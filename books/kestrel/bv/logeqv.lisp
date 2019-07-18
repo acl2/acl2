@@ -99,8 +99,7 @@
   :hints (("Goal" :cases ((and (integerp j) (integerp i))
                           (and (not (integerp j)) (integerp i))
                           (and (integerp j) (not (integerp i))))
-           :in-theory (e/d (logeqv lognot-of-logeqv logorc1 lognot-of-logand)
-                           ()))))
+           :in-theory (enable logeqv lognot-of-logeqv logorc1 lognot-of-logand))))
 
 (defthm logeqv-when-not-integerp-arg1
   (implies (not (integerp i))

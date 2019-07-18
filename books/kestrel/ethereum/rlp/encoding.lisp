@@ -133,7 +133,7 @@
      and @($s$) [YP:(184)].
      More precisely,
      @(tsee rlp-encode-tree) corresponds to @($\\mathtt{RLP}$),
-     the non-leaf case of @(tsee rlp-encode-tree)
+     the branching case of @(tsee rlp-encode-tree)
      corresponds to @($R_{\\mathrm{l}}$),
      and @(tsee rlp-encode-tree-list) corresponds to @($s$).")
    (xdoc::p
@@ -150,9 +150,9 @@
     "The first byte of the encoding of a leaf tree is always below 192:
      see theorems @('car-of-rlp-encode-tree-leaf-upper-bound-when-no-error')
      and @('rlp-encode-tree-car-ineq-to-tree-leaf').
-     The first byte of the encoding of a non-leaf tree is always at least 192:
+     The first byte of the encoding of a branching tree is always at least 192:
      see theorems @('car-of-rlp-encode-tree-leaf-upper-bound-when-no-error')
-     and @('rlp-encode-tree-car-ineq-to-tree-nonleaf').")
+     and @('rlp-encode-tree-car-ineq-to-tree-branch').")
    (xdoc::p
     "The total length of an encoding can be determined
      from the first few bytes (i.e. a prefix) of the encoding:
@@ -188,19 +188,19 @@
     (rlp-tree-case
      tree
      :leaf (rlp-encode-bytes tree.bytes)
-     :nonleaf (b* (((mv error? encoding) (rlp-encode-tree-list tree.subtrees))
-                   ((when error?) (mv t nil)))
-                (cond ((< (len encoding) 56)
-                       (b* ((encoding (cons (+ 192 (len encoding))
-                                            encoding)))
-                         (mv nil encoding)))
-                      ((< (len encoding)
-                          (expt 2 64))
-                       (b* ((be (nat=>bebytes* (len encoding)))
-                            (encoding (cons (+ 247 (len be))
-                                            (append be encoding))))
-                         (mv nil encoding)))
-                      (t (mv t nil)))))
+     :branch (b* (((mv error? encoding) (rlp-encode-tree-list tree.subtrees))
+                  ((when error?) (mv t nil)))
+               (cond ((< (len encoding) 56)
+                      (b* ((encoding (cons (+ 192 (len encoding))
+                                           encoding)))
+                        (mv nil encoding)))
+                     ((< (len encoding)
+                         (expt 2 64))
+                      (b* ((be (nat=>bebytes* (len encoding)))
+                           (encoding (cons (+ 247 (len be))
+                                           (append be encoding))))
+                        (mv nil encoding)))
+                     (t (mv t nil)))))
     :measure (rlp-tree-count tree)
     :no-function t)
 
@@ -240,9 +240,9 @@
                  191))
     :rule-classes :linear)
 
-  (defrule car-of-rlp-encode-tree-nonleaf-upper-bound-when-no-error
+  (defrule car-of-rlp-encode-tree-branch-upper-bound-when-no-error
     (implies (and (not (mv-nth 0 (rlp-encode-tree tree)))
-                  (rlp-tree-case tree :nonleaf))
+                  (rlp-tree-case tree :branch))
              (>= (car (mv-nth 1 (rlp-encode-tree tree)))
                  192))
     :rule-classes :linear
@@ -254,11 +254,11 @@
                         191)
                     (rlp-tree-case tree :leaf))))
 
-  (defrule rlp-encode-tree-car-ineq-to-tree-nonleaf
+  (defrule rlp-encode-tree-car-ineq-to-tree-branch
     (implies (not (mv-nth 0 (rlp-encode-tree tree)))
              (equal (>= (car (mv-nth 1 (rlp-encode-tree tree)))
                         192)
-                    (rlp-tree-case tree :nonleaf))))
+                    (rlp-tree-case tree :branch))))
 
   (defruled len-of-rlp-encode-tree-from-prefix
     (b* (((mv error? encoding) (rlp-encode-tree tree)))

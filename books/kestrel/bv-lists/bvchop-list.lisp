@@ -153,7 +153,7 @@
   (implies (<= n (len lst))
            (equal (take n (bvchop-list size lst))
                   (bvchop-list size (take n lst))))
-  :hints (("Goal" :in-theory (e/d (take bvchop-list) ()))))
+  :hints (("Goal" :in-theory (enable take bvchop-list))))
 
 ;improve: see the -better version nthcdr-of-bvchop-list
 (defthm nthcdr-of-bvchop-list
@@ -202,8 +202,7 @@
          (if (natp n)
              (bvchop-list size (nthcdr n lst))
            (bvchop-list size lst)))
-  :hints (("Goal" :in-theory (e/d (nthcdr bvchop-list)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable nthcdr bvchop-list))))
 
 (defthmd bvchop-list-of-nthcdr
   (equal (bvchop-list width (nthcdr n lst))

@@ -23,32 +23,30 @@
   (logxor (bvchop size x)
           (bvchop size y)))
 
+(defthm bvxor-type
+  (and (integerp (bvxor size x y))
+       (<= 0 (bvxor size x y)))
+  :rule-classes :type-prescription)
+
+(in-theory (disable (:type-prescription bvxor))) ; bvxor-type is at least as good
+
 ;rename params in this and other rules
 (defthm bvxor-associative
-  (equal (bvxor size (bvxor size a b) c)
-         (bvxor size a (bvxor size b c)))
-  :hints (("Goal" :cases ((and (natp size) (integerp a) (integerp b) (integerp c))
-                          (and (natp size) (not (integerp a)) (integerp b) (integerp c))
-                          (and (natp size) (integerp a) (not (integerp b)) (integerp c))
-                          (and (natp size) (not (integerp a)) (not (integerp b))(integerp c))
-                          (and (natp size) (integerp a) (integerp b) (not (integerp c)))
-                          (and (natp size) (not (integerp a)) (integerp b) (not (integerp c)))
-                          (and (natp size) (integerp a) (not (integerp b)) (not (integerp c)))
-                          (and (natp size) (not (integerp a)) (not (integerp b)) (not (integerp c)))
-                          )
-           :in-theory (enable bvxor natp))))
+  (equal (bvxor size (bvxor size x y) z)
+         (bvxor size x (bvxor size y z)))
+  :hints (("Goal" :in-theory (enable bvxor natp))))
 
-(defthmd bvxor-commutative-core
+(defthm bvxor-commutative
   (equal (bvxor size x y)
          (bvxor size y x))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-(defthmd bvxor-commutative-2-core
+(defthm bvxor-commutative-2
   (equal (bvxor size x (bvxor size y z))
          (bvxor size y (bvxor size x z)))
-  :hints (("Goal" :in-theory (e/d (bvxor-commutative-core) (bvxor-associative))
-           :use ((:instance bvxor-associative (a x) (b y) (c z))
-                 (:instance bvxor-associative (a y) (b x) (c z))))))
+  :hints (("Goal" :in-theory (e/d (bvxor-commutative) (bvxor-associative))
+           :use ((:instance bvxor-associative)
+                 (:instance bvxor-associative (x y) (y x))))))
 
 (defthm bvxor-same
   (equal (bvxor size x x)
@@ -61,9 +59,14 @@
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvxor))))
 
+(defthm bvxor-of-0-arg1
+  (equal (bvxor 0 x y)
+         0)
+  :hints (("Goal" :in-theory (enable bvxor))))
+
 (defthm bvxor-of-0-arg2
-  (equal (bvxor size 0 x)
-         (bvchop size x))
+  (equal (bvxor size 0 y)
+         (bvchop size y))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;in case we don't have commutativity - drop, since we'll always commute constants to the front?
@@ -73,28 +76,20 @@
   :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-combine-constants
-  (implies (syntaxp (and (quotep b) ;put this hyp first to fail fast
-                         (quotep a)
+  (implies (syntaxp (and (quotep y) ;put this hyp first to fail fast
+                         (quotep x)
                          (quotep size)))
-           (equal (bvxor size a (bvxor size b c))
-                  (bvxor size (bvxor size a b) c)))
+           (equal (bvxor size x (bvxor size y z))
+                  (bvxor size (bvxor size x y) z)))
   :hints (("Goal" :in-theory (enable bvxor))))
-
-(defthm integerp-of-bvxor
-  (integerp (bvxor size x y))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
-(defthm natp-of-bvxor
-  (natp (bvxor size x y))
-  :hints (("Goal" :in-theory (enable bvxor natp))))
 
 ;i guess this is how we should phrase all the bvchop-of-xxx rules?
 ;when n=size this will cause the bvxor to be rewritten again, unlike if we let bvchop-identity fire.  does that slow things down much?
 (defthm bvchop-of-bvxor
   (implies (and (natp n)
                 (natp size))
-           (equal (bvchop n (bvxor size a b))
-                  (bvxor (min n size) a b)))
+           (equal (bvchop n (bvxor size x y))
+                  (bvxor (min n size) x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;todo more like this for other ops
@@ -102,33 +97,27 @@
   (implies (<= size 0)
            (equal (bvxor size x y)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
-
-;any more like this?
-(defthm bvxor-when-size-is-0
-  (equal (bvxor 0 x y)
-         0)
-  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-when-size-is-not-an-integer
   (implies (not (integerp size))
            (equal (bvxor size x y)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 ;backchain-limit?
 (defthm bvxor-when-x-is-not-an-integer
   (implies (not (integerp x))
            (equal (bvxor size x y)
                   (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 ;backchain-limit?
 (defthm bvxor-when-y-is-not-an-integer
   (implies (not (integerp y))
            (equal (bvxor size x y)
                   (bvchop size x)))
-  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 ;drop? or keep since it's a simple rule
 (defthm unsigned-byte-p-of-bvxor
@@ -151,17 +140,17 @@
 (defthm bvxor-cancel-alt
   (equal (equal (bvxor size y x) (bvxor size z x))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :in-theory (enable bvxor-commutative-core))))
+  :hints (("Goal" :in-theory (enable bvxor-commutative))))
 
 (defthm bvxor-cancel-cross-1
   (equal (equal (bvxor size x y) (bvxor size z x))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :in-theory (enable bvxor-commutative-core))))
+  :hints (("Goal" :in-theory (enable bvxor-commutative))))
 
 (defthm bvxor-cancel-cross-2
   (equal (equal (bvxor size y x) (bvxor size x z))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :in-theory (enable bvxor-commutative-core))))
+  :hints (("Goal" :in-theory (enable bvxor-commutative))))
 
 ;gen the 1?
 (defthm bvxor-1-of-getbit-arg2
@@ -241,8 +230,7 @@
 (defthm bvxor-numeric-bound
   (implies (and (<= (expt 2 size) k)
                 (natp size))
-           (equal (< (bvxor size x y) k)
-                  t))
+           (< (bvxor size x y) k))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvxor)
            :in-theory (disable unsigned-byte-p-of-bvxor unsigned-byte-p-of-bvxor-gen))))
 
@@ -251,7 +239,6 @@
            (equal (equal x (bvxor size x y))
                   (and (unsigned-byte-p size x)
                        (equal (bvchop size y) 0))))
-  :otf-flg t
   :hints (("Goal" :use (:instance bvxor-cancel (x x) (z 0) (y y))
            :in-theory (disable bvxor-cancel))))
 
@@ -262,7 +249,7 @@
                   (and (unsigned-byte-p size x)
                        (equal (bvchop size y) 0))))
   :hints (("Goal" :use (:instance bvxor-cancel-lemma1)
-           :in-theory (e/d (bvxor-commutative-core)
+           :in-theory (e/d (bvxor-commutative)
                            (bvxor-cancel-cross-2 bvxor-cancel-cross-1 bvxor-cancel-lemma1)))))
 
 (defthm bvxor-cancel-lemma1-bvchop-version
@@ -270,7 +257,6 @@
                 (< 0 size))
            (equal (equal (bvchop size x) (bvxor size x y))
                   (equal (bvchop size y) 0)))
-  :otf-flg t
   :hints (("Goal" :use (:instance bvxor-cancel (x (bvchop size x)) (z 0) (y y))
            :in-theory (disable bvxor-cancel))))
 
@@ -279,7 +265,6 @@
                 (< 0 size))
            (equal (equal (bvchop size x) (bvxor size y x))
                   (equal (bvchop size y) 0)))
-  :otf-flg t
   :hints (("Goal" :use (:instance bvxor-cancel (x (bvchop size x)) (z 0) (y y))
            :in-theory (disable bvxor-cancel bvxor-cancel-lemma1-bvchop-version))))
 
@@ -288,7 +273,6 @@
                 (< 0 size))
            (equal (equal (bvxor size y x) (bvchop size x))
                   (equal (bvchop size y) 0)))
-  :otf-flg t
   :hints (("Goal" :use (:instance bvxor-cancel (x (bvchop size x)) (z 0) (y y))
            :in-theory (disable bvxor-cancel bvxor-cancel-lemma1-bvchop-version
                                bvxor-cancel-lemma1-bvchop-version-alt))))
@@ -298,7 +282,6 @@
                 (< 0 size))
            (equal (equal (bvxor size x y) (bvchop size x))
                   (equal (bvchop size y) 0)))
-  :otf-flg t
   :hints (("Goal" :use (:instance bvxor-cancel (x (bvchop size x)) (z 0) (y y))
            :in-theory (disable bvxor-cancel bvxor-cancel-lemma1-bvchop-version
                                bvxor-cancel-lemma1-bvchop-version-alt2))))
@@ -320,12 +303,7 @@
            :use (:instance bvxor-both-sides (x (bvxor size K1 K2))
                            (y (bvchop size X))
                            (z k2))
-           :in-theory (enable bvxor-commutative-core))))
-
-(defthm bvxor-non-negative-tp
-  (<= 0 (bvxor size a b))
-  :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+           :in-theory (enable bvxor-commutative))))
 
 (defthm bvxor-of-bvchop-same-arg1
   (equal (bvxor size (bvchop size x) y)
@@ -339,8 +317,8 @@
 
 ;no hyps
 (defthm bvchop-of-bvxor-same
-  (equal (bvchop size (bvxor size a b))
-         (bvxor size a b))
+  (equal (bvchop size (bvxor size x y))
+         (bvxor size x y))
   :hints (("Goal" :cases ((integerp size)))))
 
 ;todo: add more
@@ -348,7 +326,7 @@
   (equal (equal (bvxor size x y) (bvxor size w (bvxor size x z)))
          (equal (bvchop size y) (bvxor size w z)))
   :hints (("Goal" :use (:instance bvxor-cancel (z (bvxor size w z)))
-           :in-theory (e/d (bvxor-commutative-2-core) (bvxor-cancel)))))
+           :in-theory (e/d (bvxor-commutative-2) (bvxor-cancel)))))
 
 ;make versions of these for other ops..
 (defthm bvxor-subst-arg2
@@ -356,8 +334,7 @@
                 (equal (bvchop free x) k)
                 (syntaxp (quotep k))
                 (<= n free)
-                (integerp free)
-                )
+                (integerp free))
            (equal (bvxor n x y)
                   (bvxor n k y)))
   :hints (("Goal" :in-theory (e/d (bvxor) nil))))
@@ -379,4 +356,4 @@
                                   (y (bvchop size x))
                                   (z (bvchop size y))
                                   (x (bvchop size y)))
-           :in-theory (e/d (bvxor-commutative-core) (bvxor-cancel)))))
+           :in-theory (e/d (bvxor-commutative) (bvxor-cancel)))))

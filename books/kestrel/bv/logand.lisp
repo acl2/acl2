@@ -357,7 +357,7 @@
                 (integerp k))
            (equal (logand (floor j 2) (floor k 2))
                   0))
-  :hints (("Goal" :in-theory (e/d (logand) ()))))
+  :hints (("Goal" :in-theory (enable logand))))
 
 (defthm logand-of-+-1-of-*-2-and-+-1-of-*-2
   (implies (and (integerp i)

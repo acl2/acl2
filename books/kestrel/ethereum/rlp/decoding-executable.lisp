@@ -107,9 +107,9 @@
      while decoding requires the input bytes to have the right length.
      The @('bytes') field of these errors consists of the extra bytes.")
    (xdoc::p
-    "The @(':non-leaf-tree') errors occur
+    "The @(':branch-tree') errors occur
      when attempting to decode a byte array (i.e. a leaf tree)
-     results in a non-leaf tree instead.
+     results in a branching tree instead.
      The @('fragment') field contains the starting byte of the encoding.")
    (xdoc::p
     "The @(':leading-zeros-in-scalar') errors occur
@@ -130,7 +130,7 @@
   (:non-optimal-long-length ((fragment byte-list)))
   (:subtree ((error rlp-error)))
   (:extra-bytes ((bytes byte-list)))
-  (:non-leaf-tree ((fragment byte-list)))
+  (:branch-tree ((fragment byte-list)))
   (:leading-zeros-in-scalar ((bytes byte-list))))
 
 (fty::defoption maybe-rlp-error
@@ -174,7 +174,7 @@
      (i) the form @('(129 x)') is not used with @('x') below 128,
      (ii) a big endian length has no leading zeros, and
      (iii) a big endian length is not below 56.
-     Cases (ii) and (iii) apply to both leaf and non-leaf trees,
+     Cases (ii) and (iii) apply to both leaf and branching trees,
      while case (i) applies to leaf trees only.
      Without these extra checks, the decoder would accept
      not only all the valid encodings,
@@ -347,7 +347,7 @@
                (encoding (nthcdr len encoding))
                ((mv error? subtrees) (rlp-parse-tree-list subencoding))
                ((when error?) (mv (rlp-error-subtree error?) irrelevant nil)))
-            (mv nil (rlp-tree-nonleaf subtrees) encoding)))
+            (mv nil (rlp-tree-branch subtrees) encoding)))
          (lenlen (- first 247))
          ((when (< (len encoding) lenlen))
           (mv (rlp-error-fewer-bytes-than-length-of-length (list first)
@@ -378,7 +378,7 @@
          ((mv error? subtrees) (rlp-parse-tree-list subencoding))
          ((when error?)
           (mv (rlp-error-subtree error?) irrelevant nil)))
-      (mv nil (rlp-tree-nonleaf subtrees) encoding))
+      (mv nil (rlp-tree-branch subtrees) encoding))
     :measure (two-nats-measure (len encoding) 0)
     :no-function t)
 
@@ -660,7 +660,7 @@
   (b* (((mv error? tree) (rlp-decodex-tree encoding))
        ((when error?) (mv error? nil))
        ((unless (rlp-tree-case tree :leaf))
-        (mv (rlp-error-non-leaf-tree (list (car encoding))) nil))
+        (mv (rlp-error-branch-tree (list (car encoding))) nil))
        (bytes (rlp-tree-leaf->bytes tree)))
     (mv nil bytes))
   :hooks (:fix)

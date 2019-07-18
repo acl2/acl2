@@ -81,6 +81,11 @@
      performed when they are processed.
      </li>
      <li>
+     @('stub?') is the stub called @('?f') in the documentation
+     if @('old') is a reflexive function,
+     or @('nil') otherwise.
+     </li>
+     <li>
      @('app-cond-present-names') is the list of the names (keywords) of
      the applicability conditions that are present.
      </li>
@@ -150,10 +155,6 @@
        ((er &) (if recursive
                    (ensure-function-known-measure$ old$
                                                    description t nil)
-                 (value nil)))
-       ((er &) (if recursive
-                   (ensure-function-not-in-termination-thm$ old$
-                                                            description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
                    (ensure-function-guard-verified$
@@ -503,9 +504,10 @@
                          "Recursive calls, with controlling tests,
                           of the old function.")
    (restriction$ pseudo-termp)
+   (stub? symbolp)
    (wrld plist-worldp))
   :returns (consequent "A @(tsee pseudo-termp).")
-  :verify-guards nil
+  :mode :program
   :short "Generate the consequent of
           the @(':restriction-of-rec-calls') applicability condition."
   :long
@@ -513,49 +515,63 @@
    This is the term
    </p>
    @({
-     (and (implies context1<x1,...,xn>
-                   restriction<update1-x1<x1,...,xn>,
+     (and (implies context1<x1,...,xn,?f>
+                   restriction<update1-x1<x1,...,xn,?f>,
                                ...,
-                               update1-xn<x1,...,xn>>)
+                               update1-xn<x1,...,xn,?f>>)
           ...
           (implies contextm<x1,...,xn>
-                   restriction<updatem-x1<x1,...,xn>,
+                   restriction<updatem-x1<x1,...,xn,?f>,
                                ...,
-                               updatem-xn<x1,...,xn>>))
-   })"
+                               updatem-xn<x1,...,xn,?f>>))
+   })
+   <p>
+   If the function is reflexive (i.e. if @('stub?') is not @('nil'),
+   we replace every occurrence of @('old') with the stub.
+   </p>"
   (conjoin
    (restrict-gen-restriction-of-rec-calls-consequent-term-aux
-    old$ rec-calls-with-tests restriction$ nil wrld))
+    old$ rec-calls-with-tests restriction$ stub? nil wrld))
 
   :prepwork
   ((define restrict-gen-restriction-of-rec-calls-consequent-term-aux
      ((old$ symbolp)
       (rec-calls-with-tests pseudo-tests-and-call-listp)
       (restriction$ pseudo-termp)
+      (stub? symbolp)
       (rev-conjuncts pseudo-term-listp)
       (wrld plist-worldp))
      :returns (conjuncts) ; PSEUDO-TERM-LISTP
-     :verify-guards nil
+     :mode :program
      (if (endp rec-calls-with-tests)
          (reverse rev-conjuncts)
        (b* ((tests-and-call (car rec-calls-with-tests))
             (tests (access tests-and-call tests-and-call :tests))
             (call (access tests-and-call tests-and-call :call))
-            (context (conjoin tests)))
+            (context (conjoin tests))
+            (context (if stub?
+                         (sublis-fn-simple (acons old$ stub? nil) context)
+                       context))
+            (restriction-of-update (subcor-var (formals old$ wrld)
+                                               (fargs call)
+                                               restriction$))
+            (restriction-of-update (if stub?
+                                       (sublis-fn-simple (acons old$ stub? nil)
+                                                         restriction-of-update)
+                                     restriction-of-update)))
          (restrict-gen-restriction-of-rec-calls-consequent-term-aux
           old$
           (cdr rec-calls-with-tests)
           restriction$
-          (cons (implicate context
-                           (subcor-var (formals old$ wrld)
-                                       (fargs call)
-                                       restriction$))
+          stub?
+          (cons (implicate context restriction-of-update)
                 rev-conjuncts)
           wrld))))))
 
 (define restrict-gen-app-cond-formula ((name restrict-app-cond-namep)
                                        (old$ symbolp)
                                        (restriction$ pseudo-termp)
+                                       (stub? symbolp)
                                        state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -565,7 +581,7 @@
       (:restriction-of-rec-calls
        (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
             (consequent (restrict-gen-restriction-of-rec-calls-consequent-term
-                         old$ rec-calls-with-tests restriction$ wrld))
+                         old$ rec-calls-with-tests restriction$ stub? wrld))
             (formula-trans (implicate restriction$ consequent)))
          (untranslate formula-trans t wrld)))
       (:restriction-guard
@@ -583,6 +599,7 @@
                                (restriction$ pseudo-termp)
                                (hints$ symbol-alistp)
                                (print$ evmac-input-print-p)
+                               (stub? symbolp)
                                (names-to-avoid symbol-listp)
                                ctx
                                state)
@@ -616,7 +633,8 @@
                                                (pkg-witness "APT"))
                                               names-to-avoid
                                               wrld))
-       (formula (restrict-gen-app-cond-formula name old$ restriction$ state))
+       (formula
+        (restrict-gen-app-cond-formula name old$ restriction$ stub? state))
        (hints (cdr (assoc-eq name hints$)))
        (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
        (error-msg (msg
@@ -643,6 +661,7 @@
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
    (app-cond-present-names restrict-app-cond-name-listp)
+   (stub? symbolp)
    (names-to-avoid symbol-listp)
    ctx
    state)
@@ -658,6 +677,7 @@
                               verify-guards$
                               hints$
                               print$
+                              stub?
                               names-to-avoid
                               ctx
                               state)
@@ -669,6 +689,7 @@
                                        (verify-guards$ booleanp)
                                        (hints$ symbol-alistp)
                                        (print$ evmac-input-print-p)
+                                       (stub? symbolp)
                                        (names-to-avoid symbol-listp)
                                        ctx
                                        state)
@@ -683,6 +704,7 @@
                                                       restriction$
                                                       hints$
                                                       print$
+                                                      stub?
                                                       names-to-avoid
                                                       ctx
                                                       state))
@@ -693,6 +715,7 @@
                                                              verify-guards$
                                                              hints$
                                                              print$
+                                                             stub?
                                                              names-to-avoid
                                                              ctx
                                                              state)))
@@ -738,7 +761,10 @@
    its well-founded relation and measure are the same as the old function's.
    Following the design notes,
    the termination of the new function is proved
-   in the empty theory, using the termination theorem of the old function.
+   in the empty theory, using the termination theorem of the old function;
+   this should work also if the function is reflexive,
+   because of the automatic functional instantiation described in (6) of the
+   <see topic='@(url acl2::lemma-instance)'>lemma instance documentation</see>.
    The new function uses all ruler extenders,
    in case the old function's termination depends on any ruler extender.
    </p>
@@ -803,6 +829,7 @@
                                      (thm-name$ symbolp)
                                      (thm-enable$ booleanp)
                                      (app-cond-thm-names symbol-symbol-alistp)
+                                     (stub? symbolp)
                                      (old-unnorm-name symbolp)
                                      (new-unnorm-name symbolp)
                                      (wrld plist-worldp))
@@ -833,6 +860,8 @@
    the two theorems that install the non-normalized definitions of the functions
    and the induction rule of the old function,
    and using the @(':restriction-of-rec-calls') applicability condition.
+   If the old and new functions are reflexive,
+   we functionally instantiate the stub in that applicability condition.
    </p>"
   (b* ((macro (theorem-intro-macro thm-enable$))
        (formals (formals old$ wrld))
@@ -842,13 +871,18 @@
        (formula (untranslate formula t wrld))
        (recursive (recursivep old$ nil wrld))
        (hints (if recursive
-                  `(("Goal"
-                     :in-theory '(,old-unnorm-name
-                                  ,new-unnorm-name
-                                  (:induction ,old$))
-                     :induct (,old$ ,@formals))
-                    '(:use ,(cdr (assoc-eq :restriction-of-rec-calls
-                                   app-cond-thm-names))))
+                  (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
+                                          app-cond-thm-names)))
+                       (lemma-instance (if stub?
+                                           `(:functional-instance ,lemma-name
+                                             (,stub? ,new-name$))
+                                         lemma-name)))
+                    `(("Goal"
+                       :in-theory '(,old-unnorm-name
+                                    ,new-unnorm-name
+                                    (:induction ,old$))
+                       :induct (,old$ ,@formals))
+                      '(:use ,lemma-instance)))
                 `(("Goal"
                    :in-theory '(,old-unnorm-name
                                 ,new-unnorm-name)))))
@@ -865,6 +899,7 @@
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (app-cond-thm-names symbol-symbol-alistp)
+   (stub? symbolp)
    (wrld plist-worldp))
   :returns (local-event pseudo-event-formp)
   :verify-guards nil
@@ -897,6 +932,9 @@
    to corresponding recursive calls of the new function
    (the design notes cover the representative case of a single recursive call,
    but the transformation covers functions with multiple recursive calls).
+   If the old and new functions are reflexive,
+   we functionally instantiate the stub
+   in the @(':restriction-of-rec-calls') applicability condition.
    </p>
    <p>
    The guard verification event is local;
@@ -917,8 +955,13 @@
                      :use ((:guard-theorem ,old$)
                            ,(cdr (assoc-eq :restriction-guard
                                    app-cond-thm-names))
-                           ,(cdr (assoc-eq :restriction-of-rec-calls
-                                   app-cond-thm-names))
+                           ,(if stub?
+                                `(:functional-instance
+                                  ,(cdr (assoc-eq :restriction-of-rec-calls
+                                         app-cond-thm-names))
+                                  (,stub? ,new-name$))
+                              (cdr (assoc-eq :restriction-of-rec-calls
+                                     app-cond-thm-names)))
                            ,(cdr (assoc-eq :restriction-boolean
                                    app-cond-thm-names)))))
                 `(("Goal"
@@ -970,6 +1013,13 @@
    in case their proofs rely on the default or override hints.
    </p>
    <p>
+   If the old and new functions are reflexive,
+   i.e. if the old function occurs in its termination theorem,
+   just before the applicability conditions
+   we introduce the @('n')-ary stub described in the documentation,
+   which is used in the @(':restriction-of-rec-calls') applicability condition.
+   </p>
+   <p>
    The @(tsee encapsulate) also includes events
    to locally install the non-normalized definitions
    of the old and new functions,
@@ -1009,6 +1059,22 @@
    </p>"
   (b* ((wrld (w state))
        (names-to-avoid (list new-name$ thm-name$))
+       (recursivep (recursivep old$ nil wrld))
+       (reflexivep
+        (and recursivep
+             (member-eq old$
+                        (all-ffn-symbs (termination-theorem old$ (w state))
+                                       nil))))
+       (stub? (and reflexivep
+                   (fresh-name-in-world-with-$s
+                    (intern-in-package-of-symbol
+                     "?F" (pkg-witness (symbol-package-name old$)))
+                    names-to-avoid
+                    wrld)))
+       (names-to-avoid (if stub? (rcons stub? names-to-avoid) names-to-avoid))
+       (stub-event? (and stub?
+                         (list `(defstub ,stub?
+                                  ,(repeat (arity old$ wrld) '*) => *))))
        ((mv app-cond-thm-events
             app-cond-thm-names) (restrict-gen-app-conds old$
                                                         restriction$
@@ -1016,6 +1082,7 @@
                                                         hints$
                                                         print$
                                                         app-cond-present-names
+                                                        stub?
                                                         names-to-avoid
                                                         ctx
                                                         state))
@@ -1050,6 +1117,7 @@
                                             thm-name$
                                             thm-enable$
                                             app-cond-thm-names
+                                            stub?
                                             old-unnorm-name
                                             new-unnorm-name
                                             wrld))
@@ -1060,11 +1128,13 @@
                                            new-name$
                                            thm-name$
                                            app-cond-thm-names
+                                           stub?
                                            wrld))))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
+                             ,@stub-event?
                              ,@app-cond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)

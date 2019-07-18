@@ -17,7 +17,7 @@
 (defmacro and32 (x y)
   `(bvand 32 ,x ,y))
 
-(defmacro add32 (x y)
+(defmacro plus32 (x y)
   `(bvplus 32 ,x ,y))
 
 (defmacro or32 (x y)

@@ -630,7 +630,11 @@ CLEAN_FILES_EXPLICIT := \
    projects/apply-model/ex1/evaluation-apply.lisp \
    projects/apply-model/ex1/evaluation-user-defs.lisp \
    projects/apply-model/ex2/evaluation-apply.lisp \
-   projects/apply-model/ex2/evaluation-user-defs.lisp
+   projects/apply-model/ex2/evaluation-user-defs.lisp \
+   projects/apply-model-2/ex1/evaluation-apply.lisp \
+   projects/apply-model-2/ex1/evaluation-user-defs.lisp \
+   projects/apply-model-2/ex2/evaluation-apply.lisp \
+   projects/apply-model-2/ex2/evaluation-user-defs.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
@@ -745,9 +749,11 @@ ACL2_CUSTOM_TARGETS := \
   workshops/2003/kaufmann/support/input/defs-in.cert \
   workshops/2004/sumners-ray/support/success.txt
 
-# Currently, apply-model doesn't work for ACL2(r).
+# Currently, apply-model and (probably) apply-model-2 don't work for
+# ACL2(r).
 ifeq ($(ACL2_HAS_REALS), )
 ACL2_CUSTOM_TARGETS += projects/apply-model/phony
+ACL2_CUSTOM_TARGETS += projects/apply-model-2/phony
 endif
 
 # Warning!  For each target below, if there is a cert_pl_exclude file
@@ -810,6 +816,10 @@ workshops/2004/sumners-ray/support/success.txt:
 
 .PHONY: projects/apply-model/phony
 projects/apply-model/phony: projects/apply-model-deps.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+.PHONY: projects/apply-model-2/phony
+projects/apply-model-2/phony: projects/apply-model-2-deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifeq ($(ACL2_HAS_REALS), )

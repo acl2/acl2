@@ -47,7 +47,7 @@
   (implies (not (integerp val))
            (equal (slice high low val)
                   0))
-  :hints (("Goal" :in-theory (e/d (slice logtail) ()))))
+  :hints (("Goal" :in-theory (enable slice logtail))))
 
 (defthm slice-when-val-is-not-an-integer-cheap
   (implies (not (integerp val))
@@ -61,7 +61,7 @@
   (implies (unsigned-byte-p low x)
            (equal (slice high low x)
                   0))
-  :hints (("Goal" :in-theory (e/d (slice) ()))))
+  :hints (("Goal" :in-theory (enable slice))))
 
 (defthm slice-becomes-bvchop
   (equal (slice n 0 x)
@@ -119,7 +119,7 @@
            (equal (slice high low (bvchop n x))
                   (slice (+ -1 n) low x)))
   :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (slice) ()))))
+           :in-theory (enable slice))))
 
 (defthm slice-of-bvchop-too-high
   (implies (and (<= n n2)

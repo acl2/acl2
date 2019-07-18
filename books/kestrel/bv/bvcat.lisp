@@ -36,7 +36,7 @@
            (unsigned-byte-p n (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL)))
   :hints (("Goal" :do-not '(preprocess generalize eliminate-destructors)
            :cases ((integerp lowval))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 (defthm unsigned-byte-p-of-bvcat-gen
   (implies (and (>= n (+ lowsize highsize))
@@ -61,7 +61,7 @@
            (equal (bvchop n (bvcat highsize highval lowsize lowval))
                   (bvchop n lowval)))
   :hints (("Goal" :cases ((integerp lowval))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 (defthm unsigned-byte-p-of-+-when-<-of-logtail-and-expt
   (implies (and (< (logtail size x) (expt 2 size2))
@@ -138,8 +138,8 @@
                  (bvcat highsize highval lowsize lowval)))
   :hints (("Goal"
            :cases ((integerp lowval))
-           :in-theory (e/d (bvcat ;bvchop-logapp
-                            ) ()))))
+           :in-theory (enable bvcat ;bvchop-logapp
+                            ))))
 
 (defthm slice-of-bvcat
   (implies (and (<= lowsize lowindex) ;todo handle other case
@@ -176,13 +176,13 @@
   (implies (not (integerp lowval))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize highval lowsize 0)))
-  :hints (("Goal" :in-theory (e/d (bvcat LOGAPP) ()))))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
 
 (defthm bvcat-when-highval-is-not-an-integer
   (implies (not (integerp highval))
            (equal (bvcat highsize highval LOWSIZE LOWVAL)
                   (bvcat highsize 0 LOWSIZE lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvcat-of-ifix-arg2
   (equal (bvcat highsize (ifix highval) lowsize lowval)
@@ -457,8 +457,7 @@
     :cases ((and (integerp lowval) (integerp highval))
             (and (integerp lowval) (not (integerp highval)))
             (and (not (integerp lowval)) (integerp highval)))
-    :in-theory (e/d (getbit-of-bvcat-low)
-                           ()))))
+    :in-theory (enable getbit-of-bvcat-low))))
 
 (defthm getbit-of-bvcat-too-high
   (implies (and (<= (+ highsize lowsize) n)
@@ -708,7 +707,7 @@
                                     lowsize lowval)
                              size2
                              x))))
-  :hints (("Goal" :in-theory (e/d () (bvcat-recombine bvcat-associative)))))
+  :hints (("Goal" :in-theory (disable bvcat-recombine bvcat-associative))))
 
 (defthm slice-of-bvcat-hack
   (implies (and (< lowbit lowsize)

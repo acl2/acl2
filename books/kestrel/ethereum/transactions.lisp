@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/crypto/ecurve/secp256k1-interface" :dir :system)
+(include-book "kestrel/crypto/ecdsa/secp256k1-interface" :dir :system)
 (include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
 (include-book "bytes")
 (include-book "words")
@@ -135,13 +135,13 @@
      RLP trees cannot contain scalars.
      The other components are byte arrays that are left unchanged.")
    (xdoc::p
-    "We put all nine components under a non-leaf tree,
+    "We put all nine components under a branching tree,
      which we RLP-encode.
      Encoding may fail,
      if the @($\\mathbf{v}$) signature component is unreasonably large,
      or if the initialization or data array is unreasonably long."))
   (b* (((transaction trans) trans)
-       (tree (rlp-tree-nonleaf
+       (tree (rlp-tree-branch
               (list (rlp-tree-leaf (nat=>bebytes* trans.nonce))
                     (rlp-tree-leaf (nat=>bebytes* trans.gas-price))
                     (rlp-tree-leaf (nat=>bebytes* trans.gas-limit))
@@ -332,7 +332,7 @@
      and the fact that the tuples must be hashed,
      suggests that the tuples are in fact RLP trees.
      In the new flavor, the @($()$) in the last two components
-     could denote the non-leaf tree with no subtrees,
+     could denote the branching tree with no subtrees,
      but it is more reasonable that it denotes the empty byte array instead.
      This is also consistent with the fact that, in a transaction,
      the last two components are words,
@@ -369,14 +369,14 @@
      returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
    (xdoc::p
     "The @($v$) component of the signature is public key recovery information.
-     Based on the discussion in @(tsee ecurve::secp256k1-sign),
+     Based on the discussion in @(tsee secp256k1-sign-det-rec),
      the @('small-x?') flag passed to this signing function must be @('t'),
      so that the parity of the @($y$) coordinate suffices
      to recover the public key.")
    (xdoc::p
     "[YP:(281)] requires the @($s$) component of the signature
      to be below half of the order of the curve.
-     Based on the discussion in @(tsee ecurve::secp256k1-sign),
+     Based on the discussion in @(tsee secp256k1-sign-det-rec),
      the @('small-s?') flag passed to this signing function must be @('t'),
      so that a suitable @($s$) is returned.")
    (xdoc::p
@@ -394,14 +394,14 @@
        (to (maybe-byte-list20-fix to))
        (value (word-fix value))
        (6/9-tuple (if (zp chain-id)
-                      (rlp-tree-nonleaf
+                      (rlp-tree-branch
                        (list (rlp-tree-leaf (nat=>bebytes* nonce))
                              (rlp-tree-leaf (nat=>bebytes* gas-price))
                              (rlp-tree-leaf (nat=>bebytes* gas-limit))
                              (rlp-tree-leaf to)
                              (rlp-tree-leaf (nat=>bebytes* value))
                              (rlp-tree-leaf init/data)))
-                    (rlp-tree-nonleaf
+                    (rlp-tree-branch
                      (list (rlp-tree-leaf (nat=>bebytes* nonce))
                            (rlp-tree-leaf (nat=>bebytes* gas-price))
                            (rlp-tree-leaf (nat=>bebytes* gas-limit))
@@ -414,7 +414,7 @@
        ((mv error? message) (rlp-encode-tree 6/9-tuple))
        ((when error?) (mv :rlp (transaction 0 0 0 nil 0 nil 0 0 0)))
        (hash (keccak-256-bytes message))
-       ((mv error? & even? sign-r sign-s) (secp256k1-sign hash key t t))
+       ((mv error? & even? sign-r sign-s) (secp256k1-sign-det-rec hash key t t))
        ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
        (sign-v (if (zp chain-id)
                    (if even? 28 27)

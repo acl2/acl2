@@ -19,7 +19,6 @@
 
 (defpkg "ECURVE"
   (append '(;; added symbols
-            all-unsigned-byte-p
             assert!
             b*
             bebytes=>bits

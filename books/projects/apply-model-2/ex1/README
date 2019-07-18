@@ -1,0 +1,96 @@
+This is the README file for /books/projects/apply-model-2/ex1/.
+
+In this directory we demonstrate that all of the warrants issued in
+user-defs.lisp are valid in a certain model.  We do so by carrying out the
+model construction basically described in the paper "Limited Second-Order
+Functionality in a First-Order Setting."  The demonstration culminates in the
+file all-warrants-valid.lisp, which when certified establishes our claim for
+the warrants in user-defs.lisp.  We say ``basically described'' because the
+construction has been modified slightly to accommodate the lexicographic
+measures now allowed in the justification of G2 functions.
+
+The model construction can be thought of as creating a current theory that is
+in fact the evaluation theory for user-defs.lisp.  We illustrate this in the
+file defattach-demo.lisp, which explicitly does the defattaches to badge-userfn
+and apply$-userfn that are implicit in the ACL2 source code.  The success of
+these events demonstrates, at least, that the defattaches are legal.  But then
+we show how they enable some expected evaluations of the mapping functions in
+user-defs.lisp.
+
+So in a sense, the key books here are user-defs, all-warrants-valid, and
+defattach-demo.  All the other files are just used in support of the last two.
+
+The complete list of *.lisp source files in ex1/ is:
+
+user-defs             a ``representative'' sample of user-defined functions
+                      successfully badged by defwarrant for which we'll carry
+                      out the warrant model construction.  This book is
+                      certified with a portcullis that includes ../apply.lisp,
+                      the constrained version of apply.  See user-defs.acl2.
+
+doppelgangers         support file -- the doppelgangers of all the G1 and G2
+                      functions.  We have not mechanized the construction of
+                      doppelgangers beyond the weights-and-measures utility in
+                      ../weights-and-measures.lisp.  So all the defuns in this
+                      book were constructed by hand following the description
+                      of the basic process in the above paper.
+
+evaluation-apply      support file -- a copy of ../apply.lisp but certified
+                      here with a different portcullis.  See
+                      evaluation-apply.acl2 for the new portcullis but what it
+                      does is: include the doppelgangers and then defuns the
+                      originally undefined badge-userfn and apply$-userfn to be
+                      their doppelgangers.  So evaluation-apply is a book that
+                      contains the evaluation theory version of apply$ for 
+                      user-defs.
+
+evaluation-user-defs  support file -- a copy of user-defs.lisp but certified
+                      here with evaluation-apply as the portcullis, instead of
+                      ../apply.  See evaluation-user-defs.acl2.
+
+evaluation-lemmas     support file -- a collection of lemmas that are logically 
+                      unimportant but which actually contain the gist of the
+                      whole doppelganger trick: the doppelgangers satisfy the
+                      definitional equations of their counterparts and are thus
+                      equal to their counterparts.  all-warrants-valid
+                      defattach-demo.
+
+all-warrants-valid    main file -- this book contains theorems of the form
+                      (APPLY$-WARRANT-fn) for every fn in user-defs.  Its
+                      certification in the evaluation theory of user-defs shows
+                      that the evaluation theory is a model of the warrants.
+                      defattach-demo.  In a sense, all the support files above
+                      are irrelevant as long as they're certified without
+                      axioms or trust tags: however we did it, we proved that
+                      we could define badge-userfn and apply$-userfn so that
+                      all the warrants are valid.
+
+defattach-demo        main file -- this book demonstrates that we can do these
+                      two attachments:
+
+                      (defattach badge-userfn badge-userfn!)
+                      (defattach apply$-userfn apply$-userfn!)
+
+                      i.e., attach their doppelgangers to badge-userfn and
+                      apply$-userfn, and get some evaluations we'd expect.
+
+The books are certified in the order listed above.  But be sure to read the
+Important Note below before certifying these books.
+
+Important Note:
+
+Certification of books in this directory depends on the following.
+
+cp -p ../apply.lisp evaluation-apply.lisp
+cp -p user-defs.lisp evaluation-user-defs.lisp
+
+That is done automatically using "make", or by running a regression from the
+top-level ACL2 directory or books/.
+
+Running "make" in this directory, however, will not guarantee that the books in
+the parent directory are have been certified, which is necessary.
+
+Either run make in the parent directory or run cert.pl with option
+--include-excludes in either directory _after_ copying as shown above.
+
+

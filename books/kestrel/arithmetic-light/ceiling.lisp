@@ -67,7 +67,7 @@
                   (if (integerp (/ i j))
                       (/ i j)
                     (+ 1 (floor i j)))))
-  :hints (("Goal" :in-theory (e/d (ceiling floor) ()))))
+  :hints (("Goal" :in-theory (enable ceiling floor))))
 
 ;; (thm
 ;;  (implies (and (rationalp x)

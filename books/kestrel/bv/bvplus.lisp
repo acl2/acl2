@@ -24,15 +24,15 @@
 (defthm bvplus-associative
   (equal (bvplus size (bvplus size x y) z)
          (bvplus size x (bvplus size y z)))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-commutative
   (equal (bvplus size x y)
          (bvplus size y x))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;loop stopper?
-(defthm bvplus-commutative-2-core
+(defthm bvplus-commutative-2
   (equal (bvplus size y (bvplus size x z))
          (bvplus size x (bvplus size y z)))
   :hints (("Goal" :in-theory (disable bvplus-associative)
@@ -50,7 +50,7 @@
 (defthm bvplus-of-0
   (equal (bvplus size 0 x)
          (bvchop size x))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;gen?
 (defthm bvplus-of-bvchop-arg1
@@ -69,13 +69,13 @@
                 (natp n)
                 (integerp m))
            (unsigned-byte-p m (bvplus n x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-when-size-is-not-positive
   (implies (<= size 0)
            (equal (bvplus size x y)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;drop?
 (defthm bvchop-of-bvplus2
@@ -83,20 +83,19 @@
                 (natp size1)
                 (natp size2))
            (equal (bvchop size1 (bvplus size2 y z))
-                  (bvplus size2 y z)))
-  :hints (("Goal" :in-theory (e/d () nil))))
+                  (bvplus size2 y z))))
 
 (defthm bvplus-when-arg1-is-not-an-integer
   (implies (not (integerp x))
            (equal (bvplus size x y)
                   (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-when-arg2-is-not-an-integer
   (implies (not (integerp y))
            (equal (bvplus size x y)
                   (bvchop size x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-subst-value
   (implies (and (equal (bvchop n x) k) ;k comes second so that this is not a binding hyp
@@ -104,7 +103,7 @@
                               (not (quotep x)))))
            (equal (bvplus n y x)
                   (bvplus n k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-subst-value-alt
   (implies (and (equal (bvchop n x) k) ;k comes second so that this is not a binding hyp
@@ -152,7 +151,7 @@
   (equal (equal (bvplus size x y) (bvplus size x z))
          (equal (bvchop size y) (bvchop size z)))
   :hints (("Goal" :cases ((natp size))
-           :in-theory (e/d (bvplus) ()))))
+           :in-theory (enable bvplus))))
 
 (defthm bvplus-cancel-third-third
   (implies (integerp a)

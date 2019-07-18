@@ -59,7 +59,7 @@
                                   (x j)
                                   (n n)
                                   (low 1))
-           :in-theory (e/d () (floor-of-mod-of-expt-and-expt)))))
+           :in-theory (disable floor-of-mod-of-expt-and-expt))))
 
 (defthmd mod-of-floor-of-2-and-expt-of-one-less-alt
   (implies (and (natp n)
@@ -67,7 +67,7 @@
            (equal (mod (floor j 2) (expt 2 (+ -1 n)))
                   (floor (mod j (expt 2 n)) 2)))
   :hints (("Goal" :use (:instance mod-of-floor-of-2-and-expt-of-one-less)
-           :in-theory (e/d () (mod-of-floor-of-2-and-expt-of-one-less)))))
+           :in-theory (disable mod-of-floor-of-2-and-expt-of-one-less))))
 
 (local
  (defthm not-equal-when-even-and-odd

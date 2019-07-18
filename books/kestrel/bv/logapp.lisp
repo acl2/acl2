@@ -58,7 +58,7 @@
 (defthm natp-of-logapp
   (implies (natp j)
            (natp (logapp size i j)))
-  :hints (("Goal" :in-theory (e/d (logapp) ()))))
+  :hints (("Goal" :in-theory (enable logapp))))
 
 (defthm floor-of-logapp-same
   (implies (natp size)

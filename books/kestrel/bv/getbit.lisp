@@ -40,31 +40,31 @@
 (defthm getbit-of-0
   (equal (getbit n 0)
          0)
-  :hints (("Goal" :in-theory (e/d (getbit) ()))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 (defthm getbit-0-of-getbit
   (equal (getbit 0 (getbit n x))
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice) (bvchop-of-logtail-becomes-slice)))))
 
 ;gen the 1?
 (defthm bvchop-1-of-getbit
   (equal (bvchop 1 (getbit n x))
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice) (bvchop-of-logtail-becomes-slice)))))
 
 (defthm getbit-when-val-is-not-an-integer
   (implies (not (integerp val))
            (equal (getbit n val)
                   0))
-  :hints (("Goal" :in-theory (e/d (getbit) ()))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 (defthm bvchop-1-becomes-getbit
   (equal (bvchop 1 x)
          (getbit 0 x))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice)
-                           (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                           (bvchop-of-logtail-becomes-slice)))))
 
 (theory-invariant (incompatible (:rewrite bvchop-1-becomes-getbit) (:definition getbit)))
 
@@ -78,8 +78,10 @@
 ;justifies the correctness of some operations performed by Axe
 (defthmd unsigned-byte-p-1-of-getbit
   (unsigned-byte-p 1 (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT
-                                                                       BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))
 
 (defthm unsigned-byte-p-of-getbit
   (implies (posp size)

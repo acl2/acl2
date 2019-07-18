@@ -346,7 +346,7 @@
   (implies (posp n)
            (equal (bvchop 1 (expt 2 n))
                   0))
-  :hints (("Goal" :in-theory (e/d (bvchop FLOOR-WHEN-MULTIPLE) ()))))
+  :hints (("Goal" :in-theory (enable bvchop floor-when-multiple))))
 
 (defthm bvchop-of-minus-1
   (implies (natp n)
@@ -370,10 +370,10 @@
            (equal (bvchop size2 (+ -1 (expt 2 size1)))
                   (+ -1 (expt 2 size2))))
   :hints (("Goal" :induct t ;for speed
-           :in-theory (e/d ((:I expt)
-                            bvchop ;mod-cancel
-                            mod-of-mod-when-mult
-                            unsigned-byte-p) ()))))
+           :in-theory (enable (:i expt)
+                              bvchop ;mod-cancel
+                              mod-of-mod-when-mult
+                              unsigned-byte-p))))
 
 ;make a constant version? maybe not for this one?
 (defthm bvchop-of-mask-gen
@@ -426,7 +426,7 @@
   (implies (integerp i)
            (equal (mod i 4)
                   (bvchop 2 i)))
-  :hints (("Goal" :in-theory (e/d (bvchop) ()))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvchop-+-cancel-better
   (implies (and (integerp i)
@@ -656,7 +656,7 @@
                 (natp m))
            (equal (mod x (expt 2 m))
                   (bvchop m x)))
-  :hints (("Goal" :in-theory (e/d (bvchop) ()))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 (theory-invariant (incompatible (:definition bvchop)
                                 (:rewrite mod-of-expt-of-2)))

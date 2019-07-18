@@ -165,6 +165,10 @@
     "An input has been added to @(tsee apt::tailrec) to control whether
      the wrapper function is generated or not.")
 
+   (xdoc::p
+    "@(tsee apt::restrict) now supports reflexive functions,
+     i.e. functions that occur in their termination theorem.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
@@ -260,7 +264,10 @@
 
    (xdoc::p
     "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
-     has been added, which will be populated soon.")
+     has been added, which curently contains the secp256k1 signing interface,
+     which was previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface") ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
