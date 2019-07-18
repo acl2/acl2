@@ -169,6 +169,11 @@
                   nil)
            :hints(("Goal" :in-theory (enable* interp-st-defs)))))
 
+  (local (defthm interp-st->equiv-contexts-of-create-interp-st
+           (equal (interp-st->equiv-contexts (create-interp-st))
+                  nil)
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
+
   (local (defthm interp-st->cgraph-of-create-interp-st
            (equal (interp-st->cgraph (create-interp-st))
                   nil)
@@ -247,6 +252,12 @@
   (defret constraint-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->constraint new-interp-st)
                             (interp-st->logicman new-interp-st))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (enable logicman-pathcond-eval
+                                aignet::aignet-pathcond-eval))))
+
+  (defret equiv-contexts-of-<fn>
+    (equal (interp-st->equiv-contexts new-interp-st) nil)
     :hints (("goal" :do-not '(preprocess)
              :in-theory (enable logicman-pathcond-eval
                                 aignet::aignet-pathcond-eval))))
@@ -587,6 +598,11 @@
 (define fgl-toplevel-sat-check-config-wrapper (override)
   (or override (fgl-toplevel-sat-check-config)))
 
+(local (defthm iff?-forall-extensions-of-nil
+         (equal (iff?-forall-extensions nil obj term eval-alist)
+                (iff-forall-extensions obj term eval-alist))
+         :hints(("Goal" :in-theory (enable iff?-forall-extensions)))))
+
 (define fgl-clause-proc-core ((goal pseudo-termp)
                               (config glcp-config-p)
                               (interp-st)
@@ -850,7 +866,11 @@
     :hints ((fgl-casesplit :cases
                            (fgl-param-thm-cases
                             ,(cadr (assoc-keyword :param-bindings args))
-                            ',(cadr (assoc-keyword :param-hyp args))))
+                            ',(cadr (assoc-keyword :param-hyp args)))
+                           :split-params ,(cadr (assoc-keyword :split-params args))
+                           :solve-params ,(cadr (assoc-keyword :solve-params args))
+                           :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
+                           :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
             '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
 
 (defmacro fgl-param-thm (&rest args)

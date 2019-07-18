@@ -333,3 +333,12 @@ counterexample info for the stack frame from which it is called.</p>"
 (defun fgl-pathcond-fix (x)
   (declare (xargs :guard t))
   x)
+
+
+(define all-equiv (x y)
+  :enabled t
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  t ;; Always true!
+  ///
+  (defequiv all-equiv))

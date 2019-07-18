@@ -193,9 +193,19 @@
       (equal (interp-st->reclimit new-interp-st)
              (interp-st->reclimit interp-st)))
 
+    ;; (defret interp-st->errmsg-of-<fn>
+    ;;   (equal (interp-st->errmsg new-interp-st)
+    ;;          (interp-st->errmsg interp-st)))
+
     (defret interp-st->errmsg-of-<fn>
-      (equal (interp-st->errmsg new-interp-st)
-             (interp-st->errmsg interp-st)))
+      (implies (interp-st->errmsg interp-st)
+               (equal (interp-st->errmsg new-interp-st)
+                      (interp-st->errmsg interp-st))))
+
+    (defret interp-st->errmsg-equal-unreachable-of-<fn>
+      (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+               (not (equal (interp-st->errmsg new-interp-st)
+                           :unreachable))))
 
     (defret interp-st->equiv-contexts-of-<fn>
       (equal (interp-st->equiv-contexts new-interp-st)
@@ -314,6 +324,7 @@
 
     (defret eval-of-<fn>
       (implies (and successp
+                    (equal contexts (interp-st->equiv-contexts interp-st))
                     (fgl-ev-meta-extract-global-facts :state st)
                     (gl-primitive-formula-checks-stub st)
                     (equal (w st) (w state))
@@ -325,10 +336,12 @@
                     (logicman-pathcond-eval (gl-env->bfr-vals env)
                                             (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st)))
-               (equal (fgl-object-eval ans env (interp-st->logicman new-interp-st))
-                      (fgl-ev (cons (pseudo-fnsym-fix fn)
-                                    (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
-                              nil))))
+               (equal (fgl-ev-context-fix contexts
+                                          (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
+                      (fgl-ev-context-fix contexts
+                                          (fgl-ev (cons (pseudo-fnsym-fix fn)
+                                                        (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
+                                                  nil)))))
 
     (deffixequiv gl-primitive-fncall-stub)))
 
@@ -369,6 +382,7 @@
 
     (defret eval-of-<fn>
       (implies (and successp
+                    (equal contexts (interp-st->equiv-contexts interp-st))
                     (fgl-ev-meta-extract-global-facts :state st)
                     (gl-primitive-formula-checks-stub st)
                     (equal (w st) (w state))
@@ -380,7 +394,9 @@
                     (logicman-pathcond-eval (gl-env->bfr-vals env)
                                             (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st)))
-               (equal (fgl-object-eval ans env (interp-st->logicman new-interp-st))
-                      (fgl-ev (cons (pseudo-fnsym-fix fn)
-                                    (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
-                              nil))))))
+               (equal (fgl-ev-context-fix contexts
+                                          (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
+                      (fgl-ev-context-fix contexts
+                                          (fgl-ev (cons (pseudo-fnsym-fix fn)
+                                                        (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
+                                                  nil)))))))

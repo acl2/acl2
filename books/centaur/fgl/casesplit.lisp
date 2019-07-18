@@ -54,7 +54,8 @@
    (cons x y)
    (car x)
    (cdr x)
-   (syntax-bind-fn x y z))
+   ;; (syntax-bind-fn x y z)
+   )
   :namedp t)
 
 (acl2::def-join-thms fcs-ev)
@@ -576,8 +577,8 @@
                                           :cases cases-trans)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl-p)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl-p state))
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl-p repeat-concl-p)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl-p ,repeat-concl-p state))
 
 
 

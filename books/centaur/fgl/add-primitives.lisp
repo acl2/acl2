@@ -229,10 +229,10 @@
             (implies (and (interp-st-bfrs-ok interp-st)
                           (<= (base-bvar$a bvar-db) (nfix n))
                           (< (nfix n) (next-bvar$a bvar-db)))
-                     (iff (<prefix>-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
+                     (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
                                            env
                                            (interp-st->logicman new-interp-st))
-                          (<prefix>-object-eval (get-bvar->term$a n bvar-db)
+                          (fgl-object-eval (get-bvar->term$a n bvar-db)
                                                 env
                                                 (interp-st->logicman interp-st))))))
 
@@ -245,6 +245,7 @@
 
         (defret eval-of-<fn>-primitive
           (implies (and successp
+                        (equal contexts (interp-st->equiv-contexts interp-st))
                         (<prefix>-ev-meta-extract-global-facts :state st)
                         <formula-check>
                         (equal (w st) (w state))
@@ -256,10 +257,12 @@
                         (logicman-pathcond-eval (gl-env->bfr-vals env)
                                                 (interp-st->pathcond interp-st)
                                                 (interp-st->logicman interp-st)))
-                   (equal (<prefix>-object-eval ans env (interp-st->logicman new-interp-st))
-                          (<prefix>-ev (cons '<fn>
-                                             (kwote-lst (<prefix>-objectlist-eval args env (interp-st->logicman interp-st))))
-                                       nil))))
+                   (equal (fgl-ev-context-fix contexts
+                                              (<prefix>-object-eval ans env (interp-st->logicman new-interp-st)))
+                          (fgl-ev-context-fix contexts
+                                              (<prefix>-ev (cons '<fn>
+                                                                 (kwote-lst (<prefix>-objectlist-eval args env (interp-st->logicman interp-st))))
+                                                           nil)))))
 
         (table gl-primitives '<fn> '<prefix>))
      :splice-alist `((<formals> . ,formals)
@@ -445,6 +448,7 @@
                                                   (interp-st->logicman interp-st))))))
           (defret eval-of-<fn>
             (implies (and successp
+                          (equal contexts (interp-st->equiv-contexts interp-st))
                           (<eval-prefix>-ev-meta-extract-global-facts :state st)
                           ;; (,name-formula-checks st)
                           (<prefix>-formula-checks st)
@@ -457,10 +461,12 @@
                           (logicman-pathcond-eval (gl-env->bfr-vals env)
                                                   (interp-st->pathcond interp-st)
                                                   (interp-st->logicman interp-st)))
-                     (equal (<eval-prefix>-object-eval ans env (interp-st->logicman new-interp-st))
-                            (<eval-prefix>-ev (cons (pseudo-fnsym-fix fn)
-                                               (kwote-lst (<eval-prefix>-objectlist-eval args env (interp-st->logicman interp-st))))
-                                         nil))))
+                     (equal (fgl-ev-context-fix contexts
+                                                (<eval-prefix>-object-eval ans env (interp-st->logicman new-interp-st)))
+                            (fgl-ev-context-fix contexts
+                                                (<eval-prefix>-ev (cons (pseudo-fnsym-fix fn)
+                                                                        (kwote-lst (<eval-prefix>-objectlist-eval args env (interp-st->logicman interp-st))))
+                                                                  nil)))))
           (fty::deffixequiv <prefix>-primitive-fncall))
 
         ;; bozo, dumb theorem needed to prove fixequiv hook

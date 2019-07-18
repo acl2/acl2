@@ -121,10 +121,10 @@ bind-free, and syntax-bind forms in the FGL rewriter.</p>
 do not access stobjs.  When magic-ev-fncall fails, it can also expand function
 definitions and interpret their bodies.  But additionally, it calls an
 attachable function @('fancy-ev-primitive') to allow it to directly execute
-functions that access state and/or access and/or modify the FGL @('interp-st').</p>
+functions that access and/or modify the ACL2 state and FGL @('interp-st').</p>
 
-<p>To allow a function @('my-fn') that accesses @('interp-st') or @('state') to
-be executable by @('fancy-ev'), there are two steps:</p>
+<p>To allow a function @('my-fn') that accesses/updates @('interp-st') or
+@('state') to be executable by @('fancy-ev'), there are two steps:</p>
 
 <ul>
 
@@ -142,7 +142,8 @@ input function symbol where for each function/guard pair in the
 @('fancy-ev-primitives') table, if the input function symbol matches that
 function, it checks the given guard form and then executes the function on the
 input arguments, returning its return value list and modified interp-st (if
-any).  This allows all functions that were added using @('fancy-ev-add-primitive') to be executed by @('fancy-ev').</li>
+any).  This allows all functions that were added using
+@('fancy-ev-add-primitive') to be executed by @('fancy-ev').</li>
 </ul>"
     (pseudo-term-case x
       :const (mv nil x.val interp-st state)

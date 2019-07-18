@@ -124,7 +124,9 @@
                  :expand ((fgl-object-alist-eval x env)
                           (gl-object-alist-fix x))))))
 
-
+(local (defthm bool->bit-of-nonnil
+         (implies x
+                  (equal (bool->bit x) 1))))
 
 (def-gl-primitive endint (x)
   (gl-object-case x
@@ -176,6 +178,10 @@
                                consp-of-fgl-object-alist-eval)
                   :in-theory (disable fgl-object-alist-eval-when-atom
                                       consp-of-fgl-object-alist-eval)))))
+
+(local (defthm bool->bit-equal-1
+         (equal (equal (bool->bit x) 1)
+                (not (not x)))))
 
 (def-gl-primitive intcar (x)
   (gl-object-case x

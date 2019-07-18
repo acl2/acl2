@@ -2637,7 +2637,7 @@ registers are not used.</p>"
     numerator rationalp realpart
     stringp symbol-name symbol-package-name
     symbolp
-    syntax-bind-fn abort-rewrite
+    bind-var syntax-interp-fn abort-rewrite all-equiv
 
     equal not if iff int bool
     concrete return-last synp cons car cdr

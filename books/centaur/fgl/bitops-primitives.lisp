@@ -290,6 +290,8 @@
                            boolean-listp
                            (tau-system))))
 
+(local (in-theory (enable gobj-bfr-eval)))
+
 (def-gl-primitive equal (x y)
   (b* (((when (equal x y)) (mv t t interp-st))
        ((when (and (gl-object-case x :g-concrete)

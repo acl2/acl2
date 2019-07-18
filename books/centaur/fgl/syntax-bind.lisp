@@ -32,6 +32,38 @@
 
 (include-book "centaur/meta/unify" :dir :system)
 
+(define bind-var (dummy-var val)
+  :parents (fgl-rewrite-rules)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :short "Form that can bind a free variable to the result of an arbitrary computation."
+  :long "<p>Logically, @('(bind-var var form)') just returns @('var').
+However, in FGL, the intended use is to bind a free variable in a rewrite rule
+to the result of some arbitrary computation.  The @('form') argument is
+rewritten under an @('all-equiv') congruence so it can do extralogical things
+like examining the interpreter state and term syntax. The @('var') argument
+must be a variable that hasn't yet been bound during the application of the
+current rewrite rule.</p>"
+  dummy-var)
+
+(defxdoc syntax-interp
+  :parents (fgl-rewrite-rules)
+  :short "Interpret a form on the syntactic representations of variables."
+  :long "<p>Logically, this always returns NIL.  In FGL, this can be used when
+under an @('all-equiv') congruence to examine the syntactic representation of
+certain values and also to access and update the ACL2 state and FGL interpreter
+state.</p>")
+
+(define syntax-interp-fn (form untrans-form)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  nil)
+
+(defmacro syntax-interp (form)
+  `(syntax-interp-fn ,form ',form))
+
 (defxdoc syntax-bind
   :parents (fgl-rewrite-rules)
   :short "Form that can bind a free variable to a value computed from examining
@@ -44,7 +76,15 @@ the syntax of other bound variables in the RHS of an FGL rewrite rule."
 
 <p>where fresh-variable must be a variable not previously bound and
 binding-form is a term that may mention previously bound variables.  See @(see
-fgl-rewrite-rules) for further discussion.</p>")
+fgl-rewrite-rules) for further discussion.</p>
+
+<p>The above syntax-bind form is actually a macro which expands to:</p>
+@({
+ (bind-var fresh-variable (syntax-interp binding-form))
+ })
+<p>
+
+")
 
 (defxdoc abort-rewrite
   :parents (fgl-rewrite-rules)
@@ -60,62 +100,61 @@ fgl-rewrite-rules) for further discussion.</p>")
 the rewrite rule is easy to prove -- e.g., it may just be the LHS of the
 rule.</p>")
 
-(defun syntax-bind-fn (form untrans-form dummy-var)
-  (declare (ignorable form untrans-form)
-           (xargs :guard t))
-  dummy-var)
+;; (defun syntax-bind-fn (form untrans-form dummy-var)
+;;   (declare (ignorable form untrans-form)
+;;            (xargs :guard t))
+;;   dummy-var)
 
 ;; note: probably need to put this somewhere else
 (defmacro syntax-bind (dummy-var form)
-  `(syntax-bind-fn
-    ,form ',form ,dummy-var))
+  `(bind-var ,dummy-var (syntax-interp ,form)))
 
 ;; For lack of a better place to put this.
 (defun abort-rewrite (x)
   x)
 
-(defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
+;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 
-(local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))
+;; (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))
 
-(local (defthm assoc-when-key
-         (implies k
-                  (equal (assoc k a)
-                         (hons-assoc-equal k a)))))
+;; (local (defthm assoc-when-key
+;;          (implies k
+;;                   (equal (assoc k a)
+;;                          (hons-assoc-equal k a)))))
 
-(define match-syntax-bind ((x pseudo-termp))
-  :returns (mv (dummy-var symbolp
-                          ;; note: not pseudo-var-p because we indicate no match by returning nil
-                          :rule-classes :type-prescription)
-               (form pseudo-termp))
-  (b* (((mv ok alist)
-        (cmr::pseudo-term-unify '(syntax-bind-fn trans-form untrans-form dummy-var)
-                           x nil))
-       ((unless ok) (mv nil nil))
-       (untrans-form (cdr (assoc 'untrans-form alist)))
-       (trans-form (cdr (assoc 'trans-form alist)))
-       (dummy-var (cdr (assoc 'dummy-var alist)))
-       ((unless (And (pseudo-term-case dummy-var :var)
-                     (pseudo-term-case untrans-form :quote)))
-        (mv nil nil)))
-    (mv (acl2::pseudo-term-var->name dummy-var) trans-form))
-  ///
-  (std::defretd eval-when-<fn>
-    (implies dummy-var
-             (equal (synbind-ev x a)
-                    (cdr (hons-assoc-equal dummy-var a))))
-    :hints(("Goal" :expand ((:free (pat x alist) (cmr::pseudo-term-unify pat x alist))
-                            (:free (pat x alist) (cmr::pseudo-term-list-unify pat x alist))))))
+;; (define match-syntax-bind ((x pseudo-termp))
+;;   :returns (mv (dummy-var symbolp
+;;                           ;; note: not pseudo-var-p because we indicate no match by returning nil
+;;                           :rule-classes :type-prescription)
+;;                (form pseudo-termp))
+;;   (b* (((mv ok alist)
+;;         (cmr::pseudo-term-unify '(syntax-bind-fn trans-form untrans-form dummy-var)
+;;                            x nil))
+;;        ((unless ok) (mv nil nil))
+;;        (untrans-form (cdr (assoc 'untrans-form alist)))
+;;        (trans-form (cdr (assoc 'trans-form alist)))
+;;        (dummy-var (cdr (assoc 'dummy-var alist)))
+;;        ((unless (And (pseudo-term-case dummy-var :var)
+;;                      (pseudo-term-case untrans-form :quote)))
+;;         (mv nil nil)))
+;;     (mv (acl2::pseudo-term-var->name dummy-var) trans-form))
+;;   ///
+;;   (std::defretd eval-when-<fn>
+;;     (implies dummy-var
+;;              (equal (synbind-ev x a)
+;;                     (cdr (hons-assoc-equal dummy-var a))))
+;;     :hints(("Goal" :expand ((:free (pat x alist) (cmr::pseudo-term-unify pat x alist))
+;;                             (:free (pat x alist) (cmr::pseudo-term-list-unify pat x alist))))))
 
-  (fty::deffixequiv match-syntax-bind)
+;;   (fty::deffixequiv match-syntax-bind)
 
-  (local
-   (make-event
-    (b* (((mv err val state) (acl2::translate '(syntax-bind foo (and x y z)) t t nil 'match-syntax-bind-works
-                                        (w state) state))
-         ((when err) (mv err val state)))
-      (value `(defthm match-syntax-bind-works
-                (b* (((mv dummy-var form) (match-syntax-bind ',val)))
-                  (and (equal dummy-var 'foo)
-                       (equal form '(if x (if y z 'nil) 'nil))))))))))
+;;   (local
+;;    (make-event
+;;     (b* (((mv err val state) (acl2::translate '(syntax-bind foo (and x y z)) t t nil 'match-syntax-bind-works
+;;                                         (w state) state))
+;;          ((when err) (mv err val state)))
+;;       (value `(defthm match-syntax-bind-works
+;;                 (b* (((mv dummy-var form) (match-syntax-bind ',val)))
+;;                   (and (equal dummy-var 'foo)
+;;                        (equal form '(if x (if y z 'nil) 'nil))))))))))
 
