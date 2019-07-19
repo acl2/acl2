@@ -829,61 +829,6 @@
 
 
 
-(defun fgl-thm-fn (args)
-  (declare (xargs :mode :program))
-  `(thm
-     (implies ,(cadr (assoc-keyword :hyp args))
-              ,(cadr (assoc-keyword :concl args)))
-     :hints (("goal" :clause-processor expand-an-implies-cp)
-             '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
-
-(defmacro fgl-thm (&rest args)
-  (fgl-thm-fn args))
-
-(defun def-fgl-thm-fn (name args)
-  (declare (xargs :mode :program))
-  `(defthm ,name . ,(cdr (fgl-thm-fn args))))
-
-(defmacro def-fgl-thm (name &rest args)
-  (def-fgl-thm-fn name args))
-
-
-(defun fgl-param-thm-cases (param-bindings param-hyp)
-  (if (atom param-bindings)
-      nil
-    (cons (list (msg "Case: ~x0" (caar param-bindings))
-                `(let ,(pairlis$ (alist-keys (caar param-bindings))
-                                 (pairlis$ (kwote-lst (alist-keys (alist-vals (caar param-bindings))))
-                                           nil))
-                   ,param-hyp))
-          (fgl-param-thm-cases (cdr param-bindings) param-hyp))))
-
-(defun fgl-param-thm-fn (args)
-  (declare (xargs :mode :program))
-  `(thm
-    (implies ,(cadr (assoc-keyword :hyp args))
-             ,(cadr (assoc-keyword :concl args)))
-    :hints ((fgl-casesplit :cases
-                           (fgl-param-thm-cases
-                            ,(cadr (assoc-keyword :param-bindings args))
-                            ',(cadr (assoc-keyword :param-hyp args)))
-                           :split-params ,(cadr (assoc-keyword :split-params args))
-                           :solve-params ,(cadr (assoc-keyword :solve-params args))
-                           :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
-                           :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
-            '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
-
-(defmacro fgl-param-thm (&rest args)
-  (fgl-param-thm-fn args))
-
-(defun def-fgl-param-thm-fn (name args)
-  (declare (xargs :mode :program))
-  `(defthm ,name . ,(cdr (fgl-param-thm-fn args))))
-
-(defmacro def-fgl-param-thm (name &rest args)
-  (def-fgl-param-thm-fn name args))
-                         
-            
             
 
 

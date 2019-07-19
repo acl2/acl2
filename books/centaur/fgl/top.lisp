@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "clauseproc")
+(include-book "def-fgl-thm")
 (include-book "def-gl-rewrite")
 ;; (include-book "subst-functions")
 (include-book "primitives")
