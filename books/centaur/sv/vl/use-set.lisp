@@ -2234,7 +2234,7 @@
                                    (path-scope-of-fields
                                     path-wire-of-fields)))))))
 (fty::deflist addresslist :elt-type address :true-listp t)
-(fty::deflist pathlist :elt-type path :true-listp t)
+(local (fty::deflist pathlist :elt-type path :true-listp t))
 
 (acl2::defsort pathlist-sort (x)
   :comparablep path-p

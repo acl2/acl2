@@ -47,6 +47,7 @@
   ;;                        (not (consp env)))
   ;;                   (bfr-eval hyp nil))))
 
+(local (fty::deflist nat-list :pred nat-listp :elt-type natp :true-listp t :elementp-of-nil nil))
 
 (local (defthm glcp-generic-bvar-db-env-ok-of-base-bvar
            (implies (equal bb (base-bvar$a bvar-db))

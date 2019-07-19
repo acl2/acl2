@@ -55,6 +55,10 @@
       repeat
       replicate
       list-fix
+      true-list-fix
+      true-list-listp
+      true-list-list-fix
+      true-list-list-equiv
       llist-fix
       list-equiv
       same-lengthp
