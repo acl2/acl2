@@ -283,3 +283,14 @@ functions over natural numbers.
     (local (acl2s-defaults :set testing-enabled nil))
     (defun ,name ,@args)))
 
+; I tried a few different ways of doing this, so I figured I would
+; leave this here so that if I make any other changes, there is less
+; updating to do.
+(defun tbl-set-fn (tbl key val)
+  `(table ,tbl ,key ,val))
+
+(defun tbl-get-fn (tbl key)
+  `(b* ((wrld (w state)))
+     (cdr (assoc-eq ,key (table-alist ',tbl wrld)))))
+
+

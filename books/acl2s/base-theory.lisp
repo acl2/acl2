@@ -20,6 +20,7 @@
 ; Pete 9/27/2018: Include utilities book
 (include-book "utilities")
 (include-book "definec" :ttags :all)
+(include-book "properties")
 
 (include-book "std/strings/top" :dir :system)
 
