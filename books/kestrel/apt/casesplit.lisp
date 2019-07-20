@@ -931,11 +931,7 @@
      the applicability condition theorem names to use in the guard hints.
      We also use the guard theorem of @('old'),
      which may be needed to discharge the guard obligations
-     within the guard term of @('old').
-     But apparently @('(:guard-theorem old)') fails if @('old') is not defined,
-     so we use it only if @('old') is defined;
-     otherwise, the guard of @('old') itself
-     does not engender any guard obligation and so the theorem is not needed."))
+     within the guard term of @('old')."))
   (b* ((macro (function-intro-macro new-enable$ nil))
        (formals (formals old$ wrld))
        (new0 (car (last news)))
@@ -944,13 +940,11 @@
        (body (untranslate body nil wrld))
        (guard (uguard old$ wrld))
        (guard-app-cond-thm-names (nthcdr (len news) app-cond-thm-names))
-       (guard-theorem? (and (definedp old$ wrld)
-                            (list `(:guard-theorem ,old$))))
        (guard-hints? (and verify-guards$
                           `(("Goal"
                              :in-theory nil
                              :use (,@(strip-cdrs guard-app-cond-thm-names)
-                                   ,@guard-theorem?)))))
+                                   (:guard-theorem ,old$))))))
        (local-event
         `(local
           (,macro ,new-name$ (,@formals)
