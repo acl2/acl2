@@ -13683,25 +13683,29 @@
 ; function is already guard-verified.
 
                               (logicp fn wrld))))
-  (let ((names (or (getpropc fn 'recursivep nil wrld)
-                   (list fn))))
-    (mv-let (cl-set ttree)
-      (guard-clauses-for-clique names
-                                guard-debug
-                                :DO-NOT-SIMPLIFY ; ens
-                                wrld
-                                (f-get-global 'safe-mode state)
-                                (gc-off state)
-                                nil)
+  (cond
+   ((not (getpropc fn 'unnormalized-body nil wrld))
+    *t*)
+   (t
+    (let ((names (or (getpropc fn 'recursivep nil wrld)
+                     (list fn))))
+      (mv-let (cl-set ttree)
+        (guard-clauses-for-clique names
+                                  guard-debug
+                                  :DO-NOT-SIMPLIFY ; ens
+                                  wrld
+                                  (f-get-global 'safe-mode state)
+                                  (gc-off state)
+                                  nil)
 ; Note that ttree is assumption-free; see guard-clauses-for-clique.
-      (let ((cl-set
-             (cond (simp-p
-                    (mv-let (cl-set ttree)
-                      (clean-up-clause-set cl-set nil wrld ttree state)
-                      (declare (ignore ttree)) ; assumption-free
-                      cl-set))
-                   (t cl-set))))
-        (termify-clause-set cl-set)))))
+        (let ((cl-set
+               (cond (simp-p
+                      (mv-let (cl-set ttree)
+                        (clean-up-clause-set cl-set nil wrld ttree state)
+                        (declare (ignore ttree)) ; assumption-free
+                        cl-set))
+                     (t cl-set))))
+          (termify-clause-set cl-set)))))))
 
 (defun guard-or-termination-theorem-msg (kwd args coda)
   (declare (xargs :guard (and (member-eq kwd '(:gthm :tthm))

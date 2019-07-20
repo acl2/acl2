@@ -95,6 +95,11 @@
 ; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
 ; If you are stuck, see the entries about other libraries.
 
+; Note (probably too low level to mention in the :doc string): modified
+; defxdoc-raw so that the :from field is a string rather than nil, which can be
+; important for avoiding errors when building the "fast" documentation.  This
+; change has avoided an error using SBCL.
+
   :parents (note-8-3 release-notes-books)
 
   :short "Release notes for the ACL2 Community Books for ACL2 8.3"
