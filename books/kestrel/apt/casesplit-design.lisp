@@ -45,19 +45,19 @@
     (xdoc::li
      "@($f$) corresponds to @('old').")
     (xdoc::li
-     "@($c_k$) corresponds to @('condk'), for @($1 \leq k \leq p$).")
+     "@($c_k$) corresponds to @('condk'), for @($1 \\leq k \\leq p$).")
     (xdoc::li
-     "@($f{}f'_k$) corresponds to @('thmk'), for @($0 \leq k \leq p$).")
+     "@($f{}f'_k$) corresponds to @('thmk'), for @($0 \\leq k \\leq p$).")
     (xdoc::li
-     "@($h_k$) corresponds to @('hypk'), for @($0 \leq k \leq p$).")
+     "@($h_k$) corresponds to @('hypk'), for @($0 \\leq k \\leq p$).")
     (xdoc::li
-     "@($f_k$) corresponds to @('newk'), for @($0 \leq k \leq p$).")
+     "@($f_k$) corresponds to @('newk'), for @($0 \\leq k \\leq p$).")
     (xdoc::li
-     "@($H_k$) corresponds to @(':thmk-hyps'), for @($0 \leq k \leq p$).")
+     "@($H_k$) corresponds to @(':thmk-hyps'), for @($0 \\leq k \\leq p$).")
     (xdoc::li
-     "@($GC_k$) correponds to @(':condk-guard'), for @($1 \leq k \leq p$).")
+     "@($GC_k$) correponds to @(':condk-guard'), for @($1 \\leq k \\leq p$).")
     (xdoc::li
-     "@($Gf_k$) correponds to @(':newk-guard'), for @($0 \leq k \leq p$).")
+     "@($Gf_k$) correponds to @(':newk-guard'), for @($0 \\leq k \\leq p$).")
     (xdoc::li
      "@($f'$) corresponds to @('new').")
     (xdoc::li
