@@ -169,6 +169,10 @@
     "@(tsee apt::restrict) now supports reflexive functions,
      i.e. functions that occur in their termination theorem.")
 
+   (xdoc::p
+    "A new transformation, @(tsee apt::casesplit),
+     has been added to rephrase a function by cases.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
