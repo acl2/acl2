@@ -16,6 +16,8 @@
 (include-book "xdoc/constructors" :dir :system)
 (include-book "std/util/define" :dir :system)
 
+(include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc symbol-utilities
@@ -50,17 +52,3 @@
     (if (equal pkg *main-lisp-package-name*)
         "ACL2"
       pkg)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define symbol-package-name-lst ((syms symbol-listp))
-  :returns (pkgs string-listp)
-  :parents (symbol-utilities)
-  :short "Lift @(tsee symbol-package-name) to lists."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This function is named similarly to the built-in @('symbol-name-lst')."))
-  (cond ((endp syms) nil)
-        (t (cons (symbol-package-name (car syms))
-                 (symbol-package-name-lst (cdr syms))))))

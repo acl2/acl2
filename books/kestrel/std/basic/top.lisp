@@ -1,4 +1,4 @@
-; ACL2 Standard Library
+; Std/basic - Basic definitions
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,24 +10,20 @@
 
 (in-package "ACL2")
 
-(include-book "basic/top")
+(include-book "symbol-package-name-lst")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std-extensions
-  :parents (kestrel-books std)
+(defxdoc std/basic-extensions
+  :parents (std-extensions std::std/basic)
   :short
   (xdoc::topstring "Extensions of "
-                   (xdoc::seeurl "std" "Std")
-                   " library in the "
+                   (xdoc::seeurl "std::std/basic" "Std/basic")
+                   " in the "
                    (xdoc::seeurl "kestrel-books" "Kestrel Books")
                    ".")
   :long
   (xdoc::topstring
    (xdoc::p
-    "These extensions could be moved under @('[books]/std') at some point.")
-   (xdoc::p
-    "Some material under @('[books]/kestrel/utilities')
-     consists of Std extensions,
-     and thus should be moved here under @('[books]/kestrel/std')
-     (and then possibly under @('[books]/std')).")))
+    "These extension could be moved under @('[books]/std/basic')
+     at some point.")))

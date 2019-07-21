@@ -344,6 +344,11 @@
      has been moved from @('[books]/centaur/fty/basetypes.lisp')
      to a new file @('[books]/std/basic/pos-fix.lisp').")
 
+   (xdoc::p
+    "The function @(tsee symbol-package-name-lst)
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "stobjs::std/stobjs" "Standard STOBJs Library"))
