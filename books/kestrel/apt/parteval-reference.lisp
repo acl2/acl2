@@ -36,7 +36,7 @@
      "Partial evaluation is a well-known program transformation technique.
       This APT transformation realizes this technique in ACL2.
       Partial evaluation is a broad topic;
-      the current version of this APT transformation is very simple,
+      the current version of this APT transformation is relatively simple,
       but will be extended in the future.")
 
     (xdoc::p
@@ -79,7 +79,33 @@
       (xdoc::li
        "Let @('old-guard<x1,...,xn,y1,...,ym>') be the guard term of @('old').")
       (xdoc::li
-       "Let @('old-body<x1,...,xn,y1,...,ym>') be the body of @('old').")))
+       "Let @('old-body<x1,...,xn,y1,...,ym>') be the body of @('old')."))
+     (xdoc::p
+      "The current implementation distinguishes the following three cases:")
+     (xdoc::ol
+      (xdoc::li
+       "@('old') is not recursive.
+        In this case, let its body be
+        @('old-body<x1,...,xn,y1,...,ym>').")
+      (xdoc::li
+       "@('old') is recursive,
+        @('y1'), ..., @('ym') are unchanged in all the recursive calls,
+        and @('old') does not occur in its termination theorem.
+        In this case, let its body be"
+       (xdoc::codeblock
+        "old-body<x1,...,xn,y1,...,ym,"
+        "         (old update1-x1<x1,...,xn,y1,...,ym>"
+        "              ..."
+        "              update1-xn<x1,...,xn,y1,...,ym>"
+        "              y1 ... ym)"
+        "         ..."
+        "         (old updatep-x1<x1,...,xn,y1,...,ym>"
+        "              ..."
+        "              updatep-xn<x1,...,xn,y1,...,ym>"
+        "              y1 ... ym)>"))
+      (xdoc::li
+       "@('old') is recursive but it does not satisfy
+        some of the conditions in case 2 above.")))
 
     (xdoc::desc
      "@('static')"
@@ -119,7 +145,7 @@
     (xdoc::desc-apt-input-thm-enable
      :never
      (xdoc::p
-      "If @('old') is recursive
+      "If @('old') has the form of case 3 above
        and @('new') is enabled (as determined by the @(':new-enable') input),
        then @(':thm-enable') cannot be @('t')."))
 
@@ -136,17 +162,36 @@
     (xdoc::desc
      "@('new')"
      (xdoc::p
-      "Specialized version of @('old'):")
+      "Specialized version of @('old'),
+       where cases 1, 2, and 3 refer to the description of @('old') above:")
      (xdoc::codeblock
-      ";; when old is not recursive:"
+      ";; case 1:"
       "(defun new (x1 ... xn)"
       "  old-body<x1,...,xn,c1,...,cm>)"
       ""
-      ";; when old is recursive:"
+      ";; case 2:"
+      "(defun new (x1 ... xn)"
+      "  old-body<x1,...,xn,c1,...,cm,"
+      "           (new update1-x1<x1,...,xn,c1,...,cm>"
+      "                ..."
+      "                update1-xn<x1,...,xn,c1,...,cm>)"
+      "           ..."
+      "           (new updatep-x1<x1,...,xn,c1,...,cm>"
+      "                ..."
+      "                updatep-xn<x1,...,xn,c1,...,cm>)>)"
+      ""
+      ";; case 3:"
       "(defun new (x1 ... xn)"
       "  (old x1 ... xn c1 ... cm))")
      (xdoc::p
-      "The guard is @('old-guard<x1,...,xn,c1,...cm>')."))
+      "The guard is @('old-guard<x1,...,xn,c1,...cm>').")
+     (xdoc::p
+      "In case 2, the measure is the same as @('old').")
+     (xdoc::p
+      "In case 3, the new function is not recursive.
+       This is simple, preliminary approach;
+       support for more forms of recursive functions (besides case 2)
+       may be added in the future."))
 
     (xdoc::desc
      "@('old-to-new')"

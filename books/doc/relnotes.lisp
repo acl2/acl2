@@ -178,6 +178,11 @@
     "A new transformation, @(tsee apt::casesplit),
      has been added to rephrase a function by cases.")
 
+   (xdoc::p
+    "@(tsee apt::parteval) now provides better support
+     for recursive functions whose static arguments
+     do not change across recursive calls.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
