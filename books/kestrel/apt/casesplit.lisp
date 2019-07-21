@@ -259,11 +259,11 @@
     in translated form.")
   (b* ((wrld (w state))
        (description (msg "The ~n0 element of the third input" (list pos)))
-       ((unless (acl2::theorem-namep thm wrld))
+       ((unless (theorem-namep thm wrld))
         (er-soft+ ctx t nil
                   "~@0 must be the name of a theorem, but it is ~x1 instead."
                   description thm))
-       (formula (acl2::thm-formula+ thm wrld))
+       (formula (thm-formula+ thm wrld))
        (description (msg "The formula ~x0 of the theorem ~x1 ~
                           specified as ~@2"
                          formula thm (msg-downcase-first description)))
@@ -288,7 +288,7 @@
        (left-side (fargn concl 1))
        (description (msg "The left-hand side ~x0 of ~@1"
                          left-side (msg-downcase-first description)))
-       (formals (acl2::formals+ old$ wrld))
+       (formals (formals+ old$ wrld))
        ((unless (equal left-side `(,old$ ,@formals)))
         (er-soft+ ctx t nil
                   "~@0 must be ~
@@ -415,7 +415,7 @@
        ((er &) (ensure-list-no-duplicates$ keys description t nil)))
     (value alist))
   ;; for guard verification and return type proofs:
-  :prepwork ((local (in-theory (enable acl2::ensure-keyword-value-list)))))
+  :prepwork ((local (in-theory (enable ensure-keyword-value-list)))))
 
 (define casesplit-process-inputs (old
                                   conditions

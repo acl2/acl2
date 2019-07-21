@@ -304,7 +304,7 @@
   :mode :program
   :short "Classify @('old') into one of the three cases
           described in the reference documentation."
-  (b* (((when (not (acl2::irecursivep old$ wrld))) 1)
+  (b* (((when (not (irecursivep old$ wrld))) 1)
        ((when (member-eq old$ (all-ffn-symbs
                                (termination-theorem old$ wrld) nil))) 3)
        ((when (parteval-unchanging-static-in-rec-calls-p
@@ -498,16 +498,16 @@
    (xdoc::p
     "In case 3, we call @('old') with each @('yj') replaced with @('cj')."))
   (case case
-    (1 (acl2::fsublis-var static$ (ubody old$ wrld)))
+    (1 (fsublis-var static$ (ubody old$ wrld)))
     (2 (b* ((body (ubody old$ wrld))
             (body (parteval-transform-rec-calls-in-term body
                                                         old$
                                                         new-name$
                                                         (strip-cars static$)
                                                         wrld))
-            (body (acl2::fsublis-var static$ body)))
+            (body (fsublis-var static$ body)))
          body))
-    (3 (acl2::fsublis-var static$ `(,old$ ,@(formals old$ wrld))))
+    (3 (fsublis-var static$ `(,old$ ,@(formals old$ wrld))))
     (t (impossible))))
 
 (define parteval-gen-new-fn ((old$ symbolp)
@@ -560,7 +560,7 @@
                                          (:termination-theorem ,old$)
                                          :extra-bindings-ok
                                          ,@(alist-to-doublets static$))))))
-       (guard (acl2::fsublis-var static$ (uguard old$ wrld)))
+       (guard (fsublis-var static$ (uguard old$ wrld)))
        (guard (untranslate guard nil wrld))
        (local-event
         `(local
@@ -680,9 +680,9 @@
        (rec-call-with-tests (car rec-calls-with-tests))
        (rec-call (access tests-and-call rec-call-with-tests :call))
        (rec-args (fargs rec-call))
-       (rec-args (acl2::fsublis-var static$ rec-args))
+       (rec-args (fsublis-var static$ rec-args))
        (all-alist (pairlis$ (formals old$ wrld) rec-args))
-       (dynamic-alist (acl2::remove-assocs-eq (strip-cars static$) all-alist))
+       (dynamic-alist (remove-assocs-eq (strip-cars static$) all-alist))
        (final-alist (append dynamic-alist static$))
        (lemma-instance `(:instance ,thm-name$
                          :extra-bindings-ok
