@@ -15,10 +15,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc std/basic-extensions
-  :parents (std-extensions std::std/basic)
+  :parents (std-extensions std/basic)
   :short
   (xdoc::topstring "Extensions of "
-                   (xdoc::seeurl "std::std/basic" "Std/basic")
+                   (xdoc::seeurl "std/basic" "Std/basic")
                    " in the "
                    (xdoc::seeurl "kestrel-books" "Kestrel Books")
                    ".")

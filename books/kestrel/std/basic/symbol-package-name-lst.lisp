@@ -17,7 +17,7 @@
 
 (define symbol-package-name-lst ((syms symbol-listp))
   :returns (pkgs string-listp)
-  :parents (std/basic-extensions std::std/basic)
+  :parents (std/basic-extensions std/basic)
   :short "Lift @(tsee symbol-package-name) to lists."
   :long
   (xdoc::topstring
