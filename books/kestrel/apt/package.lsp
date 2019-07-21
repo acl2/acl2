@@ -177,9 +177,8 @@
                          install-not-norm-event
                          install-not-normalized
                          install-not-normalized-name
-                         irecursivep
-                         str::intern-list
                          io?
+                         irecursivep
                          justification
                          keyword-value-list-to-alist
                          lambda-applicationp
@@ -230,6 +229,8 @@
                          sr-limit
                          stobjs-in
                          stobjs-out
+                         str::intern-list
+                         str::symbol-list-names
                          strip-cddrs
                          strip-keyword-list
                          subcor-var
@@ -239,7 +240,6 @@
                          subst-expr1
                          subst-var
                          symbol-class
-                         str::symbol-list-names
                          symbol-package-name-safe
                          symbol-symbol-alistp
                          term-guard-obligation
