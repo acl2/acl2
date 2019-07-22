@@ -184,7 +184,7 @@
      do not change across recursive calls.")
 
    (xdoc::p
-    "@(tsee parteval) has been extended to support "
+    "@(tsee apt::parteval) has been extended to support "
     (xdoc::seeurl "apt::untranslate-specifier" "untranslate specifiers")
     ".")
 
