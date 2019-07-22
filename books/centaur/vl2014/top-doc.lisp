@@ -47,4 +47,4 @@
 (xdoc::archive-matching-topics
  (or (str::strprefixp "[books]/centaur/vl2014/" (cdr (assoc :from x)))
      (str::strprefixp "[books]/centaur/esim/stv/stv2c" (cdr (assoc :from x)))
-     (not (cdr (assoc :from x))))) ;; for topics defined using defxdoc-raw
+     (equal (cdr (assoc :from x)) "[defxdoc-raw]"))) ;; for topics defined using defxdoc-raw

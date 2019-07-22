@@ -42,4 +42,4 @@
  (or (str::strprefixp "[books]/centaur/vl/" (cdr (assoc :from x)))
      ;; hack -- this book isn't included in sv, probably should be moved to vl/lint dir
      (equal (cdr (assoc :from x)) "[books]/centaur/sv/vl/use-set.lisp")
-     (not (cdr (assoc :from x))))) ;; for topics defined using defxdoc-raw
+     (equal (cdr (assoc :from x)) "[defxdoc-raw]"))) ;; for topics defined using defxdoc-raw
