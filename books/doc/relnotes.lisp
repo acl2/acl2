@@ -183,6 +183,11 @@
      for recursive functions whose static arguments
      do not change across recursive calls.")
 
+   (xdoc::p
+    "@(tsee apt::parteval) has been extended to support "
+    (xdoc::seeurl "apt::untranslate-specifier" "untranslate specifiers")
+    ".")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))

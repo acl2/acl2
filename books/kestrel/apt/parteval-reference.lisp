@@ -151,6 +151,16 @@
 
     (xdoc::desc-apt-input-verify-guards :never)
 
+    (xdoc::desc
+     "@(':untranslate') &mdash; default @(':nice')"
+     (xdoc::p
+      "Specifies if and how the body of @('new') should be turned
+       from internal translated form to external untranslated form.")
+     (xdoc::p
+      "It must be an "
+      (xdoc::seeurl "untranslate-specifier" "untranslate specifier")
+      "; see that documentation topic for details."))
+
     (xdoc::evmac-input-print parteval)
 
     (xdoc::evmac-input-show-only parteval))
