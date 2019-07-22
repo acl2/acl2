@@ -6631,7 +6631,8 @@
   (command-block-names1 (cdr wrld) nil symbol-classes))
 
 (defun symbol-name-lst (lst)
-  (cond ((null lst) nil)
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
         (t (cons (symbol-name (car lst))
                  (symbol-name-lst (cdr lst))))))
 
