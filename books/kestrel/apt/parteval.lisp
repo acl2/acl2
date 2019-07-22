@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
@@ -19,6 +20,7 @@
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "utilities/transformation-table")
+(include-book "utilities/untranslate-specifiers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,6 +47,7 @@
       @('thm-name'),
       @('thm-enable'),
       @('verify-guards'),
+      @('untranslate'),
       @('print'), and
       @('show-only')
       are the homonymous inputs to @(tsee parteval),
@@ -58,6 +61,7 @@
       @('thm-name$'),
       @('thm-enable$'),
       @('verify-guards$'),
+      @('untranslate$'),
       @('print$'), and
       @('show-only$')
       are the results of processing
@@ -80,6 +84,27 @@
     "The parameters of implementation functions that are not listed above
      are described in, or clear from, those functions' documentation."))
   :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ parteval-library-extensions
+  :parents (parteval-implementation)
+  :short "Library extensions for @(tsee parteval)."
+  :long
+  (xdoc::topstring-p
+   "This material may be moved to appropriate libraries.")
+  :order-subtopics t
+  :default-parent t)
+
+(define ibody ((fn symbolp) (wrld plist-worldp))
+  :returns (body "An untranslated term.")
+  :mode :program
+  :short "Retrieve the untranslated body of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is as introduced (hence the @('i') in the name) by the user."))
+  (car (last (get-event fn wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,6 +343,7 @@
                                  thm-name
                                  thm-enable
                                  verify-guards
+                                 untranslate
                                  print
                                  show-only
                                  ctx
@@ -384,6 +410,9 @@
                    and (iii) the target function is enabled, ~
                    the :THM-ENABLE input cannot be T."
                   old$))
+       ((er &) (ensure-is-untranslate-specifier$ untranslate
+                                                 "The :UNTRANSLATE input"
+                                                 t nil))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -515,6 +544,7 @@
                              (new-name$ symbolp)
                              (new-enable$ booleanp)
                              (verify-guards$ booleanp)
+                             (untranslate$ untranslate-specifier-p)
                              (case (member case '(1 2 3)))
                              (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -548,7 +578,15 @@
   (b* ((macro (function-intro-macro new-enable$ nil))
        (formals (set-difference-eq (formals old$ wrld) (strip-cars static$)))
        (body (parteval-gen-new-fn-body old$ static$ new-name$ case wrld))
-       (body (untranslate body nil wrld))
+       (body (case untranslate$
+               (:nice
+                (directed-untranslate
+                 (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
+               (:nice-expanded
+                (directed-untranslate-no-lets
+                 (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
+               (nil body)
+               (t (untranslate body nil wrld))))
        (wfrel? (and (= case 2)
                     (well-founded-relation old$ wrld)))
        (measure? (and (= case 2)
@@ -721,6 +759,7 @@
                                  (thm-name$ symbolp)
                                  (thm-enable$ booleanp)
                                  (verify-guards$ booleanp)
+                                 (untranslate$ untranslate-specifier-p)
                                  (print$ evmac-input-print-p)
                                  (show-only$ booleanp)
                                  (case (member case '(1 2 3)))
@@ -782,6 +821,7 @@
                                               new-name$
                                               new-enable$
                                               verify-guards$
+                                              untranslate$
                                               case
                                               wrld))
        ((mv old-to-new-thm-local-event
@@ -845,6 +885,7 @@
                      thm-name
                      thm-enable
                      verify-guards
+                     untranslate
                      print
                      show-only
                      (call pseudo-event-formp)
@@ -883,6 +924,7 @@
                           thm-name
                           thm-enable
                           verify-guards
+                          untranslate
                           print
                           show-only
                           ctx state))
@@ -893,6 +935,7 @@
                                        thm-name$
                                        thm-enable
                                        verify-guards$
+                                       untranslate
                                        print
                                        show-only
                                        case
@@ -920,6 +963,7 @@
                       (thm-name ':auto)
                       (thm-enable 't)
                       (verify-guards ':auto)
+                      (untranslate ':nice)
                       (print ':result)
                       (show-only 'nil))
     `(make-event-terse (parteval-fn ',old
@@ -929,6 +973,7 @@
                                     ',thm-name
                                     ',thm-enable
                                     ',verify-guards
+                                    ',untranslate
                                     ',print
                                     ',show-only
                                     ',call
