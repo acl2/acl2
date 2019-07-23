@@ -96,9 +96,7 @@
 
   :body
 
-  (b* ((ctx 'x86-near-jmp-Op/En-D)
-
-       (byte-operand? (eql opcode #xEB)) ; T if jump short
+  (b* ((byte-operand? (eql opcode #xEB)) ; T if jump short
        ((the (integer 0 4) offset-size)
         (select-operand-size
          proc-mode byte-operand? rex-byte nil prefixes nil t t x86))
@@ -137,19 +135,18 @@
   ;; Op/En: M
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-near-jmp-Op/En-M)
-
-       (r/m (modr/m->r/m modr/m))
-       ;; Note that the reg field serves as an opcode extension for
+  (b* (;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 4 when this
        ;; function is called.
-       (mod (modr/m->mod modr/m))
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
@@ -285,7 +282,9 @@
 (def-inst x86-far-jmp-Op/En-D
 
   :parents (one-byte-opcodes)
+
   :short "Absolute Indirect Jump: Far"
+
   :long "<p>Op/En: D</p>
 <p><tt>FF/5: JMP m16:16 or m16:32 or m16:64</tt></p>
 
@@ -343,14 +342,11 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                     gdtr/idtrbits->limit
                                     )))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-far-jmp-Op/En-M)
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-
-       ;; Note that this exception was not mentioned in the Intel
+  (b* (;; Note that this exception was not mentioned in the Intel
        ;; Manuals, but I think that the reason for this omission was
        ;; that the JMP instruction reference sheet mentioned direct
        ;; addressing opcodes too (which are unavailable in the 64-bit
@@ -833,6 +829,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   ;; bits)."
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          rime-size
@@ -849,6 +846,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                 not
                                 rml-size
                                 select-operand-size)))))
+
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers)
                            (unsigned-byte-p
@@ -858,9 +856,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :body
 
-  (b* ((ctx 'x86-loop)
-
-       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+  (b* (;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length
        ;; of this instruction.
        (badlength? (check-instruction-length start-rip temp-rip 1))

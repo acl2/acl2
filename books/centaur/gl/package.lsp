@@ -69,6 +69,8 @@
                  bfr-p-of-q-implies
                  lnfix lifix lbfix lposfix pos-fix
 
+                 nat-list-fix
+
                  mv-nth-cons-meta
 
                  def-ruleset def-ruleset! add-to-ruleset add-to-ruleset! e/d* enable*

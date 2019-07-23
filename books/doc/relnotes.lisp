@@ -95,6 +95,11 @@
 ; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
 ; If you are stuck, see the entries about other libraries.
 
+; Note (probably too low level to mention in the :doc string): modified
+; defxdoc-raw so that the :from field is a string rather than nil, which can be
+; important for avoiding errors when building the "fast" documentation.  This
+; change has avoided an error using SBCL.
+
   :parents (note-8-3 release-notes-books)
 
   :short "Release notes for the ACL2 Community Books for ACL2 8.3"
@@ -132,6 +137,21 @@
      processor that quickly removes irrelevant parts of a clause during mutual
      inductions using @('tools/flag.lisp').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "defarbrec" "Arbitrary Recursion Library"))
+
+   (xdoc::p
+    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
+     has been added, to introduce recursive functions
+     without having to prove termination right away.
+     There exist similar macros in the community books,
+     but the specifics of this new macro are motivated for use with "
+    (xdoc::seeurl "apt::apt" "APT")
+    ". See the "
+    (xdoc::seeurl "defarbrec-related" "related tools section")
+    " of the documentation of @(tsee defarbrec) for more information.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -149,6 +169,24 @@
    (xdoc::p
     "An input has been added to @(tsee apt::tailrec) to control whether
      the wrapper function is generated or not.")
+
+   (xdoc::p
+    "@(tsee apt::restrict) now supports reflexive functions,
+     i.e. functions that occur in their termination theorem.")
+
+   (xdoc::p
+    "A new transformation, @(tsee apt::casesplit),
+     has been added to rephrase a function by cases.")
+
+   (xdoc::p
+    "@(tsee apt::parteval) now provides better support
+     for recursive functions whose static arguments
+     do not change across recursive calls.")
+
+   (xdoc::p
+    "@(tsee apt::parteval) has been extended to support "
+    (xdoc::seeurl "apt::untranslate-specifier" "untranslate specifiers")
+    ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,9 +266,27 @@
 
    (xdoc::p
     "The "
-    (xdoc::seeurl "crypto::secp256k1-interface"
+    (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
+
+   (xdoc::p
+    "A sub-library for elliptic curves has been added,
+     which currently contains all the secp256k1 domain parameters,
+     and fixtypes for secp256k1 field elements, points, and keys.
+     The parameters and the fixtypes that were previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
+    "have been removed from that interface,
+     which now includes the domain parameters and the fixtypes
+     from the new sub-library.")
+
+   (xdoc::p
+    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
+     has been added, which curently contains the secp256k1 signing interface,
+     which was previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface") ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,6 +349,11 @@
      has been moved from @('[books]/centaur/fty/basetypes.lisp')
      to a new file @('[books]/std/basic/pos-fix.lisp').")
 
+   (xdoc::p
+    "The function @(tsee symbol-package-name-lst)
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "stobjs::std/stobjs" "Standard STOBJs Library"))
@@ -349,6 +410,10 @@
     (xdoc::li "@('SHRD r/m16, r16, CL')")
     (xdoc::li "@('SHRD r/m32, r32, CL')")
     (xdoc::li "@('SHRD r/m64, r64, CL')"))
+
+   (xdoc::p
+    "The @('def-inst') macro has been extended
+     to generate more boilerplate code.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

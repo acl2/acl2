@@ -90,6 +90,7 @@
 (verify-termination-boot-strap pairlis-x1) ; and guards
 (verify-termination-boot-strap pairlis-x2) ; and guards
 (verify-termination-boot-strap first-keyword) ; and guards
+(verify-termination-boot-strap symbol-name-lst) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

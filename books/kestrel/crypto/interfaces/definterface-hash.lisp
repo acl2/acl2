@@ -196,9 +196,8 @@
           <see topic='@(url definterface-hash-table)'
           >@(tsee definterface-hash) table</see>."
   :long
-  "<p>
-   The name of the interface is the key of the pair in the table.
-   </p>"
+  (xdoc::topstring-p
+   "The name of the interface is the key of the pair in the table.")
   ((input-size-limit "The @(':input-size-limit') input." maybe-posp)
    (output-size "The @(':output-size') input." posp))
   :pred definterface-hash-infop)

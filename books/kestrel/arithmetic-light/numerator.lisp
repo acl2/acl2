@@ -36,3 +36,18 @@
   (implies (integerp x)
            (equal (numerator (/ x))
                   (signum x))))
+
+(defthm numerator-of--
+  (implies (rationalp x)
+           (equal (numerator (- x))
+                  (- (numerator x)))))
+
+(local (include-book "../../arithmetic/mod-gcd"))
+
+(defthm <=-of-numerator-of-*-of-/
+  (implies (and (natp i)
+                (posp j))
+           (<= (numerator (* i (/ j)))
+               i))
+  :hints (("Goal" :use (:instance least-numerator-denominator-<= (n i) (d j))
+           :in-theory (disable least-numerator-denominator-<=))))

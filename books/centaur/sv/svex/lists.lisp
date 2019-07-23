@@ -32,6 +32,7 @@
 (in-package "SV")
 
 (include-book "eval")
+(include-book "centaur/fty/baselists" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -160,11 +161,6 @@
          (element-listlist-p (cdr x)))))
 
 
-;; Maybe the stuff below should be in std/lists, although most stuff in there
-;; doesn't use fixtypes.
-(deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv :forward t)
-
-(fty::deflist true-list-list :elt-type true-list :true-listp t :pred true-list-listp :elementp-of-nil t)
 
 (define append-lists (x)
   :returns (list true-listp :rule-classes :type-prescription)

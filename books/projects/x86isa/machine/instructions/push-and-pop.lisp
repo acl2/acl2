@@ -96,6 +96,7 @@
 ;; ======================================================================
 
 (def-inst x86-push-general-register
+
   :parents (one-byte-opcodes)
 
   :short "PUSH: 50+rw/rd"
@@ -118,9 +119,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-general-register)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -166,6 +165,7 @@
     x86))
 
 (def-inst x86-push-Ev
+
   :parents (one-byte-opcodes)
 
   :short "PUSH: FF /6 r/m"
@@ -189,16 +189,13 @@
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-push-Ev)
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
 		 (prefixes->adr prefixes)))
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
@@ -286,9 +283,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-I)
-
-       (byte-imm? (eql opcode #x6A))
+  (b* ((byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
 	(select-operand-size
          proc-mode byte-imm? rex-byte t prefixes nil nil nil x86))
@@ -346,6 +341,7 @@
     x86))
 
 (def-inst x86-push-segment-register
+
   :parents (one-byte-opcodes two-byte-opcodes)
 
   :short "PUSH Segment Register"
@@ -385,9 +381,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-general-register)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -442,9 +436,11 @@
 ;; ======================================================================
 
 (def-inst x86-pop-general-register
+
   :parents (one-byte-opcodes)
 
   :short "POP: 58+rw/rd"
+
   :long "<p>Op/En: O</p>
    <p><tt>58+rw/rd r16/r32/r64</tt></p>
    <p>Note that <tt>58+rd r32</tt> is N.E. in the 64-bit mode
@@ -462,9 +458,7 @@
 						 unsigned-byte-p)))))
   :body
 
-  (b* ((ctx 'x86-pop-general-register)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -513,6 +507,7 @@
   :guard-hints (("Goal" :in-theory (enable rme-size))))
 
 (def-inst x86-pop-Ev
+
   :parents (one-byte-opcodes)
 
   :short "POP: 8F/0 r/m"
@@ -535,16 +530,14 @@
 						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
+
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-pop-Ev)
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
@@ -622,9 +615,11 @@
   )
 
 ;; (def-inst x86-pop-segment-register
+
 ;;   :parents (one-byte-opcodes)
 
 ;;   :short "POP FS/GS"
+
 ;;   :long "<p><tt>0F A1</tt>: \[POP FS\]</p>
 ;; <p><tt>0F A9</tt>: \[POP GS\]</p>
 ;;    <p>Popping other segment registers in the 64-bit mode is
@@ -646,18 +641,16 @@
 
 ;;   :guard-debug t
 
+;;   :modr/m t
+
 ;;   :body
 
-;;   (b* ((ctx 'x86-pop-Ev)
-;;        (lock (equal #.*lock* (prefixes->lck prefixes)))
+;;   (b* ((lock (equal #.*lock* (prefixes->lck prefixes)))
 ;;        ((when lock)
 ;;         (!!ms-fresh :lock-prefix prefixes))
 ;;        (p2 (prefixes->group-2-prefix prefixes))
 ;;        (p3 (equal #.*operand-size-override*
 ;;               (prefixes->group-3-prefix prefixes)))
-
-;;        (r/m (modr/m->r/m modr/m))
-;;        (mod (modr/m->mod modr/m))
 
 ;;        ((the (integer 1 8) operand-size)
 ;;         (if p3
@@ -744,6 +737,7 @@
 
   ;; #x9C: Op/En: NP
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p
@@ -755,9 +749,7 @@
 
   :body
 
-  (b* ((ctx 'x86-pushf)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -867,6 +859,7 @@
   ;; end if
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p
@@ -878,9 +871,7 @@
 
   :body
 
-  (b* ((ctx 'x86-popf)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -981,11 +972,10 @@
 
   :prepwork
   ((local (in-theory (e/d* () (not (tau-system))))))
+
   :body
 
-  (b* ((ctx 'x86-pusha)
-
-       ((the (integer 2 4) operand-size)
+  (b* (((the (integer 2 4) operand-size)
 	(select-operand-size
          proc-mode nil 0 nil prefixes nil nil nil x86))
 
@@ -1112,9 +1102,8 @@
 			   ((tau-system))))))
 
   :body
-  (b* ((ctx 'x86-popa)
 
-       ((the (integer 2 4) operand-size)
+  (b* (((the (integer 2 4) operand-size)
 	(select-operand-size
          proc-mode nil 0 nil prefixes nil nil nil x86))
 

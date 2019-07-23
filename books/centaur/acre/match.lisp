@@ -1526,13 +1526,6 @@
 
 (fty::defoption maybe-backref backref)
 
-(define backref-extract-substr ((x backref-p) (str stringp))
-  :guard (backref-in-bounds x str)
-  :guard-hints (("goal" :in-theory (enable backref-in-bounds)))
-  :returns (substr stringp :rule-classes :type-prescription)
-  (b* (((backref x)))
-    (subseq (lstrfix str) x.loc (+ x.loc x.len))))
-
 (define maybe-backref-in-bounds ((x maybe-backref-p) (str stringp))
   (or (not x) (backref-in-bounds x str))
   ///

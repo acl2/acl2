@@ -1,0 +1,185 @@
+This is the README file for /books/projects/apply-model-2/.
+
+The material in this directory demonstrates (for two sets of user definitions)
+that there exists a model of apply$ that makes all warrants valid.  We
+``re-define'' APPLY$ and DEFWARRANT in an isolated package so we can illustrate
+their properties without relying on their native implementations.  The package
+is named "MODAPP" (for Model of APPLY$).  It then contains two subdirectories,
+ex1/ and ex2/, containing sample user histories, constructions of the model of
+APPLY$ for each history, and proofs that all warrants are valid.
+
+This directory started as a copy of /books/projects/apply-model/, which
+contains a similar demonstration for the version of apply$ and defwarrant
+described in the paper "Limited Second-Order Functionality in a First-Order
+Setting," by Kaufmann and Moore.  That original apply-model/ is foundational
+and static: it backs up the definitions and arguments in the above paper.  But
+once APPLY$ was integrated into the sources, in ACL2 Version_8.0, we felt
+free (under the usual concerns that we convince ourselves of the logical
+correctness of any changes) to improve it.  One such improvement occurred even
+as we integrated APPLY$: we added a constraint to apply$-userfn allowing us to
+prove that (APPLY$ 'fn args) is only sensitive to the first n elements of args,
+where n is the arity of 'fn as reported by the badge.  Thus ACL2's sources
+drifted away from the foundational work in apply-model/.
+
+Among other changes are:
+
+* We added a constraint on untame-apply$ so that it, like apply$-userfn, is
+  only sensitive to the first n of the arguments, where n is the arity of the
+  fn being applied.  This constraint allows us to prove the doppelganger of
+  apply$-userfn satisfies its constraint.  (We could have dealt with this by
+  changing the way the doppelganger of untame-apply$ is defined but this
+  solution felt simplest.)
+
+* Badges no longer have an :authorization-flg field and instead have an
+  :arity-out field.
+
+* Multivalued functions may be applied.
+
+* Functions that are ancestrally independent of apply$ (i.e., G1 functions)
+  must satisfy fewer restrictions in order to be badged and warranted: we no
+  longer impose constraints on their measures and we do not insist that all
+  their subfunctions are badged.  We still insist that STATE and stobjs do not
+  appear in their signatures, but this allows the warranting of G1 functions
+  that use local stobjs and G1 functions in mutually recursive cliques.
+
+* Measures of scions of apply$ (i.e., G2 functions) must be ancestrally
+  independent of apply$ (thus they would be tame if badged but needn't be
+  badged) and are no longer required to be strictly numeric.  Instead, they may
+  be either numeric or syntactically lexicographic (as in instances of the
+  macroexpansion of an LLIST expression).
+
+While this code nearly mimics ACL2 Version_8.2 (and then improves upon it with
+the relaxation of restrictions on G1 and G2 functions as described above), we
+left out some features implemented in the Version_8.2 source code:
+
+* The machinery here does not support LAMBDA objects containing DECLARE forms.
+  For example, in the source code tamep-lambdap calls lambda-object-body (which
+  detects and skips over any declare form) but here we just call lambda-body.
+
+* We do not define well-formed-lambda-objectp but instead define the simpler
+  well-formed-lambdap.  The source code uses well-formed-lambda-objectp so that
+  it can efficiently support the lambda cache via factoring out the detection
+  of syntactic ill-formedness.
+
+* The machinery here does not check that the book projects/apply/base.lisp has
+  been included in the session or give predefined functions special treatment.
+  These differences show up in the definition of defwarrant-fn1.
+
+WARNING: While the definitions here basically agree with those of ACL2
+Version_8.2, but there is no guarantee that the definitions in this directory
+agree future versions of the ACL2 sources! ACL2 is free to continue to evolve
+and we feel free to add features in the source code without reflecting them
+here as long as we can convince ourselves that they're sound.
+
+In this README file we address four questions: What's in this directory, why is
+it in an isolated package, what is the relation between this directory and the
+similarly-named /books/system/apply/, and how to certify these books.
+
+WHAT IS IN THIS DIRECTORY?
+
+The "MODAPP" package is defined in portcullis.acl2 and every book here is built
+on top of that by virtue of the cert.acl2 file here.
+
+The files apply-prim.lisp, apply-constraints.lisp, and apply.lisp define
+APPLY$.
+
+The file report.lisp provides the script for proving the theorems cited as
+Examples in the above-mentioned paper.  However, we may add new theorems to
+report.lisp to illustrate features added since the paper.
+
+A key part of the APPLY$ story is the role of warrants.  These are predicates
+that stipulate the behavior of APPLY$ on user-defined functions that have been
+admitted by defwarrant.  The warrant for function fn must be provided as a
+hypothesis in the statement of any theorem whose proof requires knowledge of
+APPLY$'s behavior on 'fn.  This allows us to avoid ``the LOCAL problem,'' which
+would arise if axioms were added to describe APPLY$'s behavior on newly defined
+functions.  But warrants raise another question ``Is it possible to satisfy the
+assumptions made by all the warrants?'', i.e., ``is it possible that theorems
+carrying warrants are valid only because the warrants are contradictory?''  The
+paper addresses that question and shows, via a proof in ACL2's metatheory, that
+it is possible to construct a model for any set of warrants issued by
+DEFWARRANT.  The construction of that model is complicated and has changed
+slightly since the paper.  At the end of the ACL2 source file apply-raw.lisp
+there is an essay, "Essay on Admitting a Model for Apply$ and the Functions
+that Use It," that gives a proof for the version of apply$ and defwarrant
+implemented in the then-current sources.  The model construction used in ex1/
+and ex2/ here reflect that essay as of ACL2 Version_8.2.
+
+Another important question is whether we can execute APPLY$ on user-defined
+functions.  To do so would require the assumption of the relevant warrants.
+The paper addresses this question too.  The key observation is that we arrange
+for the ``evaluation theory'' (the theory in which top-level ACL2 evaluation
+takes place as opposed to the ``current theory'' in which theorems are proved)
+to include the attachment of certains functions from the above-mentioned model
+construction to the constrained functions BADGE-USERFN and APPLY$-USERFN.
+
+Thus the model construction is important for two reasons: to assure us that our
+theorems are non-vacuous and to explain how evaluation proceeds.
+
+To support the paper, this directory provides two subdirectories, ex1/ and ex2/
+that illustrate the model construction.  Ex1/ constructs the model for a small
+set of user-defined functions.  Ex2/ constructs the model for a much larger set
+that contains many odd uses of APPLY$ to illustrate some of the problems that
+arise in the model construction.
+
+In our opinion, ex1/ is a small enough body of work that you can grasp the
+whole model construction story by reading every line in the files there,
+assuming you're already familiar with apply-prim.lisp, apply-constraints.lisp,
+and apply.lisp here.
+
+Ex2/ is provided just to illustrate that def-warrant admits a pretty wide range
+of functions involving APPLY$ and we can model all those warrants
+simultaneously.  We recommend ex2/ only to those really wishing to see how
+model construction handles certain weird but admissible situations.
+
+WHY IS THIS DEVELOPMENT DONE IN AN ISOLATED PACKAGE?
+
+From ACL2 Version_8.0 onwards we expect APPLY$ will be an ACL2 primitive.  This
+is necessary in order to support the implicit inclusion in the evaluation
+theory of all warrants, allowing top-level execution of ground apply$ forms via
+attachments to the ``magic'' functions concrete-badge-userfn an
+concrete-apply$-userfn.
+
+To support execution of APPLY$ without tying down the definition or constraints
+on apply$ would raise soundness issues if the user defined apply$ differently.
+
+We thus decided to preserve the version APPLY$ described in the paper, along
+with its examples, model construction, and execution model.  That's why both
+the original apply-model/ and this directory do everything in an isolated
+package.
+
+WHAT IS THE RELATIONSHIP BETWEEN THIS DIRECTORY AND /books/system/apply/?
+
+The short answer is "none".  These files are essentially static, supporting the
+claim that there was a model of apply$ and defwarrant as of ACL2 Version_8.2.
+The similarly named files in books/system/apply/ support the build process for
+ACL2, particularly the claims that the definitions of APPLY$, et al, terminate
+and are guard verified.  At one time the definitions in the two directories
+might have agreed but they are free to drift apart.
+
+See the Essay on the APPLY$ Integration in the ACL2 source file apply-prim.lisp.
+
+CERTIFICATION INSTRUCTIONS
+
+Certification of the books directly in this directory is straightforward.  But
+certification of ex1/ and ex2/ is a bit non-standard because it involves
+copying certain files so they can be re-certified with different portcullises.
+
+Q. Given a book, a.lisp, defining a current theory how do you build a book,
+e.lisp, whose current theory is the evaluation theory of a.lisp defined by some
+attachments?
+
+A. Put the relevant constraints in the portcullis of a.lisp.  When you certify
+a you'll get a book that is the current theory of a.  Then copy a.lisp to
+e.lisp.  Define a new portcullis in which the constrained functions of a.lisp
+are defined to be their attachments.  Then certify e.lisp to get a book whose
+current theory is the evaluation theory of a.
+
+To certify the books in and under this directory do:
+
+make all ACL2=<your-acl2> ACL2_SYSTEM_BOOKS=<your-acl2-books-directory>
+make top ACL2=<your-acl2> ACL2_SYSTEM_BOOKS=<your-acl2-books-directory>
+
+E.g.,
+make all ACL2=v82 ACL2_SYSTEM_BOOKS=/u/moore/acl2/v8-2/books/
+make top ACL2=v82 ACL2_SYSTEM_BOOKS=/u/moore/acl2/v8-2/books/

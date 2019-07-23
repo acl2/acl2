@@ -205,11 +205,11 @@
 
 (assert-decode-bytes/scalar-error
  (list* #xc8 (repeat 8 #x1a))
- (rlp-error-non-leaf-tree '(#xc8)))
+ (rlp-error-branch-tree '(#xc8)))
 
 (assert-decode-bytes/scalar-error
  (list* #xf8 100 (repeat 100 8))
- (rlp-error-non-leaf-tree '(#xf8)))
+ (rlp-error-branch-tree '(#xf8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

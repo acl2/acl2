@@ -16,7 +16,7 @@
 ;; booleanp facts known by type-prescription (which should be the common case).
 ;; We expect IFF to be enabled and so cause a case split.  TODO: Consider using
 ;; polarities and only doing this in the conclusion of the theorem.
-(defthm equal-of-booleans-split
+(defthm equal-of-booleans-cheap
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (equal x y)
@@ -24,7 +24,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 ;; Disabled by default
-(defthmd equal-of-booleans-split-unrestricted
+(defthmd equal-of-booleans
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (equal x y)

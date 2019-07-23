@@ -15,6 +15,10 @@
 (include-book "common-concepts")
 (include-book "common-options-reference")
 
+(include-book "casesplit")
+(include-book "casesplit-design")
+(include-book "casesplit-reference")
+
 (include-book "parteval")
 (include-book "parteval-design")
 (include-book "parteval-reference")
@@ -100,8 +104,9 @@
      `A Versatile, Sound Tool for Simplifying Definitions'.")
 
    (xdoc::p
-    "Also see the <a href=\"http://www.kestrel.edu/home/projects/apt\">APT
-     Project Web page</a>."))
+    "Also see the "
+    (xdoc::a :href "http://www.kestrel.edu/home/projects/apt"
+      "APT Project Web page") "."))
 
   :order-subtopics t)
 

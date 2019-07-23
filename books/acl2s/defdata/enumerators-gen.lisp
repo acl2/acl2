@@ -127,6 +127,7 @@ data last modified: [2017-06-25 Sun]
        ((acl2::assocs ndef N new-constructors new-types kwd-alist) A)
        (C (append new-constructors (table-alist 'data-constructor-table wrld)))
        (M (append new-types (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
@@ -135,7 +136,7 @@ data last modified: [2017-06-25 Sun]
        (enum-decls (make-enum-declare-forms ivar kwd-alist))
        )
     
-    `(defun ,(enumerator-name name M) (,ivar)
+    `(defun ,(enumerator-name name A M) (,ivar)
        ,@enum-decls
        ,enum-body)))
 

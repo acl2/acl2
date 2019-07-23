@@ -33,6 +33,7 @@
 
 (include-book "centaur/gl/shape-spec" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
@@ -93,7 +94,7 @@
   :hints(("Goal" :in-theory (enable numlist-to-vars))))
 
 
-(fty::deflist nat-list :pred nat-listp :elt-type natp :true-listp t :elementp-of-nil nil)
+(local (fty::deflist nat-list :pred nat-listp :elt-type natp :true-listp t :elementp-of-nil nil))
 
 (define pseudo-term-alistp (x)
   (if (atom x)

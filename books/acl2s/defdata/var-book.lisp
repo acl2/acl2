@@ -47,7 +47,7 @@ is accepted by ACL2s, but this is not
   (enum '(#\X #\Y #\L #\N #\Z #\I #\J #\K #\A #\B #\C 
           #\M #\D #\E #\F #\G #\H #\0 #\1  
           #\O #\P #\Q #\R #\S #\T #\U #\V #\W  
-          #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
+          #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\-)))
 
 ; What to replace nil and t by
 (defconst *non-nil-non-t-fix* '(#\X)) 

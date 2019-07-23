@@ -231,6 +231,51 @@
              avoid-fns wrld
              ans)))))))
 
+; Note: The following list is used to determine ancestral dependence on
+; apply$-userfn.  But because apply$ calls apply$-userfn, we think it is
+; probably most efficient to look for apply$ and ev$ instead of just
+; apply$-userfn.  Would it be more efficient still to include the loop$ scions
+; in this list?  On the one hand it would save us from exploring them.  On the
+; other, we'd the list would be longer and more often than not we wouldn't find
+; fn on it anyway.  We opt not to include the loop$ scions.
+
+(defconst *apply$-userfn-callers*
+  '(apply$ ev$ apply$-userfn))
+
+(defconst *blacklisted-apply$-fns*
+
+; The functions listed here are not safe to apply, primarily because their
+; behavior differs from their logical definitions.
+
+   '(SYNP                                      ; bad
+     HIDE                                      ; stupid
+     WORMHOLE1                                 ; restricts arguments
+     WORMHOLE-EVAL                             ; restricts arguments
+     SYS-CALL                                  ; bad -- requires trust tag
+     HONS-CLEAR!                               ; bad -- requires trust tag
+     HONS-WASH!                                ; bad -- requires trust tag
+     ))
+
+; At one time we considered disallowing these functions but we now allow them.
+; We list them here just to document that we considered them and concluded that
+; it is ok to apply$ them.
+
+;    MV-LIST                                   ; we now handle multiple values
+;    MAKE-WORMHOLE-STATUS
+;    SET-WORMHOLE-DATA
+;    SET-WORMHOLE-ENTRY-CODE
+;    WORMHOLE-DATA
+;    WORMHOLE-ENTRY-CODE
+;    WORMHOLE-STATUSP
+;    BREAK$
+;    PRINT-CALL-HISTORY
+;    NEVER-MEMOIZE-FN
+;    MEMOIZE-FORM
+;    CLEAR-MEMOIZE-STATISTICS
+;    MEMOIZE-SUMMARY
+;    CLEAR-MEMOIZE-TABLES
+;    CLEAR-MEMOIZE-TABLE
+
 (defun first-order-like-terms-and-out-arities (world)
 
 ; Search the world for every ACL2 primitive function that does not traffic (in
@@ -261,30 +306,7 @@
   (declare (xargs :mode :program))
   (first-order-like-terms-and-out-arities1
    (function-theory :here)
-   `(SYNP                                      ; bad
-     HIDE                                      ; stupid
-;    MV-LIST
-     WORMHOLE1                                 ; restricts arguments
-     WORMHOLE-EVAL                             ; restricts arguments
-;    MAKE-WORMHOLE-STATUS
-;    SET-WORMHOLE-DATA
-;    SET-WORMHOLE-ENTRY-CODE
-;    WORMHOLE-DATA
-;    WORMHOLE-ENTRY-CODE
-;    WORMHOLE-STATUSP
-     SYS-CALL                                  ; bad -- requires trust tag
-     HONS-CLEAR!                               ; bad -- requires trust tag
-     HONS-WASH!                                ; bad -- requires trust tag
-;    BREAK$
-;    PRINT-CALL-HISTORY
-;    NEVER-MEMOIZE-FN
-;    MEMOIZE-FORM
-;    CLEAR-MEMOIZE-STATISTICS
-;    MEMOIZE-SUMMARY
-;    CLEAR-MEMOIZE-TABLES
-;    CLEAR-MEMOIZE-TABLE
-
-     )
+   *blacklisted-apply$-fns*
    world
    nil))
 

@@ -98,64 +98,61 @@
   convert between @('natp') and @('integerp'), etc."
 
   :long "<p>Definitions of constants (of the form @('2^W')) and
-functions/macros grouped in @('ruleset')s of the following form are defined (where W is at
-least a two-digit natural number; @('8') is represented as
+functions/macros grouped in @('ruleset')s of the following form are defined
+(where @('W') is at least a two-digit natural number; @('8') is represented as
 @('08')):</p>
 
 <ul>
-<li> @('nWp') belongs to @('nwp-defs') ruleset.
+
+<li>@('nWp') belongs to @('nwp-defs') ruleset.
 @({
     (define nWp (x)
       (unsigned-byte-p W x))
 })</li>
 
-<li> @('nW') belongs to @('nw-defs') ruleset.
+<li>@('nW') belongs to @('nw-defs') ruleset.
 @({
     (define nW ((x integerp))
       (mbe :logic (loghead W x)
            :exec (logand 2^W-1 x)))
 })</li>
 
-<li> @('iWp') belongs to @('iwp-defs') ruleset.
+<li>@('iWp') belongs to @('iwp-defs') ruleset.
 @({
     (define iWp (x)
       (signed-byte-p W x))
 })</li>
 
-<li> @('iW') belongs to @('iw-defs') ruleset.
+<li>@('iW') belongs to @('iw-defs') ruleset.
 @({
     (define iW ((x integerp))
       (logext W x))
 })</li>
 
-<li> @('nW-to-iW') belongs to @('nw-to-iw-defs') ruleset.
+<li>@('nW-to-iW') belongs to @('nw-to-iw-defs') ruleset.
 @({
     (define nW-to-iW ((x nWp :type (unsigned-byte W)))
         (mbe :logic (logext W x)
              :exec (if (< x 2^(W-1)) x (- x 2^W))))
 })</li>
 
-<li> @('iW-to-nW') belongs to @('iw-to-nw-defs') ruleset.
+<li>@('iW-to-nW') belongs to @('iw-to-nw-defs') ruleset.
 @({
     (define iW-to-Nw ((x iWp :type (signed-byte W)))
-        (mbe :logic (logext W x)
+        (mbe :logic (loghead W x)
              :exec (if (>= x 0) x (+ x 2^W))))
 })</li>
 
 </ul>
 
-<p> The function @('np-def-n') is used to automatically create these
-constants and functions; it also proves some associated lemmas.</p>"
-
-
-  )
+<p>The function @('np-def-n') is used to automatically create these
+constants and functions; it also proves some associated lemmas.</p>")
 
 ;; Lemmas to help in the MBE proof obligation of ntoi rules:
 
 (local
  (encapsulate
   ()
-
   (local (include-book "arithmetic/top-with-meta" :dir :system))
 
   (defthm logext-is-the-same-as-ntoi-helper-1
@@ -200,24 +197,26 @@ constants and functions; it also proves some associated lemmas.</p>"
 (def-ruleset iw-to-nw-defs  nil)
 
 (define np-def-n (n)
-  :mode :program ;; NP-DEF-N is a :program mode function
+  :mode :program
   :guard (posp n)
   :parents (constants-conversions-and-bounds)
-  (let* ((str-n          (symbol-name (if (< n 10)
-                                          (acl2::packn (list 0 n))
-                                        (acl2::packn (list n)))))
-         (digits         (symbol-name (acl2::packn (list n))))
-         (2^XY           (mk-name "*2^" digits "*"))
-         (nXYp           (mk-name "N" str-n "P"))
-         (nXY            (mk-name "N" str-n))
-         (iXYp           (mk-name "I" str-n "P"))
-         (iXY            (mk-name "I" str-n))
-         (ntoi           (mk-name "N" str-n "-TO-I" str-n))
-         (iton           (mk-name "I" str-n "-TO-N" str-n)))
+  (let* ((str-n  (symbol-name (if (< n 10)
+                                  (acl2::packn (list 0 n))
+                                (acl2::packn (list n)))))
+         (digits (symbol-name (acl2::packn (list n))))
+         (2^XY   (mk-name "*2^" digits "*"))
+         (nXYp   (mk-name "N" str-n "P"))
+         (nXY    (mk-name "N" str-n))
+         (iXYp   (mk-name "I" str-n "P"))
+         (iXY    (mk-name "I" str-n))
+         (ntoi   (mk-name "N" str-n "-TO-I" str-n))
+         (iton   (mk-name "I" str-n "-TO-N" str-n)))
     (list
 
      `(defconst ,2^XY
         (expt 2 ,n))
+
+     ;; All the following functions are kept enabled.
 
      `(define ,nXYp (x)
         ;; XY-bit natural number recognizer
@@ -230,8 +229,7 @@ constants and functions; it also proves some associated lemmas.</p>"
      `(define ,nXY ((x integerp))
         ;; Truncate input to an XY-bit natural number
         ;; This function can be used to convert, say a 32-bit integer
-        ;; to a 32-bit natural number.  We choose to keep this function
-        ;; enabled.
+        ;; to a 32-bit natural number.
         :inline t
         :no-function t
         :enabled t
@@ -240,18 +238,17 @@ constants and functions; it also proves some associated lemmas.</p>"
              :exec (logand ,(1- (expt 2 n)) x)))
 
      `(define ,iXYp (x)
+        ;; XY-bit integer recognizer
         :inline t
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        ;; XY-bit integer recognizer
         (signed-byte-p ,n x))
 
      `(define ,iXY ((x integerp))
         ;; Truncate input to an XY-bit signed integer number
         ;; This function can be used to convert, say a 32-bit natural number
-        ;; to a 32-bit integer.  We choose to keep this function
-        ;; enabled.
+        ;; to a 32-bit integer.
         :inline t
         :no-function t
         :enabled t
@@ -260,11 +257,11 @@ constants and functions; it also proves some associated lemmas.</p>"
              :exec (bitops::fast-logext ,n x)))
 
      `(define ,ntoi
+        ;; Convert natural number to integer
         :inline t
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        ;; Convert natural number to integer
         :guard-hints (("Goal" :in-theory (enable logext)))
         ((x ,nXYp :type (unsigned-byte ,n)))
 
@@ -274,11 +271,11 @@ constants and functions; it also proves some associated lemmas.</p>"
                      (- x ,(expt 2 n)))))
 
      `(define ,iton
+        ;; Convert integer to natural number
         :inline t
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        ;; Convert integer to natural number
         ((x ,iXYp :type (signed-byte ,n)))
 
         (mbe :logic (loghead ,n x)
@@ -308,22 +305,18 @@ constants and functions; it also proves some associated lemmas.</p>"
 (defuns-np 1 2 3 4 5 6 8 9 11 12 16 17 18 20 21 22 24 25 26 27 28
   30 32 33 35 43 44 45 47 48 49 51 52 55 59 60 64 65 80 112 120 128 256 512)
 
-
 (defmacro n-size (n x)
-  ;; I prefer using n-size in functions that generate functions. E.g.,
-  ;; see gpr-add-spec-gen-fn in
-  ;; machine/instructions-spec/add-adc-sub-sbb-or-and-xor-cmp-test.lisp.
+  ;; We prefer using n-size in functions that generate functions. E.g.,
+  ;; see gpr-add-spec-gen-fn in machine/instructions/add-spec.lisp.
   (let* ((fn-name (mk-name "N"
                            (symbol-name (if (< n 10)
                                             (acl2::packn (list 0 n))
                                           (acl2::packn (list n)))))))
     `(,fn-name ,x)))
 
-
 (defmacro ntoi (n x)
-  ;; I prefer using ntoi in functions that generate functions. E.g.,
-  ;; see idiv-spec-gen in
-  ;; machine/instructions-spec/div-idiv.lisp
+  ;; We prefer using ntoi in functions that generate functions. E.g.,
+  ;; see idiv-spec-gen in machine/instructions/divide-spec.lisp.
   (let* ((val (symbol-name (if (< n 10)
                                (acl2::packn (list 0 n))
                              (acl2::packn (list n)))))
@@ -331,7 +324,7 @@ constants and functions; it also proves some associated lemmas.</p>"
     `(,fn-name ,x)))
 
 (define trunc
-  ;; I prefer using trunc in function definitions.
+  ;; We prefer using trunc in function definitions.
   ((n :type (integer 0 *))
    (x :type integer))
   :inline t
