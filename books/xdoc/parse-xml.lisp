@@ -206,7 +206,8 @@
        ((when err)
         (mv err n nil))
        (n (skip-past-ws x n xl))
-       ((unless (eql (char x n) #\>))
+       ((unless (and (< n xl)
+                     (eql (char x n) #\>)))
         (mv (str::cat "Invalid closing tag." *nls*
                       "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
             n nil))
