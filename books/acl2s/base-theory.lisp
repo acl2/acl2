@@ -23,6 +23,7 @@
 (include-book "properties")
 
 (include-book "std/strings/top" :dir :system)
+(include-book "system/doc/developers-guide" :dir :system)
 
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple

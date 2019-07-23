@@ -862,12 +862,18 @@ constant). In the latter return a lambda expression"
         (find-all-instances-list
          pat (cdr list-of-terms) alists))))))
 
-(defun map-find-all-instances-list (pats list-of-terms)
+(defun map-find-all-instances-list (pats list-of-terms acc)
   (declare (xargs :mode :program))
   (if (endp  pats)
-      nil
-    (cons (find-all-instances-list (car pats) list-of-terms nil)
-          (map-find-all-instances-list (cdr pats) list-of-terms))))
+      acc
+    (let ((instances
+           (find-all-instances-list (car pats) list-of-terms nil)))
+      (if instances
+          (map-find-all-instances-list
+           (cdr pats)
+           list-of-terms
+           (cons instances acc))
+        nil))))
 
 (defun common-instancesp (x y)
   (and (consp x)
@@ -881,7 +887,7 @@ constant). In the latter return a lambda expression"
 
 (defun common-instances-listp (L)
   (cond ((atom (car L)) nil)
-        ((endp (cdr L)) (consp (car L)))
+        ((atom (cdr L)) (consp (car L)))
         (t (or (in-all (caar L) (cdr L))
                (common-instances-listp (cons (cdar L) (cdr L)))))))
 
@@ -897,11 +903,24 @@ constant). In the latter return a lambda expression"
        (hyps (append (list-up-lists arg-preds x1--xk) dependent-hyps))
        (psig-hint-body
         `(if (and stable-under-simplificationp
-                  (common-instances-listp
-                   (cons (find-all-instances-list '(,name ,@x1--xk) clause nil)
-                         (map-find-all-instances-list ',hyps clause))))
+                  (b* ((instances-name
+                        (find-all-instances-list
+                         '(,name ,@x1--xk) clause nil))
+                       ((unless instances-name) nil)
+                       (map-instances
+                        (map-find-all-instances-list ',hyps clause nil))
+                       ((unless map-instances) nil)
+                       (common-insts (common-instances-listp
+                                      (cons instances-name map-instances))))
+                    common-insts))
+             ;; Left this here in case I come back and want to trace the code
+             ;;(prog2$ (cw "~%*****Chint ~x0, Clause: ~x1~%" ',poly-gen-name clause)
              '(:in-theory (enable ,poly-gen-name))
+           ;;)
+          ;; (prog2$ (cw "~%XXXXXChint ~x0, Clause: ~x1, ~x2~%" 
+          ;;             ',poly-gen-name clause stable-under-simplificationp)
            nil)))
+    ;;)
     psig-hint-body))
 
 (defun sig-events1 (name suffix arg-types ret-type kwd-alist ctx wrld)
@@ -949,7 +968,8 @@ constant). In the latter return a lambda expression"
        (poly-computed-hints
         `((add-default-hints!
            '((,poly-hint-name clause stable-under-simplificationp id hist pspv ctx))
-           :at-end t))))
+           :at-end t)))
+       )
        
     `(,@(make-sig-tvar-support-events (cons p-ret-type p-arg-types) ctx wrld) 
 
@@ -991,7 +1011,7 @@ constant). In the latter return a lambda expression"
          poly-computed-hints
          kwd-alist
          wrld)
-)))
+      )))
      
 (defun sig-events (parsed wrld)
   (b* (((list name suffix arg-types ret-type kwd-alist) parsed)
