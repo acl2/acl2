@@ -202,7 +202,7 @@
 
 
 
-(define fncall-try-concrete-eval ((fn pseudo-fn-p)
+(define fncall-try-concrete-eval ((fn pseudo-fnsym-p)
                                   (args gl-objectlist-p)
                                   (dont-concrete-exec)
                                   state)
@@ -212,7 +212,7 @@
                   (not (g-concretelist-p args))))
         (mv nil nil))
        ((mv err ans)
-        (magic-ev-fncall (pseudo-fn-fix fn) (g-concretelist-vals args) state t nil)))
+        (acl2::magic-ev-fncall-logic (pseudo-fnsym-fix fn) (g-concretelist-vals args) state)))
     (mv (not err) (g-concrete ans)))
   ///
   (defret gl-object-bfrlist-of-<fn>
@@ -230,7 +230,7 @@
                   (fgl-ev-meta-extract-global-facts :state st)
                   (equal (w st) (w state)))
              (equal (fgl-object-eval ans env)
-                    (fgl-ev (cons (pseudo-fn-fix fn) (kwote-lst (fgl-objectlist-eval args env)))
+                    (fgl-ev (cons (pseudo-fnsym-fix fn) (kwote-lst (fgl-objectlist-eval args env)))
                             nil)))))
 
 

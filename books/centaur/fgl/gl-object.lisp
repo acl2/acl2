@@ -155,7 +155,7 @@ case you misspell @(':g-concrete').</p>
      :long "<p>An object constructed as @('(g-integer bits)') evaluates to the
             two's-complement integer formed by evaluating each Boolean function
             in the list @('bits') using @(see bfr-eval), and then converting
-            that Boolean list to an integer using @(see bools->bits).</p>"
+            that Boolean list to an integer using @(see bools->int).</p>"
      :cond (eq (car x) :g-integer)
      :fields ((bits :acc-body (cdr x) :type true-listp))
      :ctor-body (cons :g-integer bits)

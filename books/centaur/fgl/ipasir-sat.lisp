@@ -42,8 +42,8 @@
   ((ignore-pathcond booleanp :default t)
    (ignore-constraint booleanp :default nil)
    (ipasir-callback-limit acl2::maybe-natp :default nil
-                          "Limit on the number of callbacks in a single SAT ~
-                           check after which the check fails.")
+                          "Limit on the number of callbacks in a single SAT check
+                           after which the check fails.")
    (ipasir-recycle-callback-limit acl2::maybe-natp :default nil
                                   "Limit on the number of callbacks over the lifespan
                                    of a solver object, after which the solver is

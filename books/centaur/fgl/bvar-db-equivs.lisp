@@ -288,7 +288,21 @@
                    (add-term-equiv test-obj bvar bvar-db))
                   ((list a b) args)
                   ;; The rest is just a heuristic determination of which should rewrite to
-                  ;; the other. Note: in most cases we don't rewrite either way!
+                  ;; the other. Note: in many cases we don't rewrite either way!
+
+                  ;; Heuristic 1: when a variable is equated with anything else, normalize var -> other.
+                  ;; (Note this could loop, up to the user to prevent this)
+                  (a-varp (gl-object-case a :g-var))
+                  (b-varp (gl-object-case b :g-var))
+                  ((when a-varp)
+                   (if b-varp
+                       bvar-db
+                     (add-term-equiv a bvar bvar-db)))
+                  ((when b-varp)
+                   (add-term-equiv b bvar bvar-db))
+
+                  ;; Heuristic 2: when one object is a "good" g-integer, g-boolean, or g-concrete,
+                  ;;              normalize other -> good obj.
                   (a-goodp (gl-object-case a
                              :g-integer t :g-boolean t :g-concrete t :otherwise nil))
                   ((when a-goodp)
@@ -297,6 +311,8 @@
                              :g-integer t :g-boolean t :g-concrete t :otherwise nil))
                   ((when b-goodp)
                    (add-term-equiv a bvar bvar-db)))
+
+               ;; Neither heuristic applied -- don't normalize either way.
                bvar-db)
 
     :otherwise bvar-db)

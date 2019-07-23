@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FGL")
-(include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
 (defun scan-lemmas-for-nume (lemmas nume)
@@ -162,7 +162,7 @@
 
 
 (defsection def-gl-rewrite
-  :parents (reference term-level-reasoning)
+  :parents (fgl-rewrite-rules)
   :short "Define a rewrite rule for FGL to use on term-level objects"
   :long
   "<p>FGL can use ACL2-style rewrite rules to simplify term-level symbolic
@@ -195,7 +195,7 @@ reference.</p>"
 
 
 (defsection def-gl-definition
-  :parents (reference term-level-reasoning)
+  :parents (fgl-rewrite-rules)
   :short "Define a rewrite rule for FGL to use on term-level objects, after applying primitives"
   :long
   "<p>This is similar to @(see def-gl-rewrite) but rules introduced with
@@ -222,77 +222,77 @@ fgl-primitives)). </p>"
 
 
 
-(defun gl-set-uninterpreted-fn (fn val world)
-  (b* ((formals (getprop fn 'formals :none 'current-acl2-world world))
-       (fn (if (eq formals :none)
-               (cdr (assoc fn (table-alist 'acl2::macro-aliases-table world)))
-             fn))
-       (formals (if (eq formals :none)
-                    (getprop fn 'formals :none 'current-acl2-world world)
-                  formals))
-       ((when (eq formals :none))
-        (er hard? 'gl-set-uninterpreted-fn
-            "~x0 is neither a function nor a macro-alias for a function~%" fn)))
-    `(table gl-uninterpreted-functions ',fn ,val)))
+;; (defun gl-set-uninterpreted-fn (fn val world)
+;;   (b* ((formals (getprop fn 'formals :none 'current-acl2-world world))
+;;        (fn (if (eq formals :none)
+;;                (cdr (assoc fn (table-alist 'acl2::macro-aliases-table world)))
+;;              fn))
+;;        (formals (if (eq formals :none)
+;;                     (getprop fn 'formals :none 'current-acl2-world world)
+;;                   formals))
+;;        ((when (eq formals :none))
+;;         (er hard? 'gl-set-uninterpreted-fn
+;;             "~x0 is neither a function nor a macro-alias for a function~%" fn)))
+;;     `(table gl-uninterpreted-functions ',fn ,val)))
 
-(defsection gl-set-uninterpreted
-  :parents (reference term-level-reasoning)
-  :short "Prevent GL from interpreting a function's definition or concretely executing it."
-  :long
-  "<p>Usage:</p>
-@({
-  ;; disallow definition expansion and concrete execution
-  (gl::gl-set-uninterpreted fnname)
-  (gl::gl-set-uninterpreted fnname t) ;; same as above
+;; (defsection gl-set-uninterpreted
+;;   :parents (fgl-rewrite-rules)
+;;   :short "Prevent GL from interpreting a function's definition or concretely executing it."
+;;   :long
+;;   "<p>Usage:</p>
+;; @({
+;;   ;; disallow definition expansion and concrete execution
+;;   (gl::gl-set-uninterpreted fnname)
+;;   (gl::gl-set-uninterpreted fnname t) ;; same as above
 
-  ;; disallow definition expansion but allow concrete execution
-  (gl::gl-set-uninterpreted fnname :concrete-only)
+;;   ;; disallow definition expansion but allow concrete execution
+;;   (gl::gl-set-uninterpreted fnname :concrete-only)
 
-  ;; disallow concrete execution but allow definition expansion
-  (gl::gl-set-uninterpreted fnname :no-concrete)
+;;   ;; disallow concrete execution but allow definition expansion
+;;   (gl::gl-set-uninterpreted fnname :no-concrete)
 
-  ;; remove restrictions
-  (gl::gl-set-uninterpreted fnname nil)
-  (gl::gl-unset-uninterpreted fnname) ;; same
-})
-<p>prevents GL from opening the definition of fnname and/or concretely executing
-it.  GL will still apply rewrite rules to a call of @('fnname').  If the
-call is not rewritten away, symbolic execution of a @('fnname') call will
-simply produce an object (of the :g-apply type) representing a call of
-@('fnname') on the given arguments.</p>
+;;   ;; remove restrictions
+;;   (gl::gl-set-uninterpreted fnname nil)
+;;   (gl::gl-unset-uninterpreted fnname) ;; same
+;; })
+;; <p>prevents GL from opening the definition of fnname and/or concretely executing
+;; it.  GL will still apply rewrite rules to a call of @('fnname').  If the
+;; call is not rewritten away, symbolic execution of a @('fnname') call will
+;; simply produce an object (of the :g-apply type) representing a call of
+;; @('fnname') on the given arguments.</p>
 
-<p>@('gl::gl-unset-uninterpreted') undoes the effect of @('gl::gl-set-uninterpreted').</p>
+;; <p>@('gl::gl-unset-uninterpreted') undoes the effect of @('gl::gl-set-uninterpreted').</p>
 
-<p>Note that @('gl::gl-set-uninterpreted') has virtually no effect when
-applied to a GL primitive: a function that has its ``symbolic
-counterpart'' built into the GL clause processor you're using.  (It
-actually does do a little &mdash; it can prevent the function from being
-applied to concrete values before rewrite rules are applied.  But that
-could change in the future.)  But what is a GL primitive?  That
-depends on the current GL clause processor, and can only be determined
-reliably by looking at the definition of the following function
-symbol:</p>
+;; <p>Note that @('gl::gl-set-uninterpreted') has virtually no effect when
+;; applied to a GL primitive: a function that has its ``symbolic
+;; counterpart'' built into the GL clause processor you're using.  (It
+;; actually does do a little &mdash; it can prevent the function from being
+;; applied to concrete values before rewrite rules are applied.  But that
+;; could change in the future.)  But what is a GL primitive?  That
+;; depends on the current GL clause processor, and can only be determined
+;; reliably by looking at the definition of the following function
+;; symbol:</p>
 
-@({
-(cdr (assoc-eq 'gl::run-gified
-	       (table-alist 'gl::latest-greatest-gl-clause-proc (w state))))
-})
+;; @({
+;; (cdr (assoc-eq 'gl::run-gified
+;; 	       (table-alist 'gl::latest-greatest-gl-clause-proc (w state))))
+;; })
 
-<p>For example, this function symbol is 'gl::glcp-run-gified immediately after
-including the community-book @('\"centaur/gl/gl\"').  Now use @(':')@(tsee pe)
-on this function symbol.  The body of that definition should be of the form
-@('(case fn ...)'), which matches @('fn') against all the GL primitives for the
-current GL clause processor.</p>
+;; <p>For example, this function symbol is 'gl::glcp-run-gified immediately after
+;; including the community-book @('\"centaur/gl/gl\"').  Now use @(':')@(tsee pe)
+;; on this function symbol.  The body of that definition should be of the form
+;; @('(case fn ...)'), which matches @('fn') against all the GL primitives for the
+;; current GL clause processor.</p>
 
-"
+;; "
 
-  (defmacro gl-set-uninterpreted (fn &optional (val 't))
-    `(make-event
-      (gl-set-uninterpreted-fn ',fn ,val (w state)))))
+;;   (defmacro gl-set-uninterpreted (fn &optional (val 't))
+;;     `(make-event
+;;       (gl-set-uninterpreted-fn ',fn ,val (w state)))))
 
-(defmacro gl-unset-uninterpreted (fn)
-  `(make-event
-    (gl-set-uninterpreted-fn ',fn nil (w state))))
+;; (defmacro gl-unset-uninterpreted (fn)
+;;   `(make-event
+;;     (gl-set-uninterpreted-fn ',fn nil (w state))))
 
 (defun gl-branch-merge-rules (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
@@ -338,7 +338,7 @@ current GL clause processor.</p>
 
 
 (defsection def-gl-branch-merge
-  :parents (reference term-level-reasoning)
+  :parents (fgl-rewrite-rules)
   :short "Define a rule for GL to use in merging IF branches"
   :long
   "<p>Usage:</p>
@@ -414,52 +414,133 @@ must be a function call.</li>
                          (cdr (assoc ',fnsym (table-alist
                                               'glcp-ctrex-rewrite world))))))))
 
-(defsection def-glcp-ctrex-rewrite
-  :parents (reference term-level-reasoning)
-  :short "Define a heuristic for GL to use when generating counterexamples"
-  :long
-  "<p>Usage:</p>
+;; (defsection def-glcp-ctrex-rewrite
+;;   :parents (reference term-level-reasoning)
+;;   :short "Define a heuristic for GL to use when generating counterexamples"
+;;   :long
+;;   "<p>Usage:</p>
 
-@({
- (gl::def-glcp-ctrex-rewrite
-   ;; from:
-   (lhs-lvalue lhs-rvalue)
-   ;; to:
-   (rhs-lvalue rhs-rvalue)
-   :test syntaxp-term)
- })
-<p>Example:</p>
-@({
- (gl::def-glcp-ctrex-rewrite
-   ((logbitp n x) t)
-   (x (logior (ash 1 n) x))
-   :test (quotep n))
-})
+;; @({
+;;  (gl::def-glcp-ctrex-rewrite
+;;    ;; from:
+;;    (lhs-lvalue lhs-rvalue)
+;;    ;; to:
+;;    (rhs-lvalue rhs-rvalue)
+;;    :test syntaxp-term)
+;;  })
+;; <p>Example:</p>
+;; @({
+;;  (gl::def-glcp-ctrex-rewrite
+;;    ((logbitp n x) t)
+;;    (x (logior (ash 1 n) x))
+;;    :test (quotep n))
+;; })
 
-<p>If GL has generated Boolean variables corresponding to term-level objects,
-then an assignment to the Boolean variables does not directly induce an
-assignment of ACL2 objects to the ACL2 variables.  Instead, we have terms that
-are assigned true or false by the Boolean assignment, and to generate a
-counterexample, we must find an assignment for the variables in those terms
-that cause the terms to take the required truth values.  Ctrex-rewrite rules
-tell GL how to move from a valuation of a term to valuations of its
-components.</p>
+;; <p>If GL has generated Boolean variables corresponding to term-level objects,
+;; then an assignment to the Boolean variables does not directly induce an
+;; assignment of ACL2 objects to the ACL2 variables.  Instead, we have terms that
+;; are assigned true or false by the Boolean assignment, and to generate a
+;; counterexample, we must find an assignment for the variables in those terms
+;; that cause the terms to take the required truth values.  Ctrex-rewrite rules
+;; tell GL how to move from a valuation of a term to valuations of its
+;; components.</p>
 
-<p>The example rule above says that if we want @('(logbitp n x)') to be @('t'),
-and @('n') is (syntactically) a quoted constant, then assign @('x') a new value
-by effectively setting its @('n')th bit to T (that is, bitwise ORing X with the
-appropriate mask).</p>
+;; <p>The example rule above says that if we want @('(logbitp n x)') to be @('t'),
+;; and @('n') is (syntactically) a quoted constant, then assign @('x') a new value
+;; by effectively setting its @('n')th bit to T (that is, bitwise ORing X with the
+;; appropriate mask).</p>
 
-<p>Note that this rule does not always yield the desired result -- for example,
-in the case where N is a negative integer.  Because these are just heuristics
-for generating counterexamples, there is no correctness requirement and no
-checking of these rules.  Bad counterexample rules can't make anything unsound,
-but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
+;; <p>Note that this rule does not always yield the desired result -- for example,
+;; in the case where N is a negative integer.  Because these are just heuristics
+;; for generating counterexamples, there is no correctness requirement and no
+;; checking of these rules.  Bad counterexample rules can't make anything unsound,
+;; but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
 
-  (defmacro def-glcp-ctrex-rewrite (from to &key (test 't))
-    `(make-event
-      (def-glcp-ctrex-rewrite-fn ',from ',test ',(list to) state))))
+;;   (defmacro def-glcp-ctrex-rewrite (from to &key (test 't))
+;;     `(make-event
+;;       (def-glcp-ctrex-rewrite-fn ',from ',test ',(list to) state))))
 
-(defmacro def-glcp-ctrex-split-rewrite (from tos &key (test 't))
-  `(make-event
-    (def-glcp-ctrex-rewrite-fn ',from ',test ',tos state)))
+;; (defmacro def-glcp-ctrex-split-rewrite (from tos &key (test 't))
+;;   `(make-event
+;;     (def-glcp-ctrex-rewrite-fn ',from ',test ',tos state)))
+
+(defxdoc def-fgl-program
+  :parents (fgl-rewrite-rules)
+  :short "Define a function that is logically just NIL but has special extralogical behavior in FGL."
+  :long "<p> Because of FGL's @(see bind-var) feature, it isn't always possible
+to define a function the way you want it to run in FGL: if you want to use
+@('bind-var'), then you must have a free variable in the RHS of the equation
+defining the function, which isn't allowed for ACL2 definitions.  Instead, you
+may provide a function definition without @('bind-var') calls, disable that
+definition for FGL (using @(see disable-definition)), and add an FGL rewrite
+rule with @(see def-gl-rewrite) that rewrites calls of the function to the body
+containing the bind-var calls.</p>
+
+<p>@('Def-fgl-program') provides a convenient macro for this. It wraps @(see
+define) such that all the usual arguments for define may be used.  It may also
+contain the additional keyword args @(':equiv'), giving the equivalence
+relation for the generated rewrite rule (defaulting to @('all-equiv')), and
+@(':fgl-hints'), which allows hints to be passed to the proof for the rewrite
+rule.  Instead of providing the given function body as the body for the
+@('define'), it modifies it as follows: if @(':equiv') is provided, it searches
+the given body for calls of @('bind-var') and @('syntax-bind') and replaces
+them with @('nil'), otherwise, it just provides a body of @('nil').</p>")
+
+
+(defun remove-bind-var-calls (x)
+  (cond ((atom x) x)
+        ((and (consp x)
+              (or (eq (car x) 'bind-var)
+                  (eq (car x) 'syntax-bind))
+              (consp (cdr x))
+              (symbolp (cadr x))
+              (cadr x)
+              (consp (cddr x)))
+         nil)
+        (t (cons (remove-bind-var-calls (car x))
+                 (remove-bind-var-calls (cdr x))))))
+    
+
+
+(defun def-fgl-program-fn (name args world)
+  (declare (xargs :mode :program))
+  (b* (((std::defguts guts) (std::parse-define name args '(:equiv :fgl-hints) world))
+       ;; ugh, stores the fully constructed DEFUN in the guts, which we need to modify
+       (body (car (last guts.main-def)))
+       (nil-body-p (not (assoc :equiv guts.kwd-alist)))
+       (def-body (if nil-body-p
+                     nil
+                   (remove-bind-var-calls body)))
+       (new-main-def (append (butlast guts.main-def 1)
+                             (list def-body)))
+       (new-rest-events (append guts.rest-events
+                                `((fgl::disable-definition ,name)
+                                  (fgl::def-gl-rewrite ,(intern-in-package-of-symbol
+                                                         (concatenate 'string (symbol-name name) "-FGL")
+                                                         name)
+                                    (,(std::getarg :equiv 'all-equiv guts.kwd-alist)
+                                     (,name . ,(std::formallist->names guts.formals))
+                                     ,body)
+                                    :hints ,(cdr (assoc :fgl-hints guts.kwd-alist))))))
+       (new-kwd-alist (if nil-body-p
+                          ;; If we're using a body of NIL, force :ignore-ok and :irrelevant-formals-ok
+                          `((:ignore-ok . t)
+                            (:irrelevant-formals-ok . t)
+                            . ,guts.kwd-alist)
+                        guts.kwd-alist))
+       (new-guts (std::change-defguts guts
+                                      :main-def new-main-def
+                                      :rest-events new-rest-events
+                                      :pe-entry `(def-fgl-program ,name . ,args)
+                                      :kwd-alist new-kwd-alist)))
+    (std::events-from-guts new-guts world)))
+
+(defmacro def-fgl-program (name &rest args)
+  (let* ((verbose-tail (member :verbosep args))
+         (verbosep (and verbose-tail (cadr verbose-tail))))
+    `(with-output
+       :stack :push
+       ,@(and (not verbosep)
+              '(:on (acl2::error) :off :all))
+       (make-event
+        (def-fgl-program-fn ',name ',args (w state))))))
