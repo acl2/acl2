@@ -290,12 +290,42 @@
                               (- (len lemmas)
                                  (len (member rule lemmas)))))))))))
 
+
+(defthm plist-worldp-w-state
+  (implies (state-p1 state)
+           (plist-worldp (w state)))
+  :hints(("Goal" :in-theory (enable w))))
+
+(defun magic-ev-fncall-logic (fn arglist state)
+  (declare (xargs :guard (symbolp fn)
+                  :stobjs state))
+  (if (logicp fn (w state))
+      (magic-ev-fncall fn arglist state t nil)
+    (mv (msg "Not logic mode: ~x0" fn) nil)))
+
+(defthm mextract-fncall-logic
+  (mv-let (erp val)
+    (magic-ev-fncall-logic fn arglist st)
+    (implies (and (mextract-ev-global-facts)
+                  (equal (w st) (w state))
+                  (not erp))
+             (equal val
+                    (mextract-ev (cons fn (kwote-lst arglist)) nil))))
+  :hints(("Goal"
+          :use ((:instance mextract-global-badguy-sufficient
+                 (obj (list :fncall fn arglist))
+                 (a nil))))))
+
+(local (in-theory (disable magic-ev-fncall-logic)))
+
+
 (defthm mextract-fncall
   (mv-let (erp val)
     (magic-ev-fncall fn arglist st t nil)
     (implies (and (mextract-ev-global-facts)
                   (equal (w st) (w state))
-                  (not erp))
+                  (not erp)
+                  (logicp fn (w st)))
              (equal val
                     (mextract-ev (cons fn (kwote-lst arglist)) nil))))
   :hints(("Goal"
@@ -317,7 +347,8 @@
                     (equal aokp nil)
                     ;; need pseudo-termp so that we know we don't look up
                     ;; non-symbol atoms
-                    (pseudo-termp x))
+                    (pseudo-termp x)
+                    (logic-fnsp x (w st)))
                (equal val
                       (mextract-ev x alist))))
     :flag magic-ev)
@@ -329,7 +360,8 @@
                     (not erp)
                     (equal hard-errp t)
                     (equal aokp nil)
-                    (pseudo-term-listp x))
+                    (pseudo-term-listp x)
+                    (logic-fns-listp x (w st)))
                (equal val
                       (mextract-ev-lst x alist))))
     :flag magic-ev-lst)
@@ -771,6 +803,17 @@
                      (mextract-ev-contextual-facts evfn-meta-extract-contextual-facts)))
 
      (def-functional-instance
+       evfn-meta-extract-fncall-logic
+       mextract-fncall-logic
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy))
+       :translate nil
+       :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
+                     (mextract-ev-contextual-facts evfn-meta-extract-contextual-facts)))
+
+     (def-functional-instance
        evfn-meta-extract-fncall
        mextract-fncall
        ((mextract-ev evfn)
@@ -1177,10 +1220,6 @@
 
 
 
-(defthm plist-worldp-w-state
-  (implies (state-p1 state)
-           (plist-worldp (w state)))
-  :hints(("Goal" :in-theory (enable w))))
 
 ;; Allows use of meta-extract-formula with just the world.  You still need
 ;; state in the theorems (and to know that wrld = (w state)).
@@ -1188,12 +1227,14 @@
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
   (or (getprop name 'theorem nil 'current-acl2-world wrld)
-      (mv-let (flg prop)
-        (constraint-info name wrld)
-        (cond ((unknown-constraints-p prop)
-               *t*)
-              (flg (ec-call (conjoin prop)))
-              (t prop)))))
+      (cond ((logicp name wrld)
+             (mv-let (flg prop)
+               (constraint-info name wrld)
+               (cond ((unknown-constraints-p prop)
+                      *t*)
+                     (flg (ec-call (conjoin prop)))
+                     (t prop))))
+            (t *t*))))
 
 (defthm meta-extract-formula-w-rewrite
   (equal (meta-extract-formula-w name (w state))
@@ -1277,8 +1318,7 @@
              (quote-listp (cdr x))
              (mbt (pseudo-term-listp (cdr x))))
         (mv-let (erp val)
-          (magic-ev-fncall (car x) (unquote-lst (cdr x))
-                           state t nil)
+          (magic-ev-fncall-logic (car x) (unquote-lst (cdr x)) state)
           (if erp
               x
             (kwote val)))
@@ -1291,10 +1331,10 @@
              (equal (fnc-ev (ev-call-metafn x mfc state) a)
                     (fnc-ev x a)))
     :hints(("Goal"
-            :use ((:instance fnc-ev-meta-extract-fncall
-                   (fn (car x))
-                   (arglist (unquote-lst (cdr x)))
-                   (st state)))
+            ;; :use ((:instance fnc-ev-meta-extract-fncall-logic
+            ;;        (fn (car x))
+            ;;        (arglist (unquote-lst (cdr x)))
+            ;;        (st state)))
             :in-theory (enable fnc-ev-constraint-0))))
 
 
