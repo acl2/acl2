@@ -31,16 +31,13 @@
 
 (in-package "SV")
 (include-book "../mods/lhs")
+(include-book "../svex/lists")
+(include-book "centaur/fty/baselists" :dir :system)
 
 (defxdoc structure.lisp :parents (svex-stvs))
 (local (xdoc::set-default-parents structure.lisp))
 
 (local (std::add-default-post-define-hook :fix))
-
-;; redundant with ../svex/lists
-(deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv :forward t)
-(fty::deflist true-list-list :elt-type true-list :true-listp t :pred true-list-listp :elementp-of-nil t)
-
 
 (define svtv-dontcare-p (x)
   (and (symbolp x)

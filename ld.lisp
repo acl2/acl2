@@ -3844,8 +3844,9 @@
 ; whether it is otherwise needed or not.
 
 (defconst *meta-level-function-problem-1*
-  "~%~%Meta-level function Problem:  Some meta-level function applied ~x0 to the ~
-   non-term ~x1.  The meta-level function computation was ignored.~%~%")
+  "~%~%Meta-level function Problem:  Some meta-level function applied ~x0 to ~
+   the expression ~x1, which is not a term for which every function symbol is ~
+   in :logic mode.  The meta-level function computation was ignored.~%~%")
 
 (defconst *meta-level-function-problem-1a*
   "~%~%Meta-level function Problem:  Some meta-level function applied ~x0 to an ~
@@ -3859,8 +3860,9 @@
 (defconst *meta-level-function-problem-1c*
   "~%~%Meta-level function Problem:  Some meta-level function applied ~x0 to ~
    the expression ~x1 for the target argument.  This expression must be a ~
-   term that is the application of a function symbol; but it is not.  The ~
-   meta-level function computation was ignored.~%~%")
+   term that is the application of a function symbol and consists entirely of ~
+   logic-mode functions; but it is not.  The meta-level function computation ~
+   was ignored.~%~%")
 
 (defconst *meta-level-function-problem-1d*
   "~%~%Meta-level function Problem:  Some meta-level function applied ~x0 to ~
@@ -3973,7 +3975,7 @@
       (cond
        ((eq mfc *metafunction-context*)
         (cond
-         ((termp term (access metafunction-context mfc :wrld))
+         ((logic-termp term (access metafunction-context mfc :wrld))
 
 ; At this point we can code freely.  In general, any data used below
 ; (i.e., any actuals passed in above) must be vetted as shown above.
@@ -4041,7 +4043,7 @@
         (let ((wrld  (access metafunction-context mfc :wrld))
               (rcnst (access metafunction-context mfc :rcnst)))
           (cond
-           ((not (termp term wrld))
+           ((not (logic-termp term wrld))
             (cw *meta-level-function-problem-1* fn term)
             (throw-raw-ev-fncall ev-fncall-val))
            ((let ((msg (term-alistp-failure-msg alist wrld)))
@@ -4131,7 +4133,7 @@
               (rcnst (access metafunction-context mfc :rcnst))
               (ancestors (access metafunction-context mfc :ancestors)))
           (cond
-           ((not (termp hyp wrld))
+           ((not (logic-termp hyp wrld))
             (cw *meta-level-function-problem-1* 'mfc-relieve-hyp hyp)
             (throw-raw-ev-fncall ev-fncall-val))
            ((let ((msg (term-alistp-failure-msg alist wrld)))
@@ -4141,7 +4143,7 @@
            ((not (runep rune wrld))
             (cw *meta-level-function-problem-1b* 'mfc-relieve-hyp rune)
             (throw-raw-ev-fncall ev-fncall-val))
-           ((not (and (termp target wrld)
+           ((not (and (logic-termp target wrld)
                       (nvariablep target)
                       (not (fquotep target))
                       (symbolp (ffn-symb target))))
@@ -4229,7 +4231,7 @@
       (cond
        ((eq mfc *metafunction-context*)
         (cond
-         ((termp term (access metafunction-context mfc :wrld))
+         ((logic-termp term (access metafunction-context mfc :wrld))
           (let* ((force-flg (mfc-force-flg forcep mfc))
                  (linearized-list
                   (linearize term

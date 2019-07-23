@@ -95,6 +95,11 @@
 ; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
 ; If you are stuck, see the entries about other libraries.
 
+; Note (probably too low level to mention in the :doc string): modified
+; defxdoc-raw so that the :from field is a string rather than nil, which can be
+; important for avoiding errors when building the "fast" documentation.  This
+; change has avoided an error using SBCL.
+
   :parents (note-8-3 release-notes-books)
 
   :short "Release notes for the ACL2 Community Books for ACL2 8.3"
@@ -168,6 +173,20 @@
    (xdoc::p
     "@(tsee apt::restrict) now supports reflexive functions,
      i.e. functions that occur in their termination theorem.")
+
+   (xdoc::p
+    "A new transformation, @(tsee apt::casesplit),
+     has been added to rephrase a function by cases.")
+
+   (xdoc::p
+    "@(tsee apt::parteval) now provides better support
+     for recursive functions whose static arguments
+     do not change across recursive calls.")
+
+   (xdoc::p
+    "@(tsee apt::parteval) has been extended to support "
+    (xdoc::seeurl "apt::untranslate-specifier" "untranslate specifiers")
+    ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -329,6 +348,11 @@
      along with its accompanying theorems and XDOC topic,
      has been moved from @('[books]/centaur/fty/basetypes.lisp')
      to a new file @('[books]/std/basic/pos-fix.lisp').")
+
+   (xdoc::p
+    "The function @(tsee symbol-package-name-lst)
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
