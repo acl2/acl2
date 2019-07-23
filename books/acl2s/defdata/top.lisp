@@ -428,6 +428,7 @@ build product types: @('cons'), @('intern$'), @('/') and @('complex').
   (sig fun-name arg-types => return-type 
        [:satisfies hyp]
        [:hints hints]
+       [:gen-rule-classes rule-classes]
        [:rule-classes rule-classes]
        [:verbose t])
 })
@@ -452,7 +453,8 @@ The following keyword arguments are supported by the @('sig') macro:
 <ul>
 <li> :satisfies -- specify additional dependent type hypotheses.</li>
 <li> :hints -- @(see acl2::hints) option to the generic type signature.</li>
-<li> :rule-classes --  @(see acl2::rule-classes) option to the generic type signature.</li>  
+<li> :gen-rule-classes --  @(see acl2::rule-classes) option to the generic type signature.</li>  
+<li> :rule-classes --  @(see acl2::rule-classes) option to the generated theorems.</li>  
 <li> :verbose -- for debugging.</li>  
 </ul>
 
