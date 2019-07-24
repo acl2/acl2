@@ -32,6 +32,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
 
     /**
      * Validates all the function calls in this term.
+     * See the overriding methods for details.
      *
      * @throws IllegalStateException if validation fails
      */

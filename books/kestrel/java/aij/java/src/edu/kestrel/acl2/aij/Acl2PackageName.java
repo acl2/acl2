@@ -21,10 +21,10 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * Checks if the argument Java character is valid for an ACL2 package name.
      * A valid package name character is standard
      * (i.e. it satisfies the {@code standard-char-p} ACL2 function)
-     * and is not lower case.
+     * and is not lowercase.
      * The standard characters have the code 10 (i.e. {@code #\Newline})
      * and the codes from 32 to 126.
-     * The lower case characters have the codes from 97 to 122.
+     * The lowercase characters have the codes from 97 to 122.
      */
     private static boolean isValidChar(char chr) {
         return chr == 10 ||

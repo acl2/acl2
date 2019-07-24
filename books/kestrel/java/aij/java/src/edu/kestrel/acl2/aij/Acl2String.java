@@ -77,12 +77,10 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code coerce} ACL2 function,
      * when its second argument is not {@code list}.
      *
-     * @throws IllegalArgumentException if list is null or
+     * @throws IllegalArgumentException if list is
      *                                  longer than the maximum Java integer
      */
     static Acl2String coerceFromList(Acl2Value list) {
-        if (list == null)
-            throw new IllegalArgumentException("Null character list.");
         int len = 0;
         for (;
              list instanceof Acl2ConsPair;
@@ -149,10 +147,10 @@ public final class Acl2String extends Acl2Value {
      */
     @Override
     Acl2Value pkgImports() throws Acl2EvaluationException {
-        String str = this.getJavaString();
+        String str = this.jstring;
         Acl2PackageName packageName = null;
         try {
-            Acl2PackageName.make(str);
+            packageName = Acl2PackageName.make(str);
         } catch (IllegalArgumentException e) {
             throw new Acl2EvaluationException(null, e);
         }
@@ -188,6 +186,8 @@ public final class Acl2String extends Acl2Value {
             throw new Acl2EvaluationException(null, e);
         }
         String witnessName = Acl2Environment.getPackageWitnessName();
+        if (witnessName == null)
+            throw new IllegalStateException("Witness not defined yet.");
         Acl2Symbol result;
         try {
             result = Acl2Symbol.make(packageName, witnessName);

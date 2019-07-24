@@ -169,10 +169,6 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      */
     @Override
     public void define(Acl2Symbol[] parameters, Acl2Term body) {
-        if (parameters == null)
-            throw new IllegalArgumentException("Null parameters.");
-        if (body == null)
-            throw new IllegalArgumentException("Null body.");
         Acl2Symbol name = this.getName();
         if (this.definiens != null)
             throw new IllegalStateException
