@@ -41,7 +41,7 @@ import java.util.Map;
  * This way, only code in this class can create instances of those classes,
  * which it does just once per class, ensuring the singleton property.
  */
-abstract class Acl2NativeFunction extends Acl2NamedFunction {
+public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     //////////////////////////////////////// private members:
 
@@ -130,8 +130,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.characterp();
+            return execCharacterp(values[0]);
         }
     }
 
@@ -163,8 +162,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.stringp();
+            return execStringp(values[0]);
         }
     }
 
@@ -196,8 +194,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.symbolp();
+            return execSymbolp(values[0]);
         }
     }
 
@@ -229,8 +226,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.integerp();
+            return execIntegerp(values[0]);
         }
     }
 
@@ -262,8 +258,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.rationalp();
+            return execRationalp(values[0]);
         }
     }
 
@@ -295,8 +290,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.complexRationalp();
+            return execComplexRationalp(values[0]);
         }
     }
 
@@ -328,8 +322,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.acl2Numberp();
+            return execAcl2Numberp(values[0]);
         }
     }
 
@@ -361,8 +354,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.consp();
+            return execConsp(values[0]);
         }
     }
 
@@ -394,8 +386,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.charCode();
+            return execCharCode(values[0]);
         }
     }
 
@@ -427,8 +418,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.codeChar();
+            return execCodeChar(values[0]);
         }
     }
 
@@ -460,12 +450,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            if (y.equals(Acl2Symbol.LIST))
-                return x.coerceToList();
-            else
-                return Acl2String.coerceFromList(x);
+            return execCoerce(values[0], values[1]);
         }
     }
 
@@ -500,9 +485,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value str = values[0];
-            Acl2Value sym = values[1];
-            return str.internInPackageOfSymbol(sym);
+            return execInternInPackageOfSymbol(values[0], values[1]);
         }
     }
 
@@ -535,8 +518,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.symbolPackageName();
+            return execSymbolPackageName(values[0]);
         }
     }
 
@@ -568,8 +550,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            Acl2Value x = values[0];
-            return x.symbolName();
+            return execSymbolName(values[0]);
         }
     }
 
@@ -609,8 +590,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            Acl2Value pkg = values[0];
-            return pkg.pkgImports();
+            return execPkgImports(values[0]);
         }
     }
 
@@ -651,8 +631,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            Acl2Value pkg = values[0];
-            return pkg.pkgWitness();
+            return execPkgWitness(values[0]);
         }
     }
 
@@ -684,8 +663,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.negate();
+            return execUnaryMinus(values[0]);
         }
     }
 
@@ -717,8 +695,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.reciprocate();
+            return execUnarySlash(values[0]);
         }
     }
 
@@ -750,9 +727,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            return x.add(y);
+            return execBinaryPlus(values[0], values[1]);
         }
     }
 
@@ -784,9 +759,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            return x.multiply(y);
+            return execBinaryStar(values[0], values[1]);
         }
     }
 
@@ -818,14 +791,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            int realCmp = x.realpart().compareTo(y.realpart());
-            if (realCmp < 0 ||
-                    realCmp == 0 && x.imagpart().compareTo(y.imagpart()) < 0)
-                return Acl2Symbol.T;
-            else
-                return Acl2Symbol.NIL;
+            return execLessThan(values[0], values[1]);
         }
     }
 
@@ -857,9 +823,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            return Acl2Number.make(x.rfix(), y.rfix());
+            return execComplex(values[0], values[1]);
         }
     }
 
@@ -891,8 +855,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.realpart();
+            return execRealPart(values[0]);
         }
     }
 
@@ -924,8 +887,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.imagpart();
+            return execImagPart(values[0]);
         }
     }
 
@@ -957,8 +919,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.numerator();
+            return execNumerator(values[0]);
         }
     }
 
@@ -990,8 +951,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.denominator();
+            return execDenominator(values[0]);
         }
     }
 
@@ -1023,9 +983,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            return Acl2ConsPair.make(x, y);
+            return execCons(values[0], values[1]);
         }
     }
 
@@ -1057,8 +1015,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.car();
+            return execCar(values[0]);
         }
     }
 
@@ -1090,8 +1047,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            return x.cdr();
+            return execCdr(values[0]);
         }
     }
 
@@ -1123,12 +1079,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            if (x.equals(y))
-                return Acl2Symbol.T;
-            else
-                return Acl2Symbol.NIL;
+            return execEqual(values[0], values[1]);
         }
     }
 
@@ -1172,9 +1123,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            return Acl2Symbol.NIL;
+            return execBadAtomLessThanOrEqualTo(values[0], values[1]);
         }
     }
 
@@ -1213,13 +1162,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            Acl2Value z = values[2];
-            if (x.equals(Acl2Symbol.NIL))
-                return z;
-            else
-                return y;
+            return execIf(values[0], values[1], values[2]);
         }
 
         /**
@@ -1268,12 +1211,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            Acl2Value x = values[0];
-            Acl2Value y = values[1];
-            if (x.equals(Acl2Symbol.NIL))
-                return y;
-            else
-                return x;
+            return execOr(values[0], values[1]);
         }
 
         /**
@@ -1335,5 +1273,290 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         throw new IllegalArgumentException
                 ("Attempting to define the native function "
                         + this.getName() + ".");
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code characterp} ACL2 primitive function.
+     */
+    public static Acl2Value execCharacterp(Acl2Value x) {
+        return x.characterp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code stringp} ACL2 primitive function.
+     */
+    public static Acl2Value execStringp(Acl2Value x) {
+        return x.stringp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code symbolp} ACL2 primitive function.
+     */
+    public static Acl2Value execSymbolp(Acl2Value x) {
+        return x.symbolp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code integerp} ACL2 primitive function.
+     */
+    public static Acl2Value execIntegerp(Acl2Value x) {
+        return x.integerp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code rationalp} ACL2 primitive function.
+     */
+    public static Acl2Value execRationalp(Acl2Value x) {
+        return x.rationalp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code complex-rationalp} ACL2 primitive function.
+     */
+    public static Acl2Value execComplexRationalp(Acl2Value x) {
+        return x.complexRationalp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code acl2-numberp} ACL2 primitive function.
+     */
+    public static Acl2Value execAcl2Numberp(Acl2Value x) {
+        return x.acl2Numberp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code consp} ACL2 primitive function.
+     */
+    public static Acl2Value execConsp(Acl2Value x) {
+        return x.consp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code char-code} ACL2 primitive function.
+     */
+    public static Acl2Value execCharCode(Acl2Value x) {
+        return x.charCode();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code code-char} ACL2 primitive function.
+     */
+    public static Acl2Value execCodeChar(Acl2Value x) {
+        return x.codeChar();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code coerce} ACL2 primitive function.
+     */
+    public static Acl2Value execCoerce(Acl2Value x, Acl2Value y) {
+        if (y.equals(Acl2Symbol.LIST))
+            return x.coerceToList();
+        else
+            return Acl2String.coerceFromList(x);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code intern-in-package-of-symbol} ACL2 primitive function.
+     */
+    public static Acl2Value execInternInPackageOfSymbol(Acl2Value str,
+                                                        Acl2Value sym) {
+        return str.internInPackageOfSymbol(sym);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code symbol-package-name} ACL2 primitive function.
+     */
+    public static Acl2Value execSymbolPackageName(Acl2Value x) {
+        return x.symbolPackageName();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code symbol-name} ACL2 primitive function.
+     */
+    public static Acl2Value execSymbolName(Acl2Value x) {
+        return x.symbolName();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code pkg-imports} ACL2 primitive function.
+     */
+    public static Acl2Value execPkgImports(Acl2Value pkg)
+            throws Acl2EvaluationException {
+        return pkg.pkgImports();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code pkg-witness} ACL2 primitive function.
+     */
+    public static Acl2Value execPkgWitness(Acl2Value pkg)
+            throws Acl2EvaluationException {
+        return pkg.pkgWitness();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code unary--} ACL2 primitive function.
+     */
+    public static Acl2Value execUnaryMinus(Acl2Value x) {
+        return x.negate();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code unary-/} ACL2 primitive function.
+     */
+    public static Acl2Value execUnarySlash(Acl2Value x) {
+        return x.reciprocate();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code binary-+} ACL2 primitive function.
+     */
+    public static Acl2Value execBinaryPlus(Acl2Value x, Acl2Value y) {
+        return x.add(y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code binary-*} ACL2 primitive function.
+     */
+    public static Acl2Value execBinaryStar(Acl2Value x, Acl2Value y) {
+        return x.multiply(y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code <} ACL2 primitive function.
+     */
+    public static Acl2Value execLessThan(Acl2Value x, Acl2Value y) {
+        int realCmp = x.realpart().compareTo(y.realpart());
+        if (realCmp < 0 ||
+                realCmp == 0 && x.imagpart().compareTo(y.imagpart()) < 0)
+            return Acl2Symbol.T;
+        else
+            return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code complex} ACL2 primitive function.
+     */
+    public static Acl2Value execComplex(Acl2Value x, Acl2Value y) {
+        return Acl2Number.make(x.rfix(), y.rfix());
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code realpart} ACL2 primitive function.
+     */
+    public static Acl2Value execRealPart(Acl2Value x) {
+        return x.realpart();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code imagpart} ACL2 primitive function.
+     */
+    public static Acl2Value execImagPart(Acl2Value x) {
+        return x.imagpart();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code numerator} ACL2 primitive function.
+     */
+    public static Acl2Value execNumerator(Acl2Value x) {
+        return x.numerator();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code denominator} ACL2 primitive function.
+     */
+    public static Acl2Value execDenominator(Acl2Value x) {
+        return x.denominator();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code cons} ACL2 primitive function.
+     */
+    public static Acl2Value execCons(Acl2Value x, Acl2Value y) {
+        return Acl2ConsPair.make(x, y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code car} ACL2 primitive function.
+     */
+    public static Acl2Value execCar(Acl2Value x) {
+        return x.car();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code cdr} ACL2 primitive function.
+     */
+    public static Acl2Value execCdr(Acl2Value x) {
+        return x.cdr();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code equal} ACL2 primitive function.
+     */
+    public static Acl2Value execEqual(Acl2Value x, Acl2Value y) {
+        if (x.equals(y))
+            return Acl2Symbol.T;
+        else
+            return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code bad-atom<=} ACL2 primitive function.
+     */
+    public static Acl2Value execBadAtomLessThanOrEqualTo(Acl2Value x,
+                                                         Acl2Value y) {
+        return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code if} ACL2 primitive function.
+     */
+    public static Acl2Value execIf(Acl2Value x, Acl2Value y, Acl2Value z) {
+        if (x.equals(Acl2Symbol.NIL))
+            return z;
+        else
+            return y;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code or} ACL2 "pseudo-function".
+     */
+    public static Acl2Value execOr(Acl2Value x, Acl2Value y) {
+        if (x.equals(Acl2Symbol.NIL))
+            return y;
+        else
+            return x;
     }
 }
