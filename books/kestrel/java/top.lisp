@@ -40,25 +40,25 @@
    (xdoc::ul
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se11/html"
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se12/html"
        "Java language specification")
      ", referenced as `[JLS]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
       e.g.
-      `[JLS:4.2]' references Section 4.2.")
+      `[JLS:4.2]' references Section 4.2 of [JLS].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se11/html"
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se12/html"
        "Java Virtual Machine specification")
      ", referenced as `[JVMS]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
       e.g.
-      `[JVMS:5.5]' references Section 5.5.")
+      `[JVMS:5.5]' references Section 5.5 of [JVMS].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/en/java/javase/11/docs/api"
+     (xdoc::a :href "https://docs.oracle.com/en/java/javase/12/docs/api"
        "Java API specification")
      ", referenced as `[JAPIS]' in the documentation of this library."))
    (xdoc::p
@@ -103,7 +103,7 @@
       to recognize a ``pseudo-function'' @('or')
       and to execute it non-strictly,
       as an optimized version of an @(tsee if)
-      whose test and ``then'' branch are the same.
+      whose test and `then' branch are the same.
       Accordingly, ATJ has been extended
       to recognize translated terms of the form @('(if a a b)')
       and to generate Java code to represent them as @('(or a b)').")
@@ -119,11 +119,7 @@
       The AIJ evaluator has been optimized to use
       Java arrays of ACL2 values as bindings,
       instead of hash maps from ACL2 symbols to values,
-      enabling faster lookup of variables in bindings.
-      These optimizations provide roughly a 2x speedup
-      on the examples in the paper
-      (except for the factorial example,
-      where big integer multiplication dominates).")
+      enabling faster lookup of variables in bindings.")
     (xdoc::li
      "The Java representation of ACL2 named functions
       has been changed to consist of native and defined functions.
@@ -136,7 +132,7 @@
       in the future.
       Each native function has its own unique Java class and instance:
       its application to values is now handled via Java's dynamic dispath
-      rather than by cases analysis, thus optimization evaluation.
+      rather than by cases analysis, thus optimizing evaluation.
       Each defined function has its own unique instance as well
       (so, all the ACL2 named functions are interned),
       and its representation includes its definition,

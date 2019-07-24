@@ -10,7 +10,7 @@
 
 # This file compiles the Java source files of AIJ without IntelliJ IDEA.
 # It generates the class and jar files in the same places as IntelliJ IDEA does.
-# It assumes that OpenJDK Java 11 is in the path,
+# It assumes that OpenJDK Java 12 is in the path,
 # but it may well work with other Java versions or implementations.
 
 ################################################################################
