@@ -23310,8 +23310,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (table default-hints-table t))))
 
 #-acl2-loop-only
-(defmacro add-default-hints! (lst)
-  (declare (ignore lst))
+(defmacro add-default-hints! (lst &key at-end)
+  (declare (ignore lst at-end))
   nil)
 
 (defmacro remove-default-hints (lst)
