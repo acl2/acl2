@@ -1203,3 +1203,12 @@
                                    (signed-byte-p))))))
 
 
+(def-gl-rewrite logext-to-logapp
+  (implies (syntaxp (not (integerp n)))
+           (equal (logext n x)
+                  (logapp n x (endint (logbitp (+ -1 (pos-fix n)) x)))))
+  :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                     bitops::ihsext-recursive-redefs
+                                     pos-fix))))
+
+

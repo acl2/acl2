@@ -344,7 +344,7 @@ fgl-primitives)). </p>"
   "<p>Usage:</p>
 
 @({
-  (gl::def-gl-branch-merge my-branch-merge-rule
+  (fgl::def-gl-branch-merge my-branch-merge-rule
      (implies (and (syntaxp (integerp m))
                    (integerp m))
               (equal (if cond (logcons b n) m)
@@ -484,7 +484,7 @@ relation for the generated rewrite rule (defaulting to @('all-equiv')), and
 rule.  Instead of providing the given function body as the body for the
 @('define'), it modifies it as follows: if @(':equiv') is provided, it searches
 the given body for calls of @('bind-var') and @('syntax-bind') and replaces
-them with @('nil'), otherwise, it just provides a body of @('nil').</p>")
+them with their second arguments; otherwise, it just provides a body of @('nil').</p>")
 
 
 (defun remove-bind-var-calls (x)
@@ -496,7 +496,7 @@ them with @('nil'), otherwise, it just provides a body of @('nil').</p>")
               (symbolp (cadr x))
               (cadr x)
               (consp (cddr x)))
-         nil)
+         `(non-exec ,(remove-bind-var-calls (caddr x))))
         (t (cons (remove-bind-var-calls (car x))
                  (remove-bind-var-calls (cdr x))))))
     

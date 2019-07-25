@@ -553,3 +553,11 @@
 (def-gl-rewrite loghead-to-logapp-always
   (equal (loghead n x)
          (logapp n x 0)))
+
+(remove-gl-rewrite logext-to-logapp
+(def-gl-rewrite logext-to-logapp-always
+  (equal (logext n x)
+         (logapp n x (endint (logbitp (+ -1 (pos-fix n)) x))))
+  :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                     bitops::ihsext-recursive-redefs
+                                     pos-fix))))

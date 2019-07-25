@@ -735,6 +735,10 @@
     ;; :g-concrete (mv 'concrete (list (gl-object-fix x)))
     :g-apply (mv x.fn x.args)
     :g-cons (mv 'cons (list x.car x.cdr))
+    :g-concrete (if (consp x.val)
+                    (mv 'cons (list (g-concrete (car x.val))
+                                    (g-concrete (cdr x.val))))
+                  (mv nil nil))
     :otherwise (mv nil nil))
   ///
 
@@ -757,13 +761,13 @@
     :hints(("Goal" :in-theory (enable fgl-apply fgl-objectlist-eval
                                       fgl-ev-of-fncall-args))))
 
-  (defret gl-objectlist-count-of-recognize-merge-fncall
-    (implies fn
-             (<= (gl-objectlist-count args) (gl-object-count x)))
-    :hints(("Goal" :in-theory (enable gl-objectlist-count))
-           (and stable-under-simplificationp
-                '(:expand ((gl-object-count x)))))
-    :rule-classes :linear)
+  ;; (defret gl-objectlist-count-of-recognize-merge-fncall
+  ;;   (implies fn
+  ;;            (<= (gl-objectlist-count args) (gl-object-count x)))
+  ;;   :hints(("Goal" :in-theory (enable gl-objectlist-count))
+  ;;          (and stable-under-simplificationp
+  ;;               '(:expand ((gl-object-count x)))))
+  ;;   :rule-classes :linear)
 
   ;; (defret gl-bfr-objectlist-p-of-<fn>
   ;;   (implies (gl-bfr-object-p x)
@@ -1088,7 +1092,9 @@
                (gl-object-basic-merge test then else make-ites logicman)
                (b* (((unless okp)
                      (gl-interp-error :msg "If-then-else failed to merge -- see debug obj"
-                                      :debug-obj (cons test (gl-objectlist-fix (list then else))))))
+                                      :debug-obj (list :test test
+                                                       :then (gl-object-fix then)
+                                                       :else (gl-object-fix else)))))
                  (mv obj interp-st state))))
   ///
                        
@@ -1366,7 +1372,28 @@
         (member-eq equiv contexts)
         (member-eq 'all-equiv contexts))))
 
+(defun gl-interp-fncall-special-case-fn (cases)
+  (b* (((when (atom cases))
+        '((otherwise (fgl-interp-value nil nil))))
+       ((list (list fn arity) term) (car cases)))
+    (cons `(,fn
+            (if (eql (len args) ,arity)
+                (b* (((fgl-interp-value ans) ,term))
+                  (fgl-interp-value t ans))
+              (gl-interp-error :msg (gl-msg "Bad arity in special fncall: ~x0"
+                                             (cons (pseudo-fnsym-fix fn) (pseudo-term-list-fix args)))
+                               :nvals 2)))
+          (gl-interp-fncall-special-case-fn (cdr cases)))))
+
+(defmacro gl-interp-fncall-special-case (fn &rest cases)
+  `(case ,fn
+     . ,(gl-interp-fncall-special-case-fn cases)))
+
+
 (set-state-ok t)
+
+
+
 
 (progn
   (with-output
@@ -1454,40 +1481,10 @@
                (interp-st (interp-st-pop-minor-frame interp-st)))
             (fgl-interp-value val))
           :fncall 
-          (b* (((when (and** (eq x.fn 'if) (eql (len x.args) 3)))
-                (gl-interp-if/or (first x.args)
-                                 (second x.args)
-                                 (third x.args)
-                                 interp-st state))
-               ((when (and** (eq x.fn 'return-last) (eql (len x.args) 3)))
-                (gl-interp-return-last (first x.args)
-                                       (second x.args)
-                                       (third x.args)
-                                       interp-st state))
-
-               ((when (and** (eq x.fn 'bind-var)
-                             (eql (len x.args) 2)))
-                (gl-interp-bind-var (first x.args) (second x.args) interp-st state))
-
-               ((when (and** (eq x.fn 'abort-rewrite)
-                             (eql (len x.args) 1)))
-                (b* ((interp-st (interp-st-set-error :abort-rewrite interp-st)))
-                  (fgl-interp-value nil)))
-
-               ((when (and** (eq x.fn 'fgl-sat-check) (eql (len x.args) 2)))
-                (gl-interp-sat-check (first x.args)
-                                     (second x.args)
-                                     interp-st state))
-
-               ((when (and** (eq x.fn 'syntax-interp-fn) (eql (len x.args) 2)))
-                (gl-interp-syntax-interp (first x.args)
-                                         (second x.args)
-                                         interp-st state))
-
-               ((when (and** (eq x.fn 'assume) (eql (len x.args) 2)))
-                (gl-interp-assume (first x.args)
-                                  (second x.args)
-                                  interp-st state))
+          (b* (((gl-interp-recursive-call successp ans)
+                (gl-interp-fncall-special x.fn x.args interp-st state))
+               ((when successp)
+                (fgl-interp-value ans))
 
                ((interp-st-bind
                  (equiv-contexts (gl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
@@ -1499,6 +1496,59 @@
                )
             (gl-interp-fncall x.fn args interp-st state))))
 
+      (define gl-interp-fncall-special ((fn pseudo-fnsym-p)
+                                        (args pseudo-term-listp)
+                                        (interp-st interp-st-bfrs-ok)
+                                        state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020 (pseudo-term-list-binding-count args) 100)
+        :returns (mv successp
+                     (ans gl-object-p)
+                     new-interp-st new-state)
+        (gl-interp-fncall-special-case
+          (pseudo-fnsym-fix fn)
+          ((if 3)
+           (gl-interp-if/or (first args)
+                            (second args)
+                            (third args)
+                            interp-st state))
+          ((return-last 3)
+           (gl-interp-return-last (first args)
+                                  (second args)
+                                  (third args)
+                                  interp-st state))
+
+          ((bind-var 2)
+           (gl-interp-bind-var (first args) (second args) interp-st state))
+
+          ((abort-rewrite 1)
+           (b* ((interp-st (interp-st-set-error :abort-rewrite interp-st)))
+             (fgl-interp-value nil)))
+
+          ((fgl-sat-check 2)
+           (gl-interp-sat-check (first args)
+                                (second args)
+                                interp-st state))
+
+          ((syntax-interp-fn 2)
+           (gl-interp-syntax-interp (first args)
+                                    (second args)
+                                    interp-st state))
+
+          ((assume 2)
+           (gl-interp-assume (first args)
+                             (second args)
+                             interp-st state))
+
+          ((under-equiv 2)
+           (gl-interp-under-equiv (first args)
+                                  (second args)
+                                  interp-st state))
+
+          ((fgl-interp-obj 1)
+           (gl-interp-fgl-interp-obj (first args)
+                                     interp-st state))))
+        
       (define gl-interp-arglist ((args pseudo-term-listp)
                                  (interp-st interp-st-bfrs-ok)
                                  state)
@@ -1945,6 +1995,77 @@
               (gl-interp-test test interp-st state))
              ((fgl-interp-value ?unreachp ans)
               (gl-maybe-interp testbfr x interp-st state)))
+          (fgl-interp-value ans)))
+
+      (define gl-interp-under-equiv ((equiv pseudo-termp)
+                                     (x pseudo-termp)
+                                     (interp-st interp-st-bfrs-ok)
+                                     state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020
+                       (+ (pseudo-term-binding-count equiv)
+                          (pseudo-term-binding-count x))
+                       40)
+        :returns (mv
+                  (ans gl-object-p)
+                  new-interp-st new-state)
+        (b* (((unless (member-eq 'all-equiv (interp-st->equiv-contexts interp-st)))
+              (gl-interp-error :msg (gl-msg "Under-equiv called not in an all-equiv context: args ~x0."
+                                            (list (pseudo-term-fix equiv) (pseudo-term-fix x)))))
+             ((gl-interp-recursive-call equivobj)
+              (gl-interp-term-equivs equiv interp-st state))
+             ((unless (gl-object-case equivobj :g-concrete))
+              (gl-interp-error :msg (gl-msg "First argument to under-equiv ~
+                                             yielded a non-constant object: ~
+                                             args ~x0."
+                                            (list (pseudo-term-fix equiv) (pseudo-term-fix x)))))
+             (contexts (g-concrete->val equivobj))
+             ((unless (equiv-contextsp contexts))
+              (gl-interp-error :msg (gl-msg "First argument to under-equiv ~
+                                             yielded a value that did not ~
+                                             satisfy equiv-contextsp: args ~
+                                             ~x0."
+                                            (list (pseudo-term-fix equiv) (pseudo-term-fix x)))))
+             ((interp-st-bind
+               (equiv-contexts contexts))
+              ((fgl-interp-value ans)
+               (gl-interp-term-equivs x interp-st state))))
+          (fgl-interp-value ans)))
+
+      (define gl-interp-fgl-interp-obj ((x pseudo-termp)
+                                        (interp-st interp-st-bfrs-ok)
+                                        state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020
+                       (pseudo-term-binding-count x)
+                       60)
+        :returns (mv
+                  (ans gl-object-p)
+                  new-interp-st new-state)
+        (b* (((unless (member-eq 'all-equiv (interp-st->equiv-contexts interp-st)))
+              (gl-interp-error :msg (gl-msg "Fgl-interp-obj called not in an all-equiv context: args ~x0."
+                                            (list (pseudo-term-fix x)))))
+             (reclimit (interp-st->reclimit interp-st))
+             ((when (gl-interp-check-reclimit interp-st))
+              (gl-interp-error :msg (gl-msg "The recursion limit ran out.")))
+             ((gl-interp-recursive-call xobj)
+              (gl-interp-term-equivs x interp-st state))
+             ((unless (gl-object-case xobj :g-concrete))
+              (gl-interp-error :msg (gl-msg "First argument to fgl-interp-obj ~
+                                             yielded a non-constant object: ~
+                                             args ~x0."
+                                            (list (pseudo-term-fix x)))))
+             (term (g-concrete->val xobj))
+             ((unless (pseudo-termp term))
+              (gl-interp-error :msg (gl-msg "First argument to fgl-interp-obj ~
+                                             yielded a value that did not ~
+                                             satisfy pseudo-termp: args ~
+                                             ~x0."
+                                            (list (pseudo-term-fix x)))))
+             ((interp-st-bind
+               (reclimit (1- reclimit) reclimit))
+              ((fgl-interp-value ans)
+               (gl-interp-term-equivs x interp-st state))))
           (fgl-interp-value ans)))
 
       (define gl-interp-or ((test pseudo-termp)
@@ -4742,7 +4863,7 @@
 (defsection gl-interp-stack-bindings-extension
   (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
 
-  
+  (local (acl2::use-trivial-ancestors-check))
 
   (with-output
     :off (event)
@@ -5240,6 +5361,17 @@
 
 (local (in-theory (disable acl2::sub-alistp-hons-assoc-equal)))
 
+(acl2::def-universal-equiv fgl-ev-equiv
+  :qvars (env)
+  :equiv-terms ((equal (fgl-ev x env))))
+
+(defrefinement pseudo-term-equiv fgl-ev-equiv
+  :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
+
+(defcong fgl-ev-equiv equal (fgl-ev x env) 1
+  :hints(("Goal" :in-theory (enable fgl-ev-equiv-necc))))
+
+
 (defsection fgl-ev-context-equiv-forall-extensions
   (defun-sk fgl-ev-context-equiv-forall-extensions (contexts
                                                     obj
@@ -5284,6 +5416,10 @@
       fgl-ev-context-equiv-forall-extensions-witnessing
       fgl-ev-context-equiv-forall-extensions-fgl-ev-example
       fgl-ev-context-equiv-forall-extensions-fgl-ev-list-example))
+
+  (defcong fgl-ev-equiv equal (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist) 3
+    :hints (("goal" :cases ((fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))
+            (acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
   ;; (defthm context-equiv-when-fgl-ev-context-equiv-forall-extensions
   ;;   (implies (and (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist0)
@@ -5550,39 +5686,59 @@
   ;;                        nil nil)))))
   ;;   :hints(("Goal" :in-theory (enable gl-interp-syntax-bind fgl-ev-context-equiv-forall-extensions))))
 
-  (defthm fgl-ev-context-equiv-forall-extensions-of-bind-var
-    (implies (and (pseudo-term-case x :fncall)
-                  (equal (pseudo-term-fncall->fn x) 'bind-var)
-                  (consp (pseudo-term-call->args x))
-                  (consp (cdr (pseudo-term-call->args x)))
-                  (fgl-ev-context-equiv-forall-extensions
-                   contexts res-eval (car (pseudo-term-call->args x))
-                   bindings))
-             (fgl-ev-context-equiv-forall-extensions
-              contexts res-eval x bindings))
-    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+  (defthm fgl-ev-equiv-of-bind-var-call
+    (implies (equal (pseudo-fnsym-fix fn) 'bind-var)
+             (fgl-ev-equiv (pseudo-term-fncall fn args)
+                           (car args)))
+    :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
-  (defthm fgl-ev-context-equiv-forall-extensions-of-fgl-sat-check-call
-    (implies (and (pseudo-term-case x :fncall)
-                  (equal (pseudo-term-fncall->fn x) 'fgl-sat-check)
-                  (fgl-ev-context-equiv-forall-extensions
-                   contexts
-                   ans-ev `(if ,(second (pseudo-term-call->args x)) 't 'nil)
-                   alist))
-             (fgl-ev-context-equiv-forall-extensions
-              contexts ans-ev x alist))
-    :hints (("goal" :in-theory (enable fgl-sat-check))
-            (acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+  ;; (defthm fgl-ev-context-equiv-forall-extensions-of-bind-var
+  ;;   (implies (and (pseudo-term-case x :fncall)
+  ;;                 (equal (pseudo-term-fncall->fn x) 'bind-var)
+  ;;                 (consp (pseudo-term-call->args x))
+  ;;                 (consp (cdr (pseudo-term-call->args x)))
+  ;;                 (fgl-ev-context-equiv-forall-extensions
+  ;;                  contexts res-eval (car (pseudo-term-call->args x))
+  ;;                  bindings))
+  ;;            (fgl-ev-context-equiv-forall-extensions
+  ;;             contexts res-eval x bindings))
+  ;;   :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
-  (defthm fgl-ev-context-equiv-forall-extensions-of-assume-call
-    (implies (and (pseudo-term-case x :fncall)
-                  (equal (pseudo-term-fncall->fn x) 'assume)
-                  (fgl-ev-context-equiv-forall-extensions
-                   contexts
-                   ans-ev nil alist))
-             (fgl-ev-context-equiv-forall-extensions
-              contexts ans-ev x alist))
-    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+  (defthm fgl-ev-equiv-of-fgl-sat-check-call
+    (implies (equal (pseudo-fnsym-fix fn) 'fgl-sat-check)
+             (fgl-ev-equiv (pseudo-term-fncall fn args)
+                           `(if ,(second args) 't 'nil)))
+    :hints(("Goal" :in-theory (enable fgl-ev-equiv fgl-sat-check))))
+
+  (defthm fgl-ev-equiv-of-assume-call
+    (implies (member (pseudo-fnsym-fix fn) '(assume syntax-interp-fn under-equiv fgl-interp-obj))
+             (fgl-ev-equiv (pseudo-term-fncall fn args)
+                           nil))
+    :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
+
+  ;; (defthm fgl-ev-context-equiv-forall-extensions-of-fgl-sat-check-call1
+  ;;   (implies (and (equal (pseudo-fnsym-fix fn) 'fgl-sat-check)
+  ;;                 (equal (len args) 2)
+  ;;                 (fgl-ev-context-equiv-forall-extensions
+  ;;                  contexts
+  ;;                  ans-ev `(if ,(second args) 't 'nil)
+  ;;                  alist))
+  ;;            (fgl-ev-context-equiv-forall-extensions
+  ;;             contexts ans-ev (pseudo-term-fncall fn args) alist))
+  ;;   :hints (("goal" :in-theory (enable fgl-sat-check))
+  ;;           (acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+
+  
+
+  ;; (defthm fgl-ev-context-equiv-forall-extensions-of-assume-call
+  ;;   (implies (and (pseudo-term-case x :fncall)
+  ;;                 (equal (pseudo-term-fncall->fn x) 'assume)
+  ;;                 (fgl-ev-context-equiv-forall-extensions
+  ;;                  contexts
+  ;;                  ans-ev nil alist))
+  ;;            (fgl-ev-context-equiv-forall-extensions
+  ;;             contexts ans-ev x alist))
+  ;;   :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
   (defthm fgl-ev-context-equiv-forall-extensions-when-member-all-equiv
     (implies (member 'all-equiv (equiv-contexts-fix contexts))
@@ -5604,6 +5760,21 @@
              :in-theory (e/d (fgl-ev-context-equiv-forall-extensions)
                              (fgl-ev-context-equiv-forall-extensions-necc)))))
 
+  ;; (fty::deffixcong pseudo-term-equiv equal (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
+  ;;   term
+  ;;   :hints (("goal" :cases
+  ;;            ((fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist))
+  ;;            :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
+  ;;                   (term term)
+  ;;                   (ext (fgl-ev-context-equiv-forall-extensions-witness
+  ;;                         contexts obj (pseudo-term-fix term) eval-alist)))
+  ;;                  (:instance fgl-ev-context-equiv-forall-extensions-necc
+  ;;                   (term (pseudo-term-fix term))
+  ;;                   (ext (fgl-ev-context-equiv-forall-extensions-witness
+  ;;                         contexts obj term eval-alist))))
+  ;;            :in-theory (e/d (fgl-ev-context-equiv-forall-extensions)
+  ;;                            (fgl-ev-context-equiv-forall-extensions-necc)))))
+
   (defthm fgl-ev-context-equiv-forall-extensions-of-bind-free-var
     (implies (and (pseudo-term-case free-var :var)
                   (not (hons-assoc-equal (pseudo-term-var->name free-var) minor-bindings))
@@ -5620,18 +5791,15 @@
 
 
   (defret fgl-ev-context-equiv-forall-extensions-of-syntax-interp
-    (implies (and (pseudo-term-case x :fncall)
-                  (equal (pseudo-term-fncall->fn x) 'syntax-interp-fn)
-                  (consp (pseudo-term-call->args x))
-                  (consp (cdr (pseudo-term-call->args x)))
-                  (not (interp-st->errmsg new-interp-st)))
+    (implies (and (not (interp-st->errmsg new-interp-st)))
              (fgl-ev-context-equiv-forall-extensions
               (interp-st->equiv-contexts interp-st)
               (fgl-object-eval ans env (interp-st->logicman interp-st))
-              x
+              nil
               bindings))
     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-forall-extensions)))
-    :fn gl-interp-syntax-interp))
+    :fn gl-interp-syntax-interp)
+  )
               
               
 
@@ -6903,18 +7071,18 @@
     (implies (and ok
                   (xor negp (fgl-object-eval equiv-term env)))
              (equal (fgl-ev-context-fix contexts (fgl-object-eval equiv env))
-                    (fgl-ev-context-fix contexts (fgl-object-eval x env))))))
-             ;; (and (implies negp
-             ;;               (fgl-ev-context-equiv contexts
-             ;;                                     (fgl-object-eval equiv env)
-             ;;                                     (not (fgl-object-eval x env))))
-             ;;      (implies (not negp)
-             ;;               )))))
+                    (fgl-ev-context-fix contexts (fgl-object-eval x env)))))
 
+  (defretd check-equiv-replacement-iff-equiv-correct
+    (implies iff-equiv-p
+             (equal (fgl-ev-context-fix contexts (fgl-object-eval x env))
+                    (fgl-ev-context-fix contexts (and (fgl-object-eval equiv-term env) t)))))
+  )
 
 (defsection try-equivalences-correct
   (local (std::set-define-current-function try-equivalences))
-  (local (in-theory (enable try-equivalences)))
+  (local (in-theory (enable try-equivalences
+                            check-equiv-replacement-iff-equiv-correct)))
 
   (defthm try-equivalences-of-pathcond-fix
     (equal (try-equivalences x bvars contexts (pathcond-fix pathcond) bvar-db logicman state)
@@ -7725,6 +7893,7 @@
                  (iff?-forall-extensions
                   (interp-st->equiv-contexts interp-st)
                   (gobj-bfr-eval xbfr env new-logicman) x eval-alist)))
+
                ((or (:fnname gl-interp-term-equivs)
                     (:fnname gl-interp-term)
                     (:fnname gl-interp-time$)
@@ -7734,6 +7903,14 @@
                   (interp-st->equiv-contexts interp-st)
                   (fgl-object-eval xobj env new-logicman)
                   x eval-alist)))
+
+               ((:fnname gl-interp-fncall-special)
+                (:add-concl
+                 (implies successp
+                          (fgl-ev-context-equiv-forall-extensions
+                           (interp-st->equiv-contexts interp-st)
+                           (fgl-object-eval ans env new-logicman)
+                           (pseudo-term-fncall fn args) eval-alist))))
                
                ((:fnname gl-interp-sat-check)
                 (:add-concl
@@ -7742,7 +7919,9 @@
                   (fgl-object-eval xobj env new-logicman)
                   `(if ,x 't 'nil) eval-alist)))
 
-               ((:fnname gl-interp-assume)
+               ((or (:fnname gl-interp-assume)
+                    (:fnname gl-interp-fgl-interp-obj)
+                    (:fnname gl-interp-under-equiv))
                 (:add-concl
                  (fgl-ev-context-equiv-forall-extensions
                   (interp-st->equiv-contexts interp-st)

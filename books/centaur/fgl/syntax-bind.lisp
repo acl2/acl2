@@ -65,6 +65,44 @@ state.</p>")
   :ignore-ok t
   :irrelevant-formals-ok t
   :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "FGL testbench function to assume some condition while interpreting a term."
+  :long "<p>Logically, @('(assume test val)') just returns NIL.  When it is
+encountered by the FGL interpreter under an @('all-equiv') congruence, it
+causes the interpreter to assume that @('test') is true while interpreting
+@('val'), returning the symbolic result from @('val').</p>
+"
+  nil)
+
+(define under-equiv (equiv val)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "FGL testbench function to interpret a term under a given equivalence context."
+  :long "<p>Logically, @('(under-equiv equiv val)') just returns NIL.  When it
+is encountered by the FGL interpreter under an @('all-equiv') congruence, it
+interprets @('val') under an @('equiv') congruence.  Here @('equiv') should
+evaluate to an object satisfying @('equiv-contexts-p'), likely one of these:</p>
+<ul>
+<li>@('nil') means rewrite under @('equal'), that is, an object is only equivalent to itself</li>
+<li>@('(iff)') means rewrite under @('iff')</li>
+<li>@('(all-equiv)') means rewrite under @('all-equiv'), that is, all objects are equivalent.</li>
+</ul>
+"
+  nil)
+
+(define fgl-interp-obj (term)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :short "FGL testbench function to interpret a term that is the result of evaluating some form."
+  :long "<p>Logically, @('(fgl-interp-obj term)') just returns NIL.  When it is
+encountered by the FGL interpreter under an @('all-equiv') congruence, it
+recursively interprets the object that @('term') evaluates to.  That is, it
+first interprets @('term'), then if this results in a constant object whose
+value is a pseudo-term, it interprets that and returns its result.</p>
+"
   nil)
 
 (defmacro syntax-interp (form)
@@ -88,7 +126,6 @@ fgl-rewrite-rules) for further discussion.</p>
 @({
  (bind-var fresh-variable (syntax-interp binding-form))
  })
-<p>
 
 ")
 

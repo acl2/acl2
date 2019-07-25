@@ -270,6 +270,11 @@
          (if (equal (int x) (int y)) (intcdr x) 0))
   :hints(("Goal" :in-theory (enable sv::4vec))))
 
+(def-gl-branch-merge if-merge-4vec
+  (implies (sv::4vec-p x)
+           (equal (if test (sv::4vec upper lower) x)
+                  (sv::4vec (if test upper (sv::4vec->upper x))
+                            (if test lower (sv::4vec->lower x))))))
 
 
 (defmacro svdecomp-hints (&key hyp

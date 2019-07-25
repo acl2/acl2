@@ -179,26 +179,27 @@
                                  state)
   :returns (mv ok
                (equiv gl-object-p)
-               negp)
+               negp
+               iff-equiv-p)
   (declare (ignorable state))
   ;; BOZO fix these to work with context fixing terms, refinements, negated equivs, etc
   (b* (((when (hons-equal (gl-object-fix x)
                           (gl-object-fix equiv-term)))
-        (mv t nil t))
+        (mv t nil t (member-eq 'iff (equiv-contexts-fix contexts))))
        ((unless (gl-object-case equiv-term :g-apply))
-        (mv nil nil nil))
+        (mv nil nil nil nil))
        (equiv (g-apply->fn equiv-term))
        ((unless (or (eq equiv 'equal)
                     (member-eq equiv (equiv-contexts-fix contexts))))
-        (mv nil nil nil))
+        (mv nil nil nil nil))
        (args (g-apply->args equiv-term))
        ((unless (equal (len args) 2))
-        (mv nil nil nil))
+        (mv nil nil nil nil))
        ((when (hons-equal (car args) (gl-object-fix x)))
-        (mv t (cadr args) nil))
+        (mv t (cadr args) nil nil))
        ((when (hons-equal (cadr args) (gl-object-fix x)))
-        (mv t (car args) nil)))
-    (mv nil nil nil))
+        (mv t (car args) nil nil)))
+    (mv nil nil nil nil))
   ///
   (defret gl-object-bfrlist-of-<fn>
     (implies (not (member v (gl-object-bfrlist equiv-term)))
@@ -226,15 +227,21 @@
        (bvar (lnfix (car bvars)))
        (bfr-var (bfr-var bvar logicman))
        (equiv-term (get-bvar->term bvar bvar-db))
-       ((mv check-ok repl negp)
+       ((mv check-ok repl negp iff-equiv-p)
         (check-equiv-replacement x equiv-term contexts state))
        ((unless check-ok)
         (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
-       ((mv ans pathcond) (logicman-pathcond-implies bfr-var pathcond logicman)))
-    (if (if negp (eql ans 0) (eql ans 1))
-        (mv t repl pathcond)
-      (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state)))
+       ((mv ans pathcond) (logicman-pathcond-implies bfr-var pathcond logicman))
+       ((when (if negp (eql ans 0) (eql ans 1)))
+        (mv t repl pathcond))
+       ((when (and iff-equiv-p ans))
+        (mv t (eql ans 1) pathcond)))
+      (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
   ///
+  (local (defthm gl-object-bfrlist-of-boolean
+           (implies (booleanp x)
+                    (equal (gl-object-bfrlist x) nil))
+           :hints(("Goal" :in-theory (enable booleanp)))))
   (defret gl-object-bfrlist-of-<fn>
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
                   (bvar-list-okp$a bvars bvar-db))
@@ -277,6 +284,14 @@
   :guard (and (<= (base-bvar bvar-db) bvar)
               (< bvar (next-bvar bvar-db)))
   :returns (new-bvar-db)
+  ;; We (maybe) add an association between some term and the generated Boolean
+  ;; variable, saying that if the Boolean variable is assumed true or false,
+  ;; that may imply some value of the test-obj.
+
+  ;; In some cases we associate test-obj itself to bvar.  In this case the
+  ;; association means if bvar is NIL, then normalize test-obj is NIL.
+  ;; Otherwise test-obj is (equal x y) and we associate either x or y to bvar;
+  ;; in this case, if bvar is true, normalize (respectively) x to y or y to x.
   (declare (ignorable state))
   (gl-object-case test-obj
     :g-var (add-term-equiv test-obj bvar bvar-db)
@@ -296,7 +311,7 @@
                   (b-varp (gl-object-case b :g-var))
                   ((when a-varp)
                    (if b-varp
-                       bvar-db
+                       (add-term-equiv test-obj bvar bvar-db)
                      (add-term-equiv a bvar bvar-db)))
                   ((when b-varp)
                    (add-term-equiv b bvar bvar-db))
@@ -313,9 +328,9 @@
                    (add-term-equiv a bvar bvar-db)))
 
                ;; Neither heuristic applied -- don't normalize either way.
-               bvar-db)
+               (add-term-equiv test-obj bvar bvar-db))
 
-    :otherwise bvar-db)
+    :otherwise (add-term-equiv test-obj bvar bvar-db))
   ///
   
 

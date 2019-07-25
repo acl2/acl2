@@ -50,7 +50,7 @@ aignet::aignet) package.</li>
 <li>Support for calling incremental SAT during rewriting/symbolic execution.</li>
 
 <li>Less functionality included in built-in primitives, but better able to be
-programmed using rewrite rules.</li>
+programmed using rewrite rules and user-provided extensions.</li>
 
 <li>Explicit representation of the entire interpreter state, potentially
 allowing global simplifications (e.g. combinational-equivalence-preserving
@@ -66,13 +66,16 @@ point.</li>
 </ul>
 
 <p>FGL is currently missing some important features of GL.  In particular, BDD
-and hons-AIG modes are not complete.  Shape specifiers don't exist yet.
-Parametrization doesn't exist yet.  Many of the usual ways of doing things in
-GL are done differently in FGL.</p>
+and hons-AIG modes are not complete.  Shape specifiers don't exist yet.  Many
+of the usual ways of doing things in GL are done differently in FGL.</p>
 
 <p>To get started with FGL in the default configuration:</p>
 @({
+ ;; include FGL
  (include-book \"path/to/fgl/top-plus\")
+ ;; attach to an incremental SAT backend library.
+ ;; Note: must have environment variable IPASIR_SHARED_LIBRARY set to the path to 
+ ;; an IPASIR-compliant shared library
  (include-book \"centaur/ipasir/ipasir-backend\" :dir :system)
 
  ;; test a proof 
@@ -89,26 +92,332 @@ GL are done differently in FGL.</p>
 
 <ul>
 <li>@(see gl-object)</li>
-<li>@(see fgl-interpreter-overview)</li>
+<li>@(see fgl-getting-bits-from-objects)</li>
 <li>@(see fgl-rewrite-rules)</li>
-<li>@(see fgl-primitives)</li>
 <li>@(see fgl-debugging)</li>
 <li>@(see fgl-avoiding-if-then-elses)</li>
+<li>@(see fgl-interpreter-overview)</li>
+<li>@(see fgl-primitives)</li>
 <li>@(see fgl-sat-check)</li>
 <li>@(see fgl-solving)</li>
 </ul>
 ")
 
-(defxdoc fgl-steps-to-successful-proofs
+(defxdoc fgl-getting-bits-from-objects
   :parents (fgl)
-  :short "Suggestions about how to ensure your proof is set up nicely for FGL."
-  :long "
+  :short "How to ensure that FGL can reduce your conjecture to a Boolean formula"
+  :long " <p>FGL is intended to reduce ACL2 conjectures to Boolean formulas
+that can be solved with a SAT solver.  The first step in this process is to
+reduce the variables of the theorem -- which could represent any object at all
+-- into a bit-blasted representation of some sort.  In GL, this was typically
+done by providing a shape specifier for each variable, and providing a coverage
+proof to show that the shape specifier was sufficient to cover all the values
+of the variable that satisfy the hypotheses of the theorem.  In FGL, shape
+specifiers are not supported (yet); instead, theorem variables are just
+variables, but rewrite rules can be used to extract a Boolean representation
+from them.</p>
 
-<p>
-</p>
+<h3>Generating Boolean variables</h3>
+
+<p>When the FGL interpreter process an IF term, it interprets the test of the
+IF, resulting in a symbolic object.  If that symbolic object is a function call
+or variable object, then we check the Boolean variable database of the
+interpreter state to see whether that object has already been bound to a
+Boolean variable.  If not, we add a new Boolean variable representing that
+object's truth value.  This is the only way that Boolean variables are
+generated in FGL.  An example of how this can be used can be seen in the
+following rule (from \"fgl/bitops.lisp\") for expanding the @('loghead') of
+some object:</p>
+
+@({
+ (def-gl-rewrite loghead-const-width
+   (implies (syntaxp (integerp n))
+            (equal (loghead n x)
+                   (if (or (zp n)
+                           (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                                (not (intcar x))))
+                       0
+                     (intcons (and (intcar x) t)
+                              (loghead (1- n) (intcdr x)))))))
+ })
+
+<p>Applying this rule to @('(loghead 3 z)') results in three new Boolean
+variables being generated due to the subterm @('(and (intcar x) t)'), which is
+really @('(if (intcar x) t nil)').  The full expression reduces to a
+@('g-integer') form whose bits are the variables generated from @('(intcar
+z)'), @('(intcar (intcdr z))'), and @('(intcar (intcdr (intcdr z)))').</p>
+
+<p>So one way of getting from free variables to Boolean formulas that FGL can
+use is to access them through functions like @('loghead'), and to have rules
+like @('loghead-const-width') that rewrite those in a way that expose the
+Boolean variables that we want to reason about.</p>
+
+<h3>Normalizing Variables to Bit-blasted Objects</h3>
+
+<p>Often instead of accessing a variable only through accessors like
+@('loghead'), we'll have a hyp that describes the type of the variable.  We can
+use such hyps to reduce the variables to bit-blasted objects.  For example, we
+have the following rule in \"fgl/bitops.lisp\":</p>
+@({
+ (def-gl-rewrite unsigned-byte-p-const-width
+   (implies (syntaxp (integerp n))
+            (equal (unsigned-byte-p n x)
+                   (and (natp n)
+                        (equal x (loghead n x))
+                        t))))
+ })
+
+<p>When we assume @('(unsigned-byte-p 3 z)'), we end up with the formula
+@('(equal z (loghead 3 z))'), but @('(loghead 3 z)') gets rewritten to a
+symbolic integer as described above.  Since this @('equal') term is in an IF
+test @('(and (equal z ...) t)'), we add a Boolean variable for it.  When we add
+a Boolean variable for an @('equal') term, we also can add an entry in a
+database that maps terms to Boolean variables that equate them to other terms.
+Whenever the FGL interpreter produces a symbolic object that has an entry in
+this database, we check whether any of those Boolean variables are currently
+assumed to be true, and replace that symbolic object with the object it is
+equated to.  In this case, we create an entry for @('z') in the database
+mapping it to the Boolean variable representing the @('equal') term.  Since
+this occurred as a hypothesis in the theorem, we're going to be assuming that
+to be true in the conclusion, so whenever we see the variable @('z') there
+we'll then replace it with the symbolic integer generated from the
+@('loghead').</p>
+
+<h3>Pitfalls and Suggestions</h3>
+
+<p>Make sure the terms that are assigned Boolean variables don't alias each
+other -- otherwise proofs may end up having false counterexamples.  For
+example, if you generate a Boolean variable for both @('(intcar (intcdr x))')
+and @('(logbitp 1 x)'), then you're likely to have false counterexamples where
+these two variables are assigned opposite values.  Choose a single normal form
+and rewrite other accessors to that -- e.g., use a rule like
+@('logbitp-const-index') to ensure that @('logbitp') calls are normalized
+correctly to @('(intcar (intcdr ...))') form.</p>
+
+<p>Check </p>
+
 
 ")
 
+(defxdoc fgl-correctness-of-binding-free-variables
+  :parents (fgl)
+  :short "Discussion of the logical justification for the @(see bind-var) feature."
+  :long "<p>FGL's @(see bind-var) feature can be used to bind a free variable
+in a rewrite rule to some arbitrary value.  Here we discuss how the correctness
+of that feature may be formalized.</p>
+
+<h3>Requirements and Basic Idea</h3>
+
+<p>First we describe the requirements for using the @('bind-var') feature.  We
+must first have a rewrite rule containing a call of bind-var in either the RHS
+or a hyp.  Then, if and when symbolic execution reaches the call of bind-var,
+it must be the case that the first argument of @('bind-var') is a variable that
+is not yet bound in the current frame (this is checked in the interpreter).  If
+this is the case, the interpreter may add a binding for that variable to any
+object; in particular, it interprets the second argument of @('bind-var') under
+the trivial equivalence @(see all-equiv) (meaning that the value returned is
+not important for soundness) and binds it to that value.</p>
+
+<p>The justification for this is essentially that all free variables in a
+theorem are universally quantified.  When we apply a rewrite rule, we start
+with the free variables of the LHS bound to the unifying substitution.  We are
+free to bind any other variables that are mentioned in the theorem to whatever
+values we want, because the unifying substitution contains all variables of the
+LHS, so extending the unifying substitution to include additional variables
+won't change the value of the LHS under that substitution.</p>
+
+<h3>Technical Problems and Solutions</h3>
+<p>There is a technical problem with this when these free variables appear
+inside lambda bodies.  ACL2 term translation ensures that all lambdas bind all
+the free variables of their bodies -- when it translates a lambda that has free
+variables in the body, it adds bindings for those variables to themselves.  So
+if we have a rewrite rule like this:</p>
+@({
+ (equal (foo x)
+        (let* ((a (bar x))
+               (c (bind-var b (baz x a))))
+            ...))
+ })
+<p>then the outside of the RHS looks like this:</p>
+@({
+ ((lambda (a x b) ...)
+  (bar x) x b)
+ })
+
+<p>We interpret the arguments of a lambda or function call before the body, and
+normally if we encounter an unbound variable during symbolic execution we
+produce an error.  Therefore, we would run into an error when we process the
+argument @('b') of the lambda call.  To avoid this and get the intended
+behavior of binding @('b') when we arrive at its @('bind-var') form, we
+preprocess lambdas to remove bindings of variables to themselves, instead
+carrying forward the existing bindings from the outer context into the lambda
+body. (See ACL2 community book \"centaur/meta/bindinglist.lisp\" for the
+implementation.)</p>
+
+<p>A further complication is that when we bind a free variable due to
+@('bind-var'), it must be bound in the context of the current rewrite rule
+application, not just the current lambda body.  To do otherwise would allow
+that variable to be bound to different objects in a single application of the
+rule.  To deal with this, we effectively have two levels of variable bindings
+at any time: the <em>major frame</em> produced by the current rewrite rule
+application, which has a wholly new namespace for variables, and a <em>minor
+frame</em>produced by each nesting of lambdas, which carries forward all
+variable bindings from the previous minor frame and may shadow variable
+bindings from the major frame.  When we add a variable binding with
+@('bind-var'), that binding goes into the bindings of the major frame.</p>
+
+<h3>Statement of Correctness</h3>
+
+<p>Finally we discuss how the @('bind-var') feature affects how we state the
+correctness of the FGL symbolic interpreter.</p>
+
+<p>The correctness of a typical rewriter that takes an alist of variable
+bindings is along the lines of:</p>
+
+@({
+ (equivalent-under-relation equiv-relation-context
+                            (eval-term input-term (eval-bindings bindings env))
+                            (eval-term result-term env))
+ })
+
+<p>Here equiv-relation-context, input-term, and bindings are inputs to the
+rewriter, which produces result-term.</p>
+
+<p>The exact such correctness statement for FGL involves various complications
+that we won't discuss here, such as the distinction between input ACL2 terms
+and output symbolic objects and various invariants of the interpreter state.
+The main complication that we will discuss is that, rather than just an input
+to the rewriter as would be the case in a typical rewriter, the relevant
+bindings are changed (extended) by the rewriter as it (potentially) adds
+variable bindings to the major frame due to @('bind-var').  So the statement we
+want (again, very approximately) is:</p>
+
+@({
+ (equivalent-under-relation
+   equiv-relation-context
+   (eval-term input-term (append (eval-bindings output-minor-bindings env)
+                                 (eval-bindings output-major-bindings env)))
+   (eval-term result-term env))
+ })
+
+<p>(To simplify this slightly, we do show that the evaluation of the output and
+input minor bindings is equivalent.)</p>
+
+<p>This is reasonable and true, but it isn't sufficiently strong to be
+inductively proved.  The problem is that if we successively rewrite two terms,
+the output major bindings from the second term may be different from those from
+the first, so the inductive assumption from the first term doesn't help us
+anymore.</p>
+
+<p>To fix this, we instead prove, approximately:</p>
+
+@({
+ (forall ext
+         (implies (eval-alist-extension-p
+                    ext
+                    (append (eval-bindings output-minor-bindings env)
+                            (eval-bindings output-major-bindings env)))
+                  (equivalent-under-relation equiv-relation-context
+                                             (eval-term input-term ext)
+                                             (eval-term result-term env))))
+ })
+
+<p>Where @('(eval-alist-extension-p a b)') holds when @('a') binds all keys
+present in @('b') to the same values.  Since the rewriter only adds pairs to
+the major bindings whose keys are not yet bound in either the major or minor
+bindings, the resulting appended, evaluated minor and major bindings is such an
+extension of the input appended, evaluated major and minor bindings.  This
+allows the inductive assumption about the first term to be applied to the
+bindings resulting from rewriting the second term.</p>")
+
+
+;; (defxdoc fgl-interpreter-correctness
+;;   :parents (fgl)
+;;   :short "Discussion of the correctness criterion for the FGL interpreter and its
+;;           relation to the @(see bind-var) feature."
+;;   :long
+;; " <p>The correctness theorems for the core FGL interpreter are somewhat more
+;; complicated than might be expected due to our support for binding free
+;; variables using @(see bind-var).  For example, the top correctness theorem for
+;; @('gl-interp-term') is the following mess:</p>
+
+;; @(def gl-interp-term-correct)
+
+;; <p>We'll skip past most of the hypotheses and focus on one particular conclusion:</p>
+
+;; @({
+;;  (fgl-ev-context-equiv-forall-extensions
+;;   (interp-st->equiv-contexts interp-st)
+;;   (fgl-object-eval xobj env new-logicman)
+;;   x
+;;   eval-alist)
+;;  })
+
+;; <p>Here the @('xobj') is the symbolic object returned from @('gl-interp-term'),
+;; @('new-logicman') is the logicman field of the resulting interpreter state
+;; after executing @('gl-interp-term'), @('x') is the input term, and
+;; @('eval-alist') is the combined evaluated bindings for the current major and minor stack
+;; frame from the resulting interpreter state.  (Actually, the minor frame
+;; bindings are pulled from the input interpreter state, but it is a theorem that
+;; the evaluation of the minor frame bindings is preserved by @('gl-interp-term'),
+;; so that is immaterial.)</p>
+
+;; <p>The 
+
+
+;;  <ul>
+
+;; <li>
+;; @({
+;;  (logicman-pathcond-eval (gl-env->bfr-vals env)
+;;                          (interp-st->constraint interp-st)
+;;                          (interp-st->logicman interp-st))
+;;  })
+;; This says that the constraint field of the interpreter state, which is supposed
+;; to hold Boolean constraints stating facts that are known to be true
+;; universally, is true under the evaluation environment.</li>
+
+;; <li>@('(interp-st-bvar-db-ok new-interp-st env)') says that the evaluation
+;; environment is consistent in its evaluation of all the Boolean
+;; variable/symbolic object pairs stored in the Boolean variable database of the
+;; final interpreter state.  In order to apply this theorem to prove the
+;; correctness of the FGL clause processor, we construct a special environment
+;; that satisfies this condition.</li>
+
+;; <li>@('(fgl-ev-meta-extract-global-facts :state st)'), @('(equal (w st) (w
+;; state))') says, essentially, that for some state @('st') whose world field is
+;; equal to the one in the state that we're running on, the facts available
+;; through the @('meta-extract') facility are correct with respect to the term
+;; evaluator @('fgl-ev').</li>
+
+;; <li>@('(gl-primitive-formula-checks-stub st)') says that all the formulas that
+;; must be stored in the logical world in order for our symbolic interpretation of
+;; primitives to be correct (see @(see fgl-primitives)) are correctly stored in
+;; @('st').</li>
+
+;; <li>@('(interp-st-bfrs-ok interp-st)') is a syntactic invariant on the
+;; interpreter state saying essentially that no malformed Boolean function objects
+;; exist in the interpreter state.</li>
+
+;; <li>With the above hyps we can then show:
+;; @({
+;;   (logicman-pathcond-eval (gl-env->bfr-vals env)
+;;                           (interp-st->constraint new-interp-st)
+;;                           (interp-st->logicman new-interp-st))
+;;  })
+;; which says that the constraint field of the new interpreter state after running
+;; @('gl-interp-term') remains true.</li>
+
+;; <li>
+;; @({
+;;   (logicman-pathcond-eval (gl-env->bfr-vals env)
+;;                           (interp-st->pathcond interp-st)
+;;                           logicman)
+;;  })
+;; says that the path condition, which is the same type of object as the
+;; constraint but used differently, is true under the environment.
+
+;; ")
 
 (defxdoc fgl-interpreter-overview
   :parents (fgl)
@@ -122,7 +431,7 @@ perhaps be solved by SAT.  In order to do this, it recursively interprets terms
 turning them into symbolic objects (see @(see gl-object)) containing Boolean formula
 objects.  In this doc topic we outline the operation of the interpreter.</p>
 
-<p>The interpreter consists of a 29-way mutual recursion.  We won't detail each
+<p>The interpreter consists of a 31-way mutual recursion.  We won't detail each
 of the functions in the mutual recursion, but we will try to cover in general
 terms all of the things that happen in them.</p>
 
@@ -178,20 +487,23 @@ resulting from the arguments.</li>
 <h3>Interpreting Function Calls -- Special Cases</h3>
 
 <p>The special cases of function calls include @('if'), @('return-last'),
-@('syntax-bind'), @('abort-rewrite'), and @('fgl-sat-check'). Each of these
-requires special treatment of the arguments, rather than just recursively
-interpreting them:</p>
+@('bind-var'), @('abort-rewrite'), @('fgl-sat-check'), @('syntax-interp-fn'),
+@('assume'), @('under-equiv'), and @('fgl-interp-obj'). Each of these requires
+special treatment of the arguments, rather than just recursively interpreting
+them:</p>
 
 <ul>
 
 <li>For @('if') terms, the test is recursively interpreted and coerced to a
 Boolean function using @('gl-interp-test').  Then, unless a syntactic analysis
 shows that the path condition implies the test's negation, we recursively
-interpret the \"then\" branch with @('gl-interp-term-equivs'), and unless the
-syntactic analysis shows the path condition implies the test, we recursively
-interpret the \"else\" branch.  If both branches were interpreted, we then
-attempt to merge the results from the two branches into a single symbolic
-object using @('gl-interp-merge-branches'), described below.</li>
+interpret the \"then\" branch with @('gl-interp-term-equivs') and with the test
+conjoined to the path condition, and unless the syntactic analysis shows the
+path condition implies the test, we recursively interpret the \"else\" branch
+with the negated test conjoined to the path condition.  If both branches were
+interpreted, we then attempt to merge the results from the two branches into a
+single symbolic object using @('gl-interp-merge-branches'), described
+below.</li>
 
 <li>For @('return-last'), we provide special support for @('time$'), allowing
 it to time the symbolic interpretation of the enclosed term.  Otherwise, we
@@ -200,12 +512,15 @@ function as expected -- if you intend the first argument to @('prog2$') to be
 interpreted in FGL for side effects, you should instead bind it to an ignored
 variable or else use an equivalent two-argument function instead.</li>
 
-<li>For @('syntax-bind'), we call a subroutine that evaluates the syntax-bind
-form while treating the current frame's bindings as bindings to concrete values
-rather than symbolic objects.  It then
-checks to make sure that the syntax-bind variable is not already bound in the
-current major or minor frame, and then binds the computed value to that
-variable in the current major frame if not.</li>
+<li>For @('bind-var'), we bind the first argument, which must be a variable
+that is not yet bound in the current major or minor frame, to the result of
+interpreting the second argument under the @('all-equiv') equivalence relation.
+Under this equivalence relation, every object is equivalent to every other
+object; this is sort of an \"anything goes\" mode which allows certain behavior
+that would normally be unsound.  This is allowable in this context because
+@('bind-var') logically just returns its first argument (the variable), so the
+second argument is irrelevant.  It is allowable to bind anything to the
+variable if it is not yet bound **** </li>
 
 <li>For @('abort-rewrite'), the interpreter returns @('nil') and inserts a
 special error keyword in the interpreter state's @('errmsg') field, which will
@@ -216,6 +531,37 @@ argument (the condition to be tested) to a Boolean function, and
 @('gl-interp-term-equivs') to interpret the first argument (params).  We then
 call @('interp-st-sat-check'), an attachable function which calls SAT and
 returns NIL if the input Boolean formula is unsat.</li>
+
+<li>For @('syntax-interp-fn'), we check that the second argument is a quoted
+term (this is true for calls generated by the @('syntax-interp') and
+@('syntax-bind') macros) and that we're in an @('all-equiv') equivalence
+context.  If so, we evaluate the first argument using @('fancy-ev'), with the
+current variable bindings from the symbolic interpreter passed in as the
+evaluation environment.  For example, if a variable @('x') is bound to a
+symbolic integer in our current interpreter frame, then @('x') will be bound to
+the @(see gl-object) representation of that symbolic integer when evaluating
+the @('syntax-interp') term.  This is similar to ACL2's @(see syntaxp)
+behavior, but the syntaxp term operates on GL object syntax rather than ACL2
+term syntax.</li>
+
+<li>For @('assume'), we first check that we're in an @('all-equiv') equivalence
+context.  Then we interpret the first and second arguments as if they were the
+@('test') and @('then') branches of an @('if'); in particular, the Boolean
+formula resulting from the @('test') is conjoined onto the path condition (that
+is, assumed) when symbolically executing the @('then') branch.  We then simply
+return the result from the @('then') branch.</li>
+
+<li>For @('under-equiv'), we first check that we're in an @('all-equiv')
+equivalence context.  Then we interpret the first argument.  If its result is a
+concrete object whose value satisfies @('equiv-contexts-p'), then we set the
+interpreter state's equiv-contexts field to that object while interpreting the
+second argument.  This can be used to (conditionally) exit an @('all-equiv')
+context.</li>
+
+<li>For @('fgl-interp-obj'), we first check that we're in an @('all-equiv')
+equivalence context.  Then we interpret the first argument.  If its result is a
+concrete object whose value satisfies @('pseudo-term-p'), then we interpret
+that term and return its result.</li>
 
 </ul>
 
@@ -264,14 +610,13 @@ a new Boolean variable representing some term.</p>
 
 <h3>Applying Rewrite Rules</h3>
 
-<p>@('Gl-rewrite-try-rule') takes a rewrite rule object, function symbol, and
-list of symbolic object arguments.  It checks that the leading function symbol of
-the rule's LHS is the same as the input function symbol, then tries to unify
-the LHS's arguments with the input symbolic objects.  If successful, then it
-tries to relieve the hyps of the rule by calling @('gl-interp-test') on each
-one and checking that the result is (syntactically) constant-true.  It also
-checks @('syntaxp') and @('bind-free') hyps, the latter of which might extend
-the unifying substitution with some free variable bindings.</p>
+<p>@('Gl-rewrite-try-rule') takes a rewrite rule object and a @('g-apply') GL
+object.  It first tries to unify the LHS of the rule arguments with the input
+objects.  If successful, then it tries to relieve the hyps of the rule by
+calling @('gl-interp-test') on each one and checking that the result
+is (syntactically) constant-true.  It also checks @('syntaxp') and
+@('bind-free') hyps, the latter of which might extend the unifying substitution
+with some free variable bindings.</p>
 
 <p>If the hypotheses are all relieved, then it recurs on the conclusion using
 @('gl-interp-term') and returns the result unless there were errors recorded in
@@ -383,7 +728,7 @@ doesn't mean that any good ACL2 rewrite rule is a good FGL rewrite rule, or
 vice versa.  A particularly important difference is that @(see syntaxp) and
 @(see bind-free) forms receive <see topic='@(url gl-object)'>GL symbolic
 objects</see> as their inputs, rather than ACL2 terms.  GL rewrite rules also
-allow a special form called @(see syntax-bind) which allows free variables to
+allow a special form called @(see bind-var) which allows free variables to
 be bound as with @(see bind-free), but in the RHS of the rewrite rule rather
 than in the hyps.  They additionally support a form @(see abort-rewrite) which
 causes the application of the rule to be aborted when encountered in the RHS,
@@ -433,14 +778,14 @@ hypothesis forms.  However, it generally won't work to use the same rewrite
 rule in both the ACL2 and FGL rewriters if it has syntaxp or bind-free
 hypotheses, because in FGL the variables in the syntaxp/bind-free forms will be
 bound to symbolic objects, whereas in ACL2 they will be bound to
-terms. Therefore to use syntaxp, bind-free, and syntax-bind (discussed below),
+terms. Therefore to use syntaxp, bind-free, and bind-var (discussed below),
 one needs to be familiar with FGL symbolic objects -- see @(see gl-object).</p>
 
 <p>Two additional features support a new style of programming rewrite rules.
-@('Syntax-bind') allows functionality similar to bind-free, but available
-within the right-hand side of a rewrite rule.  @('Abort-rewrite') allows the
-rewrite operation to be cancelled partway through interpreting the right-hand
-side.</p>
+@('Bind-var') and @('syntax-bind') allow functionality similar to bind-free,
+but available within the right-hand side of a rewrite rule.  @('Abort-rewrite')
+allows the rewrite operation to be cancelled partway through interpreting the
+right-hand side.</p>
 
 <p>Here is an example that uses both syntax-bind and abort-rewrite, from
 \"bitops.lisp\":</p>
@@ -483,12 +828,14 @@ prove it with the free variable @('n-concrete') in place of the syntax-bind.
 That means we are logically justified in returning anything we want from the
 syntax-bind form -- since n-concrete is a free variable not previously bound,
 the rule is applicable for any value of n-concrete.  In this case we evaluate
-@('(gl-object-case n :g-concrete)').  This will produce a Boolean value, which
-is a concrete GL object representing itself.  If true, then n is concrete and
-we will produce the result of again rewriting @('(logtail n x)') -- note that
-we haven't created a loop here because the syntaxp hyp required that the
-original @('n') was not concrete. Otherwise, we proceed with the next
-syntax-bind form.</p>
+@('(gl-object-case n :g-concrete)').  (Note: @('syntax-bind') is a macro that
+uses the primitive forms @(see bind-var) and @(see syntax-interp) to implement
+this behavior; see their documentation for more general usage.)  This will
+produce a Boolean value, which is a concrete GL object representing itself.  If
+true, then n is concrete and we will produce the result of again rewriting
+@('(logtail n x)') -- note that we haven't created a loop here because the
+syntaxp hyp required that the original @('n') was not concrete. Otherwise, we
+proceed with the next syntax-bind form.</p>
 
 <p>This next syntax-bind form (note it must use a different free variable than
 the other form!) returns either some natural number value or else NIL.  Again,
@@ -513,12 +860,12 @@ Fortunately, it's fairly efficient to verify that after the fact using
 <p>FGL's implementation of syntaxp, bind-free, and syntax-bind interpret the
 syntactic term using a custom evaluator, @(see fancy-ev), that can be
 instrumented to call functions that examine the ACL2 state and the FGL
-interpreter state, and even make limited modifications to the FGL interpreter
-state.  See the documentation for @(see fancy-ev) for how to use it, and see
-@(see fgl-internals) for documentation of the contents of the interpreter
-state. One main use of this is to examine counterexamples produced from
-incremental SAT calls.  By default, after loading @('fgl/top'), the rewrite
-rule @('show-counterexample-rw') rewrites the constant-nil function
+interpreter state, and even make limited modifications to them.  See the
+documentation for @(see fancy-ev) for how to use it, and see @(see
+fgl-internals) for documentation of the contents of the interpreter state. One
+main use of this is to examine counterexamples produced from incremental SAT
+calls.  By default, after loading @('fgl/top'), the rewrite rule
+@('show-counterexample-rw') rewrites the constant-nil function
 @('(show-counterexample msg)') such that a syntax-bind form fetches the latest
 incremental SAT counterexample and prints it.</p>
 ")
@@ -681,7 +1028,7 @@ encode them symbolically.</li>
  (fgl::def-gl-rewrite vector-kind-p-of-vector-kind
    (vector-kind-p (vector-kind x)))
  
- (fgl::def-gl-rewrite if-then-else-of-vector-kind
+ (fgl::def-gl-branch-merge if-then-else-of-vector-kind
    (implies (vector-kind-p else)
             (equal (if test (vector-kind x) else)
                    (vector-kind (if test x
