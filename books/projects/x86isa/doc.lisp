@@ -413,7 +413,7 @@
 
   :long "<p>If anyone is interested in carrying out the tasks or
   activities below, please feel free to contact Shilpi
-  \(@('shigoel@cs.utexas.edu')\).</p>
+  \(@('shigoel@gmail.com')\).</p>
 
  <h3>TO-DO</h3>
 
