@@ -117,7 +117,7 @@
            (msg-listp x))
   :enable msg-listp)
 
-(defines atj-remove-mbe-exec-from-term
+(defines remove-mbe-exec-from-term
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a')."
   :long
@@ -125,7 +125,7 @@
    "In translated terms,
     these have the form @('(return-last 'acl2::mbe1-raw b a)').")
 
-  (define atj-remove-mbe-exec-from-term ((term pseudo-termp))
+  (define remove-mbe-exec-from-term ((term pseudo-termp))
     :returns (new-term "A @(tsee pseudo-termp).")
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
@@ -133,32 +133,32 @@
          (args (fargs term))
          ((when (and (eq fn 'return-last)
                      (equal (first args) '(quote acl2::mbe1-raw))))
-          (atj-remove-mbe-exec-from-term (third args)))
+          (remove-mbe-exec-from-term (third args)))
          (new-fn (if (symbolp fn)
                      fn
                    (make-lambda (lambda-formals fn)
-                                (atj-remove-mbe-exec-from-term
+                                (remove-mbe-exec-from-term
                                  (lambda-body fn)))))
-         (new-args (atj-remove-mbe-exec-from-terms args)))
+         (new-args (remove-mbe-exec-from-terms args)))
       (fcons-term new-fn new-args)))
 
-  (define atj-remove-mbe-exec-from-terms ((terms pseudo-term-listp))
+  (define remove-mbe-exec-from-terms ((terms pseudo-term-listp))
     :returns (new-terms "A @(tsee pseudo-term-listp).")
     (b* (((when (endp terms)) nil)
          ((cons term terms) terms)
-         (new-term (atj-remove-mbe-exec-from-term term))
-         (new-terms (atj-remove-mbe-exec-from-terms terms)))
+         (new-term (remove-mbe-exec-from-term term))
+         (new-terms (remove-mbe-exec-from-terms terms)))
       (cons new-term new-terms))))
 
-(define atj-unquote-lst ((list quote-listp))
+(define unquote-list ((list quote-listp))
   :returns (new-list true-listp)
   :verify-guards nil
   :short "Unquote all the elements of a list."
   (cond ((endp list) nil)
         (t (cons (unquote (car list))
-                 (atj-unquote-lst (cdr list))))))
+                 (unquote-list (cdr list))))))
 
-(define atj-decompose-at-dots ((string stringp))
+(define decompose-at-dots ((string stringp))
   :returns (substrings string-listp)
   :verify-guards nil
   :short "Decompose an ACL2 string
@@ -183,11 +183,11 @@
     (xdoc::li
      "@('\".abc..de.\"') is decomposed into
       @('(\"\" \"abc\" \"\" \"de\" \"\")').")))
-  (atj-decompose-at-dots-aux (explode string) nil)
+  (decompose-at-dots-aux (explode string) nil)
 
   :prepwork
-  ((define atj-decompose-at-dots-aux ((chars character-listp)
-                                      (rev-current-substrings string-listp))
+  ((define decompose-at-dots-aux ((chars character-listp)
+                                  (rev-current-substrings string-listp))
      :returns (final-substrings string-listp
                                 :hyp (string-listp rev-current-substrings))
      :verify-guards nil
@@ -200,7 +200,7 @@
                   (chars (nthcdr (1+ pos) chars))
                   (rev-current-substrings (cons substring
                                                 rev-current-substrings)))
-               (atj-decompose-at-dots-aux chars rev-current-substrings))
+               (decompose-at-dots-aux chars rev-current-substrings))
            (b* ((substring (implode chars))
                 (rev-final-substrings (cons substring rev-current-substrings)))
              (rev rev-final-substrings)))))
@@ -339,7 +339,7 @@
   (xdoc::topstring-p
    "The string must consist of one or more ASCII Java identifiers
     separated by dots.")
-  (b* ((identifiers (atj-decompose-at-dots string)))
+  (b* ((identifiers (decompose-at-dots string)))
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
 
@@ -523,7 +523,7 @@
                    t nil))
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
-          (args (atj-unquote-lst qcs))
+          (args (unquote-list qcs))
           ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
@@ -883,7 +883,7 @@
           ((run-when verbose$)
            (cw "  ~x0~%" fn))
           (current-fns (add-to-set-eq fn current-fns))
-          (called-fns (all-ffn-symbs (atj-remove-mbe-exec-from-term body) nil))
+          (called-fns (all-ffn-symbs (remove-mbe-exec-from-term body) nil))
           (fns-to-add-to-worklist (set-difference-eq called-fns current-fns))
           (worklist (union-eq fns-to-add-to-worklist worklist)))
        (atj-fns-to-translate-aux worklist current-fns verbose$ ctx state)))))
@@ -1769,7 +1769,7 @@
                             0 channel state nil))
        (aformals (formals afn (w state)))
        (abody (getpropc afn 'acl2::unnormalized-body))
-       (abody (atj-remove-mbe-exec-from-term abody))
+       (abody (remove-mbe-exec-from-term abody))
        (afn-jexpr (atj-gen-asymbol afn))
        (aformals-jexpr (atj-gen-deep-aformals aformals))
        ((mv abody-jexpr
