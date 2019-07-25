@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-; Avoid failure for atj-gen-number-value in ACL2(r):
+; Avoid failure for atj-gen-anumber in ACL2(r):
 ; cert_param: non-acl2r
 
 (include-book "kestrel/utilities/doublets" :dir :system)
@@ -59,8 +59,9 @@
     (xdoc::li
      "@('java-package'),
       @('java-class'),
-      @('output-dir'), and
-      @('tests')
+      @('output-dir'),
+      @('tests'), and
+      @('verbose')
       are the homonymous inputs to @(tsee atj),
       before being processed.
       These formal parameters have no types because they may be any values.")
@@ -80,22 +81,20 @@
     (xdoc::li
      "@('test$') is an element of @('tests$').")
     (xdoc::li
-     "@('pkgs') is the list of names of all the currently known ACL2 packages,
+     "@('apkgs') is the list of names of all the currently known ACL2 packages,
       in chronological order.")
     (xdoc::li
-     "@('pkg-witness') is the name of the symbol
-      returned by @(tsee pkg-witness).")
-    (xdoc::li
-     "@('fns-to-translate') is the list of names
-      of all the non-primitive functions to be translated to Java.")
+     "@('afns') is the list of ACL2 functions to be translated to Java.")
     (xdoc::li
      "@('channel') is the output channel of the generated Java file(s).")
     (xdoc::li
-     "@('value-next-var'),
-      @('term-next-var'), and
-      @('lambda-next-var')
+     "@('jvar-value-index'),
+      @('jvar-term-index'), and
+      @('jvar-lambda-index')
       are the indices of the next local variables to use
-      to construct values, terms, and lambda expressions.
+      to construct ACL2 values,
+      deeply embedded ACL2 terms,
+      and deeply embedded ACL2 lambda expressions.
       See @(tsee atj-code-generation)."))
    (xdoc::p
     "The parameters of implementation functions that are not listed above
@@ -111,6 +110,12 @@
   (xdoc::topstring-p
    "These will be moved to appropriate libraries eventually.")
   :default-parent t)
+
+(defrule msg-listp-when-string-listp
+  :parents nil
+  (implies (string-listp x)
+           (msg-listp x))
+  :enable msg-listp)
 
 (defines atj-remove-mbe-exec-from-term
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
@@ -152,6 +157,54 @@
   (cond ((endp list) nil)
         (t (cons (unquote (car list))
                  (atj-unquote-lst (cdr list))))))
+
+(define atj-decompose-at-dots ((string stringp))
+  :returns (substrings string-listp)
+  :verify-guards nil
+  :short "Decompose an ACL2 string
+          into its substrings delimited by dot characters,
+          including empty substrings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the string has no dots, a singleton list with the string is returned.
+     Otherwise, we return a list consisting of
+     the substring from the start of the string to the first dot,
+     the substrings between two consecutive dots (in order),
+     and the substring from the last dot to the end of the string.
+     The substrings include no dots, and may be empty.")
+   (xdoc::p
+    "For example:")
+   (xdoc::ul
+    (xdoc::li
+     "@('\"ab.c.def\"') is decomposed into @('(\"ab\" \"c\" \"def\")').")
+    (xdoc::li
+     "@('\"xyz\"') is decomposed into @('(\"xyz\")').")
+    (xdoc::li
+     "@('\".abc..de.\"') is decomposed into
+      @('(\"\" \"abc\" \"\" \"de\" \"\")').")))
+  (atj-decompose-at-dots-aux (explode string) nil)
+
+  :prepwork
+  ((define atj-decompose-at-dots-aux ((chars character-listp)
+                                      (rev-current-substrings string-listp))
+     :returns (final-substrings string-listp
+                                :hyp (string-listp rev-current-substrings))
+     :verify-guards nil
+     :parents nil
+     (if (endp chars)
+         (rev rev-current-substrings)
+       (b* ((pos (position #\. chars)))
+         (if pos
+             (b* ((substring (implode (take pos chars)))
+                  (chars (nthcdr (1+ pos) chars))
+                  (rev-current-substrings (cons substring
+                                                rev-current-substrings)))
+               (atj-decompose-at-dots-aux chars rev-current-substrings))
+           (b* ((substring (implode chars))
+                (rev-final-substrings (cons substring rev-current-substrings)))
+             (rev rev-final-substrings)))))
+     :measure (len chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,7 +307,7 @@
 
 (define atj-string-ascii-java-identifier-p ((string stringp))
   :returns (yes/no booleanp)
-  :short "Check if an ACL2 string is a valid Java identifier, all in ASCII."
+  :short "Check if an ACL2 string is a valid ASCII Java identifier."
   :long
   (xdoc::topstring-p
    "The string must be non-empty,
@@ -278,58 +331,10 @@
   :true-listp t
   :elementp-of-nil nil)
 
-(define atj-decompose-at-dots ((string stringp))
-  :returns (substrings string-listp)
-  :verify-guards nil
-  :short "Decompose an ACL2 string
-          into its substrings delimited by dot characters,
-          including empty substrings."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the string has no dots, a singleton list with the string is returned.
-     Otherwise, we return a list consisting of
-     the substring from the start of the string to the first dot,
-     the substrings between two consecutive dots (in order),
-     and the substring from the last dot to the end of the string.
-     The substrings include no dots, and may be empty.")
-   (xdoc::p
-    "For example:")
-   (xdoc::ul
-    (xdoc::li
-     "@('\"ab.c.def\"') is decomposed into @('(\"ab\" \"c\" \"def\")').")
-    (xdoc::li
-     "@('\"xyz\"') is decomposed into @('(\"xyz\")').")
-    (xdoc::li
-     "@('\".abc..de.\"') is decomposed into
-      @('(\"\" \"abc\" \"\" \"de\" \"\")').")))
-  (atj-decompose-at-dots-aux (explode string) nil)
-
-  :prepwork
-  ((define atj-decompose-at-dots-aux ((chars character-listp)
-                                      (rev-current-substrings string-listp))
-     :returns (final-substrings string-listp
-                                :hyp (string-listp rev-current-substrings))
-     :verify-guards nil
-     :parents nil
-     (if (endp chars)
-         (rev rev-current-substrings)
-       (b* ((pos (position #\. chars)))
-         (if pos
-             (b* ((substring (implode (take pos chars)))
-                  (chars (nthcdr (1+ pos) chars))
-                  (rev-current-substrings (cons substring
-                                                rev-current-substrings)))
-               (atj-decompose-at-dots-aux chars rev-current-substrings))
-           (b* ((substring (implode chars))
-                (rev-final-substrings (cons substring rev-current-substrings)))
-             (rev rev-final-substrings)))))
-     :measure (len chars))))
-
 (define atj-string-ascii-java-package-name-p ((string stringp))
   :returns (yes/no booleanp)
   :verify-guards nil
-  :short "Check if an ACL2 string is a valid Java package name, all in ASCII."
+  :short "Check if an ACL2 string is a valid ASCII Java package name."
   :long
   (xdoc::topstring-p
    "The string must consist of one or more ASCII Java identifiers
@@ -346,7 +351,7 @@
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
-               (result "Always @('nil').")
+               (nothing "Always @('nil').")
                state)
   :verify-guards nil
   :short "Process the @(':java-package') input."
@@ -357,7 +362,7 @@
                     (atj-string-ascii-java-package-name-p java-package)))
         (er-soft+ ctx t nil
                   "The :JAVA-PACKAGE input ~x0 is not ~
-                   a valid Java package name ~
+                   NIL or a valid Java package name ~
                    consisting of only ASCII characters."
                   java-package))
        ((when (equal java-package *atj-aij-package*))
@@ -369,8 +374,7 @@
 
 (define atj-process-java-class (java-class ctx state)
   :returns (mv erp
-               (java-class "A @(tsee stringp) to use as
-                            the name of the class to generate.")
+               (java-class$ "A @(tsee stringp).")
                state)
   :verify-guards nil
   :short "Process the @(':java-class') input."
@@ -381,7 +385,7 @@
                     (atj-string-ascii-java-identifier-p java-class)))
         (er-soft+ ctx t nil
                   "The :JAVA-CLASS input ~x0 is not ~
-                   a valid Java class name ~
+                   NIL or a valid Java class name ~
                    consisting of only ASCII characters."
                   java-class))
        (name (or java-class "ACL2")))
@@ -634,7 +638,7 @@
                         @('verbose$') is the @(':verbose') input.")
                state)
   :mode :program
-  :short "Ensure that the inputs to the macro are valid."
+  :short "Ensure that the inputs to @(tsee atj) are valid."
   :long
   (xdoc::topstring-p
    "We process the inputs in order,
@@ -682,10 +686,6 @@
     (xdoc::li
      "The names of all the currently known ACL2 packages.
       These are used to initialize
-      the Java representation of the ACL2 environment.")
-    (xdoc::li
-     "The name of the symbol returned by @(tsee pkg-witness).
-      This is also used to initialize
       the Java representation of the ACL2 environment.")
     (xdoc::li
      "The names of all the non-primitive functions to be translated to Java,
@@ -891,16 +891,13 @@
 (define atj-gather-info ((targets$ symbol-listp) (verbose$ booleanp) ctx state)
   :returns (mv erp
                (result "A tuple @('(pkgs
-                                    pkg-witness
                                     fns-to-translate)')
                         satisfying
                         @('(typed-tuplep string-listp
-                                         stringp
                                          symbol-listp
                                          result)'),
                         where @('pkgs') is the list of names of
                         all known packages in chronological order,
-                        @('pkg-witness') is the package witness symbol name,
                         and @('fns-to-translate') are
                         the functions to translate to Java.")
                state)
@@ -911,13 +908,9 @@
        ((run-when verbose$)
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs))
-       (pkg-witness *pkg-witness-name*)
-       ((run-when verbose$)
-        (cw "~%Name of the ACL2 package witness symbol:~%  ~s0~%"
-            pkg-witness))
        ((er fns-to-translate)
         (atj-fns-to-translate targets$ verbose$ ctx state)))
-    (value (list pkgs pkg-witness fns-to-translate)))
+    (value (list pkgs fns-to-translate)))
 
   :prepwork
   ((define atj-show-pkgs ((pkgs string-listp))
@@ -975,457 +968,352 @@
      Java representations of ACL2 terms and lambda expressions,
      which have a recursive structure analogously to @(tsee cons) pairs.")
    (xdoc::p
-    "The @('atj-gen-...') functions that generate Java expressions
-     keep track of the next local variable to use via a numeric index.
-     For building ACL2 values,
-     the Java variables @('value1'), @('value2'), etc. are used;
-     for building ACL2 terms,
-     the Java variables @('term1'), @('term2'), etc. are used;
-     for building ACL2 lambda expressions,
-     the Java variables @('lambda1'), @('lambda2'), etc. are used.
-     The numeric index of the next variable to use
-     is threaded through the functions.
-     The variable is declared as it is used."))
+    "The @('atj-gen-...') functions
+     that generate Java expressions for these recursive structures
+     keep track of the next local variables to use via numeric indices
+     that are threaded through the functions.
+     The indices are appended to the base names for the local variables
+     in order to guarantee the uniqueness of the local variables."))
   :order-subtopics t
   :default-parent t)
 
-(defval *atj-indent-1*
-  :short "Spaces from the left margin for the first level of indentation
-          in the generated Java code."
-  (implode (repeat 4 #\Space)))
-
-(defval *atj-indent-2*
-  :short "Spaces from the left margin for the second level of indentation
-          in the generated Java code."
-  (implode (repeat 8 #\Space)))
-
-(defval *atj-indent-3*
-  :short "Spaces from the left margin for the third level of indentation
-          in the generated Java code."
-  (implode (repeat 12 #\Space)))
-
-(defval *atj-value-local-var*
-  :short "Base name of the Java local variables used to build
-          Java representations of ACL2 values."
+(define atj-indent ((level natp))
+  :returns (spaces stringp)
+  :short "Spaces from the left margin for the specified level of indentation."
   :long
   (xdoc::topstring-p
-   "The local variables are obtained by adding numeric indices (decimal digits)
-     after this name.")
-  "value"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-value-local-var*)))
+   "We indent by increments of 4 spaces.")
+  (implode (repeat (* 4 level) #\Space)))
 
-(defval *atj-term-local-var*
-  :short "Base name of the Java local variables used to build
-          Java representations of ACL2 terms."
+(define atj-gen-comma-sep-jexprs ((exprs msg-listp))
+  :returns (comma-sep-exprs msgp :hyp (msg-listp exprs))
+  :short "Generate a comma-separated sequence of Java expressions."
   :long
   (xdoc::topstring-p
-   "The local variables are obtained by adding numeric indices (decimal digits)
-    after this name.")
-  "term"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-term-local-var*)))
+   "The list of expressions are passed as argument.
+    This function essentially puts commas and spaces between them.")
+  (cond ((endp exprs) "")
+        ((endp (cdr exprs)) (car exprs))
+        (t (msg "~@0, ~@1"
+                (car exprs)
+                (atj-gen-comma-sep-jexprs (cdr exprs))))))
 
-(defval *atj-lambda-local-var*
-  :short "Base name of the Java local variables used to build
-          Java representations of ACL2 lambda expressions."
-  :long
-  (xdoc::topstring-p
-   "The local variables are obtained by adding numeric indices (decimal digits)
-    after this name.")
-  "lambda"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-lambda-local-var*)))
+(define atj-gen-jarray ((exprs msg-listp "Elements of the array.")
+                        (type stringp "Component type of the array."))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build a new array
+          initialized with the given expressions."
+  (msg "new ~s0[]{~@1}"
+       type
+       (atj-gen-comma-sep-jexprs exprs)))
 
-(defval *atj-imports-local-var*
-  :short "Name of the Java local variable used to build
-          the import lists of ACL2 packages."
-  "imports"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-imports-local-var*)))
+(define atj-achars-to-jhexlits ((achars character-listp))
+  :returns (jhexlits string-listp)
+  :short "Turn a list of ACL2 characters
+          into a list of Java hexadecimal literals for the character codes."
+  (cond ((endp achars) nil)
+        (t (cons (str::cat "0x" (str::natstr16 (char-code (car achars))))
+                 (atj-achars-to-jhexlits (cdr achars))))))
 
-(defval *atj-name-local-var*
-  :short "Name of the Java local variable used to build
-          the name of a function call."
-  "name"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-name-local-var*)))
-
-(defval *atj-formals-local-var*
-  :short "Name of the Java local variable used to build
-          the formal arguments of a function definition."
-  "formals"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-formals-local-var*)))
-
-(defval *atj-body-local-var*
-  :short "Name of the Java local variable used to build
-          the body of a function definition."
-  "body"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-body-local-var*)))
-
-(defval *atj-function-local-var*
-  :short "Name of the Java local variable used to build
-          a named function."
-  "function"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-function-local-var*)))
-
-(defval *atj-arguments-local-var*
-  :short "Name of the Java local variables used to build
-          the array of argument values of a function call."
-  "arguments"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-arguments-local-var*)))
-
-(defval *atj-result-acl2-local-var*
-  :short "Name of the Java local variables used to build
-          the result of a test calculated in ACL2 (by ATJ)."
-  "resultAcl2"
-  ///
-  (assert-event
-   (atj-string-ascii-java-identifier-p *atj-result-acl2-local-var*)))
-
-(defval *atj-result-java-local-var*
-  :short "Name of the Java local variables used to build
-          the result of a test calculated in Java (by AIJ)."
-  "resultJava"
-  ///
-  (assert-event
-   (atj-string-ascii-java-identifier-p *atj-result-java-local-var*)))
-
-(define atj-gen-set-var
-  ((varbase stringp "Base name of the local variable.")
-   (vartype stringp "Java type of the local variable.")
-   (expression msgp "Java expression to set the variable to.")
-   (next-var posp "Index of the next local variable to use.")
-   (channel symbolp)
-   state)
-  :returns (mv (varname "A @(tsee stringp), the name of the local variable.")
-               (new-next-var "A @(tsee posp), the updated variable index.")
-               state)
-  :mode :program
-  :short "Generate Java code to set a local variable to an expression,
-          for the incremental construction of
-          values, terms, and lambda expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We generate a local variable declaration
-     with the given expression as initializer.")
-   (xdoc::p
-    "The name of the local variable to use is obtained by
-     adding the next variable index to the base name.
-     The index is incremented and returned.")
-   (xdoc::p
-    "We print the statement to the file,
-     and we return the variable name."))
-  (b* ((varname (str::cat varbase (natstr next-var)))
-       (next-var (1+ next-var))
-       ((mv & state) (fmt1! "~s0~s1 ~s2 = ~@3;~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 vartype)
-                                  (cons #\2 varname)
-                                  (cons #\3 expression))
-                            0 channel state nil)))
-    (mv varname next-var state)))
-
-(define atj-gen-package-name ((pkg stringp))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 package name."
-  (msg "Acl2PackageName.make(~x0)" pkg))
-
-(define atj-gen-character-value ((char characterp))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 character value."
-  (msg "Acl2Character.make((char) ~x0)" (char-code char)))
-
-(define atj-gen-java-string ((string stringp))
-  :returns (java-expression msgp)
+(define atj-gen-jstring ((astring stringp))
+  :returns (jexpr msgp)
   :short "Generate Java code to build a Java string from an ACL2 string."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Often, printing an ACL2 string via the @('~x') directive
+    "Often, formatting an ACL2 string via the @('~x') directive
      yields a valid Java string literal.
      Examples are @('\"abc\"') or @('\"x-y @ 5.A\"').")
    (xdoc::p
     "However, if the ACL2 string includes characters like @('#\Return'),
-     printing it may result in invalid Java code.
+     formatting it with @('~x') may result in invalid Java code.
      In this case, a safe way to build a Java string is
      via a Java character array with an initializer
      consisting of the codes of the ACL2 string.")
    (xdoc::p
     "If the ACL2 string consists of only pritable ASCII characters
      (i.e. space and visible ASCII characters),
-     we can safely print it.
-     Otherwise, we use the array.
-     The array initializer is a comma-separated sequence of hexadecimal numbers
-     between curly braces.
-     We take advantage of Java's concession
-     of a comma at the end of the sequence
-     to avoid treating the last element specially.")
+     we can safely generate it with @('~x').
+     Otherwise, we generate the array."))
+  (b* ((achars (explode astring)))
+    (if (printable-charlist-p achars)
+        (msg "~x0" astring)
+      (msg "new String(new char[]{~@0})"
+           (atj-gen-comma-sep-jexprs (atj-achars-to-jhexlits achars))))))
+
+(define atj-gen-jvar-decl-init
+  ((var-type stringp "Java type of the local variable.")
+   (var-base stringp "Base name of the local variable.")
+   (var-index natp "Index of the local variable.")
+   (expr msgp "Initializer of the local variable (a Java expression).")
+   (indent-level natp)
+   (channel symbolp)
+   state)
+  :returns (mv (var-name "A @(tsee stringp), the name of the local variable.")
+               (new-var-index "A @(tsee natp), the updated variable index.")
+               state)
+  :mode :program
+  :short "Generate Java code for
+          a local variable declaration with an initializer."
+  :long
+  (xdoc::topstring
    (xdoc::p
-    "Note that package names
-     can always be safely printed as Java string literals.
-     So, for example, @(tsee atj-gen-package-name) always does that."))
-  (b* ((chars (explode string)))
-    (if (printable-charlist-p chars)
-        (msg "~x0" string)
-      (msg "new String(new char[]{~s0})"
-           (implode (atj-chars-to-comma-sep-hex (explode string))))))
+    "The name of the local variable to use is obtained by
+     adding the next variable index after the base name.
+     The index is incremented and returned.")
+   (xdoc::p
+    "We print the statement to the file,
+     and we return the variable name."))
+  (b* ((var-name (str::cat var-base (natstr var-index)))
+       (new-var-index (1+ var-index))
+       ((mv & state) (fmt1! "~s0~s1 ~s2 = ~@3;~%"
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 var-type)
+                                  (cons #\2 var-name)
+                                  (cons #\3 expr))
+                            0 channel state nil)))
+    (mv var-name new-var-index state)))
 
-  :prepwork
-  ((define atj-chars-to-comma-sep-hex ((chars character-listp))
-     :returns (hex-comma-sep character-listp)
-     :parents nil
-     (if (endp chars)
-         nil
-       (append (list #\0 #\x)
-               (natchars16 (char-code (car chars)))
-               (list #\, #\Space)
-               (atj-chars-to-comma-sep-hex (cdr chars)))))))
+(defval *atj-jvar-value*
+  :short "Base name of the Java local variables used to build
+          Java representations of ACL2 values."
+  "value"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-value*)))
 
-(define atj-gen-string-value ((string stringp))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 string value."
+(define atj-gen-achar ((achar characterp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build an ACL2 character."
+  (msg "Acl2Character.make((char) ~x0)" (char-code achar)))
+
+(define atj-gen-astring ((astring stringp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build an ACL2 string."
   (msg "Acl2String.make(~@0)"
-       (atj-gen-java-string string)))
+       (atj-gen-jstring astring)))
 
-(define atj-gen-symbol-value ((symbol symbolp))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 symbol value."
+(define atj-gen-asymbol ((asymbol symbolp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build an ACL2 symbol."
   (msg "Acl2Symbol.make(~@0, ~@1)"
-       (atj-gen-java-string (symbol-package-name symbol))
-       (atj-gen-java-string (symbol-name symbol))))
+       (atj-gen-jstring (symbol-package-name asymbol))
+       (atj-gen-jstring (symbol-name asymbol))))
 
-(define atj-gen-integer-value ((integer integerp))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 integer value."
+(define atj-gen-ainteger ((ainteger integerp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build an ACL2 integer."
   :long
   (xdoc::topstring-p
    "If the ACL2 integer is representable as a Java integer,
-    we print it as a Java integer literal.
+    we generate a Java integer literal.
     Otherwise, if it is representable as a Java long integer,
-    we print it as a Java long integer literal.
-    Otherwise, we print a Java big integer
+    we generate a Java long integer literal.
+    Otherwise, we generate a Java big integer
     built out of the string representation of the ACL2 integer.")
-  (cond ((signed-byte-p 32 integer)
-         (msg "Acl2Integer.make(~x0)" integer))
-        ((signed-byte-p 64 integer)
-         (msg "Acl2Integer.make(~x0L)" integer))
-        ((< integer 0)
-         (msg "Acl2Integer.make(new BigInteger(\"-~x0\"))" integer))
-        (t (msg "Acl2Integer.make(new BigInteger(\"~x0\"))" integer))))
+  (cond ((signed-byte-p 32 ainteger)
+         (msg "Acl2Integer.make(~x0)" ainteger))
+        ((signed-byte-p 64 ainteger)
+         (msg "Acl2Integer.make(~x0L)" ainteger))
+        ((< ainteger 0)
+         (msg "Acl2Integer.make(new BigInteger(\"-~x0\"))" ainteger))
+        (t (msg "Acl2Integer.make(new BigInteger(\"~x0\"))" ainteger))))
 
-(define atj-gen-rational-value ((rational rationalp))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 rational value."
+(define atj-gen-arational ((arational rationalp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build an ACL2 rational."
   (msg "Acl2Rational.make(~@0, ~@1)"
-       (atj-gen-integer-value (numerator rational))
-       (atj-gen-integer-value (denominator rational))))
+       (atj-gen-ainteger (numerator arational))
+       (atj-gen-ainteger (denominator arational))))
 
-(define atj-gen-number-value ((number acl2-numberp))
-  :returns (java-expression msgp)
+(define atj-gen-anumber ((anumber acl2-numberp))
+  :returns (jexpr msgp)
   :short "Generate Java code to build an ACL2 number."
   (msg "Acl2Number.make(~@0, ~@1)"
-       (atj-gen-rational-value (realpart number))
-       (atj-gen-rational-value (imagpart number))))
+       (atj-gen-arational (realpart anumber))
+       (atj-gen-arational (imagpart anumber))))
 
-(defines atj-gen-values
-  :short "Generate Java code to build ACL2 values."
+(defines atj-gen-avalue
+  :short "Generate Java code to build an ACL2 value."
   :long
-  (xdoc::topstring-p
-   "Since ACL2 values have a recursive structure,
-   these functions are mutually recursive.")
+  (xdoc::topstring
+   (xdoc::p
+    "For a @(tsee cons) pair,
+     the generated code
+     builds the @(tsee car),
+     sets a local variable to it,
+     builds the @(tsee cdr),
+     sets another local variable to it,
+     and returns an expression that builds the pair
+     from the two local variables."))
 
-  (define atj-gen-cpair-value ((pair consp)
-                               (value-next-var posp)
-                               (channel symbolp)
-                               state)
-    :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-var "A @(tsee posp).")
+  (define atj-gen-aconspair ((aconspair consp)
+                             (jvar-value-index posp)
+                             (indent-level natp)
+                             (channel symbolp)
+                             state)
+    :returns (mv jexpr ; MSGP
+                 new-jvar-value-index ; POSP
                  state)
     :mode :program
-    :parents (atj-code-generation atj-gen-values)
-    :short "Generate Java code to build an ACL2 @(tsee cons) pair value."
-    :long
-    (xdoc::topstring-p
-     "The generated code
-      builds the @(tsee car),
-      sets a local variable to it,
-      builds the @(tsee cdr),
-      sets another local variable to it,
-      and returns an expression that builds the pair
-      from the two local variables.")
-    (b* (((mv car-expr
-              value-next-var
-              state) (atj-gen-value (car pair)
-                                    value-next-var
-                                    channel state))
-         ((mv car-var
-              value-next-var
-              state) (atj-gen-set-var *atj-value-local-var*
-                                      "Acl2Value"
-                                      car-expr
-                                      value-next-var
-                                      channel
-                                      state))
-         ((mv cdr-expr
-              value-next-var
-              state) (atj-gen-value (cdr pair)
-                                    value-next-var
-                                    channel state))
-         ((mv cdr-var
-              value-next-var
-              state) (atj-gen-set-var *atj-value-local-var*
-                                      "Acl2Value"
-                                      cdr-expr
-                                      value-next-var
-                                      channel
-                                      state)))
-      (mv (msg "Acl2ConsPair.make(~s0, ~s1)" car-var cdr-var)
-          value-next-var
+    :parents nil
+    (b* (((mv car-jexpr
+              jvar-value-index
+              state) (atj-gen-avalue (car aconspair)
+                                     jvar-value-index
+                                     indent-level
+                                     channel
+                                     state))
+         ((mv car-jvar
+              jvar-value-index
+              state) (atj-gen-jvar-decl-init "Acl2Value"
+                                             *atj-jvar-value*
+                                             jvar-value-index
+                                             car-jexpr
+                                             indent-level
+                                             channel
+                                             state))
+         ((mv cdr-jexpr
+              jvar-value-index
+              state) (atj-gen-avalue (cdr aconspair)
+                                     jvar-value-index
+                                     indent-level
+                                     channel
+                                     state))
+         ((mv cdr-jvar
+              jvar-value-index
+              state) (atj-gen-jvar-decl-init "Acl2Value"
+                                             *atj-jvar-value*
+                                             jvar-value-index
+                                             cdr-jexpr
+                                             indent-level
+                                             channel
+                                             state)))
+      (mv (msg "Acl2ConsPair.make(~s0, ~s1)" car-jvar cdr-jvar)
+          jvar-value-index
           state)))
 
-  (define atj-gen-value ((x "Value.")
-                         (value-next-var posp)
-                         (channel symbolp)
-                         state)
-    :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-var "A @(tsee posp).")
+  (define atj-gen-avalue (avalue
+                          (jvar-value-index posp)
+                          (indent-level natp)
+                          (channel symbolp)
+                          state)
+    :returns (mv jexpr ; MSGP
+                 new-jvar-value-index ; POSP
                  state)
     :mode :program
-    :parents (atj-code-generation atj-gen-values)
-    :short "Generate Java code to build an ACL2 value."
-    (cond ((characterp x) (mv (atj-gen-character-value x)
-                              value-next-var
-                              state))
-          ((stringp x) (mv (atj-gen-string-value x)
-                           value-next-var
-                           state))
-          ((symbolp x) (mv (atj-gen-symbol-value x)
-                           value-next-var
-                           state))
-          ((integerp x) (mv (atj-gen-integer-value x)
-                            value-next-var
-                            state))
-          ((rationalp x) (mv (atj-gen-rational-value x)
-                             value-next-var
-                             state))
-          ((acl2-numberp x) (mv (atj-gen-number-value x)
-                                value-next-var
+    :parents nil
+    (cond ((characterp avalue) (mv (atj-gen-achar avalue)
+                                   jvar-value-index
+                                   state))
+          ((stringp avalue) (mv (atj-gen-astring avalue)
+                                jvar-value-index
                                 state))
-          ((consp x) (atj-gen-cpair-value x
-                                          value-next-var
-                                          channel
-                                          state))
-          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom." x)
-                     (mv "" value-next-var state))))))
+          ((symbolp avalue) (mv (atj-gen-asymbol avalue)
+                                jvar-value-index
+                                state))
+          ((integerp avalue) (mv (atj-gen-ainteger avalue)
+                                 jvar-value-index
+                                 state))
+          ((rationalp avalue) (mv (atj-gen-arational avalue)
+                                  jvar-value-index
+                                  state))
+          ((acl2-numberp avalue) (mv (atj-gen-anumber avalue)
+                                     jvar-value-index
+                                     state))
+          ((consp avalue) (atj-gen-aconspair avalue
+                                             jvar-value-index
+                                             indent-level
+                                             channel
+                                             state))
+          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
+                            avalue)
+                     (mv "" jvar-value-index state))))))
 
-(define atj-gen-qconstant-term
-  ((constant "(Unquoted) value of the ACL2 quoted constant.")
-   (value-next-var posp)
+(define atj-gen-asymbols ((asymbols symbol-listp))
+  :returns (jexprs msg-listp)
+  :short "Lift @(tsee atj-gen-asymbol) to lists."
+  (cond ((endp asymbols) nil)
+        (t (cons (atj-gen-asymbol (car asymbols))
+                 (atj-gen-asymbols (cdr asymbols))))))
+
+(defval *atj-jvar-term*
+  :short "Base name of the Java local variables used to build
+          deeply embedded Java representations of ACL2 terms."
+  "term"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-term*)))
+
+(defval *atj-jvar-lambda*
+  :short "Base name of the Java local variables used to build
+          deeply embedded Java representations of ACL2 lambda expressions."
+  "lambda"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-lambda*)))
+
+(define atj-gen-deep-aqconst
+  ((aqconst "(Unquoted) value of the ACL2 quoted constant.")
+   (jvar-value-index posp)
+   (indent-level natp)
    (channel symbolp)
    state)
-  :returns (mv (java-expression "A @(tsee msgp).")
-               (new-value-next-var "A @(tsee posp).")
+  :returns (mv (jexpr "A @(tsee msgp).")
+               (new-jvar-value-index "A @(tsee posp).")
                state)
   :mode :program
-  :short "Generate Java code to build an ACL2 quoted constant term."
-  (b* (((mv value-expr
-            value-next-var
-            state) (atj-gen-value constant
-                                  value-next-var
-                                  channel
-                                  state)))
-    (mv (msg "Acl2QuotedConstant.make(~@0)" value-expr)
-        value-next-var
+  :short "Generate Java code to build a deeply embedded ACL2 quoted constant."
+  (b* (((mv value-jexpr
+            jvar-value-index
+            state) (atj-gen-avalue aqconst
+                                   jvar-value-index
+                                   indent-level
+                                   channel
+                                   state)))
+    (mv (msg "Acl2QuotedConstant.make(~@0)" value-jexpr)
+        jvar-value-index
         state)))
 
-(define atj-gen-variable-term ((symbol symbolp "The ACL2 variable."))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build an ACL2 variable term."
-  (msg "Acl2Variable.make(~@0)" (atj-gen-symbol-value symbol)))
+(define atj-gen-deep-avar ((avar symbolp "The ACL2 variable."))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build a deeply embedded ACL2 variable."
+  (msg "Acl2Variable.make(~@0)" (atj-gen-asymbol avar)))
 
-(define atj-gen-formals-array ((symbols symbol-listp "The ACL2 formals."))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build a new array initialized with
-          the given symbols, to be used as formal arguments."
+(define atj-gen-deep-aformals ((aformals symbol-listp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build a deeply embedded formals parameter list
+          of an ACL2 named function or lambda expression."
   :long
   (xdoc::topstring-p
-   "In building the comma-separated sequence of the array elements,
-    we take advantage of Java's concession
-    of a comma at the end of the sequence
-    to avoid treating the last element specially.")
+   "The generated code builds an array of the formals as symbols.")
   (msg "new Acl2Symbol[]{~@0}"
-       (atj-gen-formals-array-aux symbols))
+       (atj-gen-comma-sep-jexprs (atj-gen-asymbols aformals))))
 
-  :prepwork
-  ((define atj-gen-formals-array-aux ((symbols symbol-listp))
-     :returns (comma-separated-sequence msgp)
-     :parents nil
-     (if (endp symbols)
-         ""
-       (msg "~@0, ~@1"
-            (atj-gen-symbol-value (car symbols))
-            (atj-gen-formals-array-aux (cdr symbols)))))))
+(defines atj-gen-deep-aterms+alambdas
+  :short "Generate Java code to build
+          deeply embedded ACL2 terms and lambda expressions."
 
-(define atj-gen-java-array
-  ((java-expressions msg-listp "Elements of the array.")
-   (type stringp "Component type of the array."))
-  :returns (java-expression msgp)
-  :short "Generate Java code to build a new array
-          initialized with the given expressions."
-  :long
-  (xdoc::topstring-p
-   "In building the comma-separated sequence of the array elements,
-    we take advantage of Java's concession
-    of a comma at the end of the sequence
-    to avoid treating the last element specially.")
-  (msg "new ~s0[]{~@1}"
-       type
-       (atj-gen-java-array-aux java-expressions))
-
-  :prepwork
-  ((define atj-gen-java-array-aux ((java-expressions msg-listp))
-     :returns (comma-separated-sequence msgp)
-     :parents nil
-     (if (endp java-expressions)
-         ""
-       (msg "~@0, ~@1"
-            (car java-expressions)
-            (atj-gen-java-array-aux (cdr java-expressions)))))))
-
-(defines atj-gen-terms+lambdas
-  :short "Generate Java code to build ACL2 terms and lambda expressions."
-  :long
-  (xdoc::topstring-p
-   "Since ACL2 terms and lambda expressions have a recursive structure,
-    these functions are mutually recursive.")
-
-  (define atj-gen-application-term ((function pseudo-termfnp)
-                                    (arguments pseudo-term-listp)
-                                    (value-next-var posp)
-                                    (term-next-var posp)
-                                    (lambda-next-var posp)
-                                    (channel symbolp)
-                                    state)
-    :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-var "A @(tsee posp).")
-                 (new-term-next-var "A @(tsee posp).")
-                 (new-lambda-next-var "A @(tsee posp).")
+  (define atj-gen-deep-afnapp ((afn pseudo-termfnp)
+                               (aargs pseudo-term-listp)
+                               (jvar-value-index posp)
+                               (jvar-term-index posp)
+                               (jvar-lambda-index posp)
+                               (indent-level natp)
+                               (channel symbolp)
+                               state)
+    :returns (mv (jexpr "A @(tsee msgp).")
+                 (new-jvar-value-index "A @(tsee posp).")
+                 (new-jvar-term-index "A @(tsee posp).")
+                 (new-jvar-lambda-index "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-code-generation atj-gen-terms+lambdas)
-    :short "Generate Java code to build an ACL2 application term."
+    :parents (atj-code-generation atj-gen-deep-aterms+alambdas)
+    :short "Generate Java code to build
+            a deeply embedded ACL2 function application."
     :long
     (xdoc::topstring
-     (xdoc::topstring-p
+     (xdoc::p
       "The generated code
-       builds the function (a named function or a lambda expression),
-       builds the arguments,
+       builds the named function or lambda expression,
+       builds the argument terms,
        puts them into an array,
        builds the application,
        puts it to a local variable,
@@ -1443,73 +1331,78 @@
        Thus, ATJ recognizes (translated) terms of the form @('(if a a b)'),
        which are likely derived from @('(or a b)'),
        and represents them in AIJ via the @('or') pseudo-function."))
-    (b* (((mv function arguments)
-          (if (and (eq function 'if)
-                   (= (len arguments) 3)
-                   (equal (first arguments) (second arguments)))
-              (mv 'or (list (first arguments) (third arguments)))
-            (mv function arguments)))
-         ((mv function-expr
-              value-next-var
-              term-next-var
-              lambda-next-var
-              state) (if (symbolp function)
-                         (b* ((symbol-expr (atj-gen-symbol-value function)))
-                           (mv (msg "Acl2NamedFunction.make(~@0)" symbol-expr)
-                               value-next-var
-                               term-next-var
-                               lambda-next-var
-                               state))
-                       (atj-gen-lambda (lambda-formals function)
-                                       (lambda-body function)
-                                       value-next-var
-                                       term-next-var
-                                       lambda-next-var
-                                       channel
-                                       state)))
-         ((mv argument-exprs
-              value-next-var
-              term-next-var
-              lambda-next-var
-              state) (atj-gen-terms arguments
-                                    value-next-var
-                                    term-next-var
-                                    lambda-next-var
-                                    channel
-                                    state))
-         (argument-array-expr (atj-gen-java-array argument-exprs "Acl2Term"))
-         (application-expr (msg "Acl2FunctionApplication.make(~@0, ~@1)"
-                                function-expr
-                                argument-array-expr))
-         ((mv application-var
-              term-next-var
-              state) (atj-gen-set-var *atj-term-local-var*
-                                      "Acl2Term"
-                                      application-expr
-                                      term-next-var
-                                      channel
-                                      state)))
-      (mv application-var
-          value-next-var
-          term-next-var
-          lambda-next-var
+    (b* (((mv afn aargs)
+          (if (and (eq afn 'if)
+                   (= (len aargs) 3)
+                   (equal (first aargs) (second aargs)))
+              (mv 'or (list (first aargs) (third aargs)))
+            (mv afn aargs)))
+         ((mv afn-jexpr
+              jvar-value-index
+              jvar-term-index
+              jvar-lambda-index
+              state) (if (symbolp afn)
+                         (mv (msg "Acl2NamedFunction.make(~@0)"
+                                  (atj-gen-asymbol afn))
+                             jvar-value-index
+                             jvar-term-index
+                             jvar-lambda-index
+                             state)
+                       (atj-gen-deep-alambda (lambda-formals afn)
+                                             (lambda-body afn)
+                                             jvar-value-index
+                                             jvar-term-index
+                                             jvar-lambda-index
+                                             indent-level
+                                             channel
+                                             state)))
+         ((mv aarg-jexprs
+              jvar-value-index
+              jvar-term-index
+              jvar-lambda-index
+              state) (atj-gen-deep-aterms aargs
+                                          jvar-value-index
+                                          jvar-term-index
+                                          jvar-lambda-index
+                                          indent-level
+                                          channel
+                                          state))
+         (aargs-jexpr (atj-gen-jarray aarg-jexprs "Acl2Term"))
+         (afnapp-jexpr (msg "Acl2FunctionApplication.make(~@0, ~@1)"
+                            afn-jexpr
+                            aargs-jexpr))
+         ((mv afnapp-jvar
+              jvar-term-index
+              state) (atj-gen-jvar-decl-init "Acl2Term"
+                                             *atj-jvar-term*
+                                             jvar-term-index
+                                             afnapp-jexpr
+                                             indent-level
+                                             channel
+                                             state)))
+      (mv afnapp-jvar
+          jvar-value-index
+          jvar-term-index
+          jvar-lambda-index
           state)))
 
-  (define atj-gen-lambda ((formals symbol-listp)
-                          (body pseudo-termp)
-                          (value-next-var posp)
-                          (term-next-var posp)
-                          (lambda-next-var posp)
-                          (channel symbolp)
-                          state)
-    :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-var "A @(tsee posp).")
-                 (new-term-next-var "A @(tsee posp).")
-                 (new-lambda-next-var "A @(tsee posp).")
+  (define atj-gen-deep-alambda ((aformals symbol-listp)
+                                (abody pseudo-termp)
+                                (jvar-value-index posp)
+                                (jvar-term-index posp)
+                                (jvar-lambda-index posp)
+                                (indent-level natp)
+                                (channel symbolp)
+                                state)
+    :returns (mv (jexpr "A @(tsee msgp).")
+                 (new-jvar-value-index "A @(tsee posp).")
+                 (new-jvar-term-index "A @(tsee posp).")
+                 (new-jvar-lambda-index "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-code-generation atj-gen-terms+lambdas)
-    :short "Generate Java code to build an ACL2 lambda expression."
+    :parents (atj-code-generation atj-gen-deep-aterms+alambdas)
+    :short "Generate Java code to build
+            a deeply embedded ACL2 lambda expression."
     :long
     (xdoc::topstring-p
      "The generated code
@@ -1518,123 +1411,131 @@
       builds the lambda expression,
       puts it to a local variable,
       and returns the local variable.")
-    (b* ((formals-array-expr (atj-gen-formals-array formals))
-         ((mv body-expr
-              value-next-var
-              term-next-var
-              lambda-next-var
-              state) (atj-gen-term body
-                                   value-next-var
-                                   term-next-var
-                                   lambda-next-var
-                                   channel
-                                   state))
-         (lambda-expr (msg "Acl2LambdaExpression.make(~@0, ~@1)"
-                           formals-array-expr
-                           body-expr))
-         ((mv lambda-var
-              lambda-next-var
-              state) (atj-gen-set-var *atj-lambda-local-var*
-                                      "Acl2LambdaExpression"
-                                      lambda-expr
-                                      lambda-next-var
-                                      channel
-                                      state)))
-      (mv lambda-var
-          value-next-var
-          term-next-var
-          lambda-next-var
+    (b* ((aformals-jexpr (atj-gen-deep-aformals aformals))
+         ((mv abody-jexpr
+              jvar-value-index
+              jvar-term-index
+              jvar-lambda-index
+              state) (atj-gen-deep-aterm abody
+                                         jvar-value-index
+                                         jvar-term-index
+                                         jvar-lambda-index
+                                         indent-level
+                                         channel
+                                         state))
+         (alambda-jexpr (msg "Acl2LambdaExpression.make(~@0, ~@1)"
+                             aformals-jexpr
+                             abody-jexpr))
+         ((mv alambda-jvar
+              jvar-lambda-index
+              state) (atj-gen-jvar-decl-init "Acl2LambdaExpression"
+                                             *atj-jvar-lambda*
+                                             jvar-lambda-index
+                                             alambda-jexpr
+                                             indent-level
+                                             channel
+                                             state)))
+      (mv alambda-jvar
+          jvar-value-index
+          jvar-term-index
+          jvar-lambda-index
           state)))
 
-  (define atj-gen-term ((term pseudo-termp)
-                        (value-next-var posp)
-                        (term-next-var posp)
-                        (lambda-next-var posp)
-                        (channel symbolp)
-                        state)
-    :returns (mv (java-expression "A @(tsee msgp).")
-                 (new-value-next-var "A @(tsee posp).")
-                 (new-term-next-var "A @(tsee posp).")
-                 (new-lambda-next-var "A @(tsee posp).")
+  (define atj-gen-deep-aterm ((aterm pseudo-termp)
+                              (jvar-value-index posp)
+                              (jvar-term-index posp)
+                              (jvar-lambda-index posp)
+                              (indent-level natp)
+                              (channel symbolp)
+                              state)
+    :returns (mv (jexpr "A @(tsee msgp).")
+                 (new-jvar-value-index "A @(tsee posp).")
+                 (new-jvar-term-index "A @(tsee posp).")
+                 (new-jvar-lambda-index "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-code-generation atj-gen-terms+lambdas)
-    :short "Generate Java code to build an ACL2 term."
-    (cond ((variablep term) (mv (atj-gen-variable-term term)
-                                value-next-var
-                                term-next-var
-                                lambda-next-var
-                                state))
-          ((fquotep term) (b* (((mv expr
-                                    value-next-var
-                                    state)
-                                (atj-gen-qconstant-term (unquote term)
-                                                        value-next-var
-                                                        channel
-                                                        state)))
-                            (mv expr
-                                value-next-var
-                                term-next-var
-                                lambda-next-var
-                                state)))
-          (t (atj-gen-application-term (ffn-symb term)
-                                       (fargs term)
-                                       value-next-var
-                                       term-next-var
-                                       lambda-next-var
-                                       channel
-                                       state))))
+    :parents (atj-code-generation atj-gen-deep-aterms+alambdas)
+    :short "Generate Java code to build a deeply embedded ACL2 term."
+    (cond ((variablep aterm) (mv (atj-gen-deep-avar aterm)
+                                 jvar-value-index
+                                 jvar-term-index
+                                 jvar-lambda-index
+                                 state))
+          ((fquotep aterm) (b* (((mv jexpr
+                                     jvar-value-index
+                                     state)
+                                 (atj-gen-deep-aqconst (unquote aterm)
+                                                       jvar-value-index
+                                                       indent-level
+                                                       channel
+                                                       state)))
+                             (mv jexpr
+                                 jvar-value-index
+                                 jvar-term-index
+                                 jvar-lambda-index
+                                 state)))
+          (t (atj-gen-deep-afnapp (ffn-symb aterm)
+                                  (fargs aterm)
+                                  jvar-value-index
+                                  jvar-term-index
+                                  jvar-lambda-index
+                                  indent-level
+                                  channel
+                                  state))))
 
-  (define atj-gen-terms ((terms pseudo-term-listp)
-                         (value-next-var posp)
-                         (term-next-var posp)
-                         (lambda-next-var posp)
-                         (channel symbolp)
-                         state)
-    :returns (mv (java-expressions "A @(tsee msg-listp).")
-                 (new-value-next-var "A @(tsee posp).")
-                 (new-term-next-var "A @(tsee posp).")
-                 (new-lambda-next-var "A @(tsee posp).")
+  (define atj-gen-deep-aterms ((aterms pseudo-term-listp)
+                               (jvar-value-index posp)
+                               (jvar-term-index posp)
+                               (jvar-lambda-index posp)
+                               (indent-level natp)
+                               (channel symbolp)
+                               state)
+    :returns (mv (jexprs "A @(tsee msg-listp).")
+                 (new-jvar-value-index "A @(tsee posp).")
+                 (new-jvar-term-index "A @(tsee posp).")
+                 (new-jvar-lambda-index "A @(tsee posp).")
                  state)
     :mode :program
-    :parents (atj-code-generation atj-gen-terms+lambdas)
-    :short "Generate Java code to build a sequence of ACL2 terms."
-    (if (endp terms)
+    :parents (atj-code-generation atj-gen-deep-aterms+alambdas)
+    :short "Lift @(tsee atj-gen-deep-aterm) to lists."
+    (if (endp aterms)
         (mv nil
-            value-next-var
-            term-next-var
-            lambda-next-var
+            jvar-value-index
+            jvar-term-index
+            jvar-lambda-index
             state)
-      (b* (((mv expr
-                value-next-var
-                term-next-var
-                lambda-next-var
-                state) (atj-gen-term (car terms)
-                                     value-next-var
-                                     term-next-var
-                                     lambda-next-var
-                                     channel
-                                     state))
-           ((mv exprs
-                value-next-var
-                term-next-var
-                lambda-next-var
-                state) (atj-gen-terms (cdr terms)
-                                      value-next-var
-                                      term-next-var
-                                      lambda-next-var
-                                      channel
-                                      state)))
-        (mv (cons expr exprs)
-            value-next-var
-            term-next-var
-            lambda-next-var
+      (b* (((mv jexpr
+                jvar-value-index
+                jvar-term-index
+                jvar-lambda-index
+                state) (atj-gen-deep-aterm (car aterms)
+                                           jvar-value-index
+                                           jvar-term-index
+                                           jvar-lambda-index
+                                           indent-level
+                                           channel
+                                           state))
+           ((mv jexprs
+                jvar-value-index
+                jvar-term-index
+                jvar-lambda-index
+                state) (atj-gen-deep-aterms (cdr aterms)
+                                            jvar-value-index
+                                            jvar-term-index
+                                            jvar-lambda-index
+                                            indent-level
+                                            channel
+                                            state)))
+        (mv (cons jexpr jexprs)
+            jvar-value-index
+            jvar-term-index
+            jvar-lambda-index
             state)))))
 
-(define atj-gen-add-package-def-method-name ((pkg stringp))
+(define atj-gen-apkg-jmethod-name ((apkg stringp))
   :returns (method-name stringp)
   :short "Name of the Java method
-          to add an ACL2 package definition to the environment."
+          that adds an ACL2 package definition to the environment."
   :long
   (xdoc::topstring-p
    "We generate a private static method for each ACL2 package definition
@@ -1648,107 +1549,128 @@
     their readability is not important because
     they are names of private methods.")
   (str::cat "addPackageDef_"
-            (ubyte8s=>hexstring (string=>nats pkg))))
+            (ubyte8s=>hexstring (string=>nats apkg))))
 
-(define atj-gen-add-package-def-method ((pkg stringp)
-                                        (verbose$ booleanp)
-                                        (channel symbolp)
-                                        state)
+(define atj-gen-apkg-name ((apkg stringp))
+  :returns (jexpr msgp)
+  :short "Generate Java code to build an ACL2 package name."
+  :long
+  (xdoc::topstring-p
+   "Note that package names
+    can always be safely generated as Java string literals.")
+  (msg "Acl2PackageName.make(~x0)" apkg))
+
+(defval *atj-jvar-imports*
+  :short "Name of the Java local variable used to build
+          the import lists of ACL2 packages."
+  "imports"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-imports*)))
+
+(define atj-gen-apkg-jmethod ((apkg stringp)
+                              (verbose$ booleanp)
+                              (indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate a Java method
-          to add an ACL2 package definition to the environment."
+          that adds an ACL2 package definition to the environment."
   :long
   (xdoc::topstring-p
    "This is a private static method
-    that contains a sequence of assignment expression statements
+    that contains a sequence of statements
     to incrementally construct
     the Java list of symbols imported by the package.
     The sequence starts with a declaration of a local variable
     initialized with an empty Java list
     whose capacity is the length of the import list.
-    After all the assignments, we generate a call statement
+    After all the assignments, we generate a method call
     to add the package to the environment with the calculated import list.")
   (b* (((run-when verbose$)
-        (cw "  ~s0~%" pkg))
-       (name (atj-gen-add-package-def-method-name pkg))
+        (cw "  ~s0~%" apkg))
+       (jmethod-name (atj-gen-apkg-jmethod-name apkg))
        ((mv & state) (fmt1! "~%~s0private static void ~s1() {~%"
-                            (list (cons #\0 *atj-indent-1*)
-                                  (cons #\1 name))
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 jmethod-name))
                             0 channel state nil))
-       (imports (pkg-imports pkg))
+       (imports (pkg-imports apkg))
        ((mv & state) (fmt1! "~s0List<Acl2Symbol> ~s1 = new ArrayList<>(~x2);~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-imports-local-var*)
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-imports*)
                                   (cons #\2 (len imports)))
                             0 channel state nil))
-       (state (atj-gen-add-package-def-method-aux imports channel state))
-       (package-name-expr (atj-gen-package-name pkg))
+       (state (atj-gen-apkg-jmethod-aux imports indent-level channel state))
+       (apkg-name-jexpr (atj-gen-apkg-name apkg))
        ((mv & state) (fmt1! "~s0Acl2Environment.addPackageDef(~@1, ~s2);~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 package-name-expr)
-                                  (cons #\2 *atj-imports-local-var*))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 apkg-name-jexpr)
+                                  (cons #\2 *atj-jvar-imports*))
                             0 channel state nil))
-       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 *atj-indent-1*))
+       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state)
 
   :prepwork
-  ((define atj-gen-add-package-def-method-aux ((imports symbol-listp)
-                                               (channel symbolp)
-                                               state)
+  ((define atj-gen-apkg-jmethod-aux ((imports symbol-listp)
+                                     (indent-level natp)
+                                     (channel symbolp)
+                                     state)
      :returns state
      :mode :program
      :parents nil
      (if (endp imports)
          state
-       (b* ((symbol-expr (atj-gen-symbol-value (car imports)))
+       (b* ((import-jexpr (atj-gen-asymbol (car imports)))
             ((mv & state) (fmt1! "~s0~s1.add(~@2);~%"
-                                 (list (cons #\0 *atj-indent-2*)
-                                       (cons #\1 *atj-imports-local-var*)
-                                       (cons #\2 symbol-expr))
+                                 (list (cons #\0 (atj-indent indent-level))
+                                       (cons #\1 *atj-jvar-imports*)
+                                       (cons #\2 import-jexpr))
                                  0 channel state nil)))
-         (atj-gen-add-package-def-method-aux (cdr imports) channel state))))))
+         (atj-gen-apkg-jmethod-aux
+          (cdr imports) indent-level channel state))))))
 
-(define atj-gen-add-package-def-methods ((pkgs string-listp)
-                                         (verbose$ booleanp)
-                                         (channel symbolp)
-                                         state)
+(define atj-gen-apkg-jmethods ((apkgs string-listp)
+                               (verbose$ booleanp)
+                               (indent-level natp)
+                               (channel symbolp)
+                               state)
   :returns state
   :mode :program
   :short "Generate all the Java methods
-          to add the ACL2 package definitions to the environment."
-  (if (endp pkgs)
+          that add the ACL2 package definitions to the environment."
+  (if (endp apkgs)
       state
-    (b* ((state
-          (atj-gen-add-package-def-method (car pkgs) verbose$ channel state)))
-      (atj-gen-add-package-def-methods (cdr pkgs) verbose$ channel state))))
+    (b* ((state (atj-gen-apkg-jmethod (car apkgs) verbose$
+                                      indent-level channel state)))
+      (atj-gen-apkg-jmethods (cdr apkgs) verbose$
+                             indent-level channel state))))
 
-(define atj-gen-add-package-defs ((pkgs string-listp)
-                                  (channel symbolp)
-                                  state)
+(define atj-gen-apkgs ((apkgs string-listp)
+                       (indent-level natp)
+                       (channel symbolp)
+                       state)
   :returns state
   :mode :program
-  :short "Generate Java code
-          to add the ACL2 package definitions to the environment."
+  :short "Generate Java code to build the ACL2 packages."
   :long
   (xdoc::topstring-p
    "This is a sequence of calls to the methods
-    generated by @(tsee atj-gen-add-package-def-methods).
+    generated by @(tsee atj-gen-apkg-jmethods).
     These calls are part of the code that
     initializes (the Java representation of) the ACL2 environment.")
-  (if (endp pkgs)
+  (if (endp apkgs)
       state
-    (b* ((method-name (atj-gen-add-package-def-method-name (car pkgs)))
+    (b* ((jmethod-name (atj-gen-apkg-jmethod-name (car apkgs)))
          ((mv & state) (fmt1! "~s0~s1();~%"
-                              (list (cons #\0 *atj-indent-2*)
-                                    (cons #\1 method-name))
+                              (list (cons #\0 (atj-indent indent-level))
+                                    (cons #\1 jmethod-name))
                               0 channel state nil)))
-      (atj-gen-add-package-defs (cdr pkgs) channel state))))
+      (atj-gen-apkgs (cdr apkgs) indent-level channel state))))
 
-(define atj-gen-set-pkg-witness ((pkg-witness stringp)
-                                 (channel symbolp)
-                                 state)
+(define atj-gen-apkg-witness ((indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate Java code to set the name of the ACL2 package witness."
@@ -1757,19 +1679,19 @@
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
   (b* (((mv & state) (fmt1! "~s0Acl2Environment.setPackageWitnessName(~x1);~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 pkg-witness))
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 *pkg-witness-name*))
                             0 channel state nil)))
     state))
 
-(define atj-gen-add-function-def-method-name ((fn-to-translate symbolp))
+(define atj-gen-deep-afndef-jmethod-name ((afn symbolp))
   :returns (method-name stringp)
-  :short "Name of the Java method
-          to add an ACL2 function definition to the environment."
+  :short "Name of the Java method that builds
+          a deeply embedded ACL2 function definition."
   :long
   (xdoc::topstring-p
-   "We generate a private static method for each ACL2 function definition
-    to add to the Java representation of the ACL2 environment.
+   "We generate a private static method
+    for each deeply embedded ACL2 function definition to build.
     This function generates the name of this method,
     which has the form @('addFunctionDef_..._...'),
     wher the first @('...') is a sequence of pairs of hexadecimal digits
@@ -1783,18 +1705,40 @@
     they are names of private methods.")
   (str::cat
    "addFunctionDef_"
-   (ubyte8s=>hexstring (string=>nats (symbol-package-name fn-to-translate)))
+   (ubyte8s=>hexstring (string=>nats (symbol-package-name afn)))
    "_"
-   (ubyte8s=>hexstring (string=>nats (symbol-name fn-to-translate)))))
+   (ubyte8s=>hexstring (string=>nats (symbol-name afn)))))
 
-(define atj-gen-add-function-def-method ((fn-to-translate symbolp)
-                                         (verbose$ booleanp)
-                                         (channel symbolp)
-                                         state)
+(defval *atj-jvar-formals*
+  :short "Name of the Java local variable used to store
+          the formal arguments of a deeply embedded ACL2 function definition."
+  "formals"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-formals*)))
+
+(defval *atj-jvar-body*
+  :short "Name of the Java local variable used to store
+          the body of a deeply embedded ACL2 function definition."
+  "body"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-body*)))
+
+(defval *atj-jvar-function*
+  :short "Name of the Java local variable used to store
+          a deeply embedded ACL2 function."
+  "function"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-function*)))
+
+(define atj-gen-deep-afndef-jmethod ((afn symbolp)
+                                     (verbose$ booleanp)
+                                     (indent-level natp)
+                                     (channel symbolp)
+                                     state)
   :returns state
   :mode :program
-  :short "Generate a Java method
-          to add an ACL2 function definition to the environment."
+  :short "Generate a Java method that builds
+          a deeply embedded ACL2 function definition."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1805,9 +1749,8 @@
      store the function's body into a local variable,
      and use these local variables to add the function's definition.")
    (xdoc::p
-    "The indices of the next local variables
-     to build the recursive structures
-     (i.e. values, terms, and lambda expressions)
+    "The indices of the local variables
+     to build values, terms, and lambda expressions
      are all reset to 1,
      because each function definition is built in its own method
      (thus, there are no cross-references).")
@@ -1818,93 +1761,97 @@
      This is consistent with the fact that the Java counterpart of the function
      is executed ``in the logic''."))
   (b* (((run-when verbose$)
-        (cw "  ~s0~%" fn-to-translate))
-       (name (atj-gen-add-function-def-method-name fn-to-translate))
+        (cw "  ~s0~%" afn))
+       (jmethod-name (atj-gen-deep-afndef-jmethod-name afn))
        ((mv & state) (fmt1! "~%~s0private static void ~s1() {~%"
-                            (list (cons #\0 *atj-indent-1*)
-                                  (cons #\1 name))
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 jmethod-name))
                             0 channel state nil))
-       (formals (formals fn-to-translate (w state)))
-       (body (getpropc fn-to-translate 'acl2::unnormalized-body))
-       (body (atj-remove-mbe-exec-from-term body))
-       (name-expr (atj-gen-symbol-value fn-to-translate))
-       (formals-expr (atj-gen-formals-array formals))
-       ((mv body-expr
+       (aformals (formals afn (w state)))
+       (abody (getpropc afn 'acl2::unnormalized-body))
+       (abody (atj-remove-mbe-exec-from-term abody))
+       (afn-jexpr (atj-gen-asymbol afn))
+       (aformals-jexpr (atj-gen-deep-aformals aformals))
+       ((mv abody-jexpr
             & & &
-            state) (atj-gen-term body 1 1 1 channel state))
+            state) (atj-gen-deep-aterm abody 1 1 1
+                                       (1+ indent-level) channel state))
        ((mv & state) (fmt1! "~s0Acl2NamedFunction ~s1 = ~
                                 Acl2NamedFunction.make(~@2);~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-function-local-var*)
-                                  (cons #\2 name-expr))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-function*)
+                                  (cons #\2 afn-jexpr))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0Acl2Symbol[] ~s1 = ~@2;~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-formals-local-var*)
-                                  (cons #\2 formals-expr))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-formals*)
+                                  (cons #\2 aformals-jexpr))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0Acl2Term ~s1 = ~@2;~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-body-local-var*)
-                                  (cons #\2 body-expr))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-body*)
+                                  (cons #\2 abody-jexpr))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0~s1.define(~s2, ~s3);~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-function-local-var*)
-                                  (cons #\2 *atj-formals-local-var*)
-                                  (cons #\3 *atj-body-local-var*))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-function*)
+                                  (cons #\2 *atj-jvar-formals*)
+                                  (cons #\3 *atj-jvar-body*))
                             0 channel state nil))
-       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 *atj-indent-1*))
+       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state))
 
-(define atj-gen-add-function-def-methods ((fns-to-translate symbol-listp)
-                                          (verbose$ booleanp)
-                                          (channel symbolp)
-                                          state)
+(define atj-gen-deep-afndef-jmethods ((afns symbol-listp)
+                                      (verbose$ booleanp)
+                                      (indent-level natp)
+                                      (channel symbolp)
+                                      state)
   :returns state
   :mode :program
-  :short "Generate all the Java methods
-          to add the ACL2 function definitions to the environment."
-  (if (endp fns-to-translate)
+  :short "Generate all the Java methods that build
+          the deeply embedded ACL2 function definitions."
+  (if (endp afns)
       state
-    (b* ((state (atj-gen-add-function-def-method (car fns-to-translate)
-                                                 verbose$
-                                                 channel
-                                                 state)))
-      (atj-gen-add-function-def-methods (cdr fns-to-translate)
-                                        verbose$
-                                        channel
-                                        state))))
+    (b* ((state (atj-gen-deep-afndef-jmethod (car afns)
+                                             verbose$
+                                             indent-level
+                                             channel
+                                             state)))
+      (atj-gen-deep-afndef-jmethods (cdr afns)
+                                    verbose$
+                                    indent-level
+                                    channel
+                                    state))))
 
-(define atj-gen-add-function-defs ((fns-to-translate symbol-listp)
-                                   (channel symbolp)
-                                   state)
+(define atj-gen-deep-afndefs ((afns symbol-listp)
+                              (indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
-  :short "Generate Java code
-          to add the ACL2 function definitions to the environment."
+  :short "Generate Java code to build
+          the deeply embedded ACL2 function definitions."
   :long
   (xdoc::topstring-p
    "This is a sequence of calls to the methods
-    generated by @(tsee atj-gen-add-function-def-methods).
+    generated by @(tsee atj-gen-deep-afndef-jmethods).
     These calls are part of the code that
     initializes (the Java representation of) the ACL2 environment.")
-  (if (endp fns-to-translate)
+  (if (endp afns)
       state
-    (b* ((method-name (atj-gen-add-function-def-method-name
-                       (car fns-to-translate)))
+    (b* ((jmethod-name (atj-gen-deep-afndef-jmethod-name (car afns)))
          ((mv & state) (fmt1! "~s0~s1();~%"
-                              (list (cons #\0 *atj-indent-2*)
-                                    (cons #\1 method-name))
+                              (list (cons #\0 (atj-indent indent-level))
+                                    (cons #\1 jmethod-name))
                               0 channel state nil)))
-      (atj-gen-add-function-defs (cdr fns-to-translate) channel state))))
+      (atj-gen-deep-afndefs (cdr afns) indent-level channel state))))
 
-(define atj-gen-init-method ((pkgs string-listp)
-                             (pkg-witness stringp)
-                             (fns-to-translate symbol-listp)
-                             (channel symbolp)
-                             state)
+(define atj-gen-init-jmethod ((apkgs string-listp)
+                              (afns symbol-listp)
+                              (indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate the Java public method to initialize the ACL2 environment."
@@ -1921,31 +1868,33 @@
      Otherwise, an exception is thrown,
      because initialization must occur only once."))
   (b* (((mv & state) (fmt1! "~%~s0public static void initialize() {~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0if (initialized)~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        (exception-message "The ACL2 environment is already initialized.")
        ((mv & state) (fmt1! "~s0throw new IllegalStateException(~x1);~%"
-                            (list (cons #\0 *atj-indent-3*)
+                            (list (cons #\0 (atj-indent (+ 2 indent-level)))
                                   (cons #\1 exception-message))
                             0 channel state nil))
-       (state (atj-gen-add-package-defs pkgs channel state))
-       (state (atj-gen-set-pkg-witness pkg-witness channel state))
-       (state (atj-gen-add-function-defs fns-to-translate channel state))
+       (state (atj-gen-apkgs apkgs (1+ indent-level) channel state))
+       (state (atj-gen-apkg-witness (1+ indent-level) channel state))
+       (state (atj-gen-deep-afndefs afns (1+ indent-level) channel state))
        ((mv & state) (fmt1! "~s0Acl2NamedFunction.validateAll();~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0initialized = true;~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0}~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state))
 
-(define atj-gen-call-method ((channel symbolp) state)
+(define atj-gen-call-jmethod ((indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate the Java method to call ACL2 functions."
@@ -1963,29 +1912,31 @@
   (b* (((mv & state) (fmt1! "~%~s0public static Acl2Value ~
                              call(Acl2Symbol function, ~
                                   Acl2Value[] arguments)~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0if (!initialized)~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        (exception-message "The ACL2 environment is not initialized.")
        ((mv & state) (fmt1! "~s0throw new IllegalStateException(~x1);~%"
-                            (list (cons #\0 *atj-indent-3*)
+                            (list (cons #\0 (atj-indent (+ 2 indent-level)))
                                   (cons #\1 exception-message))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0return Acl2NamedFunction.make(function).~
                                        call(arguments);~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0}~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state))
 
-(define atj-gen-init-field ((channel symbolp) state)
+(define atj-gen-init-jfield ((indent-level natp)
+                             (channel symbolp)
+                             state)
   :returns state
   :mode :program
   :short "Generate the Java field for the initialization flag."
@@ -1996,45 +1947,47 @@
     The flag is set when the ACL2 environment is initialized,
     and checked to avoid re-initializing the ACL2 environment again.")
   (b* (((mv & state) (fmt1! "~%~s0private static boolean initialized = false;~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state))
 
-(define atj-gen-class ((pkgs string-listp)
-                       (pkg-witness stringp)
-                       (fns-to-translate symbol-listp)
-                       (java-class$ stringp)
-                       (verbose$ booleanp)
-                       (channel symbolp)
-                       state)
+(define atj-gen-jclass ((apkgs string-listp)
+                        (afns symbol-listp)
+                        (java-class$ stringp)
+                        (verbose$ booleanp)
+                        (indent-level natp)
+                        (channel symbolp)
+                        state)
   :returns state
   :mode :program
-  :short "Generate the main Java class declaration."
+  :short "Generate the main (i.e. non-test) Java class declaration."
   :long
   (xdoc::topstring-p
    "This is a public class that contains all the generated fields and methods.
     [JLS] says that a Java implementation may require
     public classes to be in files with the same names (plus extension).
     The code that we generate satisfies this requirement.")
-  (b* (((mv & state) (fmt1! "public class ~s0 {~%"
-                            (list (cons #\0 java-class$))
+  (b* (((mv & state) (fmt1! "~s0public class ~s1 {~%"
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 java-class$))
                             0 channel state nil))
-       (state (atj-gen-init-field channel state))
+       (state (atj-gen-init-jfield (1+ indent-level) channel state))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 packages:~%"))
-       (state (atj-gen-add-package-def-methods pkgs verbose$ channel state))
+       (state (atj-gen-apkg-jmethods apkgs verbose$
+                                     (1+ indent-level) channel state))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
-       (state (atj-gen-add-function-def-methods fns-to-translate
-                                                verbose$ channel state))
-       (state (atj-gen-init-method pkgs pkg-witness fns-to-translate
-                                   channel state))
-       (state (atj-gen-call-method channel state))
+       (state (atj-gen-deep-afndef-jmethods afns verbose$
+                                            (1+ indent-level) channel state))
+       (state (atj-gen-init-jmethod apkgs afns
+                                    (1+ indent-level) channel state))
+       (state (atj-gen-call-jmethod (1+ indent-level) channel state))
        ((mv & state) (fmt1! "}~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-test-method-name ((name stringp))
-  :returns (method-name stringp)
+(define atj-gen-test-jmethod-name ((test-name stringp))
+  :returns (jmethod-name stringp)
   :short "Name of the Java method to run one of the specified tests."
   :long
   (xdoc::topstring
@@ -2050,13 +2003,44 @@
      this scheme ensures that the method names are all distinct.")
    (xdoc::p
     "The argument of this function is the name of the test."))
-  (str::cat "test_" name))
+  (str::cat "test_" test-name))
 
-(define atj-gen-test-method ((test$ atj-testp)
-                             (java-class$ stringp)
-                             (verbose$ booleanp)
-                             (channel symbolp)
-                             state)
+(defval *atj-jvar-fnname*
+  :short "Name of the Java local variable used to store
+          the function name of an ACL2 function call."
+  "name"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-fnname*)))
+
+(defval *atj-jvar-fnargs*
+  :short "Name of the Java local variables used to store
+          the array of argument values of an ACL2 function call."
+  "arguments"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-fnargs*)))
+
+(defval *atj-jvar-aresult*
+  :short "Name of the Java local variables used to store
+          the result of a test calculated in ACL2 (by ATJ)."
+  "resultAcl2"
+  ///
+  (assert-event
+   (atj-string-ascii-java-identifier-p *atj-jvar-aresult*)))
+
+(defval *atj-jvar-jresult*
+  :short "Name of the Java local variables used to store
+          the result of a test calculated in Java (by AIJ)."
+  "resultJava"
+  ///
+  (assert-event
+   (atj-string-ascii-java-identifier-p *atj-jvar-jresult*)))
+
+(define atj-gen-test-jmethod ((test$ atj-testp)
+                              (java-class$ stringp)
+                              (verbose$ booleanp)
+                              (indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate a Java method to run one of the specified tests."
@@ -2078,91 +2062,98 @@
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
-       (method-name (atj-gen-test-method-name test.name))
+       (jmethod-name (atj-gen-test-jmethod-name test.name))
        ((mv & state) (fmt1! "~%~s0private static void ~s1()~%"
-                            (list (cons #\0 *atj-indent-1*)
-                                  (cons #\1 method-name))
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 jmethod-name))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1!
                       "~s0System.out.print(\"Testing \" + ~x1 + \"... \");~%"
-                      (list (cons #\0 *atj-indent-2*)
+                      (list (cons #\0 (atj-indent (1+ indent-level)))
                             (cons #\1 test.name))
                       0 channel state nil))
-       (fn-symbol-expr (atj-gen-symbol-value test.function))
+       (afnname-jexpr (atj-gen-asymbol test.function))
        ((mv & state) (fmt1! "~s0Acl2Symbol ~s1 = ~@2;~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-name-local-var*)
-                                  (cons #\2 fn-symbol-expr))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-fnname*)
+                                  (cons #\2 afnname-jexpr))
                             0 channel state nil))
-       ((mv args-exprs value-next-var state) (atj-gen-test-method-aux
-                                              test.arguments 1 channel state))
-       (args-expr (atj-gen-java-array args-exprs "Acl2Value"))
+       ((mv aarg-jexprs jvar-value-index state) (atj-gen-test-jmethod-aux
+                                                 test.arguments
+                                                 1
+                                                 (1+ indent-level)
+                                                 channel
+                                                 state))
+       (aargs-jexpr (atj-gen-jarray aarg-jexprs "Acl2Value"))
        ((mv & state) (fmt1! "~s0Acl2Value[] ~s1 = ~@2;~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-arguments-local-var*)
-                                  (cons #\2 args-expr))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-fnargs*)
+                                  (cons #\2 aargs-jexpr))
                             0 channel state nil))
-       ((mv res-expr & state) (atj-gen-value
-                               test.result value-next-var channel state))
+       ((mv ares-jexpr & state) (atj-gen-avalue
+                                 test.result jvar-value-index
+                                 (1+ indent-level) channel state))
        ((mv & state) (fmt1! "~s0Acl2Value ~s1 = ~@2;~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-result-acl2-local-var*)
-                                  (cons #\2 res-expr))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-aresult*)
+                                  (cons #\2 ares-jexpr))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0Acl2Value ~s1 = ~s2.call(~s3, ~s4);~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-result-java-local-var*)
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-jresult*)
                                   (cons #\2 java-class$)
-                                  (cons #\3 *atj-name-local-var*)
-                                  (cons #\4 *atj-arguments-local-var*))
+                                  (cons #\3 *atj-jvar-fnname*)
+                                  (cons #\4 *atj-jvar-fnargs*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0if (~s1.equals(~s2))~%"
-                            (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-result-acl2-local-var*)
-                                  (cons #\2 *atj-result-java-local-var*))
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
+                                  (cons #\1 *atj-jvar-aresult*)
+                                  (cons #\2 *atj-jvar-jresult*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0System.out.println(\"PASS\");~%"
-                            (list (cons #\0 *atj-indent-3*))
+                            (list (cons #\0 (atj-indent (+ 2 indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0else~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0System.out.println(\"FAIL\");~%"
-                            (list (cons #\0 *atj-indent-3*))
+                            (list (cons #\0 (atj-indent (+ 2 indent-level))))
                             0 channel state nil))
-       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 *atj-indent-1*))
+       ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state)
 
   :prepwork
-  ((define atj-gen-test-method-aux ((args true-listp)
-                                    (value-next-var posp)
-                                    (channel symbolp)
-                                    state)
-     :returns (mv java-expressions ;; MSG-LISTP
-                  new-value-next-var ;; POSP
+  ((define atj-gen-test-jmethod-aux ((aargs true-listp)
+                                     (jvar-value-index posp)
+                                     (indent-level natp)
+                                     (channel symbolp)
+                                     state)
+     :returns (mv jexprs ;; MSG-LISTP
+                  new-jvar-value-index ;; POSP
                   state)
      :mode :program
      :parents nil
-     (b* (((when (endp args)) (mv nil value-next-var state))
-          (arg (car args))
-          ((mv java-expression new-value-next-var state)
-           (atj-gen-value arg value-next-var channel state))
-          ((mv java-expressions new-new-value-next-var state)
-           (atj-gen-test-method-aux
-            (cdr args) new-value-next-var channel state)))
-       (mv (cons java-expression java-expressions)
-           new-new-value-next-var
+     (b* (((when (endp aargs)) (mv nil jvar-value-index state))
+          (aarg (car aargs))
+          ((mv jexpr jvar-value-index state)
+           (atj-gen-avalue aarg jvar-value-index indent-level channel state))
+          ((mv jexprs jvar-value-index state)
+           (atj-gen-test-jmethod-aux (cdr aargs) jvar-value-index
+                                     indent-level channel state)))
+       (mv (cons jexpr jexprs)
+           jvar-value-index
            state)))))
 
-(define atj-gen-test-methods ((tests$ atj-test-listp)
-                              (java-class$ stringp)
-                              (verbose$ booleanp)
-                              (channel symbolp)
-                              state)
+(define atj-gen-test-jmethods ((tests$ atj-test-listp)
+                               (java-class$ stringp)
+                               (verbose$ booleanp)
+                               (indent-level natp)
+                               (channel symbolp)
+                               state)
   :returns state
   :mode :program
   :short "Generate all the Java methods to run the specified tests."
@@ -2172,11 +2163,13 @@
     "These are generated only if the @(':tests') input is not @('nil')."))
   (if (endp tests$)
       state
-    (b* ((state (atj-gen-test-method
-                 (car tests$) java-class$ verbose$ channel state)))
-      (atj-gen-test-methods (cdr tests$) java-class$ verbose$ channel state))))
+    (b* ((state (atj-gen-test-jmethod (car tests$) java-class$ verbose$
+                                      indent-level channel state)))
+      (atj-gen-test-jmethods (cdr tests$) java-class$ verbose$
+                             indent-level channel state))))
 
 (define atj-gen-run-tests ((tests$ atj-test-listp)
+                           (indent-level natp)
                            (channel symbolp)
                            state)
   :returns state
@@ -2188,21 +2181,22 @@
     "This is generated only if the @(':tests') input is not @('nil').")
    (xdoc::p
     "This is a sequence of calls to the methods
-     generated by @(tsee atj-gen-test-methods).
+     generated by @(tsee atj-gen-test-jmethods).
      These calls are part of the main method of the test Java class."))
   (if (endp tests$)
       state
-    (b* ((method-name (atj-gen-test-method-name (atj-test->name (car tests$))))
+    (b* ((method-name (atj-gen-test-jmethod-name (atj-test->name (car tests$))))
          ((mv & state) (fmt1! "~s0~s1();~%"
-                              (list (cons #\0 *atj-indent-2*)
+                              (list (cons #\0 (atj-indent indent-level))
                                     (cons #\1 method-name))
                               0 channel state nil)))
-      (atj-gen-run-tests (cdr tests$) channel state))))
+      (atj-gen-run-tests (cdr tests$) indent-level channel state))))
 
-(define atj-gen-main-method ((tests$ atj-test-listp)
-                             (java-class$ stringp)
-                             (channel symbolp)
-                             state)
+(define atj-gen-test-main-jmethod ((tests$ atj-test-listp)
+                                   (java-class$ stringp)
+                                   (indent-level natp)
+                                   (channel symbolp)
+                                   state)
   :returns state
   :mode :program
   :short "Generate the main method of the Java test class."
@@ -2214,26 +2208,27 @@
     "This method initializes the ACL2 environment
      and then calls each test method."))
   (b* (((mv & state) (fmt1! "~%~s0public static void main(String[] args)~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
-                            (list (cons #\0 *atj-indent-2*))
+                            (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0~s1.initialize();~%"
-                            (list (cons #\0 *atj-indent-2*)
+                            (list (cons #\0 (atj-indent (1+ indent-level)))
                                   (cons #\1 java-class$))
                             0 channel state nil))
-       (state (atj-gen-run-tests tests$ channel state))
+       (state (atj-gen-run-tests tests$ 2 channel state))
        ((mv & state) (fmt1! "~s0}~%"
-                            (list (cons #\0 *atj-indent-1*))
+                            (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
     state))
 
-(define atj-gen-class-test ((tests$ atj-test-listp)
-                            (java-class$ stringp)
-                            (verbose$ booleanp)
-                            (channel symbolp)
-                            state)
+(define atj-gen-test-jclass ((tests$ atj-test-listp)
+                             (java-class$ stringp)
+                             (verbose$ booleanp)
+                             (indent-level natp)
+                             (channel symbolp)
+                             state)
   :returns state
   :mode :program
   :short "Generate the test Java class declaration."
@@ -2251,12 +2246,16 @@
                             0 channel state nil))
        ((run-when verbose$)
         (cw "~%Generating Java code for the tests:~%"))
-       (state (atj-gen-test-methods tests$ java-class$ verbose$ channel state))
-       (state (atj-gen-main-method tests$ java-class$ channel state))
+       (state (atj-gen-test-jmethods tests$ java-class$ verbose$
+                                     indent-level channel state))
+       (state (atj-gen-test-main-jmethod tests$ java-class$
+                                         (1+ indent-level) channel state))
        ((mv & state) (fmt1! "}~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-file-header ((channel symbolp) state)
+(define atj-gen-jfile-header ((indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate the Java file header."
@@ -2270,13 +2269,15 @@
     "This is common to the file of the main Java class
      and (if generated) to the file of the test Java class."))
   (b* (((mv & state)
-        (fmt1! "// This file is automatically generated by ATJ.~%~%"
-               nil 0 channel state nil)))
+        (fmt1! "~s0// This file is automatically generated by ATJ.~%~%"
+               (list (cons #\0 (atj-indent indent-level)))
+               0 channel state nil)))
     state))
 
-(define atj-gen-package-decl ((java-package$ maybe-stringp)
-                              (channel symbolp)
-                              state)
+(define atj-gen-jpkg ((java-package$ maybe-stringp)
+                      (indent-level natp)
+                      (channel symbolp)
+                      state)
   :returns state
   :mode :program
   :short "Generate the Java package declaration (if any)."
@@ -2290,13 +2291,16 @@
     "This is common to the file of the main Java class
      and (if generated) to the file of the test Java class."))
   (if java-package$
-      (b* (((mv & state) (fmt1! "package ~s0;~%~%"
-                                (list (cons #\0 java-package$))
+      (b* (((mv & state) (fmt1! "~s0package ~s1;~%~%"
+                                (list (cons #\0 (atj-indent indent-level))
+                                      (cons #\1 java-package$))
                                 0 channel state nil)))
         state)
     state))
 
-(define atj-gen-import-decls ((channel symbolp) state)
+(define atj-gen-jimport ((indent-level natp)
+                         (channel symbolp)
+                         state)
   :returns state
   :mode :program
   :short "Generate the Java import declarations for the main file."
@@ -2309,19 +2313,25 @@
      by their simple (i.e. unqualified) names.")
    (xdoc::p
     "We also import some Java library classes."))
-  (b* (((mv & state) (fmt1! "import ~s0.*;~%"
-                            (list (cons #\0 *atj-aij-package*))
+  (b* (((mv & state) (fmt1! "~s0import ~s1.*;~%"
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 *atj-aij-package*))
                             0 channel state nil))
-       ((mv & state) (fmt1! "import java.math.BigInteger;~%"
-                            nil 0 channel state nil))
-       ((mv & state) (fmt1! "import java.util.ArrayList;~%"
-                            nil 0 channel state nil))
-       ((mv & state) (fmt1! "import java.util.List;~%"
-                            nil 0 channel state nil))
+       ((mv & state) (fmt1! "~s0import java.math.BigInteger;~%"
+                            (list (cons #\0 (atj-indent indent-level)))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0import java.util.ArrayList;~%"
+                            (list (cons #\0 (atj-indent indent-level)))
+                            0 channel state nil))
+       ((mv & state) (fmt1! "~s0import java.util.List;~%"
+                            (list (cons #\0 (atj-indent indent-level)))
+                            0 channel state nil))
        ((mv & state) (fmt1! "~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-import-decls-test ((channel symbolp) state)
+(define atj-gen-test-jimport ((indent-level natp)
+                              (channel symbolp)
+                              state)
   :returns state
   :mode :program
   :short "Generate the Java import declarations for the test file."
@@ -2336,22 +2346,23 @@
      by their simple (i.e. unqualified) names.")
    (xdoc::p
     "We also import a Java library class."))
-  (b* (((mv & state) (fmt1! "import ~s0.*;~%"
-                            (list (cons #\0 *atj-aij-package*))
+  (b* (((mv & state) (fmt1! "~s0import ~s`.*;~%"
+                            (list (cons #\0 (atj-indent indent-level))
+                                  (cons #\1 *atj-aij-package*))
                             0 channel state nil))
-       ((mv & state) (fmt1! "import java.math.BigInteger;~%"
-                            nil 0 channel state nil))
+       ((mv & state) (fmt1! "~s0import java.math.BigInteger;~%"
+                            (list (cons #\0 (atj-indent indent-level)))
+                            0 channel state nil))
        ((mv & state) (fmt1! "~%" nil 0 channel state nil)))
     state))
 
-(define atj-gen-file ((java-package$ maybe-stringp)
-                      (java-class$ maybe-stringp)
-                      (output-file$ stringp)
-                      (pkgs string-listp)
-                      (pkg-witness stringp)
-                      (fns-to-translate symbol-listp)
-                      (verbose$ booleanp)
-                      state)
+(define atj-gen-jfile ((java-package$ maybe-stringp)
+                       (java-class$ maybe-stringp)
+                       (output-file$ stringp)
+                       (pkgs string-listp)
+                       (afns symbol-listp)
+                       (verbose$ booleanp)
+                       state)
   :returns (mv (erp "Always @('nil').")
                (val "Always @('nil').")
                state)
@@ -2359,21 +2370,20 @@
   :short "Generate the main Java file."
   (b* (((mv channel state) (open-output-channel! output-file$
                                                  :character state))
-       (state (atj-gen-file-header channel state))
-       (state (atj-gen-package-decl java-package$ channel state))
-       (state (atj-gen-import-decls channel state))
-       (state (atj-gen-class pkgs pkg-witness fns-to-translate java-class$
-                             verbose$ channel state))
+       (state (atj-gen-jfile-header 0 channel state))
+       (state (atj-gen-jpkg java-package$ 0 channel state))
+       (state (atj-gen-jimport 0 channel state))
+       (state (atj-gen-jclass pkgs afns java-class$ verbose$ 0 channel state))
        (state (close-output-channel channel state)))
     (value nil))
   :prepwork ((defttag :open-input-channel)))
 
-(define atj-gen-file-test ((java-package$ maybe-stringp)
-                           (java-class$ stringp)
-                           (output-file-test$ stringp)
-                           (tests$ atj-test-listp)
-                           (verbose$ booleanp)
-                           state)
+(define atj-gen-test-jfile ((java-package$ maybe-stringp)
+                            (java-class$ stringp)
+                            (output-file-test$ stringp)
+                            (tests$ atj-test-listp)
+                            (verbose$ booleanp)
+                            state)
   :returns (mv (erp "Always @('nil').")
                (val "Always @('nil').")
                state)
@@ -2381,10 +2391,10 @@
   :short "Generate the test Java file."
   (b* (((mv channel state) (open-output-channel! output-file-test$
                                                  :character state))
-       (state (atj-gen-file-header channel state))
-       (state (atj-gen-package-decl java-package$ channel state))
-       (state (atj-gen-import-decls-test channel state))
-       (state (atj-gen-class-test tests$ java-class$ verbose$ channel state))
+       (state (atj-gen-jfile-header 0 channel state))
+       (state (atj-gen-jpkg java-package$ 0 channel state))
+       (state (atj-gen-test-jimport 0 channel state))
+       (state (atj-gen-test-jclass tests$ java-class$ verbose$ 0 channel state))
        (state (close-output-channel channel state)))
     (value nil))
   :prepwork ((defttag :open-input-channel)))
@@ -2395,15 +2405,14 @@
                             (output-file-test$ maybe-stringp)
                             (tests$ atj-test-listp)
                             (pkgs string-listp)
-                            (pkg-witness stringp)
-                            (fns-to-translate symbol-listp)
+                            (afns symbol-listp)
                             (verbose$ booleanp)
                             state)
   :returns (mv (erp "Always @('nil').")
                (val "Always @('nil').")
                state)
   :mode :program
-  :short "Generate the Java file."
+  :short "Generate the main Java file, and optionally the Java test file."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2416,21 +2425,20 @@
   (state-global-let*
    ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
     (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
-   (b* (((er &) (atj-gen-file java-package$
-                              java-class$
-                              output-file$
-                              pkgs
-                              pkg-witness
-                              fns-to-translate
-                              verbose$
-                              state))
+   (b* (((er &) (atj-gen-jfile java-package$
+                               java-class$
+                               output-file$
+                               pkgs
+                               afns
+                               verbose$
+                               state))
         ((er &) (if tests$
-                    (atj-gen-file-test java-package$
-                                       java-class$
-                                       output-file-test$
-                                       tests$
-                                       verbose$
-                                       state)
+                    (atj-gen-test-jfile java-package$
+                                        java-class$
+                                        output-file-test$
+                                        tests$
+                                        verbose$
+                                        state)
                   (value :this-is-irrelevant))))
      (value nil))))
 
@@ -2462,17 +2470,14 @@
                   tests$
                   verbose$)) (atj-process-inputs args ctx state))
        ((er (list pkgs
-                  pkg-witness
-                  fns-to-translate)) (atj-gather-info
-                                      targets$ verbose$ ctx state))
+                  afns)) (atj-gather-info targets$ verbose$ ctx state))
        ((er &) (atj-gen-everything java-package$
                                    java-class
                                    output-file$
                                    output-file-test$
                                    tests$
                                    pkgs
-                                   pkg-witness
-                                   fns-to-translate
+                                   afns
                                    verbose$
                                    state))
        (- (if output-file-test$
