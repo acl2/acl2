@@ -853,7 +853,7 @@ if (@run_out_of_date || @run_up_to_date || @run_all_up_to_date || @run_all_out_o
         }
     }
     if (@run_up_to_date) {
-        my $up_to_date = collect_top_up_to_date(\@targets, $depdb, $up_to_date_db);
+        my $up_to_date = collect_top_up_to_date_modulo_local(\@targets, $depdb, $up_to_date_db);
         foreach my $run (@run_up_to_date) {
             foreach my $cert (@$up_to_date) {
                 (my $book = $cert) =~ s/\.cert$//;

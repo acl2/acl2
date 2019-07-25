@@ -75,6 +75,7 @@ deps_dfs
 check_up_to_date
 collect_bottom_out_of_date
 collect_top_up_to_date
+collect_top_up_to_date_modulo_local
 collect_all_up_to_date
 );
 
@@ -90,7 +91,7 @@ collect_all_up_to_date
 # 				rec_visited => '%' ];   # already seen files for depends_rec
 
 # database:
-my $cache_version_code = 6;
+my $cache_version_code = 7;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -1138,8 +1139,7 @@ sub src_deps {
 		$certinfo->include_dirs->{$name} = $newdir;
 		print "src_deps: add_dir $name " . $certinfo->include_dirs->{$name} . "\n" if $debugging;
 	    } elsif ($type eq include_book_event) {
-		my $bookname = $event->[1];
-		my $dir = $event->[2];
+		my (undef, $bookname, $dir, $noport, $localp) = @$event;
 		my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
 						  $certinfo->include_dirs,
 						  "include-book",
@@ -1151,8 +1151,10 @@ sub src_deps {
 		    print "include-book fullname: $fullname\n" if $debugging;
 		    if ($portp) {
 			push(@{$certinfo->portdeps}, $fullname);
+			push(@{$certinfo->portdeps_local}, $localp);
 		    } else {
 			push(@{$certinfo->bookdeps}, $fullname);
+			push(@{$certinfo->bookdeps_local}, $localp);
 		    }
 		    add_deps($fullname, $depdb, $fname);
 		    my $book_certinfo = $depdb->certdeps->{$fullname};
@@ -1509,6 +1511,40 @@ sub collect_top_up_to_date {
     }
     return \@top_up_to_date;
 }
+
+sub collect_top_up_to_date_modulo_local {
+    # up_to_date is the hash returned by check_up_to_date
+    my ($targets, $depdb, $up_to_date) = @_;
+
+    my %under_up_to_date = ();
+    my $dfs;
+    $dfs = sub {
+	my ($target, $under) = @_;
+	if (exists $under_up_to_date{$target}) {
+	    return;
+	}
+	$under_up_to_date{$target} = $under;
+	$under = $under || $up_to_date->{$target};
+
+	my $certdeps = $depdb->cert_nonlocal_deps($target);
+	foreach my $cert (@$certdeps) {
+	    $dfs->($cert, $under);
+	}
+    };
+
+    foreach my $target (@$targets) {
+	$dfs->($target);
+    }
+    my @top_up_to_date = ();
+    while ((my $cert, my $updated) = each %$up_to_date) {
+	if ($updated && ! $under_up_to_date{$cert}) {
+	    push (@top_up_to_date, $cert);
+	}
+    }
+    return \@top_up_to_date;
+}
+
+
 
 sub collect_all_up_to_date {
     # up_to_date is the hash returned by check_up_to_date

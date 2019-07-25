@@ -64,16 +64,54 @@ sub cert_bookdeps {
     return $certinfo ? $certinfo->bookdeps : [];
 }
 
+sub cert_nonlocal_bookdeps {
+    my ($self, $cert) = @_;
+    my $certinfo = $self->certdeps->{$cert};
+    if (! $certinfo) {
+	return [];
+    }
+    my @nonlocals = ();
+    for my $i (0 .. $#{$certinfo->bookdeps}) {
+	if (! $certinfo->bookdeps_local->[$i]) {
+	    push (@nonlocals, $certinfo->bookdeps->[$i]);
+	}
+    }
+    return \@nonlocals;
+}
+
+
 sub cert_portdeps {
     my ($self, $cert) = @_;
     my $certinfo = $self->certdeps->{$cert};
     return $certinfo ? $certinfo->portdeps : [];
 }
 
+sub cert_nonlocal_portdeps {
+    my ($self, $cert) = @_;
+    my $certinfo = $self->certdeps->{$cert};
+    if (! $certinfo) {
+	return [];
+    }
+    my @nonlocals = ();
+    for my $i (0 .. $#{$certinfo->portdeps}) {
+	if (! $certinfo->portdeps_local->[$i]) {
+	    push (@nonlocals, $certinfo->portdeps->[$i]);
+	}
+    }
+    return \@nonlocals;
+}
+
+
 sub cert_deps {
     my ($self, $cert) = @_;
     return [ @{$self->cert_bookdeps($cert)},
 	     @{$self->cert_portdeps($cert)} ];
+}
+
+sub cert_nonlocal_deps {
+    my ($self, $cert) = @_;
+    return [ @{$self->cert_nonlocal_bookdeps($cert)},
+	     @{$self->cert_nonlocal_portdeps($cert)} ];
 }
 
 sub cert_srcdeps {
