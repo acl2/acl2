@@ -288,6 +288,12 @@
     (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface") ".")
 
+   (xdoc::p
+    "A sub-library for KECCAK / SHA-3 hash functions
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "keccak::keccak")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
