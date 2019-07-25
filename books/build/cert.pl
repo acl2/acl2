@@ -74,8 +74,6 @@ use Certlib;
 use Bookscan;
 use Cygwin_paths;
 
-use Switch;
-
 # (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 # (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
@@ -563,21 +561,31 @@ USEFUL ENVIRONMENT VARIABLES
 
 # Called by GetOptions to handle options like source-cmd,
 # otherdep-cmd, up-to-date-cmd.  First we pick, based on the option
-# name, the list that holds functions that we'll run on the
+# name, the list that holds functions that we"ll run on the
 # appropriate set of files.  Then we add a function to that array
 # that, when run on a target file, will replace the {} from the
 # command with the filename and run that with backticks (printing its
 # stdout).
+
 sub add_command {
     my ($opt_name, $opt_value) = @_;
     my $runlist;
-    switch ("$opt_name") {
-    	case "source-cmd"          { $runlist = \@run_sources }
-    	case "otherdep-cmd"        { $runlist = \@run_otherdeps }
-    	case "up-to-date-cmd"      { $runlist = \@run_up_to_date }
-    	case "out-of-date-cmd"     { $runlist = \@run_out_of_date }
-    	case "all-up-to-date-cmd"  { $runlist = \@run_all_up_to_date }
-    	case "all-out-of-date-cmd" { $runlist = \@run_all_out_of_date }
+    # opt_name is not a string to begin with, coerce it to one
+    $opt_name = "$opt_name";
+    if ($opt_name eq "source_cmd") {
+	$runlist = \@run_sources;
+    } elsif ($opt_name eq "otherdep-cmd") {
+	$runlist = \@run_otherdeps;
+    }  elsif ($opt_name eq "up-to-date-cmd") {
+	$runlist = \@run_up_to_date;
+    } elsif ($opt_name eq  "out-of-date-cmd") {
+        $runlist = \@run_out_of_date;
+    } elsif ($opt_name eq  "all-up-to-date-cmd") {
+	$runlist = \@run_all_up_to_date;
+    } elsif ($opt_name eq "all-out-of-date-cmd") {
+	$runlist = \@run_all_out_of_date;
+    } else {
+	die "Programming error in add_command";
     }
     push (@$runlist,
     	  sub { my $target = shift;
