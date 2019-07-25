@@ -570,7 +570,6 @@ USEFUL ENVIRONMENT VARIABLES
 # stdout).
 sub add_command {
     my ($opt_name, $opt_value) = @_;
-    print "add_command $opt_name $opt_value\n";
     my $runlist;
     switch ("$opt_name") {
     	case "source-cmd"          { $runlist = \@run_sources }
