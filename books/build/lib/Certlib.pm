@@ -75,6 +75,7 @@ deps_dfs
 check_up_to_date
 collect_bottom_out_of_date
 collect_top_up_to_date
+collect_all_up_to_date
 );
 
 
@@ -1508,6 +1509,39 @@ sub collect_top_up_to_date {
     }
     return \@top_up_to_date;
 }
+
+sub collect_all_up_to_date {
+    # up_to_date is the hash returned by check_up_to_date
+    my ($targets, $depdb, $up_to_date) = @_;
+
+    my @all_up_to_date = ();
+    my @all_out_of_date = ();
+    my %visited = ();
+    my $dfs;
+    $dfs = sub {
+	my $target = shift;
+	if ($visited{$target}) {
+	    return;
+	}
+	$visited{$target} = 1;
+	my $certdeps = $depdb->cert_deps($target);
+	foreach my $cert (@$certdeps) {
+	    $dfs->($cert);
+	}
+	if ($up_to_date->{$target}) {
+	    push (@all_up_to_date, $target);
+	} else {
+	    push (@all_out_of_date, $target);
+	}
+    };
+
+    foreach my $target (@$targets) {
+	$dfs->($target);
+    }
+
+    return (\@all_up_to_date, \@all_out_of_date);
+}
+
 
 sub collect_bottom_out_of_date {
     # up_to_date is the hash returned by check_up_to_date
