@@ -11,7 +11,12 @@
 
 (in-package "PADDING")
 
-;; This book formalizes a padding operation used in several hash functions
+;; This book formalizes a padding operation used in several hash functions.
+;; Note that it does not include appending the 128-bit length field (for
+;; consistency with pad-to-448, see pad-to-448.lisp).  See Section 5.1.2 of
+;; FIPS PUB 180-4.
+
+;; See pad-to-896-tests.lisp and pad-to-896-validation.lisp
 
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
@@ -20,13 +25,24 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system))
 
+(defund pad-to-896-number-of-zeros (l)
+  (declare (xargs :guard (natp l)))
+  (mod (- 896 (+ 1 l)) 1024))
+
+;; The number of zeros (k) is non-negative
+(defthm pad-to-896-number-of-zeros-type
+  (implies (natp l)
+           (natp (pad-to-896-number-of-zeros l)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable pad-to-896-number-of-zeros))))
+
 ;; MSG is a list of any number of bits.  Add a single 1 bit, followed by enough
-;; zero bits to make the message length be congruent to 896 modulo 1024.
+;; 0 bits to make the message length be congruent to 896 modulo 1024.
 (defund pad-to-896 (msg)
   (declare (xargs :guard (and (all-unsigned-byte-p 1 msg)
                               (true-listp msg))))
   (let* ((msg-len (len msg))
-         (number-of-zeros (mod (- 896 (+ 1 msg-len)) 1024)))
+         (number-of-zeros (pad-to-896-number-of-zeros msg-len)))
     (append msg (cons 1 (repeat number-of-zeros 0)))))
 
 ;; Padding makes the message longer.
@@ -46,7 +62,8 @@
 (defthm pad-to-896-correct-3
   (equal (mod (len (pad-to-896 msg)) 1024)
          896)
-  :hints (("Goal" :in-theory (enable pad-to-896))))
+  :hints (("Goal" :in-theory (enable pad-to-896
+                                     pad-to-896-number-of-zeros))))
 
 ;; Padding adds no more bits than necessary (adds at most 1024 bits).  Note that
 ;; it can't add 0 bits, because it must always at least add a single 1.
@@ -54,7 +71,8 @@
   (<= (- (len (pad-to-896 msg))
          (len msg))
       1024)
-  :hints (("Goal" :in-theory (enable pad-to-896))))
+  :hints (("Goal" :in-theory (enable pad-to-896
+                                     pad-to-896-number-of-zeros))))
 
 (defthm all-unsigned-byte-p-of-pad-to-896
   (implies (all-unsigned-byte-p 1 msg)
@@ -65,4 +83,5 @@
 (defthm mod-of-len-of-pad-to-896-and-64
   (equal (mod (len (pad-to-896 msg)) 64)
          0)
-  :hints (("Goal" :in-theory (enable pad-to-896))))
+  :hints (("Goal" :in-theory (enable pad-to-896
+                                     pad-to-896-number-of-zeros))))
