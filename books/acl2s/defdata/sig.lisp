@@ -40,9 +40,17 @@ data last modified: [2014-08-07]
 (table psig-template-map nil) ;UNUSED now -- but seems like a more general idea to support arbitrary polymorphic type expressions. REVISIT
 
 (defstub psig-templ-instantiation-ev (* * * * * * *) => *)
-(defloop psig-inst-templates (tname tvar-sigma templates new-types kwd-alist wrld)
+(defloop psig-inst-templates
+  (tname tvar-sigma templates new-types kwd-alist wrld)
   (for ((templ in templates))
-       (append (psig-templ-instantiation-ev tname tvar-sigma templ (table-alist 'derived-pred->poly-texp-map wrld) new-types kwd-alist wrld))))
+       (append (psig-templ-instantiation-ev
+                tname
+                tvar-sigma
+                templ
+                (table-alist 'derived-pred->poly-texp-map wrld)
+                new-types
+                kwd-alist
+                wrld))))
 
 (program)
 
@@ -82,7 +90,14 @@ data last modified: [2014-08-07]
         (- (cw? (and (not yesp) verbose) "~|Defdata/Note: Failed to unify ~x0 with ~x1. Skipping polymorphic instantiation events...~%" ptype pdef))
         ((unless yesp) '()))
                 
-    (psig-templ-instantiation-ev name tvar-sigma template (table-alist 'derived-pred->poly-texp-map wrld) new-types kwd-alist wrld)))
+    (psig-templ-instantiation-ev
+     name
+     tvar-sigma
+     template
+     (table-alist 'derived-pred->poly-texp-map wrld)
+     new-types
+     kwd-alist
+     wrld)))
   
 
 
@@ -276,7 +291,7 @@ get as much automated polymorphic support as possible.
 ;(include-book "coi/util/pseudo-translate" :dir :system)
 
 (defconst *sig-keywords*
-  '(:hints :rule-classes :verbose :satisfies :suffix))
+  '(:hints :gen-rule-classes :rule-classes :verbose :satisfies :suffix))
 
 ;check -- also take care of monomorphic sig, but make sure only tnames are allowed!
 (defun parse-sig (args curr-pkg ctx wrld)
@@ -636,24 +651,47 @@ constant). In the latter return a lambda expression"
   (for ((x in xs)) (append (and (subtype-p x 'acl2::true-listp wrld) (list x)))))
 
 
-(defun psig-templ-instantiation-ev-user (tname tvar-sigma templ derived-pred->poly-texp-map new-types kwd-alist wrld)
+(defun psig-templ-instantiation-ev-user
+    (tname tvar-sigma templ derived-pred->poly-texp-map new-types kwd-alist wrld)
   "For given tvar-sigma, find functional instantiation and return instantiated templ"
-  (b* ((ppred->tname-map (polypred-typename-map tvar-sigma derived-pred->poly-texp-map new-types wrld))
+  (b* ((ppred->tname-map
+        (polypred-typename-map
+         tvar-sigma
+         derived-pred->poly-texp-map
+         new-types
+         wrld))
 ; remove signatures that have no match
-       (templ (remove-exprs-with-fns templ (undefined-preds ppred->tname-map)))
+       (templ (remove-exprs-with-fns
+               templ
+               (undefined-preds ppred->tname-map)))
 
-       (fun-inst-dlist (functional-instantiation-list (remove-undefined ppred->tname-map) tvar-sigma new-types kwd-alist wrld))
+       (fun-inst-dlist
+        (functional-instantiation-list
+         (remove-undefined ppred->tname-map)
+         tvar-sigma
+         new-types
+         kwd-alist
+         wrld))
 
        (A (table-alist 'type-alias-table wrld))
        (pred (predicate-name
               tname
               A
               (append new-types (table-alist 'type-metadata-table wrld))))
-       (disabled (remove-eq pred (union-eq (filter-proper-symbols (strip-cadrs fun-inst-dlist)) (get1 :disabled kwd-alist))))
-       (disabled (set-difference-eq disabled (filter-true-lists disabled wrld))) ;hack to fix an acl2s-issue. TODO
+       (disabled (remove-eq
+                  pred
+                  (union-eq (filter-proper-symbols (strip-cadrs fun-inst-dlist))
+                            (get1 :disabled kwd-alist))))
+       (disabled (set-difference-eq
+                  disabled
+                  (filter-true-lists disabled wrld))) ;hack to fix an acl2s-issue. TODO
        (enabled (and pred (list pred))) ;TODO.check later
-       (splice-alist `((_ENABLED-RUNES_ . ,enabled) (_DISABLED-RUNES_ . ,disabled) (_FUN-INST-ALIST_ . ,fun-inst-dlist)))
-       (ppred-inst-pred-alist (polypred-instantiated-pred-alist ppred->tname-map new-types wrld))
+       (splice-alist
+        `((_ENABLED-RUNES_ . ,enabled)
+          (_DISABLED-RUNES_ . ,disabled)
+          (_FUN-INST-ALIST_ . ,fun-inst-dlist)))
+       (ppred-inst-pred-alist
+        (polypred-instantiated-pred-alist ppred->tname-map new-types wrld))
        (atom-alist (acons '_PRED_ pred ppred-inst-pred-alist))
        (str-alist (acons "_PRED_"  (symbol-name pred) '())))
     (template-subst templ
@@ -668,15 +706,25 @@ constant). In the latter return a lambda expression"
 (defattach (psig-templ-instantiation-ev psig-templ-instantiation-ev-user) :skip-checks t)
 (defttag nil)
 
-(defloop psig-templ-instantiation-events (ps templ derived-pred->poly-texp-map new-types kwd-alist wrld)
-  (for ((p in ps)) (append (psig-templ-instantiation-ev (car p) (cdr p) templ derived-pred->poly-texp-map new-types kwd-alist wrld))))
+(defloop psig-templ-instantiation-events
+  (ps templ derived-pred->poly-texp-map new-types kwd-alist wrld)
+  (for ((p in ps))
+       (append (psig-templ-instantiation-ev
+                (car p)
+                (cdr p)
+                templ
+                derived-pred->poly-texp-map
+                new-types
+                kwd-alist
+                wrld))))
 
 ;       (n-ret-type (parse-top-texp '* return-type1 ctx wrld))
 ;       (p-ret-type (untrans-texp '* n-ret-type ctx wrld))
 
 
-(defconst *map-all-to-a* (pairlis$ *allowed-type-vars*
-                                   (make-list (len *allowed-type-vars*) :initial-element ':a)))
+(defconst *map-all-to-a*
+  (pairlis$ *allowed-type-vars*
+            (make-list (len *allowed-type-vars*) :initial-element ':a)))
 
 (mutual-recursion
  (defun simplify-prop-comb-texp (pdef)
@@ -743,7 +791,8 @@ constant). In the latter return a lambda expression"
 (defloop find/make-predicate-names (tnames A M)
   (for ((tname in tnames)) (collect (find/make-predicate-name tname A M))))
 
-(defun instantiate-poly-sig-events-for-current-types (as rtype templ kwd-alist wrld)
+(defun instantiate-poly-sig-events-for-current-types
+    (as rtype templ kwd-alist wrld)
   "limited/linear instantiation of poly signatures for all current types of same shape"
   (declare (ignorable rtype))
   (b* ((atype (pick-dominant-poly-type-expr (append as (list rtype)))) ;[2014-11-25 Tue] Dont ignore return type here.
@@ -757,9 +806,16 @@ constant). In the latter return a lambda expression"
        (arg-preds (find/make-predicate-names arg-tnames A M))
        (ret-tname (find/make-type-name (remove-names rtype) M))
        (ret-pred (find/make-predicate-name ret-tname A M))
-       (derived-pred->poly-texp-map (cons (cons ret-pred rtype) (pairlis$ arg-preds as)))
+       (derived-pred->poly-texp-map
+        (cons (cons ret-pred rtype) (pairlis$ arg-preds as)))
        )
-    (psig-templ-instantiation-events tname-IA-alst templ derived-pred->poly-texp-map '() kwd-alist wrld)))
+    (psig-templ-instantiation-events
+     tname-IA-alst
+     templ
+     derived-pred->poly-texp-map
+     '()
+     kwd-alist
+     wrld)))
   
 (defloop untrans-top-texps (nms nexps)
   (for ((nm in nms) (nexp in nexps)) (collect (untrans-top-texp nm nexp '()))))
@@ -780,7 +836,92 @@ constant). In the latter return a lambda expression"
        (psig-defthm-body `(IMPLIES (AND . ,hyps)
                                    ,(list ret-pred (cons name x1--xk)))))
     psig-defthm-body))
-       
+
+(mutual-recursion
+ (defun find-all-instances (pat term alists)
+   (declare (xargs :mode :program))
+   (mv-let
+    (instancep alist)
+    (acl2::one-way-unify pat term)
+    (let ((alists
+           (if instancep
+               (acl2::add-to-set-equal alist alists)
+             alists)))
+      (cond
+       ((acl2::variablep term) alists)
+       ((acl2::fquotep term) alists)
+       (t (find-all-instances-list pat (acl2::fargs term) alists))))))
+
+ (defun find-all-instances-list (pat list-of-terms alists)
+   (declare (xargs :mode :program))
+   (cond
+    ((null list-of-terms) alists)
+    (t (find-all-instances
+        pat
+        (car list-of-terms)
+        (find-all-instances-list
+         pat (cdr list-of-terms) alists))))))
+
+(defun map-find-all-instances-list (pats list-of-terms acc)
+  (declare (xargs :mode :program))
+  (if (endp  pats)
+      acc
+    (let ((instances
+           (find-all-instances-list (car pats) list-of-terms nil)))
+      (if instances
+          (map-find-all-instances-list
+           (cdr pats)
+           list-of-terms
+           (cons instances acc))
+        nil))))
+
+(defun common-instancesp (x y)
+  (and (consp x)
+       (or (member-equal (car x) y)
+           (common-instancesp (cdr x) y))))
+
+(defun in-all (a L)
+  (or (atom L)
+      (and (member-equal a (car L))
+           (in-all a (cdr L)))))
+
+(defun common-instances-listp (L)
+  (cond ((atom (car L)) nil)
+        ((atom (cdr L)) (consp (car L)))
+        (t (or (in-all (caar L) (cdr L))
+               (common-instances-listp (cons (cdar L) (cdr L)))))))
+
+(defun make-sig-hint-body (name arg-types poly-gen-name kwd-alist wrld)
+  (b* ((M (append (table-alist 'tvar-metadata-table wrld) 
+                  (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
+       (arg-tnames (find/make-type-names (remove-names-lst arg-types) M))
+       (arg-preds (find/make-predicate-names arg-tnames A M))
+                 
+       (x1--xk (numbered-vars 'ACL2S::X (len arg-preds)))
+       (dependent-hyps (get1 :satisfies kwd-alist)) ;they should only use x1, x2 etc
+       (hyps (append (list-up-lists arg-preds x1--xk) dependent-hyps))
+       (psig-hint-body
+        `(if (and stable-under-simplificationp
+                  (b* ((instances-name
+                        (find-all-instances-list
+                         '(,name ,@x1--xk) clause nil))
+                       ((unless instances-name) nil)
+                       (map-instances
+                        (map-find-all-instances-list ',hyps clause nil))
+                       ((unless map-instances) nil)
+                       (common-insts (common-instances-listp
+                                      (cons instances-name map-instances))))
+                    common-insts))
+             ;; Left this here in case I come back and want to trace the code
+             ;;(prog2$ (cw "~%*****Chint ~x0, Clause: ~x1~%" ',poly-gen-name clause)
+             '(:in-theory (enable ,poly-gen-name))
+           ;;)
+          ;; (prog2$ (cw "~%XXXXXChint ~x0, Clause: ~x1, ~x2~%" 
+          ;;             ',poly-gen-name clause stable-under-simplificationp)
+           nil)))
+    ;;)
+    psig-hint-body))
 
 (defun sig-events1 (name suffix arg-types ret-type kwd-alist ctx wrld)
   (b* ((arg-type-list1 (acl2::sublis-var-lst *tvar-typename-alist* arg-types)) 
@@ -795,29 +936,81 @@ constant). In the latter return a lambda expression"
 
        (name-pre (if suffix (s+ name '- suffix) name))
        (psig-name (s+ name-pre "-POLYMORPHIC-SIG"))
-       (psig-defthm-body (make-sig-defthm-body name p-arg-types p-ret-type kwd-alist wrld))
-       (poly-inst-template   `((DEFTHM ,(s+ name-pre "-_PRED_-SIG")
-                                ,psig-defthm-body
-                                :hints (("Goal" :in-theory (e/d (_ENABLED-RUNES_) (,name _DISABLED-RUNES_))
-                                         :use ((:functional-instance ,psig-name
-                                                                     _fun-inst-alist_)))))))
+       (poly-inst-name (s+ name-pre "-_PRED_-SIG"))
+       (poly-gen-name (s+ name-pre "-_PRED_-GENRULE-SIG"))
+       (poly-hint-name (s+ name-pre "-_PRED_-GENRULE-HINT-SIG"))
+       (psig-defthm-body
+        (make-sig-defthm-body name p-arg-types p-ret-type kwd-alist wrld))
+       (psig-hint-body
+        (make-sig-hint-body name p-arg-types poly-gen-name kwd-alist wrld))
+       (poly-inst-template
+        `((DEFTHM ,poly-inst-name
+            ,psig-defthm-body
+            :hints (("Goal" :in-theory (e/d (_ENABLED-RUNES_) (,name _DISABLED-RUNES_))
+                     :use ((:functional-instance ,psig-name
+                                                 _fun-inst-alist_))))
+            :rule-classes ,(get1 :rule-classes kwd-alist '(:rewrite)))))
+       (poly-gen-template
+        `((DEFTHMD ,poly-gen-name
+            ,psig-defthm-body
+            :hints (("Goal" :by ,poly-inst-name))
+            :rule-classes :generalize)))
 ;       (- (cw "args: ~x0 ret: ~x1 derived-pred->poly-texp-map: ~x2 templ: ~x3" p-arg-types p-ret-type derived-pred->poly-texp-map poly-inst-template))
-       )
 
+       (poly-hints-defun
+        `((defun ,poly-hint-name
+              (clause stable-under-simplificationp id hist pspv ctx)
+            (declare (ignorable id hist pspv ctx)) ; may need later
+            (declare (xargs :mode :program))
+            ,psig-hint-body)
+          ))
+
+       (poly-computed-hints
+        `((add-default-hints!
+           '((,poly-hint-name clause stable-under-simplificationp id hist pspv ctx))
+           :at-end t)))
+       )
+       
     `(,@(make-sig-tvar-support-events (cons p-ret-type p-arg-types) ctx wrld) 
 
       (DEFTHM ,psig-name  ;restriction: only one sig per function possible!
         ,psig-defthm-body
         :hints ,(or (get1 :hints kwd-alist)  `(("Goal" :in-theory (enable ,name))))
-        :rule-classes ,(get1 :rule-classes kwd-alist '(:rewrite)))
+        :rule-classes ,(get1 :gen-rule-classes kwd-alist '(:rewrite)))
 
 ; for functional instantiating of future types of same shape
       ,@(register-poly-sig-events name p-arg-types p-ret-type poly-inst-template wrld)
 
 ; functionally instantiate all current types of same shape
-      ,@(instantiate-poly-sig-events-for-current-types p-arg-types p-ret-type 
-                                                       poly-inst-template 
-                                                       kwd-alist wrld)
+      ,@(instantiate-poly-sig-events-for-current-types
+         p-arg-types
+         p-ret-type 
+         poly-inst-template 
+         kwd-alist
+         wrld)
+
+; functionally generalizations
+      ,@(instantiate-poly-sig-events-for-current-types
+         p-arg-types
+         p-ret-type 
+         poly-gen-template 
+         kwd-alist
+         wrld)
+
+; computed hints 
+      ,@(instantiate-poly-sig-events-for-current-types
+         p-arg-types
+         p-ret-type 
+         poly-hints-defun
+         kwd-alist
+         wrld)
+
+      ,@(instantiate-poly-sig-events-for-current-types
+         p-arg-types
+         p-ret-type 
+         poly-computed-hints
+         kwd-alist
+         wrld)
       )))
      
 (defun sig-events (parsed wrld)
