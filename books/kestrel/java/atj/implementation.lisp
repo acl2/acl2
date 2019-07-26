@@ -3615,7 +3615,7 @@
                             (list (cons #\0 (atj-indent (1+ indent-level)))
                                   (cons #\1 java-class$))
                             0 channel state nil))
-       (state (atj-gen-run-tests tests$ 2 channel state))
+       (state (atj-gen-run-tests tests$ (1+ indent-level) channel state))
        ((mv & state) (fmt1! "~s0}~%"
                             (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
