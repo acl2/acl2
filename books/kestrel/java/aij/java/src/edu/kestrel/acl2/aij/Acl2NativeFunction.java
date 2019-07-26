@@ -1211,7 +1211,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            return execOr(values[0], values[1]);
+            Acl2Value x = values[0];
+            Acl2Value y = values[1];
+            if (x.equals(Acl2Symbol.NIL))
+                return y;
+            else
+                return x;
         }
 
         /**
@@ -1547,16 +1552,5 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
             return z;
         else
             return y;
-    }
-
-    /**
-     * Executes the native implementation of
-     * the {@code or} ACL2 "pseudo-function".
-     */
-    public static Acl2Value execOr(Acl2Value x, Acl2Value y) {
-        if (x.equals(Acl2Symbol.NIL))
-            return y;
-        else
-            return x;
     }
 }
