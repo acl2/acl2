@@ -324,6 +324,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "java::java" "Java Library"))
+
+   (xdoc::p
+    (xdoc::seeurl "java::atj" "ATJ")
+    ", the Java code generator for ACL2,
+     has been extended with an option to generate Java code
+     according to a shallow embedding approach,
+     besides the previous deep embedding approach.
+     See the documentation for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "list-utilities" "Kestrel List Utilities"))
 
    (xdoc::p
