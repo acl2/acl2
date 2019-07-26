@@ -657,7 +657,7 @@
                       (oslib::catpath output-dir
                                       (concatenate 'string
                                                    java-class$
-                                                   "Test.java"))
+                                                   "Tests.java"))
                     nil))
        ((er &) (b* (((when (null file-test)) (value :this-is-irrelevant))
                     ((mv err/msg exists state) (oslib::path-exists-p file-test))
@@ -3639,7 +3639,7 @@
     [JLS] says that a Java implementation may require
     public classes to be in files with the same names (plus extension).
     The code that we generate satisfies this requirement."))
-  (b* (((mv & state) (fmt1! "~%public class ~s0Test {~%"
+  (b* (((mv & state) (fmt1! "~%public class ~s0Tests {~%"
                             (list (cons #\0 java-class$))
                             0 channel state nil))
        ((run-when verbose$)
