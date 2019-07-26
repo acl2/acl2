@@ -418,11 +418,11 @@
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
 
-(defval *atj-aij-package*
+(defval *atj-aij-jpackage*
   :short "Name of the Java package of AIJ."
   "edu.kestrel.acl2.aij"
   ///
-  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-package*)))
+  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
@@ -440,11 +440,11 @@
                    NIL or a valid Java package name ~
                    consisting of only ASCII characters."
                   java-package))
-       ((when (equal java-package *atj-aij-package*))
+       ((when (equal java-package *atj-aij-jpackage*))
         (er-soft+ ctx t nil
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
-                  java-package *atj-aij-package*)))
+                  java-package *atj-aij-jpackage*)))
     (value nil)))
 
 (defval *atj-default-java-class*
@@ -2621,12 +2621,12 @@
     can always be safely generated as Java string literals.")
   (msg "Acl2PackageName.make(~x0)" apkg))
 
-(defval *atj-jvar-imports*
+(defval *atj-jvar-aimports*
   :short "Name of the Java local variable used to build
           the import lists of ACL2 packages."
   "imports"
   ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-imports*)))
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-aimports*)))
 
 (define atj-gen-apkg-jmethod ((apkg stringp)
                               (verbose$ booleanp)
@@ -2658,7 +2658,7 @@
        (imports (pkg-imports apkg))
        ((mv & state) (fmt1! "~s0List<Acl2Symbol> ~s1 = new ArrayList<>(~x2);~%"
                             (list (cons #\0 (atj-indent (1+ indent-level)))
-                                  (cons #\1 *atj-jvar-imports*)
+                                  (cons #\1 *atj-jvar-aimports*)
                                   (cons #\2 (len imports)))
                             0 channel state nil))
        (state (atj-gen-apkg-jmethod-aux imports indent-level channel state))
@@ -2666,7 +2666,7 @@
        ((mv & state) (fmt1! "~s0Acl2Environment.addPackageDef(~@1, ~s2);~%"
                             (list (cons #\0 (atj-indent (1+ indent-level)))
                                   (cons #\1 apkg-name-jexpr)
-                                  (cons #\2 *atj-jvar-imports*))
+                                  (cons #\2 *atj-jvar-aimports*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
@@ -2685,7 +2685,7 @@
        (b* ((import-jexpr (atj-gen-asymbol (car imports)))
             ((mv & state) (fmt1! "~s0~s1.add(~@2);~%"
                                  (list (cons #\0 (atj-indent indent-level))
-                                       (cons #\1 *atj-jvar-imports*)
+                                       (cons #\1 *atj-jvar-aimports*)
                                        (cons #\2 import-jexpr))
                                  0 channel state nil)))
          (atj-gen-apkg-jmethod-aux
@@ -3672,10 +3672,10 @@
                0 channel state nil)))
     state))
 
-(define atj-gen-jpkg ((java-package$ maybe-stringp)
-                      (indent-level natp)
-                      (channel symbolp)
-                      state)
+(define atj-gen-jpackage ((java-package$ maybe-stringp)
+                          (indent-level natp)
+                          (channel symbolp)
+                          state)
   :returns state
   :mode :program
   :short "Generate the Java package declaration (if any)."
@@ -3713,7 +3713,7 @@
     "We also import some Java library classes."))
   (b* (((mv & state) (fmt1! "~s0import ~s1.*;~%"
                             (list (cons #\0 (atj-indent indent-level))
-                                  (cons #\1 *atj-aij-package*))
+                                  (cons #\1 *atj-aij-jpackage*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0import java.math.BigInteger;~%"
                             (list (cons #\0 (atj-indent indent-level)))
@@ -3746,7 +3746,7 @@
     "We also import a Java library class."))
   (b* (((mv & state) (fmt1! "~s0import ~s`.*;~%"
                             (list (cons #\0 (atj-indent indent-level))
-                                  (cons #\1 *atj-aij-package*))
+                                  (cons #\1 *atj-aij-jpackage*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0import java.math.BigInteger;~%"
                             (list (cons #\0 (atj-indent indent-level)))
@@ -3770,7 +3770,7 @@
   (b* (((mv channel state) (open-output-channel! output-file$
                                                  :character state))
        (state (atj-gen-jfile-header 0 channel state))
-       (state (atj-gen-jpkg java-package$ 0 channel state))
+       (state (atj-gen-jpackage java-package$ 0 channel state))
        (state (atj-gen-jimport 0 channel state))
        (state (atj-gen-jclass
                pkgs afns deep$ java-class$ verbose$ 0 channel state))
@@ -3792,7 +3792,7 @@
   (b* (((mv channel state) (open-output-channel! output-file-test$
                                                  :character state))
        (state (atj-gen-jfile-header 0 channel state))
-       (state (atj-gen-jpkg java-package$ 0 channel state))
+       (state (atj-gen-jpackage java-package$ 0 channel state))
        (state (atj-gen-test-jimport 0 channel state))
        (state (atj-gen-test-jclass tests$ java-class$ verbose$ 0 channel state))
        (state (close-output-channel channel state)))
