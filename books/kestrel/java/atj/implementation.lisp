@@ -954,13 +954,13 @@
           ((cons fn worklist) worklist)
           ((when (primitivep fn))
            (atj-fns-to-translate-aux worklist acc verbose$ ctx state))
-          ((when (and (or (member-eq fn (@ acl2::program-fns-with-raw-code))
-                          (member-eq fn (@ acl2::logic-fns-with-raw-code)))
+          ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
+                          (member-eq fn (@ logic-fns-with-raw-code)))
                       (not (member-eq fn *atj-allowed-raws*))))
            (er-soft+ ctx t nil "The function ~x0 has raw Lisp code ~
                                 and is not in the whitelist; ~
                                 therefore, code generation cannot proceed." fn))
-          (body (getpropc fn 'acl2::unnormalized-body))
+          (body (getpropc fn 'unnormalized-body))
           ((unless body)
            (er-soft+ ctx t nil
                      "The function ~x0 has no UNNORMALIZED-BODY property ~
@@ -1192,7 +1192,7 @@
               (not startp)) (list achar))
         ((eql achar #\-) (list #\_))
         (t (b* ((acode (char-code achar))
-                ((mv hi-char lo-char) (acl2::ubyte8=>hexchars acode)))
+                ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
 (define atj-achars-to-jchars-id ((achars character-listp) (startp booleanp))
@@ -2829,7 +2829,7 @@
                                   (cons #\1 jmethod-name))
                             0 channel state nil))
        (aformals (formals afn (w state)))
-       (abody (getpropc afn 'acl2::unnormalized-body))
+       (abody (getpropc afn 'unnormalized-body))
        (abody (remove-mbe-exec-from-term abody))
        (afn-jexpr (atj-gen-asymbol afn))
        (aformals-jexpr (atj-gen-deep-aformals aformals))
@@ -2971,7 +2971,7 @@
           (equal "execEqual(x, y)")
           (bad-atom<= "execBadAtomLessThanOrEqualTo(x, y)")
           (if "execIf(x, y, z)")
-          (t (acl2::impossible))))
+          (t (impossible))))
        (jcall (str::cat "Acl2NativeFunction." jcall))
        (jparamlist
         (case afn
@@ -3065,7 +3065,7 @@
        ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
                             (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
-       (abody (getpropc afn 'acl2::unnormalized-body))
+       (abody (getpropc afn 'unnormalized-body))
        (abody (remove-mbe-exec-from-term abody))
        ((mv jexpr & & & state) (atj-gen-shallow-aterm abody
                                                       jvars
@@ -3108,7 +3108,7 @@
                               (indent-level natp)
                               (channel symbolp)
                               state)
-  :guard (equal (acl2::symbol-package-name-lst afns)
+  :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) curr-pkg))
   :returns state
   :mode :program
@@ -3134,7 +3134,7 @@
                                       (indent-level natp)
                                       (channel symbolp)
                                       state)
-  :guard (equal (acl2::symbol-package-name-lst afns)
+  :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) apkg))
   :returns state
   :mode :program
@@ -3824,8 +3824,8 @@
     "We always generate the main Java file.
      We generated the test Java file only if @(':tests') is not @('nil')."))
   (state-global-let*
-   ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
-    (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
+   ((fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
+    (fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
    (b* (((er &) (atj-gen-jfile deep$
                                java-package$
                                java-class$
