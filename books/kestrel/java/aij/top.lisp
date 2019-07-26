@@ -48,7 +48,7 @@
     "The Java source files of AIJ may be edited either in IntelliJ IDEA
      or in a text editor like Emacs.
      These source files can be compiled either in IntelliJ IDEA
-     or via the @('compile.sh') file in this directory,
+     or via the @('Makefile') file in this directory,
      which generates class and jar files in the same places
      where IntelliJ IDEA does;
      this shell script assumes that OpenJDK Java 12 is in the path,

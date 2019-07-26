@@ -38,6 +38,9 @@ public final class Acl2Variable extends Acl2Term {
      * so that bindings of values to variables can be represented as
      * arrays instead of maps, for faster access:
      * see {@link Acl2Term#eval(Acl2Value[])}.
+     * Since variables with the same name may have different indices
+     * (when they occur in different terms),
+     * instances of this class must not be interned based on their names.
      */
     private int index = -1;
 

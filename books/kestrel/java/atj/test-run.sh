@@ -4,7 +4,7 @@
 
 # Java Library -- ATJ -- Tests -- Execution
 #
-# Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -32,12 +32,18 @@ set -e
 
 # test the factorial function:
 java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     TestFact 1 1000 5000 10000 50000 100000
+     TestFactDeep 1 1000 5000 10000 50000 100000
+java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     TestFactShallow 1 1000 5000 10000 50000 100000
 
 # test the Fibonacci function:
 java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     TestFib 1 10 20 30
+     TestFibDeep 1 10 20 30
+java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     TestFibShallow 1 10 20 30
 
 # test the ABNF parser:
 java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     TestABNF 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
+     TestABNFDeep 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
+java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     TestABNFShallow 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt

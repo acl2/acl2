@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -7,20 +7,19 @@
 import edu.kestrel.acl2.aij.*;
 
 // Test harness for the generated Java code for the Fibonacci function.
-public class TestFib {
+public class TestFibDeep {
 
     // Make n calls of the Fibonacci function on the input,
     // printing the time taken by each call
     // as well as minimum, maximum, and average.
-    private static void runTest
-        (Acl2Symbol fib, Acl2Value[] input, int n)
+    private static void runTest(Acl2Symbol fib, Acl2Value[] input, int n)
         throws Acl2EvaluationException {
         long[] times = new long[n];
         for (int i = 0; i < n; ++i) {
             // record start time:
             long start = System.currentTimeMillis();
             // execute the call:
-            Acl2Value result = Fib.call(fib, input);
+            Acl2Value result = FibDeep.call(fib, input);
             // record end time:
             long end = System.currentTimeMillis();
             // prevent unwanted JIT compiler optimizations:
@@ -67,9 +66,9 @@ public class TestFib {
     // The number of calls is arg[0], which must be a non-negative int.
     // The inputs are arg[1], arg[2], ...,
     // which must be non-negative ints.
-    // See run.sh in this directory for an example of how to run this code.
+    // See test-run.sh in this directory for an example of how to run this code.
     public static void main(String[] args) throws Acl2EvaluationException {
-        Fib.initialize();
+        FibDeep.initialize();
         int n = Integer.parseInt(args[0]);
         Acl2Symbol fib = Acl2Symbol.makeAcl2("FIB");
         int numInputs = args.length - 1;
