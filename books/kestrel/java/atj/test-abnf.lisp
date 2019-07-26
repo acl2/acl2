@@ -2100,4 +2100,6 @@
 
 ; Generate Java code for the parser.
 
-(java::atj parse-grammar :deep t :java-class "ABNF")
+(java::atj parse-grammar :deep t :java-class "ABNFDeep")
+
+(java::atj parse-grammar :deep nil :java-class "ABNFShallow")

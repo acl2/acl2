@@ -26,4 +26,6 @@
 
 ; Generate Java code for the factorial function.
 
-(java::atj fact :deep t :java-class "Fact")
+(java::atj fact :deep t :java-class "FactDeep")
+
+(java::atj fact :deep nil :java-class "FactShallow")
