@@ -74,28 +74,81 @@ causes the interpreter to assume that @('test') is true while interpreting
 "
   nil)
 
-(define under-equiv (equiv val)
+(define narrow-equiv (equiv val)
   :ignore-ok t
   :irrelevant-formals-ok t
   :enabled t
   :parents (fgl-rewrite-rules)
-  :short "FGL testbench function to interpret a term under a given equivalence context."
-  :long "<p>Logically, @('(under-equiv equiv val)') just returns NIL.  When it
-is encountered by the FGL interpreter under an @('all-equiv') congruence, it
-interprets @('val') under an @('equiv') congruence.  Here @('equiv') should
-evaluate to an object satisfying @('equiv-contexts-p'), likely one of these:</p>
+  :short "FGL testbench function to interpret a term under a narrower (stricter) equivalence context."
+  :long "<p>Logically, @('(narrow-equiv equiv val)') just returns @('val').
+When it is encountered by the FGL interpreter and @('equiv') evaluates to an
+@('equiv-contexts-p') object that is a more granular equivalence than the
+current equivalence context, then it interprets @('val') under an @('equiv')
+congruence.  The most relevant @('equiv-contexts') objects:</p>
+
 <ul>
 <li>@('nil') means rewrite under @('equal'), that is, an object is only equivalent to itself</li>
 <li>@('(iff)') means rewrite under @('iff')</li>
 <li>@('(all-equiv)') means rewrite under @('all-equiv'), that is, all objects are equivalent.</li>
 </ul>
 "
-  nil)
+  val)
+
+
+(define fgl-time-fn (time-val x)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  x)
+
+(defmacro fgl-time (x &key
+                      (mintime '0 mintime-p)
+                      (real-mintime 'nil real-mintime-p)
+                      run-mintime minalloc msg args)
+
+; Warning: Keep this in sync with the generation of time$ calls by untranslate1.
+
+  (declare (xargs :guard t))
+  (cond
+   ((and real-mintime-p mintime-p)
+    (er hard 'fgl-time
+        "It is illegal for a ~x0 form to specify both :real-mintime and ~
+         :mintime."
+        'time$))
+   (t
+    (let ((real-mintime (or real-mintime mintime)))
+      `(fgl-time-fn (list ,real-mintime ,run-mintime ,minalloc ,msg ,args)
+                    ,x)))))
+
+(defxdoc fgl-time
+  :parents (fgl-rewrite-rules)
+  :short "FGL alternative to time$ that does not get elided by rewrite rule storage."
+  :long "<p>The FGL interpreter recognizes time$ forms and prints timing
+information for the symbolic interpretation of the subterm.  However, since FGL
+is programmed mainly with rewrite rules and time$ forms are usually stripped
+out of stored rewrite rules, we provide this alternative that has the same
+effect in FGL symbolic interpretation.  It has no effect in actual execution,
+so it should just be used in rewrite rules, not in executable function
+definitions.</p>")
+
+(define fgl-prog2 (x y)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "In the FGL interpreter, run the first form for side effects and
+return the result from the second form."
+  :long "<p>Logically, returns the second argument.  In FGL, the first argument
+is interpreted under the @('all-equiv') equivalence context, then the second is
+interpreted normally and returned.</p>"
+  y)
 
 (define fgl-interp-obj (term)
   :ignore-ok t
   :irrelevant-formals-ok t
   :enabled t
+  :parents (fgl-rewrite-rules)
   :short "FGL testbench function to interpret a term that is the result of evaluating some form."
   :long "<p>Logically, @('(fgl-interp-obj term)') just returns NIL.  When it is
 encountered by the FGL interpreter under an @('all-equiv') congruence, it

@@ -2637,7 +2637,9 @@ registers are not used.</p>"
     numerator rationalp realpart
     stringp symbol-name symbol-package-name
     symbolp
-    bind-var syntax-interp-fn abort-rewrite all-equiv assume under-equiv fgl-interp-obj
+    bind-var syntax-interp-fn abort-rewrite all-equiv assume narrow-equiv fgl-interp-obj
+    fgl-time-fn fgl-prog2
+    
 
     equal not if iff int bool
     concrete return-last synp cons car cdr
