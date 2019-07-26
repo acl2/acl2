@@ -2100,4 +2100,4 @@
 
 ; Generate Java code for the parser.
 
-(java::atj parse-grammar :java-class "ABNF")
+(java::atj parse-grammar :deep t :java-class "ABNF")

@@ -191,22 +191,39 @@
      external Java code can ``use'' ACL2 code.")
 
    (xdoc::p
-    "Currently ATJ generates
-     deeply embedded Java representations of the ACL2 functions.
-     The public method (1) mentioned above
-     constructs these deeply embedded representations
-     as part of the ACL2 environment representation in Java.
-     The public method (2) mentioned above
-     executes these representations via AIJ's interpreter.")
+    "ATJ generates either deeply embedded or shallowly embedded
+     Java representations of the ACL2 functions.
+     The choice is controlled by a user option.")
+
+   (xdoc::h4 "Deep Embedding")
+
+   (xdoc::p
+    "In the deep embedding approach,
+     ATJ generates Java code to build
+     the deeply embedded ACL2 functions,
+     and to call and execute them via AIJ's interpreter.")
 
    (xdoc::p
     "This deep embedding approach is simple and thus fairly high-assurance.
      On the other hand, the Java code is not efficient or idiomatic.
-     However, the approach may work well for some simple applications,
-     and provides a good starting point for optimization.
-     In the future, we may translate ACL2 functions to
-     shallowly embedded Java representations,
-     avoiding interpretation altogether.")
+     However, the approach may work well for some simple applications.")
+
+   (xdoc::h4 "Shallow Embedding")
+
+   (xdoc::p
+    "In the shallow embedding approach,
+     ATJ generates Java code that mimics the computations of
+     the shallowly embedded ACL2 functions,
+     one Java method for each ACL2 function.
+     These methods are executed without using AIJ's interpreter.
+     However, the shallowly embedded ACL2 functions still use
+     AIJ's representation of the ACL2 values
+     and AIJ's native implementation of the ACL2 primitive functions.")
+
+   (xdoc::p
+    "This shallow embedding approach
+     is more complex than the deep embedding approach,
+     but produces code that is more efficient and more idiomatic.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,6 +231,7 @@
 
    (xdoc::codeblock
     "(atj fn1 ... fnp"
+    "     :deep         ..."
     "     :java-package ..."
     "     :java-class   ..."
     "     :output-dir   ..."
@@ -252,6 +270,16 @@
       All the @('fni') names must be distinct."))
 
    (xdoc::desc
+    "@(':deep') &mdash; default @('nil')"
+    (xdoc::p
+     "Chooses the deep or shallow embedding approach described above:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t') (the default), for the deep embedding.")
+     (xdoc::li
+      "@('nil'), for the shallow embedding.")))
+
+   (xdoc::desc
     "@(':java-package') &mdash; default @('nil')"
     (xdoc::p
      "Name of the Java package of the generated Java code.")
@@ -272,7 +300,8 @@
      "It must be either an ACL2 string or @('nil').
       If it is an ACL2 string,
       it must be a valid Java class name consisting of only ASCII characters.
-      If this input is @('nil'), the generated Java class is called @('ACL2').")
+      If this input is @('nil'),
+      the generated Java class is called @('ACL2Code').")
     (xdoc::p
      "If the @(':tests') input (see below) is not @('nil'),
       an additional Java class for testing is generated,
@@ -321,7 +350,11 @@
       These tests can be run via additional generated Java code
       (see below).")
     (xdoc::p
-     "Note that the @(':tests') input is evaluated."))
+     "Note that the @(':tests') input is evaluated.")
+    (xdoc::p
+     "This input may be present only if @(':deep') is @('t').
+      Test support for the shallow embedding approach
+      should be added in the future."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
@@ -343,34 +376,37 @@
      in the package specified by the @(':java-package') input.")
 
    (xdoc::codeblock
+    "// if :deep is t:"
     "public class <name> {"
-    "    // private static field and methods"
+    "    // private members"
     "    public static void initialize() ..."
     "    public static Acl2Value"
     "        call(Acl2Symbol function, Acl2Value[] arguments) ..."
+    "}"
+    ""
+    "// if :deep is nil:"
+    "public class <name> {"
+    "    // private members"
+    "    public static void initialize() ..."
+    "    public static class <pkg> {"
+    "        public static Acl2Value <fn>(Acl2Value ...) ..."
+    "    }"
+    "    // other public static classes with public static methods"
     "}")
 
    (xdoc::p
-    "This Java class has private static methods
-     that build the relevant portions of the ACL2 environment,
-     including the definitions of the functions @('fn1'), ..., @('fnp')
-     and of all the functions that they transitively call,
-     except for the primitive functions.
-     It also has a private static field that records whether
-     the ACL2 environment is initialized or not.")
-
-   (xdoc::p
     "This Java class has a public static method @('initialize')
-     to initialize the relevant portions of the ACL2 environment,
-     via the private methods mentioned just above.
+     to initialize the relevant portions of the ACL2 environment.
      This public method must be called just once,
-     before calling the public method @('call') described below;
-     this usage is enforced via the private field mentioned just above.
+     before calling the other public methods described below;
+     a Java exception is thrown if this protocol is not observed.
      This @('initialize') method should be also called
-     before calling any of the public methods provided by AIJ.")
+     before calling any of the public methods provided by AIJ,
+     because AIJ itself relies on this initialization to work properly.")
 
    (xdoc::p
-    "This Java class has a public static method @('call')
+    "In the deep embedding approach,
+     the Java class also has a public static method @('call')
      to call an ACL2 function on some ACL2 values.
      The method takes as arguments
      the name of the ACL2 function to call
@@ -379,6 +415,21 @@
      The called ACL2 function must be among @('fn1'), ..., @('fnp')
      and the functions that they transitively call,
      or it may be any of the primitive ACL2 functions.")
+
+   (xdoc::p
+    "In the shallow embedding approach,
+     the Java class contains one public static method
+     for each function among @('fn1'), ..., @('fnp'),
+     the functions that they transitively call,
+     and the primitive ACL2 functions.
+     Each method has the same number of parameters as the ACL2 function,
+     all ACL2 values, and returns an ACL2 value.
+     These methods are declared in nested public classes,
+     one class for each ACL2 package:
+     each function's method is in the corresponding package's class.
+     See the implementation for a description of the mapping between
+     ACL2 package and function names and these Java class and method names;
+     user-level documentation for this mapping will be added at some point.")
 
    (xdoc::h4 "Optional Test Class")
 
@@ -391,15 +442,15 @@
 
    (xdoc::codeblock
     "public class <name>Test {"
-    "    // private static methods"
+    "    // private members"
     "    public static void main(String[] args) ..."
     "}")
 
    (xdoc::p
-    "This Java class has a private static method
+    "This Java class includes code
      for each test @('(namej termj)')
      specified via the @(':tests') input (see above).
-     Each such method prints @('namej'),
+     The code for each test prints @('namej'),
      evaluates the call @('(fn qc1 1c2 ...)') (which @('termj') translates to)
      in AIJ (via the @('call') public method described above),
      compares the resulting value with the one that ACL2 returns
@@ -410,5 +461,5 @@
    (xdoc::p
     "This Java class has a public static @('main') method that
      calls the @('initialize') public method described above
-     and then calls all the testing methods described just above.
+     and then executes the code to run the tests described just above.
      Thus, this test class can be invoked as a Java application.")))

@@ -27,4 +27,4 @@
 
 ; Generate Java code for the Fibonacci function.
 
-(java::atj fib :java-class "Fib")
+(java::atj fib :deep t :java-class "Fib")
