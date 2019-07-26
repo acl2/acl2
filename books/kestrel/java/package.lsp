@@ -25,6 +25,7 @@
                          alpha/digit/dash-charlist-p
                          alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
+                         bad-atom<=
                          body
                          bool
                          char-downcase
