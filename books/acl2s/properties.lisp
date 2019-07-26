@@ -26,12 +26,13 @@ of testing. So, non-terminating functions will be accepted.
 
 modeling-validate-defs mode:
 
-Once you are happy with your model in modeling-start mode, 
-then switch to this mode and the idea is that ACL2s will
-validate definitions, i.e., ACL2s will not skip
-admissibility and contract checking, but it will also 
-not be strict. ACL2s is also given twice the time budget
-as in the previous mode.
+Once you are happy with your model in modeling-start mode, then switch
+to this mode and the idea is that ACL2s will validate definitions,
+i.e., ACL2s will not skip admissibility and contract checking, but it
+will also not be strict. ACL2s is also given twice the time budget as
+in the previous mode. In this mode, functions whose contracts have not
+been proven have their contracts checked dynamically, which can lead
+to significant increases in running time.
 
 modeling-admit-defs mode:
 
