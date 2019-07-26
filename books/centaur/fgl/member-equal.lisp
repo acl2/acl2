@@ -70,6 +70,7 @@
   (iff (maybe-value true val)
        true))
 
+
 ;; To merge a maybe-value with some other object, merge with the test under an
 ;; IFF context and then merge the value using fgl-hidden-if.
 (def-gl-branch-merge maybe-value-merge
@@ -121,3 +122,10 @@
 (def-gl-rewrite member-equal-to-maybe-value
   (equal (member-equal x lst)
          (maybe-value (memberp-equal x lst) (hide-member-equal x lst))))
+
+;; This makes our strategy work for (consp (member-equal x lst)) calls, though
+;; this is kind of a roundabout way to get it.
+(def-gl-rewrite consp-of-member-equal-result
+  (implies (equal true (memberp-equal x lst))
+           (equal (consp (maybe-value true (hide-member-equal x lst)))
+                  true)))

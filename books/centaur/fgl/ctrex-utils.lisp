@@ -2464,7 +2464,7 @@
                (and consistency-result
                     (cw "Inconsistencies in bvar-db counterexample (~x0 total). See error list: ~x1.~%"
                         (len consistency-result)
-                        '(cdr (hons-get :bvar-db-ctrex-consistency-errors (@ fgl-user-scratch)))))
+                        '(cdr (hons-get :bvar-db-ctrex-consistency-errors (@ :fgl-user-scratch)))))
                interp-st)))
 
 

@@ -1211,4 +1211,8 @@
                                      bitops::ihsext-recursive-redefs
                                      pos-fix))))
 
+(def-gl-rewrite booleanp-fgl
+  (equal (booleanp x)
+         (and (equal x (if x t nil)) t)))
+
 

@@ -554,7 +554,7 @@
   (equal (loghead n x)
          (logapp n x 0)))
 
-(remove-gl-rewrite logext-to-logapp
+(remove-gl-rewrite logext-to-logapp)
 (def-gl-rewrite logext-to-logapp-always
   (equal (logext n x)
          (logapp n x (endint (logbitp (+ -1 (pos-fix n)) x))))
