@@ -1713,7 +1713,7 @@
    (xdoc::p
     "In the shallow embedding approach,
      each ACL2 variable is turned into a Java variable.
-     The function @(tsee atj-chars-to-jchars-id) takes care of
+     The function @(tsee atj-achars-to-jchars-id) takes care of
      ensuring that only characters valid for Java identifiers are used,
      but this is not sufficient:
      a Java variable name cannot be a keyword,
