@@ -38,6 +38,9 @@
 (include-book "constprop")
 (include-book "abc-wrappers")
 
+;; for convenience, we provide a binding to the cube-sat transformation
+(include-book "cube-sat")
+
 (defxdoc aignet-comb-transforms
   :parents (aignet)
   :short "Aignet transforms that simplify the network while preserving combinational equivalence"
@@ -428,3 +431,35 @@ for translating between ABC and aignet does not support xors.</p>"
 (defconst *default-transforms*
   (list (make-balance-config) *fraig-default-config*))
 
+
+
+(define cube-sat-default-transform (aignet config state)
+  :returns (mv new-aignet new-state)
+  (if (comb-transformlist-p config)
+      (time$ (aignet::apply-comb-transforms! aignet::aignet config state)
+             :msg "All transforms: ~st seconds, ~sa bytes.~%")
+    (prog2$ (er hard? 'cube-sat-default-transform
+                "Config must satisfy ~x0, but did not: ~x1"
+                'comb-transformlist-p config)
+            (mv aignet state)))
+  ///
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet)
+           (stype-count :pi aignet)))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet)
+           (stype-count :reg aignet)))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet)
+           (stype-count :po aignet)))
+
+  (defret <fn>-comb-equivalent
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
+
+(defattach aignet-cube-sat-transform cube-sat-default-transform)
