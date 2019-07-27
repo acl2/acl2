@@ -2378,7 +2378,7 @@
                (athird (third aargs)))
             (if (equal afirst asecond)
                 (atj-gen-shallow-aorapp afirst
-                                        asecond
+                                        athird
                                         jvars
                                         jvar-var-indices
                                         jvar-value-index
