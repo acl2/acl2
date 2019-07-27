@@ -3744,7 +3744,7 @@
      by their simple (i.e. unqualified) names.")
    (xdoc::p
     "We also import a Java library class."))
-  (b* (((mv & state) (fmt1! "~s0import ~s`.*;~%"
+  (b* (((mv & state) (fmt1! "~s0import ~s1.*;~%"
                             (list (cons #\0 (atj-indent indent-level))
                                   (cons #\1 *atj-aij-jpackage*))
                             0 channel state nil))
