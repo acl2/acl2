@@ -305,7 +305,7 @@
     (xdoc::p
      "If the @(':tests') input (see below) is not @('nil'),
       an additional Java class for testing is generated,
-      whose name is obtained by appending @('Test')
+      whose name is obtained by appending @('Tests')
       at the end of the name of the main class."))
 
    (xdoc::desc
@@ -441,7 +441,7 @@
      in the package specified by the @(':java-package') input.")
 
    (xdoc::codeblock
-    "public class <name>Test {"
+    "public class <name>Tests {"
     "    // private members"
     "    public static void main(String[] args) ..."
     "}")

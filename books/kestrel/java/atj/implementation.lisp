@@ -418,11 +418,11 @@
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
 
-(defval *atj-aij-package*
+(defval *atj-aij-jpackage*
   :short "Name of the Java package of AIJ."
   "edu.kestrel.acl2.aij"
   ///
-  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-package*)))
+  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
@@ -440,11 +440,11 @@
                    NIL or a valid Java package name ~
                    consisting of only ASCII characters."
                   java-package))
-       ((when (equal java-package *atj-aij-package*))
+       ((when (equal java-package *atj-aij-jpackage*))
         (er-soft+ ctx t nil
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
-                  java-package *atj-aij-package*)))
+                  java-package *atj-aij-jpackage*)))
     (value nil)))
 
 (defval *atj-default-java-class*
@@ -657,7 +657,7 @@
                       (oslib::catpath output-dir
                                       (concatenate 'string
                                                    java-class$
-                                                   "Test.java"))
+                                                   "Tests.java"))
                     nil))
        ((er &) (b* (((when (null file-test)) (value :this-is-irrelevant))
                     ((mv err/msg exists state) (oslib::path-exists-p file-test))
@@ -954,13 +954,13 @@
           ((cons fn worklist) worklist)
           ((when (primitivep fn))
            (atj-fns-to-translate-aux worklist acc verbose$ ctx state))
-          ((when (and (or (member-eq fn (@ acl2::program-fns-with-raw-code))
-                          (member-eq fn (@ acl2::logic-fns-with-raw-code)))
+          ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
+                          (member-eq fn (@ logic-fns-with-raw-code)))
                       (not (member-eq fn *atj-allowed-raws*))))
            (er-soft+ ctx t nil "The function ~x0 has raw Lisp code ~
                                 and is not in the whitelist; ~
                                 therefore, code generation cannot proceed." fn))
-          (body (getpropc fn 'acl2::unnormalized-body))
+          (body (getpropc fn 'unnormalized-body))
           ((unless body)
            (er-soft+ ctx t nil
                      "The function ~x0 has no UNNORMALIZED-BODY property ~
@@ -1192,7 +1192,7 @@
               (not startp)) (list achar))
         ((eql achar #\-) (list #\_))
         (t (b* ((acode (char-code achar))
-                ((mv hi-char lo-char) (acl2::ubyte8=>hexchars acode)))
+                ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
 (define atj-achars-to-jchars-id ((achars character-listp) (startp booleanp))
@@ -2378,7 +2378,7 @@
                (athird (third aargs)))
             (if (equal afirst asecond)
                 (atj-gen-shallow-aorapp afirst
-                                        asecond
+                                        athird
                                         jvars
                                         jvar-var-indices
                                         jvar-value-index
@@ -2621,12 +2621,12 @@
     can always be safely generated as Java string literals.")
   (msg "Acl2PackageName.make(~x0)" apkg))
 
-(defval *atj-jvar-imports*
+(defval *atj-jvar-aimports*
   :short "Name of the Java local variable used to build
           the import lists of ACL2 packages."
   "imports"
   ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-imports*)))
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-aimports*)))
 
 (define atj-gen-apkg-jmethod ((apkg stringp)
                               (verbose$ booleanp)
@@ -2658,7 +2658,7 @@
        (imports (pkg-imports apkg))
        ((mv & state) (fmt1! "~s0List<Acl2Symbol> ~s1 = new ArrayList<>(~x2);~%"
                             (list (cons #\0 (atj-indent (1+ indent-level)))
-                                  (cons #\1 *atj-jvar-imports*)
+                                  (cons #\1 *atj-jvar-aimports*)
                                   (cons #\2 (len imports)))
                             0 channel state nil))
        (state (atj-gen-apkg-jmethod-aux imports indent-level channel state))
@@ -2666,7 +2666,7 @@
        ((mv & state) (fmt1! "~s0Acl2Environment.addPackageDef(~@1, ~s2);~%"
                             (list (cons #\0 (atj-indent (1+ indent-level)))
                                   (cons #\1 apkg-name-jexpr)
-                                  (cons #\2 *atj-jvar-imports*))
+                                  (cons #\2 *atj-jvar-aimports*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0}~%" (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
@@ -2685,7 +2685,7 @@
        (b* ((import-jexpr (atj-gen-asymbol (car imports)))
             ((mv & state) (fmt1! "~s0~s1.add(~@2);~%"
                                  (list (cons #\0 (atj-indent indent-level))
-                                       (cons #\1 *atj-jvar-imports*)
+                                       (cons #\1 *atj-jvar-aimports*)
                                        (cons #\2 import-jexpr))
                                  0 channel state nil)))
          (atj-gen-apkg-jmethod-aux
@@ -2829,7 +2829,7 @@
                                   (cons #\1 jmethod-name))
                             0 channel state nil))
        (aformals (formals afn (w state)))
-       (abody (getpropc afn 'acl2::unnormalized-body))
+       (abody (getpropc afn 'unnormalized-body))
        (abody (remove-mbe-exec-from-term abody))
        (afn-jexpr (atj-gen-asymbol afn))
        (aformals-jexpr (atj-gen-deep-aformals aformals))
@@ -2971,7 +2971,7 @@
           (equal "execEqual(x, y)")
           (bad-atom<= "execBadAtomLessThanOrEqualTo(x, y)")
           (if "execIf(x, y, z)")
-          (t (acl2::impossible))))
+          (t (impossible))))
        (jcall (str::cat "Acl2NativeFunction." jcall))
        (jparamlist
         (case afn
@@ -3065,7 +3065,7 @@
        ((mv & state) (fmt1! "~s0throws Acl2EvaluationException {~%"
                             (list (cons #\0 (atj-indent (1+ indent-level))))
                             0 channel state nil))
-       (abody (getpropc afn 'acl2::unnormalized-body))
+       (abody (getpropc afn 'unnormalized-body))
        (abody (remove-mbe-exec-from-term abody))
        ((mv jexpr & & & state) (atj-gen-shallow-aterm abody
                                                       jvars
@@ -3108,7 +3108,7 @@
                               (indent-level natp)
                               (channel symbolp)
                               state)
-  :guard (equal (acl2::symbol-package-name-lst afns)
+  :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) curr-pkg))
   :returns state
   :mode :program
@@ -3134,7 +3134,7 @@
                                       (indent-level natp)
                                       (channel symbolp)
                                       state)
-  :guard (equal (acl2::symbol-package-name-lst afns)
+  :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) apkg))
   :returns state
   :mode :program
@@ -3615,7 +3615,7 @@
                             (list (cons #\0 (atj-indent (1+ indent-level)))
                                   (cons #\1 java-class$))
                             0 channel state nil))
-       (state (atj-gen-run-tests tests$ 2 channel state))
+       (state (atj-gen-run-tests tests$ (1+ indent-level) channel state))
        ((mv & state) (fmt1! "~s0}~%"
                             (list (cons #\0 (atj-indent indent-level)))
                             0 channel state nil)))
@@ -3639,7 +3639,7 @@
     [JLS] says that a Java implementation may require
     public classes to be in files with the same names (plus extension).
     The code that we generate satisfies this requirement."))
-  (b* (((mv & state) (fmt1! "~%public class ~s0Test {~%"
+  (b* (((mv & state) (fmt1! "~%public class ~s0Tests {~%"
                             (list (cons #\0 java-class$))
                             0 channel state nil))
        ((run-when verbose$)
@@ -3672,10 +3672,10 @@
                0 channel state nil)))
     state))
 
-(define atj-gen-jpkg ((java-package$ maybe-stringp)
-                      (indent-level natp)
-                      (channel symbolp)
-                      state)
+(define atj-gen-jpackage ((java-package$ maybe-stringp)
+                          (indent-level natp)
+                          (channel symbolp)
+                          state)
   :returns state
   :mode :program
   :short "Generate the Java package declaration (if any)."
@@ -3713,7 +3713,7 @@
     "We also import some Java library classes."))
   (b* (((mv & state) (fmt1! "~s0import ~s1.*;~%"
                             (list (cons #\0 (atj-indent indent-level))
-                                  (cons #\1 *atj-aij-package*))
+                                  (cons #\1 *atj-aij-jpackage*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0import java.math.BigInteger;~%"
                             (list (cons #\0 (atj-indent indent-level)))
@@ -3744,9 +3744,9 @@
      by their simple (i.e. unqualified) names.")
    (xdoc::p
     "We also import a Java library class."))
-  (b* (((mv & state) (fmt1! "~s0import ~s`.*;~%"
+  (b* (((mv & state) (fmt1! "~s0import ~s1.*;~%"
                             (list (cons #\0 (atj-indent indent-level))
-                                  (cons #\1 *atj-aij-package*))
+                                  (cons #\1 *atj-aij-jpackage*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0import java.math.BigInteger;~%"
                             (list (cons #\0 (atj-indent indent-level)))
@@ -3770,7 +3770,7 @@
   (b* (((mv channel state) (open-output-channel! output-file$
                                                  :character state))
        (state (atj-gen-jfile-header 0 channel state))
-       (state (atj-gen-jpkg java-package$ 0 channel state))
+       (state (atj-gen-jpackage java-package$ 0 channel state))
        (state (atj-gen-jimport 0 channel state))
        (state (atj-gen-jclass
                pkgs afns deep$ java-class$ verbose$ 0 channel state))
@@ -3792,7 +3792,7 @@
   (b* (((mv channel state) (open-output-channel! output-file-test$
                                                  :character state))
        (state (atj-gen-jfile-header 0 channel state))
-       (state (atj-gen-jpkg java-package$ 0 channel state))
+       (state (atj-gen-jpackage java-package$ 0 channel state))
        (state (atj-gen-test-jimport 0 channel state))
        (state (atj-gen-test-jclass tests$ java-class$ verbose$ 0 channel state))
        (state (close-output-channel channel state)))
@@ -3824,8 +3824,8 @@
     "We always generate the main Java file.
      We generated the test Java file only if @(':tests') is not @('nil')."))
   (state-global-let*
-   ((acl2::fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
-    (acl2::fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
+   ((fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
+    (fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
    (b* (((er &) (atj-gen-jfile deep$
                                java-package$
                                java-class$
