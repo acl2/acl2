@@ -34,7 +34,9 @@ use warnings;
 
 # info about a book:
 use Class::Struct Certinfo => [ bookdeps => '@',        # books included by this one
+				bookdeps_local => '@',  # flags corresp books from bookdeps as local
 				portdeps => '@',        # books included in the portcullis
+				portdeps_local => '@',  # flags corresp books from portdeps as local
 				srcdeps => '@',         # source dependencies (.lisp, .acl2)
 				otherdeps => '@',       # from depends_on forms
 				image => '$',           # acl2, or from book.image/cert.image

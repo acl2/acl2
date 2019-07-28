@@ -146,11 +146,11 @@
   :prepwork
   ((local (in-theory (e/d () (not (tau-system))))))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-movs)
-
-       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
+  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -160,9 +160,6 @@
        (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
 
        ((the (unsigned-byte 1) df) (flgi :df x86))
 
@@ -400,11 +397,11 @@
   :prepwork
   ((local (in-theory (e/d () (not (tau-system))))))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-cmps)
-
-       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
+  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -414,9 +411,6 @@
        (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
 
        ((the (unsigned-byte 1) df) (flgi :df x86))
 
@@ -640,9 +634,7 @@
 
   :body
 
-  (b* ((ctx 'x86-stos)
-
-       (group-1-prefix (the (unsigned-byte 8) (prefixes->seg prefixes)))
+  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->seg prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))

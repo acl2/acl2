@@ -86,20 +86,12 @@
       (if (atom x) nil (f (car x)))))
   (must-fail (restrict f t)))
 
- ;; in its own termination theorem:
- (must-succeed*
-  (defun f (x)
-    (declare (xargs :guard (natp x)))
-    (if (zp x)
-        nil
-      (and (f (1- x))
-           (f (1- x)))))
-  (must-fail (restrict f t)))
-
  ;; not guard-verified (and VERIFY-GUARDS is T):
  (must-succeed*
   (defun f (x) (declare (xargs :verify-guards nil)) x)
-  (must-fail (restrict f t :verify-guards t))))
+  (must-fail (restrict f t :verify-guards t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -737,3 +729,20 @@
    (must-be-redundant (restrict nfix (natp x) :verify-guards nil)))
   (must-fail-local
    (must-be-redundant (restrict nfix (natp x) :new-name nfix-new)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test reflexive function.")
+
+ (defun f (x)
+   (declare (xargs :guard (natp x)))
+   (if (zp x)
+       nil
+     (and (f (1- x))
+          (f (1- x)))))
+
+ (restrict f (natp x))
+
+ :with-output-off nil)

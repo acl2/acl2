@@ -203,11 +203,17 @@
              (TI.max (cdr (assoc-eq :max-rec-depth al)))
              
              (TI.def (cdr (assoc-eq :def al)))
+             ((when (equal 0 TI.size))
+              (prog2$
+               (cw? (verbose-stats-flag vl)
+                    "~|Cgen/Error: size in type-info ~x0 is 0.~%" (cdr entry))
+               (acl2::make enum-info% :domain-size 0 :min-rec-depth 0 :max-rec-depth 1
+                           :category :empty :expr nil :expr2 nil)))
              ((unless (or (eq 't TI.size)
-                         (posp TI.size)))
+                          (natp TI.size)))
               (prog2$
                (cw? (normal-output-flag vl)
-                    "~|Cgen/Error: size in type-info ~x0 should be posp.~%" (cdr entry))
+                    "~|Cgen/Error: size in type-info ~x0 should be a natural number or T.~%" (cdr entry))
                (acl2::make enum-info% :domain-size 0 :min-rec-depth 0 :max-rec-depth 1
                            :category :empty :expr nil :expr2 nil)))
 

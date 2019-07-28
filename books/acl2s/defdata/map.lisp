@@ -128,9 +128,14 @@ data last modified: [2014-08-06]
     (case-match pdef
       (('MAP keybody valbody)
        (b* ((M (append new-types (type-metadata-table wrld)))
-            (pred (predicate-name name M))
-            (?keypred (and (proper-symbolp keybody) (assoc-eq keybody M) (predicate-name keybody M)))
-            (?valpred (and (proper-symbolp keybody) (assoc-eq keybody M) (predicate-name valbody M))))
+            (A (type-alias-table wrld))
+            (pred (predicate-name name A M))
+            (?keypred (and (proper-symbolp keybody)
+                           (assoc-eq keybody M)
+                           (predicate-name keybody A M)))
+            (?valpred (and (proper-symbolp keybody)
+                           (assoc-eq keybody M)
+                           (predicate-name valbody A M))))
          `((defdata-attach ,name
              :constraint (mget a x) ;x is the variable of this type
              :constraint-variable x
@@ -155,14 +160,19 @@ data last modified: [2014-08-06]
  ; (declare (xargs :mode :program))
 ;assumption: key/val body are core defdata exps (holds because user-combinators occur only at top-level)
   (b* ((M (append new-types (type-metadata-table wrld)))
-       (pred (predicate-name name M))
+       (A (type-alias-table wrld))
+       (pred (predicate-name name A M))
        ((when (not (proper-symbolp pred))) (er hard? 'map-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
        
        ((mv ?symbol-alist-subtypep ?keypred) 
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
-            (mv (subtype-p (predicate-name keybody M) 'acl2::symbolp wrld) (predicate-name keybody M))
+            (mv (subtype-p (predicate-name keybody A M)
+                           'acl2::symbolp wrld)
+                (predicate-name keybody A M))
           (mv nil nil))) ;inconsistent with earlier use of :undef
-       (?valpred (and (proper-symbolp keybody) (assoc-eq keybody M) (predicate-name valbody M)))
+       (?valpred (and (proper-symbolp keybody)
+                      (assoc-eq keybody M)
+                      (predicate-name valbody A M)))
 
        (disabled (get1 :disabled kwd-alist))
        (disabled (cons 'acl2::mset-diff-mset disabled))

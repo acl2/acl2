@@ -188,32 +188,38 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
     (type-of-pred-aux pred tbl))))
 
 #|
+(type-of-pred 'boolp
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
+(type-of-pred 'boolp
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
 (type-of-pred 'bool
-              (table-alist 'defdata::type-metadata-table (w state))
-              (table-alist 'defdata::pred-alias-table (w state)))
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
 (type-of-pred 'tlp
-              (table-alist 'defdata::type-metadata-table (w state))
-              (table-alist 'defdata::pred-alias-table (w state)))
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
 (type-of-pred 'intp
-              (table-alist 'defdata::type-metadata-table (w state))
-              (table-alist 'defdata::pred-alias-table (w state)))
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
 (type-of-pred 'integerp
-              (table-alist 'defdata::type-metadata-table (w state))
-              (table-alist 'defdata::pred-alias-table (w state)))
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
 (type-of-pred nil
-              (table-alist 'defdata::type-metadata-table (w state))
-              (table-alist 'defdata::pred-alias-table (w state)))
+              (defdata::type-metadata-table (w state))
+              (defdata::pred-alias-table (w state)))
 |#
 
 (defun enum-of-type (type tbl)
   (get-alist :enumerator (get-alist type tbl)))
 
-; (enum-of-type 'integer (table-alist 'defdata::type-metadata-table (w state)))
+; (enum-of-type 'integer (defdata::type-metadata-table (w state)))
 
 (defun base-val-of-type (type tbl)
   (get-alist :default-base-value (get-alist type tbl)))
 
-; (base-val-of-type 'integer (table-alist 'defdata::type-metadata-table (w state)))
+; (base-val-of-type 'integer (defdata::type-metadata-table (w state)))
 
 (defun unalias-pred (pred ptbl)
   (let ((apred (assoc-equal :predicate (get-alist pred ptbl))))
@@ -261,8 +267,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun get-undef-name (pred d? pkg w)
   (declare (xargs :mode :program :guard (symbolp pred)))
-  (b* ((tbl (table-alist 'defdata::type-metadata-table w))
-       (ptbl (table-alist 'defdata::pred-alias-table w))
+  (b* ((tbl (defdata::type-metadata-table w))
+       (ptbl (defdata::pred-alias-table w))
        (type (type-of-pred pred tbl ptbl))
        (undef-name (if type
                        (make-symbl `(acl2s - ,type ,(if d? '-d- '-) undefined) pkg)
@@ -272,7 +278,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       'acl2s::acl2s-undefined)))
 
 (defun make-defun-body/logic (name formals ic oc body wrld make-staticp d? pkg)
-  (b* ((ptbl (table-alist 'defdata::pred-alias-table wrld))
+  (b* ((ptbl (defdata::pred-alias-table wrld))
        (with-ic-body
         (if (c-is-t ic)
             body
@@ -422,7 +428,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? pkg w)
   (declare (xargs :mode :program))
-  (b* ((ptbl (table-alist 'defdata::pred-alias-table w))
+  (b* ((ptbl (defdata::pred-alias-table w))
        (pred (pred-of-oc name formals oc ptbl))
        (undef-name (get-undef-name pred d? pkg w)))
     (if (or (c-is-t ic)
@@ -1077,12 +1083,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defdata::deffilter filter-strings (xs) stringp)
 
-;; (defmacro termination-strictp () `(cdr (assoc-eq :termination-strictp (table-alist 'defunc-defaults-table wrld))))
-;; (defmacro function-contract-strictp () `(cdr (assoc-eq :function-contract-strictp (table-alist 'defunc-defaults-table wrld))))
-;; (defmacro body-contracts-strictp () `(cdr (assoc-eq :body-contracts-strictp (table-alist 'defunc-defaults-table wrld))))
-
-
-
 (table defunc-defaults-table nil
        '((:debug       .  nil)
          (:verbose     . nil)
@@ -1101,6 +1101,16 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        :clear)
 
 (verify-termination defdata::remove1-assoc-eq-lst)
+
+;; (defmacro termination-strictp () `(cdr (assoc-eq :termination-strictp (table-alist 'defunc-defaults-table wrld))))
+;; (defmacro function-contract-strictp () `(cdr (assoc-eq :function-contract-strictp (table-alist 'defunc-defaults-table wrld))))
+;; (defmacro body-contracts-strictp () `(cdr (assoc-eq :body-contracts-strictp (table-alist 'defunc-defaults-table wrld))))
+
+(defun defunc-table (wrld)
+  "api to get the alist representing defun-defaults-table"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defunc-defaults-table wrld))
+
 
 (defloop thereis-programp (fns wrld)
   (for ((fn in fns)) (thereis (acl2::programp fn wrld))))
@@ -1170,8 +1180,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun make-undefined-aux (parsed w d? do-it pkg)
   (declare (xargs :mode :program))
   (b* (((list name formals & oc & & kwd-alist) parsed)
-       (tbl (table-alist 'defdata::type-metadata-table w))
-       (ptbl (table-alist 'defdata::pred-alias-table w))
+       (tbl (defdata::type-metadata-table w))
+       (ptbl (defdata::pred-alias-table w))
        (pred (pred-of-oc name formals oc ptbl))
        (type (type-of-pred pred tbl ptbl))
        (undef-name (if type
@@ -1496,46 +1506,46 @@ To debug a failed defunc form, you can proceed in multiple ways:
   )
 
 (defmacro set-defunc-termination-strictp (b)
-  `(table defunc-defaults-table :termination-strictp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :termination-strictp b))
 (defmacro set-defunc-function-contract-strictp (b)
-  `(table defunc-defaults-table :function-contract-strictp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :function-contract-strictp b))
 (defmacro set-defunc-force-ic-hyps-in-definitionp (b)
-  `(table defunc-defaults-table :force-ic-hyps-in-definitionp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :force-ic-hyps-in-definitionp b))
 (defmacro set-defunc-force-ic-hyps-in-contract-thmp (b)
-  `(table defunc-defaults-table :force-ic-hyps-in-contract-thmp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :force-ic-hyps-in-contract-thmp b))
 (defmacro set-defunc-body-contracts-strictp (b)
-  `(table defunc-defaults-table :body-contracts-strictp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :body-contracts-strictp b))
 (defmacro set-defunc-timeout (r)
-  `(table defunc-defaults-table :timeout ,r :put))
+  (tbl-set-fn 'defunc-defaults-table :timeout r))
 
 
 (defmacro set-defunc-skip-admissibilityp (b)
-  `(table defunc-defaults-table :skip-admissibilityp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :skip-admissibilityp b))
 (defmacro set-defunc-skip-function-contractp (b)
-  `(table defunc-defaults-table :skip-function-contractp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :skip-function-contractp b))
 (defmacro set-defunc-skip-body-contractsp (b)
-  `(table defunc-defaults-table :skip-body-contractsp ,b :put))
+  (tbl-set-fn 'defunc-defaults-table :skip-body-contractsp b))
 
 (defmacro get-defunc-termination-strictp ()
-  `(table defunc-defaults-table :termination-strictp))
+  (tbl-get-fn 'defunc-defaults-table :termination-strictp))
 (defmacro get-defunc-function-contract-strictp ()
-  `(table defunc-defaults-table :function-contract-strictp))
+  (tbl-get-fn 'defunc-defaults-table :function-contract-strictp))
 (defmacro get-defunc-force-ic-hyps-in-definitionp ()
-  `(table defunc-defaults-table :force-ic-hyps-in-definitionp))
+  (tbl-get-fn 'defunc-defaults-table :force-ic-hyps-in-definitionp))
 (defmacro get-defunc-force-ic-hyps-in-contract-thmp ()
-  `(table defunc-defaults-table :force-ic-hyps-in-contract-thmp))
+  (tbl-get-fn 'defunc-defaults-table :force-ic-hyps-in-contract-thmp))
 (defmacro get-defunc-body-contracts-strictp ()
-  `(table defunc-defaults-table :body-contracts-strictp))
+  (tbl-get-fn 'defunc-defaults-table :body-contracts-strictp))
 (defmacro get-defunc-timeout ()
-  `(table defunc-defaults-table :timeout))
+  (tbl-get-fn 'defunc-defaults-table :timeout))
 
 
 (defmacro get-defunc-skip-admissibilityp ()
-  `(table defunc-defaults-table :skip-admissibilityp))
+  (tbl-get-fn 'defunc-defaults-table :skip-admissibilityp))
 (defmacro get-defunc-skip-function-contractp ()
-  `(table defunc-defaults-table :skip-function-contractp))
+  (tbl-get-fn 'defunc-defaults-table :skip-function-contractp))
 (defmacro get-defunc-skip-body-contractsp ()
-  `(table defunc-defaults-table :skip-body-contractsp))
+  (tbl-get-fn 'defunc-defaults-table :skip-body-contractsp))
 
 (defxdoc set-defunc-timeout
   :parents (defunc)
@@ -1623,7 +1633,7 @@ To debug a failed defunc form, you can proceed in multiple ways:
         ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro set-defunc-skip-tests (r)
-  `(table defunc-defaults-table :skip-tests ,r :put))
+  (tbl-set-fn 'defunc-defaults-table :skip-tests r))
 
 (defmacro defunc-no-test (name &rest args)
   `(acl2::with-outer-locals

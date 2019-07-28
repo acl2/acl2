@@ -10,13 +10,17 @@
 
 (in-package "APT")
 
+(include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
+(include-book "kestrel/utilities/system/event-form-lists" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/alists/remove-assocs" :dir :system)
 (include-book "utilities/transformation-table")
+(include-book "utilities/untranslate-specifiers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,6 +47,7 @@
       @('thm-name'),
       @('thm-enable'),
       @('verify-guards'),
+      @('untranslate'),
       @('print'), and
       @('show-only')
       are the homonymous inputs to @(tsee parteval),
@@ -56,6 +61,7 @@
       @('thm-name$'),
       @('thm-enable$'),
       @('verify-guards$'),
+      @('untranslate$'),
       @('print$'), and
       @('show-only$')
       are the results of processing
@@ -64,13 +70,41 @@
       but they have types implied by their successful validation,
       performed when they are processed.")
     (xdoc::li
+     "@('y1...ym') is the list of static formals @('(y1 ... ym)').")
+    (xdoc::li
+     "@('yj...ym') is a suffix of @('y1...ym').")
+    (xdoc::li
      "@('new-formals') are the formal parameters of the new function.")
+    (xdoc::li
+     "@('case') is 1, 2, or 3, corresponding to the three forms of @('old')
+      described in the reference documentation.")
     (xdoc::li
      "@('call') is the call to @(tsee restrict) supplied by the user."))
    (xdoc::p
     "The parameters of implementation functions that are not listed above
      are described in, or clear from, those functions' documentation."))
   :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ parteval-library-extensions
+  :parents (parteval-implementation)
+  :short "Library extensions for @(tsee parteval)."
+  :long
+  (xdoc::topstring-p
+   "This material may be moved to appropriate libraries.")
+  :order-subtopics t
+  :default-parent t)
+
+(define ibody ((fn symbolp) (wrld plist-worldp))
+  :returns (body "An untranslated term.")
+  :mode :program
+  :short "Retrieve the untranslated body of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is as introduced (hence the @('i') in the name) by the user."))
+  (car (last (get-event fn wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,8 +148,7 @@
 (define parteval-process-static-terms
   ((cj...cm true-listp "List @('(c1 ... cm)') initially,
                         then a tail of that in the recursive calls.")
-   (yj...ym symbol-listp "List @('(y1 ... ym)') initially,
-                          then a tail of that in the recursive calls.")
+   (yj...ym symbol-listp)
    (old$ symbolp)
    (verify-guards$ booleanp)
    ctx
@@ -123,7 +156,7 @@
   :guard (equal (len cj...cm) (len yj...ym))
   :mode :program
   :returns (mv erp
-               (yj...ym$ "The @(tsee pseudo-term-listp) list
+               (cj...cm$ "The @(tsee pseudo-term-listp) list
                           of terms @('cj...cm'), in translated form.")
                state)
   :short "Process the @('c1'), ..., @('cm') parts of the @('static') input."
@@ -162,8 +195,8 @@
                                  state)
   :returns (mv erp
                (static$ "A @(tsee symbol-alistp)
-                       from @('y1'), ..., @('ym')
-                       to the translated @('c1'), ..., @('cm').")
+                         from @('y1'), ..., @('ym')
+                         to the translated @('c1'), ..., @('cm').")
                state)
   :mode :program
   :short "Process the @('static') input."
@@ -244,6 +277,65 @@
                 t nil)))
     (value name)))
 
+(define parteval-unchanging-static-in-rec-args-p
+  ((rec-args pseudo-term-listp "Arguments of a recursive call of @('old').")
+   (old$ symbolp)
+   (yj...ym symbol-listp)
+   (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  :short "Check if the static parameters do not change
+          in the arguments of a recursive call of @('old')."
+  :long
+  (xdoc::topstring-p
+   "This is used to check if a recursive @('old') has
+    the case 2 form described in the reference documentation.")
+  (or (endp yj...ym)
+      (b* ((yj (car yj...ym))
+           (pos (position-eq yj (formals old$ wrld))))
+        (and (eq yj (nth pos rec-args))
+             (parteval-unchanging-static-in-rec-args-p rec-args
+                                                       old$
+                                                       (cdr yj...ym)
+                                                       wrld)))))
+
+(define parteval-unchanging-static-in-rec-calls-p
+  ((rec-calls-with-tests pseudo-tests-and-call-listp
+                         "Recursive calls of @('old').")
+   (old$ symbolp)
+   (y1...ym symbol-listp)
+   (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  :short "Check if the static parameters do not change
+          in the arguments of the recursive calls of @('old')."
+  :long
+  (xdoc::topstring-p
+   "This is used to check if a recursive @('old') has
+    the case 2 form described in the reference documentation.")
+  (or (endp rec-calls-with-tests)
+      (b* ((rec-call-with-tests (car rec-calls-with-tests))
+           (rec-call (access tests-and-call rec-call-with-tests :call))
+           (rec-args (fargs rec-call)))
+        (and (parteval-unchanging-static-in-rec-args-p
+              rec-args old$ y1...ym wrld)
+             (parteval-unchanging-static-in-rec-calls-p
+              (cdr rec-calls-with-tests) old$ y1...ym wrld)))))
+
+(define parteval-case-of-old ((old$ symbolp)
+                              (static$ symbol-alistp)
+                              (wrld plist-worldp))
+  :returns (case "1, 2, or 3.")
+  :mode :program
+  :short "Classify @('old') into one of the three cases
+          described in the reference documentation."
+  (b* (((when (not (irecursivep old$ wrld))) 1)
+       ((when (member-eq old$ (all-ffn-symbs
+                               (termination-theorem old$ wrld) nil))) 3)
+       ((when (parteval-unchanging-static-in-rec-calls-p
+               (recursive-calls old$ wrld) old$ (strip-cars static$) wrld)) 2))
+    3))
+
 (define parteval-process-inputs (old
                                  static
                                  new-name
@@ -251,6 +343,7 @@
                                  thm-name
                                  thm-enable
                                  verify-guards
+                                 untranslate
                                  print
                                  show-only
                                  ctx
@@ -261,7 +354,8 @@
                                     new-name$
                                     new-enable$
                                     thm-name$
-                                    verify-guards$)')
+                                    verify-guards$
+                                    case)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          symbol-alistp
@@ -269,19 +363,8 @@
                                          booleanp
                                          symbolp
                                          booleanp
-                                         result)'),
-                        where @('old$') is
-                        the result of @(tsee parteval-process-old),
-                        @('static$') is
-                        the result of @(tsee parteval-process-static),
-                        @('new-name$') is
-                        the result of @(tsee parteval-process-new-name),
-                        @('new-enable$') indicates whether
-                        the new function should be enabled or not,
-                        @('thm-name$') is
-                        the result of @(tsee parteval-process-thm-name), and
-                        @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not.")
+                                         natp
+                                         result)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -306,6 +389,7 @@
                              "The :VERIFY-GUARDS input" t nil))
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
+       (case (parteval-case-of-old old$ static$ wrld))
        ((er new-name$) (parteval-process-new-name
                         new-name old$ ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
@@ -315,16 +399,20 @@
        ((er thm-name$) (parteval-process-thm-name
                         thm-name old$ new-name$ ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((when (and (acl2::irecursivep old$ wrld)
+       ((when (and (= case 3)
                    new-enable$
                    thm-enable))
         (er-soft+ ctx t nil
-                  "Since (i) the target function ~x0 is recursive, ~
+                  "Since (i) the target function ~x0 ~
+                   has the form of case 3 in :DOC PARTEVAL, ~
                    (ii) either the :NEW-ENABLE input is T, ~
                    or it is (perhaps by default) :AUTO ~
                    and (iii) the target function is enabled, ~
                    the :THM-ENABLE input cannot be T."
                   old$))
+       ((er &) (ensure-is-untranslate-specifier$ untranslate
+                                                 "The :UNTRANSLATE input"
+                                                 t nil))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -332,7 +420,8 @@
                  new-name$
                  new-enable$
                  thm-name$
-                 verify-guards$))))
+                 verify-guards$
+                 case))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,11 +439,113 @@
   :order-subtopics t
   :default-parent t)
 
+(define parteval-transform-rec-args
+  ((rec-args pseudo-term-listp "Arguments of a recursive call of @('old').")
+   (old$ symbolp)
+   (yj...ym symbol-listp)
+   (wrld plist-worldp))
+  :returns (new-rec-args "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :short "Transform the arguments of a recursive call of @('old')."
+  :long
+  (xdoc::topstring-p
+   "This applies to case 2 in the reference documentation.
+    Each call of @('old') is replaced with
+    a call of @('new') with the static arguments removed.
+    This code performs the removal of these arguments.")
+  (cond ((endp yj...ym) rec-args)
+        (t (b* ((yj (car yj...ym))
+                (pos (position-eq yj (formals old$ wrld)))
+                (rec-args (append (take pos rec-args)
+                                  (nthcdr (1+ pos) rec-args))))
+             (parteval-transform-rec-args rec-args old$ (cdr yj...ym) wrld)))))
+
+(defines parteval-transform-rec-calls-in-term
+  :short "Transform the recursive calls in the body of @('old')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This applies to case 2 in the reference documentation.
+     Each call of @('old') is replaced with
+     a call of @('new') with the static arguments removed.
+     This code recursively processes the terms in the body of @('old')."))
+  :verify-guards nil
+
+  (define parteval-transform-rec-calls-in-term ((body-term pseudo-termp)
+                                                (old$ symbolp)
+                                                (new-name$ symbolp)
+                                                (y1...ym symbol-listp)
+                                                (wrld plist-worldp))
+    :returns new-body-term ; PSEUDO-TERMP
+    (cond ((variablep body-term) body-term)
+          ((fquotep body-term) body-term)
+          (t (b* ((fn/lambda (ffn-symb body-term))
+                  (args (fargs body-term))
+                  (new-args (parteval-transform-rec-calls-in-terms args
+                                                                   old$
+                                                                   new-name$
+                                                                   y1...ym
+                                                                   wrld)))
+               (cond ((eq fn/lambda old$)
+                      (fcons-term new-name$
+                                  (parteval-transform-rec-args
+                                   new-args old$ y1...ym wrld)))
+                     ((symbolp fn/lambda) (fcons-term fn/lambda new-args))
+                     (t (make-lambda (lambda-formals fn/lambda)
+                                     (parteval-transform-rec-calls-in-term
+                                      (lambda-body fn/lambda)
+                                      old$ new-name$ y1...ym wrld))))))))
+
+  (define parteval-transform-rec-calls-in-terms ((body-terms pseudo-term-listp)
+                                                 (old$ symbolp)
+                                                 (new-name$ symbolp)
+                                                 (y1...ym symbol-listp)
+                                                 (wrld plist-worldp))
+    :returns new-body-term ; PSEUDO-TERM-LISTP
+    (cond ((endp body-terms) nil)
+          (t (cons (parteval-transform-rec-calls-in-term
+                    (car body-terms) old$ new-name$ y1...ym wrld)
+                   (parteval-transform-rec-calls-in-terms
+                    (cdr body-terms) old$ new-name$ y1...ym wrld))))))
+
+(define parteval-gen-new-fn-body ((old$ symbolp)
+                                  (static$ symbol-alistp)
+                                  (new-name$ symbolp)
+                                  (case (member case '(1 2 3)))
+                                  (wrld plist-worldp))
+  :returns (new-body "A @(tsee pseudo-termp).")
+  :mode :program
+  :short "Generate the body of the new function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In case 1, we replace each @('yj') with @('cj') in the body of @('old').")
+   (xdoc::p
+    "In case 2, we replace each recursive call of @('old')
+     with a call of @('new') with the static arguments removed,
+     and then we replace each @('yj') with @('cj').")
+   (xdoc::p
+    "In case 3, we call @('old') with each @('yj') replaced with @('cj')."))
+  (case case
+    (1 (fsublis-var static$ (ubody old$ wrld)))
+    (2 (b* ((body (ubody old$ wrld))
+            (body (parteval-transform-rec-calls-in-term body
+                                                        old$
+                                                        new-name$
+                                                        (strip-cars static$)
+                                                        wrld))
+            (body (fsublis-var static$ body)))
+         body))
+    (3 (fsublis-var static$ `(,old$ ,@(formals old$ wrld))))
+    (t (impossible))))
+
 (define parteval-gen-new-fn ((old$ symbolp)
                              (static$ symbol-alistp)
                              (new-name$ symbolp)
                              (new-enable$ booleanp)
                              (verify-guards$ booleanp)
+                             (untranslate$ untranslate-specifier-p)
+                             (case (member case '(1 2 3)))
                              (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp).")
@@ -372,53 +563,66 @@
      obtained by removing the static parameters from the old function.
      The parameters of the new function are returned as one of the results.")
    (xdoc::p
-    "If the old function is not recursive,
-     the body of the new function is obtained by replacing,
-     in the body of the old function,
-     the static parameters with the corresponding ground terms.
-     Otherwise, if the old function is recursive,
-     the body of the new function is obtained by replacing,
-     in a generic call of the old function,
-     the static parameters with the corresponding ground terms.")
+    "The new function is recursive only in case 2.
+     The generated termination hints are
+     as in the design notes and @('parteval-template.lisp').")
    (xdoc::p
-    "The guard of the new function is obtained similarly,
-     from the guard of the old function.")
+    "The guard of the new function is obtained
+     by replacing each @('yj') with @('cj')
+     in the guard of the old function.")
    (xdoc::p
-    "If guards must be verified, the guard hints follow
-     the design notes and the template in @('parteval-template.lisp').")
-   (xdoc::p
-    "Note that the new function is never recursive."))
+    "Guard verification is deferred, because in case 2
+     its proof depends on the @('old-to-new') theorem.
+     It is deferred also for cases 1 and 3, even if that is not necessary,
+     for greater simplicity."))
   (b* ((macro (function-intro-macro new-enable$ nil))
-       (old-formals (formals old$ wrld))
-       (new-formals (set-difference-eq old-formals (strip-cars static$)))
-       (old-call-or-body (if (acl2::irecursivep old$ wrld)
-                             `(,old$ ,@old-formals)
-                           (ubody old$ wrld)))
-       (new-body (acl2::fsublis-var static$ old-call-or-body))
-       (new-body (untranslate new-body nil wrld))
-       (old-guard (uguard old$ wrld))
-       (new-guard (acl2::fsublis-var static$ old-guard))
-       (new-guard (untranslate new-guard nil wrld))
-       (new-guard-hints `(("Goal"
-                           :in-theory nil
-                           :use (:instance
-                                 (:guard-theorem ,old$)
-                                 :extra-bindings-ok
-                                 ,@(alist-to-doublets static$)))))
+       (formals (set-difference-eq (formals old$ wrld) (strip-cars static$)))
+       (body (parteval-gen-new-fn-body old$ static$ new-name$ case wrld))
+       (body (case untranslate$
+               (:nice
+                (directed-untranslate
+                 (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
+               (:nice-expanded
+                (directed-untranslate-no-lets
+                 (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
+               (nil body)
+               (t (untranslate body nil wrld))))
+       (wfrel? (and (= case 2)
+                    (well-founded-relation old$ wrld)))
+       (measure? (and (= case 2)
+                      (untranslate (measure old$ wrld) nil wrld)))
+       (termination-hints? (and (= case 2)
+                                `(("Goal"
+                                   :in-theory nil
+                                   :use (:instance
+                                         (:termination-theorem ,old$)
+                                         :extra-bindings-ok
+                                         ,@(alist-to-doublets static$))))))
+       (guard (fsublis-var static$ (uguard old$ wrld)))
+       (guard (untranslate guard nil wrld))
        (local-event
         `(local
-          (,macro ,new-name$ (,@new-formals)
-                  (declare (xargs :guard ,new-guard
-                                  :verify-guards ,verify-guards$
-                             ,@(and verify-guards$
-                                    `(:guard-hints ,new-guard-hints))))
-                  ,new-body)))
+          (,macro ,new-name$ (,@formals)
+                  (declare (xargs
+                            ,@(and (= case 2)
+                                   (list :well-founded-relation wfrel?
+                                         :measure measure?
+                                         :hints termination-hints?
+                                         :ruler-extenders :all))
+                            :guard ,guard
+                            :verify-guards nil))
+                  ,body)))
        (exported-event
-        `(,macro ,new-name$ (,@new-formals)
-                 (declare (xargs :guard ,new-guard
-                                 :verify-guards ,verify-guards$))
-                 ,new-body)))
-    (mv local-event exported-event new-formals)))
+        `(,macro ,new-name$ (,@formals)
+                 (declare (xargs
+                           ,@(and (= case 2)
+                                  (list :well-founded-relation wfrel?
+                                        :measure measure?
+                                        :ruler-extenders :all))
+                           :guard ,guard
+                           :verify-guards ,verify-guards$))
+                 ,body)))
+    (mv local-event exported-event formals)))
 
 (define parteval-gen-static-equalities ((static$ symbol-alistp))
   :returns (equalities "A @(tsee pseudo-term-listp).")
@@ -438,6 +642,7 @@
                                      (new-name$ symbolp)
                                      (thm-name$ symbolp)
                                      (thm-enable$ booleanp)
+                                     (case (member case '(1 2 3)))
                                      (new-formals symbol-listp)
                                      (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -456,12 +661,7 @@
      @('(equal (old x1 ... xn y1 ... ym) (new x1 ... xn))').")
    (xdoc::p
     "The hints follow the proof
-     in the design notes and in @('parteval-template.lisp').
-     There is a slight difference between
-     the case in which the old function is recursive
-     and the case in which it is not:
-     in the former case, only the definition of the new function is used;
-     in the latter case, also the definitino of the old function is used."))
+     in the design notes and in @('parteval-template.lisp')."))
   (b* ((macro (theorem-intro-macro thm-enable$))
        (equalities (parteval-gen-static-equalities static$))
        (antecedent (conjoin equalities))
@@ -469,13 +669,88 @@
                            (,new-name$ ,@new-formals)))
        (formula (implicate antecedent consequent))
        (formula (untranslate formula t wrld))
-       (used (if (acl2::irecursivep old$ wrld)
-                 (list new-name$)
-               (list new-name$ old$)))
-       (hints `(("Goal" :in-theory nil :use ,used)))
+       (hints (case case
+                (1 `(("Goal" :in-theory '(,old$ ,new-name$))))
+                (2 `(("Goal"
+                      :in-theory '(,old$ ,new-name$)
+                      :induct (,new-name$ ,@new-formals))))
+                (3 `(("Goal" :in-theory '(,new-name$))))
+                (t (impossible))))
        (local-event `(local (,macro ,thm-name$ ,formula :hints ,hints)))
        (exported-event `(,macro ,thm-name$ ,formula)))
     (mv local-event exported-event)))
+
+(define parteval-gen-old-to-new-thm-instances
+  ((rec-calls-with-tests pseudo-tests-and-call-listp
+                         "Recursive calls of @('old').")
+   (old$ symbolp)
+   (static$ symbol-alistp)
+   (thm-name$ symbolp)
+   (wrld plist-worldp))
+  :returns (lemma-instances pseudo-event-form-listp)
+  :verify-guards nil
+  :short "Generate an instance of the @('old-to-new') theorem
+          for each recursive call of @('old')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the guard verification proof of @('new') in case 2.
+     The design notes and @('parteval-template.lisp') show that, in case 2,
+     the @('old-to-new') theorem must be instantiated
+     by replacing the dynamic formal arguments
+     with the corresponding actual arguments in the recursive call.
+     This must be done for all recursive calls.
+     In addition, the static parameters @('yj'),
+     which in case 2 are unchanged in all the recursive calls,
+     must be replaced with the constant terms @('cj').")
+   (xdoc::p
+    "This code goes through the recursive calls of old
+     and generates the lemma instances as just described.
+     For each such call,
+     first we create an alist from all the formal parameters of @('old')
+     to the arguments in the recursive calls
+     with each @('yj') replaced with @('cj');
+     then we remove the static parameters from that alist
+     (which that alist maps all to themselves),
+     and we join the result with @('static$'),
+     obtaining the whole instantiation, in alist form."))
+  (b* (((when (endp rec-calls-with-tests)) nil)
+       (rec-call-with-tests (car rec-calls-with-tests))
+       (rec-call (access tests-and-call rec-call-with-tests :call))
+       (rec-args (fargs rec-call))
+       (rec-args (fsublis-var static$ rec-args))
+       (all-alist (pairlis$ (formals old$ wrld) rec-args))
+       (dynamic-alist (remove-assocs-eq (strip-cars static$) all-alist))
+       (final-alist (append dynamic-alist static$))
+       (lemma-instance `(:instance ,thm-name$
+                         :extra-bindings-ok
+                         ,@(alist-to-doublets final-alist)))
+       (lemma-instances (parteval-gen-old-to-new-thm-instances
+                         (cdr rec-calls-with-tests)
+                         old$ static$ thm-name$ wrld)))
+    (cons lemma-instance lemma-instances)))
+
+(define parteval-gen-new-fn-verify-guards ((old$ symbolp)
+                                           (static$ symbol-alistp)
+                                           (new-name$ symbolp)
+                                           (thm-name$ symbolp)
+                                           (case (member case '(1 2 3)))
+                                           (wrld plist-worldp))
+  :returns (local-event "A @(tsee pseudo-event-formp).")
+  :mode :program
+  :short "Generate the event to verify the guards of the new function."
+  (b* ((guard-thm-instance `(:instance
+                             (:guard-theorem ,old$)
+                             :extra-bindings-ok
+                             ,@(alist-to-doublets static$)))
+       (old-to-new-instances?
+        (and (= case 2)
+             (parteval-gen-old-to-new-thm-instances
+              (recursive-calls old$ wrld) old$ static$ thm-name$ wrld)))
+       (hints `(("Goal"
+                 :in-theory nil
+                 :use ,(cons guard-thm-instance old-to-new-instances?)))))
+    `(local (verify-guards ,new-name$ :hints ,hints))))
 
 (define parteval-gen-everything ((old$ symbolp)
                                  (static$ symbol-alistp)
@@ -484,8 +759,10 @@
                                  (thm-name$ symbolp)
                                  (thm-enable$ booleanp)
                                  (verify-guards$ booleanp)
+                                 (untranslate$ untranslate-specifier-p)
                                  (print$ evmac-input-print-p)
                                  (show-only$ booleanp)
+                                 (case (member case '(1 2 3)))
                                  (call pseudo-event-formp)
                                  (wrld plist-worldp))
   :returns (event "A @(tsee pseudo-event-formp).")
@@ -544,6 +821,8 @@
                                               new-name$
                                               new-enable$
                                               verify-guards$
+                                              untranslate$
+                                              case
                                               wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event) (parteval-gen-old-to-new-thm
@@ -552,8 +831,18 @@
                                             new-name$
                                             thm-name$
                                             thm-enable$
+                                            case
                                             new-formals
                                             wrld))
+       (new-fn-verify-guards-event? (and verify-guards$
+                                         (list
+                                          (parteval-gen-new-fn-verify-guards
+                                           old$
+                                           static$
+                                           new-name$
+                                           thm-name$
+                                           case
+                                           wrld))))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
@@ -562,6 +851,7 @@
                              (set-override-hints nil)
                              ,new-fn-local-event
                              ,old-to-new-thm-local-event
+                             ,@new-fn-verify-guards-event?
                              ,new-fn-exported-event
                              ,old-to-new-thm-exported-event
                              ,new-fn-numbered-name-event))
@@ -595,6 +885,7 @@
                      thm-name
                      thm-enable
                      verify-guards
+                     untranslate
                      print
                      show-only
                      (call pseudo-event-formp)
@@ -624,17 +915,19 @@
                   new-name$
                   new-enable$
                   thm-name$
-                  verify-guards$)) (parteval-process-inputs
-                                    old
-                                    static
-                                    new-name
-                                    new-enable
-                                    thm-name
-                                    thm-enable
-                                    verify-guards
-                                    print
-                                    show-only
-                                    ctx state))
+                  verify-guards$
+                  case)) (parteval-process-inputs
+                          old
+                          static
+                          new-name
+                          new-enable
+                          thm-name
+                          thm-enable
+                          verify-guards
+                          untranslate
+                          print
+                          show-only
+                          ctx state))
        (event (parteval-gen-everything old$
                                        static$
                                        new-name$
@@ -642,8 +935,10 @@
                                        thm-name$
                                        thm-enable
                                        verify-guards$
+                                       untranslate
                                        print
                                        show-only
+                                       case
                                        call
                                        (w state))))
     (value event)))
@@ -668,6 +963,7 @@
                       (thm-name ':auto)
                       (thm-enable 't)
                       (verify-guards ':auto)
+                      (untranslate ':nice)
                       (print ':result)
                       (show-only 'nil))
     `(make-event-terse (parteval-fn ',old
@@ -677,6 +973,7 @@
                                     ',thm-name
                                     ',thm-enable
                                     ',verify-guards
+                                    ',untranslate
                                     ',print
                                     ',show-only
                                     ',call

@@ -55,13 +55,11 @@
        be in logic mode,
        be defined,
        have at least one formal argument,
-       return a non-<see topic='@(url mv)'>multiple</see> value, and
-       have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
-       If @('old') is recursive, it must
-       be singly (not mutually) recursive,
-       not have a @(':?') measure (see @(':measure') in @(tsee xargs)), and
-       not occur in its own <see topic='@(url tthm)'>termination theorem</see>
-       (i.e. not occur in the tests and arguments of its own recursive calls).
+       return a non-" (xdoc::seeurl "mv" "multiple") " value, and
+       have no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
+      "If @('old') is recursive, it must
+       be singly (not mutually) recursive and
+       not have a @(':?') measure (see @(':measure') in @(tsee xargs)).
        If the @(':verify-guards') input is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
@@ -82,22 +80,25 @@
        "If @('old') is recursive, let
         @({
           old-body<x1,...,xn,
-                   (old update1-x1<x1,...,xn>
+                   (old update1-x1<x1,...,xn,old>
                         ...
-                        update1-xn<x1,...,xn>)
+                        update1-xn<x1,...,xn,old>)
                    ...
-                   (old updatem-x1<x1,...,xn>
+                   (old updatem-x1<x1,...,xn,old>
                         ...
-                        updatem-xn<x1,...,xn>)>
+                        updatem-xn<x1,...,xn,old>)>
         })
         be the body of @('old'),
         where @('m') &gt; 0 is the number of recursive calls
         in the body of @('old')
-        and each @('updatej-xi<x1,...,xn>') is
+        and each @('updatej-xi<x1,...,xn,old>') is
         the @('i')-th actual argument passed to the @('j')-th recursive call.
         Furthermore,
-        let @('contextj<x1,...,xn>') be the context (i.e. controlling tests)
-        in which the @('j')-th recursive call occurs.")))
+        let @('contextj<x1,...,xn,old>') be the context (i.e. controlling tests)
+        in which the @('j')-th recursive call occurs.
+        The dependency of @('updatej-xi<...,old>') and @('contextj<...,old>')
+        on @('old') only applies to so-called `reflexive functions',
+        i.e. functions that occur in their own termination theorem.")))
 
     (xdoc::desc
      "@('restriction')"
@@ -109,9 +110,9 @@
       "It must be a term
        that includes no free variables other than @('x1'), ..., @('xn'),
        that only calls logic-mode functions,
-       that returns a non-<see topic='@(url mv)'>multiple</see> value,
-       and that has no output <see topic='@(url acl2::stobj)'>stobjs</see>.
-       If the generated function is guard-verified
+       that returns a non-" (xdoc::seeurl "mv" "multiple") " value,
+       and that has no output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
+      "If the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
        then the term must only call guard-verified functions,
        except possibly in the @(':logic') subterms of @(tsee mbe)s
@@ -133,9 +134,9 @@
       "It must be a term
        that includes no free variables other than @('x1'), ..., @('xn'),
        that only calls logic-mode functions,
-       that returns a non-<see topic='@(url mv)'>multiple</see> value,
-       and that has no output <see topic='@(url acl2::stobj)'>stobjs</see>.
-       The term must not include any calls to @('old').")
+       that returns a non-" (xdoc::seeurl "mv" "multiple") " value,
+       and that has no output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
+      "The term must not include any calls to @('old').")
      (xdoc::p
       "Even if the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
@@ -180,15 +181,18 @@
        is preserved across the recursive calls of @('old'):")
      (xdoc::codeblock
       "(implies restriction<x1,...,xn>"
-      "         (and (implies context1<x1,...,xn>"
-      "                       restriction<update1-x1<x1,...,xn>,"
+      "         (and (implies context1<x1,...,xn,?f>"
+      "                       restriction<update1-x1<x1,...,xn,?f>,"
       "                                   ...,"
-      "                                   update1-xn<x1,...,xn>>)"
+      "                                   update1-xn<x1,...,xn,?f>>)"
       "              ..."
-      "              (implies contextm<x1,...,xn>"
-      "                       restriction<updatem-x1<x1,...,xn>,"
+      "              (implies contextm<x1,...,xn,?f>"
+      "                       restriction<updatem-x1<x1,...,xn,?f>,"
       "                                   ...,"
-      "                                   updatem-xn<x1,...,xn>>)))")
+      "                                   updatem-xn<x1,...,xn,?f>>)))")
+     (xdoc::p
+      "where @('?f') is an @('n')-ary stub that replaces @('old')
+       (this only applies to reflexive functions; see above).")
      (xdoc::p
       "This applicability condition is present iff @('old') is recursive."))
 
@@ -234,21 +238,20 @@
       "(defun new (x1 ... xn)"
       "  (if (mbt restriction<x1,...,xn>)"
       "      old-body<x1,...,xn,"
-      "               (new update1-x1<x1,...,xn>"
+      "               (new update1-x1<x1,...,xn,new>"
       "                    ..."
-      "                    update1-xn<x1,...,xn>)"
+      "                    update1-xn<x1,...,xn,new>)"
       "               ..."
-      "               (new updatem-x1<x1,...,xn>"
+      "               (new updatem-x1<x1,...,xn,new>"
       "                    ..."
-      "                    updatem-xn<x1,...,xn>)>"
+      "                    updatem-xn<x1,...,xn,new>)>"
       "    undefined))")
      (xdoc::p
       "If @('old') is recursive,
        the measure term and well-founded relation of @('new')
        are the same as @('old').")
      (xdoc::p
-      "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)'),
-       where @('old-guard<x1,...,xn>') is the guard term of @('old').")
+      "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)').")
      (xdoc::p
       "Since the restriction test follows from the guard,
        the test is wrapped by @(tsee mbt).

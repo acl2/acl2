@@ -181,9 +181,8 @@
           <see topic='@(url definterface-hmac-table)'
           >@(tsee definterface-hmac) table</see>."
   :long
-  "<p>
-   The name of the interface is the key of the pair in the table.
-   </p>"
+  (xdoc::topstring-p
+   "The name of the interface is the key of the pair in the table.")
   ((key-size-limit "The limit on the key size in bytes,
                     equal to the @(':input-size-limit') input, divided by 8,
                     of the @(tsee definterface-hash)

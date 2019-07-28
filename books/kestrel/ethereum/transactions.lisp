@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
+(include-book "kestrel/crypto/ecdsa/secp256k1-interface" :dir :system)
 (include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
 (include-book "bytes")
 (include-book "words")
@@ -36,20 +36,19 @@
   :parents (transactions)
   :short "Fixtype of byte arrays of length 20 and @('nil')."
   :long
-  "<p>
-   The @($\\mathbf{to}$) field of a transaction [YP:4.2] is
-   either a 20-byte (i.e. 160-bit) address
-   or the empty array (i.e. the only element of @($\\mathbb{B}_0$)) [YP:(18)].
-   Both [YP:4.2] and [YP:(18)] mention @($\\varnothing$) as
-   the (only) element of @($\\mathbb{B}_0$);
-   however, according to the definition of @($\\mathbb{B}$) [YP:(178)],
-   the empty array should be denoted as @($()$).
-   </p>
-   <p>
-   Regardless, in our model the empty byte array is @('nil'),
-   so we use either a list of 20 bytes or @('nil')
-   to model the @($\\mathbf{to}$) field of a transaction.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The @($\\mathbf{to}$) field of a transaction [YP:4.2] is
+     either a 20-byte (i.e. 160-bit) address
+     or the empty array (i.e. the only element of @($\\mathbb{B}_0$)) [YP:(18)].
+     Both [YP:4.2] and [YP:(18)] mention @($\\varnothing$) as
+     the (only) element of @($\\mathbb{B}_0$);
+     however, according to the definition of @($\\mathbb{B}$) [YP:(178)],
+     the empty array should be denoted as @($()$).")
+   (xdoc::p
+    "Regardless, in our model the empty byte array is @('nil'),
+     so we use either a list of 20 bytes or @('nil')
+     to model the @($\\mathbf{to}$) field of a transaction."))
   :pred maybe-byte-list20p
   ///
 
@@ -64,46 +63,42 @@
   :parents (transactions)
   :short "Fixtype of transactions."
   :long
-  "<p>
-   A transaction is a 9-tuple [YP:(15)].
-   The type of each component is specified in [YP:(16)].
-   </p>
-   <p>
-   We use @(see words) to model natural numbers in @($\\mathbb{N}_{256}$):
-   this is the type of the nonce, gas price, gas limit, and value fields.
-   </p>
-   <p>
-   The type of the recipient field is @(tsee maybe-byte-list20).
-   See the documentation of that fixtype for details.
-   </p>
-   <p>
-   The sixth component of the tuple is always a byte array,
-   whether it is initialization code (when the recipient is @('nil'))
-   or it is data (when the recipient is an address).
-   </p>
-   <p>
-   The remaining three components are for the signature.
-   The @($\\mathbf{r}$) and @($\\mathbf{s}$) components are words.
-   The other signature component is
-   @($\\mathbf{v}$) in the text that describes it in [YP:4.2],
-   but it is denoted as @($T_{\\mathrm{w}}$) in [YP:(15)] and [YP:(16)]
-   (presumably to avoid a conflict with
-   the @($T_{\\mathrm{v}}$) value component).
-   We pick @('sign-v') (instead of @('sign-w'))
-   for the corresponding field name in our product fixtype.
-   However, there is an issue with the type of this component:
-   [YP:(16)] says that it is a natural number below 32,
-   but [YP:F] says that @($T_{\\mathrm{w}}$) may be
-   a chain identifier doubled plus 35 or 36,
-   in which case it is above 32.
-   It looks like [YP:F] was updated according to [EIP155],
-   while [YP:4.2] was not;
-   this EIP describes an improved signature scheme
-   that involves chain identifiers.
-   [EIP155] lists some chain identifiers, one of which is larger than a byte.
-   So we use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
-   for this component of a transaction.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A transaction is a 9-tuple [YP:(15)].
+     The type of each component is specified in [YP:(16)].")
+   (xdoc::p
+    "We use @(see words) to model natural numbers in @($\\mathbb{N}_{256}$):
+     this is the type of the nonce, gas price, gas limit, and value fields.")
+   (xdoc::p
+    "The type of the recipient field is @(tsee maybe-byte-list20).
+     See the documentation of that fixtype for details.")
+   (xdoc::p
+    "The sixth component of the tuple is always a byte array,
+     whether it is initialization code (when the recipient is @('nil'))
+     or it is data (when the recipient is an address).")
+   (xdoc::p
+    "The remaining three components are for the signature.
+     The @($\\mathbf{r}$) and @($\\mathbf{s}$) components are words.
+     The other signature component is
+     @($\\mathbf{v}$) in the text that describes it in [YP:4.2],
+     but it is denoted as @($T_{\\mathrm{w}}$) in [YP:(15)] and [YP:(16)]
+     (presumably to avoid a conflict with
+     the @($T_{\\mathrm{v}}$) value component).
+     We pick @('sign-v') (instead of @('sign-w'))
+     for the corresponding field name in our product fixtype.
+     However, there is an issue with the type of this component:
+     [YP:(16)] says that it is a natural number below 32,
+     but [YP:F] says that @($T_{\\mathrm{w}}$) may be
+     a chain identifier doubled plus 35 or 36,
+     in which case it is above 32.
+     It looks like [YP:F] was updated according to [EIP155],
+     while [YP:4.2] was not;
+     this EIP describes an improved signature scheme
+     that involves chain identifiers.
+     [EIP155] lists some chain identifiers, one of which is larger than a byte.
+     So we use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
+     for this component of a transaction."))
   ((nonce word)
    (gas-price word)
    (gas-limit word)
@@ -140,13 +135,13 @@
      RLP trees cannot contain scalars.
      The other components are byte arrays that are left unchanged.")
    (xdoc::p
-    "We put all nine components under a non-leaf tree,
+    "We put all nine components under a branching tree,
      which we RLP-encode.
      Encoding may fail,
      if the @($\\mathbf{v}$) signature component is unreasonably large,
      or if the initialization or data array is unreasonably long."))
   (b* (((transaction trans) trans)
-       (tree (rlp-tree-nonleaf
+       (tree (rlp-tree-branch
               (list (rlp-tree-leaf (nat=>bebytes* trans.nonce))
                     (rlp-tree-leaf (nat=>bebytes* trans.gas-price))
                     (rlp-tree-leaf (nat=>bebytes* trans.gas-limit))
@@ -337,7 +332,7 @@
      and the fact that the tuples must be hashed,
      suggests that the tuples are in fact RLP trees.
      In the new flavor, the @($()$) in the last two components
-     could denote the non-leaf tree with no subtrees,
+     could denote the branching tree with no subtrees,
      but it is more reasonable that it denotes the empty byte array instead.
      This is also consistent with the fact that, in a transaction,
      the last two components are words,
@@ -373,6 +368,18 @@
      our Ethereum-independent library function for ECDSA signatures
      returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
    (xdoc::p
+    "The @($v$) component of the signature is public key recovery information.
+     Based on the discussion in @(tsee secp256k1-sign-det-rec),
+     the @('small-x?') flag passed to this signing function must be @('t'),
+     so that the parity of the @($y$) coordinate suffices
+     to recover the public key.")
+   (xdoc::p
+    "[YP:(281)] requires the @($s$) component of the signature
+     to be below half of the order of the curve.
+     Based on the discussion in @(tsee secp256k1-sign-det-rec),
+     the @('small-s?') flag passed to this signing function must be @('t'),
+     so that a suitable @($s$) is returned.")
+   (xdoc::p
     "This function returns the signed transaction as a high-level structure.
      This would have to be RLP-encoded (via @(tsee rlp-encode-transaction))
      to obtain something that can be sent to the Ethereum network.")
@@ -387,14 +394,14 @@
        (to (maybe-byte-list20-fix to))
        (value (word-fix value))
        (6/9-tuple (if (zp chain-id)
-                      (rlp-tree-nonleaf
+                      (rlp-tree-branch
                        (list (rlp-tree-leaf (nat=>bebytes* nonce))
                              (rlp-tree-leaf (nat=>bebytes* gas-price))
                              (rlp-tree-leaf (nat=>bebytes* gas-limit))
                              (rlp-tree-leaf to)
                              (rlp-tree-leaf (nat=>bebytes* value))
                              (rlp-tree-leaf init/data)))
-                    (rlp-tree-nonleaf
+                    (rlp-tree-branch
                      (list (rlp-tree-leaf (nat=>bebytes* nonce))
                            (rlp-tree-leaf (nat=>bebytes* gas-price))
                            (rlp-tree-leaf (nat=>bebytes* gas-limit))
@@ -407,7 +414,7 @@
        ((mv error? message) (rlp-encode-tree 6/9-tuple))
        ((when error?) (mv :rlp (transaction 0 0 0 nil 0 nil 0 0 0)))
        (hash (keccak-256-bytes message))
-       ((mv error? even? sign-r sign-s) (secp256k1-sign hash key))
+       ((mv error? & even? sign-r sign-s) (secp256k1-sign-det-rec hash key t t))
        ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
        (sign-v (if (zp chain-id)
                    (if even? 28 27)

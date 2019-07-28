@@ -116,6 +116,8 @@ my @run_sources = ();
 my @run_otherdeps = ();
 my @run_out_of_date = ();
 my @run_up_to_date = ();
+my @run_all_out_of_date = ();
+my @run_all_up_to_date = ();
 my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
@@ -417,6 +419,16 @@ COMMAND LINE OPTIONS
            up to date certificates in the dependency tree.  {} is replaced
            by the base name of the book, that is, without the ".cert".
 
+   --all-out-of-date-cmd <command-str>
+           Like --source-cmd, but runs the command on all of the
+           out of date certificates in the dependency tree.  {} is replaced
+           by the base name of the book, that is, without the ".cert".
+
+   --all-up-to-date-cmd <command-str>
+           Like --source-cmd, but runs the command on all of the
+           up to date certificates in the dependency tree.  {} is replaced
+           by the base name of the book, that is, without the ".cert".
+
    --tags-file <tagfile>
            Create an Emacs tags file containing the tags for all
            source files.  Equivalent to
@@ -547,6 +559,42 @@ USEFUL ENVIRONMENT VARIABLES
 
 ';
 
+# Called by GetOptions to handle options like source-cmd,
+# otherdep-cmd, up-to-date-cmd.  First we pick, based on the option
+# name, the list that holds functions that we"ll run on the
+# appropriate set of files.  Then we add a function to that array
+# that, when run on a target file, will replace the {} from the
+# command with the filename and run that with backticks (printing its
+# stdout).
+
+sub add_command {
+    my ($opt_name, $opt_value) = @_;
+    my $runlist;
+    # opt_name is not a string to begin with, coerce it to one
+    $opt_name = "$opt_name";
+    if ($opt_name eq "source_cmd") {
+	$runlist = \@run_sources;
+    } elsif ($opt_name eq "otherdep-cmd") {
+	$runlist = \@run_otherdeps;
+    }  elsif ($opt_name eq "up-to-date-cmd") {
+	$runlist = \@run_up_to_date;
+    } elsif ($opt_name eq  "out-of-date-cmd") {
+        $runlist = \@run_out_of_date;
+    } elsif ($opt_name eq  "all-up-to-date-cmd") {
+	$runlist = \@run_all_up_to_date;
+    } elsif ($opt_name eq "all-out-of-date-cmd") {
+	$runlist = \@run_all_out_of_date;
+    } else {
+	die "Programming error in add_command";
+    }
+    push (@$runlist,
+    	  sub { my $target = shift;
+    		my $line = $opt_value;
+    		$line =~ s/{}/$target/g;
+    		print `$line`;
+    	  });
+}
+
 GetOptions ("help|h"               => sub { print $summary_str;
                                             print $helpstr;
                                             exit 0 ; },
@@ -597,34 +645,12 @@ GetOptions ("help|h"               => sub { print $summary_str;
                                             push (@run_sources,
                                                   sub { my $target = shift;
                                                         print `etags -a -o $tagfile $target`;})},
-            "source-cmd=s"         => sub { shift;
-                                            my $cmd = shift;
-                                            push (@run_sources,
-                                                  sub { my $target = shift;
-                                                        my $line = $cmd;
-                                                        $line =~ s/{}/$target/g;
-                                                        print `$line`;})},
-            "otherdep-cmd=s"      => sub { shift;
-                                            my $cmd = shift;
-                                            push (@run_otherdeps,
-                                                  sub { my $target = shift;
-                                                        my $line = $cmd;
-                                                        $line =~ s/{}/$target/g;
-                                                        print `$line`;})},
-            "up-to-date-cmd=s"     => sub { shift;
-                                            my $cmd = shift;
-                                            push (@run_up_to_date,
-                                                  sub { my $target = shift;
-                                                        my $line = $cmd;
-                                                        $line =~ s/{}/$target/g;
-                                                        print `$line`;})},
-            "out-of-date-cmd=s"    => sub { shift;
-                                            my $cmd = shift;
-                                            push (@run_out_of_date,
-                                                  sub { my $target = shift;
-                                                        my $line = $cmd;
-                                                        $line =~ s/{}/$target/g;
-                                                        print `$line`;})},
+            "source-cmd=s"          => \&add_command,
+            "otherdep-cmd=s"        => \&add_command,
+            "up-to-date-cmd=s"      => \&add_command,
+            "out-of-date-cmd=s"     => \&add_command,
+            "all-up-to-date-cmd=s"  => \&add_command,
+            "all-out-of-date-cmd=s" => \&add_command,
             "quiet|q"              => \$quiet,
             "make-args=s"          => \@make_args,
             "keep-going|k"         => \$keep_going,
@@ -823,10 +849,10 @@ foreach my $run (@run_otherdeps) {
     }
 }
 
-if (@run_out_of_date || @run_up_to_date) {
-    my $up_to_date = check_up_to_date(\@targets, $depdb);
+if (@run_out_of_date || @run_up_to_date || @run_all_up_to_date || @run_all_out_of_date) {
+    my $up_to_date_db = check_up_to_date(\@targets, $depdb);
     if (@run_out_of_date) {
-        my $out_of_date = collect_bottom_out_of_date(\@targets, $depdb, $up_to_date);
+        my $out_of_date = collect_bottom_out_of_date(\@targets, $depdb, $up_to_date_db);
         foreach my $run (@run_out_of_date) {
             foreach my $cert (@$out_of_date) {
                 (my $book = $cert) =~ s/\.cert$//;
@@ -835,13 +861,28 @@ if (@run_out_of_date || @run_up_to_date) {
         }
     }
     if (@run_up_to_date) {
-        my $up_to_date = collect_top_up_to_date(\@targets, $depdb, $up_to_date);
+        my $up_to_date = collect_top_up_to_date_modulo_local(\@targets, $depdb, $up_to_date_db);
         foreach my $run (@run_up_to_date) {
             foreach my $cert (@$up_to_date) {
                 (my $book = $cert) =~ s/\.cert$//;
                 &$run($book);
             }
         }
+    }
+    if (@run_all_up_to_date || @run_all_out_of_date) {
+	my ($all_up_to_date, $all_out_of_date) = collect_all_up_to_date(\@targets, $depdb, $up_to_date_db);
+	foreach my $run (@run_all_up_to_date) {
+	    foreach my $cert (@$all_up_to_date) {
+                (my $book = $cert) =~ s/\.cert$//;
+                &$run($book);
+	    }
+	}
+	foreach my $run (@run_all_out_of_date) {
+	    foreach my $cert (@$all_out_of_date) {
+                (my $book = $cert) =~ s/\.cert$//;
+                &$run($book);
+	    }
+	}
     }
 }
 

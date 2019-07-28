@@ -6631,7 +6631,8 @@
   (command-block-names1 (cdr wrld) nil symbol-classes))
 
 (defun symbol-name-lst (lst)
-  (cond ((null lst) nil)
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
         (t (cons (symbol-name (car lst))
                  (symbol-name-lst (cdr lst))))))
 
@@ -10346,6 +10347,11 @@
 ; defining equation for f, not of its mutual-recursion siblings.  To obtain
 ; their constraints as well, see constraint-info+.
 
+; Be careful about calling this function when fn is a program mode function
+; symbol!  In that case we return the formula equating the call of fn on its
+; formals with the unnormalized-body of fn, which probably is not sensible
+; logically (but might be useful for finding ancestors, for example).
+
 ; This function returns a pair (mv flg x).  In the simplest and perhaps most
 ; common case, there is no 'constraint-lst property for fn, e.g., when fn is
 ; defined by defun or defchoose and not in the scope of an encapsulate.  In
@@ -13683,25 +13689,29 @@
 ; function is already guard-verified.
 
                               (logicp fn wrld))))
-  (let ((names (or (getpropc fn 'recursivep nil wrld)
-                   (list fn))))
-    (mv-let (cl-set ttree)
-      (guard-clauses-for-clique names
-                                guard-debug
-                                :DO-NOT-SIMPLIFY ; ens
-                                wrld
-                                (f-get-global 'safe-mode state)
-                                (gc-off state)
-                                nil)
+  (cond
+   ((not (getpropc fn 'unnormalized-body nil wrld))
+    *t*)
+   (t
+    (let ((names (or (getpropc fn 'recursivep nil wrld)
+                     (list fn))))
+      (mv-let (cl-set ttree)
+        (guard-clauses-for-clique names
+                                  guard-debug
+                                  :DO-NOT-SIMPLIFY ; ens
+                                  wrld
+                                  (f-get-global 'safe-mode state)
+                                  (gc-off state)
+                                  nil)
 ; Note that ttree is assumption-free; see guard-clauses-for-clique.
-      (let ((cl-set
-             (cond (simp-p
-                    (mv-let (cl-set ttree)
-                      (clean-up-clause-set cl-set nil wrld ttree state)
-                      (declare (ignore ttree)) ; assumption-free
-                      cl-set))
-                   (t cl-set))))
-        (termify-clause-set cl-set)))))
+        (let ((cl-set
+               (cond (simp-p
+                      (mv-let (cl-set ttree)
+                        (clean-up-clause-set cl-set nil wrld ttree state)
+                        (declare (ignore ttree)) ; assumption-free
+                        cl-set))
+                     (t cl-set))))
+          (termify-clause-set cl-set)))))))
 
 (defun guard-or-termination-theorem-msg (kwd args coda)
   (declare (xargs :guard (and (member-eq kwd '(:gthm :tthm))
@@ -17578,43 +17588,44 @@
         (:put
          (with-ctx-summarized
           (make-ctx-for-event event-form ctx)
-          (let* ((tbl (getpropc name 'table-alist nil wrld)))
+          (let* ((tbl (getpropc name 'table-alist nil wrld))
+                 (old-pair (assoc-equal key tbl)))
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
              (cond
-              ((let ((pair (assoc-equal key tbl)))
-                 (and pair (equal val (cdr pair))))
+              ((and old-pair (equal val (cdr old-pair)))
                (stop-redundant-event ctx state))
               (t (er-let*
-                  ((pair (chk-table-guard name key val ctx wrld ens state))
-                   (wrld1 (cond
-                           ((null pair)
-                            (value wrld))
-                           (t (let ((ttags-allowed1 (car pair))
-                                    (ttags-seen1 (cdr pair)))
-                                (pprogn (f-put-global 'ttags-allowed
-                                                      ttags-allowed1
-                                                      state)
-                                        (value (global-set?
-                                                'ttags-seen
-                                                ttags-seen1
-                                                wrld
-                                                (global-val 'ttags-seen
-                                                            wrld)))))))))
-                  (install-event
-                   name
-                   event-form
-                   'table
-                   0
-                   nil
-                   (table-cltl-cmd name key val op ctx wrld)
-                   nil ; theory-related events do their own checking
-                   nil
-                   (putprop name 'table-alist
-                            (put-assoc-equal-fast
-                             key val tbl)
-                            wrld1)
-                   state))))))))
+                     ((pair (chk-table-guard name key val ctx wrld ens state))
+                      (wrld1 (cond
+                              ((null pair)
+                               (value wrld))
+                              (t (let ((ttags-allowed1 (car pair))
+                                       (ttags-seen1 (cdr pair)))
+                                   (pprogn (f-put-global 'ttags-allowed
+                                                         ttags-allowed1
+                                                         state)
+                                           (value (global-set?
+                                                   'ttags-seen
+                                                   ttags-seen1
+                                                   wrld
+                                                   (global-val 'ttags-seen
+                                                               wrld)))))))))
+                   (install-event
+                    name
+                    event-form
+                    'table
+                    0
+                    nil
+                    (table-cltl-cmd name key val op ctx wrld)
+                    nil ; theory-related events do their own checking
+                    nil
+                    (putprop name 'table-alist
+                             (if old-pair
+                                 (put-assoc-equal key val tbl)
+                               (acons key val tbl))
+                             wrld1)
+                    state))))))))
         (:clear
          (with-ctx-summarized
           (make-ctx-for-event event-form ctx)

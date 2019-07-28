@@ -2526,13 +2526,17 @@
           (OP :OP #xF10
               :EVEX '(:0F :LIG :F2 :W1)
               :FEAT '(:AVX512F))
-          NIL NIL
+          (ARG :OP1 '(:ModR/M.reg :XMM)
+               :OP2 '(:VEX.vvvv   :XMM)
+               :OP3 '(:ModR/M.r/m :XMM))
+          NIL
           '((:EX (CHK-EXC :TYPE-E10 (:AVX512F)))))
     (INST "VMOVSD"
           (OP :OP #xF10
               :EVEX '(:0F :NDS :LIG :F2 :W1)
               :FEAT '(:AVX512F))
-          NIL NIL
+          NIL
+          NIL
           '((:EX (CHK-EXC :TYPE-E10 (:AVX512F)))))
     (INST "VMOVSS"
           (OP :OP #xF10

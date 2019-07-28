@@ -35,3 +35,17 @@
                                rational-implies2
                                *-r-denominator-r
                                numerator-when-integerp))))
+
+(defthm denominator-of--
+  (implies (rationalp x)
+           (equal (denominator (- x))
+                  (denominator x))))
+
+(local (include-book "../../arithmetic/mod-gcd"))
+
+(defthm <=-of-denominator-of-*-of-/
+  (implies (and (integerp i)
+                (posp j))
+           (<= (denominator (* i (/ j))) j))
+  :hints (("Goal" :use (:instance least-numerator-denominator-<= (n i) (d j))
+           :in-theory (disable least-numerator-denominator-<=))))

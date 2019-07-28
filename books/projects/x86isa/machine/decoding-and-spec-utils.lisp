@@ -1916,6 +1916,7 @@ reference made from privilege level 3.</blockquote>"
 	(high/low    'nil)
 	(trunc       'nil)
 	(evex        'nil)
+        (modr/m      'nil)
 	body parents short long
 	inline enabled guard-debug guard
 	guard-hints (verify-guards 't) prepwork thms
@@ -1970,7 +1971,12 @@ reference made from privilege level 3.</blockquote>"
 
 	 ,@(and returns `(:returns ,returns))
 
-	 ,body
+	 (b* ((?ctx ',name)
+              ,@(and modr/m
+                     '((?r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+                       (?mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+                       (?reg (the (unsigned-byte 3) (modr/m->reg modr/m))))))
+           ,body)
 
 	 ///
 

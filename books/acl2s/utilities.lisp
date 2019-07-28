@@ -165,27 +165,26 @@ A macro that uses @('with-outer-locals') to locally turn off
     (local (acl2s-defaults :set testing-enabled nil))
     (defthm ,name ,@args)))
 
-#|
-(definec symbol-string-app (l :symbol-list) :string
-  (if (endp l)
-      ""
-    (concatenate 'string (symbol-name (car l))
-                 (symbol-string-app (cdr l)))))
-
-(defunc make-symbl (l)
-  :input-contract (and (symbol-listp l) l)
-  :output-contract (symbolp (make-symbl l))
-  (intern-in-package-of-symbol
-   (symbol-string-app l)
-   (car l)))
-|#
+(defun sym-string-listp (l)
+  (declare (xargs :guard t))
+  (if (consp l)
+      (and (or (symbolp (car l))
+               (stringp (car l)))
+           (sym-string-listp (cdr l)))
+    (null l)))
 
 (defun symbol-string-app (l)
-  (declare (xargs :guard (symbol-listp l)))
+  (declare (xargs :guard (sym-string-listp l)))
   (if (endp l)
       ""
-    (concatenate 'string (symbol-name (car l))
+    (concatenate 'string (if (symbolp (car l))
+                             (symbol-name (car l))
+                           (car l))
                  (symbol-string-app (cdr l)))))
+
+(defthm symbol-string-app-contract-thm
+  (implies (sym-string-listp l)
+           (stringp (symbol-string-app l))))
 
 (defun best-package (x y)
   (declare (xargs :guard (and (stringp x) (stringp y))))
@@ -197,42 +196,37 @@ A macro that uses @('with-outer-locals') to locally turn off
     (if (< lx ly) x y)))
     
 (defun best-package-symbl-list (l s)
-  (declare (xargs :guard (and (symbol-listp l) (stringp s))))
-  (if (endp l)
-      s
-    (best-package-symbl-list
-     (cdr l)
-     (best-package (symbol-package-name (car l)) s))))
+  (declare (xargs :guard (and (sym-string-listp l) (stringp s))))
+  (cond ((endp l) s)
+        ((symbolp (car l))
+         (best-package-symbl-list
+          (cdr l)
+          (best-package (symbol-package-name (car l)) s)))
+        (t (best-package-symbl-list (cdr l) s))))
 
 (defthm best-package-symbl-list-stringp
-  (implies (and (symbol-listp l) (stringp s))
+  (implies (and (sym-string-listp l) (stringp s))
            (stringp (best-package-symbl-list l s))))
 
 (defthm best-package-symbl-list-not-empty
-  (implies (and (symbol-listp l) (stringp s) (not (equal s "")))
+  (implies (and (sym-string-listp l) (stringp s) (not (equal s "")))
            (not (equal (best-package-symbl-list l s) ""))))
 
 (defun make-symbl-fun (l pkg)
   (declare (xargs :guard (and l
-                              (symbol-listp l)
+                              (sym-string-listp l)
                               (or (null pkg) (stringp pkg))
                               (not (equal pkg "")))))
   (intern$
    (symbol-string-app l)
    (if pkg pkg (best-package-symbl-list l "ACL2"))))
 
+; l is a list containing strings or symbols.
 (defmacro make-symbl (l &optional pkg)
   (declare (xargs :guard t))
   `(make-symbl-fun ,l ,pkg))
 
-#|
-(defun make-symbl (l)
-  (declare (xargs :guard (and l (symbol-listp l))))
-  (intern-in-package-of-symbol
-   (symbol-string-app l)
-   'acl2-pkg-witness))
-|#
-
+; l is a list containing strings or symbols.
 (defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.
   (declare (xargs :guard t))
@@ -269,8 +263,11 @@ functions over natural numbers.
                 (o< (nat-id x) (nat-id y))))
   :rule-classes :well-founded-relation)
 
-(defmacro defthmskip (name &rest args)
-  `(skip-proofs (defthm ,name ,@args)))
+(defmacro defthm-test-no-proof (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled t))
+    (test? ,@args)
+    (skip-proofs (defthm ,name ,@args))))
 
 (defmacro defthmskipall (name &rest args)
   `(skip-proofs (defthm-no-test ,name ,@args)))
@@ -279,4 +276,15 @@ functions over natural numbers.
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
     (defun ,name ,@args)))
+
+; I tried a few different ways of doing this, so I figured I would
+; leave this here so that if I make any other changes, there is less
+; updating to do.
+(defun tbl-set-fn (tbl key val)
+  `(table ,tbl ,key ,val))
+
+(defun tbl-get-fn (tbl key)
+  `(b* ((wrld (w state)))
+     (cdr (assoc-eq ,key (table-alist ',tbl wrld)))))
+
 

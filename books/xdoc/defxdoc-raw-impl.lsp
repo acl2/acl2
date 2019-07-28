@@ -35,7 +35,8 @@
 
 (defun defxdoc-raw-fn (name parents short long pkg)
   (let* ((pkg   (or pkg (package-name *package*)))
-         (entry (list (cons :name name)
+         (entry (list (cons :from "[defxdoc-raw]")
+                      (cons :name name)
                       (cons :base-pkg (acl2::pkg-witness pkg))
                       (cons :parents parents)
                       (cons :short short)

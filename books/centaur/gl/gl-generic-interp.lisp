@@ -1248,7 +1248,7 @@
 
   (defthm glcp-generic-geval-ev-magic-ev-fncall-special
     (b* (((mv erp val)
-          (acl2::magic-ev-fncall f args st t nil)))
+          (acl2::magic-ev-fncall-logic f args st)))
       (implies (and (glcp-generic-geval-ev-meta-extract-global-facts)
                     (equal (w st) (w state))
                     (not erp))
@@ -2616,7 +2616,8 @@
                              (bfr-hyp-init$a)
                              (proper-contextsp)
                              kwote-lst
-                             symbol-listp)))
+                             symbol-listp
+                             acl2::magic-ev-fncall-logic)))
 
   (local (defthm proper-contextsp-of-iff
            (proper-contextsp '(iff))

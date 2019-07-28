@@ -469,7 +469,7 @@
          ((mv ok eval-ans)
           (if (and (pseudo-term-quote-listp args)
                    (exec-enabledp fn state))
-              (b* (((mv err ans) (magic-ev-fncall fn (pseudo-term-quote-list->vals args) state t nil)))
+              (b* (((mv err ans) (acl2::magic-ev-fncall-logic fn (pseudo-term-quote-list->vals args) state)))
                 (mv (not err) ans))
             (mv nil nil)))
          ((when ok) (pseudo-term-quote eval-ans))

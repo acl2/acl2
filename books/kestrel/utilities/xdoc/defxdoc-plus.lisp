@@ -1,6 +1,6 @@
 ; XDOC Utilities -- An Extension of DEFXDOC
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,25 +19,22 @@
   :parents (xdoc-utilities)
   :short "@('defxdoc+') extends @(tsee defxdoc) with some conveniences."
   :long
-  "<p>
-   In addition to the arguments of @(tsee defxdoc),
-   @('defxdoc+') takes the following keyword arguments:
-   </p>
-   <ul>
-     <li>
-     @(':order-subtopics'), which must be @('t') or @('nil').
-     If it is @('t'),
-     a call of @(tsee xdoc::order-subtopics) is generated
-     to order all the subtopics of this topic.
-     </li>
-     <li>
-     @(':default-parent'), which must be @('t') or @('nil').
-     If it is @('t'),
-     a book-@(see local) call of @(tsee set-default-parents) is generated
-     to use the singleton list of this topic as default parents.
-     </li>
-   </ul>
-   @(def defxdoc+)"
+  (xdoc::topstring
+   (xdoc::p
+    "In addition to the arguments of @(tsee defxdoc),
+     @('defxdoc+') takes the following keyword arguments:")
+   (xdoc::ul
+    (xdoc::li
+     "@(':order-subtopics'), which must be @('t') or @('nil').
+      If it is @('t'),
+      a call of @(tsee xdoc::order-subtopics) is generated
+      to order all the subtopics of this topic.")
+    (xdoc::li
+     "@(':default-parent'), which must be @('t') or @('nil').
+      If it is @('t'),
+      a book-@(see local) call of @(tsee set-default-parents) is generated
+      to use the singleton list of this topic as default parents."))
+   (xdoc::@def "defxdoc+"))
 
   (defmacro defxdoc+ (&rest args)
     (b* ((name (car args))

@@ -20,8 +20,10 @@
 ; Pete 9/27/2018: Include utilities book
 (include-book "utilities")
 (include-book "definec" :ttags :all)
+(include-book "properties")
 
 (include-book "std/strings/top" :dir :system)
+(include-book "system/doc/developers-guide" :dir :system)
 
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple
@@ -48,83 +50,6 @@
             set-difference-equal
             intersection-equal))
 
-; I (Pete) went through the built-in functions and added signature
-; rules where appropriate. This list is not complete for two
-; reasons. First, there are some cases in which we fail due to the
-; algorithm not being as general as it can be. See the acl2s-issues
-; file. Second, I made one pass through the documentation of
-; ACL2-built-ins. I should check again and I should check functions
-; defined in the books we load.
-
-(sig append ((listof :a) (listof :a)) => (listof :a))
-(sig append ((alistof :a :b) (alistof :a :b)) => (alistof :a :b)
-     :suffix alistof)
-
-(sig acl2::rev ((listof :a)) => (listof :a))
-(sig acl2::rev ((alistof :a :b)) => (alistof :a :b)
-     :suffix alistof)
-
-(sig nth (nat (listof :a)) => :a
-     :satisfies (< x1 (len x2)))
-; PETE: I added and removed the sig below because it caused the
-; theorem prover to get super slow.
-;(sig car ((listof :a)) => :a :satisfies (consp x1)) ;new: check
-(sig cons (:a (listof :a)) => (listof :a))
-(sig acl2::fix-true-list ((listof :a)) => (listof :a))
-(sig acl2::fix-true-list ((alistof :a :b)) => (alistof :a :b)
-     :suffix alistof)
-(sig last ((listof :a)) => (listof :a))
-(sig last ((alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig acl2::repeat (nat :a) => (listof :a)) ;renamed from replicate-fn
-(sig make-list-ac (nat :a (listof :a)) => (listof :a))
-(sig nthcdr (nat (listof :a)) => (listof :a))
-(sig nthcdr (nat (alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig remove (all (listof :a)) => (listof :a))
-(sig remove (all (alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig remove1-equal (all (listof :a)) => (listof :a))
-(sig remove1-equal (all (alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig remove-duplicates ((listof :a)) => (listof :a))
-(sig remove-duplicates ((alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig cdr ((listof :a)) => (listof :a))
-(sig cdr ((alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig revappend ((listof :a) (listof :a)) => (listof :a))
-(sig revappend ((alistof :a :b) (alistof :a :b)) => (alistof :a :b)
-     :suffix alistof)
-(sig reverse ((listof :a)) => (listof :a))
-(sig reverse ((alistof :a :b)) => (alistof :a :b) :suffix alistof)
-(sig set-difference$ ((listof :a) (listof :a)) => (listof :a))
-(sig set-difference$ ((alistof :a :b) (alistof :a :b)) => (alistof :a :b)
-     :suffix alistof)
-(sig first-n-ac (nat (listof :a) (listof :a)) => (listof :a)
-     :satisfies (< x1 (len x2)))
-(sig first-n-ac (nat (alistof :a :b) (alistof :a :b)) => (alistof :a :b)
-     :satisfies (< x1 (len x2))
-     :suffix alistof)
-(local (in-theory (enable take)))
-(sig take (nat (listof :a)) => (listof :a)
-     :satisfies (<= x1 (len x2))
-     :hints (("Goal" :cases ((equal x1 (len x2))))))
-(sig take (nat (alistof :a :b)) => (alistof :a :b)
-     :satisfies (<= x1 (len x2))
-     :suffix alistof
-     :hints (("Goal" :cases ((equal x1 (len x2))))))
-(local (in-theory (disable take)))
-(sig subseq-list ((listof :a) nat nat) => (listof :a)
-     :satisfies (and (<= x3 (len x1)) (<= x2 x3)))
-(sig subseq-list ((alistof :a :b) nat nat) => (alistof :a :b)
-     :satisfies (and (<= x3 (len x1)) (<= x2 x3))
-     :suffix alistof)
-(sig subseq ((listof :a) nat nat) => (listof :a)
-     :satisfies (and (<= x3 (len x1)) (<= x2 x3)))
-(sig subseq ((alistof :a :b) nat nat) => (alistof :a :b)
-     :satisfies (and (<= x3 (len x1)) (<= x2 x3))
-     :suffix alistof)
-
-(sig put-assoc-equal (:a :b (alistof :a :b)) => (alistof :a :b))
-(sig pairlis$ ((listof :a) (listof :b)) => (alistof :a :b)
-     :satisfies (= (len x1) (len x2)))
-(sig update-nth (nat :a (listof :a)) => (listof :a) ;new: check
-     :satisfies (<= x1 (len x3)))
 
 (include-book "arithmetic-5/top" :dir :system)
 
@@ -356,8 +281,8 @@ so instead I use computed hints.
 (in-theory
  (disable negp posp natp non-pos-integerp
           neg-ratiop pos-ratiop non-neg-ratiop non-pos-ratiop ratiop
-          neg-rationalp pos-rationalp non-neg-rationalp non-pos-rationalp
-          ))
+          neg-rationalp pos-rationalp non-neg-rationalp
+          non-pos-rationalp))
 
 (mutual-recursion
  (defun find-first-call (fn term)
@@ -405,6 +330,35 @@ so instead I use computed hints.
 End of new version.
 
 |#
+
+
+#|
+
+From rtl/rel11/lib/top.lisp, where various arithmetic-5
+theorems are disabled.
+
+I commented out some disabled theorems that seem fine to me.
+
+|#
+
+(in-theory
+ #!acl2(disable |(mod (+ x y) z) where (<= 0 z)|
+                |(mod (+ x (- (mod a b))) y)|
+                |(mod (mod x y) z)|
+                |(mod (+ x (mod a b)) y)|
+                mod-cancel-*-const
+                cancel-mod-+
+                reduce-additive-constant-<
+                ash-to-floor
+                |(floor x 2)|
+                |(equal x (if a b c))|
+                |(equal (if a b c) x)|
+                |(logior 1 x)|
+;;                mod-theorem-one-b
+                |(mod (- x) y)|
+;;                acl2::mod-sums-cancel-1
+;;                acl2::|(equal (mod a n) (mod b n))|
+                ))
 
 (defthm numerator-1-decreases
   (implies (rationalp n)

@@ -74,18 +74,16 @@
   ;; Note that opcode #x90 with REX.B = 0 is XCHG rAX, rAX, i.e., NOP.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d* () (not))))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-xchg)
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-       (reg (modr/m->reg modr/m))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
 		 (prefixes->adr prefixes)))
 
@@ -183,21 +181,18 @@
   ;; 0F B1: CMPXCHG r/m16/32/64, r16/32/64
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
 
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-cmpxchg)
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-       (reg (modr/m->reg modr/m))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -287,24 +282,21 @@
   ;; prefix anyway.
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx 'x86-two-byte-nop)
-
-       ;; [Shilpi] Though Intel Manuals (May 2018 edition) specifically mention
+  (b* (;; [Shilpi] Though Intel Manuals (May 2018 edition) specifically mention
        ;; in two different places (the opcode maps and the instruction
        ;; description page for NOP) that reg = 0 for this instruction, I have
        ;; not observed an x86 machine to throw a UD if reg != 0.
-       ;; (reg (modr/m->reg modr/m))
        ;; ((when (not (equal reg 0)))
        ;;  (!!fault-fresh :ud nil :illegal-reg modr/m))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
 
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))

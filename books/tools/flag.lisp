@@ -43,6 +43,41 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/support" :dir :system)
 
+; Matt K. mod: Needed for #+acl2-devel build.  This could probably be made
+; conditional using #+acl2-devel.
+#!acl2
+(encapsulate
+  ()
+  (local (include-book "system/termp" :dir :system))
+  (verify-termination plist-worldp-with-formals)
+  (verify-guards plist-worldp-with-formals)
+  (verify-termination arity)
+  (verify-guards arity)
+  (verify-termination arities-okp)
+  (verify-guards arities-okp)
+  (verify-termination legal-variable-or-constant-namep)
+  (verify-guards legal-variable-or-constant-namep)
+  (verify-termination legal-variablep)
+  (verify-guards legal-variablep)
+  (verify-termination arglistp1)
+  (verify-guards arglistp1)
+  (verify-termination arglistp)
+  (verify-guards arglistp)
+  (verify-termination termp)
+  (verify-guards termp)
+  (verify-termination term-listp)
+  (verify-guards term-listp)
+  (verify-termination term-list-listp)
+  (verify-guards term-list-listp)
+  (verify-termination logic-fns-listp)
+  (verify-guards logic-fns-listp)
+  (verify-termination logic-fns-list-listp)
+  (verify-guards logic-fns-list-listp)
+  (verify-termination logic-term-listp)
+  (verify-guards logic-term-listp)
+  (verify-termination logic-term-list-listp)
+  (verify-guards logic-term-list-listp))
+
 (defxdoc make-flag
   :parents (mutual-recursion)
   :short "Create a flag-based @(see acl2::induction) scheme for a @(see

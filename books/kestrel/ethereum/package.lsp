@@ -12,6 +12,8 @@
 
 (include-book "std/portcullis" :dir :system)
 (include-book "kestrel/crypto/portcullis" :dir :system)
+(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
+(include-book "kestrel/crypto/ecdsa/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,9 +51,10 @@
                              unsigned-byte-list-fix
                              std::define-sk
                              crypto::keccak-256-bytes
-                             crypto::secp256k1-point-to-bytes
-                             crypto::secp256k1-priv-key-p
-                             crypto::secp256k1-priv-to-pub
-                             crypto::secp256k1-pub-key-fix
-                             crypto::secp256k1-pub-key-p
-                             crypto::secp256k1-sign)))
+                             ecurve::secp256k1-priv-to-pub
+                             ecurve::secp256k1-sign
+                             ecurve::secp256k1-point-to-bytes
+                             ecurve::secp256k1-priv-key-p
+                             ecurve::secp256k1-pub-key-fix
+                             ecurve::secp256k1-pub-key-p
+                             ecdsa::secp256k1-sign-det-rec)))

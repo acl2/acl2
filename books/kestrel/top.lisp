@@ -21,6 +21,7 @@
 (include-book "fty/top")
 (include-book "java/top")
 (include-book "soft/top")
+(include-book "std/top")
 (include-book "utilities/top")
 
 ; (depends-on "images/kestrel-logo.png")

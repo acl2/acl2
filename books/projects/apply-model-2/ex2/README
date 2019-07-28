@@ -1,0 +1,21 @@
+This is the README file for /books/projects/apply-model-2/ex2/.  This directory
+is almost analogous to its peer, ../ex1/ and you should see the README file
+there for details.  The ``almost'' is necessary because this directory contains
+one more file, user-thms.lisp, which just illustrates more theorems about
+scions.  Some of these theorems are also in ../report.lisp but a few are novel.
+
+Certification instructions for this directory are analogous to those for ex1/
+as described in the README but bear repeating:
+
+Certification of books in this directory depends on the following.
+
+cp -p ../apply.lisp evaluation-apply.lisp
+cp -p user-defs.lisp evaluation-user-defs.lisp
+
+That is done automatically using "make", or by running a regression
+from the top-level ACL2 directory or books/.
+
+Running "make" in this directory, however, will not guarantee that the
+books in the parent directory are certified, which is necessary.
+Either run make in the parent directory or run cert.pl with option
+--include-excludes in either directory _after_ copying as shown above.

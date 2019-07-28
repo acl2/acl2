@@ -90,6 +90,7 @@
 (verify-termination-boot-strap pairlis-x1) ; and guards
 (verify-termination-boot-strap pairlis-x2) ; and guards
 (verify-termination-boot-strap first-keyword) ; and guards
+(verify-termination-boot-strap symbol-name-lst) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -1072,12 +1073,14 @@
                   :guard (symbolp name)))
   (let ((wrld (w state)))
     (or (getpropc name 'theorem nil wrld)
-        (mv-let (flg prop)
-          (constraint-info name wrld)
-          (cond ((unknown-constraints-p prop)
-                 *t*)
-                (flg (ec-call (conjoin prop)))
-                (t prop))))))
+        (cond ((logicp name wrld)
+               (mv-let (flg prop)
+                 (constraint-info name wrld)
+                 (cond ((unknown-constraints-p prop)
+                        *t*)
+                       (flg (ec-call (conjoin prop)))
+                       (t prop))))
+              (t *t*)))))
 
 (verify-termination-boot-strap type-set-quote)
 (verify-guards type-set-quote)
@@ -1196,19 +1199,21 @@
 (defun fncall-term (fn arglist state)
   (declare (xargs :stobjs state
                   :guard (true-listp arglist)))
-  (mv-let (erp val)
-          (magic-ev-fncall fn arglist state
-                           t   ; hard-error-returns-nilp
-                           nil ; aok
-                           )
-          (cond (erp *t*)
-                (t (fcons-term* 'equal
+  (cond ((logicp fn (w state))
+         (mv-let (erp val)
+           (magic-ev-fncall fn arglist state
+                            t  ; hard-error-returns-nilp
+                            nil ; aok
+                            )
+           (cond (erp *t*)
+                 (t (fcons-term* 'equal
 
 ; As suggested by Sol Swords, we use fcons-term below in order to avoid having
 ; to reason about the application of an evaluator to (cons-term fn ...).
 
-                                (fcons-term fn (kwote-lst arglist))
-                                (kwote val))))))
+                                 (fcons-term fn (kwote-lst arglist))
+                                 (kwote val))))))
+        (t *t*)))
 
 (defun logically-equivalent-states (st1 st2)
    (declare (xargs :guard t))

@@ -117,13 +117,15 @@ additional hyps")
   
   (b* ((type (access cs% defdata-type))
        (wrld (w state))
+       (M (table-alist 'defdata::type-metadata-table wrld))
+       (A (table-alist 'defdata::type-alias-table wrld))
        ((when  (and (not (defdata::recursive-type-p type wrld))
                     (record-p type wrld)))
         (b* (((mv rec-expansion field-type-hyps)
               (expand-record x type wrld))
-             (M (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))
-             (type-hyp (get-corr-type-hyp (defdata::predicate-name type M)
-                                          H))
+             (type-hyp (get-corr-type-hyp
+                        (defdata::predicate-name type A M)
+                        H))
              (updated-H (remove-equal type-hyp
                                       (union-equal field-type-hyps H))))
               (value (list rec-expansion :expand updated-H))))
@@ -134,18 +136,13 @@ additional hyps")
         (b* (((er (list cval kind))
               (get-concrete-value cs% partial-A sm vl ctx wrld state)))
           (value (list cval kind H)))
-      
       (b* ((type-hyp (get-corr-type-hyp
-                      (defdata::predicate-name type
-                        (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))
+                      (defdata::predicate-name type A M)
                       H)))
         (value (list refined-term
                      :expand
                      (remove-equal type-hyp
                                    (union-equal additional-hyps H))))))))
-
-           
-
 
 (defun put-val-A (name val dlist) ;use mset instead?
   "put list binding name->val in the front"

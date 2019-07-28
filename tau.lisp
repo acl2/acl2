@@ -7410,26 +7410,64 @@
                     (getpropc (ffn-symb atm) 'tau-pair nil wrld)
                     (quotep (fargn atm 1))))))
 
+(defun rune-< (x y)
+  (cond
+   ((eq (car x) (car y))
+    (or (symbol-< (cadr x) (cadr y))
+        (and (eq (cadr x) (cadr y))
+             (cond ((null (cddr x))
+                    (cddr y))
+                   ((null (cddr y))
+                    nil)
+                   (t (< (cddr x) (cddr y)))))))
+   ((symbol-< (car x) (car y))
+    t)
+   (t
+    nil)))
+
+(defun merge-runes-strict (l1 l2)
+  (cond ((endp l1) l2)
+        ((endp l2) l1)
+        ((equal (car l1) (car l2))
+         (cons (car l1) (merge-runes-strict (cdr l1) (cdr l2))))
+        ((rune-< (car l1) (car l2))
+         (cons (car l1) (merge-runes-strict (cdr l1) l2)))
+        (t (cons (car l2) (merge-runes-strict l1 (cdr l2))))))
+
+(defun merge-sort-runes-strict (lst)
+  (cond ((endp (cdr lst))
+         lst)
+        (t (let ((n (floor (length lst) 2)))
+             (merge-runes-strict (merge-sort-runes-strict (take n lst))
+                                 (merge-sort-runes-strict (nthcdr n lst)))))))
+
+(defun get-tau-runes (wrld)
+  (merge-sort-runes-strict (global-val 'tau-runes wrld)))
+
 (defun set-tau-runes (flg val wrld)
 
 ; This function updates the global-value of tau-runes, adding val to its
 ; current value.  Flg should be 'list or nil indicating whether val is a list
 ; of runes or a single rune.
 
-; Note: The reason we need union-equal and add-to-set-equal, even though we
-; never visit the same rule twice, is that some rules split into many (hyps
-; . concl) pairs and each pair has the same rune.  For example, if a function
-; foo has a :type-prescription rule that says the result is a symbol other than
-; T or NIL, it turns into the conjunction of (symbolp v), (not (equal v 'T)),
-; (not (equal v 'NIL)) and each is added with the same rune.
+; Note: We formerly used union-equal and add-to-set-equal below rather than
+; append and cons (respectively), even though we never visit the same rule
+; twice, because some rules split into many (hyps . concl) pairs and each pair
+; has the same rune.  For example, if a function foo has a :type-prescription
+; rule that says the result is a symbol other than T or NIL, it turns into the
+; conjunction of (symbolp v), (not (equal v 'T)), (not (equal v 'NIL)) and each
+; is added with the same rune.  However, we found in July 2019 that the
+; evaluation of (include-book "centaur/sv/top" :dir :system) sped up from just
+; over 84 seconds to just under 70 seconds, cutting about 17% off the time,
+; when using append and cons rather than union-equal and (especially)
+; add-to-set-equal.
 
   (let ((runes0 (global-val 'tau-runes wrld)))
     (global-set 'tau-runes
                 (cond ((eq flg 'list)
-                       (union-equal val runes0))
-                      (t (add-to-set-equal val runes0)))
+                       (append val runes0))
+                      (t (cons val runes0)))
                 wrld)))
-
 
 (defun add-tau-boolean-rule (rune hyps concl wrld)
 
@@ -13059,7 +13097,7 @@
       ,@(tau-get-stats-on-signatures fns wrld 0 0 0 0 0 nil nil)
       (:big-switches ,(collect-tau-big-switches wrld nil))
       (:mv-nth-synonyms ,(global-val 'tau-mv-nth-synonyms wrld))
-      (:tau-runes ,(len (global-val 'tau-runes wrld)))
+      (:tau-runes ,(len (get-tau-runes wrld)))
       (:tau-lost-runes ,(len (global-val 'tau-lost-runes wrld))))))
 
 
@@ -13193,8 +13231,7 @@
         (merge-sort-lexorder (global-val 'tau-conjunctive-rules wrld))))
      (tau-mv-nth-synonyms ,(merge-sort-lexorder
                             (global-val 'tau-mv-nth-synonyms wrld)))
-     (tau-runes ,(merge-sort-lexorder
-                  (global-val 'tau-runes wrld)))
+     (tau-runes ,(get-tau-runes wrld))
      (tau-lost-runes ,(merge-sort-lexorder
                        (global-val 'tau-lost-runes wrld))))))
 

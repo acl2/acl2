@@ -695,12 +695,45 @@
 (defmacro op (&rest args)
   `(make-opcode ,@args))
 
+(define keyword-list-fix ((x acl2::keyword-listp))
+  :enabled t
+  (mbe :logic (if (acl2::keyword-listp x) x 'nil)
+       :exec x))
+
+(fty::deffixtype keyword-list
+  :pred acl2::keyword-listp
+  :fix keyword-list-fix
+  :equiv keyword-list-equiv
+  :define t)
+
+(defprod Op/En-p
+  ((src1 acl2::keyword-listp)
+   (src2 acl2::keyword-listp)
+   (src3 acl2::keyword-listp)
+   (src4 acl2::keyword-listp)))
+
 (define operand-type-p (x)
   (or (not x)
+      ;; The opcode maps present in Intel's manuals are incomplete.  Notably,
+      ;; the EVEX-encoded instructions are absent from it.  In such cases, we
+      ;; can describe the operands using the Op/En column present in the
+      ;; instruction description pages --- this info. can be put in a keyword
+      ;; list. E.g.:
+      ;; EVEX.LIG.F2.0F.W1 10 /r VMOVSD xmm1 {k1}{z}, xmm2, xmm3
+      ;; Operand 1: ModRM:reg (w)
+      ;; Operand 2: VEX.vvvv (r)
+      ;; Operand 3: ModRM:r/m (r)
+      ;; We can describe these operands as follows (respectively):
+      ;; '(:ModRM.reg :XMM)
+      ;; '(:VEX.vvvv  :XMM)
+      ;; '(:ModRM.r/m :XMM)
+      ;; Suppose YMM registers were also allowed.  Then one could say the
+      ;; following:
+      ;; '(:ModRM.reg :XMM :YMM)
+      (acl2::keyword-listp x)
       (and (true-listp x)
            (if (equal (len x) 1)
-               (or (keywordp (nth 0 x))
-                   (acl2-numberp (nth 0 x))
+               (or (acl2-numberp (nth 0 x))
                    (addressing-method-code-p (nth 0 x)))
              (if (equal (len x) 2)
                  (and
