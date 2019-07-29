@@ -2998,7 +2998,7 @@
                                       state)
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) apkg))
-  :returns (jclass "A @(tsee classp).")
+  :returns (jclass "A @(tsee jclassp).")
   :mode :program
   :short "Generate the shallowly embedded ACL2 functions
           in an ACL2 package."
