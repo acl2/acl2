@@ -11,6 +11,7 @@
 (in-package "JAVA")
 
 (include-book "library-extensions")
+(include-book "test-structures")
 
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -51,12 +52,6 @@
                                                 targets)
                                            t nil)))
     (value nil)))
-
-(defval *atj-aij-jpackage*
-  :short "Name of the Java package of AIJ."
-  "edu.kestrel.acl2.aij"
-  ///
-  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
@@ -105,37 +100,6 @@
                   java-class))
        (name (or java-class *atj-default-java-class*)))
     (value name)))
-
-(std::defaggregate atj-test
-  :short "Recognize a processed test specified by the @(':tests') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each test specified by the @(':tests') input
-     must the form @('(namej termj)'),
-     where @('termj') must translate to @('(fn qc1 qc2 ...)'),
-     as explained in the documentation.
-     As the @(':tests') input is processed,
-     the information about each test is stored
-     into an aggregate of this type.
-     This aggregate stores
-     @('namej'),
-     @('fn'),
-     The list of values of the quoted constants @('qc1'), @('qc2'), etc.,
-     and the result of the ground call @('(fn qc1 qc2 ...)')."))
-  ((name "This is @('namej')." stringp)
-   (function "This is @('fn')." symbolp)
-   (arguments "This is the list of values of @('qc1'), @('qc2'), etc."
-              true-listp)
-   (result "This is the result of @('(fn qc1 qc2 ...)')."))
-  :pred atj-testp)
-
-(std::deflist atj-test-listp (x)
-  :short "Recognize true lists of processed tests
-          specified by the @(':tests') input."
-  (atj-testp x)
-  :true-listp t
-  :elementp-of-nil nil)
 
 (define atj-ensure-terms-quoted-constants
   ((qcs pseudo-term-listp "@('qc1'), @('qc2'), etc.")

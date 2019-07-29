@@ -288,3 +288,9 @@
   (b* ((identifiers (decompose-at-dots string)))
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
+
+(defval *atj-aij-jpackage*
+  :short "Name of the Java package of AIJ."
+  "edu.kestrel.acl2.aij"
+  ///
+  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))

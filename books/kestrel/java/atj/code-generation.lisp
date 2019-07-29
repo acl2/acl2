@@ -14,7 +14,7 @@
 ; cert_param: non-acl2r
 
 (include-book "library-extensions")
-(include-book "input-processing")
+(include-book "test-structures")
 (include-book "pretty-printer")
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
