@@ -339,6 +339,25 @@ counterexample info for the stack frame from which it is called.</p>"
   :enabled t
   :ignore-ok t
   :irrelevant-formals-ok t
+  :parents (fgl-testbenches)
+  :short "The universal equivalence relation, true of every pair of objects.  Used
+          in FGL to program testbenches."
+  :long "
+
+<p>@('Unequiv') takes two arguments and always returns @('T').  It is an
+equivalence relation; in fact, it is the equivalence relation for which every
+other equivalence relation is a refinement.</p>
+
+<p>In FGL, if the rewriter enters an @('unequiv') equivalence context, there
+are several tools that can be used that can't be used under other equivalence
+contexts.  These tools include extralogical forms such as @('syntax-interp'),
+@('fgl-interp-obj'), and @('assume').  The rewriter can also apply rules whose
+equivalence relation is @('unequiv'), meaning the LHS and RHS don't actually
+need to be related at all.  When the rewriter is under an @('unequiv') context
+it essentially means that whatever it computes there can't be relevant to the
+truth or falsity of the theorem under consideration, so it can do whatever the
+user asks it to do.</p>
+"
   t ;; Always true!
   ///
   (defequiv unequiv))
