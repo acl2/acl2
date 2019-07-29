@@ -335,10 +335,10 @@ counterexample info for the stack frame from which it is called.</p>"
   x)
 
 
-(define all-equiv (x y)
+(define unequiv (x y)
   :enabled t
   :ignore-ok t
   :irrelevant-formals-ok t
   t ;; Always true!
   ///
-  (defequiv all-equiv))
+  (defequiv unequiv))

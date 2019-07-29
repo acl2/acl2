@@ -41,7 +41,7 @@
   :long "<p>Logically, @('(bind-var var form)') just returns @('var').
 However, in FGL, the intended use is to bind a free variable in a rewrite rule
 to the result of some arbitrary computation.  The @('form') argument is
-rewritten under an @('all-equiv') congruence so it can do extralogical things
+rewritten under an @('unequiv') congruence so it can do extralogical things
 like examining the interpreter state and term syntax. The @('var') argument
 must be a variable that hasn't yet been bound during the application of the
 current rewrite rule.</p>"
@@ -51,7 +51,7 @@ current rewrite rule.</p>"
   :parents (fgl-rewrite-rules)
   :short "Interpret a form on the syntactic representations of variables."
   :long "<p>Logically, this always returns NIL.  In FGL, this can be used when
-under an @('all-equiv') congruence to examine the syntactic representation of
+under an @('unequiv') congruence to examine the syntactic representation of
 certain values and also to access and update the ACL2 state and FGL interpreter
 state.</p>")
 
@@ -68,7 +68,7 @@ state.</p>")
   :parents (fgl-rewrite-rules)
   :short "FGL testbench function to assume some condition while interpreting a term."
   :long "<p>Logically, @('(assume test val)') just returns NIL.  When it is
-encountered by the FGL interpreter under an @('all-equiv') congruence, it
+encountered by the FGL interpreter under an @('unequiv') congruence, it
 causes the interpreter to assume that @('test') is true while interpreting
 @('val'), returning the symbolic result from @('val').</p>
 "
@@ -89,7 +89,7 @@ congruence.  The most relevant @('equiv-contexts') objects:</p>
 <ul>
 <li>@('nil') means rewrite under @('equal'), that is, an object is only equivalent to itself</li>
 <li>@('(iff)') means rewrite under @('iff')</li>
-<li>@('(all-equiv)') means rewrite under @('all-equiv'), that is, all objects are equivalent.</li>
+<li>@('(unequiv)') means rewrite under @('unequiv'), that is, all objects are equivalent.</li>
 </ul>
 "
   val)
@@ -140,7 +140,7 @@ definitions.</p>")
   :short "In the FGL interpreter, run the first form for side effects and
 return the result from the second form."
   :long "<p>Logically, returns the second argument.  In FGL, the first argument
-is interpreted under the @('all-equiv') equivalence context, then the second is
+is interpreted under the @('unequiv') equivalence context, then the second is
 interpreted normally and returned.</p>"
   y)
 
@@ -151,7 +151,7 @@ interpreted normally and returned.</p>"
   :parents (fgl-rewrite-rules)
   :short "FGL testbench function to interpret a term that is the result of evaluating some form."
   :long "<p>Logically, @('(fgl-interp-obj term)') just returns NIL.  When it is
-encountered by the FGL interpreter under an @('all-equiv') congruence, it
+encountered by the FGL interpreter under an @('unequiv') congruence, it
 recursively interprets the object that @('term') evaluates to.  That is, it
 first interprets @('term'), then if this results in a constant object whose
 value is a pseudo-term, it interprets that and returns its result.</p>

@@ -340,8 +340,8 @@
         (gl-interp-error :msg (gl-msg "Bad syntax-interp form: args ~x0."
                                       (list (pseudo-term-fix synp-term)
                                             (pseudo-term-fix untrans)))))
-       ((unless (member-eq 'all-equiv (interp-st->equiv-contexts interp-st)))
-        (gl-interp-error :msg (gl-msg "Syntax-interp called not in an all-equiv context: args ~x0."
+       ((unless (member-eq 'unequiv (interp-st->equiv-contexts interp-st)))
+        (gl-interp-error :msg (gl-msg "Syntax-interp called not in an unequiv context: args ~x0."
                                       (list (pseudo-term-fix synp-term)
                                             (pseudo-term-fix untrans)))))
        (bindings (append (interp-st-minor-bindings interp-st)
@@ -413,7 +413,7 @@
 
 (define gl-interp-or-test-equiv-contexts ((contexts equiv-contextsp))
   :returns (new-contexts equiv-contextsp)
-  (cond ((member-eq 'all-equiv (equiv-contexts-fix contexts)) '(all-equiv))
+  (cond ((member-eq 'unequiv (equiv-contexts-fix contexts)) '(unequiv))
         ((member-eq 'iff (equiv-contexts-fix contexts)) '(iff))))
 
 ;; (define interp-st-checkpoint-p (chp interp-st)
@@ -1353,14 +1353,14 @@
 
 (define gl-interp-test-equiv-contexts ((contexts equiv-contextsp))
   :returns (new-contexts equiv-contextsp)
-  (if (member-eq 'all-equiv (equiv-contexts-fix contexts))
-      '(all-equiv)
+  (if (member-eq 'unequiv (equiv-contexts-fix contexts))
+      '(unequiv)
     '(iff)))
 
 (define gl-interp-arglist-equiv-contexts ((contexts equiv-contextsp))
   :returns (new-contexts equiv-contextsp)
-  (and (member-eq 'all-equiv (equiv-contexts-fix contexts))
-       '(all-equiv)))
+  (and (member-eq 'unequiv (equiv-contexts-fix contexts))
+       '(unequiv)))
 
 
 (define gl-interp-equiv-refinementp ((equiv pseudo-fnsym-p)
@@ -1370,7 +1370,7 @@
        (contexts (equiv-contexts-fix contexts)))
     (or (eq equiv 'equal)
         (member-eq equiv contexts)
-        (member-eq 'all-equiv contexts))))
+        (member-eq 'unequiv contexts))))
 
 (defun gl-interp-fncall-special-case-fn (cases)
   (b* (((when (atom cases))
@@ -1396,7 +1396,7 @@
   (b* ((x (equiv-contexts-fix x))
        (y (equiv-contexts-fix y))
        ((when (eq y nil)) t) ;; y is the finest equiv context
-       ((when (member 'all-equiv x)) t) ;; x is the coarsest equiv context
+       ((when (member 'unequiv x)) t) ;; x is the coarsest equiv context
        ((when (equal x y)) t))
     nil)
   ///
@@ -1786,7 +1786,7 @@
              (interp-st (interp-st-prof-push rule.rune interp-st))
              ((interp-st-bind
                (flags hyps-flags flags)
-               ;; NOTE: Even when in an all-equiv context, we rewrite the hyps under IFF.
+               ;; NOTE: Even when in an unequiv context, we rewrite the hyps under IFF.
                (equiv-contexts '(iff))
                (backchain-limit (1- backchain-limit) backchain-limit))
               ((gl-interp-recursive-call failed-hyp)
@@ -1932,7 +1932,7 @@
                                             (pseudo-term-fix free-var))))
              (varname (pseudo-term-var->name free-var))
              ((interp-st-bind
-               (equiv-contexts '(all-equiv)))
+               (equiv-contexts '(unequiv)))
               ((fgl-interp-value val) (gl-interp-term-equivs form interp-st state)))
              ((when (or (assoc-eq varname (interp-st-bindings interp-st))
                         (assoc-eq varname (interp-st-minor-bindings interp-st))))
@@ -2022,8 +2022,8 @@
         :returns (mv
                   (ans gl-object-p)
                   new-interp-st new-state)
-        (b* (((unless (member-eq 'all-equiv (interp-st->equiv-contexts interp-st)))
-              (gl-interp-error :msg (gl-msg "Assume called not in an all-equiv context: args ~x0."
+        (b* (((unless (member-eq 'unequiv (interp-st->equiv-contexts interp-st)))
+              (gl-interp-error :msg (gl-msg "Assume called not in an unequiv context: args ~x0."
                                             (list (pseudo-term-fix test) (pseudo-term-fix x)))))
              ((gl-interp-recursive-call testbfr)
               (gl-interp-test test interp-st state))
@@ -2082,7 +2082,7 @@
                   (xobj gl-object-p)
                   new-interp-st new-state)
         (b* (((interp-st-bind
-               (equiv-contexts '(all-equiv)))
+               (equiv-contexts '(unequiv)))
               ((gl-interp-recursive-call ?ign)
                (gl-interp-term-equivs first-arg interp-st state))))
           (gl-interp-term-equivs x interp-st state)))
@@ -2097,8 +2097,8 @@
         :returns (mv
                   (ans gl-object-p)
                   new-interp-st new-state)
-        (b* (((unless (member-eq 'all-equiv (interp-st->equiv-contexts interp-st)))
-              (gl-interp-error :msg (gl-msg "Fgl-interp-obj called not in an all-equiv context: args ~x0."
+        (b* (((unless (member-eq 'unequiv (interp-st->equiv-contexts interp-st)))
+              (gl-interp-error :msg (gl-msg "Fgl-interp-obj called not in an unequiv context: args ~x0."
                                             (list (pseudo-term-fix x)))))
              (reclimit (interp-st->reclimit interp-st))
              ((when (gl-interp-check-reclimit interp-st))
@@ -5801,8 +5801,8 @@
   ;;             contexts ans-ev x alist))
   ;;   :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
-  (defthm fgl-ev-context-equiv-forall-extensions-when-member-all-equiv
-    (implies (member 'all-equiv (equiv-contexts-fix contexts))
+  (defthm fgl-ev-context-equiv-forall-extensions-when-member-unequiv
+    (implies (member 'unequiv (equiv-contexts-fix contexts))
              (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist))
     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-forall-extensions))))
 
@@ -6296,7 +6296,7 @@
   ;;                  (append minor-bindings major-bindings1))
   ;;                 (iff* x-interp-simp-ev x-interp-ev)
   ;;                 (eval-alist-extension-p major-bindings2 major-bindings1)
-  ;;                 (not (member 'all-equiv (equiv-contexts-fix contexts))))
+  ;;                 (not (member 'unequiv (equiv-contexts-fix contexts))))
   ;;            (iff-forall-extensions
   ;;             x-interp-simp-ev
   ;;             x
@@ -6308,7 +6308,7 @@
 (define iff?-forall-extensions ((contexts equiv-contextsp)
                                 obj term eval-alist)
   :verify-guards nil
-  (if (member-eq 'all-equiv (equiv-contexts-fix contexts))
+  (if (member-eq 'unequiv (equiv-contexts-fix contexts))
       t
     (iff-forall-extensions obj term eval-alist))
   ///
@@ -7494,8 +7494,8 @@
   ///
   (local (defthm fgl-ev-list-context-fix-cases
            (equal (fgl-ev-list-context-fix (gl-interp-arglist-equiv-contexts contexts) x)
-                  (if (member 'all-equiv (equiv-contexts-fix contexts))
-                      (acl2::repeat (len x) (fgl-ev-context-fix '(all-equiv) nil))
+                  (if (member 'unequiv (equiv-contexts-fix contexts))
+                      (acl2::repeat (len x) (fgl-ev-context-fix '(unequiv) nil))
                     (true-list-fix x)))
            :hints(("Goal" :in-theory (enable len acl2::repeat true-list-fix
                                              gl-interp-arglist-equiv-contexts)))))

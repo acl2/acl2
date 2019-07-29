@@ -479,7 +479,7 @@ containing the bind-var calls.</p>
 <p>@('Def-fgl-program') provides a convenient macro for this. It wraps @(see
 define) such that all the usual arguments for define may be used.  It may also
 contain the additional keyword args @(':equiv'), giving the equivalence
-relation for the generated rewrite rule (defaulting to @('all-equiv')), and
+relation for the generated rewrite rule (defaulting to @('unequiv')), and
 @(':fgl-hints'), which allows hints to be passed to the proof for the rewrite
 rule.  Instead of providing the given function body as the body for the
 @('define'), it modifies it as follows: if @(':equiv') is provided, it searches
@@ -518,7 +518,7 @@ them with their second arguments; otherwise, it just provides a body of @('nil')
                                   (fgl::def-gl-rewrite ,(intern-in-package-of-symbol
                                                          (concatenate 'string (symbol-name name) "-FGL")
                                                          name)
-                                    (,(std::getarg :equiv 'all-equiv guts.kwd-alist)
+                                    (,(std::getarg :equiv 'unequiv guts.kwd-alist)
                                      (,name . ,(std::formallist->names guts.formals))
                                      ,body)
                                     :hints ,(cdr (assoc :fgl-hints guts.kwd-alist))))))

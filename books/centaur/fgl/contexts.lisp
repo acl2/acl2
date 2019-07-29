@@ -100,8 +100,8 @@
     (equal (fgl-ev-equiv-context-equiv-base 'iff x y)
            (iff* x y)))
 
-  (defthm fgl-ev-equiv-context-equiv-base-of-all-equiv
-    (equal (fgl-ev-equiv-context-equiv-base 'all-equiv x y)
+  (defthm fgl-ev-equiv-context-equiv-base-of-unequiv
+    (equal (fgl-ev-equiv-context-equiv-base 'unequiv x y)
            t)))
 
 
@@ -129,12 +129,12 @@
              (equal (fgl-ev-context-equiv-some contexts x y) t))
     :hints(("Goal" :in-theory (enable equiv-contexts-fix))))
 
-  (defthm fgl-ev-context-equiv-some-all-equiv
-    (equal (fgl-ev-context-equiv-some '(all-equiv) x y)
+  (defthm fgl-ev-context-equiv-some-unequiv
+    (equal (fgl-ev-context-equiv-some '(unequiv) x y)
            t))
 
-  (defthm fgl-ev-context-equiv-some-member-all-equiv
-    (implies (member 'all-equiv (equiv-contexts-fix contexts))
+  (defthm fgl-ev-context-equiv-some-member-unequiv
+    (implies (member 'unequiv (equiv-contexts-fix contexts))
              (equal (fgl-ev-context-equiv-some contexts x y)
                     t))
     :hints(("Goal" :in-theory (enable equiv-contexts-fix)))))
@@ -156,12 +156,12 @@
                   (iff* x y))
              (equal (fgl-ev-context-equiv-symm contexts x y) t)))
 
-  (defthm fgl-ev-context-equiv-symm-of-all-equiv
-    (equal (fgl-ev-context-equiv-symm '(all-equiv) x y)
+  (defthm fgl-ev-context-equiv-symm-of-unequiv
+    (equal (fgl-ev-context-equiv-symm '(unequiv) x y)
            t))
 
-  (defthm fgl-ev-context-equiv-symm-when-member-all-equiv
-    (implies (member 'all-equiv (equiv-contexts-fix contexts))
+  (defthm fgl-ev-context-equiv-symm-when-member-unequiv
+    (implies (member 'unequiv (equiv-contexts-fix contexts))
              (equal (fgl-ev-context-equiv-symm contexts x y)
                     t)))
 
@@ -231,11 +231,11 @@
     (implies (not (iff* (car (last trace)) (car trace)))
              (not (fgl-ev-context-equiv-trace '(iff) trace))))
 
-  (defthm fgl-ev-context-equiv-trace-all-equiv
-    (equal (fgl-ev-context-equiv-trace '(all-equiv) trace) t))
+  (defthm fgl-ev-context-equiv-trace-unequiv
+    (equal (fgl-ev-context-equiv-trace '(unequiv) trace) t))
 
-  (defthm fgl-ev-context-equiv-trace-when-member-all-equiv
-    (implies (member 'all-equiv (equiv-contexts-fix contexts))
+  (defthm fgl-ev-context-equiv-trace-when-member-unequiv
+    (implies (member 'unequiv (equiv-contexts-fix contexts))
              (equal (fgl-ev-context-equiv-trace contexts trace) t))))
 
 
@@ -297,15 +297,15 @@
                            (trace (list x y))))
              :expand ((fgl-ev-context-equiv contexts x y)))))
 
-  (defthm fgl-ev-context-equiv-all-equiv
-    (equal (fgl-ev-context-equiv '(all-equiv) x y)
+  (defthm fgl-ev-context-equiv-unequiv
+    (equal (fgl-ev-context-equiv '(unequiv) x y)
            t)
     :hints (("goal" :use ((:instance fgl-ev-context-equiv-suff
-                           (trace (list x y)) (contexts '(all-equiv))))
-             :expand ((fgl-ev-context-equiv '(all-equiv) x y)))))
+                           (trace (list x y)) (contexts '(unequiv))))
+             :expand ((fgl-ev-context-equiv '(unequiv) x y)))))
 
-  (defthm fgl-ev-context-equiv-when-member-all-equiv
-    (implies (member 'all-equiv (equiv-contexts-fix contexts))
+  (defthm fgl-ev-context-equiv-when-member-unequiv
+    (implies (member 'unequiv (equiv-contexts-fix contexts))
              (equal (fgl-ev-context-equiv contexts x y)
                     t))
     :hints (("goal" :use ((:instance fgl-ev-context-equiv-suff
@@ -420,15 +420,15 @@
 
 
 
-(defthm fgl-ev-context-fix-of-all-equiv
+(defthm fgl-ev-context-fix-of-unequiv
   (implies (syntaxp (not (equal x ''nil)))
-           (equal (fgl-ev-context-fix '(all-equiv) x)
-                  (fgl-ev-context-fix '(all-equiv) nil)))
-  :hints (("goal" :use ((:instance fgl-ev-context-equiv-is-equal-of-fixes (contexts '(all-equiv)) (y nil))))))
+           (equal (fgl-ev-context-fix '(unequiv) x)
+                  (fgl-ev-context-fix '(unequiv) nil)))
+  :hints (("goal" :use ((:instance fgl-ev-context-equiv-is-equal-of-fixes (contexts '(unequiv)) (y nil))))))
 
-(defthm fgl-ev-context-fix-when-member-all-equiv
+(defthm fgl-ev-context-fix-when-member-unequiv
   (implies (and (syntaxp (not (equal x ''nil)))
-                (member 'all-equiv (equiv-contexts-fix contexts)))
+                (member 'unequiv (equiv-contexts-fix contexts)))
            (equal (fgl-ev-context-fix contexts x)
                   (fgl-ev-context-fix contexts nil)))
   :hints (("goal" :use ((:instance fgl-ev-context-equiv-is-equal-of-fixes (y nil))))))
