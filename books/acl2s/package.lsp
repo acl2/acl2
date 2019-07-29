@@ -10,8 +10,9 @@
 (defpkg "DEFDATA"
   (append 
    '(value legal-constantp er-let* b* legal-variablep
+     legal-variable-or-constant-namep
      macroexpand1 trans-eval simple-translate-and-eval
-      f-boundp-global f-get-global f-put-global
+     f-boundp-global f-get-global f-put-global
      |1+F| |1-F| +f -f
      defxdoc current-acl2-world e/d unsigned-byte-p
      fquotep ffn-symb flambdap fargs
@@ -80,7 +81,8 @@
 
 (defpkg "CGEN"
   (union-eq
-   '(value legal-constantp er-let* b* 
+   '(value legal-constantp legal-variablep er-let* b* 
+     legal-variable-or-constant-namep
      macroexpand1 trans-eval simple-translate-and-eval
      assert-event legal-variable-or-constant-namep
      f-boundp-global f-get-global f-put-global
@@ -142,7 +144,10 @@
    '(defxdoc e/d er-let* b* value
       aconsp 
       mget mset wf-keyp good-map
-      
+      legal-variable-or-constant-namep
+      legal-constantp
+      legal-variablep
+      legal-variable-or-constant-namep
 
       => ;sig
       _  ;range
@@ -203,7 +208,7 @@
   (union-eq '(t nil 
               ;if ; see macro below
               equal
-
+              
               ; + * unary-- unary-/ < ; see definitions below
               numerator denominator
               rationalp integerp
