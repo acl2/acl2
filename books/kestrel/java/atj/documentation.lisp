@@ -275,9 +275,9 @@
      "Chooses the deep or shallow embedding approach described above:")
     (xdoc::ul
      (xdoc::li
-      "@('t') (the default), for the deep embedding.")
+      "@('t'), for the deep embedding.")
      (xdoc::li
-      "@('nil'), for the shallow embedding.")))
+      "@('nil') (the default), for the shallow embedding.")))
 
    (xdoc::desc
     "@(':java-package') &mdash; default @('nil')"
