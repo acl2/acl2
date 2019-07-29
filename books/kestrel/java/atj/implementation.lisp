@@ -70,6 +70,7 @@
       performed when it is processed.")
     (xdoc::li
      "@('deep'),
+      @('guards'),
       @('java-package'),
       @('java-class'),
       @('output-dir'),
@@ -80,6 +81,7 @@
       These formal parameters have no types because they may be any values.")
     (xdoc::li
      "@('deep$'),
+      @('guards$'),
       @('java-package$'),
       @('java-class$'),
       @('tests$'), and
@@ -698,6 +700,7 @@
 (defval *atj-allowed-options*
   :short "Keyword options accepted by @(tsee atj)."
   (list :deep
+        :guards
         :java-package
         :java-class
         :output-dir
@@ -711,6 +714,7 @@
   :returns (mv erp
                (result "A tuple @('((fn1 ... fnp)
                                     deep$
+                                    guards$
                                     java-package$
                                     java-class$
                                     output-file$
@@ -719,6 +723,7 @@
                                     verbose$)')
                         satisfying
                         @('(typed-tuplep symbol-listp
+                                         booleanp
                                          booleanp
                                          maybe-stringp
                                          stringp
@@ -729,6 +734,8 @@
                                          result)'),
                         where @('fn1'), ..., @('fnp') are
                         the names of the target functions,
+                        @('deep$') is the @(':deep') input,
+                        @('guards$') is the @(':guards') input,
                         @('java-package$') is the @(':java-package') input,
                         @('java-class$) is the result of
                         @(tsee atj-process-java-class),
@@ -754,6 +761,7 @@
                               followed by the options ~&0."
                              *atj-allowed-options*))
        (deep (cdr (assoc-eq :deep options)))
+       (guards (cdr (assoc-eq :guards options)))
        (java-package (cdr (assoc-eq :java-package options)))
        (java-class (cdr (assoc-eq :java-class options)))
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
@@ -761,6 +769,7 @@
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atj-process-targets targets ctx state))
        ((er &) (ensure-boolean$ deep "The :DEEP intput" t nil))
+       ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets ctx state))
@@ -773,6 +782,7 @@
        ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil)))
     (value (list targets
                  deep
+                 guards
                  java-package
                  java-class$
                  output-file$
@@ -906,6 +916,7 @@
   (assert-event (no-duplicatesp-eq *atj-allowed-raws*)))
 
 (define atj-fns-to-translate ((targets$ symbol-listp)
+                              (guards$ booleanp)
                               (verbose$ booleanp)
                               ctx
                               state)
@@ -938,8 +949,9 @@
     "Before collecting the functions
      called by the next function in the worklist,
      all the calls of @(tsee mbe) in the function's unnormalized body
-     are replaced with their @(':logic') parts.
-     Thus, their @(':exec') parts are ignored,
+     are replaced with their @(':logic') or @(':exec') parts,
+     based on the @(':guards') input.
+     Thus, their @(':exec') or @(':logic') parts are ignored,
      and calls to @(tsee return-last) that result from @(tsee mbe)s
      are accepted.")
    (xdoc::p
@@ -948,7 +960,12 @@
      The list is in no particular order."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       ((er fns) (atj-fns-to-translate-aux targets$ nil verbose$ ctx state))
+       ((er fns) (atj-fns-to-translate-aux targets$
+                                           nil
+                                           guards$
+                                           verbose$
+                                           ctx
+                                           state))
        ((unless (no-duplicatesp-eq fns))
         (value (raise "Internal error: ~
                        the list ~x0 of collected function names ~
@@ -959,6 +976,7 @@
   :prepwork
   ((define atj-fns-to-translate-aux ((worklist symbol-listp)
                                      (acc symbol-listp)
+                                     (guards$ booleanp)
                                      (verbose$ booleanp)
                                      ctx
                                      state)
@@ -970,7 +988,7 @@
      (b* (((when (endp worklist)) (value acc))
           ((cons fn worklist) worklist)
           ((when (primitivep fn))
-           (atj-fns-to-translate-aux worklist acc verbose$ ctx state))
+           (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state))
           ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
                           (member-eq fn (@ logic-fns-with-raw-code)))
                       (not (member-eq fn *atj-allowed-raws*))))
@@ -990,12 +1008,19 @@
           ((run-when verbose$)
            (cw "  ~x0~%" fn))
           (acc (add-to-set-eq fn acc))
-          (called-fns (all-ffn-symbs (remove-mbe-exec-from-term body) nil))
+          (body (if guards$
+                    (remove-mbe-logic-from-term body)
+                  (remove-mbe-exec-from-term body)))
+          (called-fns (all-ffn-symbs body nil))
           (fns-to-add-to-worklist (set-difference-eq called-fns acc))
           (worklist (union-eq fns-to-add-to-worklist worklist)))
-       (atj-fns-to-translate-aux worklist acc verbose$ ctx state)))))
+       (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state)))))
 
-(define atj-gather-info ((targets$ symbol-listp) (verbose$ booleanp) ctx state)
+(define atj-gather-info ((targets$ symbol-listp)
+                         (guards$ booleanp)
+                         (verbose$ booleanp)
+                         ctx
+                         state)
   :returns (mv erp
                (result "A tuple @('(pkgs
                                     fns-to-translate)')
@@ -1016,7 +1041,7 @@
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs))
        ((er fns-to-translate)
-        (atj-fns-to-translate targets$ verbose$ ctx state)))
+        (atj-fns-to-translate targets$ guards$ verbose$ ctx state)))
     (value (list pkgs fns-to-translate)))
 
   :prepwork
@@ -2699,7 +2724,10 @@
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-function*)))
 
-(define atj-gen-deep-afndef-jmethod ((afn symbolp) (verbose$ booleanp) state)
+(define atj-gen-deep-afndef-jmethod ((afn symbolp)
+                                     (guards$ booleanp)
+                                     (verbose$ booleanp)
+                                     state)
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a Java method that builds
@@ -2720,17 +2748,18 @@
      because each function definition is built in its own method
      (thus, there are no cross-references).")
    (xdoc::p
-    "All the calls of @(tsee mbe) are replaced with their @(':logic') parts
+    "All the calls of @(tsee mbe) are replaced with
+     their @(':logic') or @(':exec') parts (based on @(':guards'))
      in the function's body,
-     prior to generating code.
-     This is consistent with the fact that the Java counterpart of the function
-     is executed ``in the logic''."))
+     prior to generating code."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" afn))
        (jmethod-name (atj-gen-deep-afndef-jmethod-name afn))
        (aformals (formals afn (w state)))
        (abody (getpropc afn 'unnormalized-body))
-       (abody (remove-mbe-exec-from-term abody))
+       (abody (if guards$
+                  (remove-mbe-logic-from-term abody)
+                (remove-mbe-exec-from-term abody)))
        (afn-jexpr (atj-gen-asymbol afn))
        (aformals-jexpr (atj-gen-deep-aformals aformals))
        ((mv abody-jblock abody-jexpr & & &) (atj-gen-deep-aterm abody 1 1 1))
@@ -2774,6 +2803,7 @@
                   :body jmethod-body)))
 
 (define atj-gen-deep-afndef-jmethods ((afns symbol-listp)
+                                      (guards$ booleanp)
                                       (verbose$ booleanp)
                                       state)
   :returns (jmethods jmethod-listp)
@@ -2783,9 +2813,9 @@
   (if (endp afns)
       nil
     (b* ((first-jmethod
-          (atj-gen-deep-afndef-jmethod (car afns) verbose$ state))
+          (atj-gen-deep-afndef-jmethod (car afns) guards$ verbose$ state))
          (rest-jmethods
-          (atj-gen-deep-afndef-jmethods (cdr afns) verbose$ state)))
+          (atj-gen-deep-afndef-jmethods (cdr afns) guards$ verbose$ state)))
       (cons first-jmethod rest-jmethods))))
 
 (define atj-gen-deep-afndefs ((afns symbol-listp))
@@ -2897,6 +2927,7 @@
   :guard-hints (("Goal" :in-theory (enable primitivep))))
 
 (define atj-gen-shallow-afndef ((afn symbolp)
+                                (guards$ booleanp)
                                 (verbose$ booleanp)
                                 (curr-pkg stringp)
                                 state)
@@ -2933,10 +2964,9 @@
      followed by a @('return') statement with that Java expression.")
    (xdoc::p
     "Prior to shallowly embedding the ACL2 function body,
-     all the calls of @(tsee mbe) are replaced with their @(':logic') parts
-     in the function's body.
-     This is consistent with the fact that the Java counterpart of the function
-     is executed ``in the logic''."))
+     all the calls of @(tsee mbe) are replaced with
+     their @(':logic') or @(':exec') parts (based on @(':guards'))
+     in the function's body."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" afn))
        (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
@@ -2945,7 +2975,9 @@
             jvar-var-indices) (atj-gen-shallow-avars aformals nil curr-pkg))
        (jmethod-params (atj-gen-jparamlist-avalues (strip-cdrs jvars)))
        (abody (getpropc afn 'unnormalized-body))
-       (abody (remove-mbe-exec-from-term abody))
+       (abody (if guards$
+                  (remove-mbe-logic-from-term abody)
+                (remove-mbe-exec-from-term abody)))
        ((mv abody-jblock abody-jexpr & & &)
         (atj-gen-shallow-aterm abody jvars jvar-var-indices 1 1 curr-pkg))
        (jmethod-body (append abody-jblock
@@ -2964,6 +2996,7 @@
                   :body jmethod-body)))
 
 (define atj-gen-shallow-afn ((afn symbolp)
+                             (guards$ booleanp)
                              (verbose$ booleanp)
                              (curr-pkg stringp)
                              state)
@@ -2974,9 +3007,10 @@
           ACL2 primitive function or function definition."
   (if (primitivep afn)
       (atj-gen-shallow-afnprimitive afn curr-pkg)
-    (atj-gen-shallow-afndef afn verbose$ curr-pkg state)))
+    (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
+                              (guards$ booleanp)
                               (verbose$ booleanp)
                               (curr-pkg stringp)
                               state)
@@ -2987,10 +3021,12 @@
   :short "Lift @(tsee atj-gen-shallow-afn) to lists."
   (cond ((endp afns) nil)
         (t (b* ((first-jmethod (atj-gen-shallow-afn (car afns)
+                                                    guards$
                                                     verbose$
                                                     curr-pkg
                                                     state))
                 (rest-jmethods (atj-gen-shallow-afns (cdr afns)
+                                                     guards$
                                                      verbose$
                                                      curr-pkg
                                                      state)))
@@ -2998,6 +3034,7 @@
 
 (define atj-gen-shallow-afns-in-apkg ((afns symbol-listp)
                                       (apkg stringp)
+                                      (guards$ booleanp)
                                       (java-class$ stringp)
                                       (verbose$ booleanp)
                                       state)
@@ -3017,7 +3054,7 @@
      This is a public static Java class,
      nested into the main Java class that ATJ generates."))
   (b* ((jclass-name (atj-gen-shallow-apkgname apkg java-class$))
-       (jclass-methods (atj-gen-shallow-afns afns verbose$ apkg state)))
+       (jclass-methods (atj-gen-shallow-afns afns guards$ verbose$ apkg state)))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? t
@@ -3029,6 +3066,7 @@
                  :body (jmethods-to-jcmembers jclass-methods))))
 
 (define atj-gen-shallow-afns-by-apkg ((afns-by-apkg string-symbols-alistp)
+                                      (guards$ booleanp)
                                       (java-class$ stringp)
                                       (verbose$ booleanp)
                                       state)
@@ -3043,12 +3081,13 @@
      and generate all the Java classes corresponding to the ACL2 packages."))
   (b* ((apkgs (remove-duplicates-equal (strip-cars afns-by-apkg))))
     (atj-gen-shallow-afns-by-apkg-aux
-     apkgs afns-by-apkg java-class$ verbose$ state))
+     apkgs afns-by-apkg guards$ java-class$ verbose$ state))
 
   :prepwork
   ((define atj-gen-shallow-afns-by-apkg-aux
      ((apkgs string-listp)
       (afns-by-apkg string-symbols-alistp)
+      (guards$ booleanp)
       (java-class$ stringp)
       (verbose$ booleanp)
       state)
@@ -3058,9 +3097,10 @@
            (t (b* ((apkg (car apkgs))
                    (afns (cdr (assoc-equal apkg afns-by-apkg)))
                    (first-jclass (atj-gen-shallow-afns-in-apkg
-                                  afns apkg java-class$ verbose$ state))
+                                  afns apkg guards$ java-class$ verbose$ state))
                    (rest-jclasses (atj-gen-shallow-afns-by-apkg-aux (cdr apkgs)
                                                                     afns-by-apkg
+                                                                    guards$
                                                                     java-class$
                                                                     verbose$
                                                                     state)))
@@ -3205,6 +3245,7 @@
 (define atj-gen-jclass ((apkgs string-listp)
                         (afns symbol-listp)
                         (deep$ booleanp)
+                        (guards$ booleanp)
                         (java-class$ stringp)
                         (verbose$ booleanp)
                         state)
@@ -3237,7 +3278,7 @@
        (afn-jmembers
         (if deep$
             (jmethods-to-jcmembers
-             (atj-gen-deep-afndef-jmethods afns verbose$ state))
+             (atj-gen-deep-afndef-jmethods afns guards$ verbose$ state))
           (b* ((afns+primitives
                 (remove-duplicates-eq
                  (append afns
@@ -3245,6 +3286,7 @@
                (afns-by-apkg (organize-fns-by-pkg afns+primitives)))
             (jclasses-to-jcmembers
              (atj-gen-shallow-afns-by-apkg afns-by-apkg
+                                           guards$
                                            java-class$
                                            verbose$
                                            state)))))
@@ -3525,6 +3567,7 @@
                                (list (jcmember-method main-jmethod))))))
 
 (define atj-gen-jcunit ((deep$ booleanp)
+                        (guards$ booleanp)
                         (java-package$ maybe-stringp)
                         (java-class$ maybe-stringp)
                         (apkgs string-listp)
@@ -3539,8 +3582,13 @@
                               "java.math.BigInteger"
                               "java.util.ArrayList"
                               "java.util.List")
-               :types (list (atj-gen-jclass
-                             apkgs afns deep$ java-class$ verbose$ state))))
+               :types (list (atj-gen-jclass apkgs
+                                            afns
+                                            deep$
+                                            guards$
+                                            java-class$
+                                            verbose$
+                                            state))))
 
 (define atj-gen-test-jcunit ((java-package$ maybe-stringp)
                              (java-class$ stringp)
@@ -3554,6 +3602,7 @@
                :types (list (atj-gen-test-jclass tests$ java-class$ verbose$))))
 
 (define atj-gen-jfile ((deep$ booleanp)
+                       (guards$ booleanp)
                        (java-package$ maybe-stringp)
                        (java-class$ maybe-stringp)
                        (output-file$ stringp)
@@ -3565,6 +3614,7 @@
   :mode :program
   :short "Generate the main Java file."
   (print-to-jfile (print-jcunit (atj-gen-jcunit deep$
+                                                guards$
                                                 java-package$
                                                 java-class$
                                                 apkgs
@@ -3591,6 +3641,7 @@
                   state))
 
 (define atj-gen-everything ((deep$ booleanp)
+                            (guards$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ maybe-stringp)
                             (output-file$ stringp)
@@ -3616,6 +3667,7 @@
    ((fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
     (fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
    (b* ((state (atj-gen-jfile deep$
+                              guards$
                               java-package$
                               java-class$
                               output-file$
@@ -3653,6 +3705,7 @@
      regardless of @(':verbose')."))
   (b* (((er (list targets$
                   deep$
+                  guards$
                   java-package$
                   java-class
                   output-file$
@@ -3660,8 +3713,9 @@
                   tests$
                   verbose$)) (atj-process-inputs args ctx state))
        ((er (list apkgs
-                  afns)) (atj-gather-info targets$ verbose$ ctx state))
+                  afns)) (atj-gather-info targets$ guards$ verbose$ ctx state))
        ((er &) (atj-gen-everything deep$
+                                   guards$
                                    java-package$
                                    java-class
                                    output-file$

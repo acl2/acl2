@@ -123,17 +123,6 @@
      where constants are expanded.")
 
    (xdoc::p
-    "The Java counterparts of the translated ACL2 functions
-     mimic execution ``in the logic'',
-     without <see topic='@(url acl2::guard-checking)'>checking guards</see>.
-     In particular,
-     only the @(':logic') part of calls of @(tsee mbe) is executed:
-     the @(':exec') part is completely ignored.
-     Support for guards and more efficient execution
-     (including the execution of the @(':exec') part of calls of @(tsee mbe))
-     may be added in the future.")
-
-   (xdoc::p
     "The generated Java code can be called by external Java code,
      but not vice versa.
      The ability to have the generated Java code call external Java code
@@ -232,6 +221,7 @@
    (xdoc::codeblock
     "(atj fn1 ... fnp"
     "     :deep         ..."
+    "     :guards       ..."
     "     :java-package ..."
     "     :java-class   ..."
     "     :output-dir   ..."
@@ -278,6 +268,34 @@
       "@('t'), for the deep embedding.")
      (xdoc::li
       "@('nil') (the default), for the shallow embedding.")))
+
+   (xdoc::desc
+    "@(':guards') &mdash; default @('nil')"
+    (xdoc::p
+     "Specifies whether the generated code
+      may assume that all the guards are satisfied or not:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to assume that they are satisfied.
+       In this case, the generated code may run faster;
+       in particular, only the @(':exec') part of @(tsee mbe) is executed.")
+     (xdoc::li
+      "@('nil') (the default), to not assume that the guards are satisfied.
+       In this case, the generated code runs ``in the logic'';
+       in particular, only the @(':logic') part of @(tsee mbe) is executed."))
+    (xdoc::p
+     "Regardless of the value of this input,
+      the generated code never checks guards.
+      The difference is whether guards are ignored altogether
+      (i.e. execution ``in the logic'')
+      or assumed to hold
+      (i.e. possibly faster execution).
+      This input should be @('t') only when generating Java code
+      from guard-verified ACL2 code.
+      Furthermore, external Java code that calls the generated code
+      should do so only with values that satisfy
+      the guards of the called ACL2 functions, if this input is @('t').
+      Otherwise, erroneous computations may occur."))
 
    (xdoc::desc
     "@(':java-package') &mdash; default @('nil')"
