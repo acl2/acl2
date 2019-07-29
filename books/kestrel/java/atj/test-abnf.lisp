@@ -68,7 +68,7 @@
 ; This is the parser proper.
 
 (defval *grammar-parser-error-msg*
-  (msg "ABNF Grammar Parser Error.~%"))
+  (msg "ABNF Grammar Parser Error."))
 
 (define parse-any ((input nat-listp))
   :returns (mv (error? maybe-msgp)

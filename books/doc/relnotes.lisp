@@ -326,13 +326,21 @@
 
    (xdoc::h4 (xdoc::seeurl "java::java" "Java Library"))
 
+   (xdoc::h5 (xdoc::seeurl "java::atj" "ATJ, the Java Code Generator for ACL2"))
+
    (xdoc::p
-    (xdoc::seeurl "java::atj" "ATJ")
-    ", the Java code generator for ACL2,
-     has been extended with an option to generate Java code
+    "ATJ has been extended with an option to generate Java code
      according to a shallow embedding approach,
      besides the previous deep embedding approach.
      See the documentation for details.")
+
+   (xdoc::p
+    "The implementation of ATJ has been improved
+     to use a more general abstract syntax and pretty-printer for Java
+     (which are part of the implementation of ATJ),
+     instead of writing directly to the output channel piecewise.
+     This provides more flexibility, and the ability to have more code
+     in logic mode and guard-verified.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
