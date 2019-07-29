@@ -10,11 +10,13 @@
 
 (in-package "JAVA")
 
+(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/lists/rev" :dir :system)
 (include-book "std/strings/coerce" :dir :system)
 (include-book "std/util/defalist" :dir :system)
 (include-book "std/util/defines" :dir :system)
+(include-book "std/util/defval" :dir :system)
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
@@ -184,3 +186,105 @@
           (prev-fns-for-pkg (cdr (assoc-equal pkg acc))))
        (organize-fns-by-pkg-aux (cdr fns)
                                 (acons pkg (cons fn prev-fns-for-pkg) acc))))))
+
+(defval *atj-java-keywords*
+  :short "The keywords of the Java language, as ACL2 strings."
+  (list "abstract"
+        "assert"
+        "boolean"
+        "break"
+        "byte"
+        "case"
+        "catch"
+        "char"
+        "class"
+        "const"
+        "continue"
+        "default"
+        "do"
+        "double"
+        "else"
+        "enum"
+        "extends"
+        "final"
+        "finally"
+        "float"
+        "for"
+        "if"
+        "goto"
+        "implements"
+        "import"
+        "instanceof"
+        "int"
+        "interface"
+        "long"
+        "native"
+        "new"
+        "package"
+        "private"
+        "protected"
+        "public"
+        "return"
+        "short"
+        "static"
+        "strictfp"
+        "super"
+        "switch"
+        "synchronized"
+        "this"
+        "throw"
+        "throws"
+        "transient"
+        "try"
+        "void"
+        "volatile"
+        "while")
+  ///
+  (assert-event (string-listp *atj-java-keywords*))
+  (assert-event (no-duplicatesp-equal *atj-java-keywords*)))
+
+(defval *atj-java-boolean-literals*
+  :short "The boolean literals of the Java language, as ACL2 strings."
+  (list "true" "false"))
+
+(defval *atj-java-null-literal*
+  :short "The null literal of the Java language, as an ACL2 string."
+  "null")
+
+(define atj-string-ascii-java-identifier-p ((string stringp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 string is a valid ASCII Java identifier."
+  :long
+  (xdoc::topstring-p
+   "The string must be non-empty,
+    start with a letter or underscore or dollar sign,
+    and continue with zero or more
+    letters, digits, underscores, and dollar signs.
+    It must also be different
+    from Java keywords and from the boolean and null literals.")
+  (and (not (member-equal string *atj-java-keywords*))
+       (not (member-equal string *atj-java-boolean-literals*))
+       (not (equal string *atj-java-null-literal*))
+       (b* ((chars (explode string)))
+         (and (consp chars)
+              (alpha/uscore/dollar-char-p (car chars))
+              (alpha/digit/uscore/dollar-charlist-p (cdr chars))))))
+
+(std::deflist atj-string-ascii-java-identifier-listp (x)
+  (atj-string-ascii-java-identifier-p x)
+  :guard (string-listp x)
+  :short "Check if a list of ACL2 strings includes only ASCII Java identifiers."
+  :true-listp t
+  :elementp-of-nil nil)
+
+(define atj-string-ascii-java-package-name-p ((string stringp))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  :short "Check if an ACL2 string is a valid ASCII Java package name."
+  :long
+  (xdoc::topstring-p
+   "The string must consist of one or more ASCII Java identifiers
+    separated by dots.")
+  (b* ((identifiers (decompose-at-dots string)))
+    (and (consp identifiers)
+         (atj-string-ascii-java-identifier-listp identifiers))))
