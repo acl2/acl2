@@ -141,15 +141,20 @@
    "These will be moved to appropriate libraries eventually.")
   :default-parent t)
 
-(defines remove-mbe-exec-from-term
+(defines remove-mbe-logic/exec-from-term
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':logic') part @('a')."
+          into just its @(':logic') part @('a') or @(':exec') part @('b')."
   :long
-  (xdoc::topstring-p
-   "In translated terms,
-    these have the form @('(return-last 'acl2::mbe1-raw b a)').")
+  (xdoc::topstring
+   (xdoc::p
+    "The choice is determinated by the boolean flag,
+     which is @('t') when the @(':logic') part is to be removed.")
+   (xdoc::p
+    "In translated terms,
+     @(tsee mbe)s have the form @('(return-last 'acl2::mbe1-raw b a)')."))
 
-  (define remove-mbe-exec-from-term ((term pseudo-termp))
+  (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
+                                           (logic? booleanp))
     :returns (new-term "A @(tsee pseudo-termp).")
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
@@ -157,22 +162,35 @@
          (args (fargs term))
          ((when (and (eq fn 'return-last)
                      (equal (first args) '(quote acl2::mbe1-raw))))
-          (remove-mbe-exec-from-term (third args)))
+          (remove-mbe-logic/exec-from-term (if logic?
+                                               (second args)
+                                             (third args))
+                                           logic?))
          (new-fn (if (symbolp fn)
                      fn
                    (make-lambda (lambda-formals fn)
-                                (remove-mbe-exec-from-term
-                                 (lambda-body fn)))))
-         (new-args (remove-mbe-exec-from-terms args)))
+                                (remove-mbe-logic/exec-from-term
+                                 (lambda-body fn)
+                                 logic?))))
+         (new-args (remove-mbe-logic/exec-from-terms args logic?)))
       (fcons-term new-fn new-args)))
 
-  (define remove-mbe-exec-from-terms ((terms pseudo-term-listp))
+  (define remove-mbe-logic/exec-from-terms ((terms pseudo-term-listp)
+                                            (logic? booleanp))
     :returns (new-terms "A @(tsee pseudo-term-listp).")
     (b* (((when (endp terms)) nil)
          ((cons term terms) terms)
-         (new-term (remove-mbe-exec-from-term term))
-         (new-terms (remove-mbe-exec-from-terms terms)))
+         (new-term (remove-mbe-logic/exec-from-term term logic?))
+         (new-terms (remove-mbe-logic/exec-from-terms terms logic?)))
       (cons new-term new-terms))))
+
+(define remove-mbe-logic-from-term ((term pseudo-termp))
+  :returns (new-term "A @(tsee pseudo-termp).")
+  (remove-mbe-logic/exec-from-term term t))
+
+(define remove-mbe-exec-from-term ((term pseudo-termp))
+  :returns (new-term "A @(tsee pseudo-termp).")
+  (remove-mbe-logic/exec-from-term term nil))
 
 (define unquote-list ((list quote-listp))
   :returns (new-list true-listp)
