@@ -266,10 +266,60 @@
 (define atj-gen-asymbol ((asymbol symbolp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 symbol."
-  (jexpr-smethod (jtype-class "Acl2Symbol")
-                 "make"
-                 (list (atj-gen-jstring (symbol-package-name asymbol))
-                       (atj-gen-jstring (symbol-name asymbol)))))
+  :long
+  (xdoc::topstring-p
+   "Since AIJ has a number of constants (i.e. static final fields)
+    for a number of common symbols,
+    we just reference the appropriate constant
+    if the symbol in question is among those symbols.
+    Otherwise, we build it in the general way.
+    Overall, this makes the generated Java code faster.")
+  (cond
+   ((eq asymbol 't) (jexpr-name "Acl2Symbol.T"))
+   ((eq asymbol 'nil) (jexpr-name "Acl2Symbol.NIL"))
+   ((eq asymbol 'list) (jexpr-name "Acl2Symbol.LIST"))
+   ((eq asymbol 'if) (jexpr-name "Acl2Symbol.IF"))
+   ((eq asymbol 'characterp) (jexpr-name "Acl2Symbol.CHARACTERP"))
+   ((eq asymbol 'stringp) (jexpr-name "Acl2Symbol.STRINGP"))
+   ((eq asymbol 'symbolp) (jexpr-name "Acl2Symbol.SYMBOLP"))
+   ((eq asymbol 'integerp) (jexpr-name "Acl2Symbol.INTEGERP"))
+   ((eq asymbol 'rationalp) (jexpr-name "Acl2Symbol.RATIONALP"))
+   ((eq asymbol 'complex-rationalp) (jexpr-name "Acl2Symbol.COMPLEX_RATIONALP"))
+   ((eq asymbol 'acl2-numberp) (jexpr-name "Acl2Symbol.ACL2_NUMBERP"))
+   ((eq asymbol 'consp) (jexpr-name "Acl2Symbol.CONSP"))
+   ((eq asymbol 'char-code) (jexpr-name "Acl2Symbol.CHAR_CODE"))
+   ((eq asymbol 'code-char) (jexpr-name "Acl2Symbol.CODE_CHAR"))
+   ((eq asymbol 'coerce) (jexpr-name "Acl2Symbol.COERCE"))
+   ((eq asymbol 'intern-in-package-of-symbol)
+    (jexpr-name "Acl2Symbol.INTERN_IN_PACKAGE_OF_SYMBOL"))
+   ((eq asymbol 'symbol-package-name)
+    (jexpr-name "Acl2Symbol.SYMBOL_PACKAGE_NAME"))
+   ((eq asymbol 'symbol-name) (jexpr-name "Acl2Symbol.SYMBOL_NAME"))
+   ((eq asymbol 'pkg-imports) (jexpr-name "Acl2Symbol.PKG_IMPORTS"))
+   ((eq asymbol 'pkg-witness) (jexpr-name "Acl2Symbol.PKG_WITNESS"))
+   ((eq asymbol 'unary--) (jexpr-name "Acl2Symbol.UNARY_MINUS"))
+   ((eq asymbol 'unary-/) (jexpr-name "Acl2Symbol.UNARY_SLASH"))
+   ((eq asymbol 'binary-+) (jexpr-name "Acl2Symbol.BINARY_PLUS"))
+   ((eq asymbol 'binary-*) (jexpr-name "Acl2Symbol.BINARY_STAR"))
+   ((eq asymbol '<) (jexpr-name "Acl2Symbol.LESS_THAN"))
+   ((eq asymbol 'complex) (jexpr-name "Acl2Symbol.COMPLEX"))
+   ((eq asymbol 'realpart) (jexpr-name "Acl2Symbol.REALPART"))
+   ((eq asymbol 'imagpart) (jexpr-name "Acl2Symbol.IMAGPART"))
+   ((eq asymbol 'numerator) (jexpr-name "Acl2Symbol.NUMERATOR"))
+   ((eq asymbol 'denominator) (jexpr-name "Acl2Symbol.DENOMINATOR"))
+   ((eq asymbol 'cons) (jexpr-name "Acl2Symbol.CONS"))
+   ((eq asymbol 'car) (jexpr-name "Acl2Symbol.CAR"))
+   ((eq asymbol 'cdr) (jexpr-name "Acl2Symbol.CDR"))
+   ((eq asymbol 'equal) (jexpr-name "Acl2Symbol.EQUAL"))
+   ((eq asymbol 'bad-atom<=)
+    (jexpr-name "Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO"))
+   ((eq asymbol 'or) (jexpr-name "Acl2Symbol.OR"))
+   (t (jexpr-smethod (jtype-class "Acl2Symbol")
+                     "make"
+                     (list (atj-gen-jstring
+                            (symbol-package-name asymbol))
+                           (atj-gen-jstring
+                            (symbol-name asymbol)))))))
 
 (define atj-gen-ainteger ((ainteger integerp))
   :returns (jexpr jexprp)
