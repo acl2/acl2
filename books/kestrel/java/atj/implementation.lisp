@@ -28,6 +28,16 @@
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
+(defrulel natp-of-incremented-index
+  (implies (natp x)
+           (natp (1+ x))))
+
+(defrulel posp-of-incremented-index
+  (implies (posp x)
+           (posp (1+ x))))
+
+(local (in-theory (disable natp posp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-implementation
@@ -267,16 +277,6 @@
           (prev-fns-for-pkg (cdr (assoc-equal pkg acc))))
        (organize-fns-by-pkg-aux (cdr fns)
                                 (acons pkg (cons fn prev-fns-for-pkg) acc))))))
-
-(defrulel natp-of-incremented-index
-  (implies (natp x)
-           (natp (1+ x))))
-
-(defrulel posp-of-incremented-index
-  (implies (posp x)
-           (posp (1+ x))))
-
-(local (in-theory (disable natp posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
