@@ -488,7 +488,7 @@ resulting from the arguments.</li>
 
 <p>The special cases of function calls include @('if'), @('return-last'),
 @('bind-var'), @('abort-rewrite'), @('fgl-sat-check'), @('syntax-interp-fn'),
-@('assume'), @('under-equiv'), and @('fgl-interp-obj'). Each of these requires
+@('assume'), @('narrow-equiv'), and @('fgl-interp-obj'). Each of these requires
 special treatment of the arguments, rather than just recursively interpreting
 them:</p>
 
@@ -551,12 +551,20 @@ formula resulting from the @('test') is conjoined onto the path condition (that
 is, assumed) when symbolically executing the @('then') branch.  We then simply
 return the result from the @('then') branch.</li>
 
-<li>For @('under-equiv'), we first check that we're in an @('all-equiv')
-equivalence context.  Then we interpret the first argument.  If its result is a
-concrete object whose value satisfies @('equiv-contexts-p'), then we set the
-interpreter state's equiv-contexts field to that object while interpreting the
-second argument.  This can be used to (conditionally) exit an @('all-equiv')
-context.</li>
+<li>For @('narrow-equiv'), we interpret the first argument.  If its result is a
+concrete object whose value satisfies @('equiv-contexts-p') and those
+equivalence contexts are a refinement (narrowing) of the interpreter state's
+current equiv-contexts, then we set the interpreter state's equiv-contexts
+field to that object while interpreting the second argument.  This can be used
+to (conditionally) exit an @('all-equiv') context.</li>
+
+<li>For @('fgl-time-fn'), we interpret the first argument and use that as a
+@('time$') format specifier for timing the interpretation of the second
+argument, returning the result from the second argument.</li>
+
+<li>For @('fgl-prog2'), we interpret the first argument under the
+@('all-equiv') equivalence context, discarding the result; then interpret the
+second argument under the current equivalence context and return its result.</li>
 
 <li>For @('fgl-interp-obj'), we first check that we're in an @('all-equiv')
 equivalence context.  Then we interpret the first argument.  If its result is a
@@ -1335,6 +1343,58 @@ depends on a constrained function, we must be able to prove that equal to
 something in some cases.  It would then suffice to check formulas that show
 that in the cases we care about, the evaluation of the function reduces to some
 other form.</p>")
+
+
+(defxdoc fgl-testbenches
+  :parents (fgl)
+  :short "Advanced extralogical programming of FGL."
+  :long "
+
+<p>While FGL can be used to symbolically simulate logical terms and bitblast
+theorems, it can also be used as a programming platform for advanced algorithms
+involving SAT checks and a mix of logical and extralogical code.</p>
+
+<h3>Examples</h3> 
+
+<p> Suppose we want to check whether several conditions are satisfiable,
+summarize the results in an object and pretty-print that summary. </p>
+
+@({
+ ;; Suppose (my-test-condition n) gives the nth conditinon to be tested.
+ (defun my-test-condition (n) ...)
+
+ ;; Iterate from M-1 down to 0 testing each condition and collect a list of the
+ ;; indices of all those that were invalid.
+ (def-fgl-program test-my-conditions (m)
+   (if (zp m)
+       nil
+     (let* ((next-m (1- m))
+            (validity-check-result (fgl-validity-check
+                                    (make-fgl-ipasir-config)
+                                    (my-test-condition next-m)))
+            ;; Note: validity-check-result is syntactically T if the validity
+            ;; check was successful.  If not, it's some symbolic truth value
+            ;; represented as a g-boolean object.
+            (valid (syntax-interp (eq validity-check-result t))))
+        (if valid
+            (test-my-conditions next-m)
+          (cons next-m (test-my-conditions next-m))))))
+
+ ;; Summarize the list of non-valid condition indices.
+ (defun my-print-conditions (indices-list) ...)
+
+ ;; Run a fake proof in which the conditions are tested.
+ (fgl-thm
+   :hyp t
+   :concl (fgl-prog2 (let ((conds (test-my-conditions 100)))
+                       (my-print-conditions conds))
+                     t))
+         
+ })
+
+")
+
+
 
 (defxdoc fgl-internals
   :parents (fgl))
