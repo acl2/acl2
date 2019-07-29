@@ -127,10 +127,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (xargs-kwd-alist1 (cdr decls) keywords ctx al))
       (xargs-kwd-alist1 (cdr decls) keywords ctx al))))
 
-(defconst *our-xargs-keywords* (append '(:CONSIDER-CCMS :CONSIDER-ONLY-CCMS :TERMINATION-METHOD
-                                                        :CCG-PRINT-PROOFS :TIME-LIMIT
-                                                        :CCG-HIERARCHY)
-                                       acl2::*xargs-keywords*))
+(defconst *our-xargs-keywords*
+  (append '(:CONSIDER-CCMS :CONSIDER-ONLY-CCMS :TERMINATION-METHOD
+                           :CCG-PRINT-PROOFS :TIME-LIMIT
+                           :CCG-HIERARCHY)
+          acl2::*xargs-keywords*))
 
 (defun xargs-kwd-alist (decls ctx)
   "Parse a list of declare forms into a kwd-alist mapping xarg keywords to their values."
@@ -301,7 +302,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (mutual-recursion
  (defun subst-fun-sym (new old form)
    (declare (xargs :guard (and (pseudo-termp new)
-                               (acl2::legal-variablep old)
+                               (legal-variablep old)
                                (pseudo-termp form))
                    :verify-guards nil))
    (cond ((acl2::variablep form)
@@ -312,7 +313,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
  (defun subst-fun-lst (new old l)
    (declare (xargs :guard (and (pseudo-termp new)
-                               (acl2::legal-variablep old)
+                               (legal-variablep old)
                                (pseudo-term-listp l))
                    :verify-guards nil))
    (cond ((endp l) nil)
@@ -336,7 +337,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                     (fun-syms-in-term-lst (cdr l)))))))
 
 (defun fun-sym-in-termp (f term)
-  (declare (xargs :guard (and (acl2::legal-variablep f)
+  (declare (xargs :guard (and (legal-variablep f)
                               (pseudo-termp term))
                   :verify-guards nil))
   (and (member-equal f (fun-syms-in-term term)) t))
@@ -1132,9 +1133,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program))
   (declare (ignorable wrld))
   (b* ((ctx 'defunc)
-       ((unless (or (proper-symbolp name)
+       ((unless (or (legal-variablep name)
                     (and (symbolp name) (equal "*" (symbol-name name))))) ;exception
-        (er hard? ctx "~| Function name ~x0 expected to be a proper symbol.~%" name))
+        (er hard? ctx "~| Function name ~x0 expected to be a legal variable.~%" name))
 
        (defaults-alst (table-alist 'defunc-defaults-table wrld))
        (defaults-alst (defdata::remove1-assoc-eq-lst (filter-keywords args) defaults-alst))

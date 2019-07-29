@@ -183,11 +183,14 @@
 
 (verify-termination acl2::LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
 (verify-termination acl2::legal-constantp)
+(verify-termination acl2::legal-variablep)
 ;;-- convert function lambda-keywordp from :program mode to :logic mode
 (verify-termination acl2::lambda-keywordp)
 (verify-guards  acl2::lambda-keywordp)
 (verify-guards acl2::legal-constantp)
 
+; We do not use legal-variablep because we want to register
+; constructors such as /, which is not a legal-variablep.
 (defun proper-symbolp (x)
   (declare (xargs :guard t))
   (and (symbolp x)

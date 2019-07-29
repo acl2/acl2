@@ -1,3 +1,8 @@
+#|$ACL2s-Preamble$;
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis")
+(begin-book t :ttags :all);$ACL2s-Preamble$|#
+
 (in-package "ACL2S")
 (include-book "definec" :ttags :all)
 
@@ -91,26 +96,40 @@ as follows.
 ;; Generate events for a table containing settings relevant to
 ;; properties. Use :trans1 to see what this generates.
 
+(defconst *property-thm-keywords*
+  '(:hints :otf-flg))
+
+(defconst *property-just-defthm-keywords*
+  '(:rule-classes :instructions))
+
+(defconst *property-core-keywords*
+  '(:proofs? :proof-timeout :testing? :testing-timeout :doc))
+  
+(defconst *property-keywords*
+  (append *property-core-keywords*
+          *property-thm-keywords*
+          *property-just-defthm-keywords*))
+
 (gen-property-table 
- ((:proofsp . t)
+ ((:proofs? . t)
   (:proof-timeout . 5)
-  (:testingp . t)
+  (:testing? . t)
   (:testing-timeout . 5)))
      
 #|
 
 :trans1 (gen-property-table 
-         ((:proofsp . t)
+         ((:proofs? . t)
           (:proof-timeout . 5)
-          (:testingp . t)
+          (:testing? . t)
           (:testing-timeout . 5)))
 
 
 (table-alist 'acl2s-property-table (w state))
-(defdata::get1 :proofsp (table-alist 'acl2s-property-table (w state)))
-(set-acl2s-property-table-proofsp nil)
+(defdata::get1 :proofs? (table-alist 'acl2s-property-table (w state)))
+(set-acl2s-property-table-proofs? nil)
 (table-alist 'acl2s-property-table (w state))
-(defdata::get1 :proofsp (table-alist 'acl2s-property-table (w state)))
+(defdata::get1 :proofs? (table-alist 'acl2s-property-table (w state)))
 
 |#
 
@@ -137,35 +156,59 @@ with the same hints and directives that defthm accepts.
 
 |#
 
+(defun parse-property (args wrld)
+  ;; Returns (list nm formals ic oc doc decls body kwd-alist)
+  (declare (xargs :mode :program))
+  (declare (ignorable wrld))
+  (b* ((ctx 'property)
+       ((unless (consp args))
+        (er hard? ctx "~| Empty properties are not allowed.~%"))
+       (name? (acl2::legal-variablep (car args)))
+       (name (and name? (car args)))
+       (args (if name? (cdr args) args))
+       (PT (acl2s-property-table wrld))
+       (PT (defdata::remove1-assoc-eq-lst (filter-keywords args) PT))
+       ((mv kwd-alist prop-rest)
+        (defdata::extract-keywords ctx *property-keywords* args PT))
+       (prop (car prop-rest)))
+    (list name? name prop kwd-alist)))
+
 (defmacro property (&rest args)
   `(make-event
-    (b* ((PT (acl2s-property-table (w state)))
-         (proofsp (defdata::get1 :proofsp PT))
-         (testingp (defdata::get1 :testingp PT))
-         (proof-timeout (defdata::get1 :proof-timeout PT))
-         (testing-timeout (defdata::get1 :testing-timeout PT))
-         (name? (and (consp (cdr ',args)) (acl2::legal-variablep (car ',args))))
-         (body (if name? (second ',args) (first ',args)))
+    (b* (((list name? name prop kwd-alist)
+          (parse-property ',args (w state)))
+         (proofs? (defdata::get1 :proofs? kwd-alist))
+         (testing? (defdata::get1 :testing? kwd-alist))
+         (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
+         (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
          (prove (if name? 'defthm-no-test 'thm-no-test))
-         ((when (and proofsp testingp))
+         (other-kwds
+          (defdata::remove1-assoc-eq-lst
+            (append (if name? nil *property-just-defthm-keywords*)
+                    *property-core-keywords*)
+            kwd-alist))
+         (args (if name?
+                   (list* name prop other-kwds)
+                 (list* prop other-kwds)))
+         ((when (and proofs? testing?))
           `(encapsulate
             ()
-            (with-prover-time-limit ,testing-timeout (test? ,body))
-            (with-prover-time-limit ,proof-timeout (,prove ,@',args))))
-         ((when proofsp)
-          `(with-prover-time-limit ,proof-timeout (,prove ,@',args)))
-         ((when (and testingp name?))
+            (with-prover-time-limit ,testing-timeout (test? ,prop))
+            (with-prover-time-limit ,proof-timeout (,prove ,@args))))
+         ((when proofs?)
+          `(with-prover-time-limit ,proof-timeout (,prove ,@args)))
+         ((when (and testing? name?))
           `(with-prover-time-limit
             ,testing-timeout
-            (defthm-test-no-proof ,@',args)))
-         ((when testingp)
-          `(with-prover-time-limit ,testing-timeout (test? ,body)))
+            (defthm-test-no-proof ,@args)))
+         ((when testing?)
+          `(with-prover-time-limit ,testing-timeout (test? ,prop)))
          ((when name?)
           `(with-prover-time-limit
             ,proof-timeout
-            (defthmskipall ,@',args))))
+            (defthmskipall ,@args))))
       `(value-triple :passed))))
-
+       
 #|
 
 start-modeling: 
@@ -192,8 +235,8 @@ Properties are just tested with a short timeout.
      (acl2s-defaults :set cgen-local-timeout 1)
      (set-defunc-timeout 5)
     
-     (set-acl2s-property-table-proofsp nil)
-     (set-acl2s-property-table-testingp t)
+     (set-acl2s-property-table-proofs? nil)
+     (set-acl2s-property-table-testing? t)
      (set-acl2s-property-table-proof-timeout 5)
      (set-acl2s-property-table-testing-timeout 5)))
 
@@ -212,8 +255,8 @@ Properties are just tested with a short timeout.
      (acl2s-defaults :set cgen-local-timeout 2)
      (set-defunc-timeout 10)
     
-     (set-acl2s-property-table-proofsp nil)
-     (set-acl2s-property-table-testingp t)
+     (set-acl2s-property-table-proofs? nil)
+     (set-acl2s-property-table-testing? t)
      (set-acl2s-property-table-proof-timeout 10)
      (set-acl2s-property-table-testing-timeout 10)))
 
@@ -232,8 +275,8 @@ Properties are just tested with a short timeout.
      (acl2s-defaults :set cgen-local-timeout 15)
      (set-defunc-timeout 60)
     
-     (set-acl2s-property-table-proofsp nil)
-     (set-acl2s-property-table-testingp t)
+     (set-acl2s-property-table-proofs? nil)
+     (set-acl2s-property-table-testing? t)
      (set-acl2s-property-table-proof-timeout 30)
      (set-acl2s-property-table-testing-timeout 30)))
 
@@ -252,8 +295,8 @@ Properties are just tested with a short timeout.
      (acl2s-defaults :set cgen-local-timeout 15)
      (set-defunc-timeout 60)
     
-     (set-acl2s-property-table-proofsp t)
-     (set-acl2s-property-table-testingp t)
+     (set-acl2s-property-table-proofs? t)
+     (set-acl2s-property-table-testing? t)
      (set-acl2s-property-table-proof-timeout 200)
      (set-acl2s-property-table-testing-timeout 200)))
 
