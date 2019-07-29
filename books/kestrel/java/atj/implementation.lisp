@@ -2517,15 +2517,10 @@
    "We generate a private static method for each ACL2 package definition
     to add to the Java representation of the ACL2 environment.
     This function generates the name of this method,
-    which has the form @('addPackageDef_...'),
-    where @('...') is a sequence of pairs of hexadecimal digits
-    that are the codes of the package name's characters,
-    e.g. @('41434C32') for the @('\"ACL2\"') package.
-    This scheme is a simple way to keep the names all distinct;
-    their readability is not important because
-    they are names of private methods.")
-  (str::cat "addPackageDef_"
-            (ubyte8s=>hexstring (string=>nats apkg))))
+    which should be distinct from all the other methods
+    generated for the same class.")
+  (str::cat "$addPackageDef_"
+            (implode (atj-achars-to-jchars-id (explode apkg) nil))))
 
 (define atj-gen-apkg-name ((apkg stringp))
   :returns (expr jexprp)
@@ -2657,21 +2652,13 @@
    "We generate a private static method
     for each deeply embedded ACL2 function definition to build.
     This function generates the name of this method,
-    which has the form @('addFunctionDef_..._...'),
-    wher the first @('...') is a sequence of pairs of hexadecimal digits
-    that are the codes of the function symbol's package name's characters
-    (e.g. @('41434C32') for the @('\"ACL2\"') package)
-    and the second @('...') is a sequence of pairs of hexadecimal digits
-    that are the codes of the function symbol's name's characters
-    (e.g. @('4C454E') for the @(tsee len) function).
-    This scheme is a simple way to keep the names all distinct;
-    their readability is not important because
-    they are names of private methods.")
+    which should be distinct from all the other methods
+    generated for the same class.")
   (str::cat
-   "addFunctionDef_"
-   (ubyte8s=>hexstring (string=>nats (symbol-package-name afn)))
-   "_"
-   (ubyte8s=>hexstring (string=>nats (symbol-name afn)))))
+   "$addFunctionDef_"
+   (implode (atj-achars-to-jchars-id (explode (symbol-package-name afn)) nil))
+   "$$$"
+   (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil))))
 
 (defval *atj-jvar-formals*
   :short "Name of the Java local variable used to store
