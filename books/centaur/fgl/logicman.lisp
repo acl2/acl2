@@ -66,6 +66,32 @@
                            aignet::sat-litsp
                            aignet::u32arrp)))
 
+
+(defthmd logicman->ipasiri-of-resize
+  (equal (logicman->ipasiri n (resize-logicman->ipasir size logicman))
+         (cond ((and (< (nfix n) (logicman->ipasir-length logicman))
+                     (< (nfix n) (nfix size)))
+                (logicman->ipasiri n logicman))
+               ((< (nfix n) (nfix size))
+                (ipasir::create-ipasir))
+               (t nil)))
+  :hints(("Goal" :in-theory (enable logicman->ipasiri
+                                    resize-logicman->ipasir
+                                    logicman->ipasir-length))))
+
+(defthmd logicman->sat-litsi-of-resize
+  (equal (logicman->sat-litsi n (resize-logicman->sat-lits size logicman))
+         (cond ((and (< (nfix n) (logicman->sat-lits-length logicman))
+                     (< (nfix n) (nfix size)))
+                (logicman->sat-litsi n logicman))
+               ((< (nfix n) (nfix size))
+                (aignet::create-sat-lits))
+               (t nil)))
+  :hints(("Goal" :in-theory (enable logicman->sat-litsi
+                                    resize-logicman->sat-lits
+                                    logicman->sat-lits-length))))
+
+
 ;; (defconst *logicman-fields*
 ;;   '((aignet :type aignet::aignet)
 ;;     (strash :type aignet::strash)
@@ -426,6 +452,23 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
   (defthm logicman-extension-self
     (logicman-extension-p x x))
+
+  (def-updater-independence-thm logicman-extension-of-update-1
+    (implies (and (equal (logicman->aignet new)
+                         (logicman->aignet old))
+                  (equal (logicman->mode new)
+                         (logicman->mode old)))
+             (equal (logicman-extension-p new logicman)
+                    (logicman-extension-p old logicman))))
+
+  (def-updater-independence-thm logicman-extension-of-update-2
+    (implies (and (equal (logicman->aignet new)
+                         (logicman->aignet old))
+                  (equal (logicman->mode new)
+                         (logicman->mode old)))
+             (equal (logicman-extension-p logicman new)
+                    (logicman-extension-p logicman old))))
+    
 
   (defthm aignet-extension-when-logicman-extension
     (implies (logicman-extension-p new old)
@@ -2919,6 +2962,18 @@ evaluated using @('fgl-object-eval').</li>
   ;;          :hints(("Goal" :in-theory (enable logicman->ipasiri
   ;;                                            logicman->ipasir-length)))))
 
+  (defthm logicman-ipasir-sat-lits-invar-implies-aignet
+    (implies (and (logicman-ipasir-sat-lits-invar logicman)
+                  (equal aignet (logicman->aignet logicman))
+                  (< (nfix n) (logicman->ipasir-length logicman)))
+             (b* ((ipasir (logicman->ipasiri n logicman))
+                  (sat-lits (logicman->sat-litsi n logicman)))
+               (implies (not (equal (ipasir::ipasir$a->status ipasir) :undef))
+                        (and (aignet::sat-lits-wfp sat-lits aignet)
+                             (implies (equal formula (ipasir::ipasir$a->formula ipasir))
+                                      (aignet::cnf-for-aignet aignet formula sat-lits)))))))
+             
+
   (defthm logicman-ipasir-sat-lits-invar-of-update-1
     (implies (and (logicman-ipasir-sat-lits-invar logicman)
                   (< (nfix n) (logicman->ipasir-length logicman))
@@ -2968,30 +3023,10 @@ evaluated using @('fgl-object-eval').</li>
                      :cases ((< (nfix (logicman-ipasir-sat-lits-invar-witness . ,(cdr lit)))
                                 (logicman->ipasir-length logicman))))))))
 
-  (local (defthm logicman->ipasiri-of-resize
-           (equal (logicman->ipasiri n (resize-logicman->ipasir size logicman))
-                  (cond ((and (< (nfix n) (logicman->ipasir-length logicman))
-                              (< (nfix n) (nfix size)))
-                         (logicman->ipasiri n logicman))
-                        ((< (nfix n) (nfix size))
-                         (ipasir::create-ipasir))
-                        (t nil)))
-           :hints(("Goal" :in-theory (enable logicman->ipasiri
-                                             resize-logicman->ipasir
-                                             logicman->ipasir-length)))))
 
-  (local (defthm logicman->sat-litsi-of-resize
-           (equal (logicman->sat-litsi n (resize-logicman->sat-lits size logicman))
-                  (cond ((and (< (nfix n) (logicman->sat-lits-length logicman))
-                              (< (nfix n) (nfix size)))
-                         (logicman->sat-litsi n logicman))
-                        ((< (nfix n) (nfix size))
-                         (aignet::create-sat-lits))
-                        (t nil)))
-           :hints(("Goal" :in-theory (enable logicman->sat-litsi
-                                             resize-logicman->sat-lits
-                                             logicman->sat-lits-length)))))
-
+  (local (in-theory (enable logicman->ipasiri-of-resize
+                            logicman->sat-litsi-of-resize)))
+  
   (defthm logicman-ipasir-sat-lits-invar-of-resize-1
     (implies (and (logicman-ipasir-sat-lits-invar logicman)
                   (equal (logicman->ipasir-length logicman)
@@ -3179,7 +3214,12 @@ evaluated using @('fgl-object-eval').</li>
 
   (defret logicman-equiv-of-<fn>
     (logicman-equiv new-logicman logicman)
-    :hints(("Goal" :in-theory (enable logicman-equiv)))))
+    :hints(("Goal" :in-theory (enable logicman-equiv))))
+
+  (defret logicman-invar-of-<fn>
+    (implies (logicman-invar logicman)
+             (logicman-invar new-logicman))
+    :hints(("Goal" :in-theory (enable logicman-invar)))))
 
 
 (defsection bfr-boundedp

@@ -59,9 +59,7 @@
         (:fgl-satlink-config
          (interp-st-satlink-sat-check-core params bfr interp-st state))
         (otherwise
-         (b* (((mv ans interp-st)
-               (interp-st-ipasir-sat-check-core params bfr interp-st state)))
-           (mv ans interp-st state)))))
+         (interp-st-ipasir-sat-check-core params bfr interp-st state))))
     ///
     . ,*interp-st-sat-check-thms*))
 

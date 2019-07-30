@@ -95,8 +95,8 @@
   (def-cons-opener logicman->aignet)
   (def-cons-opener logicman->mode)
   (def-cons-opener logicman->mode^)
-  (def-cons-opener logicman->ipasir)
-  (def-cons-opener logicman->sat-lits)
+  (def-cons-opener logicman->ipasir-length)
+  (def-cons-opener logicman->sat-lits-length)
   (def-cons-opener logicman->aignet-refcounts)
   (def-cons-opener logicman->refcounts-index)
   (def-cons-opener logicman->refcounts-index^))
@@ -133,15 +133,8 @@
                     (!interp-flags->trace-rewrites config.trace-rewrites flags))
                    interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
-               (logicman state)
-               (b* ((logicman (update-logicman->mode (bfrmode :aignet) logicman)))
-                 (stobj-let ((ipasir (logicman->ipasir logicman))
-                             (sat-lits (logicman->sat-lits logicman)))
-                            (sat-lits ipasir state)
-                            (b* (((mv ipasir state) (ipasir::ipasir-init ipasir state))
-                                 (sat-lits (resize-aignet->sat 100 sat-lits)))
-                              (mv sat-lits ipasir state))
-                            (mv logicman state)))
+               (logicman)
+               (update-logicman->mode (bfrmode :aignet) logicman)
                (mv interp-st state)))
   ///
   (local (defthm interp-st->stack-of-create-interp-st
@@ -225,7 +218,8 @@
   (local (in-theory (disable pathcond-fix-of-pathcond-fix-pathcond-normalize-const
                              logicman-pathcond-p-fn-of-pathcond-fix-pathcond-normalize-const
                               LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
-                             (pathcond-fix))))
+                             (pathcond-fix)
+                             (update-logicman->mode))))
 
   (local (in-theory (enable  interp-st-bfrs-ok
                              logicman-pathcond-p
@@ -240,7 +234,9 @@
 
   (defret interp-st-bfrs-ok-of-<fn>
     (interp-st-bfrs-ok new-interp-st)
-    :hints (("goal" :do-not '(preprocess))))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (enable logicman-ipasir-sat-lits-invar
+                                logicman-ipasirs-assumption-free))))
 
   (defret pathcond-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->pathcond new-interp-st)

@@ -912,7 +912,11 @@
   :guard-hints (("goal" :in-theory (enable logicman-pathcond-p
                                            logicman-invar)))
   :returns (new-logicman)
-  (b* (((unless (mbt (lbfr-mode-is :aignet))) logicman)
+  (b* (((unless (mbt (lbfr-mode-is :aignet)))
+        (stobj-let ((ipasir (logicman->ipasiri ipasir-index logicman)))
+                   (ipasir)
+                   (ipasir::ipasir-input ipasir)
+                   logicman))
        (logicman (logicman-update-refcounts logicman)))
     (stobj-let ((aignet (logicman->aignet logicman))
                 (sat-lits (logicman->sat-litsi ipasir-index logicman))
@@ -921,13 +925,33 @@
                (sat-lits ipasir)
                (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
                           (sat-lits ipasir)
-                          (aignet::aignet-pathcond-to-ipasir
-                           aignet-pathcond aignet sat-lits ipasir u32arr)
+                          (b* ((ipasir (ipasir::ipasir-input ipasir)))
+                            (aignet::aignet-pathcond-to-ipasir
+                             aignet-pathcond aignet sat-lits ipasir u32arr))
                           (mv sat-lits ipasir))
                logicman))
   ///
 
-  
+  ;;(local (in-theory (enable ipasir::ipasir-input$a)))
+  (local (defret logicman-ipasir-sat-lits-invar-of-ipasir-input$a
+           (implies (and (logicman-ipasir-sat-lits-invar logicman)
+                         (< (nfix n) (logicman->ipasir-length logicman))
+                         (not (equal (ipasir::ipasir$a->status (logicman->ipasiri n logicman)) :undef)))
+                    (logicman-ipasir-sat-lits-invar
+                     (update-logicman->ipasiri n
+                                               (ipasir::ipasir-input$a (logicman->ipasiri n logicman))
+                                               logicman)))
+           :hints (("goal" :in-theory (enable ipasir::ipasir-input$a))
+                   (and stable-under-simplificationp
+                        (let ((lit (car (last clause))))
+                          `(:expand (,lit)
+                            :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split)))))))
+
+  (local (defthm consp-history-of-ipasir-input$a
+           (equal (ipasir::ipasir$a->history (ipasir::ipasir-input$a ipasir))
+                  (ipasir::ipasir$a->history ipasir))
+           :hints(("Goal" :in-theory (enable ipasir::ipasir-input$a)))))
+
   (local (defret logicman-ipasir-sat-lits-invar-of-<fn>
            (implies (and (logicman-ipasir-sat-lits-invar logicman)
                          (logicman-pathcond-p pathcond)
@@ -935,16 +959,17 @@
                          (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-index logicman)) :undef)))
                     (logicman-ipasir-sat-lits-invar new-logicman))
            :hints(("Goal" :in-theory (enable logicman-pathcond-p))
-                  (and stable-under-simplificationp
-                       (let ((lit (car (last clause))))
-                       `(:expand (,lit)
-                         :use ((:instance logicman-ipasir-sat-lits-invar-necc
-                                (n (logicman-ipasir-sat-lits-invar-witness . ,(cdr lit))))
-                               (:instance logicman-ipasir-sat-lits-invar-necc
-                                (n ipasir-index)))
-                         :in-theory (e/d (logicman->ipasiri-of-update-logicman->ipasiri-split
-                                          logicman->sat-litsi-of-update-logicman->sat-litsi-split)
-                                         (logicman-ipasir-sat-lits-invar-necc))))))))
+                  ;; (and stable-under-simplificationp
+                  ;;      (let ((lit (car (last clause))))
+                  ;;      `(:expand (,lit)
+                  ;;        :use ((:instance logicman-ipasir-sat-lits-invar-necc
+                  ;;               (n (logicman-ipasir-sat-lits-invar-witness . ,(cdr lit))))
+                  ;;              (:instance logicman-ipasir-sat-lits-invar-necc
+                  ;;               (n ipasir-index)))
+                  ;;        :in-theory (e/d (logicman->ipasiri-of-update-logicman->ipasiri-split
+                  ;;                         logicman->sat-litsi-of-update-logicman->sat-litsi-split)
+                  ;;                        (logicman-ipasir-sat-lits-invar-necc)))))
+                  )))
 
   (defret logicman-invar-of-<fn>
     (implies (and (logicman-invar logicman)
@@ -1062,7 +1087,33 @@
              (aignet::nbalist-has-sat-lits
               (nth *pathcond-aignet* pathcond)
               (logicman->sat-litsi ipasir-index new-logicman)))
-    :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p)))))
+    :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p))))
+
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-index new-logicman))
+           :input))
+
+  (defret ipasirs-length-of-<fn>
+    (implies (< (nfix ipasir-index) (logicman->ipasir-length logicman))
+             (equal (logicman->ipasir-length new-logicman)
+                    (logicman->ipasir-length logicman))))
+
+  (defret sat-lits-length-of-<fn>
+    (implies (< (nfix ipasir-index) (logicman->sat-lits-length logicman))
+             (equal (logicman->sat-lits-length new-logicman)
+                    (logicman->sat-lits-length logicman))))
+
+  (defret other-ipasir-of-<fn>
+    (implies (and (< (nfix ipasir-index) (logicman->ipasir-length logicman))
+                  (not (equal (nfix n) (nfix ipasir-index))))
+             (equal (logicman->ipasiri n new-logicman)
+                    (logicman->ipasiri n logicman))))
+
+  (defret other-sat-lits-of-<fn>
+    (implies (and (< (nfix ipasir-index) (logicman->sat-lits-length logicman))
+                  (not (equal (nfix n) (nfix ipasir-index))))
+             (equal (logicman->sat-litsi n new-logicman)
+                    (logicman->sat-litsi n logicman)))))
 
 
 (define logicman-pathcond-to-cnf (pathcond logicman

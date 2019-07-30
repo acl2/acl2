@@ -35,6 +35,7 @@
 (include-book "sat-stub")
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/resize-list" :dir :system))
+(local (in-theory (disable w)))
 
 (defprod fgl-ipasir-config
   :parents (fgl-sat-check)
@@ -47,38 +48,110 @@
    (ipasir-recycle-callback-limit acl2::maybe-natp :default nil
                                   "Limit on the number of callbacks over the lifespan
                                    of a solver object, after which the solver is
-                                   re-initialized."))
+                                   re-initialized.")
+   (ipasir-index natp :default '0))
   :tag :fgl-ipasir-config)
+
+(define logicman-ensure-ipasir ((idx natp)
+                                logicman)
+  :guard (logicman-invar logicman)
+  :returns new-logicman
+  (b* ((idx (lnfix idx))
+       ((when (< idx (logicman->ipasir-length logicman)))
+        logicman)
+       (size (max (+ 1 idx)
+                  (* 2 (logicman->ipasir-length logicman))))
+       (logicman (resize-logicman->ipasir size logicman)))
+    (resize-logicman->sat-lits size logicman))
+  ///
+
+
+  (defret logicman-ipasir-sat-lits-invar-of-<fn>
+    (implies (and (logicman-ipasir-sat-lits-invar logicman)
+                  (equal (logicman->sat-lits-length logicman)
+                         (logicman->ipasir-length logicman)))
+             (logicman-ipasir-sat-lits-invar new-logicman))
+    ;; :hints ((and stable-under-simplificationp
+    ;;              (b* ((lit (car (last clause))))
+    ;;                `(:expand (,lit)
+    ;;                  :use ((:instance logicman-ipasir-sat-lits-invar-necc
+    ;;                         (n (logicman-ipasir-sat-lits-invar-witness . ,(cdr lit)))))
+    ;;                  :in-theory (disable logicman-ipasir-sat-lits-invar-necc)))))
+    )
+
+  (defret logicman-invar-of-<fn>
+    (implies (logicman-invar logicman)
+             (logicman-invar new-logicman))
+    ;; :hints(("Goal" :in-theory (e/d (logicman-invar)
+    ;;                                (logicman-ipasir-sat-lits-invar-of-logicman-ensure-ipasir))
+    ;;         :use logicman-ipasir-sat-lits-invar-of-logicman-ensure-ipasir))
+    )
+
+  (defret logicman-ipasirs-assumption-free-of-<fn>
+    (implies (logicman-ipasirs-assumption-free logicman)
+             (logicman-ipasirs-assumption-free new-logicman))
+    ;; :hints((and stable-under-simplificationp
+    ;;             (let ((lit (car (last clause))))
+    ;;               `(:expand (,lit)))))
+    )
+
+  (defret logicman->ipasir-length-incr-of-<fn>
+    (<= (logicman->ipasir-length logicman)(logicman->ipasir-length new-logicman))
+    :rule-classes :linear)
+
+  (defret logicman->ipasir-length-sufficient-of-<fn>
+    (< (nfix idx) (logicman->ipasir-length new-logicman))
+    :rule-classes :linear)
+
+  (defret logicman-get-of-<fn>
+    (implies (and (not (equal (logicman-field-fix key) :ipasir))
+                  (not (equal (logicman-field-fix key) :sat-lits)))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman))))
+
+  (local (in-theory (enable logicman->ipasiri-of-resize
+                            logicman->sat-litsi-of-resize)))
+
+  (defret ipasir-assumption-of-<fn>
+    (implies (equal (ipasir::ipasir$a->assumption (logicman->ipasiri n logicman)) nil)
+             (equal (ipasir::ipasir$a->assumption (logicman->ipasiri n new-logicman)) nil))
+    :hints(("Goal" :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split)))))
+       
+
+
 
 
 (define logicman-maybe-recycle-ipasir ((config fgl-ipasir-config-p)
-                                       logicman)
+                                       logicman
+                                       state)
   :guard (and (logicman-invar logicman)
-              (stobj-let ((ipasir (logicman->ipasir logicman)))
-                         (ok)
-                         (not (ipasir-get-assumption ipasir))
-                         ok)
-              (bfr-mode-is :aignet (logicman->mode logicman)))
+              (bfr-mode-is :aignet (logicman->mode logicman))
+              (ec-call (logicman-ipasirs-assumption-free logicman)))
   :prepwork ((local (in-theory (enable logicman-invar))))
-  :returns new-logicman
-  (b* (((fgl-ipasir-config config)))
-    (stobj-let ((ipasir (logicman->ipasir logicman))
-                (sat-lits (logicman->sat-lits logicman)))
-               (ipasir sat-lits)
-               (b* ((ipasir (ipasir::ipasir-cancel-new-clause ipasir))
+  :returns (mv new-logicman new-state)
+  (b* (((fgl-ipasir-config config))
+       (logicman (logicman-ensure-ipasir config.ipasir-index logicman)))
+    (stobj-let ((ipasir (logicman->ipasiri config.ipasir-index logicman))
+                (sat-lits (logicman->sat-litsi config.ipasir-index logicman)))
+               (ipasir sat-lits state)
+               (b* (((when (eq (ipasir::ipasir-get-status ipasir) :undef))
+                     (b* (((mv ipasir state) (ipasir::ipasir-init ipasir state))
+                          (sat-lits (sat-lits-init sat-lits)))
+                       (mv ipasir sat-lits state)))
+                    (ipasir (ipasir::ipasir-cancel-new-clause ipasir))
                     (ipasir (ipasir::ipasir-cancel-assumption ipasir))
                     (ipasir (ipasir::ipasir-input ipasir))
                     (count (ipasir-callback-count ipasir))
                     ((when (or (not config.ipasir-recycle-callback-limit)
                                (< count config.ipasir-recycle-callback-limit)))
                      (b* ((ipasir (ipasir-set-limit ipasir config.ipasir-callback-limit)))
-                       (mv ipasir sat-lits)))
+                       (mv ipasir sat-lits state)))
                     (ipasir (ipasir-release ipasir))
                     (ipasir (ipasir-reinit ipasir))
                     (sat-lits (aignet::sat-lits-empty (aignet::aignet->sat-length sat-lits) sat-lits))
                     (ipasir (ipasir-set-limit ipasir config.ipasir-callback-limit)))
-                 (mv ipasir sat-lits))
-               logicman))
+                 (mv ipasir sat-lits state))
+               (mv logicman state)))
   ///
   (defret logicman-get-of-<fn>
     (implies (and (not (equal (logicman-field-fix key) :ipasir))
@@ -86,23 +159,68 @@
              (equal (logicman-get key new-logicman)
                     (logicman-get key logicman))))
 
+  #!aignet
+  (local (defthm sat-lits-wfp-of-create-sat-lits
+           (sat-lits-wfp (create-sat-lits) aignet)
+           :hints(("Goal" :in-theory (enable create-sat-lits
+                                             sat-lits-wfp)))))
+  #!aignet
+  (local (defthm cnf-for-aignet-empty
+           (cnf-for-aignet aignet nil (create-sat-lits))
+           :hints(("Goal" :in-theory (enable cnf-for-aignet
+                                             create-sat-lits
+                                             aignet-agrees-with-cnf
+                                             aignet-id-has-sat-var
+                                             aignet-id->sat-lit
+                                             satlink::eval-formula)))))
+
+  (defret logicman-ipasir-sat-lits-invar-of-<fn>
+    (implies (and (logicman-ipasir-sat-lits-invar logicman)
+                  (equal (logicman->sat-lits-length logicman)
+                         (logicman->ipasir-length logicman)))
+             (logicman-ipasir-sat-lits-invar new-logicman))
+    :hints(("Goal" :in-theory (enable ipasir::ipasir-set-limit$a
+                                      ipasir::ipasir-input$a
+                                      ipasir::ipasir-cancel-assumption
+                                      ipasir::ipasir-cancel-new-clause
+                                      ipasir::ipasir-init$a))))
+
+  (defret logicman-ipasirs-assumption-free-of-<fn>
+    (implies (logicman-ipasirs-assumption-free logicman)
+             (logicman-ipasirs-assumption-free new-logicman)))
+
   (defret logicman-invar-of-<fn>
     (implies (logicman-invar logicman)
              (logicman-invar new-logicman))
-    :hints(("Goal" :in-theory (enable ipasir::ipasir-input$a
-                                      ipasir::ipasir-cancel-assumption
-                                      ipasir::ipasir-cancel-new-clause
-                                      ipasir::ipasir-release$a
-                                      ipasir::ipasir-reinit$a
-                                      ipasir::ipasir-set-limit$a))))
+    :hints (("goal" :use ((:instance logicman-ipasir-sat-lits-invar-of-logicman-maybe-recycle-ipasir))
+             :in-theory (disable logicman-ipasir-sat-lits-invar-of-logicman-maybe-recycle-ipasir))))
 
   (defret logicman-extension-p-of-<fn>
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
 
   (defret ipasir-assumption-of-<fn>
-    (implies (equal (ipasir::ipasir$a->assumption (logicman->ipasir logicman)) nil)
-             (equal (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman)) nil))))
+    (implies (equal (ipasir::ipasir$a->assumption (logicman->ipasiri n logicman)) nil)
+             (equal (ipasir::ipasir$a->assumption (logicman->ipasiri n new-logicman)) nil))
+    :hints(("Goal" :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split))))
+
+  
+  (defret logicman->ipasir-length-incr-of-<fn>
+    (<= (logicman->ipasir-length logicman)(logicman->ipasir-length new-logicman))
+    :rule-classes :linear)
+
+  (defret logicman->ipasir-length-sufficient-of-<fn>
+    (< (fgl-ipasir-config->ipasir-index config) (logicman->ipasir-length new-logicman))
+    :rule-classes :linear)
+
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir::ipasir$a->status (logicman->ipasiri (fgl-ipasir-config->ipasir-index config) new-logicman))
+           :input))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))
+    :hints(("Goal" :in-theory (enable read-acl2-oracle update-acl2-oracle w)))))
 
 
 (local
@@ -167,17 +285,23 @@
 
 
 (define logicman-bfr->ipasir ((bfr lbfr-p)
+                              (ipasir-idx natp)
                               (logicman))
   :guard (and (bfr-mode-is :aignet (logicman->mode logicman))
-              (logicman-invar logicman))
+              (logicman-invar logicman)
+              (< ipasir-idx (logicman->ipasir-length logicman))
+              (stobj-let ((ipasir (logicman->ipasiri ipasir-idx logicman)))
+                         (ok)
+                         (not (equal (ipasir::ipasir-get-status ipasir) :undef))
+                         ok))
   :returns (new-logicman)
   :guard-hints (("goal" :in-theory (enable logicman-invar)))
   (b* ((logicman (logicman-update-refcounts logicman))
        (lit (bfr->aignet-lit bfr (logicman->bfrstate))))
     (stobj-let ((aignet (logicman->aignet logicman))
-                (ipasir (logicman->ipasir logicman))
+                (ipasir (logicman->ipasiri ipasir-idx logicman))
                 (u32arr (logicman->aignet-refcounts logicman))
-                (sat-lits (logicman->sat-lits logicman)))
+                (sat-lits (logicman->sat-litsi ipasir-idx logicman)))
                (sat-lits ipasir)
                (b* (((acl2::hintcontext-bind
                       ((sat-lits-orig sat-lits)
@@ -202,7 +326,9 @@
   (defret logicman-invar-of-<fn>
     (implies (and (logicman-invar logicman)
                   (lbfr-p bfr)
-                  (lbfr-mode-is :aignet))
+                  (lbfr-mode-is :aignet)
+                  (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+                  (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-idx logicman)) :undef)))
              (logicman-invar new-logicman))
     :hints(("Goal" :in-theory (enable logicman-invar
                                       ipasir::ipasir-assume$a
@@ -231,26 +357,31 @@
                     :in-theory (disable lit-eval-of-take-num-regs)))))
 
   (defret logicman-ipasir-assumption-of-<fn>
-    (implies (and (logicman-invar logicman)
-                  (lbfr-mode-is :aignet)
-                  (lbfr-p bfr)
-                  (equal (satlink::eval-formula
-                          (ipasir::ipasir$a->formula (logicman->ipasir new-logicman))
-                          env)
-                         1))
-             (equal (satlink::eval-cube
-                     (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman))
-                     env)
-                    (b* ((vals (aignet::cnf->aignet-invals
-                                nil env (logicman->sat-lits new-logicman)
-                                (logicman->aignet logicman))))
-                      (b-and (satlink::eval-cube
-                              (ipasir::ipasir$a->assumption (logicman->ipasir logicman))
-                              env)
-                             (bool->bit
-                              (bfr-eval bfr (pairlis$ (acl2::numlist 0 1 (aignet::num-ins (logicman->aignet logicman)))
-                                                      (bits->bools vals))
-                                        logicman))))))
+    (b* ((new-ipasir (logicman->ipasiri ipasir-idx new-logicman))
+         (new-sat-lits (logicman->sat-litsi ipasir-idx new-logicman))
+         (ipasir (logicman->ipasiri ipasir-idx logicman)))
+      (implies (and (logicman-invar logicman)
+                    (lbfr-mode-is :aignet)
+                    (lbfr-p bfr)
+                    (equal (satlink::eval-formula
+                            (ipasir::ipasir$a->formula new-ipasir)
+                            env)
+                           1)
+                    (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+                    (not (equal (ipasir::ipasir$a->status ipasir) :undef)))
+               (equal (satlink::eval-cube
+                       (ipasir::ipasir$a->assumption new-ipasir)
+                       env)
+                      (b* ((vals (aignet::cnf->aignet-invals
+                                  nil env new-sat-lits
+                                  (logicman->aignet logicman))))
+                        (b-and (satlink::eval-cube
+                                (ipasir::ipasir$a->assumption ipasir)
+                                env)
+                               (bool->bit
+                                (bfr-eval bfr (pairlis$ (acl2::numlist 0 1 (aignet::num-ins (logicman->aignet logicman)))
+                                                        (bits->bools vals))
+                                          logicman)))))))
     :hints(("Goal" :in-theory (e/d (bfr-eval logicman-invar)
                                    (aignet::cnf-for-aignet-implies-lit-sat-when-cnf-sat
                                     ;; aignet::cnf-for-aignet-preserved-by-aignet-lit->cnf
@@ -275,11 +406,13 @@
     (implies (and (logicman-invar logicman)
                   (lbfr-p bfr)
                   (lbfr-mode-is :aignet)
-                  (equal bfrstate (logicman->bfrstate)))
+                  (equal bfrstate (logicman->bfrstate))
+                  (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+                  (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-idx logicman)) :undef)))
              (aignet::aignet-id-has-sat-var
               (satlink::lit->var
                (bfr->aignet-lit bfr bfrstate))
-              (logicman->sat-lits new-logicman))))
+              (logicman->sat-litsi ipasir-idx new-logicman))))
   
   ;; (defret ipasir-formula-norm-of-<fn>
   ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
@@ -320,8 +453,34 @@
   ;;                                     logicman-update-refcounts))))
 
   (defret sat-lit-extension-p-of-<fn>
-    (implies (equal sat-lits (logicman->sat-lits logicman))
-             (aignet::sat-lit-extension-p (logicman->sat-lits new-logicman) sat-lits))))
+    (implies (equal sat-lits (logicman->sat-litsi ipasir-idx logicman))
+             (aignet::sat-lit-extension-p (logicman->sat-litsi ipasir-idx new-logicman) sat-lits)))
+
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-idx new-logicman))
+           :input))
+
+  (defret ipasirs-length-of-<fn>
+    (implies (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+             (equal (logicman->ipasir-length new-logicman)
+                    (logicman->ipasir-length logicman))))
+
+  (defret sat-lits-length-of-<fn>
+    (implies (< (nfix ipasir-idx) (logicman->sat-lits-length logicman))
+             (equal (logicman->sat-lits-length new-logicman)
+                    (logicman->sat-lits-length logicman))))
+
+  (defret other-ipasir-of-<fn>
+    (implies (and (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+                  (not (equal (nfix n) (nfix ipasir-idx))))
+             (equal (logicman->ipasiri n new-logicman)
+                    (logicman->ipasiri n logicman))))
+
+  (defret other-sat-lits-of-<fn>
+    (implies (and (< (nfix ipasir-idx) (logicman->sat-lits-length logicman))
+                  (not (equal (nfix n) (nfix ipasir-idx))))
+             (equal (logicman->sat-litsi n new-logicman)
+                    (logicman->sat-litsi n logicman)))))
 
 
 (defthm eval-formula-of-append
@@ -331,11 +490,16 @@
   :hints(("Goal" :in-theory (enable satlink::eval-formula))))
 
   
-(define logicman-ipasir-solve (logicman)
+(define logicman-ipasir-solve ((ipasir-idx natp) logicman)
   :returns (mv status new-logicman)
-  :guard (logicman-invar logicman)
+  :guard (and (logicman-invar logicman)
+              (< ipasir-idx (logicman->ipasir-length logicman))
+              (stobj-let ((ipasir (logicman->ipasiri ipasir-idx logicman)))
+                         (ok)
+                         (not (equal (ipasir::ipasir-get-status ipasir) :undef))
+                         ok))
   :guard-hints (("goal" :in-theory (enable logicman-invar)))
-  (stobj-let ((ipasir (logicman->ipasir logicman)))
+  (stobj-let ((ipasir (logicman->ipasiri ipasir-idx logicman)))
              (status ipasir)
              (ipasir::ipasir-solve ipasir)
              (mv status logicman))
@@ -348,19 +512,46 @@
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
 
+  (local (defthm logicman-ipasir-sat-lits-invar-of-solve
+           (implies (and (logicman-ipasir-sat-lits-invar logicman)
+                         (< (nfix idx) (logicman->ipasir-length logicman))
+                         (not (equal (ipasir::ipasir$a->status (logicman->ipasiri idx logicman)) :undef)))
+                    (logicman-ipasir-sat-lits-invar
+                     (update-logicman->ipasiri
+                      idx
+                      (mv-nth 1 (ipasir::ipasir-solve$a (logicman->ipasiri idx logicman)))
+                      logicman)))
+           :hints ((and stable-under-simplificationp
+                        `(:expand (,(car (last clause)))
+                          :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split))))))
+                    
+
   (defret logicman-invar-of-<fn>
-    (implies (logicman-invar logicman)
+    (implies (and (logicman-invar logicman)
+                  (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+                  (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-idx logicman)) :undef)))
              (logicman-invar new-logicman))
     :hints(("Goal" :in-theory (enable logicman-invar))))
 
   (defret ipasir-assumption-of-<fn>
-    (equal (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman)) nil))
+    (equal (ipasir::ipasir$a->assumption (logicman->ipasiri ipasir-idx new-logicman)) nil))
 
   (defretd <fn>-unsat-implies
-    (b* ((ipasir (logicman->ipasir logicman)))
+    (b* ((ipasir (logicman->ipasiri ipasir-idx logicman)))
       (implies (and (equal status :unsat)
                     (equal (satlink::eval-formula (ipasir::ipasir$a->formula ipasir) env) 1))
-               (equal (satlink::eval-cube (ipasir::ipasir$a->assumption ipasir) env) 0)))))
+               (equal (satlink::eval-cube (ipasir::ipasir$a->assumption ipasir) env) 0))))
+
+  (defret other-ipasir-of-<fn>
+    (implies (and (< (nfix ipasir-idx) (logicman->ipasir-length logicman))
+                  (not (equal (nfix n) (nfix ipasir-idx))))
+             (equal (logicman->ipasiri n new-logicman)
+                    (logicman->ipasiri n logicman))))
+
+  (defret logicman-get-of-<fn>
+    (implies (not (equal (logicman-field-fix key) :ipasir))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman)))))
 
 
 
@@ -384,47 +575,59 @@
 
 
 (define interp-st-ipasir-sat-check-core ((config fgl-ipasir-config-p)
-                                  (bfr interp-st-bfr-p)
-                                  (interp-st interp-st-bfrs-ok)
-                                  state)
+                                         (bfr interp-st-bfr-p)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
   :guard (bfr-mode-is :aignet (interp-st-bfr-mode))
   :returns (mv (ans)
-               new-interp-st)
+               new-interp-st
+               new-state)
   :ignore-ok t
   :irrelevant-formals-ok t
   ;; :guard-debug t
   :guard-hints (("goal" :in-theory (enable interp-st-bfrs-ok)))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
-        (mv bfr interp-st))
+        (mv bfr interp-st state))
        ((fgl-ipasir-config config)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (pathcond (interp-st->pathcond interp-st))
                 (constraint-pathcond (interp-st->constraint interp-st)))
-               (ans logicman)
-               (b* ((logicman (logicman-maybe-recycle-ipasir config logicman))
+               (ans logicman state)
+               (b* (((mv logicman state) (logicman-maybe-recycle-ipasir config logicman state))
                     (logicman (if (or** config.ignore-pathcond
                                         (not (pathcond-enabledp pathcond)))
                                   logicman
-                                (logicman-pathcond-to-ipasir pathcond logicman)))
+                                (logicman-pathcond-to-ipasir config.ipasir-index pathcond logicman)))
                     (logicman (if (or** config.ignore-constraint
                                         (not (pathcond-enabledp constraint-pathcond)))
                                   logicman
-                                (logicman-pathcond-to-ipasir constraint-pathcond logicman)))
-                    (logicman (logicman-bfr->ipasir bfr logicman))
+                                (logicman-pathcond-to-ipasir config.ipasir-index constraint-pathcond logicman)))
+                    (logicman (logicman-bfr->ipasir bfr config.ipasir-index logicman))
                     ;; ((acl2::hintcontext-bind ((logicman-solve logicman))))
-                    )
-                 (acl2::hintcontext :solve
-                                    (logicman-ipasir-solve logicman)))
+                    ((acl2::hintcontext :solve))
+                    ((mv ans logicman)
+                     (logicman-ipasir-solve config.ipasir-index logicman)))
+                 (mv ans logicman state))
                (if (eq ans :unsat)
-                   (mv nil interp-st)
-                 (mv bfr interp-st))))
+                   (mv nil interp-st state)
+                 (mv bfr interp-st state))))
   ///
   
+  (defret logicman-ipasirs-assumption-free-of-<fn>
+    (implies (logicman-ipasirs-assumption-free (interp-st->logicman interp-st))
+             (logicman-ipasirs-assumption-free (interp-st->logicman new-interp-st)))
+    :hints(("goal" :in-theory (enable logicman-ipasir-solve))
+           (and stable-under-simplificationp
+                `(:expand (,(car (last clause)))
+                  :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split)))))
+
   (defret interp-st-bfrs-ok-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
                   (interp-st-bfr-p bfr))
              (interp-st-bfrs-ok new-interp-st))
-    :hints(("Goal" :in-theory (enable interp-st-bfrs-ok))))
+    :hints(("Goal" :in-theory (e/d (interp-st-bfrs-ok)
+                                   (logicman-ipasirs-assumption-free-of-interp-st-ipasir-sat-check-core))
+            :use logicman-ipasirs-assumption-free-of-interp-st-ipasir-sat-check-core)))
 
   (defret interp-st-bfr-p-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
@@ -437,20 +640,20 @@
                     (interp-st->logicman interp-st))
     :hints(("Goal" :in-theory (enable logicman-equiv))))
 
-  (local (defthm logicman-invar-implies-cnf-for-aignet-rw
-           (implies (and (logicman-invar logicman)
-                         (equal aignet (logicman->aignet logicman)))
-                    (b* ((ipasir (logicman->ipasir logicman))
-                         (sat-lits (logicman->sat-lits logicman)))
-                      (aignet::cnf-for-aignet
-                       aignet (ipasir::ipasir$a->formula ipasir) sat-lits)))))
+  ;; (local (defthm logicman-invar-implies-cnf-for-aignet-rw
+  ;;          (implies (and (logicman-invar logicman)
+  ;;                        (equal aignet (logicman->aignet logicman)))
+  ;;                   (b* ((ipasir (logicman->ipasiri logicman))
+  ;;                        (sat-lits (logicman->sat-litsi logicman)))
+  ;;                     (aignet::cnf-for-aignet
+  ;;                      aignet (ipasir::ipasir$a->formula ipasir) sat-lits)))))
 
-  (local (defthm logicman-invar-implies-sat-lits-wfp-rw
-           (implies (and (logicman-invar logicman)
-                         (equal aignet (logicman->aignet logicman)))
-                    (b* ((sat-lits (logicman->sat-lits logicman)))
-                      (aignet::sat-lits-wfp
-                       sat-lits aignet)))))
+  ;; (local (defthm logicman-invar-implies-sat-lits-wfp-rw
+  ;;          (implies (and (logicman-invar logicman)
+  ;;                        (equal aignet (logicman->aignet logicman)))
+  ;;                   (b* ((sat-lits (logicman->sat-lits logicman)))
+  ;;                     (aignet::sat-lits-wfp
+  ;;                      sat-lits aignet)))))
 
   (local
    #!aignet
@@ -476,8 +679,8 @@
        (implies (and (sat-lits-wfp satlits aignet)
                      (bind-free
                       (case-match satlits
-                        (('fgl::logicman->sat-lits x)
-                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasir ,x)))))
+                        (('fgl::logicman->sat-litsi n x)
+                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasiri ,n ,x)))))
                         (& nil))
                       (cnf))
                      (cnf-for-aignet aignet cnf satlits)
@@ -498,25 +701,25 @@
   (local
    #!aignet
    (acl2::def-updater-independence-thm eval-conjunction-in-aignet->cnf-vals-of-sat-lit-extension-logicman
-     (implies (and (sat-lit-extension-p (fgl::logicman->sat-lits new)
-                                        (fgl::logicman->sat-lits old))
-                   (sat-lit-listp conjunction (fgl::logicman->sat-lits old)))
+     (implies (and (sat-lit-extension-p (fgl::logicman->sat-litsi n new)
+                                        (fgl::logicman->sat-litsi n old))
+                   (sat-lit-listp conjunction (fgl::logicman->sat-litsi n old)))
               (equal (eval-cube
                       conjunction (aignet->cnf-vals
                                    invals regvals cnf-vals
-                                   (fgl::logicman->sat-lits new) aignet))
+                                   (fgl::logicman->sat-litsi n new) aignet))
                      (eval-cube
                       conjunction (aignet->cnf-vals
                                    invals regvals cnf-vals
-                                   (fgl::logicman->sat-lits old) aignet))))))
+                                   (fgl::logicman->sat-litsi n old) aignet))))))
 
   (local
    #!aignet
    (acl2::def-updater-independence-thm nbalist-has-sat-lits-of-sat-lit-extension-logicman
-     (implies (and (sat-lit-extension-p (fgl::logicman->sat-lits new)
-                                        (fgl::logicman->sat-lits old))
-                   (nbalist-has-sat-lits nbalist (fgl::logicman->sat-lits old)))
-              (nbalist-has-sat-lits nbalist (fgl::logicman->sat-lits new)))))
+     (implies (and (sat-lit-extension-p (fgl::logicman->sat-litsi n new)
+                                        (fgl::logicman->sat-litsi n old))
+                   (nbalist-has-sat-lits nbalist (fgl::logicman->sat-litsi n old)))
+              (nbalist-has-sat-lits nbalist (fgl::logicman->sat-litsi n new)))))
 
   (local
    #!aignet
@@ -526,8 +729,8 @@
        (implies (and (sat-lits-wfp sat-lits aignet)
                      (bind-free
                       (case-match sat-lits
-                        (('fgl::logicman->sat-lits x)
-                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasir ,x)))))
+                        (('fgl::logicman->sat-litsi n x)
+                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasiri ,n ,x)))))
                         (& nil))
                       (cnf))
                      (cnf-for-aignet aignet cnf sat-lits)
@@ -582,8 +785,8 @@
        (implies (and (sat-lits-wfp sat-lits aignet)
                      (bind-free
                       (case-match sat-lits
-                        (('fgl::logicman->sat-lits x)
-                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasir ,x)))))
+                        (('fgl::logicman->sat-litsi n x)
+                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasiri ,n ,x)))))
                         (& nil))
                       (cnf))
                      (cnf-for-aignet aignet cnf sat-lits)
@@ -622,8 +825,8 @@
        (implies (and (sat-lits-wfp sat-lits aignet)
                      (bind-free
                       (case-match sat-lits
-                        (('fgl::logicman->sat-lits x)
-                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasir ,x)))))
+                        (('fgl::logicman->sat-litsi n x)
+                         `((cnf . (ipasir::ipasir$a->formula$inline (fgl::logicman->ipasiri ,n ,x)))))
                         (& nil))
                       (cnf))
                      (cnf-for-aignet aignet cnf sat-lits)
@@ -661,13 +864,14 @@
              interp-st-ipasir-sat-check-core
              (:solve
               (b* ((aignet (logicman->aignet logicman))
-                   (sat-lits (logicman->sat-lits logicman))
-                   (ipasir (logicman->ipasir logicman))
+                   (sat-lits (logicman->sat-litsi config.ipasir-index logicman))
+                   (ipasir (logicman->ipasiri config.ipasir-index logicman))
                    (aignet-invals (alist-to-bitarr (aignet::num-ins aignet)
                                                    (gl-env->bfr-vals env) nil))
                    (cnf-vals (aignet::aignet->cnf-vals aignet-invals nil nil sat-lits aignet)))
                 `(:use ((:instance logicman-ipasir-solve-unsat-implies
                          (logicman ,(acl2::hq logicman))
+                         (ipasir-idx ,(acl2::hq config.ipasir-index))
                          (env ,(acl2::hq cnf-vals)))
                         ;; (:instance aignet::cnf-for-aignet-implies-eval-formula
                         ;;  (cnf ,(acl2::hq (ipasir::ipasir$a->formula ipasir)))
@@ -749,7 +953,10 @@
 
   (defret interp-st->errmsg-equal-unreachable-of-<fn>
     (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
-             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (local (in-theory (disable w)))
 
@@ -770,10 +977,8 @@
           (gl-interp-error
            :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object")))
          ((when (eq bfr nil))
-          (mv nil interp-st state))
-         ((mv ans interp-st)
-          (interp-st-ipasir-sat-check-core params bfr interp-st state)))
-      (mv ans interp-st state))
+          (mv nil interp-st state)))
+      (interp-st-ipasir-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))
 
@@ -805,13 +1010,18 @@
     
   
 
-(define logicman-ipasir->env$ (logicman env$)
+(define logicman-ipasir->env$ ((ipasir-idx natp) logicman env$)
   :guard (logicman-invar logicman)
   :returns (mv err new-env$)
-  (b* ((bfrstate (logicman->bfrstate)))
-    (stobj-let ((ipasir (logicman->ipasir logicman))
+  (b* ((bfrstate (logicman->bfrstate))
+       ((unless (< (lnfix ipasir-idx) (logicman->ipasir-length logicman)))
+        (stobj-let ((bitarr (env$->bitarr env$)))
+                   (bitarr)
+                   (resize-bits (+ 1 (bfrstate->bound bfrstate)) bitarr)
+                   (mv "Error: ipasir index out of bound" env$))))
+    (stobj-let ((ipasir (logicman->ipasiri ipasir-idx logicman))
                 (aignet (logicman->aignet logicman))
-                (sat-lits (logicman->sat-lits logicman)))
+                (sat-lits (logicman->sat-litsi ipasir-idx logicman)))
                (err env$)
                (stobj-let ((bitarr (env$->bitarr env$)))
                           (err bitarr)
@@ -848,12 +1058,16 @@
                                          (interp-st interp-st-bfrs-ok)
                                          state)
   :returns (mv err new-interp-st)
-  (declare (ignore params state))
-  (stobj-let ((logicman (interp-st->logicman interp-st))
-              (env$ (interp-st->ctrex-env interp-st)))
-             (err env$)
-             (logicman-ipasir->env$ logicman env$)
-             (mv err interp-st))
+  (declare (ignore state))
+  (b* (((unless (fgl-ipasir-config-p params))
+        (mv (msg "Bad params for ~x0 -- must satisfy ~x1" __function__ 'fgl-ipasir-config-p)
+            interp-st))
+       ((fgl-ipasir-config params)))
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (env$ (interp-st->ctrex-env interp-st)))
+               (err env$)
+               (logicman-ipasir->env$ params.ipasir-index logicman env$)
+               (mv err interp-st)))
   ///
   (defret interp-st-get-of-<fn>
     (implies (not (equal (interp-st-field-fix key) :ctrex-env))

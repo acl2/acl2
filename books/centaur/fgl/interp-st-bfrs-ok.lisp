@@ -78,7 +78,30 @@
                      :use ((:instance logicman-ipasirs-assumption-free-necc
                             (logicman ,other)
                             (n (logicman-ipasirs-assumption-free-witness . ,(cdr lit)))))
-                     :in-theory (disable logicman-ipasirs-assumption-free-necc)))))))
+                     :in-theory (disable logicman-ipasirs-assumption-free-necc))))))
+
+  (defthm logicman-ipasirs-assumption-free-of-ipasir-update
+    (implies (and (logicman-ipasirs-assumption-free logicman)
+                  (or (equal (ipasir::ipasir$a->status ipasir) :undef)
+                      (not (ipasir::ipasir$a->assumption ipasir)))
+                  (< (nfix n) (logicman->ipasir-length logicman)))
+             (logicman-ipasirs-assumption-free (update-logicman->ipasiri n ipasir logicman)))
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (car (last clause))))
+                   `(:expand (,lit)
+                     :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split))))))
+
+  (local (include-book "std/lists/resize-list" :dir :system))
+
+  (local (in-theory (enable logicman->ipasiri-of-resize
+                            logicman->sat-litsi-of-resize)))
+
+  (defthm logicman-ipasirs-assumption-free-of-resize
+    (implies (logicman-ipasirs-assumption-free logicman)
+             (logicman-ipasirs-assumption-free (resize-logicman->ipasir size logicman)))
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (car (last clause))))
+                   `(:expand (,lit)))))))
 
 
 (define interp-st-bfrs-ok (interp-st)
@@ -124,6 +147,7 @@
                     (equal (next-bvar$a (interp-st->bvar-db interp-st))
                            (bfr-nvars (interp-st->logicman interp-st)))
                     (logicman-invar logicman)
+                    (logicman-ipasirs-assumption-free logicman)
                     ;; (equal (ipasir::ipasir$a->assumption (logicman->ipasir (interp-st->logicman interp-st))) nil)
                     )))
     :hints(("Goal" :in-theory (enable interp-st-nvars-ok))))
@@ -147,18 +171,26 @@
                     (interp-st-bfrs-ok old))))
 
 
+  ;; (defthm interp-st-bfrs-ok-of-logicman-extension
+  ;;   (implies (and (interp-st-bfrs-ok interp-st)
+  ;;                 (logicman-extension-p new-logicman (interp-st->logicman interp-st))
+  ;;                 (equal (bfr-nvars new-logicman) (bfr-nvars (interp-st->logicman interp-st)))
+  ;;                 (equal (logicman-get :ipasir new-logicman)
+  ;;                        (logicman-get :ipasir (interp-st->logicman interp-st)))
+  ;;                 (equal (logicman-get :sat-lits new-logicman)
+  ;;                        (logicman-get :sat-lits (interp-st->logicman interp-st)))
+  ;;                 (equal (logicman->refcounts-index new-logicman)
+  ;;                        (logicman->refcounts-index (interp-st->logicman interp-st)))
+  ;;                 (equal (logicman->aignet-refcounts new-logicman)
+  ;;                        (logicman->aignet-refcounts (interp-st->logicman interp-st))))
+  ;;            (interp-st-bfrs-ok (update-interp-st->logicman new-logicman interp-st))))
+
   (defthm interp-st-bfrs-ok-of-logicman-extension
     (implies (and (interp-st-bfrs-ok interp-st)
                   (logicman-extension-p new-logicman (interp-st->logicman interp-st))
                   (equal (bfr-nvars new-logicman) (bfr-nvars (interp-st->logicman interp-st)))
-                  (equal (logicman-get :ipasir new-logicman)
-                         (logicman-get :ipasir (interp-st->logicman interp-st)))
-                  (equal (logicman-get :sat-lits new-logicman)
-                         (logicman-get :sat-lits (interp-st->logicman interp-st)))
-                  (equal (logicman->refcounts-index new-logicman)
-                         (logicman->refcounts-index (interp-st->logicman interp-st)))
-                  (equal (logicman->aignet-refcounts new-logicman)
-                         (logicman->aignet-refcounts (interp-st->logicman interp-st))))
+                  (logicman-invar new-logicman)
+                  (logicman-ipasirs-assumption-free new-logicman))
              (interp-st-bfrs-ok (update-interp-st->logicman new-logicman interp-st))))
 
   (defthm interp-st-bfrs-ok-of-update-stack
