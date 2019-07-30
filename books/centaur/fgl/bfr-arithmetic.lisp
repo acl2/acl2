@@ -221,8 +221,8 @@
 (defmacro logicman-extension-plus (x y)
   `(and (logicman-extension-p ,x ,y)
         (equal (bfr-nvars ,x) (bfr-nvars ,y))
-        (equal (logicman->ipasir ,x) (logicman->ipasir ,y))
-        (equal (logicman->sat-lits ,x) (logicman->sat-lits ,y))
+        (equal (logicman-get :ipasir ,x) (logicman-get :ipasir ,y))
+        (equal (logicman-get :sat-lits ,x) (logicman-get :sat-lits ,y))
         (equal (logicman->refcounts-index ,x) (logicman->refcounts-index ,y))
         (equal (logicman->aignet-refcounts ,x) (logicman->aignet-refcounts ,y))))
 

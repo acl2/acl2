@@ -54,6 +54,32 @@
 ;;            (logicman-extension-p (interp-st->logicman new) prev)))
 
 
+(defsection logicman-ipasirs-assumption-free
+  (defun-sk logicman-ipasirs-assumption-free (logicman)
+    (forall n
+            (implies (< (nfix n) (logicman->ipasir-length logicman))
+                     (b* ((ipasir (logicman->ipasiri n logicman)))
+                       (implies
+                        (not (equal (ipasir::ipasir$a->status ipasir) :undef))
+                        (equal (ipasir::ipasir$a->assumption ipasir) nil)))))
+    :rewrite :direct)
+
+  (in-theory (disable logicman-ipasirs-assumption-free))
+
+  (def-updater-independence-thm logicman-ipasirs-assumption-free-of-update
+    (implies (equal (logicman-get :ipasir new)
+                    (logicman-get :ipasir old))
+             (equal (logicman-ipasirs-assumption-free new)
+                    (logicman-ipasirs-assumption-free old)))
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (assoc 'logicman-ipasirs-assumption-free clause))
+                        (other (if (eq (cadr lit) 'old) 'new 'old)))
+                   `(:expand (,lit)
+                     :use ((:instance logicman-ipasirs-assumption-free-necc
+                            (logicman ,other)
+                            (n (logicman-ipasirs-assumption-free-witness . ,(cdr lit)))))
+                     :in-theory (disable logicman-ipasirs-assumption-free-necc)))))))
+
 
 (define interp-st-bfrs-ok (interp-st)
   (b* ((constraint-db (interp-st->constraint-db interp-st))
@@ -75,10 +101,12 @@
                       (equal (next-bvar bvar-db) (bfr-nvars logicman))
                       (logicman-invar logicman)
                       (bfr-listp (bvar-db-bfrlist bvar-db))
-                      (stobj-let ((ipasir (logicman->ipasir logicman)))
-                                 (ok)
-                                 (equal (ipasir-get-assumption ipasir) nil)
-                                 ok)))
+                      (ec-call (logicman-ipasirs-assumption-free logicman))
+                      ;; (stobj-let ((ipasir (logicman->ipasir logicman)))
+                      ;;            (ok)
+                      ;;            (equal (ipasir-get-assumption ipasir) nil)
+                      ;;            ok)
+                      ))
                ok))
   ///
   (defthm interp-st-bfrs-ok-implies
@@ -96,7 +124,8 @@
                     (equal (next-bvar$a (interp-st->bvar-db interp-st))
                            (bfr-nvars (interp-st->logicman interp-st)))
                     (logicman-invar logicman)
-                    (equal (ipasir::ipasir$a->assumption (logicman->ipasir (interp-st->logicman interp-st))) nil))))
+                    ;; (equal (ipasir::ipasir$a->assumption (logicman->ipasir (interp-st->logicman interp-st))) nil)
+                    )))
     :hints(("Goal" :in-theory (enable interp-st-nvars-ok))))
 
   (acl2::def-updater-independence-thm interp-st-bfrs-ok-updater-independence
@@ -122,10 +151,10 @@
     (implies (and (interp-st-bfrs-ok interp-st)
                   (logicman-extension-p new-logicman (interp-st->logicman interp-st))
                   (equal (bfr-nvars new-logicman) (bfr-nvars (interp-st->logicman interp-st)))
-                  (equal (logicman->ipasir new-logicman)
-                         (logicman->ipasir (interp-st->logicman interp-st)))
-                  (equal (logicman->sat-lits new-logicman)
-                         (logicman->sat-lits (interp-st->logicman interp-st)))
+                  (equal (logicman-get :ipasir new-logicman)
+                         (logicman-get :ipasir (interp-st->logicman interp-st)))
+                  (equal (logicman-get :sat-lits new-logicman)
+                         (logicman-get :sat-lits (interp-st->logicman interp-st)))
                   (equal (logicman->refcounts-index new-logicman)
                          (logicman->refcounts-index (interp-st->logicman interp-st)))
                   (equal (logicman->aignet-refcounts new-logicman)

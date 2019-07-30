@@ -899,10 +899,15 @@
 
 
 
-(define logicman-pathcond-to-ipasir (pathcond logicman)
+(define logicman-pathcond-to-ipasir ((ipasir-index natp) pathcond logicman)
   :guard (and (ec-call (logicman-pathcond-p-fn pathcond logicman))
+              (< ipasir-index (logicman->ipasir-length logicman))
               (logicman-invar logicman)
               (lbfr-mode-is :aignet)
+              (stobj-let ((ipasir (logicman->ipasiri ipasir-index logicman)))
+                         (ok)
+                         (not (equal (ipasir-get-status ipasir) :undef))
+                         ok)
               )
   :guard-hints (("goal" :in-theory (enable logicman-pathcond-p
                                            logicman-invar)))
@@ -910,8 +915,8 @@
   (b* (((unless (mbt (lbfr-mode-is :aignet))) logicman)
        (logicman (logicman-update-refcounts logicman)))
     (stobj-let ((aignet (logicman->aignet logicman))
-                (sat-lits (logicman->sat-lits logicman))
-                (ipasir (logicman->ipasir logicman))
+                (sat-lits (logicman->sat-litsi ipasir-index logicman))
+                (ipasir (logicman->ipasiri ipasir-index logicman))
                 (u32arr (logicman->aignet-refcounts logicman)))
                (sat-lits ipasir)
                (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
@@ -921,12 +926,36 @@
                           (mv sat-lits ipasir))
                logicman))
   ///
+
+  
+  (local (defret logicman-ipasir-sat-lits-invar-of-<fn>
+           (implies (and (logicman-ipasir-sat-lits-invar logicman)
+                         (logicman-pathcond-p pathcond)
+                         (< (nfix ipasir-index) (logicman->ipasir-length logicman))
+                         (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-index logicman)) :undef)))
+                    (logicman-ipasir-sat-lits-invar new-logicman))
+           :hints(("Goal" :in-theory (enable logicman-pathcond-p))
+                  (and stable-under-simplificationp
+                       (let ((lit (car (last clause))))
+                       `(:expand (,lit)
+                         :use ((:instance logicman-ipasir-sat-lits-invar-necc
+                                (n (logicman-ipasir-sat-lits-invar-witness . ,(cdr lit))))
+                               (:instance logicman-ipasir-sat-lits-invar-necc
+                                (n ipasir-index)))
+                         :in-theory (e/d (logicman->ipasiri-of-update-logicman->ipasiri-split
+                                          logicman->sat-litsi-of-update-logicman->sat-litsi-split)
+                                         (logicman-ipasir-sat-lits-invar-necc))))))))
+
   (defret logicman-invar-of-<fn>
     (implies (and (logicman-invar logicman)
-                  (logicman-pathcond-p pathcond))
+                  (logicman-pathcond-p pathcond)
+                  (< (nfix ipasir-index) (logicman->ipasir-length logicman))
+                  (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-index logicman)) :undef)))
              (logicman-invar new-logicman))
-    :hints(("Goal" :in-theory (enable logicman-invar
-                                      logicman-pathcond-p))))
+    :hints(("Goal" :in-theory (e/d (logicman-invar
+                                    logicman-pathcond-p)
+                                   (logicman-ipasir-sat-lits-invar-of-logicman-pathcond-to-ipasir))
+            :use logicman-ipasir-sat-lits-invar-of-logicman-pathcond-to-ipasir)))
 
   (local (defthm eval-cube-of-append
            (equal (satlink::eval-cube (append x y) env)
@@ -944,17 +973,19 @@
     (implies (and (logicman-invar logicman)
                   (logicman-pathcond-p pathcond)
                   (equal (satlink::eval-formula
-                          (ipasir::ipasir$a->formula (logicman->ipasir new-logicman))
+                          (ipasir::ipasir$a->formula (logicman->ipasiri ipasir-index new-logicman))
                           env)
                          1)
                   (lbfr-mode-is :aignet)
-                  (nth *pathcond-enabledp* pathcond))
+                  (nth *pathcond-enabledp* pathcond)
+                  (< (nfix ipasir-index) (logicman->ipasir-length logicman))
+                  (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-index logicman)) :undef)))
              (equal (satlink::eval-cube
-                     (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman))
+                     (ipasir::ipasir$a->assumption (logicman->ipasiri ipasir-index new-logicman))
                      env)
-                    (b-and (satlink::eval-cube (ipasir::ipasir$a->assumption (logicman->ipasir logicman)) env)
+                    (b-and (satlink::eval-cube (ipasir::ipasir$a->assumption (logicman->ipasiri ipasir-index logicman)) env)
                            (b* ((vals (aignet::cnf->aignet-invals
-                                       nil env (logicman->sat-lits new-logicman)
+                                       nil env (logicman->sat-litsi ipasir-index new-logicman)
                                        (logicman->aignet logicman))))
                              (bool->bit (logicman-pathcond-eval (pairlis$
                                                                  (acl2::numlist 0 1
@@ -1018,17 +1049,19 @@
   ;;                                     logicman-update-refcounts))))
 
   (defret sat-lit-extension-p-of-<fn>
-    (implies (equal sat-lits (logicman->sat-lits logicman))
-             (aignet::sat-lit-extension-p (logicman->sat-lits new-logicman) sat-lits)))
+    (implies (equal sat-lits (logicman->sat-litsi ipasir-index logicman))
+             (aignet::sat-lit-extension-p (logicman->sat-litsi ipasir-index new-logicman) sat-lits)))
 
 
   (defret nbalist-has-sat-lits-of-<fn>
     (implies (and (lbfr-mode-is :aignet)
                   (logicman-invar logicman)
-                  (logicman-pathcond-p pathcond logicman))
+                  (logicman-pathcond-p pathcond logicman)
+                  (< (nfix ipasir-index) (logicman->ipasir-length logicman))
+                  (not (equal (ipasir::ipasir$a->status (logicman->ipasiri ipasir-index logicman)) :undef)))
              (aignet::nbalist-has-sat-lits
               (nth *pathcond-aignet* pathcond)
-              (logicman->sat-lits new-logicman)))
+              (logicman->sat-litsi ipasir-index new-logicman)))
     :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p)))))
 
 
