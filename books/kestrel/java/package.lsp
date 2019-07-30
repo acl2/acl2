@@ -25,6 +25,7 @@
                          alpha/digit/dash-charlist-p
                          alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
+                         bad-atom<=
                          body
                          bool
                          char-downcase
@@ -50,12 +51,16 @@
                          fcons-term
                          ffn-symb
                          flambda-applicationp
+                         fmt-hard-right-margin
+                         fmt-soft-right-margin
                          formals
                          fquotep
                          implode
+                         impossible
                          known-packages
                          lambda-body
                          lambda-formals
+                         logic-fns-with-raw-code
                          lower-case-p
                          make-lambda
                          maybe-stringp
@@ -65,6 +70,7 @@
                          patbind-run-when
                          primitivep
                          printable-charlist-p
+                         program-fns-with-raw-code
                          pseudo-termfnp
                          quote-listp
                          sbyte16
@@ -75,11 +81,14 @@
                          string-downcase
                          string-upcase
                          string=>nats
+                         symbol-package-name-lst
                          trans-eval
                          tuplep
                          typed-tuplep
                          ubyte16
+                         ubyte8=>hexchars
                          ubyte8s=>hexstring
+                         unnormalized-body
                          upper-case-p
                          variablep
                          str::chars-in-charset-p

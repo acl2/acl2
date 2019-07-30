@@ -156,7 +156,12 @@ sub scan_include_book {
     my ($base,$the_line) = @_;
 
     my @res = $the_line =~
-	m/^[^;]*   # not commented
+	m/^[^;]*?   # not commented. Minimal match so we don't miss the optional local.
+          (?<local>
+               \(\s*
+               (?:[^\s():]*::)? # package prefix
+               local
+               \s*)?  # optional local prefix
           \(\s*
            (?:[^\s():]*::)? # package prefix
            include-book
@@ -170,7 +175,7 @@ sub scan_include_book {
        /xi;
     if (@res) {
 	debug_print_event($base, "include_book", \@res);
-	return [include_book_event, $+{book}, $+{dirname}, $+{noport} ? 1 : 0];
+	return [include_book_event, $+{book}, $+{dirname}, $+{noport} ? 1 : 0, $+{local} ? 1 : 0 ];
     }
     return 0;
 }

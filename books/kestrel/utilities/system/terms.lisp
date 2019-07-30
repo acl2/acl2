@@ -14,8 +14,8 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "std/util/defines" :dir :system)
-(include-book "../symbols")
 (include-book "../symbol-symbol-alists")
 (include-book "term-function-recognizers")
 (include-book "world-queries")

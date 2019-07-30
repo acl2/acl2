@@ -542,7 +542,8 @@
                                                  (mv typ1 typ2)
                                                (mv typ2 typ1)))
                                  (M (table-alist 'defdata::type-metadata-table wrld))
-                                 (P (defdata::predicate-name dt M))
+                                 (A (table-alist 'defdata::type-alias-table wrld))
+                                 (P (defdata::predicate-name dt A M))
 
                                  ((unless (defdata::plausible-predicate-functionp P wrld)) ;abort before calling ev-fncall on non-function
                                   (prog2$ (cw? (debug-flag vl)

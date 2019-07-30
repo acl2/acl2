@@ -65,3 +65,25 @@
                                              (badge-userfn fn))
                                             args))))
     :rule-classes nil))
+
+(encapsulate (((untame-apply$ * *) => *
+               :formals (fn args)
+               :guard (true-listp args)))
+  (local (defun untame-apply$ (fn args)
+           (declare (ignore fn args))
+           nil))
+  (defthm untame-apply$-takes-arity-args
+    (implies (badge-userfn fn)
+             (equal (untame-apply$ fn args)
+                    (untame-apply$ fn (take (apply$-badge-arity
+                                             (badge-userfn fn))
+                                            args))))
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (and (syntaxp (and (quotep fn)
+                                             (symbolp args)))
+                               (badge-userfn fn))
+                          (equal (untame-apply$ fn args)
+                                 (untame-apply$ fn (take (apply$-badge-arity
+                                                          (badge-userfn fn))
+                                                         args))))))))

@@ -83,14 +83,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((ctx 'x86-cvts?2si/cvtts?2si-Op/En-RM)
 
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       ((the (integer 4 8) reg-size)
+  (b* (((the (integer 4 8) reg-size)
         (if (logbitp #.*w* rex-byte) 8 4))
 
        ((the (integer 4 8) xmm/mem-size)
@@ -174,14 +171,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((ctx 'x86-cvtsi2s?-Op/En-RM)
 
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       ((the (integer 4 8) reg/mem-size)
+  (b* (((the (integer 4 8) reg/mem-size)
         (if (logbitp #.*w* rex-byte) 8 4))
 
        ((the (integer 4 8) xmm-size)
@@ -267,14 +261,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((ctx 'x86-cvts?2s?-Op/En-RM)
 
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       ((the (integer 4 8) xmm-size)
+  (b* (((the (integer 4 8) xmm-size)
         (if (equal dp-to-sp #.*DP-TO-SP*) 4 8))
 
        ((the (integer 4 8) xmm/mem-size)
@@ -353,14 +344,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((ctx 'x86-cvtps2pd-Op/En-RM)
 
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       ((the (unsigned-byte 4) xmm-index)
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))
@@ -456,14 +444,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((ctx 'x86-cvtpd2ps-Op/En-RM)
 
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       ((the (unsigned-byte 4) xmm-index)
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))

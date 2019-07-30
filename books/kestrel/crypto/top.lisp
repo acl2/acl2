@@ -10,6 +10,8 @@
 
 (in-package "CRYPTO")
 
+(include-book "ecurve/top")
+(include-book "ecdsa/top")
 (include-book "interfaces/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,0 +1,109 @@
+; To generate the list of symbols subtracted from the imports, use:
+#||
+; In a fresh ACL2:
+(in-package "ACL2")
+(include-book
+ "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
+
+(value :q)
+(defvar all-symbols0)
+(defvar all-apply-symbols)
+(progn (setq all-symbols0 (let ((ans nil))
+                              (do-symbols (x *package*)
+                                (push x ans))
+                              ans))
+       (length all-symbols0))
+(lp)
+(include-book
+ "apply")
+(value :q)
+(progn (setq all-apply-symbols
+             (let (ans)
+               (do-symbols (x *package*)
+                 (or (member-eq x all-symbols0)
+
+; The following rules out the hundreds of symbols like:
+; APPLY$-PRIM-META-FN-EV-CONSTRAINT-728 Those symbols are generated from the
+; name of the evaluator, which is APPLY$-PRIM-META-FN-EV and will be in the new
+; package.
+                     (search "APPLY$-PRIM-META-FN-EV-" (symbol-name x))
+; We sometimes generate symbols like ONEIFY2773
+                     (search "ONEIFY" (symbol-name x))
+; We are not interested in record functions like
+                     (search "Make " (symbol-name x))
+                     (search "Access " (symbol-name x))
+                     (search "Change " (symbol-name x))
+; Some are obviously just local variables
+                     (member-eq x '(ALIST0 ALL-APPLY-SYMBOLS))
+                     (push x ans)))
+               ans))
+       (merge-sort-lexorder all-apply-symbols))
+||#
+
+
+
+
+
+(in-package "ACL2")
+(defpkg "MODAPP" ; Model of Apply$
+  (set-difference-eq
+   (union-eq '(BASE-SYMBOL ACL2-SYSTEM-NAMEP ALL-NILS FORMALS BODY
+               FFN-SYMB FARGS FARGN FCONS-TERM ARGLISTP
+               VARIABLEP FQUOTEP FLAMBDAP LAMBDA-FORMALS LAMBDA-BODY
+               STOBJS-IN STOBJS-OUT JUSTIFICATION SYMBOL-CLASS
+               FFNNAMEP FLAMBDA-APPLICATIONP RECURSIVEP
+               TYPE-SET TS-SUBSETP *TS-NON-NEGATIVE-INTEGER*
+               LLIST L< MAKE-FLAG
+               PRETTYIFY-STOBJ-FLAGS PRETTYIFY-STOBJS-OUT SUBCOR-VAR
+               ENS ALL-FNNAMES)
+             (union-eq *acl2-exports*
+                       *common-lisp-symbols-from-main-lisp-package*))
+   '(APPLY$ EV$ EV$-LIST ; now in *acl2-exports*
+     APPLY$-GUARD APPLY$-LAMBDA APPLY$-LAMBDA-GUARD APPLY$-USERFN ; now in *acl2-exports*
+     BADGE-USERFN SUITABLY-TAMEP-LISTP ; now in *acl2-exports*
+     TAMEP TAMEP-FUNCTIONP TAMEP-LAMBDAP ; now in *acl2-exports*
+     *APPLY$-BADGE* *APPLY$-BOOT-FNS-BADGE-ALIST* *BADGE-PRIM-FALIST*
+     *EV$-BADGE* *FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES*
+     *GENERIC-TAME-BADGE-1* *GENERIC-TAME-BADGE-2* *GENERIC-TAME-BADGE-3*
+     ACCEPTABLE-WARRANTED-JUSTIFICATIONP ACCUMULATE-ILK ALIST-OKP
+     ALIST-OKP-LIST ANCESTRALLY-DEPENDENT-ON-APPLY$P
+     ANCESTRALLY-DEPENDENT-ON-APPLY$P1 APPLY$-APPLY$ APPLY$-BADGEP
+     APPLY$-BADGEP-EXECUTABLE-BADGE APPLY$-BADGEP-EXECUTABLE-BADGE-LEMMA
+     APPLY$-BADGEP-HONS-GET-LEMMA APPLY$-BADGEP-PROPERTIES
+     APPLY$-EQUIVALENCE APPLY$-EQUIVALENCE-NECC
+     APPLY$-EQUIVALENCE-NECC-REWRITER APPLY$-EQUIVALENCE-WITNESS
+     APPLY$-EV$ APPLY$-LAMBDA APPLY$-LAMBDA-MEASURE APPLY$-LAMBDA-OPENER
+     APPLY$-MEASURE APPLY$-PRIM APPLY$-PRIM-META-FN-CORRECT
+     APPLY$-PRIM-META-FN-EV APPLY$-PRIMITIVE APPLY$-PRIMP
+     APPLY$-PRIMP-BADGE APPLY$-PRIMP-IMPLIES-SYMBOLP
+     APPLY$-SUITABLY-TAMEP-LISTP APPLY$-TAMEP APPLY$-TAMEP-FUNCTIONP
+     AUTHORIZATION-FLG AVOID-FNS BADGE BADGE-APPLY$ BADGE-BADGE BADGE-EV$
+     BADGE-PRIM BADGE-PRIM-TYPE BADGE-SUITABLY-TAMEP-LISTP BADGE-TABLE-OKP
+     BADGE-TAMEP BADGE-TAMEP-FUNCTIONP BADGE-TYPE BADGE-USERFN-TYPE BADGER
+     BETA-REDUCTION C1-CN CAR-LAMB CDDDR-LAMB
+     CHANGED-FUNCTIONAL-OR-EXPRESSIONAL-FORMALP CHECK-ILKS CHECK-ILKS-LIST
+     CHECK-IT! CHECK-IT!-WORKS COMPUTE-BADGE-OF-PRIMITIVES CONSP-CDDR-LAMB
+     CONSP-CDR-LAMB CONSP-LAMB CONVERT-ILK-ALIST-TO-ILKS
+     CONVERT-ILK-ALIST-TO-ILKS1 COUNT-TO-NIL DEFWARRANT DEFWARRANT-EVENT
+     DEFWARRANT-FN1 DEFWARRANT-FN
+     DEFCONG-FN-EQUAL-EQUAL-EVENTS DEFTHM-CHECKER DEFUN$ EV$-DEF
+     EV$-DEF-FACT EV$-LIST EV$-LIST-DEF EV$-LIST-MEASURE EV$-MEASURE
+     EV$-OPENER EXECUTABLE-BADGE EXECUTABLE-SUITABLY-TAMEP-LISTP
+     EXECUTABLE-TAMEP-LAMBDAP EXPAND-ALL-LAMBDAS EXPAND-ALL-LAMBDAS-LIST
+     FALIST FIND-BADGE-ILK FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES
+     FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES1 FLAGS FN-EQUAL
+     FN-EQUAL-IMPLIES-EQUAL-APPLY$-1 FN-EQUAL-IS-AN-EQUIVALENCE FN-EQUIV
+     GUESS-ILKS-ALIST GUESS-ILKS-ALIST-CORRECT GUESS-ILKS-ALIST-LEMMA
+     GUESS-ILKS-ALIST-LIST GUESS-ILKS-ALIST-LIST-CORRECT
+     GUESS-ILKS-ALIST-LIST-LEMMA HYP-LIST ILK LAMB LAMB-REDUCTION
+     LAMBDA-BODY-LAMB LAMBDA-FORMALS-LAMB MAKE-APPLY$-PRIM-BODY
+     MAKE-APPLY$-PRIM-BODY-FN META-APPLY$-PRIM N-CAR-CADR-CADDR-ETC
+     N-CAR-CADR-CADDR-ETC-OPENER NECC-NAME NECC-NAME-ARGS-INSTANCE
+     NEW-BADGE NEW-FORMALS NEW-ILKS OUTPUT-ARITY QUICK-CHECK-FOR-TAMENESSP
+     QUICK-CHECK-FOR-TAMENESSP-LISTP RULE-NAME SUCCESSIVE-CADRS
+     SUITABLY-TAMEP-LISTP SUITABLY-TAMEP-LISTP-IMPLICANT-1
+     SUITABLY-TAMEP-LISTP-INDUCTION TAMENESS-CONDITIONS TAMEP TAMEP-FUNCTIONP
+     TAMEP-IMPLICANT-1 TAMEP-LAMBDAP TERMS-AND-OUT-ARITIES UNTAME-APPLY$
+     UNTAME-EV$ WARRANT WARRANT-FN WARRANT-NAME WEAK-APPLY$-BADGE-P
+     WELL-FORMED-LAMBDAP XLAMB)))
+(certify-book "portcullis" 1)

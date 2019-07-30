@@ -10,10 +10,9 @@
 
 (in-package "ACL2")
 
-(defthm +-of--
-  (equal (+ x (- x))
-         0))
+;; Note that DISTRIBUTIVITY-OF-MINUS-OVER-+ and INVERSE-OF-+ are built in to
+;; ACL2.
 
-(defthm +-of---2
+(defthm +-of-+-of---same
   (equal (+ x (- x) y)
          (fix y)))

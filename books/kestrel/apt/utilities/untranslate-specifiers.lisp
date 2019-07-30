@@ -45,18 +45,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following is analogous to apt::ensure-is-print-specifier.  It may well be
-; nice to have at some point, but it is not yet used.
-
-#||
 (def-error-checker ensure-is-untranslate-specifier
   ((x "Value to check."))
   "Cause an error if a value is not a untranslate specifier."
   (((untranslate-specifier-p x)
-    "~@0 must be an APT untranslate specifier.  See :DOC APT::UNTRANSLATE-SPECIFIER."
+    "~@0 must be an APT untranslate specifier. ~
+     See :DOC APT::UNTRANSLATE-SPECIFIER."
     description))
   :returns (val (and (implies erp (equal val error-val))
                      (implies (and (not erp) error-erp)
                               (untranslate-specifier-p val))))
   :result x)
-||#

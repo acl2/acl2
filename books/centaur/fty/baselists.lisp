@@ -100,4 +100,12 @@ defined in a special way in the @(see std/strings) library, see in particular
   :true-listp t
   :elementp-of-nil t)
 
+(fty::deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv :forward t)
+
+(fty::deflist true-list-list
+  :elt-type true-list
+  :true-listp t
+  :pred true-list-listp
+  :elementp-of-nil t)
+
 ;; string-listp is handled specially in std/strings/eqv.

@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,44 +18,39 @@
   :parents (acl2)
   :short "Built-in theorems."
   :long
-  "<p>
-   The ACL2 source file @('axioms.lisp') provides a number of theorems.
-   Here we mean `theorem' in the logical sense,
-   introduced not only via @(tsee defthm) but also via @(tsee defaxiom)
-   (logically, axioms are easy-to-prove theorems).
-   </p>
-   <p>
-   This documentation topic (and subtopics)
-   collects and display these theorems,
-   organized according to the built-in functions and values that they involve.
-   These theorems may be easier to read and analyze here
-   than in the ACL2 source files, which contain additional code.
-   </p>
-   <p>
-   The current organization of these theorems in subtopics
-   may be improved in the future.
-   It may even make sense to repeat certain theorems under certin subtopics,
-   when they are relevant to multiple subtopics.
-   </p>
-   <p>
-   We use the XDOC preprocessor directive @('@(def ...)')
-   to list the theorems automatically,
-   without copying the forms (just the names).
-   Thus, the only way in which this documentation topic may get out of sync
-   is when some built-in theorem is added or removed,
-   which may be a rare occurrence.
-   </p>
-   <p>
-   For now we only include the theorems of ``plain'' ACL2, not ACL2(r).
-   </p>
-   <p>
-   We omit theorems about ``internal'' functions,
-   i.e. functions not documented in the manual.
-   An example is
-   the theorem that rewrites @('member-eq-exec') to @('member-equal'):
-   @('member-eq-exec') is internal, and in fact
-   the purpose of the aforementioned rewrite rule is to rewrite it away.
-   </p>")
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 source file @('axioms.lisp') provides a number of theorems.
+     Here we mean `theorem' in the logical sense,
+     introduced not only via @(tsee defthm) but also via @(tsee defaxiom)
+     (logically, axioms are easy-to-prove theorems).")
+   (xdoc::p
+    "This documentation topic (and subtopics)
+     collects and display these theorems,
+     organized according to the built-in functions and values that they involve.
+     These theorems may be easier to read and analyze here
+     than in the ACL2 source files, which contain additional code.")
+   (xdoc::p
+    "The current organization of these theorems in subtopics
+     may be improved in the future.
+     It may even make sense to repeat certain theorems under certin subtopics,
+     when they are relevant to multiple subtopics.")
+   (xdoc::p
+    "We use the XDOC preprocessor directive @('@(def ...)')
+     to list the theorems automatically,
+     without copying the forms (just the names).
+     Thus, the only way in which this documentation topic may get out of sync
+     is when some built-in theorem is added or removed,
+     which may be a rare occurrence.")
+   (xdoc::p
+    "For now we only include the theorems of ``plain'' ACL2, not ACL2(r).")
+   (xdoc::p
+    "We omit theorems about ``internal'' functions,
+     i.e. functions not documented in the manual.
+     An example is
+     the theorem that rewrites @('member-eq-exec') to @('member-equal'):
+     @('member-eq-exec') is internal, and in fact
+     the purpose of the aforementioned rewrite rule is to rewrite it away.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

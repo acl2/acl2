@@ -36,8 +36,6 @@
 (include-book "aes-192-cbc-pkcs7")
 (include-book "aes-256-cbc-pkcs7")
 
-(include-book "secp256k1")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc interfaces

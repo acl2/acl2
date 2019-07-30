@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+;; Theorem complex-opener below may not hold in ACL2(r), so for now we
+;; disable certification of this book in ACL2(r):
+; cert_param: (non-acl2r)
+
 (defthm complex-opener
   (equal (complex x y)
          (+ (rfix x) (* #C(0 1) (rfix y))))

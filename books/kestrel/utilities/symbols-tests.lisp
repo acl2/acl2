@@ -27,14 +27,3 @@
 
 (assert-equal (symbol-package-name-safe 'cons)
               "ACL2")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (symbol-package-name-lst nil)
-              nil)
-
-(assert-equal (symbol-package-name-lst '(symbolp))
-              (list *main-lisp-package-name*))
-
-(assert-equal (symbol-package-name-lst '(symbol-listp define std::deflist cons))
-              (list "ACL2" "ACL2" "STD" *main-lisp-package-name*))

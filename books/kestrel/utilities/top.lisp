@@ -20,6 +20,7 @@
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
 (include-book "copy-def")
+(include-book "defarbrec/top")
 (include-book "define-sk")
 (include-book "defmacroq")
 (include-book "defmax-nat/top")
@@ -82,6 +83,8 @@
   :parents (kestrel-books)
   :short "Utilities that are part of the
           <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
+
+(xdoc::add-resource-directory "kestrel-utilities-design-notes" "design-notes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

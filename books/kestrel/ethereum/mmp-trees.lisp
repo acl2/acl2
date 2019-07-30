@@ -937,7 +937,7 @@
      containing those byte arrays;
      the byte arrays and the RLP leaf trees are isomorphic,
      but the calling @(tsee mmp-encode-c) can more easily assemble the trees
-     into an RLP (non-leaf) tree.")
+     into an RLP (branching) tree.")
    (xdoc::p
     "The variable @($v$) in the third case of the definition of @($c$)
      is the value associated to the key of length @($i$) in the map,
@@ -1114,7 +1114,7 @@
                 (b* (((mv key val) (omap::head map))
                      (key-rest (nthcdr i key)))
                   (mv nil
-                      (rlp-tree-nonleaf
+                      (rlp-tree-branch
                        (list (rlp-tree-leaf (hp-encode key-rest t))
                              (rlp-tree-leaf val)))
                       nil)))
@@ -1125,7 +1125,7 @@
                      ((mv any-key &) (omap::head map))
                      (key-part (nthcdr i (take j any-key))))
                   (mv nil
-                      (rlp-tree-nonleaf
+                      (rlp-tree-branch
                        (list (rlp-tree-leaf (hp-encode key-part nil))
                              (rlp-tree-leaf n-root)))
                       n-database)))
@@ -1135,9 +1135,9 @@
                (key-prefix (take i any-key))
                (pair (omap::in key-prefix map))
                (v (and pair (cdr pair)))
-               (v-tree (if v (rlp-tree-leaf v) (rlp-tree-nonleaf nil))))
+               (v-tree (if v (rlp-tree-leaf v) (rlp-tree-branch nil))))
             (mv nil
-                (rlp-tree-nonleaf (rcons v-tree u-trees))
+                (rlp-tree-branch (rcons v-tree u-trees))
                 u-database)))
          ((when error?) (mv error? nil nil))
          ((mv rlp-error? rlp-encoding) (rlp-encode-tree rlp-tree))

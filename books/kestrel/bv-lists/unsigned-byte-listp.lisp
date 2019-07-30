@@ -15,7 +15,7 @@
 ;; all-unsigned-byte-p.  In this book, we provide some rules to connect the two
 ;; functions.
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
+(include-book "all-unsigned-byte-p")
 
 ;unlike all-unsigned-byte-p, this one implies true-listp.
 ;also in std/typed-lists/unsigned-byte-listp.lisp

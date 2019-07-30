@@ -105,6 +105,7 @@
                          ensure-function/lambda-no-stobjs$
                          ensure-function/lambda/term-number-of-results$
                          ensure-function/macro/lambda$
+                         ensure-keyword-value-list
                          ensure-keyword-value-list$
                          ensure-list-no-duplicates$
                          ensure-list-subset$
@@ -151,10 +152,12 @@
                          fn-rune-nume
                          fn-ubody
                          formals
+                         formals+
                          fquotep
                          fresh-name-in-world-with-$s
                          fsublis-fn-lst-simple
                          fsublis-fn-simple
+                         fsublis-var
                          function-intro-macro
                          function-namep
                          fundef-enabledp
@@ -174,8 +177,8 @@
                          install-not-norm-event
                          install-not-normalized
                          install-not-normalized-name
-                         str::intern-list
                          io?
+                         irecursivep
                          justification
                          keyword-value-list-to-alist
                          lambda-applicationp
@@ -207,6 +210,7 @@
                          pseudo-tests-and-call-listp
                          recursive-calls
                          recursivep
+                         remove-assocs-eq
                          remove-keyword
                          remove-lambdas
                          rename-fns
@@ -225,6 +229,8 @@
                          sr-limit
                          stobjs-in
                          stobjs-out
+                         str::intern-list
+                         str::symbol-list-names
                          strip-cddrs
                          strip-keyword-list
                          subcor-var
@@ -234,7 +240,6 @@
                          subst-expr1
                          subst-var
                          symbol-class
-                         str::symbol-list-names
                          symbol-package-name-safe
                          symbol-symbol-alistp
                          term-guard-obligation
@@ -242,6 +247,8 @@
                          tests-and-call
                          tests-and-calls
                          theorem-intro-macro
+                         theorem-namep
+                         thm-formula+
                          too-many-ifs-post-rewrite
                          too-many-ifs-pre-rewrite
                          tool2-fn

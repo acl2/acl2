@@ -163,15 +163,13 @@
            :in-theory (disable mod-of-expt-of-mod))))
 
 (defthm add-of-0-arg1-gen
-  (implies (and (integerp x)
-                (integerp p))
+  (implies (integerp p)
            (equal (add 0 x p)
                   (mod x p)))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-0-arg2-gen
-  (implies (and (integerp x)
-                (integerp p))
+  (implies (integerp p)
            (equal (add x 0 p)
                   (mod x p)))
   :hints (("Goal" :in-theory (enable add))))

@@ -57,14 +57,14 @@ data last modified: [2017-06-26 Mon]
 
 ; for readability of functions with long parameter list
 (defmacro make-pred-I... (s x)
-  `(make-pred-I ,s ,x kwd-alist M C B wrld))
+  `(make-pred-I ,s ,x kwd-alist A M C B wrld))
 
 (defmacro make-pred-Is... (ss xs)
-  `(make-pred-Is ,ss ,xs kwd-alist M C B wrld))
+  `(make-pred-Is ,ss ,xs kwd-alist A M C B wrld))
 
 ;;TODO: simplify the predicate body with satisfies expr
 (mutual-recursion
- (defun make-pred-I (s x   kwd-alist M C B wrld)
+ (defun make-pred-I (s x kwd-alist A M C B wrld)
    "predicate interpretation/expression for core defdata exp s.
 x is the name of the expr that currently names the argument under question/predication
 kwd-alist gives some defaults.
@@ -75,7 +75,7 @@ B is the builtin combinator table."
     ((possible-constant-value-p s) `(EQUAL ,x ,s))
 
     ((proper-symbolp s) (if (assoc-eq s M) ;this is fine, since names and typenames are disjoint
-                            `(,(predicate-name s M) ,x)
+                            `(,(predicate-name s A M) ,x)
                           `(EQUAL ,x ,s)))
 
     ((not (true-listp s)) (make-pred-I... (cdr s) x)) ;name decl
@@ -108,7 +108,7 @@ B is the builtin combinator table."
 ;TODO: maybe dependent expr...
      `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
 
- (defun make-pred-Is (texps xs   kwd-alist M C B wrld)
+ (defun make-pred-Is (texps xs kwd-alist A M C B wrld)
    (if (endp texps)
        '()
      (cons (make-pred-I... (car texps) (car xs))
@@ -148,15 +148,16 @@ B is the builtin combinator table."
        ((when (and new-constructors (not recp))) nil)
 
        (M (append new-types (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (C (append new-constructors (table-alist 'data-constructor-table wrld)))
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
 
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
-       (pred-body (make-pred-I ndef xvar kwd-alist M C B wrld))
+       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld))
        (pred-decls (make-pred-declare-forms xvar kwd-alist))
-       (pred-name (predicate-name name M))
+       (pred-name (predicate-name name A M))
        (def (if (and (not recp) (get1 :disable-non-recursive-p kwd-alist))
                 'defund
               'defun))
@@ -186,11 +187,12 @@ B is the builtin combinator table."
        ((acl2::assocs ndef ?N new-types kwd-alist) A)
        (C (table-alist 'data-constructor-table wrld))
        (M (append new-types (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
-       (pred-body (make-pred-I ndef xvar kwd-alist M C B wrld)))
+       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld)))
     `((defthm ,(s+ name "P-TESTTHM")
         (equal (,pred-name ,xvar)
                ,pred-body)
@@ -322,10 +324,11 @@ B is the builtin combinator table."
   (b* (((cons name A) p)
        ((acl2::assocs ndef odef pdef new-types kwd-alist) A)
        (M (append new-types (table-alist 'type-metadata-table wrld)))
+       (AT (table-alist 'type-alias-table wrld))
        (?kwd-alist (append kwd-alist top-kwd-alist)))
     `(register-type ,name
-                    :predicate  ,(predicate-name name M)
-                    :enumerator ,(enumerator-name name M)
+                    :predicate  ,(predicate-name name AT M)
+                    :enumerator ,(enumerator-name name AT M)
                     :enum/acc ,(get2 name :enum/acc M)
                     :clique ,(strip-cars new-types)
                     :theory-name ,(get1 :theory-name kwd-alist)
@@ -670,12 +673,11 @@ B is the builtin combinator table."
       (& nbody))))
 
 
-
-(defun data-constructor-basis (prod curr-pkg M)
+(defun data-constructor-basis (prod curr-pkg A M)
   (b* ((conx-name (car prod))
        (fname-tname-alist (cdr prod))
        (fnames (strip-cars fname-tname-alist))
-       (preds (predicate-names (strip-cdrs fname-tname-alist) M))
+       (preds (predicate-names (strip-cdrs fname-tname-alist) A M))
        (recog (make-predicate-symbol conx-name curr-pkg))
        (fname-pred-alist (pairlis$ fnames preds))
        (prefix (get-dest-prefix conx-name))
@@ -685,8 +687,8 @@ B is the builtin combinator table."
                                                           (acons :dest-pred-alist dest-pred-alist
                                                                  (acons :field-pred-alist fname-pred-alist '())))))))
 
-(defloop data-constructor-bases (prods curr-pkg M)
-  (for ((prod in prods)) (collect (data-constructor-basis prod curr-pkg M))))
+(defloop data-constructor-bases (prods curr-pkg A M)
+  (for ((prod in prods)) (collect (data-constructor-basis prod curr-pkg A M))))
 
 
 (defun type-metadata-basis (tname curr-pkg)
@@ -728,6 +730,7 @@ B is the builtin combinator table."
            (table-alist 'builtin-combinator-table wrld)
            wrld))
        (M (table-alist 'type-metadata-table wrld))
+       (A (table-alist 'type-alias-table wrld))
        (cmn-nms (intersection-eq (strip-cars N) (strip-cars (append M atbl))))
        ((when cmn-nms)
         (er hard? ctx "~| Naming of defdata expressions should be disjoint from the type namespace (~x0 are types).~%" cmn-nms))
@@ -751,10 +754,10 @@ B is the builtin combinator table."
 ;new types and constructors are new entries in M and C respectively that we assume!
        (new-types (type-metadata-bases tnames curr-pkg))
        (new-constructors
-        (data-constructor-bases prods curr-pkg (append new-types M)))
+        (data-constructor-bases prods curr-pkg A (append new-types M)))
 
 ; notify downstream code of recursive records and recursive types
-       (new-preds (predicate-names tnames (append new-types M)))
+       (new-preds (predicate-names tnames A (append new-types M)))
        (recp (or (consp (find-recursive-records new-preds new-constructors))
                  (intersection-eq
                   (texp-constituent-types
@@ -769,7 +772,7 @@ B is the builtin combinator table."
 ; specially handle allp aliases
        (allp-alias-events
         (and (proper-symbolp nbody) (is-allp-alias nbody wrld)
-             `((table allp-aliases ',(predicate-name tname new-types) ',tname :put))))
+             `((table allp-aliases ',(predicate-name tname A new-types) ',tname :put))))
        (kwd-alist (put-assoc-eq
                    :post-pred-events
                    (append (get1 :post-pred-events kwd-alist) allp-alias-events)
@@ -903,11 +906,14 @@ B is the builtin combinator table."
 
 ;COPIED FROM DEFDATA ----- to be deprecated and deleted
 (defun compute-defdata-relation (T1 T2 hints rule-classes strictp otf-flg ctx wrld)
-    (b* ((T1p (predicate-name T1))
-         (T2p (predicate-name T2))
-         (M (table-alist 'type-metadata-table wrld))
-         ((unless (and (assoc-eq T1 M)
-                       (assoc-eq T2 M)))
+  (b* ((M (table-alist 'type-metadata-table wrld))
+       (A (table-alist 'type-alias-table wrld))
+       (T1 (base-alias-type T1 A))
+       (T2 (base-alias-type T2 A))
+       (T1p (predicate-name T1))
+       (T2p (predicate-name T2))
+       ((unless (and (assoc-eq T1 M)
+                     (assoc-eq T2 M)))
 ;if not existing typenames raise error
         (er hard ctx  "~|One of ~x0 and ~x1 is not a defined type!~%" T1 T2))
 
@@ -1182,7 +1188,7 @@ because the rule-classes may matter.
 
 (defun is-a-typeName-current (type wrld)
   (declare (xargs :verify-guards nil))
-  (predicate-name type wrld))
+  (predicate-name type))
 
 
 (defun is-a-typeName-gv (type wrld)

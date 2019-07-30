@@ -1,6 +1,6 @@
 ; Doublets
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,9 +22,8 @@
           (i.e. lists of length 2)
           into the corresponding alist."
   :long
-  "<p>
-   This is the inverse of @(tsee alist-to-doublets).
-   </p>"
+  (xdoc::topstring-p
+   "This is the inverse of @(tsee alist-to-doublets).")
 
   (defun doublets-to-alist (doublets)
     (declare (xargs :guard (doublet-listp doublets)))

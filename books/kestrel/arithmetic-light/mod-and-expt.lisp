@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "floor"))
+(local (include-book "floor-and-expt"))
 (local (include-book "mod"))
 (local (include-book "expt2"))
 (local (include-book "times"))
@@ -29,6 +31,16 @@
                                  )
                            (expt-hack)))))
 
+(defthmd mod-expt-split2
+  (implies (and (integerp x)
+                (integerp n))
+           (equal (mod (* 2 x) (expt 2 n))
+                  (* 2 (mod x (expt 2 (+ -1 n))))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;           :cases ((integerp n))
+           :in-theory (e/d (expt mod-cancel expt-of-+
+                                 )
+                           (expt-hack)))))
 (defthm mod-of-expt-twice
   (implies (and (natp i1)
                 (natp i2))
@@ -64,3 +76,73 @@
   :hints (("Goal" :use (:instance mod-of-expt-twice (i1 i) (i2 1))
            :cases ((equal i 0))
            :in-theory (disable mod-of-expt-twice))))
+
+;gen the (expt 2 n) to anything even?
+(defthm integerp-of-half-of-mod-of-expt
+  (implies (and (integerp i)
+                (posp n))
+           (equal (integerp (* 1/2 (mod i (expt 2 n))))
+                  (integerp (* 1/2 i))))
+  :hints (("Goal" :in-theory (enable integerp-of-*-of-/-becomes-equal-of-0-and-mod))))
+
+(defthm mod-of-half-and-expt-of-one-less
+  (implies (and (equal 0 (mod i (expt 2 n)))
+                (integerp i)
+                (integerp n))
+           (equal (mod (* 1/2 i) (expt 2 (+ -1 n)))
+                  0))
+  :hints (("Goal" :in-theory (e/d (expt mod-cancel)
+                                  (expt-hack)))))
+
+(defthm mod-of-half-and-expt-of-one-less-alt
+  (implies (and (equal 0 (mod i (expt 2 n)))
+                (integerp i)
+                (integerp n))
+           (equal (mod (* 1/2 i) (* 1/2 (expt 2 n)))
+                  0))
+  :hints (("Goal" :in-theory (e/d (expt mod-cancel)
+                                  (expt-hack)))))
+
+(defthm integerp-of-half-when-mult-of-expt
+  (implies (and (equal 0 (mod i (expt 2 n)))
+                (integerp i)
+                (posp n))
+           (integerp (* 1/2 i)))
+  :hints (("Goal"
+           :use (:instance integerp-of-*
+                           (x (* i (/ (expt 2 n))))
+                           (y (expt 2 (+ -1 n))))
+           :in-theory (e/d (equal-of-0-and-mod expt-of-+)
+                           (integerp-of-*)))))
+
+(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
+
+(local
+ (defthm mod-of-*-of-expt-and-expt-bound-helper
+   (implies (and (< size size2)
+                 (natp size)
+                 (integerp size2)
+                 (integerp i)
+                 (<= 0 i) ;dropped below
+                 )
+            (<= (mod (* i (expt 2 size))
+                     (expt 2 size2))
+                (- (expt 2 size2)
+                   (expt 2 size))))
+   :hints (("Goal" :in-theory (enable mod my-floor-lower-bound-2)
+            :use (:instance my-floor-lower-bound-2
+                            (i i)
+                            (j (expt 2 (+ (- size) size2))))))))
+
+(defthm mod-of-*-of-expt-and-expt-bound
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2)
+                (integerp i))
+           (<= (mod (* i (expt 2 size))
+                    (expt 2 size2))
+               (- (expt 2 size2)
+                  (expt 2 size))))
+  :hints (("Goal" :use (:instance mod-of-*-of-expt-and-expt-bound-helper
+                                  (i (mod i (expt 2 size2))))
+           :in-theory (disable mod-of-*-of-expt-and-expt-bound-helper))))

@@ -60,17 +60,18 @@
   ;; #x98: CDQE:  RAX := Sign-extended EAX
 
   :parents (one-byte-opcodes)
+
   :returns (x86 x86p :hyp (x86p x86))
+
   :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
 					 n16-to-i16
 					 n32-to-i32
 					 n64-to-i64)
 					())))
+
   :body
 
-  (b* ((?ctx 'x86-cbw/cwd/cdqe)
-
-       ((the (integer 1 8) register-size)
+  (b* (((the (integer 1 8) register-size)
 	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
@@ -115,11 +116,10 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
-  (b* ((?ctx 'x86-cwd/cdq/cqo)
-
-       ((the (integer 1 8) src-size)
+  (b* (((the (integer 1 8) src-size)
 	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 

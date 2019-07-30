@@ -142,32 +142,16 @@
 ; functions.
 
 ; This additional conjunct can probably be easily added, though it would
-; require moving up the definition below of *apply$-boot-fns-badge-alist* so we
-; can use it in the new constraint.
-
-; More problematically, we must make sure that doppelganger-badge-userfn
-; satisfies the strengthened constraint.  This is difficult because
-; doppelganger-badge-userfn is currently (partially) constrained in
-; other-events.lisp, which is processed before apply$-primp and
-; *apply$-boot-fns-badge-alist* are defined.  The only way we can think of to
-; fix this would be to move the introduction of doppelganger-badge-userfn into
-; this file and deal with any bootstrapping issues that come up!  If this
-; additional constraint is added, we would have to change the raw Lisp
-; definition of doppelganger-badge-userfn, q.v. in apply-raw.lisp.
-
-; (BTW: The ``doppelganger'' of badge-userfn (which must also satisfy this
-; constraint) in the Foundational work of books/projects/apply-model/ex1/ and
-; ex2/ already satisfies this additional constraint because the final otherwise
-; clause in the doppelganger's definition is nil.)
+; require rearranging the order of some things in the sources as well as in the
+; model so we can use them when we introduce the contraint.
 
 ; On the other hand, so far, we haven't seen a proof where the stronger
 ; constraint is required.  It is just odd that, for all we know, (badge-userfn
 ; 'cons) is something weird and thought-provoking like '(APPLY$-BADGE 2 1 NIL
-; :FN) suggesting it's a mapping function!  That doesn't really mess us up
-; because we use badge, not badge-userfn, to access badges, and badge checks
-; the primitives and boot functions before relying on badge-userfn.  So the
-; value of badge-userfn on primitives and boot functions is actually
-; irrelevant.
+; :FN) suggesting it's a scion!  That doesn't really mess us up because we use
+; badge, not badge-userfn, to access badges, and badge checks the primitives
+; and boot functions before relying on badge-userfn.  So the value of
+; badge-userfn on primitives and boot functions is actually irrelevant.
 
 ; End of Note
 
@@ -187,10 +171,34 @@
                                             args))))
     :rule-classes nil))
 
-; These two stubs are used as the ``default values'' of (apply$ fn args) and
-; (ev$ x a) when the arguments are not suitably tame.
+; Untame-apply$ is used as the ``default value'' of apply$ when apply$ doesn't
+; like its arguments.  We must constrain untame-apply$ to be sensitive to just
+; two arguments in order to satisfy constraints on apply$ when we make
+; attachments.
 
-(defstub untame-apply$ (fn args) t)
+(encapsulate (((untame-apply$ * *) => *
+               :formals (fn args)
+               :guard (true-listp args)))
+  (local (defun untame-apply$ (fn args)
+           (declare (ignore fn args))
+           nil))
+  (defthm untame-apply$-takes-arity-args
+    (implies (badge-userfn fn)
+             (equal (untame-apply$ fn args)
+                    (untame-apply$ fn (take (apply$-badge-arity
+                                             (badge-userfn fn))
+                                            args))))
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (and (syntaxp (and (quotep fn)
+                                             (symbolp args)))
+                               (badge-userfn fn))
+                          (equal (untame-apply$ fn args)
+                                 (untame-apply$ fn (take (apply$-badge-arity
+                                                          (badge-userfn fn))
+                                                         args))))))))
+
+; Untame-ev$ is the default value for ev$.
 (defstub untame-ev$ (x a) t)
 
 ; The ``badge table'' is a table that associates badges with nonprimitive
@@ -214,8 +222,7 @@
 
 ; * user-defined functions -- functions successfully processed by defwarrant
 ;   and listed under the key :badge-userfn-structure (currently a simple alist)
-;   in the badge-table, initialized in source file apply.lisp but accumulated
-;   by defwarrant.
+;   in the badge-table and maintained by defwarrant.
 
 (defconst *apply$-boot-fns-badge-alist*
   `((BADGE . ,*generic-tame-badge-1*)
@@ -250,13 +257,15 @@
 ; the top of nearly every file).
 
 ; Some functions have badges but not warrants!  Approximately 800 primitives
-; that have badges known to the logical definition of BADGE do not have
+; have badges known to the logical definition of BADGE but do not have
 ; warrants: there is no APPLY$-WARRANT-CONS because the badge of cons is
 ; built-in.  All 6 of the apply$ boot functions have badges known to BADGE and
-; do not have warrants: apply$ knows how to apply$ itself.
-
-; Every function listed in the :badge-userfn-structure of the badge-table has a
-; badge, and these are exactly the functions that have a warrant.  The warrant
-; for fn, if it exists, is named APPLY$-WARRANT-fn and takes 0 arguments.
+; do not have warrants: e.g., apply$ knows how to apply$ itself.  Once upon a
+; time multi-valued user-defined functions could have badges but no warrants.
+; However, now that apply$ supports such functions all badged user-defined
+; functions have warrants. Every function listed in the :badge-userfn-structure
+; of the badge-table has a badge, and these are exactly the functions that have
+; a warrant.  The warrant for fn, if it exists, is named APPLY$-WARRANT-fn and
+; takes 0 arguments.
 
 )

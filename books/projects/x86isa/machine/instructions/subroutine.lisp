@@ -88,6 +88,7 @@
   ;; since we have no memory operands.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          rime-size-of-2-to-rime16
@@ -99,9 +100,7 @@
 
   :body
 
-  (b* ((ctx 'x86-call-E8-Op/En-M)
-
-       ((the (integer 0 4) offset-size)
+  (b* (((the (integer 0 4) offset-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes nil t t x86))
 
        ;; AC is not done during code fetches. Fetching rel16 or rel32 from the
@@ -167,6 +166,7 @@
   ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          select-address-size)
@@ -174,17 +174,15 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((ctx ' x86-call-FF/2-Op/En-M)
-
-       ((the (integer 2 8) operand-size)
+  (b* (((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t t x86))
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-       (mod (modr/m->mod modr/m))
-       (r/m (modr/m->r/m modr/m))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Note that the reg field serves as an opcode extension for
@@ -305,14 +303,14 @@
   ;;        #xC3:    NP: Near return to calling procedure
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (rime-size rme-size) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
-  (b* ((ctx 'x86-ret)
-
-       (rsp (read-*sp proc-mode x86))
+  (b* ((rsp (read-*sp proc-mode x86))
 
        ((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil 0 t t t x86))
@@ -431,6 +429,7 @@
   ;; 64-bit mode.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (;;riml08
                                          ;;riml32
                                          rme-size-of-2-to-rme16
@@ -443,9 +442,7 @@
 
   :body
 
-  (b* ((ctx 'x86-leave)
-
-       ((the (integer 2 8) operand-size)
+  (b* (((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rbp/ebp/bp (rgfi-size operand-size *rbp* 0 x86))

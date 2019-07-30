@@ -29,13 +29,14 @@ public final class Acl2Environment {
 
     /**
      * Information about the defined ACL2 packages.
-     * This maps the name of each defined packages
+     * This maps the name of each defined package
      * to a Java list of its imported symbols,
      * consistently with the {@code pkg-imports} ACL2 function.
      * This field is never {@code null}.
      * For each defined package,
-     * its list of symbols never has two symbols with the same name,
-     * as required for package import lists in ACL2.
+     * its list of symbols never has two symbols with the same name.
+     * The order of the imported symbols is
+     * as returned by the {@cod pkg-imports} ACL2 function.
      */
     private static final Map<Acl2PackageName, List<Acl2Symbol>>
             packageDefs = new HashMap<>();
@@ -53,28 +54,18 @@ public final class Acl2Environment {
 
     /**
      * Checks if an ACL2 package with the given name is defined.
-     *
-     * @throws IllegalArgumentException if packageName is null
      */
     static boolean hasPackage(Acl2PackageName packageName) {
-        if (packageName == null)
-            throw new IllegalArgumentException("Null package name.");
         return packageDefs.containsKey(packageName);
     }
 
     /**
      * Returns a Java list of the imported symbols of the named ACL2 package.
      * The returned list is created anew, so it can be freely modified.
-     *
-     * @throws IllegalArgumentException if packageName is null
-     *                                  or the named package is not defined
+     * This method should be called only if the package is defined,
+     * i.e. if {@link #hasPackage(Acl2PackageName)} returns {@code true}.
      */
     static List<Acl2Symbol> getImportedList(Acl2PackageName packageName) {
-        if (packageName == null)
-            throw new IllegalArgumentException("Null package name.");
-        if (!packageDefs.containsKey(packageName))
-            throw new IllegalArgumentException
-                    ("Undefined package: \"" + packageName + "\".");
         List<Acl2Symbol> list = packageDefs.get(packageName);
         List<Acl2Symbol> result = new ArrayList<>(list.size());
         result.addAll(list);
@@ -83,14 +74,9 @@ public final class Acl2Environment {
 
     /**
      * Returns the content of the {@code *pkg-witness-name*} ACL2 constant.
-     *
-     * @throws IllegalStateException if the content is not set yet
      */
     static String getPackageWitnessName() {
-        if (packageWitnessName == null)
-            throw new IllegalStateException("Witness not defined yet.");
-        else
-            return packageWitnessName;
+        return packageWitnessName;
     }
 
     //////////////////////////////////////// public members:
@@ -99,8 +85,7 @@ public final class Acl2Environment {
      * Adds an ACL2 package definition,
      * consisting of a package name and a Java list of imported symbols.
      * A package with the same name must not have been already defined.
-     * The imported symbols must have all different names,
-     * as required for package import lists in ACL2.
+     * The imported symbols must have all different names.
      * This method makes an internal copy of the argument list,
      * which can be thus freely modified after this method returns.
      *

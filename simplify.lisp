@@ -8999,21 +8999,6 @@
         (cons (car *fake-rune-for-cert-data*)
               "previously-computed data")))
 
-(defun rune-< (x y)
-  (cond
-   ((eq (car x) (car y))
-    (or (symbol-< (cadr x) (cadr y))
-        (and (eq (cadr x) (cadr y))
-             (cond ((null (cddr x))
-                    (cddr y))
-                   ((null (cddr y))
-                    nil)
-                   (t (< (cddr x) (cddr y)))))))
-   ((symbol-< (car x) (car y))
-    t)
-   (t
-    nil)))
-
 (defun merge-runes (l1 l2)
   (cond ((null l1) l2)
         ((null l2) l1)
