@@ -739,8 +739,13 @@
   :returns (local-event "A @(tsee pseudo-event-formp).")
   :mode :program
   :short "Generate the event to verify the guards of the new function."
+  :long
+  (xdoc::topstring-p
+   "We instruct ACL2 not to simplify the guard conjecture,
+    and accordingly to use the unsimplified guard theorem of @('old').
+    This increases the robustness of the generated proof.")
   (b* ((guard-thm-instance `(:instance
-                             (:guard-theorem ,old$)
+                             (:guard-theorem ,old$ nil)
                              :extra-bindings-ok
                              ,@(alist-to-doublets static$)))
        (old-to-new-instances?
@@ -750,7 +755,9 @@
        (hints `(("Goal"
                  :in-theory nil
                  :use ,(cons guard-thm-instance old-to-new-instances?)))))
-    `(local (verify-guards ,new-name$ :hints ,hints))))
+    `(local (verify-guards ,new-name$
+              :hints ,hints
+              :guard-simplify nil))))
 
 (define parteval-gen-everything ((old$ symbolp)
                                  (static$ symbol-alistp)
