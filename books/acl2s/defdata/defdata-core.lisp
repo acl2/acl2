@@ -890,22 +890,23 @@ B is the builtin combinator table."
         (defdata-events
           (parse-defdata ',args (current-package state) (w state)) (w state)))))))
 
-(defun make-subsumes-relation-name (T1 T2)
+(defun make-subsumes-relation-name (T1 T2 curr-pkg)
   (let* ((str1 (symbol-name T1))
         (str2 (symbol-name T2))
         (str11 (string-append str1 "-IS-SUBTYPE-OF-"))
         (str (string-append str11 str2)))
-    (intern$ str "DEFDATA")))
+    (intern$ str curr-pkg)))
 
-(defun make-disjoint-relation-name (T1 T2)
+(defun make-disjoint-relation-name (T1 T2 curr-pkg)
   (let* ((str1 (symbol-name T1))
          (str2 (symbol-name T2))
          (str11 (string-append str1 "-IS-DISJOINT-WITH-"))
          (str (string-append str11 str2)))
-    (intern$ str "DEFDATA")))
+    (intern$ str curr-pkg)))
 
 ;COPIED FROM DEFDATA ----- to be deprecated and deleted
-(defun compute-defdata-relation (T1 T2 hints rule-classes strictp otf-flg ctx wrld)
+(defun compute-defdata-relation
+    (T1 T2 hints rule-classes strictp otf-flg ctx curr-pkg wrld)
   (b* ((M (table-alist 'type-metadata-table wrld))
        (A (table-alist 'type-alias-table wrld))
        (T1 (base-alias-type T1 A))
@@ -941,8 +942,8 @@ because the rule-classes may matter.
                  `(implies (,T1p x) (not (,T2p x)))
                `(implies (,T1p x) (,T2p x))))
        (nm (if (eq ctx 'defdata-disjoint)
-               (make-disjoint-relation-name T1 T2)
-             (make-subsumes-relation-name T1 T2)))
+               (make-disjoint-relation-name T1 T2 curr-pkg)
+             (make-subsumes-relation-name T1 T2 curr-pkg)))
        (defthm-form `(defthm ,nm
                        ,form
                        :hints ,hints
@@ -984,9 +985,15 @@ because the rule-classes may matter.
     :stack :push
     (make-event
      (compute-defdata-relation
-      ',T1 ',T2
-      ',hints ',rule-classes ',strictp ',otf-flg
-      'defdata::defdata-subtype (w state)))))
+      ',T1
+      ',T2
+      ',hints
+      ',rule-classes
+      ',strictp
+      ',otf-flg
+      'defdata::defdata-subtype
+      (current-package state)
+      (w state)))))
 
 (defmacro defdata-disjoint
     (T1
@@ -1005,9 +1012,15 @@ because the rule-classes may matter.
     :stack :push
     (make-event
      (compute-defdata-relation
-      ',T1 ',T2
-      ',hints ',rule-classes ',strictp ',otf-flg
-      'defdata::defdata-disjoint (w state)))))
+      ',T1
+      ',T2
+      ',hints
+      ',rule-classes
+      ',strictp
+      ',otf-flg
+      'defdata::defdata-disjoint
+      (current-package state)
+      (w state)))))
 
 (defmacro defdata-subtype-strict
     (T1
