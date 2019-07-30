@@ -2059,10 +2059,11 @@
                                             (list (pseudo-term-fix equiv) (pseudo-term-fix x)))))
              ((unless (equiv-contexts-coarsening-p (interp-st->equiv-contexts interp-st) contexts))
               (gl-interp-error :msg (gl-msg "First argument to narrow-equiv ~
-                                             yielded a value that did not ~
-                                             satisfy equiv-contextsp: args ~
-                                             ~x0."
-                                            (list (pseudo-term-fix equiv) (pseudo-term-fix x)))))
+                                             yielded a value was not a ~
+                                             narrowing of the current equiv ~
+                                             contexts: ~x0.  Current equiv contexts: ~x1"
+                                            (pseudo-term-fix equiv)
+                                            (interp-st->equiv-contexts interp-st))))
              ((interp-st-bind
                (equiv-contexts contexts))
               ((fgl-interp-value ans)
@@ -2120,7 +2121,7 @@
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((fgl-interp-value ans)
-               (gl-interp-term-equivs x interp-st state))))
+               (gl-interp-term-equivs term interp-st state))))
           (fgl-interp-value ans)))
 
       (define gl-interp-or ((test pseudo-termp)
