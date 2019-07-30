@@ -294,6 +294,13 @@
    ;; xdoc to be added later
    ;; (xdoc::seeurl "keccak::keccak")
 
+   (xdoc::p
+    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
+     as specified by RFC 8018, and specialized to use HMAC SHA-512,
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
