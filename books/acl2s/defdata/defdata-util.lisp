@@ -638,6 +638,13 @@ This is true when we have defdata available.
         (cdr ppred)
       pred)))
 
+#|
+(i-am-here) :add enumerator macros for the alias, eg, nth-nn-rat/acc
+nth-nn-rat
+see (defdata foo rational)
+
+|#
+
 (defmacro defdata-alias (alias type &optional pred)
   `(make-event
     (b* ((pkg (current-package state))
@@ -645,8 +652,14 @@ This is true when we have defdata available.
          (A (type-alias-table (w state)))
          (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
          (type (base-alias-type ',type A))
-         (predicate (acl2s::get-alist :predicate (acl2s::get-alist type M)))
+         (predicate (acl2s::get-alist
+                     :predicate (acl2s::get-alist type M)))
+         (base-enum (enumerator-name type A M))
+         (base-enum/acc (enum/acc-name type A M))
+         (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
+         (alias-enum-acc (acl2s::make-symbl `(,alias-enum /acc) pkg))
          (x (intern$ "X" pkg))
+         (seed (intern$ "SEED" pkg))
          ((unless predicate)
           (er hard 'defdata-alias
  "~%**Unknown type**: ~x0 is not a known type name.~%" ',type )))
@@ -664,7 +677,9 @@ This is true when we have defdata available.
                  (:type . ,type)
                  (:predicate . ,predicate))
                :put)
-        (defmacro ,pred (,x) `(,',predicate ,,x))))))
+        (defmacro ,pred (,x) `(,',predicate ,,x))
+        (defmacro ,alias-enum (,x) `(,',base-enum ,,x))
+        (defmacro ,alias-enum-acc (,x ,seed) `(,',base-enum/acc ,,x ,,seed))))))
 
 (defmacro predicate-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.
