@@ -111,9 +111,9 @@ as follows.
 
 (gen-property-table 
  ((:proofs? . t)
-  (:proof-timeout . 5)
+  (:proof-timeout . 60)
   (:testing? . t)
-  (:testing-timeout . 5)))
+  (:testing-timeout . 60)))
      
 #|
 
