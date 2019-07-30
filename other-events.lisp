@@ -11847,11 +11847,6 @@
                (access cert-obj cert-obj :pre-alist-abs)))
           (t (value cert-obj)))))
 
-(defun symbol-name-equal (x str)
-  (declare (xargs :guard (stringp str)))
-  (and (symbolp x)
-       (equal (symbol-name x) str)))
-
 (defun chk-acceptable-certify-book1 (user-book-name file dir k cmds cert-obj
                                                     cbds names cert-op
                                                     suspect-book-action-alist

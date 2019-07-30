@@ -11052,6 +11052,20 @@
           `(car (cdr ,carton))
           `(cdr (cdr ,carton)))))
 
+(defun symbol-name-equal (x str)
+  (declare (xargs :guard (stringp str)))
+  (and (symbolp x)
+       (equal (symbol-name x) str)))
+
+(defun assoc-symbol-name-equal (sym alist)
+  (declare (xargs :guard (and (symbolp sym)
+                              (symbol-alistp alist))))
+  (cond
+   ((endp alist) nil)
+   ((symbol-name-equal sym (symbol-name (caar alist)))
+    (car alist))
+   (t (assoc-symbol-name-equal sym (cdr alist)))))
+
 (defun parse-loop$-accum (args ans)
 
 ; We add two things to ans, the op and the (unfinished) carton for the op's
@@ -11062,15 +11076,22 @@
     ((op ':GUARD gexpr expr)
      (cond ((and (symbolp op)
                  (not (null op))
-                 (assoc-eq op *loop$-keyword-info*))
-            (mv nil (cons (make-carton gexpr nil expr nil)
-                          (cons op ans))))
+                 (assoc-symbol-name-equal op *loop$-keyword-info*))
+            (mv nil (cons
+                     (make-carton gexpr nil expr nil)
+                     (cons
+                      (car (assoc-symbol-name-equal op *loop$-keyword-info*))
+                      ans))))
            (t (mv t args))))
     ((op expr)
      (cond ((and (symbolp op)
                  (not (null op))
-                 (assoc-eq op *loop$-keyword-info*))
-            (mv nil (cons (make-carton T *T* expr nil) (cons op ans))))
+                 (assoc-symbol-name-equal op *loop$-keyword-info*))
+            (mv nil (cons
+                     (make-carton T *T* expr nil)
+                     (cons
+                      (car (assoc-symbol-name-equal op *loop$-keyword-info*))
+                      ans))))
            (t (mv t args))))
     (& (mv t args))))
 
@@ -11084,9 +11105,9 @@
 ; illegal CLTL loop in raw Lisp.
 
   (case-match args
-    (('WHEN ':GUARD gtest test . rest)
+    (((quote~ WHEN) ':GUARD gtest test . rest)
      (parse-loop$-accum rest (cons (make-carton gtest nil test nil) ans)))
-    (('WHEN test . rest)
+    (((quote~ WHEN) test . rest)
      (parse-loop$-accum rest (cons (make-carton T *T* test nil) ans)))
     (& (parse-loop$-accum args (cons nil ans)))))
 
@@ -11095,9 +11116,9 @@
 ; We add one entry to ans for the UNTIL clause, an unfinished carton or nil.
 
   (case-match args
-    (('UNTIL ':GUARD gtest test . rest)
+    (((quote~ UNTIL) ':GUARD gtest test . rest)
      (parse-loop$-when rest (cons (make-carton gtest nil test nil) ans)))
-    (('UNTIL test . rest)
+    (((quote~ UNTIL) test . rest)
      (parse-loop$-when rest (cons (make-carton T *T* test nil) ans)))
     (& (parse-loop$-when args (cons nil ans)))))
 
@@ -11114,27 +11135,27 @@
 
   (mv-let (args vsts)
     (case-match args
-      ((v 'OF-TYPE spec 'IN lst . rest)
+      ((v (quote~ OF-TYPE) spec (quote~ IN) lst . rest)
        (mv rest (cons `(,v ,spec (IN ,lst)) vsts)))
-      ((v 'OF-TYPE spec 'ON lst . rest)
+      ((v (quote~ OF-TYPE) spec (quote~ ON) lst . rest)
        (mv rest (cons `(,v ,spec (ON ,lst)) vsts)))
-      ((v 'OF-TYPE spec 'FROM i 'TO j 'BY k . rest)
+      ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j (quote~ BY) k . rest)
        (mv rest (cons `(,v ,spec (FROM-TO-BY ,i ,j ,k)) vsts)))
-      ((v 'OF-TYPE spec 'FROM i 'TO j . rest)
+      ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j . rest)
        (mv rest (cons `(,v ,spec (FROM-TO-BY ,i ,j 1)) vsts)))
-      ((v 'IN lst . rest)
+      ((v (quote~ IN) lst . rest)
        (mv rest (cons `(,v T (IN ,lst)) vsts)))
-      ((v 'ON lst . rest)
+      ((v (quote~ ON) lst . rest)
        (mv rest (cons `(,v T (ON ,lst)) vsts)))
-      ((v 'FROM i 'TO j 'BY k . rest)
+      ((v (quote~ FROM) i (quote~ TO) j (quote~ BY) k . rest)
        (mv rest (cons `(,v T (FROM-TO-BY ,i ,j ,k)) vsts)))
-      ((v 'FROM i 'TO j . rest)
+      ((v (quote~ FROM) i (quote~ TO) j . rest)
        (mv rest (cons `(,v T (FROM-TO-BY ,i ,j 1)) vsts)))
       (& (mv args vsts)))
     (cond
      ((null vsts) (mv t args))
      ((and (consp args)
-           (eq (car args) 'AS))
+           (symbol-name-equal (car args) "AS"))
       (parse-loop$-vsts (cdr args) vsts ans))
      (t (parse-loop$-until args (cons (revappend vsts nil) ans))))))
 
@@ -11167,7 +11188,7 @@
   (cond ((and (consp stmt)
               (eq (car stmt) 'LOOP$)
               (consp (cdr stmt))
-              (eq (cadr stmt) 'FOR))
+              (symbol-name-equal (cadr stmt) "FOR"))
          (mv-let (flg ans)
            (parse-loop$-vsts (cddr stmt) nil nil)
 ; When flg is T, ans is the unparsed part of the stmt.  Otherwise, ans is the reversed
@@ -11569,9 +11590,9 @@
 
   (cond ((endp args) nil)
         ((and (symbolp (car args))
-              (or (eq (car args) 'UNTIL)
-                  (eq (car args) 'WHEN)
-                  (assoc-eq (car args) *loop$-keyword-info*))
+              (or (symbol-name-equal (car args) "UNTIL")
+                  (symbol-name-equal (car args) "WHEN")
+                  (assoc-symbol-name-equal (car args) *loop$-keyword-info*))
               (eq (cadr args) :GUARD))
          (cons (car args)
                (cons (cadddr args)
