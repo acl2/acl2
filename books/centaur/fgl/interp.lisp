@@ -1417,7 +1417,107 @@
 (set-state-ok t)
 
 
+;; bozo move to own book
+(define easy-arity ((fn (or (and (consp fn)
+                                 (consp (cdr fn))
+                                 (true-listp (cadr fn)))
+                            (symbolp fn)))
+                    (w plist-worldp))
+  :returns (nargs (equal nargs (arity fn w))
+                  :hints(("Goal" :in-theory (enable arity length))))
+  (cond ((acl2::flambdap fn) (length (acl2::lambda-formals fn)))
+        (t (let ((temp (getpropc fn 'formals t w)))
+             (cond ((eq temp t) nil)
+                   (t (if (stringp temp) (length temp) (len temp))))))))
 
+(defines easy-termp
+  (define easy-termp (x (w plist-worldp))
+    :no-function t
+    :verify-guards nil
+    :returns (ans (equal ans (termp x w))
+                  :hints ('(:expand ((termp x w)))))
+    :prepwork ((local (in-theory (disable termp term-listp
+                                          acl2::legal-variablep
+                                          acl2::arglistp1
+                                          acl2::all-vars1
+                                          acl2-count
+                                          true-listp))))
+    (cond ((acl2::variablep x) (acl2::legal-variablep x))
+          ((acl2::fquotep x)
+           (and (consp (cdr x)) (null (cddr x))))
+          ((symbolp (car x))
+           (let ((arity (easy-arity (car x) w)))
+             (and arity
+                  (easy-term-listp (cdr x) w)
+                  (eql (length (cdr x)) arity))))
+          ((and (consp (car x))
+                (true-listp (car x))
+                (eq (caar x) 'lambda)
+                (eql 3 (length (car x)))
+                (acl2::arglistp (cadr (car x)))
+                (easy-termp (caddr (car x)) w)
+                (null (set-difference-eq (all-vars (caddr (car x)))
+                                         (cadr (car x))))
+                (easy-term-listp (cdr x) w)
+                (eql (length (cadr (car x)))
+                     (length (cdr x))))
+           t)
+          (t nil)))
+  (define easy-term-listp (x (w plist-worldp))
+    :no-function t
+    :returns (ans (equal ans (term-listp x w))
+                  :hints ('(:expand ((term-listp x w)))))
+    (cond ((atom x) (equal x nil))
+          ((easy-termp (car x) w)
+           (easy-term-listp (cdr x) w))
+          (t nil)))
+  ///
+  (local (defthm symbolp-when-legal-variablep
+           (implies (acl2::legal-variablep x)
+                    (symbolp x))
+           :hints(("Goal" :in-theory (enable acl2::legal-variablep)))))
+  (local (defthm symbol-listp-when-arglistp1
+           (implies (acl2::arglistp1 x)
+                    (symbol-listp x))
+           :hints(("Goal" :in-theory (enable acl2::arglistp1)))))
+  (local (defthm true-listp-when-arglistp1
+           (implies (acl2::arglistp1 x)
+                    (true-listp x))
+           :hints(("Goal" :in-theory (enable acl2::arglistp1)))))
+  
+  #!acl2
+  (local (flag::make-flag all-vars1-flag all-vars1))
+  #!acl2
+  (local (defthm-all-vars1-flag
+           (defthm true-listp-of-all-vars1
+             (implies (true-listp ans)
+                      (true-listp (all-vars1 term ans)))
+             :hints ('(:expand ((all-vars1 term ans))))
+             :flag all-vars1)
+           (defthm true-listp-of-all-vars1-lst
+             (implies (true-listp ans)
+                      (true-listp (all-vars1-lst lst ans)))
+             :hints ('(:expand ((all-vars1-lst lst ans))))
+             :flag all-vars1-lst)))
+                      
+  (defthm-easy-termp-flag
+    (defthm termp-implies-pseudo-termp
+      (implies (termp x w)
+               (pseudo-termp x))
+      :hints ('(:expand ((termp x w)
+                         (pseudo-termp x))))
+      :flag easy-termp)
+    (defthm term-listp-implies-pseudo-term-listp
+      (implies (term-listp x w)
+               (pseudo-term-listp x))
+      :hints ('(:expand ((term-listp x w)
+                         (pseudo-term-listp x))))
+      :flag easy-term-listp))
+    
+
+
+  (verify-guards easy-termp))
+  
 
 (progn
   (with-output
@@ -2112,10 +2212,10 @@
                                              args ~x0."
                                             (list (pseudo-term-fix x)))))
              (term (g-concrete->val xobj))
-             ((unless (pseudo-termp term))
+             ((unless (easy-termp term (w state)))
               (gl-interp-error :msg (gl-msg "First argument to fgl-interp-obj ~
                                              yielded a value that did not ~
-                                             satisfy pseudo-termp: args ~
+                                             satisfy termp: args ~
                                              ~x0."
                                             (list (pseudo-term-fix x)))))
              ((interp-st-bind
@@ -4272,6 +4372,21 @@
                                                       '(:no-op t)))))
       :mutual-recursion gl-interp)))
 
+(local (in-theory (disable w)))
+
+(defsection gl-interp-preserves-w-state
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-w-state
+      :rules ((t (:add-concl (equal (w new-state) (w state)))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints ((fgl-interp-default-hint 'gl-interp-term id nil world))
+      :mutual-recursion gl-interp)))
 
 (defsection gl-interp-term-guards
   (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
@@ -7074,21 +7189,7 @@
 
 
 
-(local (in-theory (disable w)))
 
-(defsection gl-interp-preserves-w-state
-  (with-output
-    :off (event)
-    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
-    (std::defret-mutual-generate <fn>-preserves-w-state
-      :rules ((t (:add-concl (equal (w new-state) (w state)))
-                 (:add-keyword :hints ('(:do-not-induct t)
-                                       (let ((flag (find-flag-is-hyp clause)))
-                                         (and flag
-                                              (prog2$ (cw "flag: ~x0~%" flag)
-                                                      '(:no-op t))))))))
-      :hints ((fgl-interp-default-hint 'gl-interp-term id nil world))
-      :mutual-recursion gl-interp)))
 
 (defret logicman-pathcond-eval-preserved-by-logicman-pathcond-assume
   (implies (and (logicman-pathcond-eval env pathcond)
