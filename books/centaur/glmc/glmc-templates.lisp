@@ -502,7 +502,7 @@
            (mv "Glmc only works in AIG mode" nil interp-st state))
           ((acl2::local-stobjs bvar-db)
            (mv er clauses bvar-db interp-st state))
-          ((mv (glmc-fsm fsm) er bvar-db interp-st state)
+          ((mv fsm er bvar-db interp-st state)
            (time$ (glmc-mcheck-to-fsm config bvar-db interp-st state)
                   :msg "; ~s0: ~st seconds, ~sa bytes.~%"
                   :args '(glmc-mcheck-to-fsm)))
