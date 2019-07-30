@@ -555,3 +555,70 @@
       ((unless err)
        (er soft 'ctrex-test "Expected this to fail!~%")))
    (value '(value-triple :ok))))
+
+
+(include-book "member-equal")
+(include-book "bitops-primitives")
+(local (in-theory (disable w)))
+(install-gl-primitives tests)
+
+(define pythag-triple-p ((x natp) (y natp) (z natp))
+  (and (< 0 (lnfix x))
+       (<= (lnfix x) (lnfix y))
+       (equal (* (lnfix z) (lnfix z))
+              (+ (* (lnfix x) (lnfix x))
+                 (* (lnfix y) (lnfix y))))))
+
+(def-fgl-program find-all-pythag-triples (x y z found)
+  (b* ((cond (narrow-equiv '(iff)
+                           (and (not (member-equal (list x y z) found))
+                                (pythag-triple-p x y z))))
+       (config  (make-fgl-ipasir-config))
+       (sat-res (fgl-sat-check config cond))
+       (unsat (syntax-interp (not sat-res)))
+       ((when unsat)
+        found)
+       ((list (list error bindings ?vars) &)
+        (syntax-interp (show-counterexample-bind config interp-st state)))
+       ((when error)
+        (cw "Error: ~x0~%" error))
+       (xval (cdr (assoc 'x bindings)))
+       (yval (cdr (assoc 'y bindings)))
+       (zval (cdr (assoc 'z bindings)))
+       (list (list xval yval zval))
+       ((unless (and (pythag-triple-p xval yval zval)
+                     (not (member-equal list found))))
+        (fgl-prog2 (syntax-interp (cw "Bad: result: ~x0 found: ~x1~%" list found))
+                   nil)))
+    (find-all-pythag-triples x y z (cons list found))))
+
+(def-fgl-program add-scratch-pair (key val)
+  (syntax-interp
+   (interp-st-put-user-scratch key val interp-st)))
+
+(fancy-ev-add-primitive interp-st->user-scratch$inline t)
+(fancy-ev-add-primitive interp-st-put-user-scratch t)
+(def-fancy-ev-primitives mine)
+
+
+(fgl-thm
+ :hyp (and (unsigned-byte-p 7 x)
+           (unsigned-byte-p 7 y)
+           (unsigned-byte-p 7 z))
+ :concl (fgl-prog2 (b* ((trips (find-all-pythag-triples x y z nil)))
+                     (fgl-prog2 (syntax-interp
+                                 (let ((interp-st 'interp-st))
+                                   (interp-st-put-user-scratch :pythag-triples trips interp-st)))
+                                ;; (add-scratch-pair :pythag-triples trips)
+                                (cw "trips: ~x0~%" trips)))
+                   t))
+
+(make-event
+ (b* ((trips (g-concrete->val (cdr (hons-get :pythag-triples (interp-st->user-scratch interp-st))))))
+   `(def-fgl-thm 7-bit-pythag-trips
+      :hyp (and (unsigned-byte-p 7 x)
+                (unsigned-byte-p 7 y)
+                (unsigned-byte-p 7 z))
+      :concl (implies (not (member-equal (list x y z) ',trips))
+                      (not (pythag-triple-p x y z))))))
+       

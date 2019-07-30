@@ -160,6 +160,11 @@
 (defmacro disable-definition (fnname)
   `(remove-gl-definition (:definition ,fnname)))
 
+(defmacro disable-execution (fnname)
+  `(table gl-fn-modes
+          ',fnname
+          (make-gl-function-mode :dont-concrete-exec t)))
+
 
 (defsection def-gl-rewrite
   :parents (fgl-rewrite-rules)
@@ -514,8 +519,9 @@ them with their second arguments; otherwise, it just provides a body of @('nil')
        (new-main-def (append (butlast guts.main-def 1)
                              (list def-body)))
        (new-rest-events (append guts.rest-events
-                                `((fgl::disable-definition ,name)
-                                  (fgl::def-gl-rewrite ,(intern-in-package-of-symbol
+                                `((disable-definition ,name)
+                                  (disable-execution ,name)
+                                  (def-gl-rewrite ,(intern-in-package-of-symbol
                                                          (concatenate 'string (symbol-name name) "-FGL")
                                                          name)
                                     (,(std::getarg :equiv 'unequiv guts.kwd-alist)

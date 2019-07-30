@@ -194,9 +194,9 @@
    interp-st)
   ///
   (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :user-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+    (implies (not (equal (interp-st-field-fix k) :user-scratch))
+             (equal (interp-st-get k new-interp-st)
+                    (interp-st-get k interp-st)))))
 
 
 

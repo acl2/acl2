@@ -1354,42 +1354,143 @@ other form.</p>")
 theorems, it can also be used as a programming platform for advanced algorithms
 involving SAT checks and a mix of logical and extralogical code.</p>
 
-<h3>Examples</h3> 
+<h3>Basic Example</h3> 
 
 <p> Suppose we want to check whether several conditions are satisfiable,
 summarize the results in an object and pretty-print that summary. </p>
 
 @({
- ;; Suppose (my-test-condition n) gives the nth conditinon to be tested.
- (defun my-test-condition (n) ...)
+ ;; Suppose (my-test-condition n x) gives the nth condition to be tested.
+ (defun my-test-condition (n x) ...)
 
  ;; Iterate from M-1 down to 0 testing each condition and collect a list of the
  ;; indices of all those that were invalid.
- (def-fgl-program test-my-conditions (m)
+ (def-fgl-program test-my-conditions (m x)
    (if (zp m)
        nil
      (let* ((next-m (1- m))
+            ;; Narrow the equivalence context from UNEQUIV to IFF to ensure
+            ;; that an accurate result is produced for my-test-condition.
+            (testcond (narrow-equiv '(iff) (my-test-condition next-m x)))
             (validity-check-result (fgl-validity-check
                                     (make-fgl-ipasir-config)
-                                    (my-test-condition next-m)))
+                                    testcond))
             ;; Note: validity-check-result is syntactically T if the validity
             ;; check was successful.  If not, it's some symbolic truth value
             ;; represented as a g-boolean object.
             (valid (syntax-interp (eq validity-check-result t))))
         (if valid
-            (test-my-conditions next-m)
-          (cons next-m (test-my-conditions next-m))))))
+            (test-my-conditions next-m x)
+          (cons next-m (test-my-conditions next-m x))))))
 
  ;; Summarize the list of non-valid condition indices.
- (defun my-print-conditions (indices-list) ...)
+ (defun my-print-test-condition-results (indices-list) ...)
 
  ;; Run a fake proof in which the conditions are tested.
  (fgl-thm
    :hyp t
-   :concl (fgl-prog2 (let ((conds (test-my-conditions 100)))
-                       (my-print-conditions conds))
+   :concl (fgl-prog2 (let ((conds (test-my-conditions 100 x)))
+                       (my-print-test-condition-results conds))
                      t))
-         
+ })
+
+<p>In the @('fgl-thm') form, @('fgl-prog2') is used to enter an @('unequiv')
+equivalence context, which allows the use of extralogical forms such as
+@('syntax-interp').  (Since every pair of objects are @('unequiv'), an
+@('unequiv') context allows any term to be rewritten to any other term, or
+interpreted in any way that might be desired.  Thus @('syntax-interp'), which
+logically just returns @('nil'), can be used to run an arbitrary computation
+with no logical meaning and return its result.</p>
+
+<p>The @('fgl-prog2') calls @('test-my-conditions'), which successively checks
+the validity of 100 test conditions.  The use of @('narrow-equiv') inside
+@('test-my-conditions') ensures that @('my-test-condition') is interpreted
+under an @('iff') context instead of an @('unequiv') context.  We then use
+@('fgl-validity-check') to check whether the resulting condition is always
+non-nil.  If this is found to be true, then @('fgl-validity-check') will return
+@('t'), that is, the constant-@('t') symbolic object; otherwise, it will return
+some other symbolic Boolean object: either @('nil') or a non-constant
+@('g-boolean') object.  To check whether the condition was found to be always
+true, we check whether the object resulting from @('fgl-validity-check') is
+syntactically @('t').  We collect the indices of those conditions that are not
+constant-true.</p>
+
+<p>Note that the body for @('test-my-conditions') above could not exist if
+@('test-my-conditions') were to be interpreted under @('equal') rather than
+@('unequiv'): it could produce different results on the same inputs depending
+on the behavior of @('fgl-validity-check'), which could fail or succeed based
+on (for example) the current contents of the interpreter state.  Thus,
+logically speaking, @('test-my-conditions') isn't a function.  But under an
+@('unequiv') context we can still interpret it as though it were.</p>
+
+<h3>More Examples</h3>
+
+<p>Examining counterexamples: The following example shows how to generate all
+of the Pythagorean triples of a given size, by checking repeatedly whether
+there exists another triple that is missing from the list.</p>
+
+@({
+ 
+ (define pythag-triple-p ((x natp) (y natp) (z natp))
+   (and (< 0 (lnfix x))
+        (<= (lnfix x) (lnfix y))
+        (equal (* (lnfix z) (lnfix z))
+               (+ (* (lnfix x) (lnfix x))
+                  (* (lnfix y) (lnfix y))))))
+ 
+ (def-fgl-program find-all-pythag-triples (x y z found)
+   (b* ((cond (narrow-equiv '(iff)
+                            (and (not (member-equal (list x y z) found))
+                                 (pythag-triple-p x y z))))
+        (config  (make-fgl-ipasir-config))
+        (sat-res (fgl-sat-check config cond))
+        (unsat (syntax-interp (not sat-res)))
+        ((when unsat)
+         found)
+        ((list (list error bindings ?vars) &)
+         (syntax-interp (show-counterexample-bind config interp-st state)))
+        ((when error)
+         (cw \"Error: ~x0~%\" error))
+        (xval (cdr (assoc 'x bindings)))
+        (yval (cdr (assoc 'y bindings)))
+        (zval (cdr (assoc 'z bindings)))
+        (list (list xval yval zval))
+        ((unless (and (pythag-triple-p xval yval zval)
+                      (not (member-equal list found))))
+         (fgl-prog2 (syntax-interp (cw \"Bad: result: ~x0 found: ~x1~%\" list found))
+                    nil)))
+     (find-all-pythag-triples x y z (cons list found))))
+ 
+ (def-fgl-program add-scratch-pair (key val)
+   (syntax-interp
+    (interp-st-put-user-scratch key val interp-st)))
+
+ (local (in-theory (disable w)))
+ (fancy-ev-add-primitive interp-st-put-user-scratch t)
+ (def-fancy-ev-primitives mine)
+
+ (fgl-thm
+  :hyp (and (unsigned-byte-p 7 x)
+            (unsigned-byte-p 7 y)
+            (unsigned-byte-p 7 z))
+  :concl (fgl-prog2 (b* ((trips (find-all-pythag-triples x y z nil)))
+                      ;; Store the generated triples in the user-scratch
+                      ;; field of the interp-st.
+                      (fgl-prog2 (add-scratch-pair :pythag-triples trips)
+                                 (cw \"trips: ~x0~%\" trips)))
+                    t))
+
+ (make-event
+  ;; Fetch the stored triples from the user-scratch field.
+  (b* ((trips (g-concrete->val
+               (cdr (hons-get :pythag-triples
+                              (interp-st->user-scratch interp-st))))))
+    `(def-fgl-thm 7-bit-pythag-trips
+       :hyp (and (unsigned-byte-p 7 x)
+                 (unsigned-byte-p 7 y)
+                 (unsigned-byte-p 7 z))
+       :concl (implies (not (member-equal (list x y z) ',trips))
+                       (not (pythag-triple-p x y z))))))
  })
 
 ")

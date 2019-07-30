@@ -561,3 +561,14 @@
   :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
                                      bitops::ihsext-recursive-redefs
                                      pos-fix))))
+
+;; (remove-gl-rewrite logbitp-const-index)
+;; (add-gl-definition logbitp-const-index)
+;; (def-gl-rewrite logbitp-to-logtail
+;;   (implies (syntaxp (and (integerp n)
+;;                          (gl-object-case x :g-integer)))
+;;            (equal (logbitp n x)
+;;                   (intcar (logtail n x)))))
+                  
+(remove-gl-rewrite int-less-than-0)
+(add-gl-definition int-less-than-0)
