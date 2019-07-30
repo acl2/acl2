@@ -207,8 +207,7 @@
                                   (dont-concrete-exec)
                                   state)
   :returns (mv ok (ans gl-object-p))
-  (b* (((gl-function-mode mode))
-       ((when (or dont-concrete-exec
+  (b* (((when (or dont-concrete-exec
                   (not (g-concretelist-p args))))
         (mv nil nil))
        ((mv err ans)
