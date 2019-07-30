@@ -752,7 +752,7 @@ stobj must be empty, and they preserve this property unconditionally.</p>")
 
 (defthm ipasir-solve$a-unsat-implies-unsat
   (b* (((ipasir$a solver))
-       ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+       ((mv status &) (ipasir-solve$a solver)))
     (implies (and (equal formula solver.formula)
                   (equal 1 (eval-formula formula env$))
                   (case-split (equal 1 (eval-cube solver.assumption env$))))

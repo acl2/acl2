@@ -229,8 +229,7 @@
   :guard (not (eq (ipasir-get-status$a solver) :undef))
   :returns (new-solver ipasir$a-p)
   :short "Logic form of @(see ipasir-input).  See @(see ipasir) for usage."
-  (b* (((ipasir$a solver)))
-    (change-ipasir$a solver :status :input))
+  (change-ipasir$a solver :status :input)
   ///
   (std::defret ipasir-input$a-status
     (equal (ipasir$a->status new-solver) :input))
@@ -453,8 +452,7 @@
                             (equal (eval-cube new-solver.solution env$) 0))))))
 
  (defthm ipasir-solve$a-sat
-   (b* (((ipasir$a solver))
-        ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+   (b* (((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
      (implies (equal status :sat)
               (equal new-solver.status :sat))))
  ;; Won't assume the solution is a correct assignment because we can just
@@ -463,8 +461,7 @@
  ;; formula/assumption (for any starting env).
 
  (defthm ipasir-solve$a-failed
-   (b* (((ipasir$a solver))
-        ((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
+   (b* (((mv status (ipasir$a new-solver)) (ipasir-solve$a solver)))
      (implies (equal status :failed)
               (equal new-solver.status :input)))))
 

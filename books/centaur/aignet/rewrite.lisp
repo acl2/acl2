@@ -1353,7 +1353,7 @@
               (< cut (nodecut-indicesi (cut-nnodes cutsdb) cutsdb))
               (equal (num-nxsts aignet2) 0)
               (equal (num-outs aignet2) 0)
-              (b* (((cutinfo cutinf) (cut-infoi cut cutsdb))
+              (b* ((cutinf (cut-infoi cut cutsdb))
                    ((acl2::stobj-get ok)
                     ((aignet-tmp (rwlib->aigs rwlib)))
                     (and (<= (num-fanins aignet-tmp) (lits-length copy2))
@@ -3657,7 +3657,6 @@
         (mv aignet2 cutsdb eba eba2 copy copy2 eba3 eba4 strash2 refcounts2 rewrite-stats))
        ((mv lit build-cost cutsdb aignet2 strash2 refcounts2 rewrite-stats)
         (rewrite-copy-node n aignet aignet2 cutsdb copy strash2 refcounts2 rewrite-stats config))
-       ((rewrite-config config))
        (eba4 (maybe-grow-eba (num-fanins aignet2) eba4))
        
        ((mv new-lit aignet2 eba eba2 copy2 eba3 eba4 strash2 refcounts2 rewrite-stats)
