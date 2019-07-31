@@ -1012,7 +1012,7 @@
        (formula `(equal (,old$ ,@formals)
                         (,new-name$ ,@formals)))
        (formula (untranslate formula t wrld))
-       (thm-hyp-app-cond-thm-names (take (1+ (len theorems$))
+       (thm-hyp-app-cond-thm-names (take (len theorems$)
                                          app-cond-thm-names))
        (hints `(("Goal"
                  :in-theory '(,new-unnorm-name)
