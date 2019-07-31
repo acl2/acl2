@@ -286,4 +286,34 @@
 (in-theory (disable sublis-var))
 
 
+(defthm subcor-var1-in-terms-of-cdr-assoc
+  (equal (subcor-var1 vars terms var)
+         (let ((look (assoc var (pairlis$ vars terms))))
+           (if look (cdr look) var))))
+
+(local (defthm cons-term1-equals-cons-term1-mv2
+         (equal (cons-term1 fn args)
+                (mv-nth 1 (cons-term1-mv2 fn args (cons fn args))))
+         :hints(("Goal" :in-theory (enable cons-term1-mv2)))))
+
+(local (defthm cons-term1-mv2-when-not-symbolp
+         (implies (not (symbolp fn))
+                  (equal (mv-nth 1 (cons-term1-mv2 fn args x))
+                         x))
+         :hints(("Goal" :in-theory (enable cons-term1-mv2)))))
+
+(defthm-term-subst-flg
+  (defthm subcor-var-is-sublis-var1
+    (implies (pseudo-termp x)
+             (equal (subcor-var vars terms x)
+                    (mv-nth 1 (sublis-var1 (pairlis$ vars terms) x))))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (cons-term) (cons-term1)))))
+    :flag term)
+  (defthm subcor-var-lst-is-sublis-var1-lst
+    (implies (pseudo-term-listp x)
+             (equal (subcor-var-lst vars terms x)
+                    (mv-nth 1 (sublis-var1-lst (pairlis$ vars terms) x))))
+    :flag list))
+
 

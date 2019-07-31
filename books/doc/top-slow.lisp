@@ -30,7 +30,24 @@
 
 (in-package "ACL2")
 
-(progn ;; group together include-books to see total time
+;; Note about the following commented-out form.  This allows a significant
+;; reduction of memory usage by this book: of ~130 million conses in the ACL2
+;; world after all books are loaded, 51 million are due to tau automatically
+;; computing implicants from theorems/definitions -- 42 million conses are
+;; stored in various POS-IMPLICANTS and 9.2 million in various NEG-IMPLICANTS
+;; properties.  So overriding the default setting of tau-auto-mode saves a
+;; significant amount of memory when loading this book.  Question is whether
+;; it's worth the cheating.
+
+#||
+(defttag :override-tau-auto-mode)
+(progn!
+ (set-raw-mode t)
+ (setf (cdr (assoc :tau-auto-modep *initial-acl2-defaults-table*)) nil)
+ (set-raw-mode nil))
+||#
+
+(progn ;; use progn to time including all the books
 (include-book "build/ifdef" :dir :system)
 
 ; Note, 7/28/2014: if we include
@@ -70,10 +87,14 @@
 
 (include-book "xdoc/save" :dir :system)
 (include-book "xdoc/archive" :dir :system)
+(include-book "xdoc/archive-matching-topics" :dir :system)
 
 (include-book "build/doc" :dir :system)
 
-(include-book "clause-processors/stobj-preservation" :dir :system)
+(include-book "centaur/4v-sexpr/top" :dir :system)
+(include-book "centaur/aig/top" :dir :system)
+
+(include-book "centaur/aignet/top" :dir :system)
 
 ; The rest of ihs is included elsewhere transitively.
 ; We load logops-lemmas first so that the old style :doc-strings don't get
@@ -84,8 +105,6 @@
 (include-book "centaur/bitops/top" :dir :system)
 (include-book "centaur/bitops/congruences" :dir :system)
 (include-book "centaur/bitops/defaults" :dir :system)
-(include-book "centaur/bitops/sparseint" :dir :system)
-(include-book "centaur/bitops/limited-shifts" :dir :system)
 
 (include-book "centaur/acre/top" :dir :system)
 
@@ -97,12 +116,26 @@
 
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 
+(include-book "centaur/esim/stv/stv-top" :dir :system)
+(include-book "centaur/esim/stv/stv-debug" :dir :system)
+(include-book "centaur/esim/esim-sexpr-correct" :dir :system)
 
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "centaur/getopt/demo" :dir :system)
 (include-book "centaur/getopt/demo2" :dir :system)
 (include-book "centaur/bed/top" :dir :system)
 
+(include-book "centaur/gl/gl" :dir :system)
+(include-book "centaur/gl/bfr-aig-bddify" :dir :system)
+(include-book "centaur/gl/gl-ttags" :dir :system)
+(include-book "centaur/gl/gobject-type-thms" :dir :system)
+(include-book "centaur/gl/bfr-satlink" :dir :system)
+(include-book "centaur/gl/bfr-fraig-satlink" :dir :system)
+(include-book "centaur/gl/def-gl-rule" :dir :system)
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
+
+(include-book "centaur/glmc/glmc" :dir :system)
+(include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
 
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
@@ -123,6 +156,7 @@
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
 (include-book "centaur/misc/spacewalk" :dir :system)
 (include-book "centaur/misc/dag-measure" :dir :system)
+(include-book "centaur/misc/try-gl-concls" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -146,6 +180,63 @@
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 
+(include-book "centaur/sv/top" :dir :system)
+
+(ifdef "OS_HAS_GLUCOSE"
+       (include-book "centaur/sv/tutorial/alu" :dir :system)
+       (include-book "centaur/sv/tutorial/boothpipe" :dir :system)
+
+       (ifdef "OS_HAS_ABC"
+              (include-book "centaur/glmc/glmc-test" :dir :system)
+              (include-book "centaur/glmc/counter" :dir :system)
+              :endif)
+
+       (ifdef "OS_HAS_IPASIR"
+              (include-book "centaur/sv/tutorial/sums" :dir :system)
+              :endif)
+       :endif)
+
+(ifndef "OS_HAS_GLUCOSE"
+        ;; This is needed to avoid broken topic link errors
+        (defxdoc sv::sv-tutorial
+          :parents (sv::sv)
+          :short "Stub for missing topic"
+          :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
+        (defxdoc sv::stvs-and-testing
+          :parents (sv::sv-tutorial)
+          :short "Stub for missing topic"
+          :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
+        :endif)
+
+
+
+
+(include-book "centaur/esim/vcd/vcd" :dir :system)
+(include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
+(include-book "centaur/esim/vcd/vcd-stub" :dir :system)
+;; BOZO causes some error with redefinition?  Are we loading the right
+;; books above?  What does stv-debug load?
+;; (include-book "centaur/esim/vcd/vcd-impl")
+
+(include-book "centaur/vl/doc" :dir :system)
+
+;; Try to avoid some expensive type-prescription problems
+(in-theory (disable true-listp-append (:t append)))
+
+(include-book "centaur/vl/kit/top" :dir :system)
+(include-book "centaur/vl/mlib/atts" :dir :system)
+
+(include-book "centaur/vl2014/doc" :dir :system)
+(include-book "centaur/vl2014/kit/top" :dir :system)
+(include-book "centaur/vl2014/mlib/clean-concats" :dir :system)
+(include-book "centaur/vl2014/lint/use-set" :dir :system)
+(include-book "centaur/vl2014/transforms/clean-selects" :dir :system)
+(include-book "centaur/vl2014/transforms/propagate" :dir :system)
+(include-book "centaur/vl2014/transforms/expr-simp" :dir :system)
+(include-book "centaur/vl2014/transforms/inline" :dir :system)
+(include-book "centaur/vl2014/util/prefix-hash" :dir :system)
 
 ;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
 ;; these being used at all?
@@ -170,9 +261,8 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
-;; translate11-call.  This hasn't been much of a problem in doc/top-fast (as
-;; opposed to doc/top), but we'll unmemoize these here anyway because having
-;; them memoized is a little unexpected.
+;; translate11-call, which end up taking a lot of space and causing us to spend
+;; a lot of time GCing.
 (include-book "tools/memoize-prover-fns" :dir :system)
 (unmemoize-lst (f-get-global 'memoized-prover-fns state))
 
@@ -199,6 +289,14 @@
 ;; other topics...
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "arithmetic/top" :dir :system)
+
+(include-book "rtl/rel11/lib/top" :dir :system)
+; And books not included in lib/top:
+(include-book "rtl/rel11/lib/add" :dir :system)
+(include-book "rtl/rel11/lib/mult" :dir :system)
+(include-book "rtl/rel11/lib/div" :dir :system)
+(include-book "rtl/rel11/lib/srt" :dir :system)
+(include-book "rtl/rel11/lib/sqrt" :dir :system)
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
@@ -240,8 +338,11 @@
 
 (include-book "acl2s/doc" :dir :system)
 
+(include-book "projects/doc" :dir :system)
+
+(include-book "kestrel/top" :dir :system)
+
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
-(include-book "clause-processors/pseudo-term-fty" :dir :system)
 
 ;; [Jared] keep these near the end to avoid expensive type prescription rules,
 ;; especially related to consp-append.
@@ -249,36 +350,10 @@
 (include-book "data-structures/memories/memory" :dir :system)
 
 (include-book "coi/documentation" :dir :system)
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
 
-(include-book "centaur/aignet/top-doc" :dir :system)
-(include-book "centaur/gl/top-doc" :dir :system)
-(include-book "centaur/vl/top-doc" :dir :system)
-(include-book "centaur/sv/top-doc" :dir :system)
-(include-book "centaur/vl2014/top-doc" :dir :system)
-(include-book "projects/top-doc" :dir :system)
-(include-book "kestrel/top-doc" :dir :system)
-(include-book "rtl/rel11/lib/top-doc" :dir :system)
-(include-book "centaur/esim/top-doc" :dir :system)
-(include-book "centaur/aig/top-doc" :dir :system)
-(include-book "std/util/termhints" :dir :system)
-
-;; omitted from gl
-(include-book "centaur/misc/outer-local" :dir :system)
-(include-book "tools/pattern-match" :dir :system)
-
-;; omitted from aignet
-(include-book "std/stobjs/nested-stobjs" :dir :system)
-(include-book "tools/symlet" :dir :system)
-(include-book "std/stobjs/updater-independence" :dir :system)
-(include-book "centaur/misc/iter" :dir :system)
-(include-book "centaur/misc/nth-equiv" :dir :system)
-
-;; omitted from aig
-(include-book "system/random" :dir :system)
 (include-book "std/util/defret-mutual-generate" :dir :system)
-
-) ;; end progn so we can see total include-book time
-
+) ;; end progn for including all the books
 
 #||
 
@@ -416,10 +491,10 @@
 (local (deflabel doc-rebuild-label))
 
 (make-event
- (b* ((state (serialize-write "xdoc.sao"
+ (b* ((state (serialize-write "xdoc-slow.sao"
                               (xdoc::get-xdoc-table (w state))
                               :verbosep t)))
-   (value '(value-triple "xdoc.sao"))))
+   (value '(value-triple "xdoc-slow.sao"))))
 
 
 ; Once upon a time we had a an out-of-control macro generating automatic docs
@@ -453,14 +528,14 @@
 ; reasons Jared doesn't understand this is screwing up the extended manual we
 ; build at Centaur.  So, I'm putting the save event into a make-event to try
 ; to localize its effects to just this book's certification.
- (er-progn (xdoc::save "./manual-fast"
+ (er-progn (xdoc::save "./manual-slow"
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
                        :redef-okp t
                        :logo-image "./acl2-big.png"
                        :error t
                        :broken-links-limit 1)
-           (value `(value-triple :manual))))
+           (value `(value-triple :manual-slow))))
 
 (value-triple
  (progn$ (cw "--- Done Writing ACL2+Books Manual -----------------------------~%")
@@ -503,7 +578,7 @@
 
 (xdoc::save-rendered-event
  (extend-pathname (cbd)
-                  "../system/doc/rendered-doc-combined-fast.lsp"
+                  "../system/doc/rendered-doc-combined-slow.lsp"
                   state)
  *rendered-doc-combined-header*
  '*acl2+books-documentation*
@@ -561,12 +636,12 @@
      (ubt! 'doc-rebuild-label)
      (ld ;; newline to fool dependency scanner
       "new-doc.lsp")
-     (xdoc::save "./manual-fast"
+     (xdoc::save "./manual-slow"
                  :redef-okp t
                  :zip-p nil
                  :logo-image "./acl2-big.png"
                  :error t)
-     (value `(value-triple :manual)))))
+     (value `(value-triple :manual-slow)))))
 
 
 

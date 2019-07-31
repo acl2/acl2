@@ -294,6 +294,13 @@
    ;; xdoc to be added later
    ;; (xdoc::seeurl "keccak::keccak")
 
+   (xdoc::p
+    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
+     as specified by RFC 8018, and specialized to use HMAC SHA-512,
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
@@ -326,13 +333,34 @@
 
    (xdoc::h4 (xdoc::seeurl "java::java" "Java Library"))
 
+   (xdoc::h5 (xdoc::seeurl "java::atj" "ATJ, the Java Code Generator for ACL2"))
+
    (xdoc::p
-    (xdoc::seeurl "java::atj" "ATJ")
-    ", the Java code generator for ACL2,
-     has been extended with an option to generate Java code
+    "ATJ has been extended with an option to generate Java code
      according to a shallow embedding approach,
      besides the previous deep embedding approach.
      See the documentation for details.")
+
+   (xdoc::p
+    "The implementation of ATJ has been improved
+     to use a more general abstract syntax and pretty-printer for Java
+     (which are part of the implementation of ATJ),
+     instead of writing directly to the output channel piecewise.
+     This provides more flexibility, and the ability to have more code
+     in logic mode and guard-verified.")
+
+   (xdoc::p
+    "ATJ has been extended with an option to generate Java code
+     under the assumption that the guards are always satisfied.
+     Currently the only difference that this option makes is that
+     Java code is generated only for the @(':exec') parts of @(tsee mbe),
+     instead of only for the @(':logic') parts,
+     but it opens the door to faster execution under the guards.
+     This option should be used only with guard-verified ACL2 code
+     and with external Java code that calls the generated Java code
+     always with values that satisfy the guards.
+     This is just a start towards handling guards in ATJ (and AIJ);
+     more sophisticated support will be added in the future.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

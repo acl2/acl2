@@ -17399,9 +17399,8 @@
 
 ; We need aokp to be true; otherwise defwarrant can run into the following
 ; problem.  The function badge-table-guard calls badger, which can call
-; acceptable-warranted-justificationp, which can call type-set, which can lead
-; to a call of ancestors-check, which typically has an attachment,
-; ancestors-check-builtin.
+; g2-justification which can call type-set, which can lead to a call of
+; ancestors-check, which typically has an attachment, ancestors-check-builtin.
 
               t)
           (declare (ignore latches))

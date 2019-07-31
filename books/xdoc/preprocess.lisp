@@ -722,8 +722,7 @@
 
 (defun process-tsee-directive (arg arg-raw preproc-data acc) ;; ===> ACC
   ;; @(tsee foo) is basically <tt>@(see ...)</tt>.
-  (b* (((preproc-data preproc-data))
-       (acc (str::printtree-rconcat "<tt>" acc))
+  (b* ((acc (str::printtree-rconcat "<tt>" acc))
        (acc (process-see-directive arg arg-raw preproc-data acc))
        (acc (str::printtree-rconcat "</tt>" acc)))
     acc))

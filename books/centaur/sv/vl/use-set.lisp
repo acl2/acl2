@@ -1840,7 +1840,7 @@
          (lsb (lnfix lsb))
          (width (lposfix width))
          (dim1 (car dims))
-         ((vl-range range) (vl-dimension->range dim1))
+         (range (vl-dimension->range dim1))
          (n-entries (vl-range-size range))
          (full-size (* n-entries entry-size))
          ((when (eql entry-size 0)) nil)

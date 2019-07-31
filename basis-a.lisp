@@ -7205,16 +7205,16 @@
 ; Occurrences of a symbol after the first match only structures equal to
 ; the binding.  Non-symbolp atoms match themselves.
 
-; There are some exceptions to the general scheme described above.  A
-; cons structure starting with QUOTE matches only itself.  The symbols
-; nil and t, and all symbols whose symbol-name starts with #\* match
-; only structures equal to their values.  (These symbols cannot be
-; legally bound in ACL2 anyway, so this exceptional treatment does not
-; restrict us further.)  Any symbol starting with #\! matches only the
-; value of the symbol whose name is obtained by dropping the #\!.
-; This is a way of referring to already bound variables in the
-; pattern.  Finally, the symbol & matches anything and causes no
-; binding.
+; There are some exceptions to the general scheme described above.  A cons
+; structure starting with QUOTE matches only itself.  A cons structure of the
+; form (QUOTE~ sym), where sym is a symbol, is like (QUOTE sym) except it
+; matches any symbol with the same symbol-name as sym.  The symbols nil and t,
+; and all symbols whose symbol-name starts with #\* match only structures equal
+; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
+; this exceptional treatment does not restrict us further.)  Any symbol
+; starting with #\! matches only the value of the symbol whose name is obtained
+; by dropping the #\!.  This is a way of referring to already bound variables
+; in the pattern. Finally, the symbol & matches anything and causes no binding.
 
   (declare (xargs :guard (symbol-doublet-listp bindings)))
   (cond
@@ -7250,6 +7250,12 @@
          (consp (cdr pat))
          (null (cddr pat)))
     (mv (cons (equal-x-constant x pat) tests)
+        bindings))
+   ((and (eq (car pat) 'quote~)
+         (consp (cdr pat))
+         (symbolp (cadr pat))
+         (null (cddr pat)))
+    (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
         bindings))
    (t (mv-let (tests1 bindings1)
         (match-tests-and-bindings (list 'car x) (car pat)

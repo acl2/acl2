@@ -1484,28 +1484,34 @@ sub collect_top_up_to_date {
     # up_to_date is the hash returned by check_up_to_date
     my ($targets, $depdb, $up_to_date) = @_;
 
+    # This tracks whether each target is under an up-to-date target,
+    # but also doubles as a seen list.
     my %under_up_to_date = ();
     my $dfs;
     $dfs = sub {
 	my ($target, $under) = @_;
 	if (exists $under_up_to_date{$target}) {
+	    # Seen already. Skip, but first update under_up_to_date if
+	    # it needs it.
+	    if ($under) {
+		$under_up_to_date{$target} = 1;
+	    }
 	    return;
 	}
 	$under_up_to_date{$target} = $under;
-	$under = $under || $up_to_date->{$target};
 
 	my $certdeps = $depdb->cert_deps($target);
 	foreach my $cert (@$certdeps) {
-	    $dfs->($cert, $under);
+	    $dfs->($cert, $up_to_date->{$target});
 	}
     };
 
     foreach my $target (@$targets) {
-	$dfs->($target);
+	$dfs->($target, 0);
     }
     my @top_up_to_date = ();
     while ((my $cert, my $updated) = each %$up_to_date) {
-	if ($updated && ! $under_up_to_date{$cert}) {
+	if ($updated && exists $under_up_to_date{$cert} && $under_up_to_date{$cert} == 0) {
 	    push (@top_up_to_date, $cert);
 	}
     }
@@ -1516,28 +1522,34 @@ sub collect_top_up_to_date_modulo_local {
     # up_to_date is the hash returned by check_up_to_date
     my ($targets, $depdb, $up_to_date) = @_;
 
+    # This tracks whether each target is under an up-to-date target,
+    # but also doubles as a seen list.
     my %under_up_to_date = ();
     my $dfs;
     $dfs = sub {
 	my ($target, $under) = @_;
 	if (exists $under_up_to_date{$target}) {
+	    # Seen already. Skip, but first update under_up_to_date if
+	    # it needs it.
+	    if ($under) {
+		$under_up_to_date{$target} = 1;
+	    }
 	    return;
 	}
 	$under_up_to_date{$target} = $under;
-	$under = $under || $up_to_date->{$target};
 
 	my $certdeps = $depdb->cert_nonlocal_deps($target);
 	foreach my $cert (@$certdeps) {
-	    $dfs->($cert, $under);
+	    $dfs->($cert, $up_to_date->{$target});
 	}
     };
 
     foreach my $target (@$targets) {
-	$dfs->($target);
+	$dfs->($target, 0);
     }
     my @top_up_to_date = ();
     while ((my $cert, my $updated) = each %$up_to_date) {
-	if ($updated && ! $under_up_to_date{$cert}) {
+	if ($updated && exists $under_up_to_date{$cert} && $under_up_to_date{$cert} == 0) {
 	    push (@top_up_to_date, $cert);
 	}
     }

@@ -1142,7 +1142,7 @@ correctness criterion we've described.</p>
       :hints(("Goal" :in-theory (enable nth-lit))))
 
 
-    (local (defthm aignet->sat-well-formedp-of-create
+    (local (defthm aignet->sat-well-formedp-of-resize-of-create
              (aignet->sat-well-formedp m (resize-aignet->sat n (create-sat-lits))
                                        aignet)
              :hints (("goal" :induct (aignet->sat-well-formedp m (resize-aignet->sat n
@@ -1152,6 +1152,12 @@ correctness criterion we've described.</p>
                                        nth-lit)
                                       (acl2::make-list-ac-redef
                                        acl2::resize-list-when-empty))))))
+
+    (local (defthm aignet->sat-well-formedp-of-create
+             (aignet->sat-well-formedp m (create-sat-lits) aignet)
+             :hints (("goal" :induct (aignet->sat-well-formedp m (create-sat-lits)
+                                                               aignet)
+                      :in-theory (e/d (nth-lit))))))
 
     (local (in-theory (disable create-sat-lits)))
 
@@ -1165,10 +1171,18 @@ correctness criterion we've described.</p>
 
     (local (in-theory (enable sat-lits-wfp)))
 
-    (defthm sat-lits-wfp-of-create
+    (defthm sat-lits-wfp-of-resize-of-create
       ;; (implies (<= (nfix (num-fanins aignet)) (nfix n))
       (sat-lits-wfp (resize-aignet->sat n (create-sat-lits)) aignet)
       :hints(("Goal" :in-theory (e/d (nth-lit nth update-nth create-sat-lits)
+                                     (aignet->sat-well-formedp-of-resize-of-create))
+              :use ((:instance aignet->sat-well-formedp-of-resize-of-create
+                     (m (nfix n)))))))
+
+    (defthm sat-lits-wfp-of-create
+      ;; (implies (<= (nfix (num-fanins aignet)) (nfix n))
+      (sat-lits-wfp (create-sat-lits) aignet)
+      :hints(("Goal" :in-theory (e/d (nth-lit nth update-nth create-sat-lits sat-lits-wfp)
                                      (aignet->sat-well-formedp-of-create))
               :use ((:instance aignet->sat-well-formedp-of-create
                      (m (nfix n)))))))
@@ -2150,11 +2164,22 @@ correctness criterion we've described.</p>
 
   (in-theory (disable aignet-agrees-with-cnf))
 
-  (defthm aignet-agrees-with-cnf-of-create-sat-lits
+  (defthm aignet-agrees-with-cnf-of-resize-of-create-sat-lits
 ;    (implies (aignet-well-formedp aignet)
              (aignet-agrees-with-cnf
               aignet
               (resize-aignet->sat n (create-sat-lits))
+              cnf-vals)
+    :hints(("Goal" :in-theory (e/d (aignet-agrees-with-cnf
+                                    aignet-id-has-sat-var))
+            :expand ((:free (invals regvals)
+                      (id-eval 0 invals regvals aignet))))))
+
+  (defthm aignet-agrees-with-cnf-of-create-sat-lits
+;    (implies (aignet-well-formedp aignet)
+             (aignet-agrees-with-cnf
+              aignet
+              (create-sat-lits)
               cnf-vals)
     :hints(("Goal" :in-theory (e/d (aignet-agrees-with-cnf
                                     aignet-id-has-sat-var))
@@ -3206,8 +3231,12 @@ correctness criterion we've described.</p>
 
   (in-theory (disable cnf-for-aignet))
 
-  (defthm cnf-for-aignet-initial
+  (defthm cnf-for-aignet-of-resize-of-create
     (cnf-for-aignet aignet nil (resize-aignet->sat n (create-sat-lits)))
+    :hints(("Goal" :in-theory (enable cnf-for-aignet))))
+
+  (defthm cnf-for-aignet-of-create-sat-lits
+    (cnf-for-aignet aignet nil (create-sat-lits))
     :hints(("Goal" :in-theory (enable cnf-for-aignet))))
 
   (local (in-theory (disable aignet-eval)))

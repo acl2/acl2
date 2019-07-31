@@ -2478,16 +2478,19 @@
 ; thought had obvious importance and also for the unconscious clear violations
 ; of our own conventions.
 
-; A function that returns multiple values can have a badge but will not have a
-; warrant.
-
 ; Functions with badges are partitioned into primitives (e.g., CAR and
 ; BINARY-APPEND), boot functions (e.g., TAMEP and APPLY$), and user-defined
 ; (e.g., SQUARE and COLLECT).
 
 ; Non-primitive badged functions are partitioned into:
-; G1 -- ancestrally independent of APPLY$-USERFN, and
-; G2 -- ancestrally dependent on APPLY$-USERFN.
+; G1 -- ancestrally independent of APPLY$-USERFN in both body and justification
+;       (and ancestrally independent of inapplicable functions like sys-call
+;       in the body -- a separate check since we don't require all functions in
+;       G1 functions to be badged)
+
+; G2 -- ancestrally independent of APPLY$-USERFN in justification but dependent
+;       on APPLY$-USERFN in body
+
 ; Thus ``all non-primitive badged functions'' is the same set as ``all G1 and
 ; G2 functions.''
 
@@ -2507,9 +2510,8 @@
 
 ; We believe every tame expression is G1 definable in the sense that an
 ; equivalent expression could be written in terms of (possibly newly
-; introduced) G1 functions.  See the discussion in
-; acceptable-warranted-justificationp in apply.lisp.  However, we do not
-; exploit that belief (or prove it) here.
+; introduced) G1 functions.  However, we do not exploit that belief (or prove
+; it) here.
 
 ; If a formal has ilk :FN or has ilk :EXPR we call it a :FN/:EXPR formal or say
 ; it has ilk :FN/:EXPR.  That's technically a misnomer: there is no :FN/:EXPR
@@ -2517,19 +2519,24 @@
 ; :EXPR.
 
 ; Some important facts about any user-defined badged function, f, with formals
-; (x1 ... xn), and body, b, include the following.  Note that the first three
-; bullet points apply to both G1 and G2 functions but the final ones are
-; relevant only to G2 functions (because no G1 function can call a function
-; with :FN/:EXPR ilks or else it would be dependent on APPLY$-USERFN):
+; (x1 ... xn), and body, b, include the following.  Note that the first bullet
+; point applies to both G1 and G2 functions but the rest are relevant only to
+; G2 functions (because no G1 function can call a function with :FN/:EXPR ilks
+; or else it would be dependent on APPLY$-USERFN):
 
-; - f's measure term is entirely in G1 functions.  In our model, this is
-;   insured by the acceptable-warranted-justificationp called from badger in
-;   apply.lisp: the measure is tame (all badged) and ancestrally independent of
-;   APPLY$-USERFN, i.e., G1.
+; - f's measure, well-founded relation and domain predicate are pre-apply$
+;   definable.  See badger.  So we needn't worry about modeling measures as we
+;   model apply$.
 
-; - f's measure is natural number valued and its well-founded relation is O<
-;   over O-P.  We assume without loss of generality that the measure takes all
-;   of the formals.
+; - f's measure is natural number valued or is an LLIST expression (in both
+;   cases, with the appropriate well-founded relation and domain).  This means
+;   that the user's measures are all bounded ordinal and there is a largest
+;   one, e.g., with k components.  We pretend all the user measures are
+;   lexicographic with k components, with 0s in the more significant (but
+;   unused) slots of user functions using fewer than k components.  To justify
+;   the apply$! clique, we use a lexicographic measure of 4+k components.
+;   Without loss of generality we can assume that the measure of f takes all of
+;   the formals.
 
 ; - f is singly recursive, not in a mutually recursive clique.
 
@@ -2567,14 +2574,16 @@
 ; All of these facts (and others) are checked by (defwarrant f) which fails if
 ; any of the checks fail.
 
-; We could loosen some of the restrictions.  The insistence that the measure be
-; a natp is only relevant for G2 functions and even then could be loosened to
-; bounded ordinal.  We'd have to change the proof here.  We could eliminate the
-; restriction that measures be independent of APPLY$-USERFN if we were sure of
-; the claim that every tame expression is G1 definable.  See the discussion in
-; acceptable-warranted-justificationp.  We could allow mutual recursion if we
-; generalized the badger to handle it; we'd have to allow it in our G2
-; doppelganger construction.
+; We could loosen some of the restrictions.  Two relaxations have occurred to
+; us.  One is to abandon the restriction that G2 functions be justified by
+; LLIST measures (or naturals) and replace that restriction by recognition of a
+; ``bounded ordinal.''  Then we'd have to replace the LLISTs measuring all of
+; the functions in the apply$! clique with an ordinal subsumes that bounded
+; ordinal and that behaves analogously to the current LLIST construction.
+
+; The second relaxation would be to allow the badging of mutually recursive
+; functions, but we'd have to extend the doppelganger construction to sweep in
+; all the user-defined functions in the clique.
 
 ; In the evaluation theory, all G1 functions will be defined exactly as in the
 ; user's history, except that we omit any mention of guards.
@@ -2586,48 +2595,51 @@
 ; =================================================================
 ; The Standard Doppelganger Construction:
 
+; The model construction is illustrated in books/projects/apply-model-2/,
+; specifically in subdirectories ex1/ and ex2/, both of which contain a file
+; named doppelganger.lisp, to which we refer below when examples are called
+; for.
+
 ; In constructing the model we will define every G1 function exactly as the
 ; user did, except that we will omit any :guards because we don't need guards
-; in this application.  We know that every G1 function is justified in terms of
-; G1 functions (every justification of a badged function has well-founded
-; relation O< on domain O-P with a tame measure that is ancestrally independent
-; of APPLY$-USERFN (and, coincidentally, natp valued, though while always
-; enforced that observation needn't be for G1 functions)).  That means that if
-; we just copy the user's unguarded G1 definitions down in the same order they
-; will be admissible for the same reasons as before.  None of them rely on G2
-; functions for admission.
+; in this application.  We know that every G1 function is pre-apply$ definable.
+; That means that if we just copy the user's unguarded G1 definitions down in
+; the same order they will be admissible for the same reasons as before.  None
+; of them rely on apply$ or G2 functions for admission.
 
 ; So now we describe how to define the doppelgangers for G2 functions.
 
 ; Suppose f is a user-defined G2 function with formals (v1 ... vn), and body b.
 ; Let (m v1 ... vn) be the measure used to admit f.  Note that the measure is
-; entirely in G1 and so can be written after the G1 functions are defined.
-; The measure is also a natp, which will be discussed when we discuss the
-; measure for the G2 doppelgangers.   Then the definition of the
-; doppelganger of f, namely f!, is (DEFUN f! (v1 ... vn) b''), where b'' is
-; obtained in two steps as follows.  First, let b' be the result of
-; renaming in b every G2 function called, replacing the called function
-; by its doppelganger name.  (Here we truly mean only ACL2 function calls, not
-; ``calls'' within lambda objects and terms.)  Next, consider a call of f! in b'
-; ``marked'' if the measure conjecture for that call,
+; pre-apply$ definable and so can be written after the G1 functions are
+; defined.  (Indeed, G1 functions might be used in the measures, since they're
+; all pre-apply$ definable.)  Then the definition of the doppelganger of f,
+; namely f!, is (DEFUN f! (v1 ... vn) b''), where b'' is obtained in two steps
+; as follows.  First, let b' be the result of renaming in b every G2 function
+; called, replacing the called function by its doppelganger name.  (Here we
+; truly mean only ACL2 function calls, not ``calls'' within lambda objects and
+; terms.)  Next, consider a call of f! in b' ``marked'' if the measure
+; conjecture for that call,
 
 ; (IMPLIES (AND t1 ... tn) (O< (m a1 ... an) (m v1 ... vn)))
 
 ; mentions a G2 function.  Create b'' by visiting every marked call, c, in b'
 ; and replacing c by
 
-; (IF (O< (m a1 ... an)
-;         (m v1 ... vn))
+; (IF (rel (m a1 ... an)
+;          (m v1 ... vn))
 ;     c
 ;     NIL).
 
-; We call the O< term above the ``O< condition'' for the marked call.  The O<
-; condition will be sufficient to justify call c during the admission of the
-; clique.  These conditions cannot be proved until all the G2 functions are
-; defined.  However, once all the G2 functions are defined, each O< condition
-; is implied by the tests governing it.  Logically this follows from the proof
-; that the doppelgangers are equivalent to their counterparts in the evaluation
-; theory.  But, practically speaking, to prove that equivalence may require
+; We call the rel term above the ``rel condition'' for the marked call.  Rel
+; here is the well-founded relation used by the user's definition and is
+; pre-apply$ definable and so is available.  The rel condition will be
+; sufficient to justify call c during the admission of the clique.  These
+; conditions cannot be proved until all the G2 functions are defined.  However,
+; once all the G2 functions are defined, each rel condition is implied by the
+; tests governing it.  Logically this follows from the proof that the
+; doppelgangers are equivalent to their counterparts in the evaluation theory.
+; But, practically speaking, to prove that equivalence may require
 ; recapitulating for the doppelgangers the lemma development the user used
 ; during the admission of f.
 
@@ -2642,19 +2654,36 @@
 ;          (APPLY$ FN (LIST LST LST)))
 ;         (T (PROW* (PROW LST FN) FN))))
 
+; While the measure shown above is numeric, assume the longest lexicographic
+; measure among the G2 user functions is (LLIST x1 x2 x3), e.g., has length 3.
+
 ; To create the doppelganger definition we carry out the steps described.
 ; First, rename the G2 functions to their doppelgangers.  Note that the G2
-; functions mentioned in PROW* are APPLY$, PROW, and PROW*.  So the renaming
-; produces:
+; functions mentioned in PROW* are APPLY$, PROW, and PROW*.  Also, change the
+; measure to that used by the apply$! clique, which is, in this case, an LLIST
+; of length 4+3.  In the defun$ below we do not specify the first three or the
+; last component and just write a1-a4 in those slots.  See The Measure for the
+; APPLY$! Clique, below, for the actual expressions.  Here we're just
+; interested in how we integrate the user's measure for PROW* to the measure
+; used in PROW*!.  This produces:
 
 ; (DEFUN$ PROW*! (LST FN)
-;   (DECLARE (XARGS :MEASURE (LEN LST)))
+;   (DECLARE (XARGS :MEASURE (LLIST a1 a2 a3 0 0 (LEN LST) a4)
+;                   :WELL-FOUNDED-RELATION L<))
 ;   (COND ((OR (ENDP LST)
 ;              (ENDP (CDR LST)))
 ;          (APPLY$! FN (LIST LST LST)))
 ;         (T (PROW*! (PROW! LST FN) FN))))
 
-; The call (PROW*! (PROW! LST FN) FN) is marked because the
+; Note that the user's measure, (LEN LST), is slotted into a 3-slot wide
+; section of the larger measure.  Numeric user measures, as here, are in the
+; least significant of the 3 slots.  In general, we add as many
+; more-significant 0's as necessary to the user's measure to produce a measure
+; of length 3.  This work is actually done in the file
+; weights-and-measures.lisp of books/projects/apply-model-2/ and wrapped up in
+; the macro standard-g2-userfn-measure.
+
+; The call (PROW*! (PROW! LST FN) FN) is ``marked'' because the
 ; measure conjecture for that call is:
 
 ; (IMPLIES (AND (NOT (ENDP LST))
@@ -2666,7 +2695,8 @@
 ; the final definition of the doppelganger for prow*:
 
 ; (DEFUN$ PROW*! (LST FN)
-;   (DECLARE (XARGS :MEASURE (LEN LST)))
+;   (DECLARE (XARGS :MEASURE (LLIST a1 a2 a3 0 0 (LEN LST) a4)
+;                   :WELL-FOUNDED-RELATION L<))
 ;   (COND ((OR (ENDP LST)
 ;              (ENDP (CDR LST)))
 ;          (APPLY$! FN (LIST LST LST)))
@@ -2674,7 +2704,7 @@
 ;                (PROW*! (PROW! LST FN) FN)
 ;                NIL))))
 
-; We claim that the O< condition inserted is implied by the governing tests --
+; We claim that the rel condition inserted is implied by the governing tests --
 ; or will be once all the G2 functions are defined.  Intuitively, the proof is
 ; ``the same'' as that of the measure conjecture proved for that case in the
 ; user's chronology:
@@ -2795,7 +2825,7 @@
 ; must be proved simultaneously along with the proofs that the inserted O<
 ; conditions on marked calls are implied by their governors.  The latter can be
 ; proved because the induction hypotheses equating doppelgangers and their
-; counterparts allow us to rewrite the O< conditions (which are stated in
+; counterparts allow us to rewrite the rel conditions (which are stated in
 ; doppelganger terms) into their counterparts, and the resulting conjecture is
 ; known to be a theorem by the measure conjectures proved during the admission
 ; of the user's functions.
@@ -3007,11 +3037,22 @@
 ; functions and only afterwards do we present the measures for APPLY$!, EV$!,
 ; and EV$-LIST!.
 
+; Let k be the length of the longest LLIST measure used by a user-defined G2
+; function.
+
 ; Let f be a user-defined G2 function with doppelganger f!.
 
-; The measure for f! is a lexicographic 5-tuple where the first four components
-; are computed by the macro expressions given below.  The fifth component is
-; always 1.
+; The measure for f! is a lexicographic 4+k-tuple where the first three
+; components are computed by the macro expressions given below.  The last
+; component is always 1 (for user G2 functions).  The middle k components are
+; the user-specified measure for f, padded on the left with 0s to make it k
+; wide.  For example, if f is justified with a numeric measure, say m, and k is
+; 3, then the middle k components are 0, 0, and m.  If f is justified with
+; (LLIST m1 m2), then the middle k components are 0, m1, and m2.
+
+; See standard-g2-userfn-measure defined in
+; books/projects/apply-model-2/weights-and-measures.lisp for the code that
+; generates the entire 4+k tuple for user-defined G2 functions.
 
 ; (tameness-bit f): 0 if all of the :FN/:EXPR formals of f are tame, 1
 ;    otherwise.  Here by ``tame'' we mean accepted by tamep-functionp! or
@@ -3023,10 +3064,6 @@
 ;    chronology.  The position of APPLY$ and APPLY$-USERFN is 0, the positions
 ;    of EV$ and EV$-LIST are 1, the position of the first badged user-defined
 ;    function is 2, the next such function 3, etc.
-
-; (original-measure f): measure term used to admit f in the user's chronology
-;    (which we have required to exist rather than being local; indeed to be
-;    definable in terms of G1 functions).
 
 ; Implementation Note: Each component above requires knowledge of how f was
 ; defined and so requires looking at the world created by the user's
@@ -3059,6 +3096,14 @@
 ; *ORIGINAL-MEASURES-ALIST*       alist pairing each user-defined G2 function
 ;                                  symbol with the original measure
 ;                                  term used in its admission
+
+; *MAX-LEX-LENGTH*                length of the longest LLIST justifying a 
+;                                  user-defined G2 function
+
+; *BIG-0*                         a list of *MAX-LEX-LENGTH* zeros to fill the
+;                                  slots dedicated to user-defined functions in
+;                                  measures for apply$!, ev$!, ev$!-list, and
+;                                  apply$-userfn1!.
 
 ; The values of these constants are computed from the world by make-event forms
 ; in doppelgangers.lisp, run after locally including "user-defs".  We list the
@@ -3247,7 +3292,7 @@
 ;                   (+ 1 (MAXIMAL-WEIGHT (FN/EXPR-ARGS FN ARGS)))
 ;                   0))
 ;          (CHRONOLOGICAL-POSITION APPLY$)
-;          0
+;          0 ... 0  ; e.g., ,@*BIG-0*
 ;          1))
 
 ; The function FN/EXPR-ARGS returns the elements of its second argument that
@@ -3263,16 +3308,16 @@
 ;                   (+ 1 (MAX-WEIGHT (FN/EXPR-ARGS FN ARGS)))
 ;                   0))
 ;          (CHRONOLOGICAL-POSITION APPLY$-USERFN)
-;          0
+;          0 ... 0  ; e.g., ,@*BIG-0*
 ;          0))
 
 ; The measures of EV$! and EV$-LIST! are:
 
 ; (DEFUN EV$!-MEASURE (X A)
-;   (LLIST 0 (WEIGHT X) (CHRONOLOGICAL-POSITION EV$) 0 1))
+;   (LLIST 0 (WEIGHT X) (CHRONOLOGICAL-POSITION EV$) 0...0 1))
 
 ; (DEFUN EV$!-LIST-MEASURE (X A)
-;   (LLIST 0 (WEIGHT X)  (CHRONOLOGICAL-POSITION EV$-LIST) 0 1))
+;   (LLIST 0 (WEIGHT X)  (CHRONOLOGICAL-POSITION EV$-LIST) 0...0 1))
 
 ; As already explained, the measure of each user-defined doppelganger, f!, is
 
@@ -3280,7 +3325,7 @@
 ;   (LLIST (TAMENESS-BIT f)
 ;          (MAX-INTERNAL-WEIGHT f)
 ;          (CHRONOLOGICAL-POSITION f)
-;          (ORIGINAL-MEASURE f)
+;          0 ... (ORIGINAL-MEASURE f) ; left-padded with 0s
 ;          1))
 
 ; As mentioned earlier, APPLY$-USERFN1! is only called by APPLY$! and is could
@@ -3919,16 +3964,21 @@
 
 ; Because the :FN/:EXPR a_i are equal to the corresponding v_i the first three
 ; components of the two measures are equal and the comparison above can be
-; decided by the comparison of the fourth components.  Let the original measure
-; function used to admit f be m.  Thus, the conjecture above reduces to
+; decided by the comparison of the so-called ``middle'' components in which the
+; user's measure of f occupy the right-most (least significant) slots with 0s
+; padding the left-most (more significant) slots.  The last component is always
+; 1.  The original measure of f is either some numeric measure m or else (LLIST
+; (m1 v_1 ... vn_n) ...).  Without loss of generality we can focus on the LLIST
+; case, treating the numeric case as (LLIST m).  Thus, the conjecture above
+; reduces to
 
 ; (IMPLIES tst
-;          (O< (m a_1 ... a_n)
-;              (m v_1 ... v_n)))
+;          (L< (LLIST (m1 a_1 ... a_n) ...)
+;              (LLIST (m1 v_1 ... v_n) ...)))
 
 ; If this formula involves any G2 function then the call of recursive f! was
 ; considered marked by the standard doppelganger construction and thus the
-; concluding O< comparison is one of the tests governing the recursive call.
+; concluding L< comparison is one of the tests governing the recursive call.
 ; Hence, the formula trivially holds.
 
 ; Otherwise, up to the renaming of G1 functions to their doppelgangers, the

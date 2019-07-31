@@ -574,23 +574,32 @@
 ;      defwarrant and thus:
 
 ;      Fn is a defined :logic mode function without state or stobjs in its
-;      signature and is either in class (G1) or (G2) as described below:
+;      signature, its justification is ``pre-apply$ definable,'' meaning that
+;      the measure, well-founded relation, and domain are ancestrally
+;      independent of apply$-userfn, and is either in class (G1) or (G2) as
+;      described below:
 
-;      (G1) fn is not ancestrally dependent on apply$ (or on any inapplicative
-;           primitive like sys-call).
+;      (G1) fn's body is ancestrally independent of apply$-userfn and
+;           ancestrally independent of inapplicative functions, like sys-call.
+;           (This odd extra condition is necessary because we don't actually
+;           require that fn's body be fully badged.  If fn could only call
+;           badged functions, then we wouldn't have to check that such
+;           functions as sys-call are not involved.)
 
-;      (G2) fn is ancestrally dependent on apply$ and
+;      (G2) fn's body is ancestrally dependent on apply$-usefn and
 
 ;        (a) one of these conditions hold:
 ;            * fn is not recursively defined, or
 
-;            * fn is recursively defined with a natural number measure not
-;              ancestrally dependent on apply$, well-founded relation O<, and
-;              domain O-P, or
+;            * fn is recursively defined with a natural number measure and
+;              well-founded relation O<, and domain O-P, or
 
-;            * fn is recursively defined with a measure not ancestrally
-;              dependent on apply$ and that is the macroexpansion of an LLIST
-;              expression, well-founded relation L<, and domain LEXP
+;            * fn is recursively defined with a measure that is the
+;              macroexpansion of an LLIST expression, well-founded relation L<,
+;              and domain LEXP
+
+;            Recall from above that we also know justification is pre-apply$
+;            definable.
 
 ;        (b) Every function called in the body of fn, except fn itself, has a
 ;            badge (and thus cannot be one of the inapplicable primitives)
@@ -1331,8 +1340,6 @@
                      (if (eq temp t) nil temp))))))
    (t nil)))
 
-; Note:  This function replaces acceptable-warranted-justificationp
-
 (defun g2-justification (fn ens wrld)
 
 ; Fn is a defined function symbol being considered for a warrant and we know
@@ -1747,39 +1754,54 @@
 ; Assurances on Badged Functions (recapitulation)
 
 ; If badger assigns new-badge as the badge of fn with (beta-reduced) body,
-; body, then we know:
+; body, then we know fn is a defined :logic mode function without state or
+; stobjs in its signature, its justification is pre-apply$ definable as above
+; and fn is either in class (G1) or (G2).
 
-; (a) Fn is a defined, singly-recursive (or non-recursive) :logic mode function
-;     that does not traffic in stobjs or state and that (if recursive) is
-;     justified with a natural number valued measure decreasing by o<.
-;     Furthermore, the badge returned is an apply$-badgep with correct :arity
-;     and :out-arity and :ilks of either T or a list (in 1:1 correspondence
-;     with the formals of fn) of NIL, :FN, and/or :EXPR tokens.
+; (G1) fn's body is ancestrally independent of apply$-userfn and ancestrally
+;      independent of inapplicative functions, like sys-call.
 
-; (b) Every function called in body has a badge (including fn if we consider
-;     new-badge the badge of fn).
+; (G2) fn's body is ancestrally dependent on apply$-usefn and
 
-; (c) Every formal of ilk :FN is only passed into :FN slots, and
-;     every :FN slot in the body is occupied by
-;     * a formal variable of ilk :FN in new-badge, or
-;     * a quoted tame function symbol other than fn, or
-;     * a quoted, well-formed (fully translated and closed), tame lambda
-;       object that does not call fn.
+;  (a) one of these conditions hold:
+;      * fn is not recursively defined, or
 
-; (d) Every formal of ilk :EXPR is only passed into :EXPR slots, and
-;     every :EXPR slot in the body is occupied by
-;     * a formal variable of ilk :EXPR in new-badge, or
-;     * a quoted, well-formed (fully translated), tame term that does not call
-;       fn.
+;      * fn is recursively defined with a natural number measure and
+;        well-founded relation O<, and domain O-P, or
 
-; (e) If the nth formal, vn, of fn has ilk :FN or :EXPR then vn is passed
-;     unchanged into the nth slot of every recursive call of fn.
+;      * fn is recursively defined with a measure that is the
+;        macroexpansion of an LLIST expression, well-founded relation L<,
+;        and domain LEXP
 
-; To establish this we first inspect badger and see that there are only two
-; places where it returns non-erroneously, i.e., (mv nil ...).  In the first
-; non-erroneous return, fn has a tame body, and so is tame, and we assign :ilks
-; = t, which is obviously correct.  It is the second non-erroneous return that
-; is potentially problematic.
+;      Recall from above that we also know justification is pre-apply$
+;      definable.
+
+;  (b) Every function called in body has a badge (including fn if we consider
+;      new-badge the badge of fn).
+
+;  (c) Every formal of ilk :FN is only passed into :FN slots, and
+;      every :FN slot in the body is occupied by
+;      * a formal variable of ilk :FN in new-badge, or
+;      * a quoted tame function symbol other than fn, or
+;      * a quoted, well-formed (fully translated and closed), tame lambda
+;        object that does not call fn.
+
+;  (d) Every formal of ilk :EXPR is only passed into :EXPR slots, and
+;      every :EXPR slot in the body is occupied by
+;      * a formal variable of ilk :EXPR in new-badge, or
+;      * a quoted, well-formed (fully translated), tame term that does not call
+;        fn.
+
+;  (e) If the nth formal, vn, of fn has ilk :FN or :EXPR then vn is passed
+;      unchanged into the nth slot of every recursive call of fn.
+
+; To establish this we first inspect badger and see that it quite literally
+; checks that fn is in :logic mode without state or stobjs in its signature,
+; its justification is pre-apply$ definable, and it is either in class (G1) or
+; (G2).  It then goes on to check the additional properties imposed on (G2)
+; functions.  One need only pay attention to the non-erroneous exits, e.g., (mv
+; nil ...).  It is the third (last) non-erroneous exit that is potentially
+; problematic.
 
 ; Briefly reviewing the code in badger leading to the second non-erroneous
 ; return we see that it guesses an alist0 assigning ilks to the vars of body,

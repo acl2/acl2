@@ -109,10 +109,10 @@ public final class Acl2Environment {
             Acl2String symbolName = symbol.getName();
             if (importedCopy.contains(symbol))
                 throw new IllegalArgumentException
-                        ("Symbol with name \""
+                        ("Symbol with name "
                                 + symbolName
-                                + "\" already imported by \""
-                                + packageName + "\".");
+                                + " already imported by package "
+                                + packageName + ".");
             importedCopy.add(symbol);
         }
         packageDefs.put(packageName, importedCopy);

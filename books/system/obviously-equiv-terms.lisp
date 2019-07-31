@@ -7,6 +7,10 @@
 (include-book "clause-processors/sublis-var-meaning" :Dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (in-theory (disable subcor-var-is-sublis-var1
+                           subcor-var-lst-is-sublis-var1-lst
+                           subcor-var1-in-terms-of-cdr-assoc)))
+
 (defines term-depth
   :flag-local nil
   (define term-depth ((x pseudo-termp))

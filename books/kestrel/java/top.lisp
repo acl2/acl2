@@ -155,4 +155,8 @@
      "ATJ has been extended with a facility to generate Java code
       to execute tests that compare
       results obtained via evaluation in ACL2
-      with results obtained via evaluation in AIJ."))))
+      with results obtained via evaluation in AIJ.")
+    (xdoc::li
+     "ATJ has been extended with a facility to generate Java code
+      according to a shallow embedding approach,
+      in addition to the deep embedding approach described in the paper."))))

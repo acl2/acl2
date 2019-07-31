@@ -83,7 +83,8 @@ data last modified: [2014-08-07]
        (pdef (remove-names pdef))
 ;(one-way-unify '(alistof :a :b) '(alistof nat symbol-list))
 ;(T ((:B . SYMBOL-LIST) (:A . NAT)))
-       ((mv yesp tvar-sigma) (one-way-unify (acl2::sublis-var *tvar-typename-alist* ptype) pdef))
+       ((mv yesp tvar-sigma)
+        (one-way-unify (acl2::sublis-var *tvar-typename-alist* ptype) pdef))
 
        (verbose (get1 :verbose kwd-alist t))
         
@@ -98,9 +99,6 @@ data last modified: [2014-08-07]
      new-types
      kwd-alist
      wrld)))
-  
-
-
 
 (defloop polymorphic-inst-defdata-events0 (ps kwd-alist wrld)
   (for ((p in ps)) (append (polymorphic-inst-defdata-events1 p kwd-alist wrld))))
@@ -116,6 +114,7 @@ fails, but later theorems would have succeeded. In this way, we
 get as much automated polymorphic support as possible.
 
 |#
+
 (defun try-admitting-events-fun (events)
   (if (endp events)
       nil
@@ -130,16 +129,11 @@ get as much automated polymorphic support as possible.
           `(commentary ,(get1 :print-commentary kwd-alist) "~| Polymorphic sig instantiation events...~%")
           (try-admitting-events-fun events)))))
 
-
-(add-pre-post-hook defdata-defaults-table :post-pred-hook-fns '(polymorphic-inst-defdata-events))
-
-
-
-
+(add-pre-post-hook
+ defdata-defaults-table
+ :post-pred-hook-fns '(polymorphic-inst-defdata-events))
 
 ; The rest of the file concerns with the implementation of the SIG macro
-
-
 
 ; sig macro for polymorphic support.
 
@@ -736,6 +730,7 @@ constant). In the latter return a lambda expression"
                 (cons 'or rest)
               (car rest))))
          (t (cons (car pdef) (simplify-prop-comb-texps (cdr pdef))))))
+
  (defun simplify-prop-comb-texps (texps)
    (if (endp texps)
        '()
@@ -750,7 +745,10 @@ constant). In the latter return a lambda expression"
        ((when yes) (mv t sigma)))
 ;exceptional hack
     (if (eq (car ptype) 'LISTOF)
-        (b* (((mv yes sigma) (one-way-unify ptype (simplify-prop-comb-texp (acl2::sublis-var *map-all-to-a* pdef))))
+        (b* (((mv yes sigma)
+              (one-way-unify
+               ptype
+               (simplify-prop-comb-texp (acl2::sublis-var *map-all-to-a* pdef))))
              ((unless yes) (mv yes sigma))
              (val (cdr (car sigma))) ;the lone :a mapped value
              (tvars (all-vars pdef))
