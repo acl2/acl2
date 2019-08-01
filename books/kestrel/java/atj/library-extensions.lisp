@@ -10,6 +10,7 @@
 
 (in-package "JAVA")
 
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/lists/rev" :dir :system)
@@ -24,13 +25,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-library-extensions
-  :parents (atj-implementation)
-  :short "Library extensions for @(tsee atj)."
-  :long
-  (xdoc::topstring-p
-   "These will be moved to more general libraries eventually.")
-  :default-parent t)
+(xdoc::evmac-topic-library-extensions atj)
 
 (defines remove-mbe-logic/exec-from-term
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
