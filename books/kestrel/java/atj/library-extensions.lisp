@@ -72,10 +72,14 @@
 
 (define remove-mbe-logic-from-term ((term pseudo-termp))
   :returns (new-term "A @(tsee pseudo-termp).")
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':exec') part @('b')."
   (remove-mbe-logic/exec-from-term term t))
 
 (define remove-mbe-exec-from-term ((term pseudo-termp))
   :returns (new-term "A @(tsee pseudo-termp).")
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':logic') part @('a')."
   (remove-mbe-logic/exec-from-term term nil))
 
 (define unquote-list ((list quote-listp))
