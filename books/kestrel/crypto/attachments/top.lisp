@@ -10,7 +10,7 @@
 
 (in-package "CRYPTO")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "keccak-256")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

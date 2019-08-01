@@ -301,6 +301,11 @@
    ;; xdoc to be added later
    ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
+   (xdoc::p
+    "An executable attachment has been made for
+     the Keccak-256 interface that operates on bytes,
+     using the definition from the sub-library for Keccak.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
