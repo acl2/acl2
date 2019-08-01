@@ -35,8 +35,8 @@
      and returns a sequence of bits
      of a fixed size.
      Given an endianness convention to covert between bit and byte sequences,
-     the hash function can be regarded as
-     operating on byte sequences instead of bit sequences.")
+     the hash function can be also regarded as
+     operating on byte sequences.")
 
    (xdoc::p
     "This macro introduces weakly constrained ACL2 functions
