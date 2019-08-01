@@ -52,31 +52,20 @@
      the HMAC function has no limit on the sizes of its inputs either.
      Otherwise, limits are derived as follows,
      and included in the guard of the generated constrained function.
+
      RFC 2104 says that the key size
      must not exceed the hash function's block size
      in order for the key to be used ``directly'',
      otherwise the key is hashed and its hash used:
-     since the hash function's block size is (much) smaller than
-     the hash function's maximum input size,
-     it follows that the key's maximum size
-     is the same as the hash function's maximum input size.
+     either way, the key or its hash is padded to the block size.
      RFC 2104 says that an inner hash is taken
-     of the concatenation of the (xor'd) key and the text,
+     of the concatenation of
+     (i) the (xor'd) padded key or key hash and (ii) the text,
      whose total size must therefore not exceed
      the hash function's maximum input size:
      it follows that the size of the text must not exceed
      the hash function's maximum input size dimished by
-     either (i) the key size if it does not exceed the block size
-     or (ii) the hash function's output size otherwise.
-     For simplicity,
-     we use the block size as an over-approximation of (i) and (ii)
-     (note that the block size is larger than the output size):
-     that is, the maximum size of the text size is
-     the maximum input size of the hash
-     diminished by the block size of the hash;
-     this is a very large value,
-     and using the slightly more relaxed but more complicated maximum
-     would not provide significant advantages.
+     the hash function's block size.
      Note that @(tsee definterface-hash) has no information about
      the hash function's block size,
      which is therefore supplied directly to @('definterface-hmac').
