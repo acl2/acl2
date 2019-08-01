@@ -30,7 +30,7 @@
     "We define a wrapper of the executable definition
      and attach the wrapper to the constrained function.
      The wrapper serves to use the fixtypes for byte lists,
-     to fix the input accordingly,
+     to fix the inputs accordingly,
      and to convert the text input to bits
      as required by the executable definition
      (while the key is in bytes)."))
