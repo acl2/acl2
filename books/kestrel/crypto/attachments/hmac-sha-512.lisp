@@ -46,14 +46,14 @@
                                acl2::unsigned-byte-listp-rewrite))))
     (b* ((key (mbe :logic (byte-list-fix key) :exec key))
          (text (mbe :logic (byte-list-fix text) :exec text))
-         (text-bits (acl2::bebytes=>bits text)))
+         (text-bits (bebytes=>bits text)))
       (hmac::hmac-sha-512 key text-bits))
 
     :prepwork
     ((defrulel verify-guards-lemma
-       (implies (acl2::bit-listp x)
-                (acl2::all-unsigned-byte-p 1 x))
-       :enable (acl2::bit-listp)))
+       (implies (bit-listp x)
+                (all-unsigned-byte-p 1 x))
+       :enable (bit-listp)))
 
     :hooks (:fix)
 
