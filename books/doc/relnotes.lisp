@@ -305,8 +305,9 @@
     (xdoc::seeurl "crypto::attachments" "Executable attachments")
     " have been added for
      the Keccak-256 interface that operates on bytes,
-     the SHA-256 interface that operates on bytes, and
-     the HMAC-SHA-512 interface.")
+     the SHA-256 interface that operates on bytes,
+     the HMAC-SHA-512 interface,
+     and the PBKDF2 HMAC-SHA-512 interface.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
