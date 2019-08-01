@@ -12,6 +12,7 @@
 
 (include-book "std/portcullis" :dir :system)
 (include-book "kestrel/crypto/portcullis" :dir :system)
+(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

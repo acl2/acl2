@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
-(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
