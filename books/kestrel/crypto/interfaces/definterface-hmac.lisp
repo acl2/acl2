@@ -17,9 +17,11 @@
 (defxdoc definterface-hmac
 
   :parents (interfaces)
-
-  :short "Introduce an interface for
-          a cryptographic hash-based message authentication (HMAC) function."
+  :short (xdoc::topstring
+          "Introduce an "
+          (xdoc::seeurl "interfaces" "interface")
+          " for a cryptographic
+           hash-based message authentication (HMAC) function.")
 
   :long
 

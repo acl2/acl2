@@ -18,8 +18,10 @@
 (defxdoc definterface-hash
 
   :parents (interfaces)
-
-  :short "Introduce an interface for a cryptographic hash function."
+  :short (xdoc::topstring
+          "Introduce an "
+          (xdoc::seeurl "interfaces" "interface")
+          " for a cryptographic hash function.")
 
   :long
 
