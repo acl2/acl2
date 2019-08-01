@@ -315,6 +315,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "event-macros" "Event Macros Library"))
+
+   (xdoc::p
+    "XDOC constructors for documenting the implementation of event macros
+     have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
 
    (xdoc::p
