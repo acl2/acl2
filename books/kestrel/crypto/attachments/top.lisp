@@ -10,6 +10,7 @@
 
 (in-package "CRYPTO")
 
+(include-book "hmac-sha-512")
 (include-book "keccak-256")
 (include-book "sha-256")
 
