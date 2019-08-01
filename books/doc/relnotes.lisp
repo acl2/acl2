@@ -302,9 +302,10 @@
    ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
    (xdoc::p
-    "An executable attachment has been made for
-     the Keccak-256 interface that operates on bytes,
-     using the definition from the sub-library for Keccak.")
+    (xdoc::seeurl "crypto::attachments" "Executable attachments")
+    " have been added for
+     the Keccak-256 interface that operates on bytes
+     and the SHA-256 interface that operates on bytes.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
