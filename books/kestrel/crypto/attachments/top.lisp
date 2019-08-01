@@ -10,13 +10,16 @@
 
 (in-package "CRYPTO")
 
-(include-book "ecurve/top")
-(include-book "ecdsa/top")
-(include-book "interfaces/top")
-(include-book "attachments/top")
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc cryptography
-  :parents (acl2::kestrel-books acl2::projects)
-  :short "A library for cryptography.")
+(defxdoc attachments
+  :parents (cryptography)
+  :short "Cryptographic attachments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we provide executable attachments for "
+    (xdoc::seeurl "interfaces" "cryptographic interfaces")
+    ".")))
