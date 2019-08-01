@@ -53,7 +53,9 @@
       (mv (reverse acc) used-fal)
      (b* ((name (cdr (assoc :name (car x))))
           (look (hons-get name fal)))
-       (if look
+       (if (and look
+                (equal (cdr (assoc :from (car x)))
+                       (cdr (assoc :from (cdr look)))))
            (replace-bound-topics
             (cdr x) fal (cons (cdr look) acc)
             (hons-acons name t used-fal))
