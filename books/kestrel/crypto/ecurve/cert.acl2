@@ -8,5 +8,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
-(include-book "kestrel/crypto/portcullis" :dir :system)
+(include-book "../portcullis") ; for CRYPTO package
+(include-book "portcullis") ; for ECURVE package
