@@ -92,13 +92,12 @@ public final class Acl2String extends Acl2Value {
         }
         char[] jcharacters = new char[len];
         for (int i = 0; i < len; ++i) {
-            Acl2ConsPair pair = (Acl2ConsPair) list;
-            Acl2Value element = pair.getCar();
+            Acl2Value element = list.car();
             if (element instanceof Acl2Character)
                 jcharacters[i] = ((Acl2Character) element).getJavaChar();
             else
                 jcharacters[i] = 0;
-            list = pair.getCdr();
+            list = list.cdr();
         }
         return make(new String(jcharacters));
     }
