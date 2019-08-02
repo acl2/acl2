@@ -10,15 +10,17 @@
 
 (in-package "ECURVE")
 
-(include-book "short-weierstrass")
-(include-book "short-weierstrass-validation")
+;; TODO: Uncomment once name clashes are fixed:
+;; (include-book "short-weierstrass")
+;; (include-book "short-weierstrass-validation")
 
 (include-book "secp256k1-domain-parameters")
 (include-book "secp256k1-interface")
 (include-book "secp256k1-types")
 
-(include-book "secp256k1")
-(include-book "secp256k1-tests")
+;; TODO: Uncomment once name clashes are fixed:
+;; (include-book "secp256k1")
+;; (include-book "secp256k1-tests")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
