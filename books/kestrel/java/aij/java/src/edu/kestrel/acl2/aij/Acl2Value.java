@@ -56,8 +56,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code characterp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 character,
+     * consistently with the {@code characterp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Character}.
      */
@@ -66,8 +66,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code stringp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 string,
+     * consistently with the {@code stringp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2String}.
      */
@@ -76,8 +76,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code symbolp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 symbol,
+     * consistently with the {@code symbolp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Symbol}.
      */
@@ -86,8 +86,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code integerp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 integer,
+     * consistently with the {@code integerp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Integer}.
      */
@@ -96,8 +96,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code rationalp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 rational,
+     * consistently with the {@code rationalp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Rational}.
      */
@@ -106,8 +106,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code complex-rationalp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 complex rational,
+     * consistently with the {@code complex-rationalp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2ComplexRational}.
      */
@@ -116,8 +116,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code acl2-numberp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 number,
+     * consistently with the {@code acl2-numberp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Number}.
      */
@@ -126,8 +126,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code consp} ACL2 function.
+     * Checks if this ACL2 value is an ACL2 {@code cons} pair,
+     * consistently with the {@code consp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2ConsPair}.
      */
@@ -136,8 +136,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code char-code} ACL2 function.
+     * Returns the ACL2 integer code of this ACL2 value
+     * (treated as an ACL2 character),
+     * consistently with the {@code char-code} ACL2 function.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Character}.
      */
@@ -146,8 +147,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code code-char} ACL2 function.
+     * Returns the ACL2 character of this ACL2 value
+     * (treated as an ACL2 integer code of the character),
+     * consistently with the {@code code-char} ACL2 function.
      * It returns the character with code 0 by default;
      * it is overridden in {@link Acl2Integer}.
      */
@@ -156,8 +158,8 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code coerce} ACL2 function,
+     * Coerces this ACL2 value to a list,
+     * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2String}.
@@ -178,8 +180,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code symbol-package-name} ACL2 function.
+     * Returns the symbol package name of this ACL2 value
+     * (treated as an ACL2 symbol),
+     * consistently with the {@code symbol-package-name} ACL2 function.
      * It returns the empty string by default;
      * it is overridden in {@link Acl2Symbol}.
      */
@@ -188,8 +191,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code symbol-name} ACL2 function.
+     * Returns the symbol name of this ACL2 value
+     * (treated as an ACL2 symbol),
+     * consistently with the {@code symbol-name} ACL2 function.
      * It returns the empty string by default;
      * it is overridden in {@link Acl2Symbol}.
      */
@@ -198,8 +202,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code pkg-imports} ACL2 function.
+     * Returns the ACL2 list of symbols imported by this ACL2 value
+     * (treated as an ACL2 string that names a package),
+     * consistently with the {@code pkg-imports} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2String}.
      *
@@ -211,8 +216,10 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code pkg-witness} ACL2 function.
+     * Returns the ACL2 string that is the name of
+     * the witness of the package named by this ACL2 value
+     * (treated as an ACL2 string),
+     * consistently with the {@code pkg-witness} ACL2 function.
      * Since this function treats an argument that is not an ACL2 string
      * as the ACL2 string "ACL2",
      * the default implementation of this method
@@ -227,50 +234,119 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code unary--} ACL2 function.
+     * Negates (arithmetically) this ACL2 value,
+     * consistently with the {@code unary--} ACL2 function.
      * It returns 0 by default;
-     * it is overridden in {@link Acl2Rational} and {@link Acl2ComplexRational}.
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      */
     Acl2Number negate() {
         return Acl2Integer.ZERO;
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code unary-/} ACL2 function.
+     * Reciprocates (arithmetically) this ACL2 value,
+     * consistently with the {@code unary-/} ACL2 function.
      * It returns 0 by default;
-     * it is overridden in {@link Acl2Rational} and {@link Acl2ComplexRational}.
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      */
     Acl2Number reciprocate() {
         return Acl2Integer.ZERO;
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code binary-+} ACL2 function.
+     * Adds the argument ACL2 value to this ACL2 value,
+     * consistently with the {@code binary-+} ACL2 function.
      * It returns the result of coercing the argument to a number by default;
      * it is overridden in
-     * {@link Acl2Integer}, {@link Acl2Ratio}, and {@link Acl2ComplexRational}.
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      */
-    Acl2Number add(Acl2Value other) {
+    Acl2Number addValue(Acl2Value other) {
         return other.fix();
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code binary-*} ACL2 function.
+     * Adds the argument ACL2 number to this ACL2 value,
+     * consistently with the {@code binary-+} ACL2 function.
+     * It returns the argument by default;
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
+     */
+    Acl2Number addNumber(Acl2Number other) {
+        return other;
+    }
+
+    /**
+     * Adds the argument ACL2 rational to this ACL2 value,
+     * consistently with the {@code binary-+} ACL2 function.
+     * It returns the argument by default;
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
+     */
+    Acl2Number addRational(Acl2Rational other) {
+        return other;
+    }
+
+    /**
+     * Adds the argument ACL2 integer to this ACL2 value,
+     * consistently with the {@code binary-+} ACL2 function.
+     * It returns the argument by default;
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
+     */
+    Acl2Number addInteger(Acl2Integer other) {
+        return other;
+    }
+
+    /**
+     * Multiplies the argument ACL2 value to this ACL2 value,
+     * consistently with the {@code binary-*} ACL2 function.
      * It returns 0 by default;
      * it is overridden in
-     * {@link Acl2Integer}, {@link Acl2Ratio}, and {@link Acl2ComplexRational}.
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      */
-    Acl2Number multiply(Acl2Value other) {
+    Acl2Number multiplyValue(Acl2Value other) {
         return Acl2Integer.ZERO;
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code realpart} ACL2 function.
+     * Multiplies the argument ACL2 number to this ACL2 value,
+     * consistently with the {@code binary-*} ACL2 function.
+     * It returns 0 by default;
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
+     */
+    Acl2Number multiplyNumber(Acl2Number other) {
+        return Acl2Integer.ZERO;
+    }
+
+    /**
+     * Multiplies the argument ACL2 rational to this ACL2 value,
+     * consistently with the {@code binary-*} ACL2 function.
+     * It returns 0 by default;
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
+     */
+    Acl2Number multiplyRational(Acl2Rational other) {
+        return Acl2Integer.ZERO;
+    }
+
+    /**
+     * Multiplies the argument ACL2 integer to this ACL2 value,
+     * consistently with the {@code binary-*} ACL2 function.
+     * It returns 0 by default;
+     * it is overridden in
+     * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
+     */
+    Acl2Number multiplyInteger(Acl2Integer other) {
+        return Acl2Integer.ZERO;
+    }
+
+    /**
+     * Returns the real part of this ACL2 value
+     * (treating it as an ACL2 number),
+     * consistently with the {@code realpart} ACL2 function.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Number}.
      */
@@ -279,8 +355,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code imagpart} ACL2 function.
+     * Returns the imaginary part of this ACL2 value
+     * (treating it as an ACL2 number),
+     * consistently with the {@code imagpart} ACL2 function.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Number}.
      */
@@ -289,8 +366,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code numerator} ACL2 function.
+     * Returns the numerator of this ACL2 value
+     * (treating it as an ACL2 rational),
+     * consistently with the {@code numerator} ACL2 function.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Rational}.
      */
@@ -299,8 +377,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code denominator} ACL2 function.
+     * Returns the denominator of this ACL2 value
+     * (treating it as an ACL2 number),
+     * consistently with the {@code denominator} ACL2 function.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Rational}.
      */
@@ -309,8 +388,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code car} ACL2 function.
+     * Returns the first component of this ACL2 value
+     * (treating it as a {@code cons} pair),
+     * consistently with the {@code car} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2ConsPair}.
      */
@@ -319,8 +399,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code cdr} ACL2 function.
+     * Returns the first component of this ACL2 value
+     * (treating it as a {@code cons} pair),
+     * consistently with the {@code cdr} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2ConsPair}.
      */
@@ -329,7 +410,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Coerce this ACL2 value to an ACL2 number.
+     * Coerces this ACL2 value to an ACL2 number.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Number}.
      * This is consistent with the {@code fix} ACL2 function.
@@ -339,7 +420,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Coerce this ACL2 value to an ACL2 rational.
+     * Coerces this ACL2 value to an ACL2 rational.
      * It returns 0 by default;
      * it is overridden in {@link Acl2Rational}.
      * This is consistent with the {@code rfix} ACL2 function.

@@ -73,9 +73,8 @@ public final class Acl2Integer extends Acl2Rational {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code unary--} ACL2 function.
-     * This method refines the return type of {@link Acl2Rational#negate()}.
+     * Negates (arithmetically) this ACL2 integer,
+     * consistently with the {@code unary--} ACL2 function.
      */
     @Override
     Acl2Integer negate() {
@@ -83,55 +82,90 @@ public final class Acl2Integer extends Acl2Rational {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code unary-/} ACL2 function.
+     * Reciprocates (arithmetically) this ACL2 integer,
+     * consistently with the {@code unary-/} ACL2 function.
      */
     @Override
     Acl2Rational reciprocate() {
+        // 1/a:
         if (this.equals(Acl2Integer.ZERO))
             return Acl2Integer.ZERO;
         return Acl2Rational.make(Acl2Integer.ONE, this);
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code binary-+} ACL2 function.
+     * Adds the argument ACL2 value to this ACL2 integer,
+     * consistently with the {@code binary-+} ACL2 function.
      */
     @Override
-    Acl2Number add(Acl2Value other) {
-        if (other instanceof Acl2Integer) {
-            Acl2Integer otherInteger = (Acl2Integer) other;
-            return Acl2Integer.make
-                    (this.numericValue.add(otherInteger.numericValue));
-        } else {
-            // use Acl2Ratio.add() or Acl2ComplexNumber.add() or Acl2Value.add()
-            // and return the result because addition is commutative:
-            return other.add(this);
-        }
+    Acl2Number addValue(Acl2Value other) {
+        return other.addInteger(this);
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code binary-*} ACL2 function.
+     * Adds the argument ACL2 number to this ACL2 integer,
+     * consistently with the {@code binary-+} ACL2 function.
      */
     @Override
-    Acl2Number multiply(Acl2Value other) {
-        if (other instanceof Acl2Integer) {
-            Acl2Integer otherInteger = (Acl2Integer) other;
-            return Acl2Integer.make
-                    (this.numericValue.multiply(otherInteger.numericValue));
-        } else {
-            // use Acl2Ratio.multiply()
-            // or Acl2ComplexNumber.multiply()
-            // or Acl2Value.multiply()
-            // and return the result because multiplication is commutative:
-            return other.multiply(this);
-        }
+    Acl2Number addNumber(Acl2Number other) {
+        return other.addInteger(this);
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code integerp} ACL2 function.
+     * Adds the argument ACL2 rational to this ACL2 integer,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Rational addRational(Acl2Rational other) {
+        return other.addInteger(this);
+    }
+
+    /**
+     * Adds the argument ACL2 integer to this ACL2 integer,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    Acl2Integer addInteger(Acl2Integer other) {
+        return Acl2Integer.make(this.numericValue.add(other.numericValue));
+    }
+
+    /**
+     * Multiplies the argument ACL2 value to this ACL2 integer,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyValue(Acl2Value other) {
+        return other.multiplyInteger(this);
+    }
+
+    /**
+     * Multiplies the argument ACL2 number to this ACL2 integer,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyNumber(Acl2Number other) {
+        return other.multiplyInteger(this);
+    }
+
+    /**
+     * Multiplies the argument ACL2 rational to this ACL2 integer,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Rational multiplyRational(Acl2Rational other) {
+        return other.multiplyInteger(this);
+    }
+
+    /**
+     * Multiplies the argument ACL2 integer to this ACL2 integer,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    Acl2Integer multiplyInteger(Acl2Integer other) {
+        return Acl2Integer.make(this.numericValue.multiply(other.numericValue));
+    }
+
+    /**
+     * Returns {@code true},
+     * consistently with the {@code integerp} ACL2 function.
      */
     @Override
     Acl2Symbol integerp() {
@@ -139,9 +173,8 @@ public final class Acl2Integer extends Acl2Rational {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code code-char} ACL2 function.
-     * If this integer is negative or above 255, it is treated as 0.
+     * Returns the ACL2 character of this ACL2 integer code,
+     * consistently with the {@code code-char} ACL2 function.
      */
     @Override
     Acl2Character codeChar() {

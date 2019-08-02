@@ -37,8 +37,8 @@ public final class Acl2ConsPair extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Supports the native implementation of
-     * the {@code consp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code consp} ACL2 function.
      */
     @Override
     Acl2Symbol consp() {
@@ -46,16 +46,16 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code car} ACL2 function.
+     * Returns the first component of this ACL2 {@code cons} pair,
+     * consistently with the {@code car} ACL2 function.
      */
     Acl2Value car() {
         return this.car;
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code cdr} ACL2 function.
+     * Returns the first component of this ACL2 {@code cons} pair,
+     * consistently with the {@code cdr} ACL2 function.
      */
     Acl2Value cdr() {
         return this.cdr;

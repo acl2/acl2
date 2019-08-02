@@ -43,85 +43,8 @@ final class Acl2ComplexRational extends Acl2Number {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Supports the native implementation of
-     * the {@code unary--} ACL2 function.
-     */
-    @Override
-    Acl2Number negate() {
-        // -(a+bi) is (-a)+(-b)i:
-        Acl2Rational a = this.realPart;
-        Acl2Rational b = this.imaginaryPart;
-        return Acl2Number.make(a.negate(), b.negate());
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code unary-/} ACL2 function.
-     */
-    Acl2Number reciprocate() {
-        // 1/(a+bi) is (a/(aa+bb))-(b/(aa+bb))i:
-        Acl2Rational a = this.realPart;
-        Acl2Rational b = this.imaginaryPart;
-        Acl2Rational aa = (Acl2Rational) a.multiply(a);
-        Acl2Rational bb = (Acl2Rational) b.multiply(b);
-        Acl2Rational aabb = (Acl2Rational) aa.add(bb);
-        Acl2Rational aabbInv = aabb.reciprocate();
-        Acl2Rational resultReal = (Acl2Rational) a.multiply(aabbInv);
-        Acl2Rational resultImag = (Acl2Rational) b.negate().multiply(aabbInv);
-        return Acl2Number.make(resultReal, resultImag);
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code binary-+} ACL2 function.
-     */
-    @Override
-    Acl2Number add(Acl2Value other) {
-        if (other instanceof Acl2Number) {
-            // (a+bi)+(c+di) is (a+c)+(b+d)i:
-            Acl2Rational a = this.realPart;
-            Acl2Rational b = this.imaginaryPart;
-            Acl2Rational c = other.realpart();
-            Acl2Rational d = other.imagpart();
-            Acl2Rational resultReal = (Acl2Rational) a.add(c);
-            Acl2Rational resultImag = (Acl2Rational) b.add(d);
-            return Acl2Number.make(resultReal, resultImag);
-        } else {
-            // use Acl2Value.add()
-            // and return the result because addition is commutative:
-            return other.add(this);
-        }
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code binary-*} ACL2 function.
-     */
-    @Override
-    Acl2Number multiply(Acl2Value other) {
-        if (other instanceof Acl2Number) {
-            // (a+bi)*(c+di) is (ac-bd)+(bc+ad)i:
-            Acl2Rational a = this.realPart;
-            Acl2Rational b = this.imaginaryPart;
-            Acl2Rational c = other.realpart();
-            Acl2Rational d = other.imagpart();
-            Acl2Rational ac = (Acl2Rational) a.multiply(c);
-            Acl2Rational bd = (Acl2Rational) b.multiply(d);
-            Acl2Rational bc = (Acl2Rational) b.multiply(c);
-            Acl2Rational ad = (Acl2Rational) a.multiply(d);
-            Acl2Rational resultReal = (Acl2Rational) ac.add(bd.negate());
-            Acl2Rational resultImag = (Acl2Rational) bc.add(ad);
-            return Acl2Number.make(resultReal, resultImag);
-        } else {
-            // use Acl2Value.multiply()
-            // and return the result because multiplication is commutative:
-            return other.multiply(this);
-        }
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code complex-rationalp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code complex-rationalp} ACL2 function.
      */
     @Override
     Acl2Symbol complexRationalp() {

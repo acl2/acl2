@@ -60,8 +60,8 @@ public final class Acl2String extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Supports the native implementation of
-     * the {@code stringp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code stringp} ACL2 function.
      */
     @Override
     Acl2Symbol stringp() {
@@ -103,8 +103,8 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code coerce} ACL2 function,
+     * Coerces this ACL2 string to a list,
+     * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
      */
     @Override
@@ -134,8 +134,9 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code pkg-imports} ACL2 function.
+     * Returns the ACL2 list of symbols imported by
+     * the package named by this ACL2 string,
+     * consistently with the {@code pkg-imports} ACL2 function.
      * An exception is thrown if this string does not name a known package
      * (this includes the case in which the string is not a valid package name).
      * This is in accordance with the ACL2 manual page for {@code pkg-imports},
@@ -168,8 +169,9 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code pkg-witness} ACL2 function.
+     * Returns the ACL2 string that is the name of
+     * the witness of the package named by this ACL2 string,
+     * consistently with the {@code pkg-witness} ACL2 function.
      *
      * @throws Acl2EvaluationException if the package name is invalid
      *                                 or the package is not defined

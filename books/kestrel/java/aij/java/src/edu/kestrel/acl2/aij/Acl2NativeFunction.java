@@ -1435,7 +1435,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code binary-+} ACL2 primitive function.
      */
     public static Acl2Number execBinaryPlus(Acl2Value x, Acl2Value y) {
-        return x.add(y);
+        return x.addValue(y);
     }
 
     /**
@@ -1443,7 +1443,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code binary-*} ACL2 primitive function.
      */
     public static Acl2Number execBinaryStar(Acl2Value x, Acl2Value y) {
-        return x.multiply(y);
+        return x.multiplyValue(y);
     }
 
     /**

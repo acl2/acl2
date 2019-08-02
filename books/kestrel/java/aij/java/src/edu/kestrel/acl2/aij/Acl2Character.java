@@ -44,8 +44,8 @@ public final class Acl2Character extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Supports the native implementation of
-     * the {@code characterp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code characterp} ACL2 function.
      */
     @Override
     Acl2Symbol characterp() {
@@ -53,8 +53,8 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code char-code} ACL2 function.
+     * Returns the ACL2 integer code of this ACL2 character,
+     * consistently with the {@code char-code} ACL2 function.
      */
     @Override
     Acl2Integer charCode() {
