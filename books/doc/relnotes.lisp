@@ -341,6 +341,8 @@
 
    (xdoc::h4 (xdoc::seeurl "java::java" "Java Library"))
 
+   ;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h5 (xdoc::seeurl "java::atj" "ATJ, the Java Code Generator for ACL2"))
 
    (xdoc::p
@@ -369,6 +371,18 @@
      always with values that satisfy the guards.
      This is just a start towards handling guards in ATJ (and AIJ);
      more sophisticated support will be added in the future.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seeurl "java::aij"
+                           "AIJ, the Deep Embedding of ACL2 into Java"))
+
+   (xdoc::p
+    "The return types of some of the methods that provide
+     native Java implementation of the ACL2 primitive functions
+     have been made more precise than the general type @('Acl2Value').
+     For instance, the method for @(tsee equal)
+     now returns @('Acl2Symbol').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

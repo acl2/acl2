@@ -159,4 +159,9 @@
     (xdoc::li
      "ATJ has been extended with a facility to generate Java code
       according to a shallow embedding approach,
-      in addition to the deep embedding approach described in the paper."))))
+      in addition to the deep embedding approach described in the paper.")
+    (xdoc::li
+     "The return types of some of the native Java implementation methods
+      of the ACL2 primitive functions have been made more precise
+      than the general type @('Acl2Value'),
+      e.g. now the method for @(tsee equal) returns @('Acl2Symbol')."))))

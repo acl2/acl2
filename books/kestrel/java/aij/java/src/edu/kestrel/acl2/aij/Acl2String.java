@@ -177,7 +177,7 @@ public final class Acl2String extends Acl2Value {
      * @throws IllegalStateException   if the package witness is not set yet
      */
     @Override
-    Acl2Value pkgWitness() throws Acl2EvaluationException {
+    Acl2Symbol pkgWitness() throws Acl2EvaluationException {
         String str = this.jstring;
         Acl2PackageName packageName;
         try {

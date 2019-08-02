@@ -222,7 +222,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      *                                 or the package is not defined
      * @throws IllegalStateException   if the package witness is not set yet
      */
-    Acl2Value pkgWitness() throws Acl2EvaluationException {
+    Acl2Symbol pkgWitness() throws Acl2EvaluationException {
         return Acl2String.ACL2.pkgWitness();
     }
 
