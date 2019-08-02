@@ -148,7 +148,7 @@ public final class Acl2String extends Acl2Value {
     @Override
     Acl2Value pkgImports() throws Acl2EvaluationException {
         String str = this.jstring;
-        Acl2PackageName packageName = null;
+        Acl2PackageName packageName;
         try {
             packageName = Acl2PackageName.make(str);
         } catch (IllegalArgumentException e) {
