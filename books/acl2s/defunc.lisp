@@ -1128,7 +1128,20 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             :program)
         (thereis-programp sub-fns wrld))))
 
-(defun parse-defunc (name args wrld)
+(defun pred-of-type (type tbl atbl)
+  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist :predicate (get-alist type tbl))))
+        (or res
+            (er hard 'pred-of-type
+ "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
+
+(defun make-output-contract (name args type)
+  (cond ((equal type 'acl2s::allp) t)
+        (t `(,type ,(cons name args)))))
+
+(defun parse-defunc (name args pkg wrld)
   ;; Returns (list nm formals ic oc doc decls body kwd-alist)
   (declare (xargs :mode :program))
   (declare (ignorable wrld))
@@ -1142,12 +1155,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (defaults-alst (put-assoc :testing-enabled (get-acl2s-defaults 'testing-enabled wrld) defaults-alst))
        (defaults-alst (put-assoc :cgen-timeout (get-acl2s-defaults 'cgen-timeout wrld) defaults-alst))
        ((mv kwd-alist defun-rest) (defdata::extract-keywords ctx *defunc-keywords* args defaults-alst))
-
+       (tbl (table-alist 'defdata::type-metadata-table wrld))
+       (atbl (table-alist 'defdata::type-alias-table wrld))
+          
        (formals (car defun-rest))
        (decls/docs (butlast (cdr defun-rest) 1))
        (body  (car (last defun-rest)))
        (full-input-contract (assoc-equal-alias *input-contract-alias* kwd-alist))
        (full-output-contract (assoc-equal-alias *output-contract-alias* kwd-alist))
+
        ((unless full-input-contract)
         (er hard ctx "~|Defunc is missing an input contract. ~%" ))
        ((unless full-output-contract)
@@ -1155,6 +1171,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
        (input-contract (get1-alias *input-contract-alias* kwd-alist ))
        (output-contract (get1-alias *output-contract-alias* kwd-alist ))
+       (kword-oc? (keywordp output-contract))
+       (f-type (and kword-oc? (intern$ (symbol-name output-contract) pkg)))
+       (f-type-pred (and kword-oc? (pred-of-type f-type tbl atbl)))
+       (output-contract
+        (if kword-oc?
+            (make-output-contract name formals f-type-pred)
+          output-contract))
+
        ((unless (simple-termp input-contract))
         (er hard ctx "~|The input contract has to be a term. ~x0 is not.~%" input-contract))
        ((unless (simple-termp output-contract))
@@ -1238,7 +1262,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun make-undefined (name args d? pkg w)
   (declare (xargs :mode :program :guard (symbolp name)))
-  (make-undefined-aux (parse-defunc name args w) w d? nil pkg))
+  (make-undefined-aux (parse-defunc name args pkg w) w d? nil pkg))
 
 ; (make-event (make-undefined 'foo '((x) :input-contract (natp x) :output-contract (booleanp (foo x)) nil)  (w state)))
 ; (make-event (make-undefined 'booleanp (w state)))
@@ -1305,9 +1329,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (make-event
         (er-progn
          ;; Test phase using trans-eval/make-event
-         (test?-phase (parse-defunc ',name ',args (w state)) state)
+         (test?-phase (parse-defunc ',name ',args (current-package state) (w state)) state)
          ;; Generate events
-         (defunc-events (parse-defunc ',name ',args (w state)) nil state)))))))
+         (defunc-events (parse-defunc ',name ',args (current-package state) (w state)) nil state)))))))
 
 (defmacro defundc (name &rest args)
   (b* ((verbosep (let ((lst (member :verbose args)))
@@ -1326,9 +1350,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (make-event
         (er-progn
          ;; Test phase using trans-eval/make-event
-         (test?-phase (parse-defunc ',name ',args (w state)) state)
+         (test?-phase (parse-defunc ',name ',args (current-package state) (w state)) state)
          ;; Generate events
-         (defunc-events (parse-defunc ',name ',args (w state)) t state)))))))
+         (defunc-events (parse-defunc ',name ',args (current-package state) (w state)) t state)))))))
 
 (include-book "xdoc/top" :dir :system)
 

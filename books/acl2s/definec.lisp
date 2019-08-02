@@ -6,15 +6,6 @@
 (in-package "ACL2S")
 (include-book "defunc" :ttags :all)
 
-(defun pred-of-type (type tbl atbl)
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        (or res
-            (er hard 'Definec
- "~%**Unknown type in definec**: ~x0 is not a known type name.~%" type ))))))
-
 (defun map-preds (types pkg tbl atbl)
   (if (endp types)
       nil
@@ -34,10 +25,6 @@
           ((equal (len res) 1) (first res))
           (t (cons 'and res)))))
      
-(defun make-output-contract (name args type)
-  (cond ((equal type 'acl2s::allp) t)
-        (t `(,type ,(cons name args)))))
-
 
 #|
 ;; A version of definec without the fc rules
