@@ -41,6 +41,7 @@
 (include-book "ctrex-utils")
 (include-book "doc")
 (include-book "pathcond-fix")
+(include-book "def-fgl-thm")
 
 (local (in-theory (disable w)))
 
@@ -254,3 +255,57 @@ be a string or message identifying the particular SAT check.</p>"
              (db)
              (bvar-db-debug bvar-db)
              db))
+
+
+(defmacro fgl-error! (&key msg debug-obj)
+  `(syntax-interp
+    (b* ((interp-st 'interp-st)) ;; fake
+      (gl-interp-store-debug-info ,msg ,debug-obj interp-st))))
+
+(defmacro fgl-error (&key msg debug-obj)
+  `(fgl-prog2 (fgl-error! :msg ,msg :debug-obj ,debug-obj)
+              nil))
+
+(defmacro fgl-assert! (cond &key msg debug-obj)
+  `(if ,cond
+       nil
+     (fgl-error!
+      ,@(if msg
+            `(:msg ,msg)
+          `(:msg (gl-msg "Assertion failed: ~x0" ',cond)))
+      ,@(if debug-obj
+            `(:debug-obj ,debug-obj)
+          `(:debug-obj ',cond)))))
+
+(defmacro fgl-assert (cond &key msg debug-obj)
+  `(fgl-prog2 (fgl-assert! :cond ,cond :msg ,msg :debug-obj ,debug-obj)
+              nil))
+
+(defmacro with-branch-on-if-flag (flag term)
+  `(b* (((list fgl-with-branch-on-if-flag &)
+         (syntax-interp
+          (b* ((interp-st 'interp-st) ;; hack
+               (flags (interp-st->flags interp-st))
+               (flag (interp-flags->branch-on-ifs flags))
+               (new-flags (!interp-flags->branch-on-ifs ,flag flags)))
+            (list flag
+                  (update-interp-st->flags new-flags interp-st)))))
+        (ans ,term)
+        (?fgl-interp-ignore
+         (b* ((interp-st 'interp-st)
+              (flags (interp-st->flags interp-st))
+              (new-flags (!interp-flags->branch-on-ifs fgl-with-branch-on-if-flag flags)))
+           (update-interp-st->flags new-flags interp-st))))
+     ans))
+
+(defmacro with-fgl-testbench! (term)
+  `(with-branch-on-if-flag nil ,term))
+
+(defmacro with-fgl-testbench (term)
+  `(fgl-prog2 (with-fgl-testbench! ,term) nil))
+
+(defmacro without-fgl-testbench! (term)
+  `(with-branch-on-if-flag t ,term))
+
+(defmacro without-fgl-testbench (term)
+  `(with-branch-on-if-flag t (narrow-equiv nil ,term)))

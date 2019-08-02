@@ -622,3 +622,57 @@
       :concl (implies (not (member-equal (list x y z) ',trips))
                       (not (pythag-triple-p x y z))))))
        
+
+
+(fgl-thm
+ :hyp (unsigned-byte-p 7 x)
+ :concl (if (logbitp 8 x)
+            (fgl-error :msg "Logbitp 8!")
+          t)
+ :rule-classes nil)
+
+(make-event
+ (b* (((mv err ?val state)
+       (fgl-thm
+        :hyp (unsigned-byte-p 7 x)
+        :concl (if (logbitp 6 x)
+                   (fgl-error :msg "Logbitp 6!")
+                 t)
+        :rule-classes nil))
+      ((unless (and err
+                    (equal (@ :fgl-interp-error-message) "Logbitp 6!")))
+       (er soft 'test-fgl-error "Didn't work?")))
+   (value '(value-triple :ok))))
+   
+      
+
+
+(fgl-thm
+ :hyp (unsigned-byte-p 7 x)
+ :concl (fgl-prog2 (with-fgl-testbench!
+                     (if (logbitp 8 x)
+                         (syntax-interp (cw "Yes~%"))
+                       (syntax-interp (cw "No~%"))))
+                   t)
+ :rule-classes nil)
+
+
+(fancy-ev-add-primitive interp-st->flags$inline t)
+(fancy-ev-add-primitive update-interp-st->flags$inline (interp-flags-p flags))
+(def-fancy-ev-primitives new)
+
+(make-event
+ (b* (((mv err ?val state)
+       (fgl-thm
+        :hyp (unsigned-byte-p 7 x)
+        :concl (fgl-prog2 (with-fgl-testbench!
+                            (if (logbitp 6 x)
+                                (syntax-interp (cw "Yes~%"))
+                              (syntax-interp (cw "No~%"))))
+                          t)
+        :rule-classes nil))
+      ((unless (and err
+                    (gl-object-case (@ :fgl-interp-error-debug-obj) :g-boolean)))
+       (er soft 'test-with-fgl-testbench "Didn't work?")))
+   (value '(value-triple :ok))))
+

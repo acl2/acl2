@@ -727,11 +727,6 @@
                     (bfr-listp (gl-object-bfrlist (mk-g-integer bits))))
            :hints(("Goal" :in-theory (enable mk-g-integer)))))
 
-  (local (defthm bfr-listp-of-mk-g-boolean
-           (implies (bfr-p bool)
-                    (bfr-listp (gl-object-bfrlist (mk-g-boolean bool))))
-           :hints(("Goal" :in-theory (enable mk-g-boolean)))))
-
   (defret-mutual lbfr-listp-of-pathcond-fix-aignet-impl
     (defret lbfr-listp-of-<fn>
       (implies (lbfr-mode-is :aignet)

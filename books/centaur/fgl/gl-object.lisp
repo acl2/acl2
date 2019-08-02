@@ -268,6 +268,9 @@ case you misspell @(':g-concrete').</p>
                         (g-concrete->val y)))
     (g-cons x y)))
 
+
+
+
 ;; (defines gl-object-symbolic-boolean-free
 ;;   (define gl-object-symbolic-boolean-free ((x gl-object-p))
 ;;     :measure (gl-object-count x)

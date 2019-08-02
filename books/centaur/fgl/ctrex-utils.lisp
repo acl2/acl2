@@ -376,7 +376,7 @@
 
 (include-book "glcp-unify-thms")
 
-(defthm glcp-unify-create-produces-concrete-objs
+(defthm glcp-unify-concrete-produces-concrete-objs
   (b* (((mv ?flag new-alist) (glcp-unify-concrete pat x alist)))
     (implies (and flag (not (hons-assoc-equal k alist)))
              (equal (gl-object-kind (cdr (hons-assoc-equal k new-alist)))
@@ -390,11 +390,12 @@
                                           ,(acl2::hq alist)))))))
 
 (encapsulate nil
-  (flag::make-flag glcp-unify-term/gobj-flg glcp-unify-term/gobj
+  (flag::make-flag glcp-unify-term/gobj-flg glcp-unify-term/gobj-fn
                    :local t
                    :hints ((and stable-under-simplificationp
                                 '(:expand ((pseudo-term-count pat)
-                                           (pseudo-term-list-count (pseudo-term-call->args pat)))))))
+                                           (pseudo-term-list-count (pseudo-term-call->args pat))
+                                           (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))))))
 
   (local (defthm gl-object-count-of-mk-g-boolean
            (equal (gl-object-count (mk-g-boolean x)) 1)
@@ -410,6 +411,21 @@
            :hints(("Goal" :in-theory (enable gl-object-count)))))
 
   (local (in-theory (disable len acl2::member-of-cons member-equal)))
+
+  (local (defthm gl-object-count-of-gobj-syntactic-boolean-fix
+           (<= (gl-object-count (mv-nth 1 (gobj-syntactic-boolean-fix x)))
+               (gl-object-count x))
+           :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix
+                                             gl-object-count)))
+           :rule-classes :linear))
+
+  (local (defthm gl-object-count-of-gobj-syntactic-boolean-negate
+           (<= (gl-object-count (gobj-syntactic-boolean-negate x))
+               (gl-object-count x))
+           :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-negate
+                                             gl-object-count)))
+           :rule-classes :linear))
+
 
   (defthm-glcp-unify-term/gobj-flg
     (defthm gl-object-count-of-glcp-unify-term/gobj
@@ -428,7 +444,7 @@
                    '(:expand ((gl-object-count x)
                               (gl-objectlist-count (g-apply->args x))
                               (gl-objectlist-count (cdr (g-apply->args x)))))))
-      :flag glcp-unify-term/gobj
+      :flag glcp-unify-term/gobj-fn
       :rule-classes :linear)
     (defthm gl-object-count-of-glcp-unify-term/gobj-commutative-args
       (b* (((mv flag new-alist)
@@ -445,7 +461,27 @@
                                                                  ,(acl2::hq x1)
                                                                  ,(acl2::hq x2)
                                                                  ,(acl2::hq alist))))))
-      :flag glcp-unify-term/gobj-commutative-args
+      :flag glcp-unify-term/gobj-commutative-args-fn
+      :rule-classes :linear)
+    (defthm gl-object-count-of-glcp-unify-term/gobj-if
+      (b* (((mv flag new-alist)
+            (glcp-unify-term/gobj-if pat-test pat-then pat-else x-test x-then x-else alist)))
+        (implies (and flag
+                      (not (hons-assoc-equal k alist))
+                      (hons-assoc-equal k new-alist))
+                 (<= (gl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (max (gl-object-count x-test)
+                          (max (gl-object-count x-then)
+                               (gl-object-count x-else))))))
+      :hints ((acl2::use-termhint
+               `(:expand ((glcp-unify-term/gobj-if ,(acl2::hq pat-test)
+                                                   ,(acl2::hq pat-then)
+                                                   ,(acl2::hq pat-else)
+                                                   ,(acl2::hq x-test)
+                                                   ,(acl2::hq x-then)
+                                                   ,(acl2::hq x-else)
+                                                   ,(acl2::hq alist))))))
+      :flag glcp-unify-term/gobj-if-fn
       :rule-classes :linear)
     (defthm gl-object-count-of-glcp-unify-term/gobj-list
       (b* (((mv flag new-alist)
@@ -459,7 +495,7 @@
                `(:expand ((glcp-unify-term/gobj-list ,(acl2::hq pat)
                                                      ,(acl2::hq x)
                                                      ,(acl2::hq alist))))))
-      :flag glcp-unify-term/gobj-list
+      :flag glcp-unify-term/gobj-list-fn
       :rule-classes :linear))
 
   (defthmd gl-object-count-of-glcp-unify-term/gobj-casesplit
@@ -472,8 +508,20 @@
                    (gl-object-count x))))
     :rule-classes :linear)
 
-  (local (in-theory (enable gl-object-count-of-glcp-unify-term/gobj-casesplit)))
+  (local (defthm <=-max-forward-3
+           (implies (and (<= x (max y (max z w)))
+                         (natp y) (natp z) (natp w))
+                    (<= x (+ y z w)))
+           :rule-classes :forward-chaining))
 
+  (local (defthm <=-max-forward-2
+           (implies (and (<= x (max y z))
+                         (natp y) (natp z))
+                    (<= x (+ y z)))
+           :rule-classes :forward-chaining))
+
+  (local (in-theory (enable gl-object-count-of-glcp-unify-term/gobj-casesplit)))
+  (local (in-theory (disable max)))
   (defthm gl-object-count-of-glcp-unify-term/gobj-strict
     (b* (((mv flag new-alist)
           (glcp-unify-term/gobj pat x alist)))
@@ -497,8 +545,25 @@
                           (pat1 (car (pseudo-term-call->args pat)))
                           (pat2 (cadr (pseudo-term-call->args pat)))
                           (x2 (car (g-apply->args x)))
-                          (x1 (cadr (g-apply->args x)))))
-                   :in-theory (disable gl-object-count-of-glcp-unify-term/gobj-commutative-args))))
+                          (x1 (cadr (g-apply->args x))))
+                         (:instance gl-object-count-of-glcp-unify-term/gobj-if
+                          (pat-test (car (pseudo-term-call->args pat)))
+                          (pat-then (cadr (pseudo-term-call->args pat)))
+                          (pat-else (caddr (pseudo-term-call->args pat)))
+                          (x-test (g-ite->test x))
+                          (x-then (g-ite->then x))
+                          (x-else (g-ite->else x)))
+                         (:instance gl-object-count-of-glcp-unify-term/gobj-if
+                          (pat-test (car (pseudo-term-call->args pat)))
+                          (pat-then (cadr (pseudo-term-call->args pat)))
+                          (pat-else (caddr (pseudo-term-call->args pat)))
+                          (x-test (gobj-syntactic-boolean-negate
+                                   (mv-nth 1
+                                           (gobj-syntactic-boolean-fix (g-ite->test x)))))
+                          (x-then (g-ite->else x))
+                          (x-else (g-ite->then x))))
+                   :in-theory (disable gl-object-count-of-glcp-unify-term/gobj-commutative-args
+                                       gl-object-count-of-glcp-unify-term/gobj-if))))
     :rule-classes :linear))
 
 
@@ -664,10 +729,12 @@
                                    (cgraph cgraph-p)
                                    (memo cgraph-alist-p)
                                    (ruletable ctrex-ruletable-p)
+                                   (bfrstate bfrstate-p)
                                    (wrld plist-worldp))
     :well-founded-relation acl2::nat-list-<
     :measure (list (gl-object-count x) 10 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
+    :guard (bfr-listp (gl-object-bfrlist x))
     :verify-guards nil
     (b* ((fnsym (gl-object-case x
                   (:g-ite 'if)
@@ -689,35 +756,39 @@
                (rule (change-ctrex-rule *fake-ctrex-rule-for-equivs* :equiv x.fn))
                (cgraph (add-cgraph-edge 'y `((x . ,arg2) (y . ,arg1)) rule cgraph))
                (cgraph (add-cgraph-edge 'y `((x . ,arg1) (y . ,arg2)) rule cgraph))
-               ((mv cgraph memo) (gl-object-add-to-cgraph arg1 cgraph memo ruletable wrld)))
-            (gl-object-add-to-cgraph arg2 cgraph memo ruletable wrld)))
+               ((mv cgraph memo) (gl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld)))
+            (gl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld)))
          (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
-      (gl-object-add-to-cgraph-rules x rules cgraph memo ruletable wrld)))
+      (gl-object-add-to-cgraph-rules x rules cgraph memo ruletable bfrstate wrld)))
 
   (define gl-object-add-to-cgraph-rules ((x gl-object-p)
                                          (rules ctrex-rulelist-p)
                                          (cgraph cgraph-p)
                                          (memo cgraph-alist-p)
                                          (ruletable ctrex-ruletable-p)
+                                         (bfrstate bfrstate-p)
                                          (wrld plist-worldp))
-    :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (gl-object-bfrlist x)))
     :measure (list (gl-object-count x) 7 (len rules) 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (atom rules)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((mv cgraph memo) (gl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable wrld)))
-      (gl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable wrld)))
+         ((mv cgraph memo) (gl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable bfrstate wrld)))
+      (gl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable bfrstate wrld)))
 
   (define gl-object-add-to-cgraph-rule ((x gl-object-p)
                                         (rule ctrex-rule-p)
                                         (cgraph cgraph-p)
                                         (memo cgraph-alist-p)
                                         (ruletable ctrex-ruletable-p)
+                                        (bfrstate bfrstate-p)
                                         (wrld plist-worldp))
-    :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (gl-object-bfrlist x)))
     :measure (list (gl-object-count x) 7 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((ctrex-rule rule)))
-      (gl-object-add-to-cgraph-matches x rule.match rule cgraph memo ruletable wrld)))
+      (gl-object-add-to-cgraph-matches x rule.match rule cgraph memo ruletable bfrstate wrld)))
 
   (define gl-object-add-to-cgraph-matches ((x gl-object-p)
                                            (matches pseudo-term-subst-p)
@@ -725,16 +796,18 @@
                                            (cgraph cgraph-p)
                                            (memo cgraph-alist-p)
                                            (ruletable ctrex-ruletable-p)
+                                           (bfrstate bfrstate-p)
                                            (wrld plist-worldp))
-    :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (gl-object-bfrlist x)))
     :measure (list (gl-object-count x) 5 (len matches) 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (atom matches)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((unless (mbt (and (consp (car matches))
                             (pseudo-var-p (caar matches)))))
-          (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable wrld))
-         ((mv cgraph memo) (gl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph memo ruletable wrld)))
-      (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable wrld)))
+          (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld))
+         ((mv cgraph memo) (gl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph memo ruletable bfrstate wrld)))
+      (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld)))
 
   (define gl-object-add-to-cgraph-match ((x gl-object-p)
                                          (matchvar pseudo-var-p)
@@ -743,8 +816,10 @@
                                          (cgraph cgraph-p)
                                          (memo cgraph-alist-p)
                                          (ruletable ctrex-ruletable-p)
+                                         (bfrstate bfrstate-p)
                                          (wrld plist-worldp))
-    :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (gl-object-bfrlist x)))
     :measure (list (gl-object-count x) 5 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (pseudo-term-case match :var))
@@ -761,9 +836,11 @@
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          (to (cdr to-look))
          (cgraph (add-cgraph-edge matchvar subst rule cgraph)))
-      (gl-object-add-to-cgraph to cgraph memo ruletable wrld)))
+      (gl-object-add-to-cgraph to cgraph memo ruletable bfrstate wrld)))
   ///
-  (verify-guards gl-object-add-to-cgraph)
+  (verify-guards gl-object-add-to-cgraph
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable bfr-listp-when-not-member-witness))))
   (local (in-theory (disable gl-object-add-to-cgraph
                              gl-object-add-to-cgraph-rules
                              gl-object-add-to-cgraph-rule
@@ -777,35 +854,37 @@
                            (pseudo-term-subst-fix (cdr x))))
            :hints(("Goal" :in-theory (enable pseudo-term-subst-fix)))))
 
+  (local (in-theory (enable bfr-listp-when-not-member-witness)))
+
   (defret-mutual cgraph-bfrlist-of-gl-object-add-to-cgraph
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (not (member v (gl-object-bfrlist x)))
-                    (not (member v (cgraph-bfrlist cgraph))))
-               (not (member v (cgraph-bfrlist new-cgraph))))
+      (implies (and (bfr-listp (gl-object-bfrlist x))
+                    (bfr-listp (cgraph-bfrlist cgraph)))
+               (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
       :fn gl-object-add-to-cgraph)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (not (member v (gl-object-bfrlist x)))
-                    (not (member v (cgraph-bfrlist cgraph))))
-               (not (member v (cgraph-bfrlist new-cgraph))))
+      (implies (and (bfr-listp (gl-object-bfrlist x))
+                    (bfr-listp (cgraph-bfrlist cgraph)))
+               (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
       :fn gl-object-add-to-cgraph-rules)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (not (member v (gl-object-bfrlist x)))
-                    (not (member v (cgraph-bfrlist cgraph))))
-               (not (member v (cgraph-bfrlist new-cgraph))))
+      (implies (and (bfr-listp (gl-object-bfrlist x))
+                    (bfr-listp (cgraph-bfrlist cgraph)))
+               (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
       :fn gl-object-add-to-cgraph-rule)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (not (member v (gl-object-bfrlist x)))
-                    (not (member v (cgraph-bfrlist cgraph))))
-               (not (member v (cgraph-bfrlist new-cgraph))))
+      (implies (and (bfr-listp (gl-object-bfrlist x))
+                    (bfr-listp (cgraph-bfrlist cgraph)))
+               (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
       :fn gl-object-add-to-cgraph-matches)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (not (member v (gl-object-bfrlist x)))
-                    (not (member v (cgraph-bfrlist cgraph))))
-               (not (member v (cgraph-bfrlist new-cgraph))))
+      (implies (and (bfr-listp (gl-object-bfrlist x))
+                    (bfr-listp (cgraph-bfrlist cgraph)))
+               (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
       :fn gl-object-add-to-cgraph-match))
 
@@ -816,31 +895,35 @@
                                    (cgraph cgraph-p)
                                    (memo cgraph-alist-p)
                                    (ruletable ctrex-ruletable-p)
+                                   (bfrstate bfrstate-p)
                                    (wrld plist-worldp))
   :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
   :guard (and (<= n (next-bvar bvar-db))
-              (<= (base-bvar bvar-db) n))
+              (<= (base-bvar bvar-db) n)
+              (bfr-listp (bvar-db-bfrlist bvar-db)))
   :measure (nfix (- (next-bvar bvar-db) (nfix n)))
   (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
                    :exec (eql n (next-bvar bvar-db))))
         (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
        ((mv cgraph memo) (gl-object-add-to-cgraph (get-bvar->term n bvar-db)
-                                                  cgraph memo ruletable wrld)))
+                                                  cgraph memo ruletable bfrstate wrld)))
     (bvar-db-add-to-cgraph-aux (1+ (lnfix n))
-                               bvar-db cgraph memo ruletable wrld))
+                               bvar-db cgraph memo ruletable bfrstate wrld))
   ///
   (defret cgraph-bfrlist-of-<fn>
-    (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                  (not (member v (cgraph-bfrlist cgraph)))
+    (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
+                  (bfr-listp (cgraph-bfrlist cgraph))
                   (<= (base-bvar$a bvar-db) (nfix n)))
-             (not (member v (cgraph-bfrlist new-cgraph))))))
+             (bfr-listp (cgraph-bfrlist new-cgraph)))))
 
 (define bvar-db-create-cgraph (bvar-db
                                (ruletable ctrex-ruletable-p)
+                               (bfrstate bfrstate-p)
                                (wrld plist-worldp))
+  :guard (bfr-listp (bvar-db-bfrlist bvar-db))
   :returns (cgraph cgraph-p)
   (b* (((mv cgraph memo)
-        (bvar-db-add-to-cgraph-aux (base-bvar bvar-db) bvar-db nil nil ruletable wrld)))
+        (bvar-db-add-to-cgraph-aux (base-bvar bvar-db) bvar-db nil nil ruletable bfrstate wrld)))
     (fast-alist-free memo)
     (fast-alist-clean cgraph))
   ///
@@ -848,29 +931,33 @@
            (equal (cgraph-bfrlist (cdr (last x))) nil)
            :hints(("Goal" :in-theory (enable last cgraph-bfrlist)))))
 
+  (local (in-theory (enable bfr-listp-when-not-member-witness)))
+
   (defret cgraph-bfrlist-of-<fn>
-    (implies (not (member v (bvar-db-bfrlist bvar-db)))
-             (not (member v (cgraph-bfrlist cgraph))))))
+    (implies (bfr-listp (bvar-db-bfrlist bvar-db))
+             (bfr-listp (cgraph-bfrlist cgraph)))))
 
 (define bvar-db-update-cgraph ((cgraph cgraph-p)
                                (memo cgraph-alist-p)
                                (cgraph-index natp)
                                bvar-db
                                (ruletable ctrex-ruletable-p)
+                               (bfrstate bfrstate-p)
                                (wrld plist-worldp))
   :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
+  :guard (bfr-listp (bvar-db-bfrlist bvar-db))
   ;; BOZO this never shrinks the cgraph -- probably not necessary
   (b* (((when (<= (next-bvar bvar-db) (lnfix cgraph-index)))
         (mv (cgraph-fix cgraph) (cgraph-alist-fix memo))))
     (bvar-db-add-to-cgraph-aux (max (lnfix cgraph-index)
                                     (base-bvar bvar-db))
-                               bvar-db cgraph memo ruletable wrld))
+                               bvar-db cgraph memo ruletable bfrstate wrld))
   ///
   
   (defret cgraph-bfrlist-of-<fn>
-    (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                  (not (member v (cgraph-bfrlist cgraph))))
-             (not (member v (cgraph-bfrlist new-cgraph))))))
+    (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
+                  (bfr-listp (cgraph-bfrlist cgraph)))
+             (bfr-listp (cgraph-bfrlist new-cgraph)))))
 
 
 
@@ -2370,7 +2457,9 @@
                     ((unless (ctrex-ruletable-p ruletable))
                      (mv "bad ctrex-ruletable~%" cgraph memo cgraph-index env$))
                     ((mv cgraph memo) ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
-                     (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable (w state)))
+                     (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable
+                                            (logicman->bfrstate)
+                                            (w state)))
                     ((unless (bfr-env$-p env$ (logicman->bfrstate)))
                      (mv "Bad env$ -- not bfr-env$-p" cgraph memo (next-bvar bvar-db) env$))
                     ((mv var-vals assigns sts)

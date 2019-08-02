@@ -49,7 +49,11 @@
 
 (defun def-fgl-thm-fn (name args)
   (declare (xargs :mode :program))
-  `(defthm ,name . ,(cdr (fgl-thm-fn args))))
+  `(defthm ,name
+     ,@(cdr (fgl-thm-fn args))
+     . ,(let ((rc-look (assoc-keyword :rule-classes args)))
+          (and rc-look
+               (take 2 rc-look)))))
 
 (defmacro def-fgl-thm (name &rest args)
   (def-fgl-thm-fn name args))
@@ -85,7 +89,11 @@
 
 (defun def-fgl-param-thm-fn (name args)
   (declare (xargs :mode :program))
-  `(defthm ,name . ,(cdr (fgl-param-thm-fn args))))
+  `(defthm ,name
+     ,@(cdr (fgl-param-thm-fn args))
+     . ,(let ((rc-look (assoc-keyword :rule-classes args)))
+          (and rc-look
+               (take 2 rc-look)))))
 
 (defmacro def-fgl-param-thm (name &rest args)
   (def-fgl-param-thm-fn name args))

@@ -777,9 +777,12 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 (define gbc-process-new-lit-tuple ((lit gl-object-p)
                                    (tuple constraint-tuple-p)
-                                   (ccat constraint-db-p) state)
+                                   (ccat constraint-db-p)
+                                   (bfrstate bfrstate-p)
+                                   state)
   :returns (mv (insts constraint-instancelist-p)
                (new-ccat constraint-db-p))
+  :guard (bfr-listp (gl-object-bfrlist lit))
   (b* ((ccat (constraint-db-fix ccat))
        ((constraint-tuple x) tuple)
        ;; (rule existing-lits matching-lit common-vars existing-vars sig-table)
@@ -814,12 +817,13 @@ prior to introducing the constraint rule above, but succeed after:</p>
     (mv nil ccat))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bfrlist lit)))
-                  (not (member v (constraint-tuple-bfrlist tuple)))
-                  (not (member v (constraint-db-bfrlist ccat))))
-             (and (not (member v (constraint-instancelist-bfrlist insts)))
-                  (not (member v (constraint-db-bfrlist new-ccat)))))
-    :hints(("Goal" :in-theory (enable constraint-tuple-bfrlist)))))
+    (implies (and (bfr-listp (gl-object-bfrlist lit))
+                  (bfr-listp (constraint-tuple-bfrlist tuple))
+                  (bfr-listp (constraint-db-bfrlist ccat)))
+             (and (bfr-listp (constraint-instancelist-bfrlist insts))
+                  (bfr-listp (constraint-db-bfrlist new-ccat))))
+    :hints(("Goal" :in-theory (enable constraint-tuple-bfrlist
+                                      bfr-listp-when-not-member-witness)))))
 
 
 
@@ -827,42 +831,46 @@ prior to introducing the constraint rule above, but succeed after:</p>
 (define gbc-process-new-lit-tuples ((lit gl-object-p)
                                     (tuples constraint-tuplelist-p)
                                     (ccat constraint-db-p)
+                                    (bfrstate bfrstate-p)
                                     state)
   :returns (mv (insts constraint-instancelist-p)
                (new-ccat constraint-db-p))
+  :guard (bfr-listp (gl-object-bfrlist lit))
   (b* (((when (atom tuples)) (mv nil (constraint-db-fix ccat)))
        ((mv substs1 ccat)
-        (gbc-process-new-lit-tuple lit (car tuples) ccat state))
+        (gbc-process-new-lit-tuple lit (car tuples) ccat bfrstate state))
        ((mv substs-rest ccat)
-        (gbc-process-new-lit-tuples lit (cdr tuples) ccat state)))
+        (gbc-process-new-lit-tuples lit (cdr tuples) ccat bfrstate state)))
     (mv (append substs1 substs-rest) ccat))
   ///
   
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bfrlist lit)))
-                  (not (member v (constraint-tuplelist-bfrlist tuples)))
-                  (not (member v (constraint-db-bfrlist ccat))))
-             (and (not (member v (constraint-instancelist-bfrlist insts)))
-                  (not (member v (constraint-db-bfrlist new-ccat)))))
+    (implies (and (bfr-listp (gl-object-bfrlist lit))
+                  (bfr-listp (constraint-tuplelist-bfrlist tuples))
+                  (bfr-listp (constraint-db-bfrlist ccat)))
+             (and (bfr-listp (constraint-instancelist-bfrlist insts))
+                  (bfr-listp (constraint-db-bfrlist new-ccat))))
     :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
 
 
 (define gbc-process-new-lit ((lit gl-object-p)
                              (ccat constraint-db-p)
+                             (bfrstate bfrstate-p)
                              state)
   :returns (mv (insts constraint-instancelist-p)
                (new-ccat constraint-db-p))
+  :guard (bfr-listp (gl-object-bfrlist lit))
   (b* ((ccat (constraint-db-fix ccat))
        ((unless (gl-object-case lit :g-apply))
         (mv nil ccat))
        (tuples (cdr (hons-get (g-apply->fn lit) ccat))))
-    (gbc-process-new-lit-tuples lit tuples ccat state))
+    (gbc-process-new-lit-tuples lit tuples ccat bfrstate state))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bfrlist lit)))
-                  (not (member v (constraint-db-bfrlist ccat))))
-             (and (not (member v (constraint-instancelist-bfrlist insts)))
-                  (not (member v (constraint-db-bfrlist new-ccat)))))
+    (implies (and (bfr-listp (gl-object-bfrlist lit))
+                  (bfr-listp (constraint-db-bfrlist ccat)))
+             (and (bfr-listp (constraint-instancelist-bfrlist insts))
+                  (bfr-listp (constraint-db-bfrlist new-ccat))))
     :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
 
 

@@ -439,7 +439,11 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     (case x
       (0 nil)
       (1 t)
-      (t x))))
+      (t x)))
+  ///
+  (defthm aignet-lit->bfr-of-consts
+    (and (equal (aignet-lit->bfr 0) nil)
+         (equal (aignet-lit->bfr 1) t))))
 
 
 (define bfr-fix ((x bfr-p) &optional ((bfrstate bfrstate-p) 'bfrstate))
@@ -491,6 +495,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
            (len x))))
 
 
+
+
 (define bfr->aignet-lit ((x bfr-p) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :guard (bfrstate-mode-is :aignet)
   :returns (lit satlink::litp :rule-classes :type-prescription)
@@ -521,7 +527,44 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   (defthm bfr->aignet-lit-of-bfr-fix
     (equal (bfr->aignet-lit (bfr-fix x))
            (bfr->aignet-lit x))
-    :hints(("Goal" :in-theory (enable bfr-fix)))))
+    :hints(("Goal" :in-theory (enable bfr-fix))))
+
+  (defthm bfr->aignet-lit-of-consts
+    (and (equal (bfr->aignet-lit t) 1)
+         (equal (bfr->aignet-lit nil) 0))))
+
+(define bfr-negate ((x bfr-p) &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (new-x bfr-p :hints(("Goal" :in-theory (enable bfr-p))
+                               (and stable-under-simplificationp
+                                    '(:in-theory (enable bfr->aignet-lit aignet-lit->bfr
+                                                         bfr-fix)))))
+  :guard-hints (("goal" :in-theory (enable bfr-p))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable bfr->aignet-lit aignet-lit->bfr
+                                          bfr-fix))))
+  :prepwork ((local (defthm lit->var-not-equal-0
+                      (implies (and (satlink::litp x)
+                                    (not (equal x 0))
+                                    (not (equal x 1)))
+                               (not (equal (satlink::lit->var x) 0)))
+                      :hints(("Goal" :in-theory (enable satlink::lit->var satlink::litp
+                                                        bitops::logtail**))))))
+  (mbe :logic (b* ((x (bfr-fix x)))
+                (bfrstate-case
+                  :aig (acl2::aig-not x)
+                  :bdd (acl2::q-not x)
+                  :aignet
+                  (aignet-lit->bfr (satlink::lit-negate (bfr->aignet-lit x)))))
+       :exec (if (booleanp x)
+                 (not x)
+               (bfrstate-case
+                 :aig (acl2::aig-not x)
+                 :bdd (acl2::q-not x)
+                 :aignet (satlink::lit-negate x))))
+  ///
+  (defthm bfr-negate-of-bfr-fix
+    (equal (bfr-negate (bfr-fix x))
+           (bfr-negate x))))
 
 
 
@@ -1157,7 +1200,29 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   ;;     :hints ('(:expand ((gl-object-alist-bfrlist x)
   ;;                        (gl-object-alist-symbolic-boolean-free x))))
   ;;     :flag gl-object-alist-bfrlist))
-  )
+
+  
+  (defthm gl-object-bfrlist-of-mk-g-integer
+    (implies (not (member v bits))
+             (not (member v (gl-object-bfrlist (mk-g-integer bits)))))
+    :hints(("Goal" :in-theory (e/d (mk-g-integer)
+                                   (bools->int)))))
+
+  (defthm gl-object-bfrlist-of-mk-g-cons
+    (implies (and (not (member v (gl-object-bfrlist a)))
+                  (not (member v (gl-object-bfrlist b))))
+             (not (member v (gl-object-bfrlist (mk-g-cons a b)))))
+    :hints(("Goal" :in-theory (e/d (mk-g-cons)))))
+
+  (defthm bfr-listp-of-mk-g-boolean
+         (implies (bfr-p x)
+                  (bfr-listp (gl-object-bfrlist (mk-g-boolean x))))
+         :hints(("Goal" :in-theory (enable mk-g-boolean))))
+
+  (defthm gl-object-bfrlist-of-gobj-syntactic-boolean-fix
+    (implies (not (member v (gl-object-bfrlist x)))
+             (not (member v (gl-object-bfrlist (mv-nth 1 (gobj-syntactic-boolean-fix x))))))
+    :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix)))))
 
 (define gl-object-bindings-bfrlist ((x gl-object-bindings-p))
   :returns (bfrlist)
@@ -1282,4 +1347,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     (implies (not (member v (gl-object-alist-bfrlist x)))
              (not (member v (gl-object-bfrlist (cdar x)))))
     :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist)))))
+
+
+
+
 

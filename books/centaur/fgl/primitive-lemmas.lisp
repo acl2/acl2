@@ -113,19 +113,6 @@
   :hints(("Goal" :in-theory (enable scdr gobj-bfr-list-eval))))
 
 
-;; BOZO Move all these
-(defthm gl-object-bfrlist-of-mk-g-integer
-  (implies (not (member v bits))
-           (not (member v (gl-object-bfrlist (mk-g-integer bits)))))
-  :hints(("Goal" :in-theory (e/d (mk-g-integer)
-                                 (bools->int)))))
-
-(defthm gl-object-bfrlist-of-mk-g-cons
-  (implies (and (not (member v (gl-object-bfrlist a)))
-                (not (member v (gl-object-bfrlist b))))
-           (not (member v (gl-object-bfrlist (mk-g-cons a b)))))
-  :hints(("Goal" :in-theory (e/d (mk-g-cons)))))
-
 (defthm gl-object-bfrlist-implies-bfr-p-gobj-syntactic-boolean->bool
   (implies (and (bfr-listp (gl-object-bfrlist x))
                 (gobj-syntactic-booleanp x))
@@ -208,13 +195,6 @@
            (not (member v (gl-object-bfrlist new-x))))
   :hints(("Goal" :in-theory (enable gobj-syntactic-integer-fix)))
   :fn gobj-syntactic-integer-fix)
-
-(defret gl-object-bfrlist-of-gobj-syntactic-boolean-fix
-  (implies (not (member v (gl-object-bfrlist x)))
-           (not (member v (gl-object-bfrlist new-x))))
-  :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix)))
-  :fn gobj-syntactic-boolean-fix)
-
 
 (Defthm car-of-gl-objectlist-fix
   (equal (car (gl-objectlist-fix x))

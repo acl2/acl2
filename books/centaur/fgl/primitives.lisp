@@ -57,6 +57,8 @@
 ;;    intcons intcons* endint intcar intcdr int-endp
 ;;    typespec-check implies fgl-sat-check))
 
+(def-formula-checks primitives-formula-checks
+  (if!))
 
 
 
@@ -316,7 +318,37 @@
                       (g-map '(:g-map) (cdr x.alist)))
                interp-st)
     :otherwise (mv nil nil interp-st)))
-    
+
+
+(encapsulate nil
+  (local (defthm fgl-object-eval-under-iff-when-concrete-syntactic-boolean-fix
+           (b* (((mv ok fix) (gobj-syntactic-boolean-fix x)))
+             (implies (and ok
+                           (gl-object-case fix :g-concrete))
+                      (iff (fgl-object-eval x env)
+                           (g-concrete->val fix))))
+           :hints(("Goal" :in-theory (enable fgl-object-eval gobj-syntactic-boolean-fix)))))
+
+  (local (in-theory (enable fgl-object-eval-under-iff-when-concrete-syntactic-boolean-fix)))
+
+  (local (add-default-hints
+          '((and stable-under-simplificationp
+                 '(:in-theory (enable if!))))))
+
+  (local (in-theory (disable acl2::booleanp-of-car-when-boolean-listp
+                             acl2::integerp-of-car-when-integer-listp
+                             bfr-listp$-when-subsetp-equal
+                             equal-of-booleans-rewrite)))
+         
+
+  (def-gl-primitive if! (x y z)
+    (b* (((mv ok x-fix) (gobj-syntactic-boolean-fix x))
+         ((unless ok) (mv t (g-ite x y z) interp-st))
+         ((when (gl-object-case x-fix :g-concrete))
+          (mv t (if (g-concrete->val x-fix) y z) interp-st)))
+      (mv t (g-ite x-fix y z) interp-st))
+    :formula-check primitives-formula-checks))
+
 
 ;; (defthm integerp-in-terms-of-int
 ;;   (equal (integerp x)

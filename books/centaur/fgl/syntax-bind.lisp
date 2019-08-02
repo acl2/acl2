@@ -182,6 +182,15 @@ fgl-rewrite-rules) for further discussion.</p>
 
 ")
 
+;; (defun syntax-bind-fn (form untrans-form dummy-var)
+;;   (declare (ignorable form untrans-form)
+;;            (xargs :guard t))
+;;   dummy-var)
+
+;; note: probably need to put this somewhere else
+(defmacro syntax-bind (dummy-var form)
+  `(bind-var ,dummy-var (syntax-interp ,form)))
+
 (defxdoc abort-rewrite
   :parents (fgl-rewrite-rules)
   :short "Form that aborts the application of an FGL rewrite rule when encountered
@@ -196,18 +205,16 @@ fgl-rewrite-rules) for further discussion.</p>
 the rewrite rule is easy to prove -- e.g., it may just be the LHS of the
 rule.</p>")
 
-;; (defun syntax-bind-fn (form untrans-form dummy-var)
-;;   (declare (ignorable form untrans-form)
-;;            (xargs :guard t))
-;;   dummy-var)
-
-;; note: probably need to put this somewhere else
-(defmacro syntax-bind (dummy-var form)
-  `(bind-var ,dummy-var (syntax-interp ,form)))
 
 ;; For lack of a better place to put this.
 (defun abort-rewrite (x)
   x)
+
+(define if! (x y z)
+  :parents (fgl-rewrite-rules)
+  :short "Function implementing IF that under FGL interpretation makes a
+@(':g-ite') object instead of doing the usual merging process."
+  (if x y z))
 
 ;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 

@@ -1679,7 +1679,13 @@ registers are not used.</p>"
              (not (bfr-depends-on v (bfr-not x))))
     :hints(("Goal" :in-theory (enable bfr-depends-on))
            (and stable-under-simplificationp
-                '(:in-theory (enable bfr-fix))))))
+                '(:in-theory (enable bfr-fix)))))
+
+  (defthm bfr-negate-of-logicman->bfrstate
+    (equal (bfr-negate x (logicman->bfrstate))
+           (bfr-not x))
+    :hints(("Goal" :in-theory (enable bfr-negate)))))
+
 
 
 (local (defthm aignet-hash-and-of-0
@@ -1760,14 +1766,6 @@ registers are not used.</p>"
                           (:free (x y) (aignet::reduce-gate-rec 4 x y gatesimp aignet))
                           (:free (x y) (aignet::reduce-gate-rec 5 x y gatesimp aignet)))))))
 
-(local (defthm bfr->aignet-lit-of-consts
-         (and (Equal (bfr->aignet-lit nil) 0)
-              (equal (Bfr->aignet-lit t) 1))
-         :hints(("Goal" :in-theory (enable bfr->aignet-lit)))))
-(local (defthm aignet-lit->bfr-of-consts
-         (and (equal (aignet-lit->bfr 1) t)
-              (equal (aignet-lit->bfr 0) nil))
-         :hints(("Goal" :in-theory (enable aignet-lit->bfr)))))
 
 
 (local (in-theory (disable set::in-tail))) ;; incompatible with trivial ancestors check

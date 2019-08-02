@@ -1516,6 +1516,26 @@
 
 
   (verify-guards easy-termp))
+
+(define fgl-interp-branch-merge-rules (thenfn elsefn runes (wrld plist-worldp))
+  :returns (rules pseudo-rewrite-rule-listp)
+  :prepwork ((local (defthm true-listp-when-pseudo-rewrite-rule-listp
+                      (implies (pseudo-rewrite-rule-listp x)
+                               (true-listp x))
+                      :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp)))))
+             (local (defthm pseudo-rewrite-rule-listp-of-append
+                      (implies (and (pseudo-rewrite-rule-listp x)
+                                    (pseudo-rewrite-rule-listp y))
+                               (pseudo-rewrite-rule-listp (append x y)))
+                      :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp))))))
+  (let* ((then-rules (and thenfn (fn-branch-merge-rules thenfn runes wrld)))
+         (else-rules (and elsefn (fn-branch-merge-rules elsefn runes wrld))))
+    (mbe :logic (append then-rules else-rules)
+         :exec (if then-rules
+                   (if else-rules
+                       
+                       then-rules)
+                 else-rules))))
   
 
 (progn
@@ -1860,7 +1880,8 @@
              ;; (rule.lhs.args (pseudo-term-call->args rule.lhs))
              ((mv unify-ok bindings) (glcp-unify-term/gobj rule.lhs
                                                            call
-                                                           nil))
+                                                           nil
+                                                           (interp-st-bfr-state)))
              ((unless unify-ok) (fgl-interp-value nil nil))
              ((unless (mbt (pseudo-term-listp rule.hyps)))
               (gl-interp-error
@@ -2056,9 +2077,74 @@
         :returns (mv
                   (ans gl-object-p)
                   new-interp-st new-state)
-        (if (hons-equal test then)
-            (gl-interp-or test else interp-st state)
-          (gl-interp-if test then else interp-st state)))
+        (if (interp-flags->branch-on-ifs (interp-st->flags interp-st))
+            (if (hons-equal test then)
+                (gl-interp-or test else interp-st state)
+              (gl-interp-if test then else interp-st state))
+          (if (hons-equal test then)
+              (gl-interp-or-nonbranching test else interp-st state)
+            (gl-interp-if-nonbranching test then else interp-st state))))
+
+      (define gl-interp-if-nonbranching ((test pseudo-termp)
+                                         (then pseudo-termp)
+                                         (else pseudo-termp)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
+        
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020
+                       (+ (pseudo-term-binding-count test)
+                          (pseudo-term-binding-count then)
+                          (pseudo-term-binding-count else))
+                       40)
+        :returns (mv
+                  (ans gl-object-p)
+                  new-interp-st new-state)
+        (b* (((interp-st-bind
+               (equiv-contexts (gl-interp-test-equiv-contexts (interp-st->equiv-contexts interp-st))))
+              ((gl-interp-recursive-call testobj)
+               (gl-interp-term-equivs test interp-st state)))
+             ((mv ok boolfix) (gobj-syntactic-boolean-fix testobj))
+             ((unless (and** ok (gl-object-case boolfix :g-concrete)))
+              (gl-interp-error :msg (gl-msg "Symbolic IF test occurred under ~
+                                             nonbranching context -- see ~
+                                             debug obj. Resulted from term: ~
+                                             ~x0"
+                                            (pseudo-term-fix test))
+                               :debug-obj boolfix)))
+          (if (g-concrete->val boolfix)
+              (gl-interp-term-equivs then interp-st state)
+            (gl-interp-term-equivs else interp-st state))))
+
+      (define gl-interp-or-nonbranching ((test pseudo-termp)
+                                         (else pseudo-termp)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
+        
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020
+                       (+ (pseudo-term-binding-count test)
+                          (pseudo-term-binding-count else))
+                       40)
+        :returns (mv
+                  (ans gl-object-p)
+                  new-interp-st new-state)
+        (b* ((equiv-contexts  (interp-st->equiv-contexts interp-st))
+             ((interp-st-bind
+               (equiv-contexts (gl-interp-or-test-equiv-contexts equiv-contexts) equiv-contexts))
+              ((gl-interp-recursive-call testobj)
+               (gl-interp-term-equivs test interp-st state)))
+             ((mv ok boolfix) (gobj-syntactic-boolean-fix testobj))
+             ((unless (and** ok (gl-object-case boolfix :g-concrete)))
+              (gl-interp-error :msg (gl-msg "Symbolic IF test occurred under ~
+                                             nonbranching context -- see ~
+                                             debug obj. Resulted from term: ~
+                                             ~x0"
+                                            (pseudo-term-fix test))
+                               :debug-obj boolfix)))
+          (if (g-concrete->val boolfix)
+              (fgl-interp-value testobj)
+            (gl-interp-term-equivs else interp-st state))))
 
       
       (define gl-interp-if ((test pseudo-termp)
@@ -2108,6 +2194,44 @@
               (fgl-interp-value thenval)))
           (gl-interp-merge-branches testbfr thenval elseval interp-st state)))
           ;; (gl-interp-if-finish testbfr thenval elseval then-unreachable else-unreachable interp-st state)
+
+      
+
+      (define gl-interp-or ((test pseudo-termp)
+                            (else pseudo-termp)
+                            (interp-st interp-st-bfrs-ok)
+                            state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020
+                       (+ (pseudo-term-binding-count test)
+                          (pseudo-term-binding-count else))
+                       40)
+        :returns (mv
+                  (ans gl-object-p)
+                  new-interp-st new-state)
+        (b* ((equiv-contexts (interp-st->equiv-contexts interp-st))
+             (or-test-equiv-contexts (gl-interp-or-test-equiv-contexts equiv-contexts))
+             ((interp-st-bind
+               (equiv-contexts or-test-equiv-contexts equiv-contexts))
+              ((gl-interp-recursive-call testval)
+               (gl-interp-term-equivs test interp-st state)))
+             ;; ((when err) (mv nil interp-st state))
+             (interp-st (interp-st-push-scratch-gl-obj testval interp-st))
+             ((gl-interp-recursive-call testbfr)
+              (gl-interp-simplify-if-test testval interp-st state))
+             ;; ((when err)
+             ;;  (b* ((interp-st (interp-st-pop-scratch interp-st)))
+             ;;    (mv nil interp-st state)))
+             (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
+             ((gl-interp-recursive-call else-unreachable elseval)
+              (gl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
+             ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+             ((mv testval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
+             ;; ((when err)
+             ;;  (mv nil interp-st state))
+             ((when else-unreachable)
+              (fgl-interp-value testval)))
+          (gl-interp-merge-branches testbfr testval elseval interp-st state)))
 
       (define gl-interp-assume ((test pseudo-termp)
                                 (x pseudo-termp)
@@ -2222,42 +2346,6 @@
               ((fgl-interp-value ans)
                (gl-interp-term-equivs term interp-st state))))
           (fgl-interp-value ans)))
-
-      (define gl-interp-or ((test pseudo-termp)
-                            (else pseudo-termp)
-                            (interp-st interp-st-bfrs-ok)
-                            state)
-        :measure (list (nfix (interp-st->reclimit interp-st))
-                       2020
-                       (+ (pseudo-term-binding-count test)
-                          (pseudo-term-binding-count else))
-                       40)
-        :returns (mv
-                  (ans gl-object-p)
-                  new-interp-st new-state)
-        (b* ((equiv-contexts (interp-st->equiv-contexts interp-st))
-             (or-test-equiv-contexts (gl-interp-or-test-equiv-contexts equiv-contexts))
-             ((interp-st-bind
-               (equiv-contexts or-test-equiv-contexts equiv-contexts))
-              ((gl-interp-recursive-call testval)
-               (gl-interp-term-equivs test interp-st state)))
-             ;; ((when err) (mv nil interp-st state))
-             (interp-st (interp-st-push-scratch-gl-obj testval interp-st))
-             ((gl-interp-recursive-call testbfr)
-              (gl-interp-simplify-if-test testval interp-st state))
-             ;; ((when err)
-             ;;  (b* ((interp-st (interp-st-pop-scratch interp-st)))
-             ;;    (mv nil interp-st state)))
-             (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
-             ((gl-interp-recursive-call else-unreachable elseval)
-              (gl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
-             ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
-             ((mv testval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
-             ;; ((when err)
-             ;;  (mv nil interp-st state))
-             ((when else-unreachable)
-              (fgl-interp-value testval)))
-          (gl-interp-merge-branches testbfr testval elseval interp-st state)))
           ;; (gl-interp-if-finish testbfr testval elseval nil else-unreachable interp-st state)))
 
 
@@ -2576,7 +2664,7 @@
         :returns (mv new-interp-st new-state)
         (b* ((constraint-db (interp-st->constraint-db interp-st))
              ((mv constraint-substs constraint-db)
-              (gbc-process-new-lit xobj constraint-db state))
+              (gbc-process-new-lit xobj constraint-db (interp-st-bfr-state) state))
              (interp-st (update-interp-st->constraint-db constraint-db interp-st))
              ((unless constraint-substs) (fgl-interp-value))
              (reclimit (interp-st->reclimit interp-st))
@@ -2679,40 +2767,40 @@
              ((when (eq testbfr t)) (fgl-interp-value thenval))
              ((when (eq testbfr nil)) (fgl-interp-value elseval))
              ((when (hons-equal thenval elseval)) (fgl-interp-value thenval)))
-          (gl-interp-merge-branches-rewrite testbfr thenval elseval nil interp-st state)))
+          (gl-interp-merge-branches-rewrite testbfr thenval elseval interp-st state)))
 
       (define gl-interp-merge-branches-rewrite ((testbfr interp-st-bfr-p)
                                                 (thenval gl-object-p)
                                                 (elseval gl-object-p)
-                                                switchedp
                                                 (interp-st interp-st-bfrs-ok)
                                                 state)
         :guard (and (interp-st-bfr-listp (gl-object-bfrlist thenval))
                     (interp-st-bfr-listp (gl-object-bfrlist elseval)))
         :measure (list (nfix (interp-st->reclimit interp-st))
-                       1900 0 (if switchedp 20 30))
+                       1900 0 20)
         :returns (mv
                   (ans gl-object-p)
                   new-interp-st new-state)
         (b* ((thenval (gl-object-fix thenval))
              (elseval (gl-object-fix elseval))
-             (fn (gl-fncall-object->fn thenval))
-             (rules (and** fn (fn-branch-merge-rules fn 
-                                                     (glcp-config->branch-merge-rules
-                                                      (interp-st->config interp-st))
-                                                     (w state))))
-             ((unless rules)
-              ;; Note: we try to apply if-merge rules based on the leading function
-              ;; symbol of the then or else objects.  We try then first
-              ;; (switchedp=nil), then else (switchedp=t), and if both fail we move
-              ;; on to merge-branches-subterms.
-              (if switchedp
-                  (gl-interp-merge-branch-subterms
-                   (interp-st-bfr-not testbfr)
-                   elseval thenval interp-st state)
-                (gl-interp-merge-branches-rewrite
-                 (interp-st-bfr-not testbfr)
-                 elseval thenval t interp-st state)))
+             (thenfn (gl-fncall-object->fn thenval))
+             (elsefn (gl-fncall-object->fn elseval))
+             (rules (fgl-interp-branch-merge-rules thenfn elsefn
+                                                   (glcp-config->branch-merge-rules
+                                                    (interp-st->config interp-st))
+                                                   (w state)))
+             ;; ((unless rules)
+             ;;  ;; Note: we try to apply if-merge rules based on the leading function
+             ;;  ;; symbol of the then or else objects.  We try then first
+             ;;  ;; (switchedp=nil), then else (switchedp=t), and if both fail we move
+             ;;  ;; on to merge-branches-subterms.
+             ;;  (if switchedp
+             ;;      (gl-interp-merge-branch-subterms
+             ;;       (interp-st-bfr-not testbfr)
+             ;;       elseval thenval interp-st state)
+             ;;    (gl-interp-merge-branches-rewrite
+             ;;     (interp-st-bfr-not testbfr)
+             ;;     elseval thenval t interp-st state)))
 
              (reclimit (interp-st->reclimit interp-st))
              ((when (gl-interp-check-reclimit interp-st))
@@ -2721,12 +2809,18 @@
              (interp-st (interp-st-push-scratch-gl-obj thenval interp-st))
              (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
              (interp-st (interp-st-push-scratch-gl-obj
-                         (g-apply 'if (list (g-boolean testbfr) thenval elseval))
+                         (g-ite (g-boolean testbfr) thenval elseval)
                          interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((fgl-interp-value successp ans)
-               (gl-rewrite-try-rules rules interp-st state)))
+               (b* (((gl-interp-recursive-call successp ans)
+                     (gl-rewrite-try-rules rules interp-st state))
+                    ((when successp) (fgl-interp-value successp ans)))
+                 (gl-rewrite-try-rules (fn-rewrite-rules 'if (glcp-config->rewrite-rule-table
+                                                              (interp-st->config interp-st))
+                                                         (w state))
+                                       interp-st state))))
              (interp-st (interp-st-pop-scratch interp-st))
              ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
              ((mv thenval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
@@ -2735,13 +2829,8 @@
              ;;  (mv nil interp-st state))
              ((when successp)
               (fgl-interp-value ans)))
-          (if switchedp
-              (gl-interp-merge-branch-subterms
-               (interp-st-bfr-not testbfr)
-               elseval thenval interp-st state)
-            (gl-interp-merge-branches-rewrite
-             (interp-st-bfr-not testbfr)
-             elseval thenval t interp-st state))))
+          (gl-interp-merge-branch-subterms
+           testbfr thenval elseval interp-st state)))
 
       (define gl-interp-merge-branch-subterms ((testbfr interp-st-bfr-p)
                                                (thenval gl-object-p)
@@ -3496,11 +3585,6 @@
   :hints(("Goal" :in-theory (enable gl-object-bfrlist))))
 
 
-(local (defthm bfr-listp-of-mk-g-boolean
-         (implies (bfr-p x)
-                  (bfr-listp (gl-object-bfrlist (mk-g-boolean x))))
-         :hints(("Goal" :in-theory (enable mk-g-boolean)))))
-
 
 
 (defthm bfr-p-of-bool-fix
@@ -3643,7 +3727,7 @@
        ;;                                 (prog2$ (cw "flag: ~x0~%" flag)
        ;;                                         '(:no-op t)))))))
        ((:fnname gl-rewrite-try-rules)
-        (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-obj))))
+        (:add-hyp (scratchobj-case (stack$a-top-scratch (double-rewrite (interp-st->stack interp-st))) :gl-obj))))
       
       :hints ((fgl-interp-default-hint 'gl-interp-term id nil world)
               `(:do-not-induct t
@@ -3975,6 +4059,26 @@
                                            maybe-incr)))
          :fn interp-st-pathcond-assume))
 
+(local (acl2::use-trivial-ancestors-check))
+
+;; (local
+;;  (DEFTHM INTERP-ST-BFRS-OK-OF-GL-REWRITE-TRY-RULES-double-rewrite
+;;    (B*
+;;        (((MV ?SUCCESSP
+;;              ?ANS ?NEW-INTERP-ST ?NEW-STATE)
+;;          (GL-REWRITE-TRY-RULES RULES INTERP-ST STATE)))
+;;      (IMPLIES
+;;       (AND
+;;        (double-rewrite (SCRATCHOBJ-CASE
+;;                          (STACK$A-TOP-SCRATCH (INTERP-ST->STACK INTERP-ST))
+;;                          :GL-OBJ))
+;;        (INTERP-ST-BFRS-OK INTERP-ST))
+;;       (AND (LBFR-LISTP (GL-OBJECT-BFRLIST ANS)
+;;                        (INTERP-ST->LOGICMAN NEW-INTERP-ST))
+;;            (INTERP-ST-BFRS-OK NEW-INTERP-ST))))))
+
+;; (local (in-theory (disable interp-st-bfrs-ok-of-gl-rewrite-try-rules)))
+
 (progn
   (with-output
     :off (event)
@@ -4058,7 +4162,8 @@
                                               (prog2$ (cw "flag: ~x0~%" flag)
                                                       '(:no-op t)))))))
               ((:fnname gl-rewrite-try-rules)
-               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-obj))))
+               (:add-hyp (scratchobj-case (double-rewrite (stack$a-top-scratch (interp-st->stack interp-st)))
+                           :gl-obj))))
       :hints (("goal" :do-not-induct t))
       :no-induction-hint t
       :mutual-recursion gl-interp)))
@@ -4430,6 +4535,12 @@
                     (booleanp (nth *pathcond-enabledp* (interp-st->pathcond interp-st))))
            :hints(("Goal" :in-theory (enable interp-stp pathcondp interp-st->pathcond)))
            :rule-classes :type-prescription))
+
+  (local (defthm pseudo-rewrite-rule-listp-of-and*
+           (implies (pseudo-rewrite-rule-listp x)
+                    (pseudo-rewrite-rule-listp (and* cond x)))
+           :hints(("Goal" :in-theory (enable and*)))))
+
   (with-output
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
@@ -4751,7 +4862,7 @@
                                             env
                                             (interp-st->logicman interp-st)))))
               ((:fnname gl-rewrite-try-rules)
-               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-obj))))
+               (:add-hyp (scratchobj-case (double-rewrite (stack$a-top-scratch (interp-st->stack interp-st))) :gl-obj))))
       :hints ((fgl-interp-default-hint 'gl-interp-term id nil world))
       :mutual-recursion gl-interp))
 
@@ -6200,7 +6311,7 @@
                    major-bindings1)
                   (mv-nth 0 (glcp-unify-term/gobj
                              (acl2::rewrite-rule->lhs rule)
-                             call nil))
+                             call nil (logicman->bfrstate)))
                   (fgl-ev-context-equiv-forall-extensions
                    contexts rhs-obj (acl2::rewrite-rule->rhs rule)
                    major-bindings2)
@@ -6211,7 +6322,7 @@
                    (fgl-object-bindings-eval
                     (mv-nth 1 (glcp-unify-term/gobj
                                (acl2::rewrite-rule->lhs rule)
-                               call nil))
+                               call nil (logicman->bfrstate)))
                     env))
                   (eval-alist-extension-p major-bindings2 major-bindings1))
              (equal (fgl-ev-context-fix contexts
@@ -6231,7 +6342,7 @@
                   (a (fgl-object-bindings-eval
                       (mv-nth 1 (glcp-unify-term/gobj
                                  (acl2::rewrite-rule->lhs rule)
-                                 call nil))
+                                 call nil (logicman->bfrstate)))
                       env))
                   (b major-bindings2))
                  (:instance iff-forall-extensions-necc
@@ -6402,6 +6513,103 @@
               (append minor-bindings major-bindings2)))
     :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2))
             (acl2::witness :ruleset context-equiv-forall)))
+
+
+  (local (defthm eval-under-iff-when-boolean-fix
+           (b* (((mv ok boolfix) (gobj-syntactic-boolean-fix testobj)))
+             (implies (and ok
+                           (gl-object-case boolfix :g-concrete))
+                      (iff (fgl-object-eval testobj env)
+                           (g-concrete->val boolfix))))
+           :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix fgl-object-eval)))))
+           
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-if-nonbranching-true
+    (b* (((mv ok boolfix) (gobj-syntactic-boolean-fix testobj)))
+      (implies (and ok
+                    (gl-object-case boolfix :g-concrete)
+                    (g-concrete->val boolfix)
+                    (fgl-ev-context-equiv-forall-extensions
+                     (gl-interp-test-equiv-contexts contexts)
+                     (fgl-object-eval testobj env)
+                     test (append minor-bindings major-bindings1))
+                    (fgl-ev-context-equiv-forall-extensions
+                     contexts then-eval then (append minor-bindings major-bindings2))
+                    (eval-alist-extension-p major-bindings2 major-bindings1))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts
+                then-eval
+                (pseudo-term-fncall 'if (list test then else))
+                (append minor-bindings major-bindings2))))
+    :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2
+                                       gl-interp-test-equiv-contexts))
+            ;; (acl2::witness :ruleset context-equiv-forall)
+            ))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-if-nonbranching-false
+    (b* (((mv ok boolfix) (gobj-syntactic-boolean-fix testobj)))
+      (implies (and ok
+                    (gl-object-case boolfix :g-concrete)
+                    (not (g-concrete->val boolfix))
+                    (fgl-ev-context-equiv-forall-extensions
+                     (gl-interp-test-equiv-contexts contexts)
+                     (fgl-object-eval testobj env)
+                     test (append minor-bindings major-bindings1))
+                    (fgl-ev-context-equiv-forall-extensions
+                     contexts else-eval else (append minor-bindings major-bindings2))
+                    (eval-alist-extension-p major-bindings2 major-bindings1))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts
+                else-eval
+                (pseudo-term-fncall 'if (list test then else))
+                (append minor-bindings major-bindings2))))
+    :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2
+                                       gl-interp-test-equiv-contexts))
+            ;; (acl2::witness :ruleset context-equiv-forall)
+            ))
+
+  
+  (defthm fgl-ev-context-equiv-forall-extensions-of-or-nonbranching-true
+    (b* (((mv ok boolfix) (gobj-syntactic-boolean-fix testobj)))
+      (implies (and ok
+                    (gl-object-case boolfix :g-concrete)
+                    (g-concrete->val boolfix)
+                    (fgl-ev-context-equiv-forall-extensions
+                     (gl-interp-or-test-equiv-contexts contexts)
+                     (fgl-object-eval testobj env)
+                     test bindings))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts
+                (fgl-object-eval testobj env)
+                (pseudo-term-fncall 'if (list test test else))
+                bindings)))
+    :hints (("goal" :in-theory (enable gl-interp-or-test-equiv-contexts
+                                       ))
+            (acl2::witness :ruleset context-equiv-forall)
+            ))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-or-nonbranching-false
+    (b* (((mv ok boolfix) (gobj-syntactic-boolean-fix testobj)))
+      (implies (and ok
+                    (gl-object-case boolfix :g-concrete)
+                    (not (g-concrete->val boolfix))
+                    (fgl-ev-context-equiv-forall-extensions
+                     (gl-interp-or-test-equiv-contexts contexts)
+                     (fgl-object-eval testobj env)
+                     test (append minor-bindings major-bindings1))
+                    (fgl-ev-context-equiv-forall-extensions
+                     contexts else-eval else (append minor-bindings major-bindings2))
+                    (eval-alist-extension-p major-bindings2 major-bindings1))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts
+                else-eval
+                (pseudo-term-fncall 'if (list test then else))
+                (append minor-bindings major-bindings2))))
+    :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2
+                                       gl-interp-or-test-equiv-contexts))
+            (acl2::witness :ruleset context-equiv-forall)
+            ))
+               
 
   ;; (defthm iff-forall-extensions-of-gl-interp-test
   ;;   (implies (and (fgl-ev-context-equiv-forall-extensions
@@ -7457,7 +7665,24 @@
                            (acl2::mextract-ev-lst fgl-ev-list)
                            (acl2::mextract-ev-falsify fgl-ev-falsify)
                            (acl2::mextract-global-badguy fgl-ev-meta-extract-global-badguy)
-                           (mextract-good-rewrite-rulesp fgl-ev-good-rewrite-rulesp)))))))
+                           (mextract-good-rewrite-rulesp fgl-ev-good-rewrite-rulesp))))))
+
+  (local (defthm true-listp-when-pseudo-rewrite-rule-listp
+                      (implies (pseudo-rewrite-rule-listp x)
+                               (true-listp x))
+                      :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp)))))
+
+  (local (defthm fgl-ev-good-rewrite-rulesp-of-append
+           (implies (and (fgl-ev-good-rewrite-rulesp x)
+                         (fgl-ev-good-rewrite-rulesp y))
+                    (fgl-ev-good-rewrite-rulesp (append x y)))))
+
+  (defthm fgl-ev-good-branch-merge-rulep-of-fgl-interp-branch-merge-rules
+    (implies (and (fgl-ev-meta-extract-global-facts)
+                  (equal wrld (w state)))
+             (fgl-ev-good-rewrite-rulesp
+              (fgl-interp-branch-merge-rules thenfn elsefn runes wrld)))
+    :hints(("Goal" :in-theory (enable fgl-interp-branch-merge-rules)))))
 
 
 
@@ -7653,7 +7878,36 @@
              (equal (fgl-ev-list-context-fix contexts (if* test c (cons a b)))
                     (cons (fgl-ev-context-fix contexts (if* test (car c) a))
                           (fgl-ev-list-context-fix contexts (if* test (cdr c) b)))))))
-                  
+
+
+
+(defthm fgl-ev-good-rewrite-rulesp-of-and*
+  (implies (fgl-ev-good-rewrite-rulesp x)
+           (fgl-ev-good-rewrite-rulesp (and* cond x)))
+  :hints(("Goal" :in-theory (enable and*))))
+
+
+(DEFTHM
+  GL-REWRITE-TRY-RULES-STACK-EQUIV-EXCEPT-TOP-BINDINGS-double-rw
+  (B*
+      (((MV ?SUCCESSP
+            ?ANS ?NEW-INTERP-ST ?NEW-STATE)
+        (GL-REWRITE-TRY-RULES RULES INTERP-ST STATE)))
+    (IMPLIES
+     (AND
+      (SCRATCHOBJ-CASE
+        (double-rewrite (STACK$A-TOP-SCRATCH (INTERP-ST->STACK INTERP-ST)))
+        :GL-OBJ)
+      (INTERP-ST-BFRS-OK INTERP-ST))
+     (STACK-EQUIV-EXCEPT-TOP-BINDINGS
+      (FGL-MAJOR-STACK-CONCRETIZE
+       (INTERP-ST->STACK NEW-INTERP-ST)
+       ENV (INTERP-ST->LOGICMAN NEW-INTERP-ST))
+      (FGL-MAJOR-STACK-CONCRETIZE
+       (INTERP-ST->STACK INTERP-ST)
+       ENV (INTERP-ST->LOGICMAN INTERP-ST))))))
+
+(local (in-theory (disable gl-rewrite-try-rules-stack-equiv-except-top-bindings)))
 
 (defsection-unique gl-interp-correct
   (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
@@ -8002,7 +8256,6 @@
     :hints(("Goal" :in-theory (enable stack$a-bindings stack$a-pop-scratch))))
 
 
-
   (defconst *gl-interp-correct-body*
     '(std::defret-generate <fn>-correct
        :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
@@ -8197,14 +8450,16 @@
                           (iff-forall-extensions
                            t hyp eval-alist))))
                ((or (:fnname gl-interp-if/or)
-                    (:fnname gl-interp-if))
+                    (:fnname gl-interp-if)
+                    (:fnname gl-interp-if-nonbranching))
                 (:add-concl
                  (fgl-ev-context-equiv-forall-extensions
                   (interp-st->equiv-contexts interp-st)
                   (fgl-object-eval ans env new-logicman)
                   (pseudo-term-fncall 'if (list test then else))
                   eval-alist)))
-               ((:fnname gl-interp-or)
+               ((or (:fnname gl-interp-or)
+                    (:fnname gl-interp-or-nonbranching))
                 (:add-concl
                  (fgl-ev-context-equiv-forall-extensions
                   (interp-st->equiv-contexts interp-st)
