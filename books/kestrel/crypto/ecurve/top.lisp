@@ -21,6 +21,7 @@
 ;; TODO: Uncomment once name clashes are fixed:
 ;; (include-book "secp256k1")
 ;; (include-book "secp256k1-tests")
+;; (include-book "secp256k1-attachment")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

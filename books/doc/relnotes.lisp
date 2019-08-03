@@ -306,7 +306,8 @@
      the Keccak-256 interface that operates on bytes,
      the SHA-256 interface that operates on bytes,
      the HMAC-SHA-512 interface,
-     and the PBKDF2 HMAC-SHA-512 interface.")
+     the PBKDF2 HMAC-SHA-512 interface,
+     and the secp256k1 interface.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
