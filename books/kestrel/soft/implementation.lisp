@@ -18,12 +18,17 @@
 (include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
-(local (xdoc::set-default-parents soft-implementation))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ soft-implementation
+  :parents (soft)
+  :short "Implementation of SOFT."
+  :order-subtopics t
+  :default-parent t)
 
 (define *-listp (stars)
   :returns (yes/no booleanp)
