@@ -243,8 +243,8 @@
   :returns (kind "A @(tsee sofun-kindp).")
   :verify-guards nil
   :short "Kind of a second-order function."
-  (cond ((acl2::defchoosep sofun wrld) 'choice)
-        ((acl2::defun-sk-p sofun wrld) 'quant)
+  (cond ((defchoosep sofun wrld) 'choice)
+        ((defun-sk-p sofun wrld) 'quant)
         (t 'plain)))
 
 (define plain-sofunp (sofun (wrld plist-worldp))
