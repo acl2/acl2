@@ -1207,6 +1207,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (b* (((list name formals & oc & & kwd-alist) parsed)
        (tbl (defdata::type-metadata-table w))
        (ptbl (defdata::pred-alias-table w))
+       (skip-admissibilityp 
+        (defdata::get1 :skip-admissibilityp kwd-alist))
        (pred (pred-of-oc name formals oc ptbl))
        (type (type-of-pred pred tbl ptbl))
        (undef-name (if type
@@ -1215,7 +1217,47 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (attch-name (make-symbl `(,undef-name ,(if d? '-d- '-) attached) pkg))
        (attch-base-name (make-symbl `(,attch-name ,(if d? '-d- '-) base) pkg))
        (thm-name (make-symbl `(,undef-name ,(if d? '-d- '-) ,pred) pkg))
-       (base-val (and type (base-val-of-type type tbl))))
+       (base-val (and type (base-val-of-type type tbl)))
+       (defthm-d? `(defthm ,thm-name (,pred (,undef-name))
+                     :rule-classes ((:type-prescription) (:rewrite))))
+       (defthm-no-d? `(defthm ,thm-name (,pred (,undef-name x y))
+                        :rule-classes ((:type-prescription) (:rewrite))))
+       (d?-form `(encapsulate
+                  nil
+                  (encapsulate
+                   ((,undef-name () t))
+                   (local (defun ,undef-name ()
+                            ',base-val))
+                   ,defthm-d?)
+                  (defun ,attch-name ()
+                    (declare (xargs :guard t))
+                    (cw "~|**Input contract violation** ~%"))
+                  (defun ,attch-base-name ()
+                    (declare (xargs :guard t))
+                    ',base-val)
+                  ,(if *print-contract-violations*
+                       `(defattach ,undef-name ,attch-name)
+                     `(defattach ,undef-name ,attch-base-name))))
+       (d?-form (if skip-admissibilityp `(skip-proofs ,d?-form) d?-form))
+       (no-d?-form `(encapsulate
+                     nil
+                     (encapsulate
+                      ((,undef-name (x y) t :guard (and (symbolp x) (true-listp y))))
+                      (local (defun ,undef-name (x y)
+                               (declare (ignorable x y))
+                               ',base-val))
+                      ,defthm-no-d?)
+                     (defun ,attch-name (x y)
+                       (declare (xargs :guard (and (symbolp x) (true-listp y))))
+                       (cw "~|**Input contract violation**: ~x0 ~%" `(,x ,@y)))
+                     (defun ,attch-base-name (x y)
+                       (declare (xargs :guard (and (symbolp x) (true-listp y))))
+                       (declare (ignorable x y))
+                       ',base-val)
+                     ,(if *print-contract-violations*
+                          `(defattach ,undef-name ,attch-name)
+                        `(defattach ,undef-name ,attch-base-name))))
+       (no-d?-form (if skip-admissibilityp `(skip-proofs ,no-d?-form) no-d?-form)))
     (cond
      ((and (not do-it)
            (defdata::get1 :program-mode-p kwd-alist))
@@ -1223,42 +1265,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      ((and (not do-it)
            (acl2::arity undef-name w))
       `(value-triple ',undef-name))
-     (d? `(encapsulate
-          nil
-          (encapsulate
-           ((,undef-name () t))
-           (local (defun ,undef-name ()
-                    ',base-val))
-           (defthm ,thm-name (,pred (,undef-name))
-             :rule-classes ((:type-prescription) (:rewrite))))
-          (defun ,attch-name ()
-            (declare (xargs :guard t))
-            (cw "~|**Input contract violation** ~%"))
-          (defun ,attch-base-name ()
-            (declare (xargs :guard t))
-            ',base-val)
-          ,(if *print-contract-violations*
-               `(defattach ,undef-name ,attch-name)
-             `(defattach ,undef-name ,attch-base-name))))
-     (t `(encapsulate
-          nil
-          (encapsulate
-           ((,undef-name (x y) t :guard (and (symbolp x) (true-listp y))))
-           (local (defun ,undef-name (x y)
-                    (declare (ignorable x y))
-                    ',base-val))
-           (defthm ,thm-name (,pred (,undef-name x y))
-             :rule-classes ((:type-prescription) (:rewrite))))
-          (defun ,attch-name (x y)
-            (declare (xargs :guard (and (symbolp x) (true-listp y))))
-            (cw "~|**Input contract violation**: ~x0 ~%" `(,x ,@y)))
-          (defun ,attch-base-name (x y)
-            (declare (xargs :guard (and (symbolp x) (true-listp y))))
-            (declare (ignorable x y))
-            ',base-val)
-          ,(if *print-contract-violations*
-               `(defattach ,undef-name ,attch-name)
-             `(defattach ,undef-name ,attch-base-name)))))))
+     (d? d?-form)
+     (t no-d?-form))))
 
 (defun make-undefined (name args d? pkg w)
   (declare (xargs :mode :program :guard (symbolp name)))
