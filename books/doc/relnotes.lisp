@@ -301,6 +301,13 @@
    ;; xdoc to be added later
    ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
+   (xdoc::p
+    "Executable attachments have been added for
+     the Keccak-256 interface that operates on bytes,
+     the SHA-256 interface that operates on bytes,
+     the HMAC-SHA-512 interface,
+     and the PBKDF2 HMAC-SHA-512 interface.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))

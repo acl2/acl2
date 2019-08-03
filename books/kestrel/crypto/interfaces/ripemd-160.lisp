@@ -19,7 +19,8 @@
   :input-size-limit nil
   :output-size 160
   :parents (interfaces)
-  :short "RIPEMD-160 interface."
+  :short (xdoc::topstring
+          "RIPEMD-160 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

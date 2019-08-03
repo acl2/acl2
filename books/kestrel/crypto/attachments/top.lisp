@@ -10,16 +10,19 @@
 
 (in-package "CRYPTO")
 
-(include-book "ecurve/top")
-(include-book "ecdsa/top")
-(include-book "interfaces/top")
-
-; The following is temporarily commented out,
-; waiting for conflicts in the manual to be resolved.
-;; (include-book "attachments/top")
+(include-book "hmac-sha-512")
+(include-book "keccak-256")
+(include-book "pbkdf2-hmac-sha-512")
+(include-book "sha-256")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc cryptography
-  :parents (acl2::kestrel-books acl2::projects)
-  :short "A library for cryptography.")
+(defxdoc attachments
+  :parents (cryptography)
+  :short "Cryptographic attachments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we provide executable attachments for "
+    (xdoc::seeurl "interfaces" "cryptographic interfaces")
+    ".")))

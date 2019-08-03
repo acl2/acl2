@@ -19,7 +19,8 @@
   :input-size-limit nil
   :output-size 512
   :parents (interfaces)
-  :short "Keccak-512 interface."
+  :short (xdoc::topstring
+          "Keccak-512 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

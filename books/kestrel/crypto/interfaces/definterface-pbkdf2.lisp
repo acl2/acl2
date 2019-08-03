@@ -18,8 +18,10 @@
 
   :parents (interfaces)
 
-  :short "Introduce an interface for
-          a password-based key derivation function 2 (PBKDF2)."
+  :short (xdoc::topstring
+          "Introduce an "
+          (xdoc::seeurl "interfaces" "interface")
+          " for a password-based key derivation function 2 (PBKDF2).")
 
   :long
 

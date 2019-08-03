@@ -19,7 +19,8 @@
   :hash sha-256
   :block-size 64
   :parents (interfaces)
-  :short "HMAC-SHA-256 interface."
+  :short (xdoc::topstring
+          "HMAC-SHA-256 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

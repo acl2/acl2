@@ -19,8 +19,11 @@
 
   :parents (interfaces)
 
-  :short "Introduce an interface for
-          a cryptographic encryption function with an initialization vector."
+  :short (xdoc::topstring
+          "Introduce an "
+          (xdoc::seeurl "interfaces" "interface")
+          " for a cryptographic encryption function
+           with an initialization vector.")
 
   :long
 
