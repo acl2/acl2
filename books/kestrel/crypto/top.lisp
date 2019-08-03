@@ -13,7 +13,10 @@
 (include-book "ecurve/top")
 (include-book "ecdsa/top")
 (include-book "interfaces/top")
-(include-book "attachments/top")
+
+; The following is temporarily commented out,
+; waiting for conflicts in the manual to be resolved.
+;; (include-book "attachments/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

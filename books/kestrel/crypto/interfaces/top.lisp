@@ -61,8 +61,7 @@
      over the details of the cryptographic functions,
      without having to include and use full definitions of these functions.")
    (xdoc::p
-    (xdoc::seeurl "attachments" "Executable attachments")
-    " for these interfaces can be used
+    "Executable attachments for these interfaces can be used
      to execute code that calls these interfaces.
      It should be also possible to automatically specialize
      code that uses these interfaces
