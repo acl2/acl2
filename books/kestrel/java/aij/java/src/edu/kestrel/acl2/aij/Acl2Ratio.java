@@ -40,86 +40,6 @@ final class Acl2Ratio extends Acl2Rational {
         this.denominator = denominator;
     }
 
-    //////////////////////////////////////// package-private members:
-
-    /**
-     * Supports the native implementation of
-     * the {@code unary--} ACL2 function.
-     */
-    @Override
-    Acl2Rational negate() {
-        // -(a/b) is (-a)/b:
-        Acl2Integer a = this.numerator;
-        Acl2Integer b = this.denominator;
-        return Acl2Rational.make(a.negate(), b);
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code unary-/} ACL2 function.
-     */
-    @Override
-    Acl2Rational reciprocate() {
-        // 1/(a/b) is b/a:
-        Acl2Integer a = this.numerator;
-        if (a.equals(Acl2Integer.ZERO))
-            return Acl2Integer.ZERO;
-        Acl2Integer b = this.denominator;
-        return Acl2Rational.make(b, a);
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code binary-+} ACL2 function.
-     */
-    @Override
-    Acl2Number add(Acl2Value other) {
-        if (other instanceof Acl2Rational) {
-            // a/b + c/d is (a*(lcm/b)+c*(lcm/d))/lcm,
-            // where lcm is the least common multiple of b and d:
-            Acl2Integer thisNumerator = this.numerator;
-            Acl2Integer thisDenominator = this.denominator;
-            Acl2Integer otherNumerator = other.numerator();
-            Acl2Integer otherDenominator = other.denominator();
-            Acl2Integer lcm = thisDenominator.lcm(otherDenominator);
-            Acl2Integer thisMultiplied = // a*(lcm/b)
-                    (Acl2Integer)
-                            thisNumerator.multiply
-                                    (Acl2Rational.make(lcm, thisDenominator));
-            Acl2Integer otherMultiplied = // c*(lcm/d)
-                    (Acl2Integer)
-                            otherNumerator.multiply
-                                    (Acl2Rational.make(lcm, otherDenominator));
-            return Acl2Rational.make
-                    ((Acl2Integer) thisMultiplied.add(otherMultiplied),
-                            lcm);
-        } else {
-            // use Acl2ComplexRational.add() or Acl2Value.add()
-            // and return the result because addition is commutative:
-            return other.add(this);
-        }
-    }
-
-    /**
-     * Supports the native implementation of
-     * the {@code binary-*} ACL2 function.
-     */
-    @Override
-    Acl2Number multiply(Acl2Value other) {
-        if (other instanceof Acl2Rational) {
-            // (a/b)*(c/d) is (a*c)/(b*d):
-            Acl2Integer resultNumerator =
-                    (Acl2Integer) this.numerator.multiply(other.numerator());
-            Acl2Integer resultDenominator =
-                    (Acl2Integer) this.denominator.multiply(other.numerator());
-            return Acl2Rational.make(resultNumerator, resultDenominator);
-        } else {
-            // use Acl2ComplexRational.multiply() or Acl2Value.multiply()
-            // and return the result because multiplication is commutative:
-            return other.multiply(this);
-        }
-    }
-
     //////////////////////////////////////// public members:
 
     /**
@@ -167,9 +87,9 @@ final class Acl2Ratio extends Acl2Rational {
             // a*d is less than or equal to or greater than c*b,
             // since b and d are always positive:
             Acl2Integer thisMultiplied =
-                    (Acl2Integer) this.numerator.multiply(o.numerator());
+                    (Acl2Integer) this.numerator.multiplyValue(o.numerator());
             Acl2Integer thatMultiplied =
-                    (Acl2Integer) o.numerator().multiply(this.denominator);
+                    (Acl2Integer) o.numerator().multiplyValue(this.denominator);
             return thisMultiplied.compareTo(thatMultiplied);
         }
         // ratios are less than

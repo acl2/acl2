@@ -774,11 +774,10 @@
   ;; We need to show that what we'll prove through model checking implies this clause.
   ;; We'll first show that check-run is of the appropriate form
   ;; 
-  (b* (((glmc-config config)))
-    (list* (glmc-clause-check-clause clause config)
-           (glmc-run-check-clause config)
-           (append (glmc-measure-clauses config)
-                   (glmc-state-hyp-is-inductive-clause config)))))
+  (list* (glmc-clause-check-clause clause config)
+         (glmc-run-check-clause config)
+         (append (glmc-measure-clauses config)
+                 (glmc-state-hyp-is-inductive-clause config))))
 
 (define glmc-check-st-hyp-inductive ((config glmc-config-p)
                                      (fsm glmc-fsm-p)

@@ -18,7 +18,8 @@
 (definterface-pbkdf2 pbkdf2-hmac-sha-512
   :hmac hmac-sha-512
   :parents (interfaces)
-  :short "PBKDF2 HMAC-SHA-512 interface."
+  :short (xdoc::topstring
+          "PBKDF2 HMAC-SHA-512 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

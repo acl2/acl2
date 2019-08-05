@@ -188,8 +188,9 @@
                (logtail n y)))
   :hints (("Goal" :in-theory (e/d (logtail) (logtail-lessp)))))
 
-;better than LOGTAIL-UNSIGNED-BYTE-P
-(defthm unsigned-byte-p-of-logtail
+;better than LOGTAIL-UNSIGNED-BYTE-P and UNSIGNED-BYTE-P-OF-LOGTAIL (from
+;centaur/bitops/ihsext-basics.lisp)
+(defthm unsigned-byte-p-of-logtail-strong
   (equal (unsigned-byte-p n (logtail pos i))
          (and (natp n)
               (unsigned-byte-p (+ n (nfix pos)) (ifix i))))

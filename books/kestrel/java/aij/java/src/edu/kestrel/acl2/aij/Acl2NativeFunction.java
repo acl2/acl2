@@ -1284,7 +1284,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code characterp} ACL2 primitive function.
      */
-    public static Acl2Value execCharacterp(Acl2Value x) {
+    public static Acl2Symbol execCharacterp(Acl2Value x) {
         return x.characterp();
     }
 
@@ -1292,7 +1292,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code stringp} ACL2 primitive function.
      */
-    public static Acl2Value execStringp(Acl2Value x) {
+    public static Acl2Symbol execStringp(Acl2Value x) {
         return x.stringp();
     }
 
@@ -1300,7 +1300,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code symbolp} ACL2 primitive function.
      */
-    public static Acl2Value execSymbolp(Acl2Value x) {
+    public static Acl2Symbol execSymbolp(Acl2Value x) {
         return x.symbolp();
     }
 
@@ -1308,7 +1308,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code integerp} ACL2 primitive function.
      */
-    public static Acl2Value execIntegerp(Acl2Value x) {
+    public static Acl2Symbol execIntegerp(Acl2Value x) {
         return x.integerp();
     }
 
@@ -1316,7 +1316,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code rationalp} ACL2 primitive function.
      */
-    public static Acl2Value execRationalp(Acl2Value x) {
+    public static Acl2Symbol execRationalp(Acl2Value x) {
         return x.rationalp();
     }
 
@@ -1324,7 +1324,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code complex-rationalp} ACL2 primitive function.
      */
-    public static Acl2Value execComplexRationalp(Acl2Value x) {
+    public static Acl2Symbol execComplexRationalp(Acl2Value x) {
         return x.complexRationalp();
     }
 
@@ -1332,7 +1332,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code acl2-numberp} ACL2 primitive function.
      */
-    public static Acl2Value execAcl2Numberp(Acl2Value x) {
+    public static Acl2Symbol execAcl2Numberp(Acl2Value x) {
         return x.acl2Numberp();
     }
 
@@ -1340,7 +1340,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code consp} ACL2 primitive function.
      */
-    public static Acl2Value execConsp(Acl2Value x) {
+    public static Acl2Symbol execConsp(Acl2Value x) {
         return x.consp();
     }
 
@@ -1348,7 +1348,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code char-code} ACL2 primitive function.
      */
-    public static Acl2Value execCharCode(Acl2Value x) {
+    public static Acl2Integer execCharCode(Acl2Value x) {
         return x.charCode();
     }
 
@@ -1356,7 +1356,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code code-char} ACL2 primitive function.
      */
-    public static Acl2Value execCodeChar(Acl2Value x) {
+    public static Acl2Character execCodeChar(Acl2Value x) {
         return x.codeChar();
     }
 
@@ -1375,8 +1375,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code intern-in-package-of-symbol} ACL2 primitive function.
      */
-    public static Acl2Value execInternInPackageOfSymbol(Acl2Value str,
-                                                        Acl2Value sym) {
+    public static Acl2Symbol execInternInPackageOfSymbol(Acl2Value str,
+                                                         Acl2Value sym) {
         return str.internInPackageOfSymbol(sym);
     }
 
@@ -1384,7 +1384,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code symbol-package-name} ACL2 primitive function.
      */
-    public static Acl2Value execSymbolPackageName(Acl2Value x) {
+    public static Acl2String execSymbolPackageName(Acl2Value x) {
         return x.symbolPackageName();
     }
 
@@ -1392,7 +1392,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code symbol-name} ACL2 primitive function.
      */
-    public static Acl2Value execSymbolName(Acl2Value x) {
+    public static Acl2String execSymbolName(Acl2Value x) {
         return x.symbolName();
     }
 
@@ -1409,7 +1409,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code pkg-witness} ACL2 primitive function.
      */
-    public static Acl2Value execPkgWitness(Acl2Value pkg)
+    public static Acl2Symbol execPkgWitness(Acl2Value pkg)
             throws Acl2EvaluationException {
         return pkg.pkgWitness();
     }
@@ -1418,7 +1418,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code unary--} ACL2 primitive function.
      */
-    public static Acl2Value execUnaryMinus(Acl2Value x) {
+    public static Acl2Number execUnaryMinus(Acl2Value x) {
         return x.negate();
     }
 
@@ -1426,7 +1426,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code unary-/} ACL2 primitive function.
      */
-    public static Acl2Value execUnarySlash(Acl2Value x) {
+    public static Acl2Number execUnarySlash(Acl2Value x) {
         return x.reciprocate();
     }
 
@@ -1434,23 +1434,23 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code binary-+} ACL2 primitive function.
      */
-    public static Acl2Value execBinaryPlus(Acl2Value x, Acl2Value y) {
-        return x.add(y);
+    public static Acl2Number execBinaryPlus(Acl2Value x, Acl2Value y) {
+        return x.addValue(y);
     }
 
     /**
      * Executes the native implementation of
      * the {@code binary-*} ACL2 primitive function.
      */
-    public static Acl2Value execBinaryStar(Acl2Value x, Acl2Value y) {
-        return x.multiply(y);
+    public static Acl2Number execBinaryStar(Acl2Value x, Acl2Value y) {
+        return x.multiplyValue(y);
     }
 
     /**
      * Executes the native implementation of
      * the {@code <} ACL2 primitive function.
      */
-    public static Acl2Value execLessThan(Acl2Value x, Acl2Value y) {
+    public static Acl2Symbol execLessThan(Acl2Value x, Acl2Value y) {
         int realCmp = x.realpart().compareTo(y.realpart());
         if (realCmp < 0 ||
                 realCmp == 0 && x.imagpart().compareTo(y.imagpart()) < 0)
@@ -1463,7 +1463,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code complex} ACL2 primitive function.
      */
-    public static Acl2Value execComplex(Acl2Value x, Acl2Value y) {
+    public static Acl2Number execComplex(Acl2Value x, Acl2Value y) {
         return Acl2Number.make(x.rfix(), y.rfix());
     }
 
@@ -1471,7 +1471,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code realpart} ACL2 primitive function.
      */
-    public static Acl2Value execRealPart(Acl2Value x) {
+    public static Acl2Rational execRealPart(Acl2Value x) {
         return x.realpart();
     }
 
@@ -1479,7 +1479,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code imagpart} ACL2 primitive function.
      */
-    public static Acl2Value execImagPart(Acl2Value x) {
+    public static Acl2Rational execImagPart(Acl2Value x) {
         return x.imagpart();
     }
 
@@ -1487,7 +1487,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code numerator} ACL2 primitive function.
      */
-    public static Acl2Value execNumerator(Acl2Value x) {
+    public static Acl2Integer execNumerator(Acl2Value x) {
         return x.numerator();
     }
 
@@ -1495,7 +1495,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code denominator} ACL2 primitive function.
      */
-    public static Acl2Value execDenominator(Acl2Value x) {
+    public static Acl2Integer execDenominator(Acl2Value x) {
         return x.denominator();
     }
 
@@ -1503,7 +1503,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code cons} ACL2 primitive function.
      */
-    public static Acl2Value execCons(Acl2Value x, Acl2Value y) {
+    public static Acl2ConsPair execCons(Acl2Value x, Acl2Value y) {
         return Acl2ConsPair.make(x, y);
     }
 
@@ -1527,7 +1527,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code equal} ACL2 primitive function.
      */
-    public static Acl2Value execEqual(Acl2Value x, Acl2Value y) {
+    public static Acl2Symbol execEqual(Acl2Value x, Acl2Value y) {
         if (x.equals(y))
             return Acl2Symbol.T;
         else
@@ -1538,8 +1538,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code bad-atom<=} ACL2 primitive function.
      */
-    public static Acl2Value execBadAtomLessThanOrEqualTo(Acl2Value x,
-                                                         Acl2Value y) {
+    public static Acl2Symbol execBadAtomLessThanOrEqualTo(Acl2Value x,
+                                                          Acl2Value y) {
         return Acl2Symbol.NIL;
     }
 

@@ -70,18 +70,33 @@
 
 ; Library extensions.
 
-(fty::deflist string-list
-  :short "True lists of ACL2 strings."
+(define string-list-fix ((x string-listp))
+  :returns (fixed-x string-listp)
+  :short "Fixer for @(tsee string-listp)."
   :long
   (xdoc::topstring-p
    "This is not specific to Java,
-    but it causes an error if defined in the @('\"ACL2\") package,
-    so we define it here in the @('\"JAVA\") package for now.
-    (Eventually, this issue should be resolved for the @('\"ACL2\"') package.)")
-  :elt-type string
-  :true-listp t
-  :elementp-of-nil nil
-  :pred string-listp)
+    and it should be moved to a more general library eventually.")
+  (mbe :logic (if (string-listp x) x nil)
+       :exec x)
+  ///
+  (defrule string-list-fix-when-string-listp
+    (implies (string-listp x)
+             (equal (string-list-fix x)
+                    x))))
+
+(defsection string-list
+  :short "Fixtype of true lists of ACL2 strings."
+  :long
+  (xdoc::topstring-p
+   "This is not specific to Java,
+    and it should be moved to a more general library eventually.")
+  (fty::deffixtype string-list
+    :pred string-listp
+    :fix string-list-fix
+    :equiv string-list-equiv
+    :define t
+    :forward t))
 
 (defsection maybe-string
   :short "ACL2 strings and @('nil')."

@@ -424,3 +424,71 @@ I commented out some disabled theorems that seem fine to me.
   (and (consp X)
        (or (== a (car X))
            (in a (cdr X)))))
+
+(definec tail (x :tl) :tl
+  (cdr x))
+
+(defdata non-empty-true-list (cons all true-list))
+
+(defdata-alias ne-tl non-empty-true-list)
+
+(add-macro-fn ne-tlp non-empty-true-listp)
+
+(definec head (x :ne-tl) :all
+  (car x))
+
+(defunc snth (n l)
+  :input-contract (and (natp n) (tlp l) (< (len l) n))
+  :output-contract t
+  (nth n l))
+
+(defunc snthcdr (n l)
+  :input-contract (and (natp n) (tlp l) (< (len l) n))
+  :output-contract (tlp (snthcdr n l))
+  (nthcdr n l))
+
+(defmacro scar (x) `(head ,x))
+(defmacro scdr (x) `(tail ,x))
+
+(defmacro scaar (x) `(head (head ,x)))
+(defmacro scadr (x) `(head (tail ,x)))
+(defmacro scdar (x) `(tail (head ,x)))
+(defmacro scddr (x) `(tail (tail ,x)))
+
+(defmacro scaaar (x) `(head (head (head ,x))))
+(defmacro scaadr (x) `(head (head (tail ,x))))
+(defmacro scadar (x) `(head (tail (head ,x))))
+(defmacro scaddr (x) `(head (tail (tail ,x))))
+(defmacro scdaar (x) `(tail (head (head ,x))))
+(defmacro scdadr (x) `(tail (head (tail ,x))))
+(defmacro scddar (x) `(tail (tail (head ,x))))
+(defmacro scdddr (x) `(tail (tail (tail ,x))))
+
+(defmacro scaaaar (x) `(head (head (head (head ,x)))))
+(defmacro scaaadr (x) `(head (head (head (tail ,x)))))
+(defmacro scaadar (x) `(head (head (tail (head ,x)))))
+(defmacro scaaddr (x) `(head (head (tail (tail ,x)))))
+(defmacro scadaar (x) `(head (tail (head (head ,x)))))
+(defmacro scadadr (x) `(head (tail (head (tail ,x)))))
+(defmacro scaddar (x) `(head (tail (tail (head ,x)))))
+(defmacro scadddr (x) `(head (tail (tail (tail ,x)))))
+(defmacro scdaaar (x) `(tail (head (head (head ,x)))))
+(defmacro scdaadr (x) `(tail (head (head (tail ,x)))))
+(defmacro scdadar (x) `(tail (head (tail (head ,x)))))
+(defmacro scdaddr (x) `(tail (head (tail (tail ,x)))))
+(defmacro scddaar (x) `(tail (tail (head (head ,x)))))
+(defmacro scddadr (x) `(tail (tail (head (tail ,x)))))
+(defmacro scdddar (x) `(tail (tail (tail (head ,x)))))
+(defmacro scddddr (x) `(tail (tail (tail (tail ,x)))))
+
+(defmacro sfirst   (x) `(scar ,x))
+(defmacro ssecond  (x) `(scadr ,x))
+(defmacro sthird   (x) `(scaddr ,x))
+(defmacro sfourth  (x) `(scadddr ,x))
+(defmacro sfifth   (x) `(scar (scddddr ,x)))
+(defmacro ssixth   (x) `(scadr (scddddr ,x)))
+(defmacro sseventh (x) `(scaddr (scddddr ,x)))
+(defmacro seighth  (x) `(scadddr (scddddr ,x)))
+(defmacro sninth   (x) `(scar (scddddr (scddddr ,x))))
+(defmacro stenth   (x) `(scadr (scddddr (scddddr ,x))))
+

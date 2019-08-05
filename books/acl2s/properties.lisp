@@ -112,9 +112,9 @@ as follows.
 
 (gen-property-table 
  ((:proofs? . t)
-  (:proof-timeout . 5)
+  (:proof-timeout . 40)
   (:testing? . t)
-  (:testing-timeout . 5)))
+  (:testing-timeout . 20)))
      
 #|
 
@@ -174,40 +174,42 @@ with the same hints and directives that defthm accepts.
     (list name? name prop kwd-alist)))
 
 (defmacro property (&rest args)
-  `(make-event
-    (b* (((list name? name prop kwd-alist)
-          (parse-property ',args (w state)))
-         (proofs? (defdata::get1 :proofs? kwd-alist))
-         (testing? (defdata::get1 :testing? kwd-alist))
-         (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
-         (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
-         (prove (if name? 'defthm-no-test 'thm-no-test))
-         (other-kwds
-          (defdata::remove1-assoc-eq-lst
-            (append (if name? nil *property-just-defthm-keywords*)
-                    *property-core-keywords*)
-            kwd-alist))
-         (args (if name?
-                   (list* name prop other-kwds)
-                 (list* prop other-kwds)))
-         ((when (and proofs? testing?))
-          `(encapsulate
-            ()
-            (with-prover-time-limit ,testing-timeout (test? ,prop))
-            (with-prover-time-limit ,proof-timeout (,prove ,@args))))
-         ((when proofs?)
-          `(with-prover-time-limit ,proof-timeout (,prove ,@args)))
-         ((when (and testing? name?))
-          `(with-prover-time-limit
-            ,testing-timeout
-            (defthm-test-no-proof ,@args)))
-         ((when testing?)
-          `(with-prover-time-limit ,testing-timeout (test? ,prop)))
-         ((when name?)
-          `(with-prover-time-limit
-            ,proof-timeout
-            (defthmskipall ,@args))))
-      `(value-triple :passed))))
+  `(with-output
+    :on (error summary)
+    (make-event
+     (b* (((list name? name prop kwd-alist)
+           (parse-property ',args (w state)))
+          (proofs? (defdata::get1 :proofs? kwd-alist))
+          (testing? (defdata::get1 :testing? kwd-alist))
+          (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
+          (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
+          (prove (if name? 'defthm-no-test 'thm-no-test))
+          (other-kwds
+           (defdata::remove1-assoc-eq-lst
+             (append (if name? nil *property-just-defthm-keywords*)
+                     *property-core-keywords*)
+             kwd-alist))
+          (args (if name?
+                    (list* name prop other-kwds)
+                  (list* prop other-kwds)))
+          ((when (and proofs? testing?))
+           `(encapsulate
+             ()
+             (with-prover-time-limit ,testing-timeout (test? ,prop))
+             (with-prover-time-limit ,proof-timeout (,prove ,@args))))
+          ((when proofs?)
+           `(with-prover-time-limit ,proof-timeout (,prove ,@args)))
+          ((when (and testing? name?))
+           `(with-prover-time-limit
+             ,testing-timeout
+             (defthm-test-no-proof ,@args)))
+          ((when testing?)
+           `(with-prover-time-limit ,testing-timeout (test? ,prop)))
+          ((when name?)
+           `(with-prover-time-limit
+             ,proof-timeout
+             (defthmskipall ,@args))))
+       `(value-triple :passed)))))
        
 #|
 

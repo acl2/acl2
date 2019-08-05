@@ -18,7 +18,8 @@
   :key-size 256
   :init-size 128
   :parents (interfaces)
-  :short "AES-256 CBC PKCS7 interface."
+  :short (xdoc::topstring
+          "AES-256 CBC PKCS7 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

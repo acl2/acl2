@@ -10,6 +10,7 @@
 
 (in-package "JAVA")
 
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/lists/rev" :dir :system)
@@ -24,13 +25,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-library-extensions
-  :parents (atj-implementation)
-  :short "Library extensions for @(tsee atj)."
-  :long
-  (xdoc::topstring-p
-   "These will be moved to more general libraries eventually.")
-  :default-parent t)
+(xdoc::evmac-topic-library-extensions atj)
 
 (defines remove-mbe-logic/exec-from-term
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
@@ -77,10 +72,14 @@
 
 (define remove-mbe-logic-from-term ((term pseudo-termp))
   :returns (new-term "A @(tsee pseudo-termp).")
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':exec') part @('b')."
   (remove-mbe-logic/exec-from-term term t))
 
 (define remove-mbe-exec-from-term ((term pseudo-termp))
   :returns (new-term "A @(tsee pseudo-termp).")
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':logic') part @('a')."
   (remove-mbe-logic/exec-from-term term nil))
 
 (define unquote-list ((list quote-listp))

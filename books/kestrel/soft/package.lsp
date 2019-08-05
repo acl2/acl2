@@ -21,17 +21,19 @@
                          defchoose-body
                          defchoose-bound-vars
                          defchoose-strengthen
+                         defchoosep
                          definedp
                          defpun
                          defun-sk-bound-vars
                          defun-sk-definition-name
                          defun-sk-matrix
+                         defun-sk-p
                          defun-sk-quantifier
+                         defun-sk-quantifier-p
                          defun-sk-rewrite-kind
                          defun-sk-rewrite-name
                          defun-sk-strengthen
                          defun-sk-witness
-                         defun-sk-quantifier-p
                          defxdoc+
                          er-soft+
                          fail-event
@@ -51,8 +53,8 @@
                          maybe-pseudo-event-formp
                          measure
                          o<
-                         pseudo-event-formp
                          pseudo-event-form-listp
+                         pseudo-event-formp
                          recursivep
                          remove-keyword
                          restore-output

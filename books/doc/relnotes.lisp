@@ -301,6 +301,15 @@
    ;; xdoc to be added later
    ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
+   (xdoc::p
+    "Executable attachments have been added for
+     the Keccak-256 interface that operates on bytes,
+     the SHA-256 interface that operates on bytes,
+     the HMAC-SHA-512 interface,
+     the PBKDF2 HMAC-SHA-512 interface,
+     the secp256k1 interface, and
+     the secp256k1 ECDSA interface.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
@@ -311,6 +320,14 @@
    (xdoc::p
     "Functions to calculate an account address
      from a public key and from a private key (via its public key)
+     have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "event-macros" "Event Macros Library"))
+
+   (xdoc::p
+    "XDOC constructors for documenting the implementation of event macros
      have been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -332,6 +349,8 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "java::java" "Java Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seeurl "java::atj" "ATJ, the Java Code Generator for ACL2"))
 
@@ -361,6 +380,18 @@
      always with values that satisfy the guards.
      This is just a start towards handling guards in ATJ (and AIJ);
      more sophisticated support will be added in the future.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seeurl "java::aij"
+                           "AIJ, the Deep Embedding of ACL2 into Java"))
+
+   (xdoc::p
+    "The return types of some of the methods that provide
+     native Java implementation of the ACL2 primitive functions
+     have been made more precise than the general type @('Acl2Value').
+     For instance, the method for @(tsee equal)
+     now returns @('Acl2Symbol').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

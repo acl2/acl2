@@ -1189,7 +1189,7 @@ gives these instructions their semantics.</p>"
        (result-col (+ n col))
        ((when (<= result-col config.hard-right-margin))
         (make-list-ac n #\Space acc)))
-    (spaces1 n col config.hard-right-margin nil)))
+    (spaces1 n col config.hard-right-margin acc)))
 
 
 (defines print-instruction
