@@ -532,7 +532,7 @@
      :hints (("goal" :use ((:instance unsigned-byte-p-of-loghead
                             (size1 8) (size 7) (i n))
                            (:instance unsigned-byte-p-of-logior
-                            (n 8) (x 128) (y (loghead 7 n))))
+                            (n 8) (i 128) (j (loghead 7 n))))
               :in-theory (disable unsigned-byte-p-of-logior
                                   unsigned-byte-p-of-loghead))))))
 
