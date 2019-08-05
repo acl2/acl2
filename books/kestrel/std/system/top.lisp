@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "conjoin")
+
 (include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
