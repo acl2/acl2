@@ -1533,7 +1533,7 @@
     (mbe :logic (append then-rules else-rules)
          :exec (if then-rules
                    (if else-rules
-                       
+                       (append then-rules else-rules)
                        then-rules)
                  else-rules))))
   
