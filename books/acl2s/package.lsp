@@ -128,6 +128,7 @@
      test? prove/cgen
      stopping-condition
      define-rule
+     set-cgen-guard-checking
      ))
 
 (defconst *ccg-exports*
