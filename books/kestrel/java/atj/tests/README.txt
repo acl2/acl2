@@ -1,20 +1,4 @@
-This directory contains ATJ (= ACL2 To Java), a Java code generator for ACL2.
-
-
-documentation.lisp
-
-  User-level XDOCumentation of ATJ.
-
-
-implementation.lisp
-
-  Implementation of ATJ, including implementation-level XDOCumentation.
-
-
-top.lisp
-
-  Top-level ATJ file for the ACL2+Books manual. Includes the two files above,
-  which are the only ones with XDOCumentation.
+Contents of this directory:
 
 
 test-*.lisp (except test-times.lisp)
@@ -64,10 +48,10 @@ Test*.java
 test-compile.sh
 
   Script to compile all the generated and handwritten Java files. Assumes that
-  Java 10's javac is on the path.
+  Java 12's javac is on the path.
 
 
 test-run.sh
 
   Script to run all the tests (with certain choices of inputs), collecting and
-  printing time measurements. Assumes that Java 10's java is on the path.
+  printing time measurements. Assumes that Java 12's java is on the path.

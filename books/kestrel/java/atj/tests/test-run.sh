@@ -31,19 +31,19 @@
 set -e
 
 # test the factorial function:
-java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestFactDeep 1 1000 5000 10000 50000 100000
-java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestFactShallow 1 1000 5000 10000 50000 100000
 
 # test the Fibonacci function:
-java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestFibDeep 1 10 20 30
-java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestFibShallow 1 10 20 30
 
 # test the ABNF parser:
-java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestABNFDeep 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
-java -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestABNFShallow 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt

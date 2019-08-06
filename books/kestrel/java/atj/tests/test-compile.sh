@@ -23,4 +23,4 @@
 set -e
 
 # generate class files:
-javac -cp ../aij/java/out/artifacts/AIJ_jar/AIJ.jar *.java
+javac -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar *.java
