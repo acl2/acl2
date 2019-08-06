@@ -90,7 +90,9 @@
        
        ((mv ?er res state) 
         (acl2::state-global-let*
-         ((acl2::guard-checking-on :none))
+;         ((acl2::guard-checking-on :none))
+;; PETE: now controlled by the global cgen::cgen-guard-checking
+         ((acl2::guard-checking-on (@ cgen-guard-checking)))
          (trans-eval
           `(let* ,A
              (declare (ignorable ,@(strip-cars A)))

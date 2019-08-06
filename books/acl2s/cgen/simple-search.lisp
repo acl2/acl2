@@ -849,7 +849,10 @@ Use :simple search strategy to find counterexamples and witnesses.
 ; :none is almost half as slow!!!  TODO: Do testing in two phases. First check
 ; for guard violations, if yes, print and proceed with :none, else use nil or t
 ; for faster execution speed.
-          ((acl2::guard-checking-on ,(if (or t programp) :none nil))
+;          ((acl2::guard-checking-on ,(if (or t programp) :none nil))
+
+;; PETE: now controlled by the global cgen::cgen-guard-checking
+          ((acl2::guard-checking-on (@ cgen-guard-checking))
            (acl2::inhibit-output-lst
                     ,(if (system-debug-flag vl)
                          ''(summary)
