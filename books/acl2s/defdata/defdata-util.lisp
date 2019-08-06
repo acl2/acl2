@@ -625,15 +625,17 @@ This is true when we have defdata available.
 |#
 
 (defun base-alias-type (type A)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp A))))
-  (b* ((atype (assoc-equal :type (acl2s::get-alist type A))))
+  (declare (xargs :guard (sym-aalistp A)))
+  (b* (((unless (symbolp type)) type)
+       (atype (assoc-equal :type (acl2s::get-alist type A))))
     (if (consp atype)
         (cdr atype)
       type)))
 
 (defun base-alias-pred (pred ptbl)
-  (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
-  (b* ((ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
+  (declare (xargs :guard (sym-aalistp ptbl)))
+  (b* (((unless (symbolp pred)) pred)
+       (ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
     (if (consp ppred)
         (cdr ppred)
       pred)))
