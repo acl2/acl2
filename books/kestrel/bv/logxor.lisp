@@ -136,8 +136,7 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("goal" :in-theory (enable logxor logeqv logorc1))))
 
-;;todo: name clash with centaur/bitops/ihsext-basics.lisp
-(defthm unsigned-byte-p-of-logxor-2
+(defthm unsigned-byte-p-of-logxor
   (implies (and (unsigned-byte-p n i)
                 (unsigned-byte-p n j))
            (unsigned-byte-p n (logxor i j)))
