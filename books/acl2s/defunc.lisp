@@ -696,6 +696,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :guard t))
   nil)
 
+; PETE:
 ; If you want to see contract violations printed in an ACL2s
 ; session, you can do that with the following event:
 ; (defattach show-contract-violations? show-contract-violations)
@@ -1323,8 +1324,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                    ,defthm-d?)
                   (defun ,attch-name ()
                     (declare (xargs :guard t))
-                    (prog2$ (cgen::cw? (show-contract-violations?)
-                                      "~|**Input contract violation** ~%")
+                    (prog2$ (cgen::cw?
+                             (show-contract-violations?)
+                             "~|**Input contract violation in ~x0** ~%"
+                             ',attch-name)
                             ',base-val))
                   ,def-att))
        (no-d?-form `(encapsulate
@@ -1337,8 +1340,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                       ,defthm-no-d?)
                      (defun ,attch-name (x y)
                        (declare (xargs :guard (and (symbolp x) (true-listp y))))
-                       (prog2$ (cgen::cw? (show-contract-violations?)
-                                          "~|**Input contract violation**: ~x0 ~%" `(,x ,@y))
+                       (prog2$ (cgen::cw?
+                                (show-contract-violations?)
+                                "~|**Input contract  violation in ~x0**: ~x1 ~%"
+                                ',attch-name `(,x ,@y))
                                ',base-val))
                      ,def-att)))
     (cond
