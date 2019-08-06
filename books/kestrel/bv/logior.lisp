@@ -239,8 +239,7 @@
                        (integerp (* 1/2 j)))))
   :hints (("Goal" :in-theory (enable logior))))
 
-;;todo: name clash with centaur/bitops/ihsext-basics.lisp
-(defthm unsigned-byte-p-of-logior-2
+(defthm unsigned-byte-p-of-logior
   (implies (and (unsigned-byte-p n i)
                 (unsigned-byte-p n j))
            (unsigned-byte-p n (logior i j)))
