@@ -473,7 +473,7 @@ off looking at the source code.</p>")
                  (:linear :trigger-terms ((logior x y))))
   :hints(("Goal"
           :in-theory (disable unsigned-byte-p-of-logior)
-          :use ((:instance unsigned-byte-p-of-logior)))))
+          :use ((:instance unsigned-byte-p-of-logior (i x) (j y))))))
 
 (defthm upper-bound-of-logxor-for-naturals
   (implies (and (< x (expt 2 n))
