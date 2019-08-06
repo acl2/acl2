@@ -17,10 +17,20 @@
 ;; PETE: add the global cgen::cgen-guard-checking to control how
 ; guard-checking is handled.
 ; The default value is :none, but set it to :all to get more error reporting.
-(make-event (er-progn (acl2::assign cgen-guard-checking :none)
-;(make-event (er-progn (acl2::assign cgen-guard-checking :all)
-                      (value '(value-triple nil)))
-            :check-expansion t)
+; See below.
+
+(defmacro get-cgen-guard-checking ()
+  `(@ cgen::cgen-guard-checking))
+
+(defmacro set-cgen-guard-checking (val)
+  `(make-event (er-progn (acl2::assign cgen::cgen-guard-checking, val)
+                         (value '(value-triple nil)))
+               :check-expansion t))
+
+(set-cgen-guard-checking :none)
+; How to set guard-checking 
+; (set-cgen-guard-checking :all)
+
 
 ;;-- create a new symbol with prefix or suffix appended
 ;;-- if its a common-lisp symbol then attach acl2 package name to it
