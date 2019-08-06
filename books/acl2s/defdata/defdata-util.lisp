@@ -995,12 +995,18 @@ see (defdata foo rational)
         (or (cadr (assoc-keyword :guard (cdar edecls))) 't)
       (extract-guard-from-edecls (cdr edecls)))))
 
+#|
+
+PETE: seems like this is not used. If used, have to 
+fix s+ form so that it has access to pkg.
+
 (defmacro acl2s::defun-attach (&rest args)
   "generate a defun with suffix -builtin and attach it to name"
   (b* ((name (car args))
        ((unless (proper-symbolp name))
         (er hard 'defun-attach "~| ~x0 should be a proper name symbol.~%" name))
-       (b-name (s+ name "-BUILTIN"))
+       (pkg (extract-kwd-val :pkg args))
+       (b-name (s+ name "-BUILTIN" :pkg pkg))
        (formals (cadr args))
        ;(formal-stars (make-list (len formals) :initial-element 'ACL2::*))
        (guard (extract-guard-from-edecls (collect-declares args))))
@@ -1014,6 +1020,8 @@ see (defdata foo rational)
                 (declare (ignorable . ,formals))
                 (,b-name . ,formals))))
       (DEFATTACH ,name ,b-name))))
+
+|#
 
 (defun convert-listpairs-to-conspairs (listpairs)
   (declare (xargs :guard (acl2::symbol-doublet-listp listpairs)))
