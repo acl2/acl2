@@ -37,29 +37,8 @@
 
 
 
-(def-gl-formula-checks aig-eval-formula-checks
-  (hons-get
-   hons-assoc-equal
-   hons-equal
-   atom
-   eq
-   acl2::aig-env-lookup
-   acl2::aig-atom-p$inline
-   acl2::aig-eval
-   acl2::aig-eval-list))
-
-(local (def-gl-formula-checks-lemmas aig-eval-formula-checks))
-
-
-(def-formula-check-definition-thm atom                    aig-eval-formula-checks)
-(def-formula-check-definition-thm eq                      aig-eval-formula-checks)
-(def-formula-check-definition-thm hons-equal              aig-eval-formula-checks)
-(def-formula-check-definition-thm hons-assoc-equal        aig-eval-formula-checks)
-(def-formula-check-definition-thm hons-get                aig-eval-formula-checks)
-(def-formula-check-definition-thm acl2::aig-atom-p$inline aig-eval-formula-checks)
-(def-formula-check-definition-thm acl2::aig-env-lookup    aig-eval-formula-checks)
-(def-formula-check-definition-thm acl2::aig-eval          aig-eval-formula-checks)
-(def-formula-check-definition-thm acl2::aig-eval-list     aig-eval-formula-checks)
+(def-formula-checks aig-eval-formula-checks
+  (acl2::aig-eval-list))
 
 
 (define gl-object-alist-to-varmap ((x gl-object-alist-p)

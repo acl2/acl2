@@ -32,168 +32,14 @@
 
 (include-book "tools/templates" :dir :system)
 (include-book "primitives-stub")
+(include-book "centaur/meta/def-formula-checks" :dir :system)
 (set-state-ok t)
 
 
-(defun function-deps (fn wrld)
-  (b* ((body (getpropc fn 'acl2::unnormalized-body nil wrld)))
-    (acl2::all-fnnames body)))
-
-(defun function-deps-lst (fns wrld acc)
-  (if (atom fns)
-      acc
-    (b* ((body (getpropc (car fns) 'acl2::unnormalized-body nil wrld)))
-      (function-deps-lst (cdr fns) wrld (acl2::all-fnnames1 nil body acc)))))
-       
-
-(mutual-recursion
- (defun collect-toposort-function-deps (fn wrld seen toposort)
-   (declare (xargs :mode :program))
-   (b* (((when (member-eq fn seen))
-         (mv seen toposort))
-        (clique (or (getpropc fn 'acl2::recursivep nil wrld) (list fn)))
-        (deps (function-deps-lst clique wrld nil))
-        (seen (append clique seen))
-        ((mv seen toposort)
-         (collect-toposort-function-deps-list deps wrld seen toposort)))
-     (mv seen (append clique toposort))))
- (defun collect-toposort-function-deps-list (fns wrld seen toposort)
-   (b* (((when (atom fns)) (mv seen toposort))
-        ((mv seen toposort) (collect-toposort-function-deps (car fns) wrld seen toposort)))
-     (collect-toposort-function-deps-list (cdr fns) wrld seen toposort))))
-
-
-(defun gl-primitive-formula-checks (formulas state)
-  (declare (xargs :stobjs state :mode :program))
-  (if (atom formulas)
-      nil
-    (cons `(equal (meta-extract-formula ',(car formulas) state)
-                  ',(meta-extract-formula (car formulas) state))
-          (gl-primitive-formula-checks (cdr formulas) state))))
-
-(defun def-gl-formula-checks-fn (name formulas state)
-  (declare (xargs :stobjs state :mode :program))
-  `(define ,name (state)
-     :returns (ok)
-     (and . ,(gl-primitive-formula-checks formulas state))
-     ///
-     (table gl-formula-checks ',name ',formulas)))
-
-(defmacro def-gl-formula-checks (name formulas)
-  `(make-event
-    (def-gl-formula-checks-fn ',name ',formulas state)))
-
-(defun gl-primitive-formula-checks-lemmas (name formulas state)
-  (declare (xargs :stobjs state :mode :program))
-  (if (atom formulas)
-      nil
-    (cons `(defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string "META-EXTRACT-FORMULA-" (symbol-name (car formulas))
-                                  "-WHEN-" (symbol-name name))
-                     name)
-             (implies (,name state)
-                      (equal (meta-extract-formula ',(car formulas) state)
-                             ',(meta-extract-formula (car formulas) state)))
-             :hints(("Goal" :in-theory (enable ,name))))
-          (gl-primitive-formula-checks-lemmas name (cdr formulas) state))))
-
-(defun def-gl-formula-checks-lemmas-fn (name state)
-  (declare (xargs :stobjs state :mode :program))
-  (let ((formulas (cdr (assoc name (table-alist 'gl-formula-checks (w state))))))
-    `(defsection ,(intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-LEMMAS")
-                   name)
-       . ,(gl-primitive-formula-checks-lemmas name formulas state))))
-
-(defmacro def-gl-formula-checks-lemmas (name)
-  `(make-event
-    (def-gl-formula-checks-lemmas-fn ',name state)))
-
-
-(defun formals-subsubsts (formals)
-  (declare (xargs :mode :program))
-  (if (atom formals)
-      nil
-    (cons (acl2::make-tmplsubst :atoms `((<formal> . ,(car formals))))
-          (formals-subsubsts (cdr formals)))))
-
-(defun def-formula-check-definition-thm-fn (name formula-check wrld)
-  (declare (xargs :mode :program))
-  (b* ((recursivep (fgetprop name 'recursivep nil wrld))
-       (formals (formals name wrld)))
-    (acl2::template-subst
-     (if recursivep
-         '(encapsulate nil
-            (local (defthmd fgl-ev-of-<name>-lemma
-                     (implies (and (<formula-check> state)
-                                   (fgl-ev-meta-extract-global-facts))
-                              (equal (fgl-ev '(<name> . <formals>)
-                                             (list (:@proj <formals> (cons '<formal> <formal>))))
-                                     (<name> . <formals>)))
-                     :hints(("Goal" :in-theory (enable <name>)
-                             :induct (<name> . <formals>))
-                            '(:use ((:instance fgl-ev-meta-extract-formula
-                                     (name '<name>)
-                                     (a (list (:@proj <formals> (cons '<formal> <formal>))))
-                                     (st state)))
-                              :in-theory (enable fgl-ev-of-fncall-args <name>)))))
-            
-            (defthm fgl-ev-of-<name>-when-<formula-check>
-              (implies (and (<formula-check> state)
-                            (fgl-ev-meta-extract-global-facts))
-                       (equal (fgl-ev (list '<name> . <formals>) env)
-                              (<name> (:@proj <formals>
-                                       (fgl-ev <formal> env)))))
-              :hints(("Goal" :use ((:instance fgl-ev-of-<name>-lemma
-                                    (:@proj <formals> (<formal> (fgl-ev <formal> env)))))
-                      :in-theory (enable fgl-ev-of-fncall-args)))))
-       '(defthm fgl-ev-of-<name>-when-<formula-check>
-          (implies (and (<formula-check> state)
-                        (fgl-ev-meta-extract-global-facts))
-                   (equal (fgl-ev (list '<name> . <formals>) env)
-                          (<name> (:@proj <formals>
-                                     (fgl-ev <formal> env)))))
-          :hints(("Goal" :in-theory (enable fgl-ev-of-fncall-args <name>)
-                  :use ((:instance fgl-ev-meta-extract-formula
-                         (name '<name>)
-                         (a (list (:@proj <formals>
-                                   (CONS '<formal> (FGL-EV <formal> env)))))
-                         (st state)))))))
-     :str-alist `(("<NAME>" . ,(symbol-name name))
-                  ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
-     :atom-alist `((<name> . ,name)
-                   (<formula-check> . ,formula-check)
-                   (<formals> . ,formals))
-     :subsubsts `((<formals> . ,(formals-subsubsts formals)))
-     :pkg-sym formula-check)))
-
-(defmacro def-formula-check-definition-thm (name formula-check)
-  `(make-event
-    (def-formula-check-definition-thm-fn ',name ',formula-check (w state))))
-
-(defun def-formula-checks-definition-thm-list-fn (x name)
-  (if (atom x)
-      nil
-    (cons `(def-formula-check-definition-thm ,(car x) ,name)
-          (def-formula-checks-definition-thm-list-fn (cdr x) name))))
-
-(defmacro def-formula-checks-definition-thm-list (x name)
-  `(make-event
-    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',name))))
-
-(defun def-formula-checks-fn (name fns wrld)
-  (declare (xargs :mode :program))
-  (b* (((mv ?seen deps) (collect-toposort-function-deps-list fns wrld *fgl-ev-base-fns* nil))
-       (deps (rev deps)))
-    `(progn
-       (def-gl-formula-checks ,name ,deps)
-       (local (def-gl-formula-checks-lemmas ,name))
-       (def-formula-checks-definition-thm-list ',deps ,name))))
-
 (defmacro def-formula-checks (name fns)
-  `(make-event
-    (def-formula-checks-fn ',name ',fns (W state))))
-     
+  `(progn (cmr::def-formula-checks ,name ,fns :evl fgl-ev :evl-base-fns *fgl-ev-base-fns*)
+          (table gl-formula-checks ',name
+                 (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))))
 
 
 
@@ -400,20 +246,14 @@
                              (concatenate 'string (symbol-name prefix) "-FORMULA-CHECKS")
                              prefix))
        (formula-checks-table (table-alist 'gl-formula-checks wrld))
-       (all-formulas (gl-primitive-formula-checks
-                      (set::mergesort (append-alist-vals formula-checks-table))
-                      state))
+       (formula-check-fns (set::mergesort (append-alist-vals formula-checks-table)))
        (formula-check-thms (formula-check-thms name-formula-checks formula-checks-table))
        )
     (acl2::template-subst
      '(progn
         ;; (def-gl-object-eval <prefix> nil :union-previous t)
-        (define <prefix>-formula-checks (state)
-          :ignore-ok t
-          :irrelevant-formals-ok t
-          (and . <all-formulas>)
-          ///
-          . <formula-check-thms>)
+        (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
+        (progn . <formula-check-thms>)
 
         ;; (make-event
         ;;  (cons 'progn
@@ -520,8 +360,9 @@
      :atom-alist `(;; (<all-formulas> . ,all-formulas)
                    ;; (<formula-check-thms> . ,formula-check-thms)
                    (<entries> . ,(gl-primitive-fncall-entries (table-alist 'gl-primitives wrld)))
-                   (<all-formulas> . ,all-formulas)
-                   (<formula-check-thms> . ,formula-check-thms))
+                   ;; (<all-formulas> . ,all-formulas)
+                   (<formula-check-thms> . ,formula-check-thms)
+                   (<formula-check-fns> . ,formula-check-fns))
      :splice-alist `((<thms> . ,*gl-primitive-thms*)))
     
     ))

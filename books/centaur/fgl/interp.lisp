@@ -706,6 +706,7 @@
     :g-concrete 'concrete
     :g-apply x.fn
     :g-cons 'cons
+    :g-ite 'if
     :otherwise nil))
 
 
@@ -1517,25 +1518,30 @@
 
   (verify-guards easy-termp))
 
-(define fgl-interp-branch-merge-rules (thenfn elsefn runes (wrld plist-worldp))
+(define fn-branch-merge-rules? ((fn symbolp) runes (wrld plist-worldp))
   :returns (rules pseudo-rewrite-rule-listp)
-  :prepwork ((local (defthm true-listp-when-pseudo-rewrite-rule-listp
-                      (implies (pseudo-rewrite-rule-listp x)
-                               (true-listp x))
-                      :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp)))))
-             (local (defthm pseudo-rewrite-rule-listp-of-append
-                      (implies (and (pseudo-rewrite-rule-listp x)
-                                    (pseudo-rewrite-rule-listp y))
-                               (pseudo-rewrite-rule-listp (append x y)))
-                      :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp))))))
-  (let* ((then-rules (and thenfn (fn-branch-merge-rules thenfn runes wrld)))
-         (else-rules (and elsefn (fn-branch-merge-rules elsefn runes wrld))))
-    (mbe :logic (append then-rules else-rules)
-         :exec (if then-rules
-                   (if else-rules
-                       (append then-rules else-rules)
-                       then-rules)
-                 else-rules))))
+  :hooks nil
+  (and fn (fn-branch-merge-rules fn runes wrld)));; )
+
+;; (define fgl-interp-branch-merge-rules (thenfn elsefn runes (wrld plist-worldp))
+;;   :returns (rules pseudo-rewrite-rule-listp)
+;;   :prepwork ((local (defthm true-listp-when-pseudo-rewrite-rule-listp
+;;                       (implies (pseudo-rewrite-rule-listp x)
+;;                                (true-listp x))
+;;                       :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp)))))
+;;              (local (defthm pseudo-rewrite-rule-listp-of-append
+;;                       (implies (and (pseudo-rewrite-rule-listp x)
+;;                                     (pseudo-rewrite-rule-listp y))
+;;                                (pseudo-rewrite-rule-listp (append x y)))
+;;                       :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp))))))
+;;   (let* ((then-rules (and thenfn (fn-branch-merge-rules thenfn runes wrld)))
+;;          (else-rules (and elsefn (fn-branch-merge-rules elsefn runes wrld))))
+;;     (mbe :logic (append then-rules else-rules)
+;;          :exec (if then-rules
+;;                    (if else-rules
+;;                        (append then-rules else-rules)
+;;                        then-rules)
+;;                  else-rules))))
   
 
 (progn
@@ -2785,10 +2791,17 @@
              (elseval (gl-object-fix elseval))
              (thenfn (gl-fncall-object->fn thenval))
              (elsefn (gl-fncall-object->fn elseval))
-             (rules (fgl-interp-branch-merge-rules thenfn elsefn
-                                                   (glcp-config->branch-merge-rules
-                                                    (interp-st->config interp-st))
-                                                   (w state)))
+             ;; (rules (fgl-interp-branch-merge-rules thenfn elsefn
+             ;;                                       (glcp-config->branch-merge-rules
+             ;;                                        (interp-st->config interp-st))
+             ;;                                       (w state)))
+             (runes (glcp-config->branch-merge-rules (interp-st->config interp-st)))
+             (wrld (w state))
+             (then-rules (fn-branch-merge-rules? thenfn runes wrld))
+             (else-rules (fn-branch-merge-rules? elsefn runes wrld))
+             (if-rules (fn-rewrite-rules 'if (glcp-config->rewrite-rule-table
+                                              (interp-st->config interp-st))
+                                         wrld))
              ;; ((unless rules)
              ;;  ;; Note: we try to apply if-merge rules based on the leading function
              ;;  ;; symbol of the then or else objects.  We try then first
@@ -2815,12 +2828,12 @@
                (reclimit (1- reclimit) reclimit))
               ((fgl-interp-value successp ans)
                (b* (((gl-interp-recursive-call successp ans)
-                     (gl-rewrite-try-rules rules interp-st state))
+                     (gl-rewrite-try-rules then-rules interp-st state))
+                    ((when successp) (fgl-interp-value successp ans))
+                    ((gl-interp-recursive-call successp ans)
+                     (gl-rewrite-try-rules else-rules interp-st state))
                     ((when successp) (fgl-interp-value successp ans)))
-                 (gl-rewrite-try-rules (fn-rewrite-rules 'if (glcp-config->rewrite-rule-table
-                                                              (interp-st->config interp-st))
-                                                         (w state))
-                                       interp-st state))))
+                 (gl-rewrite-try-rules if-rules interp-st state))))
              (interp-st (interp-st-pop-scratch interp-st))
              ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
              ((mv thenval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
@@ -7667,22 +7680,29 @@
                            (acl2::mextract-global-badguy fgl-ev-meta-extract-global-badguy)
                            (mextract-good-rewrite-rulesp fgl-ev-good-rewrite-rulesp))))))
 
-  (local (defthm true-listp-when-pseudo-rewrite-rule-listp
-                      (implies (pseudo-rewrite-rule-listp x)
-                               (true-listp x))
-                      :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp)))))
-
-  (local (defthm fgl-ev-good-rewrite-rulesp-of-append
-           (implies (and (fgl-ev-good-rewrite-rulesp x)
-                         (fgl-ev-good-rewrite-rulesp y))
-                    (fgl-ev-good-rewrite-rulesp (append x y)))))
-
-  (defthm fgl-ev-good-branch-merge-rulep-of-fgl-interp-branch-merge-rules
+  (defthm fgl-ev-good-branch-merge-rulep-of-fn-branch-merge-rules?
     (implies (and (fgl-ev-meta-extract-global-facts)
                   (equal wrld (w state)))
-             (fgl-ev-good-rewrite-rulesp
-              (fgl-interp-branch-merge-rules thenfn elsefn runes wrld)))
-    :hints(("Goal" :in-theory (enable fgl-interp-branch-merge-rules)))))
+             (fgl-ev-good-rewrite-rulesp (fn-branch-merge-rules? fn runes wrld)))
+    :hints(("Goal" :in-theory (enable fn-branch-merge-rules?))))
+
+  ;; (local (defthm true-listp-when-pseudo-rewrite-rule-listp
+  ;;                     (implies (pseudo-rewrite-rule-listp x)
+  ;;                              (true-listp x))
+  ;;                     :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-listp)))))
+
+  ;; (local (defthm fgl-ev-good-rewrite-rulesp-of-append
+  ;;          (implies (and (fgl-ev-good-rewrite-rulesp x)
+  ;;                        (fgl-ev-good-rewrite-rulesp y))
+  ;;                   (fgl-ev-good-rewrite-rulesp (append x y)))))
+
+  ;; (defthm fgl-ev-good-branch-merge-rulep-of-fgl-interp-branch-merge-rules
+  ;;   (implies (and (fgl-ev-meta-extract-global-facts)
+  ;;                 (equal wrld (w state)))
+  ;;            (fgl-ev-good-rewrite-rulesp
+  ;;             (fgl-interp-branch-merge-rules thenfn elsefn runes wrld)))
+  ;;   :hints(("Goal" :in-theory (enable fgl-interp-branch-merge-rules))))
+  )
 
 
 
