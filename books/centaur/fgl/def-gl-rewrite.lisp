@@ -370,7 +370,7 @@ must be a function call.</li>
 
   (defun def-gl-branch-merge-fn (name body hints otf-flg)
     `(progn
-       (defthm ,name
+       (defthmd ,name
          ,body
          :hints ,hints
          :otf-flg ,otf-flg)
