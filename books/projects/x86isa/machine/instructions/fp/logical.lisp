@@ -60,7 +60,7 @@
    :hints (("Goal"
             :in-theory (disable unsigned-byte-p-of-logxor)
             :use (:instance unsigned-byte-p-of-logxor
-                            (n 128))))
+                            (n 128) (i x) (j y))))
    :rule-classes :linear))
 
 ; =============================================================================

@@ -14,6 +14,10 @@
 (include-book "ecdsa/top")
 (include-book "interfaces/top")
 
+; The following is temporarily commented out,
+; waiting for conflicts in the manual to be resolved.
+;; (include-book "attachments/top")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc cryptography

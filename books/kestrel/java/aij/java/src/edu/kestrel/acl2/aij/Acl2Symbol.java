@@ -113,8 +113,8 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code symbolp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code symbolp} ACL2 function.
      */
     @Override
     Acl2Symbol symbolp() {
@@ -122,8 +122,8 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code symbol-package-name} ACL2 function.
+     * Returns the symbol package name of this ACL2 symbol,
+     * consistently with the {@code symbol-package-name} ACL2 function.
      */
     @Override
     Acl2String symbolPackageName() {
@@ -131,8 +131,8 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code symbol-name} ACL2 function.
+     * Returns the symbol name of this ACL2 symbol,
+     * consistently with the {@code symbol-name} ACL2 function.
      */
     @Override
     Acl2String symbolName() {

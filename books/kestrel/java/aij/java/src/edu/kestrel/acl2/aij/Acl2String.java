@@ -60,8 +60,8 @@ public final class Acl2String extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Supports the native implementation of
-     * the {@code stringp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code stringp} ACL2 function.
      */
     @Override
     Acl2Symbol stringp() {
@@ -92,20 +92,19 @@ public final class Acl2String extends Acl2Value {
         }
         char[] jcharacters = new char[len];
         for (int i = 0; i < len; ++i) {
-            Acl2ConsPair pair = (Acl2ConsPair) list;
-            Acl2Value element = pair.getCar();
+            Acl2Value element = list.car();
             if (element instanceof Acl2Character)
                 jcharacters[i] = ((Acl2Character) element).getJavaChar();
             else
                 jcharacters[i] = 0;
-            list = pair.getCdr();
+            list = list.cdr();
         }
         return make(new String(jcharacters));
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code coerce} ACL2 function,
+     * Coerces this ACL2 string to a list,
+     * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
      */
     @Override
@@ -135,8 +134,9 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code pkg-imports} ACL2 function.
+     * Returns the ACL2 list of symbols imported by
+     * the package named by this ACL2 string,
+     * consistently with the {@code pkg-imports} ACL2 function.
      * An exception is thrown if this string does not name a known package
      * (this includes the case in which the string is not a valid package name).
      * This is in accordance with the ACL2 manual page for {@code pkg-imports},
@@ -148,7 +148,7 @@ public final class Acl2String extends Acl2Value {
     @Override
     Acl2Value pkgImports() throws Acl2EvaluationException {
         String str = this.jstring;
-        Acl2PackageName packageName = null;
+        Acl2PackageName packageName;
         try {
             packageName = Acl2PackageName.make(str);
         } catch (IllegalArgumentException e) {
@@ -169,15 +169,16 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code pkg-witness} ACL2 function.
+     * Returns the ACL2 string that is the name of
+     * the witness of the package named by this ACL2 string,
+     * consistently with the {@code pkg-witness} ACL2 function.
      *
      * @throws Acl2EvaluationException if the package name is invalid
      *                                 or the package is not defined
      * @throws IllegalStateException   if the package witness is not set yet
      */
     @Override
-    Acl2Value pkgWitness() throws Acl2EvaluationException {
+    Acl2Symbol pkgWitness() throws Acl2EvaluationException {
         String str = this.jstring;
         Acl2PackageName packageName;
         try {

@@ -1741,9 +1741,9 @@ off looking at the source code.</p>")
                     (equal (logior (lognot x) x) -1))))
 
   (defthm unsigned-byte-p-of-logior
-    (implies (and (unsigned-byte-p n x)
-                  (unsigned-byte-p n y))
-             (unsigned-byte-p n (logior x y))))
+    (implies (and (unsigned-byte-p n i)
+                  (unsigned-byte-p n j))
+             (unsigned-byte-p n (logior i j))))
 
   (defthm logior-natp-type
     (implies (and (or (not (integerp a))
@@ -2546,11 +2546,11 @@ off looking at the source code.</p>")
                (my-induct (- n 1) (logcdr x) (logcdr y)))))
 
     (defthm unsigned-byte-p-of-logxor
-      (implies (and (unsigned-byte-p n x)
-                    (unsigned-byte-p n y))
-               (unsigned-byte-p n (logxor x y)))
+      (implies (and (unsigned-byte-p n i)
+                    (unsigned-byte-p n j))
+               (unsigned-byte-p n (logxor i j)))
       :hints(("Goal"
-              :induct (my-induct n x y)
+              :induct (my-induct n i j)
               :in-theory (enable acl2::logxor**
                                  acl2::unsigned-byte-p**)))))
 
@@ -3957,8 +3957,8 @@ off looking at the source code.</p>")
                                          unsigned-byte-p-logior)
                      :use ((:instance unsigned-byte-p-of-logior
                                       (n size)
-                                      (x a)
-                                      (y b)))))))
+                                      (i a)
+                                      (j b)))))))
 
     (local (defthm l3
              ;; BOZO good rule to unlocalize?

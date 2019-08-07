@@ -276,6 +276,8 @@
 
     ;;Misc
     (set-guard-checking :nowarn)
+;; PETE: for debugging          
+;;  (set-guard-checking :all)
     (value '(value-triple :invisible))))
    
   (make-event

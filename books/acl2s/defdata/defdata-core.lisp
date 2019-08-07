@@ -193,7 +193,7 @@ B is the builtin combinator table."
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
        (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld)))
-    `((defthm ,(s+ name "P-TESTTHM")
+    `((defthm ,(s+ name "P-TESTTHM" :pkg curr-pkg)
         (equal (,pred-name ,xvar)
                ,pred-body)
         :rule-classes nil

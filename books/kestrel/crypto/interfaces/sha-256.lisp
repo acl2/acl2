@@ -19,7 +19,8 @@
   :input-size-limit (expt 2 64)
   :output-size 256
   :parents (interfaces)
-  :short "SHA-256 interface."
+  :short (xdoc::topstring
+          "SHA-256 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

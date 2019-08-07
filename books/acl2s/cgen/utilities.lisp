@@ -14,6 +14,24 @@
 (include-book "std/util/bstar" :dir :system)
 ;(include-book "basis")
 
+;; PETE: add the global cgen::cgen-guard-checking to control how
+; guard-checking is handled.
+; The default value is :none, but set it to :all to get more error reporting.
+; See below.
+
+(defmacro get-cgen-guard-checking ()
+  `(@ cgen::cgen-guard-checking))
+
+(defmacro set-cgen-guard-checking (val)
+  `(make-event (er-progn (acl2::assign cgen::cgen-guard-checking, val)
+                         (value '(value-triple nil)))
+               :check-expansion t))
+
+(set-cgen-guard-checking :none)
+; How to set guard-checking 
+; (set-cgen-guard-checking :all)
+
+
 ;;-- create a new symbol with prefix or suffix appended
 ;;-- if its a common-lisp symbol then attach acl2 package name to it
 ;;-- example:
@@ -154,7 +172,9 @@
   (declare (xargs :mode :program
                   :stobjs (state)))
   (acl2::state-global-let*
-   ((acl2::guard-checking-on :none))
+;   ((acl2::guard-checking-on :none))
+;; PETE: now controlled by the global cgen::cgen-guard-checking
+   ((acl2::guard-checking-on (@ cgen-guard-checking)))
    (er-let* ((ans (trans-eval expr ctx state t)));for now aok is t
      (if (equal (car ans) '(nil))
        (value (cdr ans))
@@ -553,7 +573,9 @@
 (defun trans-eval2 (form ctx state)
   (declare (xargs :mode :program :stobjs state))
   (acl2::state-global-let*
-   ((acl2::guard-checking-on :none))
+;   ((acl2::guard-checking-on :none))
+;; PETE: now controlled by the global cgen::cgen-guard-checking
+   ((acl2::guard-checking-on (@ cgen-guard-checking)))
    (mv-let
     (erp trans bindings state)
     (acl2::translate1 form
@@ -582,7 +604,9 @@
 (defun trans-eval-single-value-with-bindings (term bindings ctx state)
   (declare (xargs :mode :program :stobjs state))
   (acl2::state-global-let*
-   ((acl2::guard-checking-on :none))
+;   ((acl2::guard-checking-on :none))
+;; PETE: now controlled by the global cgen::cgen-guard-checking
+   ((acl2::guard-checking-on (@ cgen-guard-checking)))
    (er-let* ((term-val (acl2::simple-translate-and-eval term bindings nil
                                                         "" ctx (w state) state t)))
      (value (cdr term-val)))))

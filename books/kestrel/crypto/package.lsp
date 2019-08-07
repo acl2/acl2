@@ -11,12 +11,13 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
-(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "CRYPTO" (append *std-pkg-symbols*
-                         '(bit-listp
+                         '(all-unsigned-byte-p
+                           bebytes=>bits
+                           bit-listp
                            bool-fix
                            byte-list-equiv
                            byte-list-fix

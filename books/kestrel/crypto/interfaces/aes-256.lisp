@@ -18,7 +18,8 @@
   :key-size 256
   :block-size 128
   :parents (interfaces)
-  :short "AES-256 interface."
+  :short (xdoc::topstring
+          "AES-256 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

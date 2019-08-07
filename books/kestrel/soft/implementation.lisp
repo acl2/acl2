@@ -10,20 +10,25 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/utilities/system/defchoose-queries" :dir :system)
-(include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
-(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
+(include-book "kestrel/utilities/system/defchoose-queries" :dir :system)
+(include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
-(local (xdoc::set-default-parents soft-implementation))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ soft-implementation
+  :parents (soft)
+  :short "Implementation of SOFT."
+  :order-subtopics t
+  :default-parent t)
 
 (define *-listp (stars)
   :returns (yes/no booleanp)
@@ -194,6 +199,27 @@
     (and (funvarp (car funvars) wrld)
          (funvar-listp (cdr funvars) wrld))))
 
+(defsection second-order-functions-table
+  :short "Table of second-order functions."
+  :long
+  "<p>
+   The names of declared second-order functions
+   are stored as keys in a @(see table),
+   associated with the function variables they depend on.
+   </p>"
+
+  (table second-order-functions nil nil
+    :guard (and (symbolp acl2::key)
+                (funvar-listp acl2::val world))))
+
+(define sofunp (sofun (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  :short "Recognize names of second-order functions."
+  (let ((table (table-alist 'second-order-functions wrld)))
+    (and (symbolp sofun)
+         (not (null (assoc-eq sofun table))))))
+
 (define sofun-kindp (kind)
   :returns (yes/no booleanp)
   :short "Recognize symbols that denote
@@ -218,48 +244,13 @@
       (eq kind 'choice)
       (eq kind 'quant)))
 
-(define sofun-infop (info (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :verify-guards nil
-  :short "Recognize the information associated to second-order function names
-          in the table of second-order functions."
-  :long
-  "<p>
-   This records the kind of the function
-   and the function variables that the function depends on.
-   </p>"
-  (and (true-listp info)
-       (= (len info) 2)
-       (sofun-kindp (first info))
-       (funvar-listp (second info) wrld)))
-
-(defsection second-order-functions-table
-  :short "Table of second-order functions."
-  :long
-  "<p>
-   The names of declared second-order functions
-   are stored as keys in a @(see table),
-   associated with their kind and the function variables they depend on.
-   </p>"
-
-  (table second-order-functions nil nil
-    :guard (and (symbolp acl2::key)
-                (sofun-infop acl2::val world))))
-
-(define sofunp (sofun (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :verify-guards nil
-  :short "Recognize names of second-order functions."
-  (let ((table (table-alist 'second-order-functions wrld)))
-    (and (symbolp sofun)
-         (not (null (assoc-eq sofun table))))))
-
 (define sofun-kind ((sofun (sofunp sofun wrld)) (wrld plist-worldp))
   :returns (kind "A @(tsee sofun-kindp).")
   :verify-guards nil
-  :short "Kind of a second-order function recorded in the table."
-  (let ((table (table-alist 'second-order-functions wrld)))
-    (first (cdr (assoc-eq sofun table)))))
+  :short "Kind of a second-order function."
+  (cond ((defchoosep sofun wrld) 'choice)
+        ((defun-sk-p sofun wrld) 'quant)
+        (t 'plain)))
 
 (define plain-sofunp (sofun (wrld plist-worldp))
   :returns (yes/no booleanp)
@@ -287,7 +278,7 @@
   :verify-guards nil
   :short "Function variables that a second-order function depends on."
   (let ((table (table-alist 'second-order-functions wrld)))
-    (second (cdr (assoc-eq sofun table)))))
+    (cdr (assoc-eq sofun table))))
 
 (defines funvars-of-term/terms
   :verify-guards nil
@@ -563,9 +554,8 @@
                rest))
        (defun-event `(defun ,sofun ,@rest))
        (table-event `(table second-order-functions
-                       ',sofun (list 'plain
-                                     (remove-duplicates
-                                      (funvars-of-plain-fn ',sofun world)))))
+                       ',sofun (remove-duplicates
+                                (funvars-of-plain-fn ',sofun world))))
        (check-event `(make-event-terse
                       (b* ((err-msg? (check-wfrel-o< ',sofun (w state))))
                         (if err-msg?
@@ -676,9 +666,8 @@
        (options (remove-keyword :print options))
        (defchoose-event `(defchoose ,sofun ,bvars ,params ,body ,@options))
        (table-event `(table second-order-functions
-                       ',sofun (list 'choice
-                                     (remove-duplicates
-                                      (funvars-of-choice-fn ',sofun world)))))
+                       ',sofun (remove-duplicates
+                                (funvars-of-choice-fn ',sofun world))))
        (print-funvar-event `(value-triple
                              (print-funvar-dependency
                               ',sofun 'plain (w state))))
@@ -753,9 +742,9 @@
   :returns (mv (erp "@(tsee booleanp) flag of the
                      <see topic='@(url acl2::error-triple)'>error
                      triple</see>.")
-               (event maybe-pseudo-event-formp)
+               (event "A @(tsee maybe-pseudo-event-formp).")
                state)
-  :verify-guards nil
+  :mode :program
   :short "Validate some of the inputs to @(tsee defun-sk2)
           and generate the event form to submit."
   :long
@@ -789,8 +778,7 @@
        (options (remove-keyword :print options))
        (defun-sk-event `(defun-sk ,sofun ,params ,body ,@options))
        (table-event `(table second-order-functions
-                       ',sofun (list 'quant
-                                     (funvars-of-quantifier-fn ',sofun world))))
+                       ',sofun (funvars-of-quantifier-fn ',sofun world)))
        (check-event `(make-event-terse
                       (b* ((err-msg? (check-qrewrite-rule-funvars ',sofun
                                                                   (w state))))
@@ -1597,7 +1585,7 @@
                  ,fun-body))
        (table-event?
         (if funvars
-            `((table second-order-functions ',fun (list 'plain ',funvars)))
+            `((table second-order-functions ',fun ',funvars))
           nil)))
     (value (list `(,defun-event ,@table-event?)
                  result
@@ -1662,7 +1650,7 @@
                  :strengthen ,strengthen))
        (table-event?
         (if funvars
-            `((table second-order-functions ',fun (list 'choice ',funvars)))
+            `((table second-order-functions ',fun ',funvars))
           nil)))
     (value (list `(,defchoose-event ,@table-event?)
                  result
@@ -1778,7 +1766,7 @@
                  ,@rest))
        (table-event?
         (if funvars
-            `((table second-order-functions ',fun (list 'quant ',funvars)))
+            `((table second-order-functions ',fun ',funvars))
           nil))
        (check-event `(make-event-terse
                       (b* ((err-msg?

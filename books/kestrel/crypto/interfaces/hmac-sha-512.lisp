@@ -19,7 +19,8 @@
   :hash sha-512
   :block-size 128
   :parents (interfaces)
-  :short "HMAC-SHA-512 interface."
+  :short (xdoc::topstring
+          "HMAC-SHA-512 " (xdoc::seeurl "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

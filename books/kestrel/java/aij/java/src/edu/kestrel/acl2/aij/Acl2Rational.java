@@ -29,8 +29,8 @@ public abstract class Acl2Rational extends Acl2Number {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code rationalp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code rationalp} ACL2 function.
      */
     @Override
     Acl2Symbol rationalp() {
@@ -38,36 +38,135 @@ public abstract class Acl2Rational extends Acl2Number {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code unary--} ACL2 function.
-     * This method refines the return type of {@link Acl2Value#negate()}.
-     * This method is implemented by
-     * {@link Acl2Ratio#negate()} and {@link Acl2Integer#negate()}.
+     * Negates (arithmetically) this ACL2 rational,
+     * consistently with the {@code unary--} ACL2 function.
      */
     @Override
-    abstract Acl2Rational negate();
+    Acl2Rational negate() {
+        // -(a/b) is (-a)/b:
+        Acl2Integer a = this.numerator();
+        Acl2Integer b = this.denominator();
+        return Acl2Rational.make(a.negate(), b);
+    }
 
     /**
-     * Supports the native implementation of
-     * the {@code unary-/} ACL2 function.
-     * This method refines the return type of {@link Acl2Value#reciprocate()}.
-     * This method is implemented by
-     * {@link Acl2Ratio#reciprocate()} and {@link Acl2Integer#reciprocate()}.
+     * Reciprocates (arithmetically) this ACL2 rational,
+     * consistently with the {@code unary-/} ACL2 function.
      */
     @Override
-    abstract Acl2Rational reciprocate();
+    Acl2Rational reciprocate() {
+        // 1/(a/b) is b/a:
+        Acl2Integer a = this.numerator();
+        if (a.equals(Acl2Integer.ZERO))
+            return Acl2Integer.ZERO;
+        Acl2Integer b = this.denominator();
+        return Acl2Rational.make(b, a);
+    }
 
     /**
-     * Supports the native implementation of
-     * the {@code numerator} ACL2 function.
+     * Adds the argument ACL2 value to this ACL2 rational,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Number addValue(Acl2Value other) {
+        return other.addRational(this);
+    }
+
+    /**
+     * Adds the argument ACL2 number to this ACL2 rational,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Number addNumber(Acl2Number other) {
+        return other.addRational(this);
+    }
+
+    /**
+     * Adds the argument ACL2 rational to this ACL2 rational,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    Acl2Rational addRational(Acl2Rational other) {
+        // a/b+c/d is (a*(lcm/b)+c*(lcm/d))/lcm,
+        // where lcm is the least common multiple of b and d:
+        Acl2Integer a = this.numerator();
+        Acl2Integer b = this.denominator();
+        Acl2Integer c = other.numerator();
+        Acl2Integer d = other.denominator();
+        Acl2Integer lcm = b.lcm(d);
+        Acl2Integer aMultiplied = // a*(lcm/b)
+                (Acl2Integer) a.multiplyRational(Acl2Rational.make(lcm, b));
+        Acl2Integer bMultiplied = // c*(lcm/d)
+                (Acl2Integer) c.multiplyRational(Acl2Rational.make(lcm, d));
+        return Acl2Rational.make(aMultiplied.addInteger(bMultiplied), lcm);
+    }
+
+    /**
+     * Adds the argument ACL2 integer to this ACL2 rational,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Rational addInteger(Acl2Integer other) {
+        // a/b+c is (a*c)/d:
+        Acl2Integer a = this.numerator();
+        Acl2Integer b = this.denominator();
+        return Acl2Rational.make(a.multiplyInteger(other), b);
+    }
+
+    /**
+     * Multiplies the argument ACL2 value to this ACL2 rational,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyValue(Acl2Value other) {
+        return other.addRational(this);
+    }
+
+    /**
+     * Multiplies the argument ACL2 number to this ACL2 rational,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyNumber(Acl2Number other) {
+        return other.multiplyRational(this);
+    }
+
+    /**
+     * Multiplies the argument ACL2 rational to this ACL2 rational,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Rational multiplyRational(Acl2Rational other) {
+        // (a/b)*(c/d) is (a*c)/(b*d):
+        Acl2Integer a = this.numerator();
+        Acl2Integer b = this.denominator();
+        Acl2Integer c = other.numerator();
+        Acl2Integer d = other.denominator();
+        return Acl2Rational.make(a.multiplyInteger(c), b.multiplyInteger(d));
+    }
+
+    /**
+     * Multiplies the argument ACL2 integer to this ACL2 rational,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Rational multiplyInteger(Acl2Integer other) {
+        // (a/b)*c is (a*c)/b:
+        Acl2Integer a = this.numerator();
+        Acl2Integer b = this.denominator();
+        return Acl2Rational.make(a.multiplyInteger(other), b);
+    }
+
+    /**
+     * Returns the numerator of this ACL2 rational,
+     * consistently with the {@code numerator} ACL2 function.
      */
     Acl2Integer numerator() {
         return this.getNumerator();
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code denominator} ACL2 function.
+     * Returns the denominator of this ACL2 rational,
+     * consistently with the {@code denominator} ACL2 function.
      */
     Acl2Integer denominator() {
         return this.getDenominator();

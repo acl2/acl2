@@ -61,8 +61,8 @@
      over the details of the cryptographic functions,
      without having to include and use full definitions of these functions.")
    (xdoc::p
-    "Executable attachments for these interfaces can be defined,
-     and used to execute code that calls these interfaces.
+    "Executable attachments for these interfaces can be used
+     to execute code that calls these interfaces.
      It should be also possible to automatically specialize
      code that uses these interfaces
      to use (compatible) full definitions of the functions.")

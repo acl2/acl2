@@ -10,22 +10,23 @@
 
 (in-package "ACL2")
 
-(include-book "implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Define the factorial function.
+; Define the Fibonacci function.
 
-(defun fact (n)
+(defun fib (n)
   (declare (xargs :guard (natp n)))
-  (if (zp n)
-      1
-    (* n (fact (1- n)))))
+  (cond ((zp n) 1)
+        ((= n 1) 1)
+        (t (+ (fib (- n 1))
+              (fib (- n 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the factorial function.
+; Generate Java code for the Fibonacci function.
 
-(java::atj fact :deep t :java-class "FactDeep")
+(java::atj fib :deep t :java-class "FibDeep")
 
-(java::atj fact :deep nil :java-class "FactShallow")
+(java::atj fib :deep nil :java-class "FibShallow")

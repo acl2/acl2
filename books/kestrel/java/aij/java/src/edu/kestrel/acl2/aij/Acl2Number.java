@@ -29,8 +29,8 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code acl2-numberp} ACL2 function.
+     * Returns {@code true},
+     * consistently with the {@code acl2-numberp} ACL2 function.
      */
     @Override
     Acl2Symbol acl2Numberp() {
@@ -38,8 +38,138 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code realpart} ACL2 function.
+     * Negates (arithmetically) this ACL2 number,
+     * consistently with the {@code unary--} ACL2 function.
+     */
+    @Override
+    Acl2Number negate() {
+        // -(a+bi) is (-a)+(-b)i:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        return Acl2Number.make(a.negate(), b.negate());
+    }
+
+    /**
+     * Reciprocates (arithmetically) this ACL2 number,
+     * consistently with the {@code unary-/} ACL2 function.
+     */
+    @Override
+    Acl2Number reciprocate() {
+        // 1/(a+bi) is (a/(aa+bb))-(b/(aa+bb))i:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        Acl2Rational aa = a.multiplyRational(a);
+        Acl2Rational bb = b.multiplyRational(b);
+        Acl2Rational aabb = aa.addRational(bb);
+        Acl2Rational aabbInv = aabb.reciprocate();
+        Acl2Rational resultReal = a.multiplyRational(aabbInv);
+        Acl2Rational resultImag = b.negate().multiplyRational(aabbInv);
+        return Acl2Number.make(resultReal, resultImag);
+    }
+
+    /**
+     * Adds the argument ACL2 value to this ACL2 number,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Number addValue(Acl2Value other) {
+        return other.addNumber(this);
+    }
+
+    /**
+     * Adds the argument ACL2 number to this ACL2 number,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Number addNumber(Acl2Number other) {
+        // (a+bi)+(c+di) is (a+c)+(b+d)i:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        Acl2Rational c = other.realpart();
+        Acl2Rational d = other.imagpart();
+        return Acl2Number.make(a.addRational(c), b.addRational(d));
+    }
+
+    /**
+     * Adds the argument ACL2 rational to this ACL2 number,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Number addRational(Acl2Rational other) {
+        // (a+bi)+c is (a+c)+bi:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        return Acl2Number.make(a.addRational(other), b);
+    }
+
+    /**
+     * Adds the argument ACL2 integer to this ACL2 number,
+     * consistently with the {@code binary-+} ACL2 function.
+     */
+    @Override
+    Acl2Number addInteger(Acl2Integer other) {
+        // (a+bi)+c is (a+c)+bi:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        return Acl2Number.make(a.addRational(other), b);
+    }
+
+    /**
+     * Multiplies the argument ACL2 value to this ACL2 number,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyValue(Acl2Value other) {
+        return other.multiplyNumber(this);
+    }
+
+    /**
+     * Multiplies the argument ACL2 number to this ACL2 number,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyNumber(Acl2Number other) {
+        // (a+bi)*(c+di) is (ac-bd)+(bc+ad)i:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        Acl2Rational c = other.realpart();
+        Acl2Rational d = other.imagpart();
+        Acl2Rational ac = a.multiplyRational(c);
+        Acl2Rational bd = b.multiplyRational(d);
+        Acl2Rational bc = b.multiplyRational(c);
+        Acl2Rational ad = a.multiplyRational(d);
+        return Acl2Number.make(ac.addRational(bd.negate()), bc.addRational(ad));
+    }
+
+    /**
+     * Multiplies the argument ACL2 rational to this ACL2 number,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyRational(Acl2Rational other) {
+        // (a+bi)*c is (ac)+(bc)i:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        return Acl2Number.make
+                (a.multiplyRational(other), b.multiplyRational(other));
+    }
+
+    /**
+     * Multiplies the argument ACL2 integer to this ACL2 number,
+     * consistently with the {@code binary-*} ACL2 function.
+     */
+    @Override
+    Acl2Number multiplyInteger(Acl2Integer other) {
+        // (a+bi)*c is (ac)+(bc)i:
+        Acl2Rational a = this.realpart();
+        Acl2Rational b = this.imagpart();
+        return Acl2Number.make
+                (a.multiplyRational(other), b.multiplyRational(other));
+    }
+
+    /**
+     * Returns the real part of this ACL2 number,
+     * consistently with the {@code realpart} ACL2 function.
      */
     @Override
     Acl2Rational realpart() {
@@ -47,8 +177,8 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code imagpart} ACL2 function.
+     * Returns the imaginary part of this ACL2 number,
+     * consistently with the {@code imagpart} ACL2 function.
      */
     @Override
     Acl2Rational imagpart() {

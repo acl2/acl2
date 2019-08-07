@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
 
 (include-book "kestrel/abnf/concrete-syntax" :dir :system)
 

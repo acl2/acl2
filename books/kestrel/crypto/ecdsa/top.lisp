@@ -12,6 +12,9 @@
 
 (include-book "secp256k1-interface")
 
+;; TODO: Uncomment once name clashes are fixed:
+;; (include-book "secp256k1-attachment")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc elliptic-curve-digital-signature-algorithm
