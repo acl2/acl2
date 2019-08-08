@@ -13,6 +13,7 @@
 (include-book "abstract-syntax")
 
 (include-book "kestrel/utilities/messages" :dir :system)
+(include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "std/strings/binary" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/hex" :dir :system)
@@ -94,6 +95,54 @@
                 (car parts)
                 (print-comma-sep (cdr parts))))))
 
+(define print-jstring-char ((char characterp))
+  :returns (part msgp)
+  :short "Pretty-print a Java string character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This turns an ACL2 character, viewed as a Java character,
+     into a form that can be correctly pretty-printed
+     when the character is part of a Java string literal.
+     This has to take into account not only Java's string literal syntax,
+     but also the fact that the pretty-printer uses ACL2's formatted printing,
+     where the tilde has a special meaning.")
+   (xdoc::p
+    "A double quote or backslash is preceded by a backslash,
+     as required for Java.")
+   (xdoc::p
+    "The other characters with codes between 32 and 125 are left unchanged.")
+   (xdoc::p
+    "All the other characters, including tilde,
+     are turned into their Java Unicode escapes.
+     This is needed for tilde,
+     which otherwise would cause errors or misinterpretations
+     in ACL2's formatted printing.
+     It is also needed for certain characters, such as newline,
+     which would cause errors in Java.
+     It may not be needed for all the characters
+     that do not fall into the previous cases,
+     but we conservatively treat them in the same way
+     for simplicity and safety."))
+  (b* (((when (member char '(#\" #\\))) (implode (list #\\ char)))
+       (code (char-code char))
+       ((when (and (<= 32 code)
+                   (<= code 125))) (implode (list char)))
+       ((mv hi-char lo-char) (ubyte8=>hexchars code)))
+    (implode (list #\\ #\u #\0 #\0 hi-char lo-char))))
+
+(define print-jstring-chars ((chars character-listp))
+  :returns (part msgp)
+  :short "Lift @(tsee print-jstring-char) to lists of characters."
+  :long
+  (xdoc::topstring-p
+   "The representations of the characters are juxtaposed one after the other,
+    as needed for Java string literals.")
+  (cond ((endp chars) "")
+        (t (msg "~@0~@1"
+                (print-jstring-char (car chars))
+                (print-jstring-chars (cdr chars))))))
+
 (define print-jliteral ((lit jliteralp))
   :returns (part msgp)
   :short "Pretty-print a Java literal."
@@ -111,7 +160,7 @@
                   (str::cat digits "L")
                 digits))
    :boolean (if lit.value "true" "false")
-   :string (str::cat "\"" lit.value "\"")
+   :string (msg "\"~@0\"" (print-jstring-chars (explode lit.value)))
    :null "null"))
 
 (define print-jtype ((type jtypep))
