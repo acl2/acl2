@@ -425,26 +425,26 @@ I commented out some disabled theorems that seem fine to me.
        (or (== a (car X))
            (in a (cdr X)))))
 
-(definec tail (x :tl) :tl
-  (cdr x))
-
 (defdata non-empty-true-list (cons all true-list))
 
 (defdata-alias ne-tl non-empty-true-list)
 
 (add-macro-fn ne-tlp non-empty-true-listp)
 
+(definec tail (x :ne-tl) :tl 
+  (cdr x))
+
 (definec head (x :ne-tl) :all
   (car x))
 
 (defunc snth (n l)
-  :input-contract (and (natp n) (tlp l) (< (len l) n))
-  :output-contract t
+  :pre  (and (natp n) (tlp l) (< (len l) n))
+  :post t
   (nth n l))
 
 (defunc snthcdr (n l)
-  :input-contract (and (natp n) (tlp l) (< (len l) n))
-  :output-contract (tlp (snthcdr n l))
+  :pre (and (natp n) (tlp l) (< (len l) n))
+  :post :tl
   (nthcdr n l))
 
 (defmacro scar (x) `(head ,x))
