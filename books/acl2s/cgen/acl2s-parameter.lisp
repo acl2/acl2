@@ -322,12 +322,12 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :long
   "Maximum allowed time (in seconds) to be spent
   in the ACL2 prover on behalf of Cgen/test? macro.
-  This value is used as the second argument of the
-  with-prover-time-limit macro around the call to 
+  This value is used as the first argument of the
+  with-timeout macro around the call to 
   prove/cgen.
 
   The default timeout limit is set to 3600 sec.
-  Guard : Timeout should be a rational.
+  Guard : Timeout should be a non-negative rational.
    <code>
     Usage:
     (acl2s-defaults :set cgen-timeout 3600)
@@ -335,7 +335,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
     :doc cgen-timeout
    </code>
    "
- :guard (rationalp value))
+ :guard (and (rationalp value) (<= 0 value)))
         
 (add-acl2s-parameter 
  cgen-local-timeout 10
@@ -346,7 +346,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   The default timeout limit is set to 10 sec.
   Setting this parameter to 0 amounts to disabling
   the timeout mechanism, i.e. its a no-op.
-  Guard : Timeout should be a rational.
+  Guard : Timeout should be a non-negative rational.
    <code>
     Usage:
     (acl2s-defaults :set cgen-local-timeout 10)
@@ -354,7 +354,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
     :doc cgen-local-timeout
    </code>
    "
- :guard (rationalp value))
+ :guard (and (rationalp value) (<= 0 value)))
 
 (defconst *testing-enabled-values* '(T NIL :naive))
 
