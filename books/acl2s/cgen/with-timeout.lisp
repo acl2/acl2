@@ -54,15 +54,18 @@
 
 (defttag :acl2s-timeout)
 
-
 (progn!
  (set-raw-mode t)
  (load (concatenate 'string (cbd) "with-timeout-raw.lsp")))
 
-
 (defmacro-last with-timeout-aux)
 
-
+;; Defined this way to be compatible with make-event.
+;; If time is 0, we set a timeout of 2^20 seconds ~ 12 days
+(defmacro with-time-limit (time form)
+  `(with-prover-time-limit
+    (if (equal ,time 0) (expt 2 20) ,time)
+    ,form))
 
 (defmacro with-timeout (duration form timeout-form)
 "can only be called at top-level, that too only forms that are allowed
