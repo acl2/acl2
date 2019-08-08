@@ -195,18 +195,18 @@ with the same hints and directives that defthm accepts.
           ((when (and proofs? testing?))
            `(encapsulate
              ()
-             (with-prover-time-limit ,testing-timeout (test? ,prop))
-             (with-prover-time-limit ,proof-timeout (,prove ,@args))))
+             (with-time-limit ,testing-timeout (test? ,prop))
+             (with-time-limit ,proof-timeout (,prove ,@args))))
           ((when proofs?)
-           `(with-prover-time-limit ,proof-timeout (,prove ,@args)))
+           `(with-time-limit ,proof-timeout (,prove ,@args)))
           ((when (and testing? name?))
-           `(with-prover-time-limit
+           `(with-time-limit
              ,testing-timeout
              (defthm-test-no-proof ,@args)))
           ((when testing?)
-           `(with-prover-time-limit ,testing-timeout (test? ,prop)))
+           `(with-time-limit ,testing-timeout (test? ,prop)))
           ((when name?)
-           `(with-prover-time-limit
+           `(with-time-limit
              ,proof-timeout
              (defthmskipall ,@args))))
        `(value-triple :passed)))))
