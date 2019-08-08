@@ -153,8 +153,13 @@ B is the builtin combinator table."
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
 
+       (pkg (get1 :current-package kwd-alist))
+       (v (intern$ "V" pkg))
+
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
+       (xvar (if (member-eq v avoid-lst)
+                 v
+               (acl2::generate-variable v avoid-lst nil nil wrld)))
        (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld))
        (pred-decls (make-pred-declare-forms xvar kwd-alist))
        (pred-name (predicate-name name A M))
@@ -191,7 +196,11 @@ B is the builtin combinator table."
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
+       (v (intern$ "V" curr-pkg))
+
+       (xvar (if (member-eq v avoid-lst)
+                 v
+               (acl2::generate-variable v avoid-lst nil nil wrld)))
        (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld)))
     `((defthm ,(s+ name "P-TESTTHM" :pkg curr-pkg)
         (equal (,pred-name ,xvar)
