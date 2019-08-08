@@ -73,9 +73,10 @@ data last modified: [2017-06-22 Thu]
                  'acl2::integerp
                'acl2::rationalp)))
   (case-match rexp
-    ((lo lo-rel-sym '_ hi-rel-sym hi) `((,dom ,x)
-                                        ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
-                                        ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
+    ((lo lo-rel-sym '_ hi-rel-sym hi)
+     `((,dom ,x)
+       ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
+       ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
 
 
 ;(defun range-pred-I (x s) `(acl2::in-tau-intervalp ,x ',(get-tau-int (cadr s) (third s))))

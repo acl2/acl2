@@ -109,26 +109,23 @@
 
 
 ;;symbols
-(register-data-constructor (symbolp intern$)
-                           ((stringp symbol-name) (stringp symbol-package-name))
-                           :rule-classes nil
-                           :proper nil) ;package name destructor fails
+(register-data-constructor
+ (symbolp intern$)
+ ((stringp symbol-name) (stringp symbol-package-name))
+ :rule-classes nil
+ :proper nil) ;package name destructor fails
 
-
-
-(register-data-constructor (rationalp /)
-                           ((integerp numerator) (posp denominator))
-                           :rule-classes nil
-                           :proper nil)
-
-
- 
+(register-data-constructor
+ (rationalp /)
+ ((integerp numerator) (posp denominator))
+ :rule-classes nil
+ :proper nil)
 
 ;;complex number type
-(register-data-constructor (acl2-numberp complex)
-                           ((rationalp realpart) (rationalp imagpart))
-                           :rule-classes nil
-                           )
+(register-data-constructor
+ (acl2-numberp complex)
+ ((rationalp realpart) (rationalp imagpart))
+ :rule-classes nil)
 
 
 #||

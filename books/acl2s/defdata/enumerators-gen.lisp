@@ -61,12 +61,15 @@ data last modified: [2017-06-25 Sun]
  C is the constructor table + some basic info for new constructors.
  B is the builtin combinator table."
 
-  (cond ((possible-constant-value-p s) (if (quotep s) s (list 'QUOTE s))) ;its already quoted, dont quote it furthur.
+  (cond ((possible-constant-value-p s)
+         (if (quotep s) s (list 'QUOTE s))) ;its already quoted, dont quote it furthur.
 
-        ((proper-symbolp s) (if (assoc-eq s M) `(,(get2 s :enumerator M) ,i)  s))
+        ((proper-symbolp s)
+         (if (assoc-eq s M) `(,(get2 s :enumerator M) ,i)  s))
 
         ;;dead code (since only names are kept at parent call)
-        ((not (true-listp s)) (make-enum-I (cdr s) i kwd-alist M C B wrld))  ;name decl
+        ((not (true-listp s))
+         (make-enum-I (cdr s) i kwd-alist M C B wrld))  ;name decl
 
         ((assoc-eq (car s) B) ;builtin combinator
          (b* ((enum-I-fn (get2 (car s) :enum-I B))
@@ -85,7 +88,9 @@ data last modified: [2017-06-25 Sun]
 
         ((assoc-eq (car s) C) ;constructor
          (b* ((k (len (cdr s)))
-              (i1--ik (numbered-vars 'i k))
+              (pkg (get1 :current-package kwd-alist))
+              (vari (intern$ "I" pkg))
+              (i1--ik (numbered-vars vari k))
               (enum-arg-exprs (make-enum-Is... (remove-names-lst (cdr s)) i1--ik))
               (binding (bind-names-vals (cdr s) enum-arg-exprs))
               (?satisfies-exprs (get-all :satisfies kwd-alist))
@@ -130,8 +135,13 @@ data last modified: [2017-06-25 Sun]
        (A (table-alist 'type-alias-table wrld))
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
+       (pkg (get1 :current-package kwd-alist))
+
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (ivar (if (member-eq 'i avoid-lst) 'i (acl2::generate-variable 'i avoid-lst nil nil wrld)))
+       (i (intern$ "I" pkg))
+       (ivar (if (member-eq i avoid-lst)
+                 i
+               (acl2::generate-variable i avoid-lst nil nil wrld)))
        (enum-body (make-enum-I ndef ivar kwd-alist M C B wrld))
        (enum-decls (make-enum-declare-forms ivar kwd-alist))
        )
@@ -302,8 +312,11 @@ B is the builtin combinator table."
          ((assoc-eq (car s) C) ; data constructor
           (b* ((k (len (cdr s)))
                (i1--ik (numbered-vars i k))
-               (enum/acc-exprs (make-enum/acc-Is... (remove-names-lst (cdr s)) i1--ik))
-               (_v1--_vk (numbered-vars '_V k))
+               (enum/acc-exprs
+                (make-enum/acc-Is... (remove-names-lst (cdr s)) i1--ik))
+               (pkg (get1 :current-package kwd-alist))
+               (_V (intern$ "_V" pkg))
+               (_v1--_vk (numbered-vars _V k))
                (binding (bind-mv2-names-enum/acc-calls (cdr s) enum/acc-exprs _v1--_vk '_SEED))
                (names (replace-calls-with-names _v1--_vk (cdr s))))
                
@@ -377,8 +390,12 @@ B is the builtin combinator table."
        (M (append new-types (table-alist 'type-metadata-table wrld)))
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
+       (pkg (get1 :current-package kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars Ndecl)))
-       (sizevar (if (member-eq 'size avoid-lst) 'size (acl2::generate-variable 'size avoid-lst nil nil wrld)))
+       (size (intern$ "SIZE" pkg))
+       (sizevar (if (member-eq size avoid-lst)
+                    size
+                  (acl2::generate-variable size avoid-lst nil nil wrld)))
        (enum/acc-body (make-enum/acc-I ndef sizevar kwd-alist (strip-cars new-types) M C B wrld))
        (enum/acc-decls (make-enum/acc-declare-forms sizevar kwd-alist))
        )
