@@ -47,7 +47,6 @@
 (disable-definition int-endp)
 (disable-definition int)
 
-
 (disable-definition acl2::logcons$inline)
 (def-gl-rewrite logcons-is-intcons
   (equal (logcons a b) (intcons (eql a 1) b)))

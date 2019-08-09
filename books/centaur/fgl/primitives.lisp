@@ -34,6 +34,7 @@
 (include-book "primitives-stub")
 (include-book "bfr-arithmetic")
 (include-book "subst-functions")
+(include-book "def-gl-rewrite")
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -60,7 +61,7 @@
 (def-formula-checks primitives-formula-checks
   (if!))
 
-
+(enable-split-ifs equal)
 
 (def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-integer-fix)
 (def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-integerp)
@@ -81,7 +82,7 @@
 (local (in-theory (enable kwote-lst
                           fgl-objectlist-eval)))
 
-
+(enable-split-ifs int)
 (def-gl-primitive int (x)
   (b* (((mv ok fix) (gobj-syntactic-integer-fix x))
        ((unless ok) (mv nil nil interp-st)))
@@ -107,7 +108,7 @@
          :hints(("Goal" :in-theory (enable booleanp fgl-object-eval)))))
 
 
-
+(enable-split-ifs integerp)
 (def-gl-primitive integerp (x)
   (gl-object-case x
     :g-concrete (mv t (integerp x.val) interp-st)
@@ -130,6 +131,7 @@
          (implies x
                   (equal (bool->bit x) 1))))
 
+(enable-split-ifs endint)
 (def-gl-primitive endint (x)
   (gl-object-case x
     :g-concrete (mv t (if x.val -1 0) interp-st)
@@ -141,7 +143,7 @@
 
 
 
-
+(enable-split-ifs intcons)
 (def-gl-primitive intcons (car cdr)
   (b* (((mv ok car-fix) (gobj-syntactic-boolean-fix car))
        ((unless ok) (mv nil nil interp-st))
@@ -185,6 +187,7 @@
          (equal (equal (bool->bit x) 1)
                 (not (not x)))))
 
+(enable-split-ifs intcar)
 (def-gl-primitive intcar (x)
   (gl-object-case x
     :g-concrete (mv t (and (integerp x.val)
@@ -207,7 +210,8 @@
                          (and (consp bits)
                               (list (gobj-bfr-eval (car bits) env)))))
          :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))
-                           
+                 
+(enable-split-ifs int-endp)          
 (def-gl-primitive int-endp (x)
   (gl-object-case x
     :g-concrete (mv t (or (not (integerp x.val))
@@ -233,6 +237,7 @@
 
 (local (in-theory (disable logcdr-of-bools->int)))
 
+(enable-split-ifs intcdr)
 (def-gl-primitive intcdr (x)
   (gl-object-case x
     :g-concrete (mv t (if (integerp x.val)
@@ -250,6 +255,7 @@
 
 (local (in-theory (enable bool-fix)))
 
+(enable-split-ifs bool)
 (def-gl-primitive bool (x)
   (gl-object-case x
     :g-concrete (mv t (bool-fix x.val) interp-st)
@@ -270,7 +276,7 @@
 
 (set-ignore-ok t)
 
-
+(enable-split-ifs consp)
 (def-gl-primitive consp (x)
   (gl-object-case x
     :g-concrete (mv t (consp x.val) interp-st)
@@ -292,6 +298,7 @@
                          (cons (cons (caar x) (fgl-object-eval (cdar x) env))
                                (fgl-object-alist-eval (cdr x) env))))))
 
+(enable-split-ifs car)
 (def-gl-primitive car (x)
   (gl-object-case x
     :g-concrete (mv t (g-concrete (mbe :logic (car x.val)
@@ -306,6 +313,7 @@
                interp-st)
     :otherwise (mv nil nil interp-st)))
 
+(enable-split-ifs cdr)
 (def-gl-primitive cdr (x)
   (gl-object-case x
     :g-concrete (mv t (g-concrete (mbe :logic (cdr x.val)

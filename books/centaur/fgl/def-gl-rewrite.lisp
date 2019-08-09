@@ -163,7 +163,26 @@
 (defmacro disable-execution (fnname)
   `(table gl-fn-modes
           ',fnname
-          (make-gl-function-mode :dont-concrete-exec t)))
+          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
+            (change-gl-function-mode mode :dont-concrete-exec t))))
+
+(defmacro enable-execution (fnname)
+  `(table gl-fn-modes
+          ',fnname
+          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
+            (change-gl-function-mode mode :dont-concrete-exec nil))))
+
+(defmacro enable-split-ifs (fnname)
+  `(table gl-fn-modes
+          ',fnname
+          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
+            (change-gl-function-mode mode :split-ifs t))))
+
+(defmacro disable-split-ifs (fnname)
+  `(table gl-fn-modes
+          ',fnname
+          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
+            (change-gl-function-mode mode :split-ifs nil))))
 
 
 (defsection def-gl-rewrite
@@ -340,6 +359,16 @@ fgl-primitives)). </p>"
 
 (defmacro add-gl-branch-merge (rune)
   (add-gl-branch-merge-fn rune))
+
+(defun remove-gl-branch-merge-fn (rune)
+  (declare (xargs :mode :program))
+  (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune)))
+    `(table gl-branch-merge-rules
+            'gl-branch-merge-rules
+            (remove-equal ',rune (gl-branch-merge-rules world)))))
+
+(defmacro remove-gl-branch-merge (rune)
+  (remove-gl-branch-merge-fn rune))
 
 
 (defsection def-gl-branch-merge

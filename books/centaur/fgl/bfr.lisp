@@ -1200,8 +1200,40 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   ;;     :hints ('(:expand ((gl-object-alist-bfrlist x)
   ;;                        (gl-object-alist-symbolic-boolean-free x))))
   ;;     :flag gl-object-alist-bfrlist))
+  (local (defthm bfr-list-fix-of-append
+           (equal (bfr-list-fix (append a b))
+                  (append (bfr-list-fix a) (bfr-list-fix b)))
+           :hints(("Goal" :in-theory (enable bfr-list-fix)))))
+  (local (defthm bfr-list-fix-of-cons
+           (equal (bfr-list-fix (cons a b))
+                  (cons (bfr-fix a) (bfr-list-fix b)))
+           :hints(("Goal" :in-theory (enable bfr-list-fix)))))
 
+  (local (defthm true-listp-of-bfr-list-fix
+           (implies (true-listp x)
+                    (true-listp (bfr-list-fix x)))
+           :hints(("Goal" :in-theory (enable bfr-list-fix)))))
   
+  (defthm-gl-object-bfrlist-flag
+    (defthm gl-object-bfrlist-of-gl-bfr-object-fix
+      (equal (gl-object-bfrlist (gl-bfr-object-fix x))
+             (bfr-list-fix (gl-object-bfrlist x)))
+      :hints ('(:expand ((gl-bfr-object-fix x)
+                         (gl-object-bfrlist x))))
+      :flag gl-object-bfrlist)
+    (defthm gl-objectlist-bfrlist-of-gl-bfr-objectlist-fix
+      (equal (gl-objectlist-bfrlist (gl-bfr-objectlist-fix x))
+             (bfr-list-fix (gl-objectlist-bfrlist x)))
+      :hints ('(:expand ((gl-bfr-objectlist-fix x)
+                         (gl-objectlist-bfrlist x))))
+      :flag gl-objectlist-bfrlist)
+    (defthm gl-object-alist-bfrlist-of-gl-bfr-object-alist-fix
+      (equal (gl-object-alist-bfrlist (gl-bfr-object-alist-fix x))
+             (bfr-list-fix (gl-object-alist-bfrlist x)))
+      :hints ('(:expand ((gl-bfr-object-alist-fix x)
+                         (gl-object-alist-bfrlist x))))
+      :flag gl-object-alist-bfrlist))
+
   (defthm gl-object-bfrlist-of-mk-g-integer
     (implies (not (member v bits))
              (not (member v (gl-object-bfrlist (mk-g-integer bits)))))

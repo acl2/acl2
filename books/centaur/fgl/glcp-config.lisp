@@ -38,7 +38,13 @@
 (fty::defbitstruct gl-function-mode
   :parents (fgl)
   :short "Limitations on what the FGL interpreter will do to resolve a call of a given function."
-  ((dont-concrete-exec booleanp
+  ((split-ifs booleanp
+    "If true, when the function is applied to arguments represented as @('g-ite')
+     objects, the FGL interpreter will first split into cases for all combinations
+     of @('g-ite') branches.  Generally this should be set for functions that resolve
+     via rewrite rules and false for functions that resolve via definition
+     expansion.")
+   (dont-concrete-exec booleanp
     "If true, skip attempting to concretely execute the function in the case when
      all the arguments are explicit.")
    (dont-expand-def booleanp
