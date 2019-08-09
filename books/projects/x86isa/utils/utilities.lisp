@@ -148,46 +148,29 @@ functions/macros grouped in @('ruleset')s of the following form are defined
 <p>The function @('np-def-n') is used to automatically create these
 constants and functions; it also proves some associated lemmas.</p>")
 
-;; Lemmas to help in the MBE proof obligation of ntoi rules:
+;; Lemmas to help in the MBE proof obligations
+;; of the generated NTOI and ITON functions below:
 
-(local
- (encapsulate
-  ()
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
+(defruledl logext-when-unsigned-byte-p-and-sign-changes
+  (implies (and (unsigned-byte-p size x)
+                (<= (expt 2 (1- size)) x))
+           (equal (logext size x) (- x (expt 2 size))))
+  :prep-books ((include-book "arithmetic-5/top" :dir :system))
+  :enable (logext logapp loghead))
 
-  (defthm logext-is-the-same-as-ntoi-helper-1
-    (implies (and (unsigned-byte-p (1+ n) x)
-                  (<= 0 n)
-                  (< x (expt 2 n)))
-             (equal (loghead n x) x)))))
-
-(local
- (encapsulate
-  ()
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defthm logext-is-the-same-as-ntoi-helper-2
-    (implies (and (unsigned-byte-p (1+ n) x)
-                  (not (zp (1+ n)))
-                  (<= (expt 2 n) x))
-             (equal (logapp n x -1)
-                    (+ x (- (expt 2 (1+ n))))))
-    :hints (("Goal" :in-theory (e/d (logapp loghead) ()))))
-
-  (defthm logext-is-the-same-as-ntoi-helper-3
-    (implies (and (unsigned-byte-p (1+ n) x)
-                  (logbitp n x)
-                  (natp n)
-                  (< x (expt 2 n)))
-             (equal (logapp n x -1)
-                    x))
-    :hints (("Goal" :in-theory (e/d (logapp logbitp) ()))))
-
-  (defthm loghead-is-the-same-as-iton-helper
-    (implies (signed-byte-p n x)
-             (equal (loghead n x)
-                    (if (>= x 0) x (+ x (expt 2 n)))))
-    :hints (("Goal" :in-theory (enable loghead** logcons))))))
+(defruledl loghead-when-signed-byte-p-and-sign-changes
+  (implies (and (signed-byte-p size x)
+                (< x 0))
+           (equal (loghead size x) (+ (expt 2 size) x)))
+  :prep-books ((include-book "arithmetic-5/top" :dir :system))
+  :enable loghead
+  :prep-lemmas
+  ((defrule lemma
+     (implies (posp size)
+              (< (expt 2 (1- size))
+                 (expt 2 size)))
+     :rule-classes :linear
+     :prep-books ((include-book "arithmetic/top" :dir :system)))))
 
 (def-ruleset nwp-defs       nil)
 (def-ruleset nw-defs        nil)
@@ -262,7 +245,9 @@ constants and functions; it also proves some associated lemmas.</p>")
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        :guard-hints (("Goal" :in-theory (enable logext)))
+        :guard-hints (("Goal"
+                       :in-theory
+                       (enable logext-when-unsigned-byte-p-and-sign-changes)))
         ((x ,nXYp :type (unsigned-byte ,n)))
 
         (mbe :logic (logext ,n x)
@@ -276,6 +261,9 @@ constants and functions; it also proves some associated lemmas.</p>")
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
+        :guard-hints (("Goal"
+                       :in-theory
+                       (enable loghead-when-signed-byte-p-and-sign-changes)))
         ((x ,iXYp :type (signed-byte ,n)))
 
         (mbe :logic (loghead ,n x)
