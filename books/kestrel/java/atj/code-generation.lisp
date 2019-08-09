@@ -2537,6 +2537,7 @@
 (define atj-gen-test-main-jmethod ((tests$ atj-test-listp)
                                    (java-class$ stringp))
   :returns (jmethod jmethodp)
+  :short "Generate the Java main method for the test Java class."
   :long
   (xdoc::topstring
    (xdoc::p
