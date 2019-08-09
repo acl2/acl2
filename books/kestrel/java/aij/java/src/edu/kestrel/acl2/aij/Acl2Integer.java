@@ -350,4 +350,5 @@ public final class Acl2Integer extends Acl2Rational {
     public Acl2Integer getDenominator() {
         return ONE;
     }
+
 }

@@ -110,4 +110,5 @@ final class Acl2Ratio extends Acl2Rational {
     public Acl2Integer getDenominator() {
         return denominator;
     }
+
 }

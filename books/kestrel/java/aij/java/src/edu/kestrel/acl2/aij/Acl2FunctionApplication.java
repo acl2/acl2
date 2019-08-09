@@ -239,4 +239,5 @@ public final class Acl2FunctionApplication extends Acl2Term {
             throw new IllegalArgumentException("Null arguments.");
         return new Acl2FunctionApplication(function, arguments);
     }
+
 }

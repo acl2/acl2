@@ -80,4 +80,5 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      */
     @Override
     public abstract int compareTo(Acl2Term o);
+
 }

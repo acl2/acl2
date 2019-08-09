@@ -386,4 +386,5 @@ public final class Acl2String extends Acl2Value {
     public String getJavaString() {
         return this.jstring;
     }
+
 }

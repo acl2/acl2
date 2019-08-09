@@ -730,23 +730,10 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns the package name of this ACL2 symbol as a Java string.
-     */
-    public String getJavaStringPackageName() {
-        return this.packageName.getJavaString();
-    }
-
-    /**
      * Returns the name of this ACL2 symbol.
      */
     public Acl2String getName() {
         return this.name;
     }
 
-    /**
-     * Returns the name of this ACL2 symbol as a Java string.
-     */
-    public String getJavaStringName() {
-        return this.name.getJavaString();
-    }
 }

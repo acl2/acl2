@@ -346,4 +346,5 @@ public abstract class Acl2Number extends Acl2Value {
      * Returns the imaginary part of this ACL2 number.
      */
     public abstract Acl2Rational getImaginaryPart();
+
 }

@@ -118,4 +118,5 @@ final class Acl2ComplexRational extends Acl2Number {
     public Acl2Rational getImaginaryPart() {
         return this.imaginaryPart;
     }
+
 }

@@ -522,4 +522,5 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     @Override
     public abstract int compareTo(Acl2Value o);
+
 }

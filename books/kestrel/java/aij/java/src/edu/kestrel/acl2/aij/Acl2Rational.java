@@ -315,4 +315,5 @@ public abstract class Acl2Rational extends Acl2Number {
     public Acl2Rational getImaginaryPart() {
         return Acl2Integer.ZERO;
     }
+
 }

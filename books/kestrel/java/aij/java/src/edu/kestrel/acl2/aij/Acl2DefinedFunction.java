@@ -178,4 +178,5 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
         definiens.setVariableIndices();
         this.definiens = definiens;
     }
+
 }

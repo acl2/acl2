@@ -128,4 +128,5 @@ public final class Acl2QuotedConstant extends Acl2Term {
         else
             return new Acl2QuotedConstant(value);
     }
+
 }
