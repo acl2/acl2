@@ -395,7 +395,9 @@
      builds the @(tsee cdr),
      sets another local variable to it,
      and returns an expression that builds the pair
-     from the two local variables."))
+     from the two local variables.")
+   (xdoc::@def "atj-gen-avalue")
+   (xdoc::@def "atj-gen-aconspair"))
 
   (define atj-gen-aconspair ((aconspair consp) (jvar-value-index posp))
     :returns (mv (jblock jblockp)
@@ -525,6 +527,7 @@
    "The generated code builds an array of the formals as symbols.")
   (jexpr-newarray (jtype-class "Acl2Symbol")
                   (atj-gen-asymbols aformals)))
+
 (defines atj-gen-deep-aterms+alambdas
   :short "Generate Java code to build
           deeply embedded ACL2 terms and lambda expressions."
