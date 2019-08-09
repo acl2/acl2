@@ -131,7 +131,7 @@
       and other built-in ACL2 functions could be represented like that as well
       in the future.
       Each native function has its own unique Java class and instance:
-      its application to values is now handled via Java's dynamic dispath
+      its application to values is now handled via Java's dynamic dispatch
       rather than by cases analysis, thus optimizing evaluation.
       Each defined function has its own unique instance as well
       (so, all the ACL2 named functions are interned),
