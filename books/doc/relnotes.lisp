@@ -393,6 +393,10 @@
      For instance, the method for @(tsee equal)
      now returns @('Acl2Symbol').")
 
+   (xdoc::p
+    "Some of the native Java implementations of the ACL2 primitive functions
+     have been optimized.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "list-utilities" "Kestrel List Utilities"))
