@@ -118,7 +118,7 @@ public abstract class Acl2Rational extends Acl2Number {
      */
     @Override
     Acl2Number multiplyValue(Acl2Value other) {
-        return other.addRational(this);
+        return other.multiplyRational(this);
     }
 
     /**
