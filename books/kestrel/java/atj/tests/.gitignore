@@ -6,3 +6,5 @@ FibDeep.java
 FibShallow.java
 ABNFDeep.java
 ABNFShallow.java
+NativeDeep.java
+NativeDeepTests.java
