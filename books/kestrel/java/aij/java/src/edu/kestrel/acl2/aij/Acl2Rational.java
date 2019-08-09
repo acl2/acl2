@@ -106,10 +106,11 @@ public abstract class Acl2Rational extends Acl2Number {
      */
     @Override
     Acl2Rational addInteger(Acl2Integer other) {
-        // a/b+c is (a*c)/d:
+        // a/b+c is (a+b*c)/b:
         Acl2Integer a = this.numerator();
         Acl2Integer b = this.denominator();
-        return Acl2Rational.make(a.multiplyInteger(other), b);
+        Acl2Integer c = other;
+        return Acl2Rational.make(a.addInteger(b.multiplyInteger(c)), b);
     }
 
     /**
