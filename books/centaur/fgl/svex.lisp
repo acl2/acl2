@@ -277,6 +277,9 @@
                             (if test lower (sv::4vec->lower x))))))
 
 
+(enable-split-ifs sv::4vec->upper$inline)
+(enable-split-ifs sv::4vec->lower$inline)
+
 (defmacro svdecomp-hints (&key hyp
                                g-bindings
                                enable

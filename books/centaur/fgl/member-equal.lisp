@@ -32,55 +32,114 @@
 
 (include-book "def-gl-rewrite")
 (include-book "glcp-config")
+(include-book "syntax-bind")
+(include-book "centaur/misc/starlogic" :dir :system)
+(local (in-theory (enable if!)))
 
 ;; This set of rules deals with a common problem in specs where something that
 ;; returns a non-Boolean value is typically used in a Boolean context -- think
 ;; (member-equal x lst).  In FGL, (member-equal x lst) is generally something
 ;; that needs to be represented using if-then-elses, which are problematic.  So
 ;; we produce an alternate representation here.  We first introduce a function
-;; maybe-value that separately represents the Boolean equivalent and the full
-;; data of an object.  -- its definition is just (and true (or val t)).  So it
-;; is nonnil iff true is nonnil, but its full value is val if true and val are
-;; both nonnil.
+;; maybe-list that separately represents the Boolean saying whether it's a cons
+;; or nil, and the actual object -- its definition is just (and consp (if
+;; (consp val) val '(t))).  So it is consp iff consp is nonnil, and a cons
+;; otherwise.
 
-;; We use maybe-value to expose the Boolean equivalent of member-equal,
+;; We use maybe-list to expose the Boolean equivalent of member-equal,
 ;; memberp-equal, while hiding away the real value in an equivalent call of
 ;; hide-member-equal, which we won't allow to expand or prove any rules about.
 
+;; Using maybe-list instead of maybe-true allows us to also support use of the
+;; idiom (consp (member ...)).  There are some complications regarding if
+;; branch merging with using maybe-list instead of maybe-true, so in some cases
+;; we revert to using maybe-true.
 
-;; This function is just IF, but we'll turn off its definition.
-(defun fgl-hidden-if (test then else)
-  (if test then else))
 
-(disable-definition fgl-hidden-if)
+;; ;; This function is just IF, but we'll turn off its definition.
+;; (defun fgl-hidden-if (test then else)
+;;   (if test then else))
+
+;; (disable-definition fgl-hidden-if)
 
 ;; This function represents a value that is likely to be just treated as
-;; Boolean, but may not actually be T when it is non-NIL.  The TRUE input
-;; determines its truth value and VAL determines its actual form when non-NIL.
+;; Boolean but is actually either a cons or NIL.  The CONSP input determines
+;; whether it is consp or nil, and VAL determines its actual form when non-NIL.
 ;; We use this function when we think we won't need the actual value of val,
-;; just its truth value.
-(defun maybe-value (true val)
-  (and true
-       (or val t)))
+;; just whether it is consp or nil.
+(defun maybe-list (consp val)
+  (and consp
+       (if (consp val)
+           val
+         '(t))))
 
-(disable-definition maybe-value)
+(disable-definition maybe-list)
 
-;; Under IFF, maybe-value is just its truth value.
-(def-gl-rewrite maybe-value-under-iff
-  (iff (maybe-value true val)
+;; Under IFF, maybe-list is just its truth value.
+(def-gl-rewrite maybe-list-under-iff
+  (iff (maybe-list true val)
        true))
 
+;; Also under CONSP.
+(def-gl-rewrite consp-of-maybe-list
+  (equal (consp (maybe-list true val))
+         (and true t)))
 
-;; To merge a maybe-value with some other object, merge with the test under an
-;; IFF context and then merge the value using fgl-hidden-if.
-(def-gl-branch-merge maybe-value-merge
-  (equal (if test (maybe-value true val) else)
-         (maybe-value (if test true (and else t)) (fgl-hidden-if test val else))))
+(defun maybe-consp (x)
+  (or (consp x) (not x)))
 
-;; We probably shouldn't need to compare maybe-value with equal, but this might
+(disable-definition maybe-consp)
+
+(def-gl-rewrite maybe-consp-of-cons
+  (maybe-consp (cons x y)))
+
+(def-gl-rewrite maybe-consp-of-maybe-list
+  (maybe-consp (maybe-list consp val)))
+
+
+(defun maybe-true (truep val)
+  (and truep
+       (or val t)))
+
+(disable-definition maybe-true)
+
+(def-gl-rewrite maybe-true-under-iff
+  (iff (maybe-true truep val)
+       truep))
+
+;; This supports cases like
+;; (or ... (member k x) (member k y))
+;; where the ... may or may not also be member checks.
+;; When they are member checks, we support keeping the aggregate in maybe-list
+;; form so that we can support both simple Boolean checks and consp checks of
+;; the OR.  When they are not member checks, we revert to maybe-true form,
+;; which will still support Boolean checks but not consp checks.
+(def-gl-branch-merge maybe-list-merge
+  (equal (if test (maybe-list true val) else)
+         (b* ((maybe-consp (maybe-consp else))
+              (maybe-consp-true (syntax-bind maybe-consp-true (eq maybe-consp t))))
+           (if (and* maybe-consp-true maybe-consp)
+               (maybe-list (if test true (consp else)) (if! test val else))
+             (maybe-true (if test true (and else t))
+                         (if! test (if! (consp val) val '(t)) else))))))
+
+(def-gl-branch-merge maybe-true-merge
+  (equal (if test (maybe-true true val) else)
+         (maybe-true (if test true (and else t))
+                     (if! test val else))))
+
+;; We probably shouldn't need to compare maybe-list with equal, but this might
 ;; succeed if we end up needing to.
-(def-gl-rewrite equal-of-maybe-value
-  (equal (equal (maybe-value true val) x)
+(def-gl-rewrite equal-of-maybe-list
+  (equal (equal (maybe-list true val) x)
+         (if true
+             (if (consp val)
+                 (equal x val)
+               (equal x '(t)))
+           (not x))))
+
+(def-gl-rewrite equal-of-maybe-true
+  (equal (equal (maybe-true true val) x)
          (if true
              (if val
                  (equal x val)
@@ -88,7 +147,7 @@
            (not x))))
  
          
-;; We'll represent member-equal using maybe-value.  Memberp-equal gives its
+;; We'll represent member-equal using maybe-list.  Memberp-equal gives its
 ;; truth value:
 (defun memberp-equal (x lst)
   (if (atom lst)
@@ -104,7 +163,7 @@
   (equal (memberp-equal x nil) nil))
 
 ;; We introduce a version of member-equal about which we won't prove any rules,
-;; so as to hide it away in the value of the maybe-value:
+;; so as to hide it away in the value of the maybe-list:
 (defun hide-member-equal (x lst)
   (member-equal x lst))
 
@@ -116,16 +175,14 @@
 (defthm memberp-equal-iff-member-equal
   (iff (memberp-equal x lst) (member-equal x lst)))
 
+(def-gl-rewrite maybe-consp-of-hide-member-equal
+  (maybe-consp (hide-member-equal x lst)))
+
 ;; Now when we see member-equal, we'll hide its full value away using
 ;; hide-member-equal and expose its Boolean value (memberp-equal) through
-;; maybe-value.
-(def-gl-rewrite member-equal-to-maybe-value
+;; maybe-list.
+(def-gl-rewrite member-equal-to-maybe-list
   (equal (member-equal x lst)
-         (maybe-value (memberp-equal x lst) (hide-member-equal x lst))))
+         (maybe-list (memberp-equal x lst) (hide-member-equal x lst))))
 
-;; This makes our strategy work for (consp (member-equal x lst)) calls, though
-;; this is kind of a roundabout way to get it.
-(def-gl-rewrite consp-of-member-equal-result
-  (implies (equal true (memberp-equal x lst))
-           (equal (consp (maybe-value true (hide-member-equal x lst)))
-                  true)))
+
