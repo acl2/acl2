@@ -90,7 +90,7 @@
                 (declare (xargs :mode :program))
                 (declare (ignorable state))
                 (if (atom x)
-                    acc
+                    (reverse acc)
                   (filter-matching-topics
                    (cdr x) state
                    (let* ((,x (car x))
