@@ -82,6 +82,7 @@ public final class Acl2String extends Acl2Value {
      */
     static Acl2String coerceFromList(Acl2Value list) {
         int len = 0;
+        Acl2Value savedList = list;
         for (;
              list instanceof Acl2ConsPair;
              list = ((Acl2ConsPair) list).getCdr()) {
@@ -90,6 +91,7 @@ public final class Acl2String extends Acl2Value {
             else
                 ++len;
         }
+        list = savedList;
         char[] jcharacters = new char[len];
         for (int i = 0; i < len; ++i) {
             Acl2Value element = list.car();
