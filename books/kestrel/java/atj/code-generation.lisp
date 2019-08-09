@@ -2337,6 +2337,26 @@
                  :superinterfaces nil
                  :body body-jclass)))
 
+(define atj-gen-test-failures-jfield ()
+  :returns (jfield jfieldp)
+  :short "Generate the Java field that keeps track of failures
+          in the test Java class."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a private static boolean field that is initially false,
+     and gets set if and when any test fails (see below).")
+   (xdoc::p
+    "This is generated only if the @(':tests') input is not @('nil')."))
+  (make-jfield :access (jaccess-private)
+               :static? t
+               :final? nil
+               :transient? nil
+               :volatile? nil
+               :type (jtype-boolean)
+               :name "failures"
+               :init (jliteral-boolean nil)))
+
 (define atj-gen-test-jmethod-name ((test-name stringp))
   :returns (jmethod-name stringp)
   :short "Name of the Java method to run one of the specified tests."
@@ -2402,7 +2422,8 @@
      builds the result value of the test using AIJ,
      calls (the Java representation of) the function on them,
      compares the obtained result value with the test's result value,
-     and prints a message of success or failure.")
+     and prints a message of success or failure.
+     It also sets the failures field to true if the test fails.")
    (xdoc::p
     "We use an auxiliary recursive function to build the argument values.
      We initialize the local variable index for values to 1."))
@@ -2452,12 +2473,17 @@
                             (jexpr-imethod (jexpr-name "System.out")
                                            "println"
                                            (list (atj-gen-jstring "FAIL")))))
+       (set-fail-jstatem (jstatem-expr
+                          (jexpr-binary (jbinop-asg)
+                                        (jexpr-name "failures")
+                                        (jexpr-literal (jliteral-boolean t)))))
        (if-jstatem (jstatem-ifelse
                     (jexpr-imethod (jexpr-name *atj-jvar-aresult*)
                                    "equals"
                                    (list (jexpr-name *atj-jvar-jresult*)))
                     (list print-pass-jstatem)
-                    (list print-fail-jstatem)))
+                    (list set-fail-jstatem
+                          print-fail-jstatem)))
        (jmethod-body (append (list print-jstatem)
                              (list (jstatem-locvar function-jlocvar))
                              aargs-jblock
@@ -2544,7 +2570,8 @@
     "This is generated only if the @(':tests') input is not @('nil').")
    (xdoc::p
     "This method initializes the ACL2 environment
-     and then calls each test method."))
+     and then calls each test method.
+     It also prints a message saying whether all tests passed or not."))
   (b* ((jmethod-param (make-jparam :final? nil
                                    :type (jtype-array (jtype-class "String"))
                                    :name "args"))
@@ -2552,8 +2579,22 @@
                                                   "initialize"
                                                   nil)))
        (tests-jblock (atj-gen-run-tests tests$))
-       (jmethod-body (cons init-jstatem
-                           tests-jblock)))
+       (print-all-pass-jstatem
+        (jstatem-expr
+         (jexpr-imethod (jexpr-name "System.out")
+                        "println"
+                        (list (atj-gen-jstring "All tests passed.")))))
+       (print-some-fail-jstatem
+        (jstatem-expr
+         (jexpr-imethod (jexpr-name "System.out")
+                        "println"
+                        (list (atj-gen-jstring "Some tests failed.")))))
+       (if-jstatem (jstatem-ifelse (jexpr-name "failures")
+                                   (list print-some-fail-jstatem)
+                                   (list print-all-pass-jstatem)))
+       (jmethod-body (append (list init-jstatem)
+                             tests-jblock
+                             (list if-jstatem))))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -2583,8 +2624,12 @@
     The code that we generate satisfies this requirement."))
   (b* (((run-when verbose$)
         (cw "~%Generating Java code for the tests:~%"))
+       (failures-jfield (atj-gen-test-failures-jfield))
        (test-jmethods (atj-gen-test-jmethods tests$ java-class$ verbose$))
-       (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$)))
+       (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
+       (body-jclass (append (list (jcmember-field failures-jfield))
+                            (jmethods-to-jcmembers test-jmethods)
+                            (list (jcmember-method main-jmethod)))))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? nil
@@ -2593,8 +2638,7 @@
                  :name (str::cat java-class$ "Tests")
                  :superclass? nil
                  :superinterfaces nil
-                 :body (append (jmethods-to-jcmembers test-jmethods)
-                               (list (jcmember-method main-jmethod))))))
+                 :body body-jclass)))
 
 (define atj-gen-jcunit ((deep$ booleanp)
                         (guards$ booleanp)
