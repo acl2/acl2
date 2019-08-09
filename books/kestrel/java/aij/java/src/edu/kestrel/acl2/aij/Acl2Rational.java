@@ -183,7 +183,70 @@ public abstract class Acl2Rational extends Acl2Number {
         return this;
     }
 
+    /**
+     * Compares this ACL2 rational with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this rational is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        return - o.compareToRational(this);
+    }
+
+    /**
+     * Compares this ACL2 rational with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this rational is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        // a/b is less than or equal to or greater than c/d iff
+        // a*d is less than or equal to or greater than c*b,
+        // since b and d are always positive:
+        Acl2Integer thisMultiplied =
+                this.numerator().multiplyInteger(o.denominator());
+        Acl2Integer oMultiplied =
+                o.numerator().multiplyInteger(this.denominator());
+        return thisMultiplied.compareToInteger(oMultiplied);
+    }
+
+    /**
+     * Compares this ACL2 rational with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        // a/b is less than or equal to or greater than c iff
+        // a is less than or equal to or greater than c*b,
+        // since b is always positive:
+        Acl2Integer cb = o.multiplyInteger(this.denominator());
+        Acl2Integer a = this.numerator();
+        return a.compareToInteger(cb);
+    }
+
     //////////////////////////////////////// public members:
+
+    /**
+     * Compares this ACL2 rational with the argument ACL2 value for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    @Override
+    public int compareTo(Acl2Value o) {
+        if (o == null)
+            throw new NullPointerException();
+        return - o.compareToRational(this);
+    }
 
     /**
      * Returns an ACL2 rational whose numeric value is

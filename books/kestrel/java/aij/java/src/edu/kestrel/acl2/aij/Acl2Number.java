@@ -195,7 +195,128 @@ public abstract class Acl2Number extends Acl2Value {
         return this;
     }
 
+    /**
+     * Compares this ACL2 number with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToCharacter(Acl2Character o) {
+        // numbers are less than characters:
+        return -1;
+    }
+
+    /**
+     * Compares this ACL2 number with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToString(Acl2String o) {
+        // numbers are less than strings:
+        return -1;
+    }
+
+    /**
+     * Compares this ACL2 number with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToSymbol(Acl2Symbol o) {
+        // numbers are less than symbols:
+        return -1;
+    }
+
+    /**
+     * Compares this ACL2 number with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        // compare real and imaginary parts lexicographically:
+        int realCmp = this.realpart().compareToRational(o.realpart());
+        if (realCmp != 0)
+            return realCmp;
+        else
+            return this.imagpart().compareToRational(o.imagpart());
+    }
+
+    /**
+     * Compares this ACL2 number with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        // compare real and imaginary parts lexicographically:
+        int realCmp = this.realpart().compareToRational(o.realpart());
+        if (realCmp != 0)
+            return realCmp;
+        else
+            // the imaginary part is always 0 for the rational:
+            return this.imagpart().compareToInteger(Acl2Integer.ZERO);
+    }
+
+    /**
+     * Compares this ACL2 number with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        // compare real and imaginary parts lexicographically:
+        int realCmp = this.realpart().compareToRational(o.realpart());
+        if (realCmp != 0)
+            return realCmp;
+        else
+            // the imaginary part is always 0 for the integer:
+            return this.imagpart().compareToInteger(Acl2Integer.ZERO);
+    }
+
+    /**
+     * Compares this ACL2 number with
+     * the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToConsPair(Acl2ConsPair o) {
+        // numbers are less than cons pairs:
+        return -1;
+    }
+
     //////////////////////////////////////// public members:
+
+    /**
+     * Compares this ACL2 number with the argument ACL2 value for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    @Override
+    public int compareTo(Acl2Value o) {
+        if (o == null)
+            throw new NullPointerException();
+        return -o.compareToNumber(this);
+    }
 
     /**
      * Returns an ACL2 number with the given real and imaginary parts.

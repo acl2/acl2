@@ -429,6 +429,77 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
         return Acl2Integer.ZERO;
     }
 
+    /**
+     * Compares this ACL2 value with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToCharacter(Acl2Character o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToString(Acl2String o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToSymbol(Acl2Symbol o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToNumber(Acl2Number o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToRational(Acl2Rational o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToInteger(Acl2Integer o);
+
+    /**
+     * Compares this ACL2 value with
+     * the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToConsPair(Acl2ConsPair o);
+
     //////////////////////////////////////// public members:
 
     /**

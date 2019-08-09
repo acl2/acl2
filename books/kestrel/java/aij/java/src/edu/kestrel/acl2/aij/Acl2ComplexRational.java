@@ -82,37 +82,6 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
-     * Compares this ACL2 complex rational
-     * with the argument ACL2 value for order.
-     * This is consistent with the {@code lexorder} ACL2 function.
-     *
-     * @return a negative integer, zero, or a positive integer as
-     * this complex rational is
-     * less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
-     */
-    @Override
-    public int compareTo(Acl2Value o) {
-        if (o == null)
-            throw new NullPointerException();
-        if (o instanceof Acl2Rational)
-            // complex rationals are greater than rationals:
-            return 1;
-        if (o instanceof Acl2ComplexRational) {
-            // compare real and imaginary parts lexicographically:
-            Acl2ComplexRational that = (Acl2ComplexRational) o;
-            int realCmp = this.realPart.compareTo(that.realPart);
-            if (realCmp != 0)
-                return realCmp;
-            else
-                return this.imaginaryPart.compareTo(that.imaginaryPart);
-        }
-        // complex rationals are less than
-        // characters, strings, symbols, and cons pairs:
-        return -1;
-    }
-
-    /**
      * Returns a printable representation of this ACL2 complex rational.
      * We return a Java string that
      * conforms to ACL2's notation for complex rationals.

@@ -198,6 +198,98 @@ public final class Acl2String extends Acl2Value {
         return result;
     }
 
+    /**
+     * Compares this ACL2 string with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToCharacter(Acl2Character o) {
+        // strings are greater than characters:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToString(Acl2String o) {
+        // compare underlying Java strings:
+        return this.jstring.compareTo(o.jstring);
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToSymbol(Acl2Symbol o) {
+        // strings are less than symbols:
+        return -1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        // strings are greater than numbers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        // strings are greater than rationals:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        // strings are greater than integers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with
+     * the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToConsPair(Acl2ConsPair o) {
+        // strings are less than cons pairs:
+        return -1;
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -223,15 +315,7 @@ public final class Acl2String extends Acl2Value {
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        if (o instanceof Acl2Number || o instanceof Acl2Character)
-            // strings are greater than numbers and characters:
-            return 1;
-        if (o instanceof Acl2String) {
-            Acl2String that = (Acl2String) o;
-            return this.jstring.compareTo(that.jstring);
-        }
-        // strings are less than symbols and cons pairs:
-        return -1;
+        return - o.compareToString(this);
     }
 
     /**

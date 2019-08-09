@@ -185,6 +185,42 @@ public final class Acl2Integer extends Acl2Rational {
             return Acl2Character.CODE_0;
     }
 
+    /**
+     * Compares this ACL2 integer with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this integer is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        return - o.compareToInteger(this);
+    }
+
+    /**
+     * Compares this ACL2 integer with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this integer is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        return - o.compareToInteger(this);
+    }
+
+    /**
+     * Compares this ACL2 integer with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this integer is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        return this.numericValue.compareTo(o.numericValue);
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -220,22 +256,7 @@ public final class Acl2Integer extends Acl2Rational {
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        if (o instanceof Acl2Integer)
-            return this.numericValue.compareTo
-                    (((Acl2Integer) o).numericValue);
-        if (o instanceof Acl2Ratio) {
-            // use Acl2Ratio.compareTo() and flip result:
-            int cmp = o.compareTo(this);
-            if (cmp < 0)
-                return 1; // in case cmp is Integer.MIN_VALUE
-            else if (cmp > 0)
-                return -1;
-            else
-                return 0;
-        }
-        // integers are less than
-        // complex rationals, characters, strings, symbols, and cons pairs:
-        return -1;
+        return - o.compareToInteger(this);
     }
 
     /**

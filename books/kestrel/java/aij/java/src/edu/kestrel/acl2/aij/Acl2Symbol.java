@@ -137,6 +137,102 @@ public final class Acl2Symbol extends Acl2Value {
         return name;
     }
 
+    /**
+     * Compares this ACL2 symbol with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToCharacter(Acl2Character o) {
+        // symbols are greater than characters:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 symbol with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToString(Acl2String o) {
+        // symbols are greater than strings:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 symbol with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToSymbol(Acl2Symbol o) {
+        // compare name and package names lexicographically:
+        int nameCmp = this.name.compareTo(o.name);
+        if (nameCmp != 0)
+            return nameCmp;
+        else
+            return this.packageName.compareTo(o.packageName);
+    }
+
+    /**
+     * Compares this ACL2 symbol with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        // symbols are greater than numbers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 symbol with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        // symbols are greater than rationals:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 symbol with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        // symbols are greater than integers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 symbol with
+     * the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToConsPair(Acl2ConsPair o) {
+        // symbols are less than cons pairs:
+        return -1;
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -161,22 +257,7 @@ public final class Acl2Symbol extends Acl2Value {
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        if (o instanceof Acl2Number ||
-                o instanceof Acl2Character ||
-                o instanceof Acl2String)
-            // symbols are greater than numbers, characters, and strings:
-            return 1;
-        if (o instanceof Acl2Symbol) {
-            // compare name and package names lexicographically:
-            Acl2Symbol that = (Acl2Symbol) o;
-            int nameCmp = this.name.compareTo(that.name);
-            if (nameCmp != 0)
-                return nameCmp;
-            else
-                return this.packageName.compareTo(that.packageName);
-        }
-        // symbols are less than cons pairs:
-        return -1;
+        return - o.compareToSymbol(this);
     }
 
     /**

@@ -61,6 +61,107 @@ public final class Acl2ConsPair extends Acl2Value {
         return this.cdr;
     }
 
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToCharacter(Acl2Character o) {
+        // cons pairs are greater than characters:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToString(Acl2String o) {
+        // cons pairs are greater than strings:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToSymbol(Acl2Symbol o) {
+        // cons pairs are greater than symbols:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        // cons pairs are greater than numbers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        // cons pairs are greater than rationals:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        // cons pairs are greater than integers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 {@code cons} pair
+     * with the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this cons pair is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToConsPair(Acl2ConsPair o) {
+        // the two components are compared lexicographically:
+        int carCmp = this.car.compareTo(o.car);
+        if (carCmp != 0)
+            return carCmp;
+        return this.cdr.compareTo(o.cdr);
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -92,23 +193,16 @@ public final class Acl2ConsPair extends Acl2Value {
      * with the argument ACL2 value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this {@code cons} pair is less than, equal to, or greater than
-     * the argument
+     * @return a negative integer, zero, or a positive integer
+     * as this {@code cons} pair is
+     * less than, equal to, or greater than the argument
      * @throws NullPointerException if the argument is null
      */
     @Override
     public int compareTo(Acl2Value o) {
-        if (o instanceof Acl2ConsPair) {
-            // the two components are compared lexicographically:
-            Acl2ConsPair that = (Acl2ConsPair) o;
-            int carCmp = this.car.compareTo(that.car);
-            if (carCmp != 0)
-                return carCmp;
-            return this.cdr.compareTo(that.cdr);
-        }
-        // cons pairs are greater than atoms:
-        return 1;
+        if (o == null)
+            throw new NullPointerException();
+        return - o.compareToConsPair(this);
     }
 
     /**
