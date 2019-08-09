@@ -156,18 +156,16 @@ public final class Acl2String extends Acl2Value {
         } catch (IllegalArgumentException e) {
             throw new Acl2EvaluationException(null, e);
         }
-        if (Acl2Environment.hasPackage(packageName)) {
-            List<Acl2Symbol> imported =
-                    Acl2Environment.getImportedList(packageName);
-            int len = imported.size();
-            Acl2Value result = Acl2Symbol.NIL;
-            for (int i = len - 1; i >= 0; --i)
-                result = Acl2ConsPair.make(imported.get(i), result);
-            return result;
-        } else {
+        Acl2Package packag = Acl2Package.getDefined(packageName);
+        if (packag == null)
             throw new Acl2EvaluationException
                     ("Undefined package: \"" + packageName + "\".");
-        }
+        List<Acl2Symbol> imports = packag.getImports();
+        int len = imports.size();
+        Acl2Value result = Acl2Symbol.NIL;
+        for (int i = len - 1; i >= 0; --i)
+            result = Acl2ConsPair.make(imports.get(i), result);
+        return result;
     }
 
     /**

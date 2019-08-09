@@ -1643,8 +1643,8 @@
        (imports-jblock (atj-gen-apkg-jmethod-aux aimports))
        (apkg-name-jexpr (atj-gen-apkg-name apkg))
        (defpkg-jstatem (jstatem-expr
-                        (jexpr-smethod (jtype-class "Acl2Environment")
-                                       "addPackageDef"
+                        (jexpr-smethod (jtype-class "Acl2Package")
+                                       "define"
                                        (list apkg-name-jexpr
                                              (jexpr-name
                                               *atj-jvar-aimports*)))))
