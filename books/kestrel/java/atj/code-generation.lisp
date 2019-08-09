@@ -922,7 +922,6 @@
         "Acl2ComplexRational"
         "Acl2ConsPair"
         "Acl2DefinedFunction"
-        "Acl2Environment"
         "Acl2EvaluationException"
         "Acl2Function"
         "Acl2FunctionApplication"
@@ -931,6 +930,7 @@
         "Acl2NamedFunction"
         "Acl2NativeFunction"
         "Acl2Number"
+        "Acl2Package"
         "Acl2PackageName"
         "Acl2QuotedConstant"
         "Acl2Ratio"
@@ -1582,12 +1582,11 @@
 
 (define atj-gen-apkg-jmethod-name ((apkg stringp))
   :returns (jmethod-name stringp)
-  :short "Name of the Java method
-          that adds an ACL2 package definition to the environment."
+  :short "Name of the Java method that adds an ACL2 package definition."
   :long
   (xdoc::topstring-p
-   "We generate a private static method for each ACL2 package definition
-    to add to the Java representation of the ACL2 environment.
+   "We generate a private static method
+    for each ACL2 package definition to build.
     This function generates the name of this method,
     which should be distinct from all the other methods
     generated for the same class.")
@@ -1614,8 +1613,7 @@
 
 (define atj-gen-apkg-jmethod ((apkg stringp) (verbose$ booleanp))
   :returns (jmethod jmethodp)
-  :short "Generate a Java method
-          that adds an ACL2 package definition to the environment."
+  :short "Generate a Java method that adds an ACL2 package definition."
   :long
   (xdoc::topstring-p
    "This is a private static method
@@ -1626,7 +1624,7 @@
     initialized with an empty Java list
     whose capacity is the length of the import list.
     After all the assignments, we generate a method call
-    to add the package to the environment with the calculated import list.")
+    to add the ACL2 package definition with the calculated import list.")
   (b* (((run-when verbose$)
         (cw "  ~s0~%" apkg))
        (jmethod-name (atj-gen-apkg-jmethod-name apkg))
@@ -1680,8 +1678,7 @@
 
 (define atj-gen-apkg-jmethods ((apkgs string-listp) (verbose$ booleanp))
   :returns (jmethods jmethod-listp)
-  :short "Generate all the Java methods
-          that add the ACL2 package definitions to the environment."
+  :short "Generate all the Java methods that add the ACL2 package definitions."
   (if (endp apkgs)
       nil
     (b* ((first-jmethod (atj-gen-apkg-jmethod (car apkgs) verbose$))
@@ -1711,8 +1708,8 @@
   (xdoc::topstring-p
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
-  (jstatem-expr (jexpr-smethod (jtype-class "Acl2Environment")
-                               "setPackageWitnessName"
+  (jstatem-expr (jexpr-smethod (jtype-class "Acl2Package")
+                               "setWitnessName"
                                (list (atj-gen-jstring *pkg-witness-name*)))))
 
 (define atj-gen-deep-afndef-jmethod-name ((afn symbolp))
