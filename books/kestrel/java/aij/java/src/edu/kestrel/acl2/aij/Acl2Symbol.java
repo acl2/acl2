@@ -60,8 +60,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This nested map structure is extended in three circumstances:
      * <ol>
      * <li>
-     * When {@link Acl2Environment#addPackageDef(Acl2PackageName, List)}
-     * is called,
+     * When {@link Acl2Package#define(Acl2PackageName, List)} is called,
      * i.e. when a package definition is added to the ACL2 environment.
      * In this case, the nested map structure is extended
      * according to the package's import list
@@ -98,8 +97,7 @@ public final class Acl2Symbol extends Acl2Value {
 
     /**
      * Adds information about all the ACL2 symbols imported by an ACL2 package.
-     * This is called by
-     * {@link Acl2Environment#addPackageDef(Acl2PackageName, List)}
+     * This is called by {@link Acl2Package#define(Acl2PackageName, List)}
      * when a new package definition is added to the environment.
      */
     static void addPackageImports(Acl2PackageName packageName,

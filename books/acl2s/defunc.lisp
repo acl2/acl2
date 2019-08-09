@@ -859,7 +859,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (verify-guards-ev (make-verify-guards-ev name kwd-alist))
          (timeout-secs (defdata::get1 :timeout kwd-alist))
          (test-subgoals-p (eq t (defdata::get1 :testing-enabled kwd-alist))))
-      `(with-prover-time-limit
+      `(with-time-limit
         ,timeout-secs
         (encapsulate
          nil
@@ -874,9 +874,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (make-event (er-progn
                        (assign defunc-failure-reason :termination)
                        (value '(value-triple :invisible)))))
-         ;;(with-prover-time-limit ,timeout-secs ,defun/ng)
+         ;;(with-time-limit ,timeout-secs ,defun/ng)
          (with-output :on (summary) :summary (acl2::form acl2::time)
-                      (with-prover-time-limit ,(* 4/5 timeout-secs) ,defun/ng))
+                      (with-time-limit ,(* 4/5 timeout-secs) ,defun/ng))
 
          (with-output
           :off :all
@@ -888,7 +888,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          ,@(and contract-defthm ;(list contract-defthm))
                 `((with-output
                    :on (summary) :summary (acl2::form acl2::time)
-                   (with-prover-time-limit ,(* 1/3 timeout-secs) ,contract-defthm))))
+                   (with-time-limit ,(* 1/3 timeout-secs) ,contract-defthm))))
          ,@(and test-subgoals-p '((local (acl2s-defaults :set testing-enabled nil))))
 
          (with-output
@@ -897,7 +897,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                 (value '(value-triple :invisible)))))
          (with-output
           :on (summary) :summary (acl2::form acl2::time)
-          (with-prover-time-limit ,(* 1/3 timeout-secs) ,verify-guards-ev))
+          (with-time-limit ,(* 1/3 timeout-secs) ,verify-guards-ev))
          
          (with-output
           :off :all
@@ -948,7 +948,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       (value nil)
     (b* (((mv erp & state)
           ;; test?-fn will use a timeout and if there is a timeout, erp=nil
-          (with-prover-time-limit
+          (with-time-limit
            timeout
            (test?-fn (car guards) hints override-defaults state)))
          (vl  (acl2s-defaults :get verbosity-level))
@@ -1028,7 +1028,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  ((er &) (with-output
                           :off (warning warning! observation prove
                                 proof-builder event history summary proof-tree)
-                          (with-prover-time-limit
+                          (with-time-limit
                            ,testing-timeout
                            (test-guards guard-ob
                                         ',hints
@@ -1049,7 +1049,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (with-output
              :off (warning warning! observation prove proof-builder event history
                            summary proof-tree)
-             (with-prover-time-limit
+             (with-time-limit
               ,testing-timeout
               (test? (implies ,ic ,oc) :print-cgen-summary nil :num-witnesses 0)))
              (value '(value-triple :invisible))))

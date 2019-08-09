@@ -73,9 +73,10 @@ data last modified: [2017-06-22 Thu]
                  'acl2::integerp
                'acl2::rationalp)))
   (case-match rexp
-    ((lo lo-rel-sym '_ hi-rel-sym hi) `((,dom ,x)
-                                        ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
-                                        ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
+    ((lo lo-rel-sym '_ hi-rel-sym hi)
+     `((,dom ,x)
+       ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
+       ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
 
 
 ;(defun range-pred-I (x s) `(acl2::in-tau-intervalp ,x ',(get-tau-int (cadr s) (third s))))
@@ -164,11 +165,12 @@ data last modified: [2017-06-22 Thu]
       (1 :eq ,mid2)
       (10 :uniform ,small-low ,small-hi)
       (19 :geometric :around ,mid1)
-      (45 :uniform ,min ,max)
+      (47 :uniform ,min ,max)
       (10 :geometric :leq ,max)
       (10 :geometric :geq ,min)
-      (1 :geometric :geq ,(1+ max))
-      (1 :geometric :leq ,(1- min)))))
+;     (1 :geometric :geq ,(1+ max))
+;     (1 :geometric :leq ,(1- min))
+      )))
 
 #|
 
@@ -217,10 +219,11 @@ data last modified: [2017-06-22 Thu]
       (1 :geometric :around ,mid1)
       (22 :uniform ,min ,max)
       (1 :geometric :leq ,max)
-      (30 :uniform ,small-low ,small-hi)
+      (32 :uniform ,small-low ,small-hi)
       (40 :geometric :geq ,min)
-      (1 :geometric :geq ,(1+ max))
-      (1 :geometric :leq ,(1- min)))))
+;      (1 :geometric :geq ,(1+ max))
+;      (1 :geometric :leq ,(1- min))
+      )))
 
 (defun sampling-dist-hi (min max mid1 mid2)
   (b* ((small-low (if (< min -100) -100 min))
@@ -231,11 +234,12 @@ data last modified: [2017-06-22 Thu]
       (1 :eq ,mid2)
       (1 :geometric :around ,mid1)
       (22 :uniform ,min ,max)
-      (30 :uniform ,small-low ,small-hi)
+      (32 :uniform ,small-low ,small-hi)
       (40 :geometric :leq ,max)
       (1 :geometric :geq ,min)
-      (1 :geometric :geq ,(1+ max))
-      (1 :geometric :leq ,(1- min)))))
+;      (1 :geometric :geq ,(1+ max))
+;      (1 :geometric :leq ,(1- min))
+      )))
 
 (defun midpoints (lo hi)
   (if (and (integerp lo) (integerp hi)

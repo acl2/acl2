@@ -46,11 +46,6 @@ data last modified: [2014-08-06]
             (build-dex-recordImpl-bindings (cdr dex-names) (cdr dex-var-names) rec-expr)))))
 
 
-
-
-
-
-
 ;;make a constructor defun and corresponding predicate
 (defun make-constructor-predicate (conx-name dex-pairs kwd-alist)
   (declare (ignorable kwd-alist))
@@ -197,7 +192,10 @@ data last modified: [2014-08-06]
        (dest-pred-alist (get1 :dest-pred-alist conx-al))
        (field-pred-alist (get1 :field-pred-alist conx-al))
        (theory-name (get1 :theory-name kwd-alist))
-       (dest-defs-ruleset-name (s+ theory-name "DEST-DEFS" :separator "/"))
+       (pkg (get1 :current-package kwd-alist))
+
+       (dest-defs-ruleset-name
+        (s+ theory-name "DEST-DEFS" :separator "/" :pkg pkg))
        )
        
     (append `((local (in-theory (enable ,(get1 :recog conx-al)))))
@@ -435,7 +433,8 @@ data last modified: [2014-08-06]
                                   
        (all-defthm-names (get-event-names export-thm-events))
        (theory-name (get1 :theory-name kwd-alist))
-       (inv-ruleset-name (s+ theory-name "INVERSE-DEST-DEF-RULES" :separator "/"))
+       (inv-ruleset-name
+        (s+ theory-name "INVERSE-DEST-DEF-RULES" :separator "/" :pkg curr-pkg))
        )
 ;   in
     `(;,@(and time-trackp `((value-triple (prog2$ (time-tracker :record-theory-events :start) :invisible))))
@@ -687,19 +686,27 @@ data last modified: [2014-08-06]
 
 (defloop inverse-dest-rulesets (tnames wrld)
   (for ((tname in tnames))
-       (collect (s+ (get2 tname :theory-name (table-alist 'type-metadata-table wrld)) "INVERSE-DEST-DEF-RULES" :separator "/"))))
+       (collect (s+ (get2 tname :theory-name
+                          (table-alist 'type-metadata-table wrld))
+                    "INVERSE-DEST-DEF-RULES" :separator "/"))))
 
 (defloop dest-defs-rulesets (tnames wrld)
   (for ((tname in tnames)) 
-       (collect (s+ (get2 tname :theory-name (table-alist 'type-metadata-table wrld)) "DEST-DEFS" :separator "/"))))
+       (collect (s+ (get2 tname :theory-name
+                          (table-alist 'type-metadata-table wrld))
+                    "DEST-DEFS" :separator "/"))))
 
-
-(defun record-dest-elim-support-fn (stable-under-simplificationp clause keyword-alist world)
+(defun record-dest-elim-support-fn
+    (stable-under-simplificationp clause keyword-alist world)
   (b* ((var->fnames (collect-mget-var->field-names-lst clause '()))
        (var->Ps (predicate-mapping-for-vars-in-terms clause (strip-cars var->fnames) '()))
        (record-names (find-record-names var->fnames var->Ps world))
+
        (enabled (inverse-dest-rulesets record-names world))
-       (disabled (union-equal record-names (dest-defs-rulesets record-names world))) ;HACK: Lets disable constructors too ASSUMING record name and constructor name match)
+       (disabled (union-equal
+                  record-names
+                  (dest-defs-rulesets record-names world)))
+;HACK: Lets disable constructors too ASSUMING record name and constructor name match)
        ;; (- (cw? record-names "~| record-names: ~x0    enabled: ~x1   disabled: ~x2~%" record-names enabled disabled))
        )
     (if (and stable-under-simplificationp (consp record-names))

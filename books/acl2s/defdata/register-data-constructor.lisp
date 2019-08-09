@@ -33,7 +33,13 @@ data last modified: [2014-08-06]
          (ctx 'register-data-constructor))
     `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
        (make-event
-        (register-data-constructor-fn ',recog-constr-pair ',pred-dex-lst ',keys ',ctx (w state))))))
+        (register-data-constructor-fn
+         ',recog-constr-pair
+         ',pred-dex-lst
+         ',keys
+         ',ctx
+         (current-package state)
+         (w state))))))
 
 
 
@@ -62,13 +68,16 @@ data last modified: [2014-08-06]
   (get-proper-dex-theorems1 conx-name dex-names dex-names))
 
 
-(defun apply-to-x-lst (fns)
+(defun apply-to-x-lst (fns pkg)
 ;  (declare (xargs :guard (true-listp fns)))
-  (list-up-lists fns (make-list (len fns) :initial-element 'x)))
+  (b* ((x (intern$ "X" pkg)))
+    (list-up-lists fns (make-list (len fns) :initial-element x))))
 
-(defun register-data-constructor-fn (recog-constr-pair pred-dex-lst keys ctx wrld)
+(defun register-data-constructor-fn
+    (recog-constr-pair pred-dex-lst keys ctx pkg wrld)
   (declare (ignorable wrld))
-  (b* (((mv kwd-alist rest) (extract-keywords ctx *register-data-constructor-keywords* keys nil))
+  (b* (((mv kwd-alist rest)
+        (extract-keywords ctx *register-data-constructor-keywords* keys nil))
        ((when rest) (er hard? ctx "~| Error: Extra args: ~x0~%" rest))
        ((list recog conx-name) recog-constr-pair)
        (dex-names (strip-cadrs pred-dex-lst))
@@ -79,43 +88,51 @@ data last modified: [2014-08-06]
               (if (consp hyps)
                   (car hyps)
                 t)))
-       (rule-classes (if (member :rule-classes keys) (get1 :rule-classes kwd-alist) (list :rewrite)))
+       (rule-classes (if (member :rule-classes keys)
+                         (get1 :rule-classes kwd-alist)
+                       (list :rewrite)))
        (hints (get1 :hints kwd-alist))
        (proper (if (assoc :proper kwd-alist) (get1 :proper kwd-alist) t))
        (recordp (get1 :recordp kwd-alist))
        (dest-pred-alist (pairlis$ dex-names dpreds))
-       (kwd-alist (acons :arity (len dex-names) (acons :recog recog (acons :dest-pred-alist dest-pred-alist kwd-alist))))
-       )
-        
+       (x (intern$ "X" pkg))
+       (kwd-alist
+        (acons :arity (len dex-names)
+               (acons :recog recog
+                      (acons :dest-pred-alist dest-pred-alist kwd-alist)))))
+
     `(ENCAPSULATE
       nil
       (LOGIC)
       (WITH-OUTPUT
        :SUMMARY (ACL2::FORM) :ON (ERROR)
        (PROGN
-        (defthm ,(s+ conx-name '-CONSTRUCTOR-PRED)
+        (defthm ,(s+ conx-name '-CONSTRUCTOR-PRED :pkg pkg)
           (implies ,hyp
                    (,recog (,conx-name . ,dex-names)))
           :hints ,hints
           :rule-classes ,rule-classes)
         
-        (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS)
-          (implies (,recog x)
-                   (and . ,(list-up-lists dpreds (apply-to-x-lst dex-names))))
+        (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS :pkg pkg)
+          (implies (,recog ,x)
+                   (and . ,(list-up-lists
+                            dpreds
+                            (apply-to-x-lst dex-names pkg))))
           :hints ,hints
           :rule-classes ,(if recordp (cons ':generalize rule-classes) rule-classes))
 
 
         ,@(and proper
-               `((defthm ,(s+ conx-name '-ELIM-RULE)
-                   (implies (,recog x)
-                            (equal (,conx-name . ,(apply-to-x-lst dex-names))
-                                   x))
+               `((defthm ,(s+ conx-name '-ELIM-RULE :pkg pkg)
+                   (implies (,recog ,x)
+                            (equal (,conx-name
+                                    . ,(apply-to-x-lst dex-names pkg))
+                                   ,x))
                    :hints ,hints
                    :rule-classes ,(if (or recordp rule-classes) '(:elim) rule-classes))
                  
                  
-                 (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER)
+                 (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER :pkg pkg)
                    (implies ,hyp
                             (and . ,(get-proper-dex-theorems conx-name dex-names)))
                    :hints ,hints

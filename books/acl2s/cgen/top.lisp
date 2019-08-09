@@ -110,8 +110,8 @@
                         "Goal" :do-not-induct T hints))))
 
        ((mv res cgen::cgen-state state)
-        (with-prover-time-limit timeout
-                                (prove/cgen form hints cgen::cgen-state state)))
+        (with-time-limit timeout
+                         (prove/cgen form hints cgen::cgen-state state)))
 
        ((er &) (cond ((not (cgen::cgen-state-p cgen::cgen-state)) (value nil))
                      ((and (<= (acl2::access cgen::gcs% (cgen::cget gcs) :cts) 0)

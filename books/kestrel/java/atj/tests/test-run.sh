@@ -47,3 +47,6 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestABNFDeep 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      TestABNFShallow 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
+
+# test AIJ's native implementations of ACL2 functions:
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepTests

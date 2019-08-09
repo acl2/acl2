@@ -87,7 +87,7 @@ final class Acl2Ratio extends Acl2Rational {
             // a*d is less than or equal to or greater than c*b,
             // since b and d are always positive:
             Acl2Integer thisMultiplied =
-                    (Acl2Integer) this.numerator.multiplyValue(o.numerator());
+                    (Acl2Integer) this.numerator.multiplyValue(o.denominator());
             Acl2Integer thatMultiplied =
                     (Acl2Integer) o.numerator().multiplyValue(this.denominator);
             return thisMultiplied.compareTo(thatMultiplied);

@@ -82,6 +82,7 @@ public final class Acl2String extends Acl2Value {
      */
     static Acl2String coerceFromList(Acl2Value list) {
         int len = 0;
+        Acl2Value savedList = list;
         for (;
              list instanceof Acl2ConsPair;
              list = ((Acl2ConsPair) list).getCdr()) {
@@ -90,6 +91,7 @@ public final class Acl2String extends Acl2Value {
             else
                 ++len;
         }
+        list = savedList;
         char[] jcharacters = new char[len];
         for (int i = 0; i < len; ++i) {
             Acl2Value element = list.car();
@@ -154,18 +156,16 @@ public final class Acl2String extends Acl2Value {
         } catch (IllegalArgumentException e) {
             throw new Acl2EvaluationException(null, e);
         }
-        if (Acl2Environment.hasPackage(packageName)) {
-            List<Acl2Symbol> imported =
-                    Acl2Environment.getImportedList(packageName);
-            int len = imported.size();
-            Acl2Value result = Acl2Symbol.NIL;
-            for (int i = len - 1; i >= 0; --i)
-                result = Acl2ConsPair.make(imported.get(i), result);
-            return result;
-        } else {
+        Acl2Package packag = Acl2Package.getDefined(packageName);
+        if (packag == null)
             throw new Acl2EvaluationException
                     ("Undefined package: \"" + packageName + "\".");
-        }
+        List<Acl2Symbol> imports = packag.getImports();
+        int len = imports.size();
+        Acl2Value result = Acl2Symbol.NIL;
+        for (int i = len - 1; i >= 0; --i)
+            result = Acl2ConsPair.make(imports.get(i), result);
+        return result;
     }
 
     /**
@@ -186,7 +186,7 @@ public final class Acl2String extends Acl2Value {
         } catch (IllegalArgumentException e) {
             throw new Acl2EvaluationException(null, e);
         }
-        String witnessName = Acl2Environment.getPackageWitnessName();
+        String witnessName = Acl2Package.getWitnessName();
         if (witnessName == null)
             throw new IllegalStateException("Witness not defined yet.");
         Acl2Symbol result;

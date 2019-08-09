@@ -17,6 +17,7 @@
      defxdoc current-acl2-world e/d unsigned-byte-p
      fquotep ffn-symb flambdap fargs
      template-subst
+     with-time-limit
 
      error warning warning! observation prove
      proof-builder event history summary proof-tree
@@ -98,7 +99,7 @@
      test? ;for acl2s-hooks query categorization
      
      acl2s-defaults acl2s-defaults-table
-     
+     with-time-limit     
      
      ; from community books
      u::defloop template-subst
@@ -149,7 +150,7 @@
       legal-constantp
       legal-variablep
       legal-variable-or-constant-namep
-
+      
       => ;sig
       _  ;range
 
@@ -158,7 +159,8 @@
     
       begin-book
       rev ;why do we need to add this??
-
+      with-time-limit
+      
 ;community books
       u::defloop def-ruleset
       must-fail ;from misc/eval
@@ -245,7 +247,8 @@
               must-prove
               must-not-prove
               symbol-package-name-safe
-
+              with-time-limit
+              
               stage
               
               trace* trace$
@@ -295,6 +298,7 @@
 
               acl2s::check=
               
+              with-time-limit
               stage
               trace*
               )
@@ -343,6 +347,7 @@
               
               stage
               trace* trace$
+              with-time-limit
 
               defthm thm defconst in-package defun table
               
