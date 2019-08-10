@@ -150,6 +150,7 @@
       legal-constantp
       legal-variablep
       legal-variable-or-constant-namep
+      xdoc
       
       => ;sig
       _  ;range
