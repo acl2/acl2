@@ -204,7 +204,7 @@
                    t nil))
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
-          (args (unquote-list qcs))
+          (args (unquote-terms qcs))
           ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))

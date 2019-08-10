@@ -82,13 +82,22 @@
           into just its @(':logic') part @('a')."
   (remove-mbe-logic/exec-from-term term nil))
 
-(define unquote-list ((list quote-listp))
-  :returns (new-list true-listp)
-  :verify-guards nil
-  :short "Unquote all the elements of a list."
-  (cond ((endp list) nil)
-        (t (cons (unquote (car list))
-                 (unquote-list (cdr list))))))
+(define unquote-term ((term (and (pseudo-termp term)
+                                 (quotep term))))
+  :returns value
+  :short "Unquote a term that is a quoted constant."
+  :long
+  (xdoc::topstring-p
+   "The result is the quoted values, which may have any type.")
+  (unquote term))
+
+(define unquote-terms ((terms (and (pseudo-term-listp terms)
+                                   (quote-listp terms))))
+  :returns (values true-listp)
+  :short "Lift @(tsee unquote-term) to lists."
+  (cond ((endp terms) nil)
+        (t (cons (unquote-term (car terms))
+                 (unquote-terms (cdr terms))))))
 
 (define decompose-at-dots ((string stringp))
   :returns (substrings string-listp)
