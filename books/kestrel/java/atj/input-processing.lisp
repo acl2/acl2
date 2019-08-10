@@ -15,22 +15,13 @@
 
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "oslib/top" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-input-processing
-  :parents (atj-implementation)
-  :short "Input processing performed by @(tsee atj)."
-  :long
-  (xdoc::topstring-p
-   "This involves validating the inputs.
-    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
-    Thus, generally the input processing functions return
-    <see topic='@(url acl2::error-triple)'>error triples</see>.")
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-input-processing atj)
 
 (define atj-process-targets ((targets true-listp) ctx state)
   :returns (mv erp
