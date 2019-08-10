@@ -1377,7 +1377,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Symbol execInternInPackageOfSymbol(Acl2Value str,
                                                          Acl2Value sym) {
-        return str.internInPackageOfSymbol(sym);
+        return str.internThisInPackageOf(sym);
     }
 
     /**
