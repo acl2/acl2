@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +124,7 @@
   (xdoc::topstring
    (xdoc::p
     "The first step towards RLP-encoding a transaction
-     is to turn it into an RLP trees.
+     is to turn it into an RLP tree.
      This is implied by [YP:4.2],
      which in fact uses a tuple notation for transactions.")
    (xdoc::p
@@ -311,7 +312,7 @@
    (xdoc::p
     "The chain id is another input of this function.
      [EIP155] suggests that the chain id is never zero;
-     at least, it list only non-zero chain ids.
+     at least, it lists only non-zero chain ids.
      Thus, we use 0 as input to this function to select the old flavor,
      and any non-zero value to select the new flavor;
      we do not constrain the non-zero value
@@ -351,22 +352,25 @@
     "If the ECDSA signature operation succeeds,
      the resulting @($v$), @($r$), and @($s$) are used
      to construct the last three components of the final signed transaction,
-     whose first six components are the same as the starting ones
-     (in the 6-tuple or 9-tuple).
+     whose first six components are the same as the first six in
+     in the 6-tuple or 9-tuple.
      @($r$) and @($s$) are used directly as the last two components,
      i.e. @($T_\\mathrm{r}$) and @($T_\\mathrm{s}$) [YP:(15)].
      The component @($T_\\mathrm{w}$) depends on the flavor
      (before or after the Spurious Dragon hard fork) [YP:F]:
-     in the old flavor, that component is
-     27 if @($v$) indicates odd, 28 if @($v$) indicates even;
-     in the new flavor, that conponent is
-     the chain identifier doubled plus
-     35 if @($v$) indicates odd, 35 if @($v$) indicates even.
+     in the old flavor, @($T_\\mathrm{w}$) is
+     27 if @($v$) indicates an even ephemeral public key y value,
+     or 28 if @($v$) indicates odd;
+     in the new flavor, @($T_\\mathrm{w}$) is
+     the chain identifier doubled plus 35 if @($v$) indicates an even
+     ephemeral mublic key y value, or the chain identifier doubled plus 36
+     if @($v$) indicates even.
      The formulation in [YP:F] suggests that the ECDSA signature operation
      already returns these values as the @($v$) result,
      but these are Ethereum-specific:
      our Ethereum-independent library function for ECDSA signatures
-     returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
+     returns a boolean @($v$), which represents an even ephemeral public key y
+     value as @('t') and odd as @('nil').")
    (xdoc::p
     "The @($v$) component of the signature is public key recovery information.
      Based on the discussion in @(tsee secp256k1-sign-det-rec),
@@ -417,8 +421,8 @@
        ((mv error? & even? sign-r sign-s) (secp256k1-sign-det-rec hash key t t))
        ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
        (sign-v (if (zp chain-id)
-                   (if even? 28 27)
-                 (+ (* 2 chain-id) (if even? 36 35)))))
+                   (if even? 27 28)
+                 (+ (* 2 chain-id) (if even? 35 36)))))
     (mv nil (make-transaction :nonce nonce
                               :gas-price gas-price
                               :gas-limit gas-limit
