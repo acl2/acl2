@@ -497,9 +497,12 @@ I commented out some disabled theorems that seem fine to me.
         `(("h" `(head ,x))
           ("t" `(tail ,x))))
 
+; The termination hint isn't need, but it saves 10 seconds and I
+; certify this file enough that it is worth annotating.
 (definec-no-test gen-car-cdr-aux
   (car :var cdr :var carstr :string cdrstr :string
        depth :nat res :l-str-all) :l-str-all
+  (declare (xargs :consider-only-ccms ( depth )))
   (cond ((endp res) (gen-car-cdr-aux
                      car
                      cdr
@@ -641,3 +644,27 @@ I commented out some disabled theorems that seem fine to me.
 (defmacro sninth   (x) `(slcar (slcddddr (slcddddr ,x))))
 (defmacro stenth   (x) `(slcadr (slcddddr (slcddddr ,x))))
 
+; A forward-chaining rule to deal with the relationship
+; between len and cdr
+(defthm expand-len-with-trigger-cdr
+  (implies (and (<= c (len x))
+                (posp c))
+	   (and (<= (1- c) (len (cdr x)))
+		x))
+  :rule-classes ((:forward-chaining :trigger-terms ((cdr x)))))
+
+#|
+
+This may be useful. I started with this, but used the above rule
+instead.
+
+(defthm exp-len
+  (implies (and (syntaxp (quotep c))
+                (syntaxp (< (second c) 100))
+		(posp c)
+		(<= c (len x)))
+	   (and (<= (1- c) (len (cdr x)))
+		x))
+  :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
+
+|#
