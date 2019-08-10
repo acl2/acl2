@@ -545,3 +545,34 @@
          :long ,long
          :order-subtopics t
          :default-parent t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::evmac-topic-input-processing
+  :short "Generate an XDOC topic for the input processing
+          that is part of the implementation of an event macro."
+
+  (defmacro xdoc::evmac-topic-input-processing (macro)
+    (declare (xargs :guard (symbolp macro)))
+    (let* ((macro-name (string-downcase (symbol-name macro)))
+           (macro-ref (concatenate 'string "@('" macro-name "')"))
+           (this-topic (add-suffix macro "-INPUT-PROCESSING"))
+           (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+           (short (concatenate 'string
+                               "Input processing performed by "
+                               macro-ref
+                               "."))
+           (long (xdoc::topstring-p
+                  "This involves validating the inputs.
+                   When validation fails, "
+                  (xdoc::seeurl "acl2::er" "soft errors")
+                  " occur.
+                   Thus, generally the input processing functions return "
+                  (xdoc::seeurl "acl2::error-triple" "error triples")
+                  ".")))
+      `(defxdoc+ ,this-topic
+         :parents (,parent-topic)
+         :short ,short
+         :long ,long
+         :order-subtopics t
+         :default-parent t))))
