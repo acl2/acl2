@@ -252,7 +252,8 @@
         "try"
         "void"
         "volatile"
-        "while")
+        "while"
+        "_")
   ///
   (assert-event (string-listp *atj-java-keywords*))
   (assert-event (no-duplicatesp-equal *atj-java-keywords*)))
