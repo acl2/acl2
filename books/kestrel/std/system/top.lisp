@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "conjoin")
+(include-book "function-symbolp")
 
 (include-book "xdoc/constructors" :dir :system)
 
