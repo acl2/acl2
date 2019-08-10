@@ -645,26 +645,114 @@ I commented out some disabled theorems that seem fine to me.
 (defmacro stenth   (x) `(slcadr (slcddddr (slcddddr ,x))))
 
 ; A forward-chaining rule to deal with the relationship
-; between len and cdr
+; between len and cdr.
+
 (defthm expand-len-with-trigger-cdr
   (implies (and (<= c (len x))
                 (posp c))
-	   (and (<= (1- c) (len (cdr x)))
-		x))
-  :rule-classes ((:forward-chaining :trigger-terms ((cdr x)))))
+           (<= (1- c) (len (cdr x))))
+  :rule-classes ((:forward-chaining
+                  :trigger-terms ((< (len x) c) (cdr x)))))
+
+(defthm len-non-nil-with-trigger-cdr
+  (implies (and (<= c (len x))
+                (posp c))
+           x)
+  :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
 
 #|
 
-This may be useful. I started with this, but used the above rule
-instead.
+ This may be useful. I started with this, but used the above rule
+ instead.
 
-(defthm exp-len
-  (implies (and (syntaxp (quotep c))
-                (syntaxp (< (second c) 100))
-		(posp c)
-		(<= c (len x)))
-	   (and (<= (1- c) (len (cdr x)))
-		x))
-  :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
+ (defthm exp-len
+   (implies (and (syntaxp (quotep c))
+                 (syntaxp (< (second c) 100))
+ 		 (posp c)
+ 		 (<= c (len x)))
+	    (and (<= (1- c) (len (cdr x)))
+		 x))
+   :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
 
 |#
+
+#|
+
+ A collection of forward-chaining rules that help with reasoning about
+ conses with car, cdr, head, tail, left, right.
+
+|#
+
+(defthm cddr-implies-cdr-trigger-cddr
+  (implies (cddr x)
+	   (cdr x))
+  :rule-classes ((:forward-chaining :trigger-terms ((cddr x)))))
+
+(defthm tlp-implies-tlpcdr-trigger-cdr
+  (implies (true-listp x)
+	   (true-listp (cdr x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((cdr x)))))
+
+(defthm tlp-consp-cdr-implies-tail-trigger-tail
+  (implies (and (true-listp x)
+		(consp (cdr x)))
+	   (tail x))
+  :rule-classes ((:forward-chaining :trigger-terms ((tail x)))))
+
+(defthm tlp-consp-implies-tlp-tail-trigger-tail
+  (implies (and (true-listp x) x)
+	   (true-listp (tail x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((tail x)))))
+
+(defthm consp-cdr-implies-right-trigger-right
+  (implies (consp (cdr x))
+	   (right x))
+  :rule-classes ((:forward-chaining :trigger-terms ((right x)))))
+
+(defthm tlp-consp-implies-tlp-right-trigger-right
+  (implies (and (true-listp x) x)
+	   (true-listp (right x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((right x)))))
+
+; Basic left-right theorems
+(defthm left-cons
+  (equal (left (cons x y))
+         x))
+
+(defthm right-cons
+  (equal (right (cons x y))
+         y))
+
+(defthm left-consp
+  (implies (force (consp x))
+           (equal (left x) (car x))))
+
+(defthm right-consp
+  (implies (force (consp x))
+           (equal (right x) (cdr x))))
+
+; Basic head-tail theorems
+(defthm head-cons
+  (implies (force (tlp y))
+           (equal (head (cons x y))
+                  x)))
+
+(defthm tail-cons
+  (implies (force (tlp y))
+           (equal (tail (cons x y))
+                  y)))
+
+(defthm head-consp
+  (implies (and (force (tlp x)) (force x))
+           (equal (head x) (car x))))
+
+(defthm tail-consp
+  (implies (and (force (tlp x)) (force x))
+           (equal (tail x) (cdr x))))
+
+; Disable tail, head, left, right so that it is easier to debug
+; proofs
+(in-theory (disable tail tail-definition-rule
+                    head head-definition-rule
+                    left left-definition-rule
+                    right right-definition-rule))
