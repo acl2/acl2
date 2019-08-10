@@ -467,6 +467,8 @@
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             avalue)
                      (mv nil (jexpr-name "irrelevant") jvar-value-index))))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-ACONSPAIR decreases:
     :measure (two-nats-measure (acl2-count avalue) 1))
 
   :verify-guards nil ; done below
@@ -618,6 +620,9 @@
           jvar-value-index
           jvar-term-index
           jvar-lambda-index))
+    ;; 2nd component is greater then the one of ATJ-GEN-DEEP-ALAMBDA
+    ;; so that the call of ATJ-GEN-DEEP-ALAMBDA decreases
+    ;; even when AFN is a non-symbol atom (impossible under the guard):
     :measure (two-nats-measure (+ (acl2-count afn) (acl2-count aargs)) 2))
 
   (define atj-gen-deep-alambda ((aformals symbol-listp)
@@ -667,6 +672,8 @@
           jvar-value-index
           jvar-term-index
           jvar-lambda-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-DEEP-ATERM decreases:
     :measure (two-nats-measure (acl2-count abody) 1))
 
   (define atj-gen-deep-aterm ((aterm pseudo-termp)
@@ -1157,6 +1164,7 @@
 
 (defines atj-gen-shallow-aterms+alambdas
   :short "Generate shallowly embedded ACL2 terms and lambda expressions."
+  :verify-guards nil
 
   (define atj-gen-shallow-aifapp ((atest pseudo-termp)
                                   (athen pseudo-termp)
@@ -1171,7 +1179,6 @@
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 @(tsee if) application."
     :long
@@ -1258,7 +1265,14 @@
           jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that each call of ATJ-GEN-SHALLOW-ATERM decreases
+    ;; even when the ACL2-COUNTs of the other two addends are 0:
+    :measure (two-nats-measure (+ (acl2-count atest)
+                                  (acl2-count athen)
+                                  (acl2-count aelse))
+                               1))
 
   (define atj-gen-shallow-aorapp ((afirst pseudo-termp)
                                   (asecond pseudo-termp)
@@ -1272,7 +1286,6 @@
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 @('or') application."
     :long
@@ -1341,7 +1354,13 @@
           jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that each call of ATJ-GEN-SHALLOW-ATERM decreases
+    ;; even when the ACL2-COUNT of the other addend is 0:
+    :measure (two-nats-measure (+ (acl2-count afirst)
+                                  (acl2-count asecond))
+                               1))
 
   (define atj-gen-shallow-afnapp ((afn pseudo-termfnp)
                                   (aargs pseudo-term-listp)
@@ -1355,7 +1374,6 @@
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 function application."
     :long
@@ -1381,7 +1399,8 @@
        (lambda expressions are strict too),
        and then use a separate code generation function
        for the lambda expression (applied to the computed arguments)."))
-    (b* (((when (eq afn 'if))
+    (b* (((when (and (eq afn 'if)
+                     (= (len aargs) 3)))
           (b* ((afirst (first aargs))
                (asecond (second aargs))
                (athird (third aargs)))
@@ -1436,7 +1455,13 @@
           jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is greater than the one of ATJ-GEN-SHALLOW-ALAMBDA
+    ;; so that the call of ATJ-GEN-SHALLOW-ALAMBDA decreases
+    ;; even when AFN is a non-symbol atom (impossible under the guard):
+    :measure (two-nats-measure (+ (acl2-count afn)
+                                  (acl2-count aargs))
+                               2))
 
   (define atj-gen-shallow-alambda ((aformals symbol-listp)
                                    (abody pseudo-termp)
@@ -1451,7 +1476,6 @@
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
@@ -1490,7 +1514,10 @@
           body-jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-ATERM decreases:
+    :measure (two-nats-measure (acl2-count abody) 1))
 
   (define atj-gen-shallow-aterm ((aterm pseudo-termp)
                                  (jvars symbol-string-alistp)
@@ -1503,7 +1530,6 @@
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 term."
     :long
@@ -1539,7 +1565,8 @@
                                      jvar-var-indices
                                      jvar-value-index
                                      jvar-result-index
-                                     curr-pkg))))
+                                     curr-pkg)))
+    :measure (two-nats-measure (acl2-count aterm) 0))
 
   (define atj-gen-shallow-aterms ((aterms pseudo-term-listp)
                                   (jvars symbol-string-alistp)
@@ -1552,7 +1579,6 @@
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Lift @(tsee atj-gen-shallow-aterm) to lists."
     (if (endp aterms)
@@ -1581,7 +1607,8 @@
             (cons first-jexpr rest-jexprs)
             jvar-var-indices
             jvar-value-index
-            jvar-result-index)))))
+            jvar-result-index)))
+    :measure (two-nats-measure (acl2-count aterms) 0)))
 
 (define atj-gen-apkg-jmethod-name ((apkg stringp))
   :returns (jmethod-name stringp)
@@ -1962,7 +1989,7 @@
                                 state)
   :guard (equal (symbol-package-name afn) curr-pkg)
   :returns (jmethod "A @(tsee jmethodp).")
-  :mode :program
+  :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
   (xdoc::topstring
@@ -2031,7 +2058,7 @@
                              state)
   :guard (equal (symbol-package-name afn) curr-pkg)
   :returns (jmethod "A @(tsee jmethodp).")
-  :mode :program
+  :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 primitive function or function definition."
   (if (primitivep afn)
@@ -2046,7 +2073,7 @@
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) curr-pkg))
   :returns (jmethods "A @(tsee jmethod-listp).")
-  :mode :program
+  :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-afn) to lists."
   (cond ((endp afns) nil)
         (t (b* ((first-jmethod (atj-gen-shallow-afn (car afns)
@@ -2070,7 +2097,7 @@
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) apkg))
   :returns (jclass "A @(tsee jclassp).")
-  :mode :program
+  :verify-guards nil
   :short "Generate the shallowly embedded ACL2 functions
           in an ACL2 package."
   :long
@@ -2100,7 +2127,7 @@
                                       (verbose$ booleanp)
                                       state)
   :returns (jclasses "A @(tsee jclass-listp).")
-  :mode :program
+  :verify-guards nil
   :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
   :long
   (xdoc::topstring
@@ -2121,7 +2148,7 @@
       (verbose$ booleanp)
       state)
      :returns jclasses ; JCLASS-LISTP
-     :mode :program
+     :verify-guards nil
      (cond ((endp apkgs) nil)
            (t (b* ((apkg (car apkgs))
                    (afns (cdr (assoc-equal apkg afns-by-apkg)))
@@ -2279,7 +2306,7 @@
                         (verbose$ booleanp)
                         state)
   :returns (jclass "A @(tsee jclassp).")
-  :mode :program
+  :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration."
   :long
   (xdoc::topstring
@@ -2649,7 +2676,7 @@
                         (verbose$ booleanp)
                         state)
   :returns (jcunit "A @(tsee jcunitp).")
-  :mode :program
+  :verify-guards nil
   :short "Generate the main Java compilation unit."
   (make-jcunit :package? java-package$
                :imports (list (str::cat *atj-aij-jpackage* ".*")
