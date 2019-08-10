@@ -883,7 +883,10 @@
                                (jvar-var-indices symbol-nat-alistp)
                                (curr-apkg stringp))
   :returns (mv (jvars symbol-string-alistp :hyp (symbol-listp avars))
-               (new-jvar-var-indices "A @(tsee symbol-nat-alistp)."))
+               (new-jvar-var-indices
+                symbol-nat-alistp
+                :hyp (and (symbol-listp avars)
+                          (symbol-nat-alistp jvar-var-indices))))
   :verify-guards nil
   :short "Generate a sequence of shallowly embedded ACL2 variables."
   :long
@@ -1174,8 +1177,8 @@
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1281,8 +1284,8 @@
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1369,8 +1372,8 @@
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1471,8 +1474,8 @@
                                    (jvar-result-index posp)
                                    (curr-pkg stringp))
     :guard (= (len jargs) (len aformals))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1525,8 +1528,8 @@
                                  (jvar-value-index posp)
                                  (jvar-result-index posp)
                                  (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1574,8 +1577,8 @@
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexprs "A @(tsee jexpr-listp).")
+    :returns (mv (jblock jblockp)
+                 (jexpr jexpr-listp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1988,7 +1991,7 @@
                                 (curr-pkg stringp)
                                 state)
   :guard (equal (symbol-package-name afn) curr-pkg)
-  :returns (jmethod "A @(tsee jmethodp).")
+  :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
@@ -2057,7 +2060,7 @@
                              (curr-pkg stringp)
                              state)
   :guard (equal (symbol-package-name afn) curr-pkg)
-  :returns (jmethod "A @(tsee jmethodp).")
+  :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 primitive function or function definition."
@@ -2072,7 +2075,7 @@
                               state)
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) curr-pkg))
-  :returns (jmethods "A @(tsee jmethod-listp).")
+  :returns (jmethods jmethod-listp)
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-afn) to lists."
   (cond ((endp afns) nil)
@@ -2096,7 +2099,7 @@
                                       state)
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) apkg))
-  :returns (jclass "A @(tsee jclassp).")
+  :returns (jclass jclassp)
   :verify-guards nil
   :short "Generate the shallowly embedded ACL2 functions
           in an ACL2 package."
@@ -2126,7 +2129,7 @@
                                       (java-class$ stringp)
                                       (verbose$ booleanp)
                                       state)
-  :returns (jclasses "A @(tsee jclass-listp).")
+  :returns (jclasses jclass-listp)
   :verify-guards nil
   :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
   :long
@@ -2147,7 +2150,7 @@
       (java-class$ stringp)
       (verbose$ booleanp)
       state)
-     :returns jclasses ; JCLASS-LISTP
+     :returns (jclasses jclass-listp)
      :verify-guards nil
      (cond ((endp apkgs) nil)
            (t (b* ((apkg (car apkgs))
@@ -2305,7 +2308,7 @@
                         (java-class$ stringp)
                         (verbose$ booleanp)
                         state)
-  :returns (jclass "A @(tsee jclassp).")
+  :returns (jclass jclassp)
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration."
   :long
@@ -2675,7 +2678,7 @@
                         (afns symbol-listp)
                         (verbose$ booleanp)
                         state)
-  :returns (jcunit "A @(tsee jcunitp).")
+  :returns (jcunit jcunitp)
   :verify-guards nil
   :short "Generate the main Java compilation unit."
   (make-jcunit :package? java-package$

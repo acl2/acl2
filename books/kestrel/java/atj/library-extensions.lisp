@@ -144,7 +144,13 @@
   :val (natp x)
   :true-listp t
   :keyp-of-nil t
-  :valp-of-nil nil)
+  :valp-of-nil nil
+  ///
+
+  (defrule natp-of-cdr-of-assoc-equal-when-symbol-nat-alistp
+    (implies (and (symbol-nat-alistp alist)
+                  (assoc-equal key alist))
+             (natp (cdr (assoc-equal key alist))))))
 
 (std::defalist symbol-string-alistp (x)
   :short "Recognize alists from symbols to strings."
