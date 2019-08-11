@@ -158,7 +158,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Coerces this ACL2 value to a list,
+     * Coerces this ACL2 value to an ACL2 list,
      * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
      * It returns {@code nil} by default;
@@ -166,6 +166,17 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Value coerceToList() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Coerces this ACL2 value to an ACL2 string,
+     * consistently with the {@code coerce} ACL2 function
+     * when the second argument is not {@code list}.
+     * It returns the empty Java string by default;
+     * it is overwritten in {@link Acl2ConsPair}.
+     */
+    Acl2String coerceToString() {
+        return Acl2String.EMPTY;
     }
 
     /**
@@ -440,6 +451,17 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Rational rfix() {
         return Acl2Integer.ZERO;
+    }
+
+    /**
+     * Coerces this ACL2 value to an ACL2 character.
+     * It returns the character with code 0 by default;
+     * it is overridden in {@link Acl2Character}.
+     * This is consistent with
+     * the {@code char-fix} ACL2 (non-built-in) function.
+     */
+    Acl2Character charFix() {
+        return Acl2Character.CODE_0;
     }
 
     /**

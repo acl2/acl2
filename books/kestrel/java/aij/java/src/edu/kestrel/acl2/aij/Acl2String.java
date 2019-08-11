@@ -69,42 +69,6 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Coerce an ACL2 list of ACL2 characters to an ACL2 string.
-     * If the ACL2 argument value is an atom that is not {@code nil},
-     * it is treated as {@code nil}, i.e. the empty list.
-     * If any element of the list is not an ACL2 character,
-     * it is treated as the ACL2 character with code 0.
-     * This is consistent with the {@code coerce} ACL2 function,
-     * when its second argument is not {@code list}.
-     *
-     * @throws IllegalArgumentException if list is
-     *                                  longer than the maximum Java integer
-     */
-    static Acl2String coerceFromList(Acl2Value list) {
-        int len = 0;
-        Acl2Value savedList = list;
-        for (;
-             list instanceof Acl2ConsPair;
-             list = ((Acl2ConsPair) list).getCdr()) {
-            if (len == Integer.MAX_VALUE)
-                throw new IllegalArgumentException("Character list too long.");
-            else
-                ++len;
-        }
-        list = savedList;
-        char[] jcharacters = new char[len];
-        for (int i = 0; i < len; ++i) {
-            Acl2Value element = list.car();
-            if (element instanceof Acl2Character)
-                jcharacters[i] = ((Acl2Character) element).getJavaChar();
-            else
-                jcharacters[i] = 0;
-            list = list.cdr();
-        }
-        return make(new String(jcharacters));
-    }
-
-    /**
      * Coerces this ACL2 string to a list,
      * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.

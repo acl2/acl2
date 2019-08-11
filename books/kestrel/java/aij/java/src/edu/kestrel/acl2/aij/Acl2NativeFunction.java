@@ -1368,7 +1368,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         if (y.equals(Acl2Symbol.LIST))
             return x.coerceToList();
         else
-            return Acl2String.coerceFromList(x);
+            return x.coerceToString();
     }
 
     /**

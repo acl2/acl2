@@ -62,6 +62,16 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
+     * Coerces this ACL2 value to an ACL2 character.
+     * This is consistent with
+     * the {@code char-fix} ACL2 (non-built-in) function.
+     */
+    @Override
+    Acl2Character charFix() {
+        return this;
+    }
+
+    /**
      * Compares this ACL2 character with the argument ACL2 character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
@@ -233,7 +243,7 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * The ACL2 character with jchar 0.
+     * The ACL2 character with code 0.
      */
     public static final Acl2Character CODE_0 = characters[0];
 
