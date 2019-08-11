@@ -535,6 +535,9 @@
 
    (xdoc::h3 "Miscellaneous")
 
+   (xdoc::p
+    "Some @(see xdoc) string processing has been made a bit more efficient.")
+
    ))
 
 (defxdoc note-8-2-books

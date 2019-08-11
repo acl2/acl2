@@ -166,6 +166,13 @@
 (add-ld-keyword-alias! :doc '(1 xdoc))
 
 
+; Matt K. mod: Originally we used remove-equal-with-hint here and below, copied
+; from the CONS-WITH-HINT :doc topic.  But it is more efficient to remove only
+; the first occurrence; moreover, we might as well compare just the name rather
+; than the result of calling find-topic on name.
+
+; The following note is thus somewhat obsolete, but it still has some value.
+
 ;; Note about the importance of REMOVE-EQUAL-WITH-HINT.  At one point
 ;; doc/top.lisp was taking upwards of 30 minutes to certify.  The culprit
 ;; turned out to be all the uses of xdoc-prepend in std::define, each of which
@@ -177,18 +184,20 @@
 ;; almost all of this consing.  (Similarly for xdoc-extend and order-subtopics,
 ;; though these were less common.)
 
-;; Copied from the CONS-WITH-HINT doc topic, by Matt Kaufmann.
-(defun remove-equal-with-hint (x l)
-  (declare (xargs :guard (true-listp l)))
-  (mbe :logic (remove-equal x l)
-       :exec (cond ((endp l) nil)
-                   ((equal x (car l))
-                    (remove-equal-with-hint x (cdr l)))
-                   (t
-                    (cons-with-hint (car l)
-                                    (remove-equal-with-hint x (cdr l))
-                                    l)))))
+(defun remove1-name (name l)
 
+; We assume that name is found in l.  If that were not the case, it would have
+; been best to use cons-with-hint below in place of cons.
+
+; The guard should be that l is a list of alists.
+
+  (declare (xargs :mode :program))
+  (cond ((endp l) nil)
+        ((equal (cdr (assoc-eq :NAME (car l)))
+                name)
+         (cdr l))
+        (t (cons (car l)
+                 (remove1-name name (cdr l))))))
 
 (defun xdoc-extend-fn (name long world)
   (declare (xargs :mode :program))
@@ -204,7 +213,7 @@
             (er hard? 'xdoc-extend "Topic ~x0 wasn't found." name)
             all-topics))
           (t
-           (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
+           (let* ((other-topics (remove1-name name all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string old-long long))
                   (new-topic    (acons :long new-long (remove1-assoc :long old-topic))))
@@ -229,7 +238,7 @@
     (cond ((not old-topic)
            (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." name))
           (t
-           (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
+           (let* ((other-topics (remove1-name name all-topics))
                   (old-long     (or (cdr (assoc :long old-topic)) ""))
                   (new-long     (concatenate 'string long old-long))
                   (new-topic    (acons :long new-long (remove1-assoc :long old-topic))))
@@ -251,7 +260,7 @@
           ((not (booleanp flg))
            (er hard? ctx "Optional argument is not Boolean: ~x0" flg))
           (t
-           (let* ((other-topics (remove-equal-with-hint old-topic all-topics))
+           (let* ((other-topics (remove1-name name all-topics))
                   (new-topic    (acons :suborder
                                        (if flg
                                            (append order flg)
