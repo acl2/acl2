@@ -121,18 +121,14 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code intern-in-package-of-symbol} ACL2 function,
-     * where this ACL2 value is the first argument of that function.
+     * Interns this ACL2 value in the package of the argument ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the first argument of that function
+     * and the argument ACL2 value is the second argument of that function.
      */
     @Override
-    Acl2Symbol internInPackageOfSymbol(Acl2Value sym) {
-        if (sym instanceof Acl2Symbol) {
-            Acl2PackageName packageName = ((Acl2Symbol) sym).getPackageName();
-            return Acl2Symbol.make(packageName, this);
-        } else {
-            return Acl2Symbol.NIL;
-        }
+    Acl2Symbol internThisInPackageOf(Acl2Value sym) {
+        return sym.internInPackageOfThis(this);
     }
 
     /**

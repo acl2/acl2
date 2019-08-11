@@ -169,13 +169,26 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code intern-in-package-of-symbol} ACL2 function,
-     * where this ACL2 value is the first argument of that function.
+     * Interns this ACL2 value in the package of the argument ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the first argument of that function
+     * and the argument ACL2 value is the second argument of that function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2String}.
      */
-    Acl2Symbol internInPackageOfSymbol(Acl2Value sym) {
+    Acl2Symbol internThisInPackageOf(Acl2Value sym) {
+        return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Interns the argument ACL2 string in the package of this ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the second argument of that function
+     * and the argument ACL2 value is the first argument of that function.
+     * It returns {@code nil} by default;
+     * it is overridden in {@link Acl2Symbol}.
+     */
+    Acl2Symbol internInPackageOfThis(Acl2String str) {
         return Acl2Symbol.NIL;
     }
 

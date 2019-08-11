@@ -138,6 +138,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
+     * Interns the argument ACL2 string in the package of this ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the second argument of that function
+     * and the argument ACL2 value is the first argument of that function.
+     */
+    @Override
+    Acl2Symbol internInPackageOfThis(Acl2String str) {
+        Acl2PackageName packageName = this.packageName;
+        return Acl2Symbol.make(packageName, str);
+    }
+
+    /**
      * Compares this ACL2 symbol with the argument ACL2 character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
