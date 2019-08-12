@@ -287,4 +287,80 @@ functions over natural numbers.
   `(b* ((wrld (w state)))
      (cdr (assoc-eq ,key (table-alist ',tbl wrld)))))
 
+(defun all-tlps (l)
+  (declare (xargs :guard t))
+  (or (atom l)
+      (and (true-listp l)
+           (all-tlps (car l))
+           (all-tlps (cdr l)))))
+                     
+(mutual-recursion
+ (defun subst-var (new old form)
+   (declare (xargs :guard (and (atom old) (all-tlps form))))
+   (cond ((atom form)
+          (cond ((equal form old) new)
+                (t form)))
+         ((acl2::fquotep form) form)
+         (t (cons (car form)
+                  (subst-var-lst new old (cdr form))))))
+
+ (defun subst-var-lst (new old l)
+   (declare (xargs :guard (and (atom old) (true-listp l) (all-tlps l))))
+   (cond ((endp l) nil)
+         (t (cons (subst-var new old (car l))
+                  (subst-var-lst new old (cdr l)))))))
+
+(mutual-recursion
+ (defun subst-fun-sym (new old form)
+   (declare (xargs :guard (and (legal-variablep old)
+                               (legal-variablep new)
+                               (all-tlps form))))
+   (cond ((atom form)
+          form)
+         ((acl2::fquotep form) form)
+         (t (cons (if (atom (car form))
+                      (subst-var new old (car form))
+                    (subst-fun-sym new old (car form)))
+                  (subst-fun-lst new old (cdr form))))))
+
+ (defun subst-fun-lst (new old l)
+   (declare (xargs :guard (and (legal-variablep old)
+                               (legal-variablep new)
+                               (true-listp l)
+                               (all-tlps l))))
+   (cond ((endp l) nil)
+         (t (cons (subst-fun-sym new old (car l))
+                  (subst-fun-lst new old (cdr l)))))))
+
+#|
+
+;; PETE: These functions were leading to errors. For example, in
+;; parse-defunc, the check for recp was using fun-sym-in-termp, and
+;; this was leading to a guard error. The code I now use uses
+;; pseudo-translate and all-ffnames.  The subst-fun-sym functions were
+;; also updated to do a better job of dealing with lambdas, let, let*,
+;; etc, but they are probably not bullet-proof.
+
+(mutual-recursion
+ (defun fun-syms-in-term (term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
+   (cond ((acl2::variablep term) nil)
+         ((acl2::fquotep term) nil)
+         (t (cons (acl2::ffn-symb term)
+                  (fun-syms-in-term-lst (acl2::fargs term))))))
+
+ (defun fun-syms-in-term-lst (l)
+   (declare (xargs :guard (pseudo-term-listp l)
+                   :verify-guards nil))
+   (cond ((endp l) nil)
+         (t (append (fun-syms-in-term (car l))
+                    (fun-syms-in-term-lst (cdr l)))))))
+
+(defun fun-sym-in-termp (f term)
+  (declare (xargs :guard (and (legal-variablep f)
+                              (pseudo-termp term))
+                  :verify-guards nil))
+  (and (member-equal f (fun-syms-in-term term)) t))
+|#
 
