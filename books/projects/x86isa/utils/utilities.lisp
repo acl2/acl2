@@ -386,6 +386,12 @@ constants and functions; it also proves some associated lemmas.</p>")
                           :name ,name)
                  ,@alist))))
 
+;; =============================================================================
+
+;; Maps a list of integers to a corresponding list of Booleans,
+;; treating 0 as false.  Example: (ints-to-booleans '(0 1 0 0 1)) ==>
+;; (nil t nil nil t).
+
 (defun ints-to-booleans-acc (x acc)
   (declare (xargs :guard (and (integer-listp x)
                               (true-listp acc))))
@@ -395,11 +401,6 @@ constants and functions; it also proves some associated lemmas.</p>")
                                        acc)))))
 
 (defun ints-to-booleans (x)
-
-  ;; Maps a list of integers to a corresponding list of Booleans,
-  ;; treating 0 as false.  Example: (ints-to-booleans '(0 1 0 0 1)) ==>
-  ;; (nil t nil nil t).
-
   (declare (xargs :guard (integer-listp x)))
   (ints-to-booleans-acc x nil))
 
