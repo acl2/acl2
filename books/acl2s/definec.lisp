@@ -6,11 +6,19 @@
 (in-package "ACL2S")
 (include-book "defunc" :ttags :all)
 
-(defun map-preds (types pkg tbl atbl)
+(defun map-preds (types tbl atbl ctx)
   (if (endp types)
       nil
-    (cons (pred-of-type (intern$ (symbol-name (car types)) pkg) tbl atbl)
-          (map-preds (rest types) pkg tbl atbl))))
+    (cons (pred-of-type (car types) tbl atbl ctx)
+          (map-preds (rest types) tbl atbl ctx))))
+
+(defun map-intern-types (types pkg)
+  (if (endp types)
+      nil
+    (cons (if (keywordp (car types))
+              (intern$ (symbol-name (car types)) pkg)
+            (car types))
+          (map-intern-types (rest types) pkg))))
 
 (defun make-input-contract-aux (args types)
   (cond ((endp args) nil)
@@ -66,9 +74,16 @@ both expand into
 
 ;; Before latest updates to defunc 
 
+(defun find-bad-d-arg-types (d-arg-types d-arg-preds)
+  (cond ((endp d-arg-preds) nil)
+        ((null (car d-arg-preds))
+         (car d-arg-types))
+        (t (find-bad-d-arg-types (cdr d-arg-types)
+                                 (cdr d-arg-preds)))))
+
 (defmacro definec (name &rest args)
   `(with-output
-    :stack :push :off :all
+    :stack :push :off :all :on (summary) :summary (acl2::time)
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
           (atbl (table-alist 'defdata::type-alias-table (w state)))
@@ -77,14 +92,26 @@ both expand into
           (f-type (intern$ ,(symbol-name (second args)) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
-          (d-arg-preds (map-preds d-arg-types pkg tbl atbl))
-          (f-type-pred (pred-of-type f-type tbl atbl))
+          (d-arg-types (map-intern-types d-arg-types pkg))
+          (d-arg-preds (map-preds d-arg-types tbl atbl 'definec))
+          (f-type-pred (pred-of-type f-type tbl atbl 'definec))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-output-contract ',name d-args f-type-pred))
           (defunc `(defunc ,',name ,d-args
                      :input-contract ,ic
                      :output-contract ,oc
-                     ,@(cddr ',args))))
+                     ,@(cddr ',args)))
+          ((when (oddp (len f-args)))
+           (er hard 'definec
+               "~%The argumets to ~x0 should alternate between variables and types,
+but ~x0 has an odd number of arguments: ~x1"
+               ',name f-args))
+          (bad-type
+           (find-bad-d-arg-types d-arg-types d-arg-preds))
+          ((when bad-type)
+           (er hard 'definec "~%~x0 is not a type." bad-type))
+          ((unless f-type-pred)
+           (er hard 'definec "~%~x0 is not a type." f-type)))
        `(with-output :stack :pop ,defunc)))))
 
 (defmacro definedc (name &rest args)
@@ -98,8 +125,8 @@ both expand into
           (f-type (intern$ ,(symbol-name (second args)) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
-          (d-arg-preds (map-preds d-arg-types pkg tbl atbl))
-          (f-type-pred (pred-of-type f-type tbl atbl))
+          (d-arg-preds (map-preds d-arg-types tbl atbl 'definedc))
+          (f-type-pred (pred-of-type f-type tbl atbl 'definedc))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-output-contract ',name d-args f-type-pred))
           (defunc `(defundc ,',name ,d-args
