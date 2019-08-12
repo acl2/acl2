@@ -251,7 +251,13 @@
 (defsection xdoc::evmac-section-appconds
   :short "Construct the applicability conditions section
           of the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-section-appconds")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this documentation is part of the XDOC topic
+     whose name is the name of the macro,
+     the @('macro-ref') variable is not a link.")
+   (xdoc::@def "xdoc::evmac-section-appconds"))
 
   (defconst xdoc::*evmac-section-appconds-title*
     "Applicability Conditions")
@@ -314,6 +320,10 @@
      This XDOC constructor may be generalized in the future
      to cover event macros that do not have exactly
      those two specific inputs with those specific meanings.")
+   (xdoc::p
+    "Since this documentation is part of the XDOC topic
+     whose name is the name of the macro,
+     the @('macro-ref') variable is not a link.")
    (xdoc::@def "xdoc::evmac-section-redundancy"))
 
   (defconst xdoc::*evmac-section-redundancy-title*
@@ -394,7 +404,13 @@
 (defsection xdoc::evmac-input-print
   :short "Construct a description of the @(':print') input
           for the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-input-print")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this documentation is part of the XDOC topic
+     whose name is the name of the macro,
+     the @('macro-ref') variable is not a link.")
+   (xdoc::@def "xdoc::evmac-input-print"))
 
   (defmacro xdoc::evmac-input-print (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
@@ -466,7 +482,13 @@
 (defsection xdoc::evmac-input-show-only
   :short "Construct a description of the @(':show-only') input
           for the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-input-show-only")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this documentation is part of the XDOC topic
+     whose name is the name of the macro,
+     the @('macro-ref') variable is not a link.")
+   (xdoc::@def "xdoc::evmac-input-show-only"))
 
   (defmacro xdoc::evmac-input-show-only (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
