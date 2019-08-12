@@ -201,6 +201,7 @@
 ; Symbols below should probably be added to *acl2-exports*.
 
     SYMBOL-NAME-LST
+    MAYBE-FLUSH-AND-COMPRESS1
   ))
 
 (defconst *special-ops*

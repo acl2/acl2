@@ -12658,6 +12658,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (set-acl2-array-property name nil))
 
+(defun maybe-flush-and-compress1 (name ar)
+  (declare (xargs :guard (array1p name ar)))
+  #+acl2-loop-only
+  (compress1 name ar)
+  #-acl2-loop-only
+  (let ((old (get-acl2-array-property name)))
+    (cond
+     ((null old)
+      (compress1 name ar))
+     ((eq (car old) ar)
+      ar)
+     (t (prog2$ (flush-compress name)
+                (compress1 name ar))))))
+
 ; MULTIPLE VALUE returns, done our way, not Common Lisp's way.
 
 ; We implement an efficient mechanism for returning a multiple value,
@@ -13499,6 +13513,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     hard-error ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
     abort! p! ; THROW
     flush-compress ; SETF [may be critical for correctness]
+    maybe-flush-and-compress1
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
     default-total-parallelism-work-limit ; for #+acl2-par (raw Lisp error)
