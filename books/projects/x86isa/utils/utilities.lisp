@@ -346,7 +346,7 @@ constants and functions; it also proves some associated lemmas.</p>")
                        (alistp y))))
   :hints (("Goal" :induct (revappend x y))))
 
-(defthm alist-list-to-alist
+(defthm alistp-of-list-to-alist
   (implies (alistp acc)
            (alistp (list-to-alist x i acc))))
 
