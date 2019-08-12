@@ -10,67 +10,39 @@
 
 (in-package "APT")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 
 ; (depends-on "design-notes/restrict.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; documentation topic for the design notes,
-; which are in design-notes/restrict.pdf:
-
-(defxdoc restrict-design
-
-  :parents (design-notes restrict)
-
-  :short "Design notes for the APT domain restriction transformation."
-
-  :long
-
-  (xdoc::topstring
-
-   (xdoc::p
-    "The design of the transformation is described in "
-    (xdoc::a :href "res/kestrel-apt-design-notes/restrict.pdf" "these notes")
-    ", which use "
-    (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
-    ".")
-
-   (xdoc::p
-    "The correspondence between the design notes and the reference documentation
-     is the following:")
-
-   (xdoc::ul
-    (xdoc::li
-     "@($f$) corresponds to @('old').")
-    (xdoc::li
-     "@($e(\\overline{x})$) corresponds to the body of @('old'),
-      when @('old') is not recursive.")
-    (xdoc::li
-     "When @('old') is recursive,
-      the notes use
-      a single non-recursive branch @($b(\\overline{x})$)
-      controlled by @($a(\\overline{x})$)
-      and a single recursive branch
-      @($c(\\overline{x},f(\\overline{d}(\\overline{x})))$)
-      controlled by the negation of @($a(\\overline{x})$).
-      This is a representative recursive structure,
-      but the transformation handles
-      multiple non-recursive and recursive branches,
-      and also recursive functions that occur in their termination theorem.
-      In this representative recursive structure,
-      @($d_i(\\overline{x})$)
-      corresponds to @('update-xi<x1,...,xn>')
-      and the negation of @($a(\\overline{x})$)
-      corresponds to @('context<x1,...,xn>').")
-    (xdoc::li
-     "@($R$) corresponds to @('(lambda (x1 ... xn) restriction<x1,...,xn>)').")
-    (xdoc::li
-     "@($R{}d$) corresponds to @(':restriction-of-rec-calls').")
-    (xdoc::li
-     "@($G{}R$) corresponds to @(':restriction-guard').")
-    (xdoc::li
-     "@($f'$) corresponds to @('new').")
-    (xdoc::li
-     "@($f{}f'$) corresponds to @('old-to-new')."))))
+(xdoc::evmac-topic-design-notes
+ restrict
+ "res/kestrel-apt-design-notes/restrict.pdf"
+ :additional-parents (design-notes)
+ :correspondences
+  ("@($f$) corresponds to @('old')."
+   "@($e(\\overline{x})$) corresponds to the body of @('old'),
+    when @('old') is not recursive."
+   "When @('old') is recursive,
+    the notes use
+    a single non-recursive branch @($b(\\overline{x})$)
+    controlled by @($a(\\overline{x})$)
+    and a single recursive branch
+    @($c(\\overline{x},f(\\overline{d}(\\overline{x})))$)
+    controlled by the negation of @($a(\\overline{x})$).
+    This is a representative recursive structure,
+    but the transformation handles
+    multiple non-recursive and recursive branches,
+    and also recursive functions that occur in their termination theorem.
+    In this representative recursive structure,
+    @($d_i(\\overline{x})$)
+    corresponds to @('update-xi<x1,...,xn>')
+    and the negation of @($a(\\overline{x})$)
+    corresponds to @('context<x1,...,xn>')."
+   "@($R$) corresponds to @('(lambda (x1 ... xn) restriction<x1,...,xn>)')."
+   "@($R{}d$) corresponds to @(':restriction-of-rec-calls')."
+   "@($G{}R$) corresponds to @(':restriction-guard')."
+   "@($f'$) corresponds to @('new')."
+   "@($f{}f'$) corresponds to @('old-to-new')."))

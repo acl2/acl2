@@ -6,6 +6,9 @@
 
 package edu.kestrel.acl2.aij;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * Representation of ACL2 {@code cons} pairs.
  * These are the ACL2 values that satisfy {@code consp}.
@@ -59,6 +62,26 @@ public final class Acl2ConsPair extends Acl2Value {
      */
     Acl2Value cdr() {
         return this.cdr;
+    }
+
+    /**
+     * Coerces this ACL2 {@code cons} pair to an ACL2 string,
+     * consistently with the {@code coerce} ACL2 function
+     * when the second argument is not {@code list}.
+     */
+    @Override
+    Acl2String coerceToString() {
+        List<Acl2Character> charList = new LinkedList<>();
+        for (Acl2Value list = this;
+             list instanceof Acl2ConsPair;
+             list = ((Acl2ConsPair) list).cdr) {
+            charList.add(((Acl2ConsPair) list).car.charFix());
+        }
+        int size = charList.size();
+        char[] charArray = new char[size];
+        for (int i = 0; i < size; ++i)
+            charArray[i] = charList.get(i).getJavaChar();
+        return Acl2String.make(new String(charArray));
     }
 
     /**

@@ -187,6 +187,7 @@
       ;; signed integers for the sake of efficiency.  E.g., -1 in
       ;; unsigned format would occupy 64 bits, a bignum.  But in the
       ;; signed format, it would be a fixum.
+      ;; See Intel manual, Jan'19, Volume 1, Section 3.4.1.
       (rgf$c :type (array (signed-byte 64)
                           (#.*64-bit-general-purpose-registers-len*))
              :initially 0
@@ -198,6 +199,7 @@
       ;; mode.  So, in our model, 0 to 2^47-1 represents the lower
       ;; range of canonical addresses and -2^47 to -1 represents the
       ;; upper range of canonical addresses.
+      ;; See Intel manual, Jan'19, Volume 1, Section 3.5.
       (rip$c :type (signed-byte 48)
              :initially 0)
 
@@ -206,6 +208,7 @@
       ;; is good to do, because it avoids bignum creation.  Also, as
       ;; of 2014, Intel says that the top 32 bits of rflags are
       ;; reserved, so we aren't messing anything up.
+      ;; See Intel manual, Jan'19, Volume 1, Section 3.4.3.
       (rflags$c :type (unsigned-byte 32)
                 ;; Bit 1 is always 1.
                 :initially 2)
@@ -217,6 +220,8 @@
       ;; 16-bit Attributes
       ;; 32-bit Limit
       ;; 64-bit Base Address
+      ;; See Intel manual, Jan'19, Volume 1, Section 3.4.2
+      ;; and Intel manual, Jan'19, Volume 3, Sections 3.4.2 and 3.4.3.
       (seg-visible$c :type (array (unsigned-byte 16)
                                   (#.*segment-register-names-len*))
                      :initially 0
@@ -234,11 +239,11 @@
                          :initially 0
                          :resizable nil)
 
-
       ;; System Table Registers (GDTR and IDTR) -- these registers
       ;; point to bounded tables of (up to 8192) segment descriptors.
       ;; In 64-bit mode, the system table registers are extended from
       ;; 48 to 80 bits.
+      ;; See Intel manual, Jan'19, Volume 3, Figure 2-6.
       (str$c :type (array (unsigned-byte 80)
                           (#.*gdtr-idtr-names-len*))
              :initially 0
@@ -251,6 +256,7 @@
       ;; 16-bit Attributes
       ;; 32-bit Limit
       ;; 64-bit Base Address
+      ;; See Intel manual, Jan'19, Volume 3, Figure 2-6.
       (ssr-visible$c :type (array (unsigned-byte 16)
                                   (#.*ldtr-tr-names-len*))
                      :initially 0
@@ -275,12 +281,14 @@
       ;; but the low 21 bits reserved.  It'd be nice to define these
       ;; registers separately so that bignum creation can be avoided
       ;; during slicing operations involving these registers.
+      ;; See Intel manual, Jan'19, Volume 3, Section 2.5.
       (ctr$c  :type (array (unsigned-byte 64)
                            (#.*control-register-names-len*))
               :initially 0
               :resizable nil)
 
       ;; Debug registers
+      ;; See Intel manual, Jan'19, Volume 3, Section 17.2.
       (dbg$c :type (array (unsigned-byte 64)
                           (#.*debug-register-names-len*))
              :initially 0
@@ -291,32 +299,39 @@
       ;; FPU 80-bit data registers
       ;; The MMX registers (MM0 through MM7) are aliased to the low
       ;; 64-bits of the FPU data registers.
+      ;; See Intel manual, Jan'19, Volume 1, Section 8.1.2.
       (fp-data$c :type (array (unsigned-byte 80)
                               (#.*fp-data-register-names-len*))
                  :initially 0
                  :resizable nil)
 
       ;; FPU 16-bit control register
+      ;; See Intel manual, Jan'19, Volume 1, Section 8.1.5.
       (fp-ctrl$c :type (unsigned-byte 16)
                  :initially 0)
 
       ;; FPU 16-bit status register
+      ;; See Intel manual, Jan'19, Volume 1, Section 8.1.3.
       (fp-status$c :type (unsigned-byte 16)
                    :initially 0)
 
       ;; FPU 16-bit tag register
+      ;; See Intel manual, Jan'19, Volume 1, Section 8.1.7.
       (fp-tag$c :type (unsigned-byte 16)
                 :initially 0)
 
       ;; FPU 48-bit last instruction pointer
+      ;; See Intel manual, Jan'19, Volume 1, Figure 8-1.
       (fp-last-inst$c :type (unsigned-byte 48)
                       :initially 0)
 
       ;; FPU 48-bit last data (operand) pointer
+      ;; See Intel manual, Jan'19, Volume 1, Figure 8-1.
       (fp-last-data$c :type (unsigned-byte 48)
                       :initially 0)
 
       ;; FPU 11-bit opcode
+      ;; See Intel manual, Jan'19, Volume 1, Figure 8-1.
       (fp-opcode$c :type (unsigned-byte 11)
                    :initially 0)
 
@@ -377,7 +392,7 @@
       (marking-view$c :type (satisfies booleanp) :initially t)
 
       ;; The os-info$c is meaningful only in the application-level view.
-      (os-info$c               :type (satisfies keywordp) :initially :linux)
+      (os-info$c :type (satisfies keywordp) :initially :linux)
 
       ;; For our ACL2 model, we define a paging-like mechanism to
       ;; model the complete x86 52-bit address space.  The memory is

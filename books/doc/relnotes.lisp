@@ -330,6 +330,10 @@
     "XDOC constructors for documenting the implementation of event macros
      have been added.")
 
+   (xdoc::p
+    "More XDOC constructors for documenting event macros at the user level
+     have been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
