@@ -410,12 +410,28 @@ B is the builtin combinator table."
   (declare (xargs :guard (and (symbolp name) (eqlable-2-alistp A))))
   (if (endp A)
       nil
+    (b* ((lookup (assoc key (cdar A)))
+         ((unless lookup)
+          (match-alist name key val (cdr A)))
+         (Aval (cdr lookup))
+         (Aname (caar A))
+         (nval (acl2::subst Aname name val)))
+      (if (equal Aval nval)
+          Aname
+        (match-alist name key val (cdr A))))))
+
+#|
+(defun match-alist (name key val A)
+  (declare (xargs :guard (and (symbolp name) (eqlable-2-alistp A))))
+  (if (endp A)
+      nil
     (b* ((Aval (get1 key (cdar A)))
          (Aname (caar A))
          (nval (acl2::subst Aname name val)))
       (if (equal Aval nval)
           Aname
         (match-alist name key val (cdr A))))))
+|#
 
 (program)
 
@@ -582,7 +598,14 @@ Example use
            ;; considered equivalent, so I'm going to remove quotes since that
            ;; seems like the cleanest way of doing things
            ;; (if (quotep texp) texp (kwote texp)))
-           (if (quotep texp) (second texp) texp))
+           (if (and (quotep texp)
+                    (or (booleanp (second texp))
+                        (characterp (second texp))
+                        (stringp (second texp))
+                        (acl2-numberp (second texp))
+                        (keywordp (second texp))))
+               (second texp)
+             texp))
           ((proper-symbolp texp) texp)
           ((not (true-listp texp)) ;name decl
            (cons (base-alias-type (car texp) (table-alist 'type-alias-table wrld))
