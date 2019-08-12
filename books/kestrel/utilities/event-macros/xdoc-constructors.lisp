@@ -511,6 +511,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::evmac-topic-design-notes
+  :short "Generate an XDOC topic for the design notes of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This utility takes the following arguments:")
+   (xdoc::ul
+    (xdoc::li
+     "The event macro's symbol.")
+    (xdoc::li
+     "A string for the @('href') link with the actual notes,
+      normally of the form @('res/.../<notes>.pdf'), based on the "
+     (xdoc::seeurl "xdoc::add-resource-directory" "XDOC resource directory")
+     ".")
+    (xdoc::li
+     "A list of additional parent topics, besides the macro itself.")
+    (xdoc::li
+     "Zero or more XDOC trees (often just strings)
+      to put into the bullets that explain the correspondence between
+      the symbols in the design notes and the reference documentation.
+      If this list is empty,
+      then no bulletted list is generated,
+      and no introductory text for it.")
+    (xdoc::li
+     "Zero or more XDOC trees (often paragraphs)
+      that provide some additional explanation
+      about how the design notes relate to the event macro
+      (e.g. parts of the design notes that are not implemented yet.")))
+
+  (define xdoc::evmac-topic-design-notes-make-bullets
+    ((correspondences xdoc::tree-listp))
+    :returns (bullets xdoc::tree-listp :hyp :guard)
+    (cond ((endp correspondences) nil)
+          (t (cons (xdoc::li (car correspondences))
+                   (xdoc::evmac-topic-design-notes-make-bullets
+                    (cdr correspondences))))))
+
+  (defmacro xdoc::evmac-topic-design-notes (macro
+                                            notes-ref
+                                            &key
+                                            additional-parents
+                                            correspondences
+                                            additional-doc)
+    (declare (xargs :guard (and (symbolp macro)
+                                (stringp notes-ref)
+                                (symbol-listp additional-parents))))
+    (let* ((macro-name (string-downcase (symbol-name macro)))
+           (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+           (this-topic (add-suffix macro "-DESIGN"))
+           (parents (cons macro additional-parents))
+           (short (concatenate 'string
+                               "Design notes for "
+                               macro-ref
+                               "."))
+           (long `(xdoc::topstring
+                   (xdoc::p
+                    "The design of "
+                    ,macro-ref
+                    " is described in "
+                    (xdoc::a :href ,notes-ref "these notes")
+                    ", which use "
+                    (xdoc::a :href "res/kestrel-design-notes/notation.pdf"
+                      "this notation")
+                    ".")
+                   ,@(and correspondences
+                          `((xdoc::p
+                             "The correspondence between
+                              the design notes and the reference documentation
+                              is the following:")
+                            (xdoc::ul-fn
+                             nil
+                             (xdoc::evmac-topic-design-notes-make-bullets
+                              (list ,@correspondences)))))
+                   ,@additional-doc)))
+      `(defxdoc ,this-topic
+         :parents ,parents
+         :short ,short
+         :long ,long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ xdoc::evmac-constructors-implementation-level
   :parents (xdoc::evmac-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
@@ -527,7 +608,7 @@
   (defmacro xdoc::evmac-topic-library-extensions (macro)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')"))
+           (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
            (this-topic (add-suffix macro "-LIBRARY-EXTENSIONS"))
            (parent-topic (add-suffix macro "-IMPLEMENTATION"))
            (short (concatenate 'string
@@ -555,7 +636,7 @@
   (defmacro xdoc::evmac-topic-input-processing (macro)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')"))
+           (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
            (this-topic (add-suffix macro "-INPUT-PROCESSING"))
            (parent-topic (add-suffix macro "-IMPLEMENTATION"))
            (short (concatenate 'string
