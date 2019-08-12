@@ -298,7 +298,7 @@
      gas limit,
      recipient,
      value,
-     and initialization or data byte array;
+     and initialization/data;
      these are all inputs of this function.
      A tuple is then formed,
      which differs slightly depending on the flavor [YP:(285)]:
@@ -310,16 +310,16 @@
      The 9-tuple is like a pre-transaction
      whose last three components contain preliminary values.")
    (xdoc::p
-    "The chain id is another input of this function.
+    "The chain id is the seventh input of this function.
      [EIP155] suggests that the chain id is never zero;
      at least, it lists only non-zero chain ids.
      Thus, we use 0 as input to this function to select the old flavor,
      and any non-zero value to select the new flavor;
      we do not constrain the non-zero value
-     to be among the ones listed in [EIP155].")
+     to be among the chain ids listed in [EIP155].")
    (xdoc::p
     "[YP:(285)] uses the @($v$) result of the ECDSA signature [YP:(279)]
-     to distinguish between old and new flavor.
+     to distinguish between old and new flavors.
      This is a bit confusing, because the ECDSA signature is calculated
      after forming the tuple, not before.
      The choice of flavor should be determined by external means,
@@ -363,8 +363,8 @@
      or 28 if @($v$) indicates odd;
      in the new flavor, @($T_\\mathrm{w}$) is
      the chain identifier doubled plus 35 if @($v$) indicates an even
-     ephemeral mublic key y value, or the chain identifier doubled plus 36
-     if @($v$) indicates even.
+     ephemeral public key y value, or the chain identifier doubled plus 36
+     if @($v$) indicates odd.
      The formulation in [YP:F] suggests that the ECDSA signature operation
      already returns these values as the @($v$) result,
      but these are Ethereum-specific:
@@ -372,7 +372,8 @@
      returns a boolean @($v$), which represents an even ephemeral public key y
      value as @('t') and odd as @('nil').")
    (xdoc::p
-    "The @($v$) component of the signature is public key recovery information.
+    "Besides communicating the chain id, the resulting @($v$) component
+     of the signature can be used for public key recovery.
      Based on the discussion in @(tsee secp256k1-sign-det-rec),
      the @('small-x?') flag passed to this signing function must be @('t'),
      so that the parity of the @($y$) coordinate suffices
@@ -382,13 +383,13 @@
      to be below half of the order of the curve.
      Based on the discussion in @(tsee secp256k1-sign-det-rec),
      the @('small-s?') flag passed to this signing function must be @('t'),
-     so that a suitable @($s$) is returned.")
+     so that an @($s$) suitable for Ethereum is returned.")
    (xdoc::p
     "This function returns the signed transaction as a high-level structure.
-     This would have to be RLP-encoded (via @(tsee rlp-encode-transaction))
+     This must be RLP-encoded (via @(tsee rlp-encode-transaction))
      to obtain something that can be sent to the Ethereum network.")
    (xdoc::p
-    "This function returns @(':rlp') as error result if
+    "This function returns @(':rlp') as the error result if
      the RLP encoding of the 6-tuple or 9-tuple fails.
      If the ECDSA signature operation fails, the error result is @(':ecdsa').
      In both cases, the second result is an irrelevant transaction value."))
