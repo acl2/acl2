@@ -12,12 +12,15 @@
     (cons (pred-of-type (car types) tbl atbl ctx)
           (map-preds (rest types) tbl atbl ctx))))
 
+(defun map-intern-type (type pkg)
+  (if (keywordp type)
+      (intern$ (symbol-name type) pkg)
+    type))
+
 (defun map-intern-types (types pkg)
   (if (endp types)
       nil
-    (cons (if (keywordp (car types))
-              (intern$ (symbol-name (car types)) pkg)
-            (car types))
+    (cons (map-intern-type (car types) pkg)
           (map-intern-types (rest types) pkg))))
 
 (defun make-input-contract-aux (args types)
@@ -89,7 +92,7 @@ both expand into
           (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
-          (f-type (intern$ ,(symbol-name (second args)) pkg))
+          (f-type (map-intern-type ,(second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
@@ -122,7 +125,7 @@ but ~x0 has an odd number of arguments: ~x1"
           (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
-          (f-type (intern$ ,(symbol-name (second args)) pkg))
+          (f-type (map-intern-type ,(second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
           (d-arg-preds (map-preds d-arg-types tbl atbl 'definedc))
