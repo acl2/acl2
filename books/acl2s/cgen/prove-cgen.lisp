@@ -835,7 +835,10 @@ history s-hist.")
              (acl2::state-global-let*
               ((acl2::inhibit-output-lst 
                 (cond ((debug-flag vl) '(summary))
-                      (t #!acl2(set-difference-eq *valid-output-names* '(error prove))))))
+                      (t #!acl2(set-difference-eq *valid-output-names* '(error))))))
+; Pete: replaced the line below to get rid of annoying "Q.E.D."
+; messages when testing.              
+;                     (t #!acl2(set-difference-eq *valid-output-names* '(error prove))))))
 ; Q: Why is here a wrapper call to trans-eval?
 ; A: To catch some hard errors! (see the email to Matt dated 3/20/2013)
               (trans-eval
