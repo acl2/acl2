@@ -1128,7 +1128,7 @@ because the rule-classes may matter.
 (defmacro defdata-equal
     (T1
      T2
-     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     &key (rule-classes '((:tau-system)))
      strictp
      verbose
      hints
@@ -1187,7 +1187,7 @@ because the rule-classes may matter.
 (defmacro defdata-equal-strict
     (T1
      T2
-     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     &key (rule-classes '((:tau-system)))
      verbose
      hints
      otf-flg)
