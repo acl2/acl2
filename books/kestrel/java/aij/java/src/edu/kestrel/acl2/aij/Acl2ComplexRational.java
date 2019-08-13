@@ -60,9 +60,7 @@ final class Acl2ComplexRational extends Acl2Number {
      */
     @Override
     public boolean equals(Object o) {
-        /* Since complex rationals are disjoint from integers and rationals,
-           only a complex rational can be equal to another complex rational.
-           Two complex rationals are equal iff
+        /* Two complex rationals are equal iff
            their real and imaginary parts are. */
         if (this == o) return true;
         if (!(o instanceof Acl2ComplexRational)) return false;

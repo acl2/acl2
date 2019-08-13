@@ -49,10 +49,8 @@ final class Acl2Ratio extends Acl2Rational {
      */
     @Override
     public boolean equals(Object o) {
-        /* Since ratios are disjoint from integers and complex rationals,
-           only a ratio can be equal to another ratio.
-           Since the denominator is positive and coprime with the numerator,
-           two ratio are equal iff their numerator and denominator are. */
+        /* Since the denominator is positive and coprime with the numerator,
+           two ratios are equal iff their numerator and denominator are. */
         if (this == o) return true;
         if (!(o instanceof Acl2Ratio)) return false;
         Acl2Ratio that = (Acl2Ratio) o;
