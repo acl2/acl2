@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +124,7 @@
   (xdoc::topstring
    (xdoc::p
     "The first step towards RLP-encoding a transaction
-     is to turn it into an RLP trees.
+     is to turn it into an RLP tree.
      This is implied by [YP:4.2],
      which in fact uses a tuple notation for transactions.")
    (xdoc::p
@@ -297,7 +298,7 @@
      gas limit,
      recipient,
      value,
-     and initialization or data byte array;
+     and initialization/data;
      these are all inputs of this function.
      A tuple is then formed,
      which differs slightly depending on the flavor [YP:(285)]:
@@ -309,16 +310,16 @@
      The 9-tuple is like a pre-transaction
      whose last three components contain preliminary values.")
    (xdoc::p
-    "The chain id is another input of this function.
+    "The chain id is the seventh input of this function.
      [EIP155] suggests that the chain id is never zero;
-     at least, it list only non-zero chain ids.
+     at least, it lists only non-zero chain ids.
      Thus, we use 0 as input to this function to select the old flavor,
      and any non-zero value to select the new flavor;
      we do not constrain the non-zero value
-     to be among the ones listed in [EIP155].")
+     to be among the chain ids listed in [EIP155].")
    (xdoc::p
     "[YP:(285)] uses the @($v$) result of the ECDSA signature [YP:(279)]
-     to distinguish between old and new flavor.
+     to distinguish between old and new flavors.
      This is a bit confusing, because the ECDSA signature is calculated
      after forming the tuple, not before.
      The choice of flavor should be determined by external means,
@@ -351,24 +352,28 @@
     "If the ECDSA signature operation succeeds,
      the resulting @($v$), @($r$), and @($s$) are used
      to construct the last three components of the final signed transaction,
-     whose first six components are the same as the starting ones
-     (in the 6-tuple or 9-tuple).
+     whose first six components are the same as the first six in
+     in the 6-tuple or 9-tuple.
      @($r$) and @($s$) are used directly as the last two components,
      i.e. @($T_\\mathrm{r}$) and @($T_\\mathrm{s}$) [YP:(15)].
      The component @($T_\\mathrm{w}$) depends on the flavor
      (before or after the Spurious Dragon hard fork) [YP:F]:
-     in the old flavor, that component is
-     27 if @($v$) indicates odd, 28 if @($v$) indicates even;
-     in the new flavor, that conponent is
-     the chain identifier doubled plus
-     35 if @($v$) indicates odd, 35 if @($v$) indicates even.
+     in the old flavor, @($T_\\mathrm{w}$) is
+     27 if @($v$) indicates an even ephemeral public key y value,
+     or 28 if @($v$) indicates odd;
+     in the new flavor, @($T_\\mathrm{w}$) is
+     the chain identifier doubled plus 35 if @($v$) indicates an even
+     ephemeral public key y value, or the chain identifier doubled plus 36
+     if @($v$) indicates odd.
      The formulation in [YP:F] suggests that the ECDSA signature operation
      already returns these values as the @($v$) result,
      but these are Ethereum-specific:
      our Ethereum-independent library function for ECDSA signatures
-     returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
+     returns a boolean @($v$), which represents an even ephemeral public key y
+     value as @('t') and odd as @('nil').")
    (xdoc::p
-    "The @($v$) component of the signature is public key recovery information.
+    "Besides communicating the chain id, the resulting @($v$) component
+     of the signature can be used for public key recovery.
      Based on the discussion in @(tsee secp256k1-sign-det-rec),
      the @('small-x?') flag passed to this signing function must be @('t'),
      so that the parity of the @($y$) coordinate suffices
@@ -378,13 +383,13 @@
      to be below half of the order of the curve.
      Based on the discussion in @(tsee secp256k1-sign-det-rec),
      the @('small-s?') flag passed to this signing function must be @('t'),
-     so that a suitable @($s$) is returned.")
+     so that an @($s$) suitable for Ethereum is returned.")
    (xdoc::p
     "This function returns the signed transaction as a high-level structure.
-     This would have to be RLP-encoded (via @(tsee rlp-encode-transaction))
+     This must be RLP-encoded (via @(tsee rlp-encode-transaction))
      to obtain something that can be sent to the Ethereum network.")
    (xdoc::p
-    "This function returns @(':rlp') as error result if
+    "This function returns @(':rlp') as the error result if
      the RLP encoding of the 6-tuple or 9-tuple fails.
      If the ECDSA signature operation fails, the error result is @(':ecdsa').
      In both cases, the second result is an irrelevant transaction value."))
@@ -417,8 +422,8 @@
        ((mv error? & even? sign-r sign-s) (secp256k1-sign-det-rec hash key t t))
        ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
        (sign-v (if (zp chain-id)
-                   (if even? 28 27)
-                 (+ (* 2 chain-id) (if even? 36 35)))))
+                   (if even? 27 28)
+                 (+ (* 2 chain-id) (if even? 35 36)))))
     (mv nil (make-transaction :nonce nonce
                               :gas-price gas-price
                               :gas-limit gas-limit
