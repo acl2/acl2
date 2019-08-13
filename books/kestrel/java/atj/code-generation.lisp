@@ -1447,7 +1447,9 @@
               jvar-value-index
               jvar-result-index) (atj-gen-shallow-alambda (lambda-formals afn)
                                                           (lambda-body afn)
+                                                          aargs
                                                           arg-jexprs
+                                                          jvars
                                                           jvar-var-indices
                                                           jvar-value-index
                                                           jvar-result-index
@@ -1469,12 +1471,15 @@
 
   (define atj-gen-shallow-alambda ((aformals symbol-listp)
                                    (abody pseudo-termp)
+                                   (aargs pseudo-term-listp)
                                    (jargs jexpr-listp)
+                                   (jvars symbol-string-alistp)
                                    (jvar-var-indices symbol-nat-alistp)
                                    (jvar-value-index posp)
                                    (jvar-result-index posp)
                                    (curr-pkg stringp))
-    :guard (= (len jargs) (len aformals))
+    :guard (and (= (len aargs) (len aformals))
+                (= (len jargs) (len aformals)))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
@@ -1492,15 +1497,48 @@
        producing a new @('jvars') alist
        and updating the @('jvar-var-indices') alist.")
      (xdoc::p
-      "Then we assign to these Java local variables
-       the Java expressions for the actual arguments,
+      "ACL2 lambda expressions are always closed,
+       which means that often they include formal parameters
+       that are replaced by themselves (i.e. by the same symbols)
+       when the lambda expression is applied.
+       For instance, the untranslated term @('(let ((x 0)) (+ x y))')
+       is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
+       the lambda expression includes the extra formal parameter @('y')
+       (which is not bound by the @(tsee let)),
+       applied to @('y') itself,
+       making the lambda expression closed.
+       To avoid generating an extra Java local variable
+       for these additional formal parameters of lambda expressions
+       (e.g. to avoid generating a Java local variable
+       for the formal parameter @('y') in the example above,
+       given that one must already be in scope
+       for the @(tsee let) term to make sense),
+       we remove for consideration all the formal parameters
+       that are replaced by themselves when the lambda expression is applied.
+       We do that by looking at
+       the actual arguments @('aargs') of the lambda expression;
+       this is why @('aargs') is passed to this code generation function.")
+     (xdoc::p
+      "Since we only generate new Java local variables
+       for the lambda expression's formal parameters
+       that are not dropped as just explained,
+       in general we need to keep the Java local variables
+       associated to the dropped formal parameters.
+       We do that by simply appending the new @('jvars')
+       in front of the old one, achieving the desired ``overwriting''.")
+     (xdoc::p
+      "After generating the needed Java local variables,
+       we assign to them the Java expressions for the actual arguments,
        as in @(tsee let) bindings.")
      (xdoc::p
       "Finally, we generate Java code
        for the body of the lambda expression."))
-    (b* (((mv jvars jvar-var-indices) (atj-gen-shallow-avars aformals
-                                                             jvar-var-indices
-                                                             curr-pkg))
+    (b* ((aformals (remove-unneeded-lambda-formals aformals aargs))
+         ((mv new-jvars
+              jvar-var-indices) (atj-gen-shallow-avars aformals
+                                                       jvar-var-indices
+                                                       curr-pkg))
+         (jvars (append new-jvars jvars))
          (let-jblock (atj-gen-shallow-let-bindings aformals
                                                    jargs
                                                    jvars))
