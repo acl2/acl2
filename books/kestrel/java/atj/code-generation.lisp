@@ -40,7 +40,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We generate directly Java abstract syntax,
+    "We generate Java abstract syntax,
      which we then pretty-print to files.")
    (xdoc::p
     "We translate ACL2 values, expressions, and lambda expressions
@@ -51,7 +51,7 @@
      That is, the Java block provides the necessary code
      to ``prepare'' the evaluation of the Java expression.
      The Java block may include Java expressions and blocks
-     recursively produced.")
+     that are recursively generated.")
    (xdoc::p
     "To illustrate this concept,
      consider the generation of a Java expression to build
@@ -795,14 +795,15 @@
      from the ACL2 variable.")
    (xdoc::p
     "Each ACL2 function is turned into a Java method,
-     whose body is a shallowly embedded represented of the ACL2 function body.
+     whose body is a shallowly embedded representation
+     of the ACL2 function body.
      The ACL2 function body may reference the ACL2 function's parameter,
      as well as @(tsee let)-bound variables (via lambda expressions).
-     Thus, the same variable name may in fact denote different variables
+     Thus, the same variable symbol may in fact denote different variables
      in different parts of an ACL2 function body.
-     Java does not allow different local variables with the same
-     (in nested scopes in) the same method,
-     and so we need to map equally named ACL2 variables
+     Java does not allow different local variables with the same name
+     in (nested scopes in) the same method,
+     and so we need to map homonymous but different ACL2 variables
      in the same ACL2 function
      to differently named Java variables
      in the same Java method.
@@ -822,7 +823,7 @@
      every symbol name with the package prefix affects readability.
      In ACL2, package prefixes are normally omitted
      for symbols in the current ACL2 package.
-     We do something similar for the Java variable names,
+     Here we do something similar for the Java variable names,
      where the notion of current package is as follows.
      As mentioned above, each ACL2 function is turned into a Java method:
      this method is inside a Java class whose name is derived from
@@ -843,15 +844,15 @@
      so that if there is just one variable with a certain name,
      since we start with index 0, no index is added to the name.
      Thus there are a few combinations possible with these three parts;
-     the use of triple and double @('$') characters guaranteee
+     the use of triple and double @('$') characters guarantees
      that there is no confusion with the @('$hh') escapes
      where @('hh') is the hex code of an ACL2 character
      that is not valid for a Java identifier.
-     Furthermore, if the resulting variable name if just @('<name>')
+     Furthermore, if the resulting variable name is just @('<name>')
      and happens to be a Java keyword or Java literal or empty,
      we add a single @('$') at the end, which again is unambiguous.")
    (xdoc::p
-    "This is a simple scheme to keep names unique,
+    "This is a simple uniform scheme to keep names unique,
      but we may improve it to generate more readable names.")
    (xdoc::p
     "We call @(tsee atj-achars-to-jchars-id) to create
