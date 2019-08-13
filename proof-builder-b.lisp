@@ -3197,7 +3197,7 @@
    1 target-name-or-rune target-index))
 
 (defun make-linear-instr (lemma-id raw-subst instantiate-free)
-  (list* (make-pretty-pc-command :linear)
+  (list* (make-pretty-pc-command :apply-linear)
          lemma-id
          (cond (instantiate-free (list raw-subst instantiate-free))
                (raw-subst (list raw-subst))
