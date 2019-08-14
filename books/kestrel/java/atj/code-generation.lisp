@@ -782,7 +782,10 @@
   (assert-event (string-listp *atj-disallowed-shallow-jvars*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jvars*)))
 
-(define atj-gen-shallow-avar ((avar symbolp) (index natp) (curr-apkg stringp))
+(define atj-gen-shallow-avar ((avar symbolp)
+                              (index natp)
+                              (curr-apkg stringp)
+                              (avars-by-name string-symbols-alistp))
   :returns (jvar-name stringp)
   :short "Generate a shallowly embedded ACL2 variable."
   :long
@@ -838,12 +841,30 @@
      @('<pname>$$$<name>$$<index>'),
      where @('<pname>') and @('<name>') are representations of the ACL2 names
      that are valid for Java identifiers,
-     and @('<index>') is a decimal representation of the numeric index.
-     If @('pname') is the same as the current package, we omit @('<pname>$$$').
-     If the index is 0, we omit @('$$<index>'),
+     and @('<index>') is a decimal representation of the numeric index.")
+   (xdoc::p
+    "If @('<pname>') is the same as the current package,
+     we omit @('<pname>$$$').
+     We omit @('<pname>$$$') also when the variable
+     is the only one with name @('<name>')
+     within the ``current'' ACL2 function:
+     since the scope of Java method parameters and local variables
+     is limited to the method where they occur,
+     no naming conflict may arise in this case.
+     The parameter @('avars-by-name') consists of
+     all the variables in the current ACL2 function,
+     organized by symbol name for easy lookup.
+     We retrieve the variables with the same name of the variable,
+     we remove the variables from them,
+     and we check if the result is empty:
+     in this case, this is the only variable with that name.
+     (The alist may have duplicate symbols in its values.)")
+   (xdoc::p
+    "If the index is 0, we omit @('$$<index>'),
      so that if there is just one variable with a certain name,
-     since we start with index 0, no index is added to the name.
-     Thus there are a few combinations possible with these three parts;
+     since we start with index 0, no index is added to the name.")
+   (xdoc::p
+    "Thus there are a few combinations possible with these three parts;
      the use of triple and double @('$') characters guarantees
      that there is no confusion with the @('$hh') escapes
      where @('hh') is the hex code of an ACL2 character
@@ -852,7 +873,7 @@
      and happens to be a Java keyword or Java literal or empty,
      we add a single @('$') at the end, which again is unambiguous.")
    (xdoc::p
-    "This is a simple uniform scheme to keep names unique,
+    "This is a relatively simple and uniform scheme to keep names unique,
      but we may improve it to generate more readable names.")
    (xdoc::p
     "We call @(tsee atj-achars-to-jchars-id) to create
@@ -863,7 +884,12 @@
      Otherwise, @('startp') is @('t') for @('name')
      if there is no package prefix."))
   (b* ((apkg (symbol-package-name avar))
-       (pname$$$-jchars (if (equal apkg curr-apkg)
+       (omit-pname? (or (equal apkg curr-apkg)
+                        (null (remove-eq
+                               avar
+                               (cdr (assoc-equal (symbol-name avar)
+                                                 avars-by-name))))))
+       (pname$$$-jchars (if omit-pname?
                             nil
                           (append (atj-achars-to-jchars-id (explode apkg) t)
                                   (list #\$ #\$ #\$))))
@@ -882,7 +908,8 @@
 
 (define atj-gen-shallow-avars ((avars symbol-listp)
                                (jvar-var-indices symbol-nat-alistp)
-                               (curr-apkg stringp))
+                               (curr-apkg stringp)
+                               (avars-by-name string-symbols-alistp))
   :returns (mv (jvars symbol-string-alistp :hyp (symbol-listp avars))
                (new-jvar-var-indices
                 symbol-nat-alistp
@@ -926,8 +953,11 @@
        (jvar-var-indices (acons avar (1+ index) jvar-var-indices))
        ((mv jvars jvar-var-indices) (atj-gen-shallow-avars (cdr avars)
                                                            jvar-var-indices
-                                                           curr-apkg)))
-    (mv (acons avar (atj-gen-shallow-avar avar index curr-apkg) jvars)
+                                                           curr-apkg
+                                                           avars-by-name)))
+    (mv (acons avar
+               (atj-gen-shallow-avar avar index curr-apkg avars-by-name)
+               jvars)
         jvar-var-indices)))
 
 (defval *atj-aij-class-names*
@@ -1177,7 +1207,8 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
@@ -1221,7 +1252,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          ((mv result-jlocvar jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed (jtype-class "Acl2Value")
                                    *atj-jvar-result*
@@ -1236,7 +1268,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          (else-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
                                                    (jexpr-name jvar-result)
                                                    else-jexpr)))
@@ -1249,7 +1282,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          (then-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
                                                    (jexpr-name jvar-result)
                                                    then-jexpr)))
@@ -1284,7 +1318,8 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
@@ -1321,7 +1356,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          ((mv result-jlocvar jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed (jtype-class "Acl2Value")
                                    *atj-jvar-result*
@@ -1336,7 +1372,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          (second-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
                                                      (jexpr-name jvar-result)
                                                      second-jexpr)))
@@ -1372,7 +1409,8 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
@@ -1415,7 +1453,8 @@
                                         jvar-var-indices
                                         jvar-value-index
                                         jvar-result-index
-                                        curr-pkg)
+                                        curr-pkg
+                                        avars-by-name)
               (atj-gen-shallow-aifapp afirst
                                       asecond
                                       athird
@@ -1423,7 +1462,8 @@
                                       jvar-var-indices
                                       jvar-value-index
                                       jvar-result-index
-                                      curr-pkg))))
+                                      curr-pkg
+                                      avars-by-name))))
          ((mv args-jblock
               arg-jexprs
               jvar-var-indices
@@ -1433,7 +1473,8 @@
                                                          jvar-var-indices
                                                          jvar-value-index
                                                          jvar-result-index
-                                                         curr-pkg))
+                                                         curr-pkg
+                                                         avars-by-name))
          ((when (symbolp afn))
           (mv args-jblock
               (jexpr-method (atj-gen-shallow-afnname afn curr-pkg)
@@ -1453,7 +1494,8 @@
                                                           jvar-var-indices
                                                           jvar-value-index
                                                           jvar-result-index
-                                                          curr-pkg))
+                                                          curr-pkg
+                                                          avars-by-name))
          (jblock (append args-jblock
                          lambda-jblock))
          (jexpr lambda-jexpr))
@@ -1477,7 +1519,8 @@
                                    (jvar-var-indices symbol-nat-alistp)
                                    (jvar-value-index posp)
                                    (jvar-result-index posp)
-                                   (curr-pkg stringp))
+                                   (curr-pkg stringp)
+                                   (avars-by-name string-symbols-alistp))
     :guard (and (= (len aargs) (len aformals))
                 (= (len jargs) (len aformals)))
     :returns (mv (jblock jblockp)
@@ -1537,7 +1580,8 @@
          ((mv new-jvars
               jvar-var-indices) (atj-gen-shallow-avars aformals
                                                        jvar-var-indices
-                                                       curr-pkg))
+                                                       curr-pkg
+                                                       avars-by-name))
          (jvars (append new-jvars jvars))
          (let-jblock (atj-gen-shallow-let-bindings aformals
                                                    jargs
@@ -1551,7 +1595,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg)))
+                                                        curr-pkg
+                                                        avars-by-name)))
       (mv (append let-jblock body-jblock)
           body-jexpr
           jvar-var-indices
@@ -1566,7 +1611,8 @@
                                  (jvar-var-indices symbol-nat-alistp)
                                  (jvar-value-index posp)
                                  (jvar-result-index posp)
-                                 (curr-pkg stringp))
+                                 (curr-pkg stringp)
+                                 (avars-by-name string-symbols-alistp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
@@ -1607,7 +1653,8 @@
                                      jvar-var-indices
                                      jvar-value-index
                                      jvar-result-index
-                                     curr-pkg)))
+                                     curr-pkg
+                                     avars-by-name)))
     :measure (two-nats-measure (acl2-count aterm) 0))
 
   (define atj-gen-shallow-aterms ((aterms pseudo-term-listp)
@@ -1615,7 +1662,8 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
     :returns (mv (jblock jblockp)
                  (jexpr jexpr-listp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
@@ -1634,7 +1682,8 @@
                                                           jvar-var-indices
                                                           jvar-value-index
                                                           jvar-result-index
-                                                          curr-pkg))
+                                                          curr-pkg
+                                                          avars-by-name))
            ((mv rest-jblock
                 rest-jexprs
                 jvar-var-indices
@@ -1644,7 +1693,8 @@
                                                            jvar-var-indices
                                                            jvar-value-index
                                                            jvar-result-index
-                                                           curr-pkg)))
+                                                           curr-pkg
+                                                           avars-by-name)))
         (mv (append first-jblock rest-jblock)
             (cons first-jexpr rest-jexprs)
             jvar-var-indices
@@ -2069,15 +2119,19 @@
         (cw "  ~s0~%" afn))
        (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
        (aformals (formals afn (w state)))
-       ((mv jvars
-            jvar-var-indices) (atj-gen-shallow-avars aformals nil curr-pkg))
-       (jmethod-params (atj-gen-jparamlist-avalues (strip-cdrs jvars)))
        (abody (getpropc afn 'unnormalized-body))
        (abody (if guards$
                   (remove-mbe-logic-from-term abody)
                 (remove-mbe-exec-from-term abody)))
+       (avars (union-eq aformals (all-free/bound-vars abody)))
+       (avars-by-name (organize-symbols-by-name avars))
+       ((mv jvars
+            jvar-var-indices) (atj-gen-shallow-avars
+                               aformals nil curr-pkg avars-by-name))
+       (jmethod-params (atj-gen-jparamlist-avalues (strip-cdrs jvars)))
        ((mv abody-jblock abody-jexpr & & &)
-        (atj-gen-shallow-aterm abody jvars jvar-var-indices 1 1 curr-pkg))
+        (atj-gen-shallow-aterm
+         abody jvars jvar-var-indices 1 1 curr-pkg avars-by-name))
        (jmethod-body (append abody-jblock
                              (list (jstatem-return abody-jexpr)))))
     (make-jmethod :access (jaccess-public)

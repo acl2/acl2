@@ -203,6 +203,32 @@
                                            (cons sym prev-syms-for-pkg)
                                            acc))))))
 
+(define organize-symbols-by-name ((syms symbol-listp))
+  :returns (syms-by-name "A @(tsee string-symbols-alistp).")
+  :verify-guards nil
+  :short "Organize a list of symbols by their names."
+  :long
+  (xdoc::topstring-p
+   "The result is an alist from symbol names (strings)
+    to the non-empty lists of the symbols
+    that have the respective names.")
+  (organize-symbols-by-name-aux syms nil)
+
+  :prepwork
+  ((define organize-symbols-by-name-aux ((syms symbol-listp)
+                                         (acc string-symbols-alistp))
+     :returns syms-by-name ; STRING-SYMBOLS-ALISTP
+     :verify-guards nil
+     :parents nil
+     (b* (((when (endp syms)) acc)
+          (sym (car syms))
+          (name (symbol-name sym))
+          (prev-syms-for-name (cdr (assoc-equal name acc))))
+       (organize-symbols-by-name-aux (cdr syms)
+                                     (acons name
+                                            (cons sym prev-syms-for-name)
+                                            acc))))))
+
 (define remove-unneeded-lambda-formals ((formals symbol-listp)
                                         (actuals pseudo-term-listp))
   :guard (= (len formals) (len actuals))
@@ -244,6 +270,42 @@
              (cons (car formals)
                    (remove-unneeded-lambda-formals (cdr formals)
                                                    (cdr actuals)))))))
+
+(defines all-free/bound-vars
+  :short "Return all the free and bound variables that occur in a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The returned list of variables is in no particular order,
+     but it has no duplicates,
+     because we use @(tsee union-eq) to join variable lists.")
+   (xdoc::p
+    "This utility is in contrast with the built-in @(tsee all-vars),
+     which returns only the free variables."))
+
+  (define all-free/bound-vars ((term pseudo-termp))
+    :returns (vars symbol-listp :hyp :guard)
+    (cond ((variablep term) (list term))
+          ((fquotep term) nil)
+          (t (b* ((fn/lambda (ffn-symb term))
+                  (fn/lambda-vars (and (acl2::flambdap fn/lambda)
+                                       (union-eq (lambda-formals fn/lambda)
+                                                 (all-free/bound-vars
+                                                  (lambda-body fn/lambda)))))
+                  (args-vars (all-free/bound-vars-lst (fargs term))))
+               (union-eq fn/lambda-vars args-vars)))))
+
+  (define all-free/bound-vars-lst ((terms pseudo-term-listp))
+    :returns (vars symbol-listp :hyp :guard)
+    (cond ((endp terms) nil)
+          (t (union-eq (all-free/bound-vars (car terms))
+                       (all-free/bound-vars-lst (cdr terms))))))
+
+  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards all-free/bound-vars))
 
 (defval *atj-java-keywords*
   :short "The keywords of the Java language, as ACL2 strings."
