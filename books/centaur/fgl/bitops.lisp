@@ -62,6 +62,10 @@
 (def-gl-rewrite ifix-is-int
   (equal (ifix x) (int x)))
 
+(def-gl-rewrite bitp-fgl
+  (equal (bitp x)
+         (and (equal x (bfix x)) t)))
+
 (defund gl-int-endp (x)
   (gl-object-case x
     :g-integer (atom (cdr x.bits))
@@ -186,11 +190,15 @@
   (implies (and (syntaxp (and (gl-object-case x :g-integer)
                               (gl-object-case n :g-concrete)))
                 (integerp x)
-                (posp n)
-                (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
-                     ((when x-endp) t))
-                  (check-signed-byte-p (1- n) (intcdr x))))
-           (equal (check-signed-byte-p n x) t))
+                (posp n))
+           (equal (check-signed-byte-p n x)
+                  (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+                       ((when x-endp) t)
+                       (rest (check-signed-byte-p (1- n) (intcdr x)))
+                       ((when (and (syntax-bind rest-t (eq rest t))
+                                   (eq rest t)))
+                        t))
+                    (abort-rewrite (check-signed-byte-p n x)))))
   :hints(("Goal" :in-theory (e/d (check-signed-byte-p
                                   bitops::signed-byte-p**
                                   int-endp)
@@ -205,11 +213,15 @@
   (implies (and (syntaxp (and (gl-object-case x :g-integer)
                               (gl-object-case n :g-concrete)))
                 (integerp x)
-                (natp n)
-                (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
-                     ((when x-endp) (not (intcar x))))
-                  (check-unsigned-byte-p (1- n) (intcdr x))))
-           (equal (check-unsigned-byte-p n x) t))
+                (natp n))
+           (equal (check-unsigned-byte-p n x)
+                  (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+                       ((when x-endp) (not (intcar x)))
+                       (rest (check-unsigned-byte-p (1- n) (intcdr x)))
+                       ((when (and (syntax-bind rest-t (eq rest t))
+                                   (eq rest t)))
+                        t))
+                    (abort-rewrite (check-unsigned-byte-p n x)))))
   :hints(("Goal" :in-theory (e/d (check-unsigned-byte-p
                                   bitops::unsigned-byte-p**
                                   int-endp)

@@ -110,7 +110,7 @@
             ((when failed-hyp)
              (fmt-to-comment-window
               "~t0<~x1 ~x2 failed (hyp ~x3)~%"
-              (pairlis2 acl2::*base-10-chars* (list (1- depth) depth rune failed-hyp))
+              (pairlis2 acl2::*base-10-chars* (list (1- depth) (1- depth) rune failed-hyp))
               0 evisc-tuple nil)
              (update-interp-st->trace-scratch (1- depth) interp-st)))
          interp-st))
