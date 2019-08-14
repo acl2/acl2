@@ -27,125 +27,9 @@
 
 (xdoc::evmac-topic-library-extensions atj)
 
-(defines remove-mbe-logic/exec-from-term
-  :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':logic') part @('a') or @(':exec') part @('b')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The choice is determinated by the boolean flag,
-     which is @('t') when the @(':logic') part is to be removed.")
-   (xdoc::p
-    "In translated terms,
-     @(tsee mbe)s have the form @('(return-last 'acl2::mbe1-raw b a)')."))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
-                                           (logic? booleanp))
-    :returns (new-term "A @(tsee pseudo-termp).")
-    (b* (((when (variablep term)) term)
-         ((when (fquotep term)) term)
-         (fn (ffn-symb term))
-         (args (fargs term))
-         ((when (and (eq fn 'return-last)
-                     (equal (first args) '(quote acl2::mbe1-raw))))
-          (remove-mbe-logic/exec-from-term (if logic?
-                                               (second args)
-                                             (third args))
-                                           logic?))
-         (new-fn (if (symbolp fn)
-                     fn
-                   (make-lambda (lambda-formals fn)
-                                (remove-mbe-logic/exec-from-term
-                                 (lambda-body fn)
-                                 logic?))))
-         (new-args (remove-mbe-logic/exec-from-terms args logic?)))
-      (fcons-term new-fn new-args)))
-
-  (define remove-mbe-logic/exec-from-terms ((terms pseudo-term-listp)
-                                            (logic? booleanp))
-    :returns (new-terms "A @(tsee pseudo-term-listp).")
-    (b* (((when (endp terms)) nil)
-         ((cons term terms) terms)
-         (new-term (remove-mbe-logic/exec-from-term term logic?))
-         (new-terms (remove-mbe-logic/exec-from-terms terms logic?)))
-      (cons new-term new-terms))))
-
-(define remove-mbe-logic-from-term ((term pseudo-termp))
-  :returns (new-term "A @(tsee pseudo-termp).")
-  :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':exec') part @('b')."
-  (remove-mbe-logic/exec-from-term term t))
-
-(define remove-mbe-exec-from-term ((term pseudo-termp))
-  :returns (new-term "A @(tsee pseudo-termp).")
-  :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':logic') part @('a')."
-  (remove-mbe-logic/exec-from-term term nil))
-
-(define unquote-term ((term (and (pseudo-termp term)
-                                 (quotep term))))
-  :returns value
-  :short "Unquote a term that is a quoted constant."
-  :long
-  (xdoc::topstring-p
-   "The result is the quoted values, which may have any type.")
-  (unquote term))
-
-(define unquote-terms ((terms (and (pseudo-term-listp terms)
-                                   (quote-listp terms))))
-  :returns (values true-listp)
-  :short "Lift @(tsee unquote-term) to lists."
-  (cond ((endp terms) nil)
-        (t (cons (unquote-term (car terms))
-                 (unquote-terms (cdr terms))))))
-
-(define decompose-at-dots ((string stringp))
-  :returns (substrings string-listp)
-  :verify-guards nil
-  :short "Decompose an ACL2 string
-          into its substrings delimited by dot characters,
-          including empty substrings."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the string has no dots, a singleton list with the string is returned.
-     Otherwise, we return a list consisting of
-     the substring from the start of the string to the first dot,
-     the substrings between two consecutive dots (in order),
-     and the substring from the last dot to the end of the string.
-     The substrings include no dots, and may be empty.")
-   (xdoc::p
-    "For example:")
-   (xdoc::ul
-    (xdoc::li
-     "@('\"ab.c.def\"') is decomposed into @('(\"ab\" \"c\" \"def\")').")
-    (xdoc::li
-     "@('\"xyz\"') is decomposed into @('(\"xyz\")').")
-    (xdoc::li
-     "@('\".abc..de.\"') is decomposed into
-      @('(\"\" \"abc\" \"\" \"de\" \"\")').")))
-  (decompose-at-dots-aux (explode string) nil)
-
-  :prepwork
-  ((define decompose-at-dots-aux ((chars character-listp)
-                                  (rev-current-substrings string-listp))
-     :returns (final-substrings string-listp
-                                :hyp (string-listp rev-current-substrings))
-     :verify-guards nil
-     :parents nil
-     (if (endp chars)
-         (rev rev-current-substrings)
-       (b* ((pos (position #\. chars)))
-         (if pos
-             (b* ((substring (implode (take pos chars)))
-                  (chars (nthcdr (1+ pos) chars))
-                  (rev-current-substrings (cons substring
-                                                rev-current-substrings)))
-               (decompose-at-dots-aux chars rev-current-substrings))
-           (b* ((substring (implode chars))
-                (rev-final-substrings (cons substring rev-current-substrings)))
-             (rev rev-final-substrings)))))
-     :measure (len chars))))
+; basic:
 
 (std::defalist symbol-nat-alistp (x)
   :short "Recognize alists from symbols to natural numbers."
@@ -229,6 +113,134 @@
                                             (cons sym prev-syms-for-name)
                                             acc))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; strings:
+
+(define decompose-at-dots ((string stringp))
+  :returns (substrings string-listp)
+  :verify-guards nil
+  :short "Decompose an ACL2 string
+          into its substrings delimited by dot characters,
+          including empty substrings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the string has no dots, a singleton list with the string is returned.
+     Otherwise, we return a list consisting of
+     the substring from the start of the string to the first dot,
+     the substrings between two consecutive dots (in order),
+     and the substring from the last dot to the end of the string.
+     The substrings include no dots, and may be empty.")
+   (xdoc::p
+    "For example:")
+   (xdoc::ul
+    (xdoc::li
+     "@('\"ab.c.def\"') is decomposed into @('(\"ab\" \"c\" \"def\")').")
+    (xdoc::li
+     "@('\"xyz\"') is decomposed into @('(\"xyz\")').")
+    (xdoc::li
+     "@('\".abc..de.\"') is decomposed into
+      @('(\"\" \"abc\" \"\" \"de\" \"\")').")))
+  (decompose-at-dots-aux (explode string) nil)
+
+  :prepwork
+  ((define decompose-at-dots-aux ((chars character-listp)
+                                  (rev-current-substrings string-listp))
+     :returns (final-substrings string-listp
+                                :hyp (string-listp rev-current-substrings))
+     :verify-guards nil
+     :parents nil
+     (if (endp chars)
+         (rev rev-current-substrings)
+       (b* ((pos (position #\. chars)))
+         (if pos
+             (b* ((substring (implode (take pos chars)))
+                  (chars (nthcdr (1+ pos) chars))
+                  (rev-current-substrings (cons substring
+                                                rev-current-substrings)))
+               (decompose-at-dots-aux chars rev-current-substrings))
+           (b* ((substring (implode chars))
+                (rev-final-substrings (cons substring rev-current-substrings)))
+             (rev rev-final-substrings)))))
+     :measure (len chars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; system:
+
+(defines remove-mbe-logic/exec-from-term
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':logic') part @('a') or @(':exec') part @('b')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The choice is determinated by the boolean flag,
+     which is @('t') when the @(':logic') part is to be removed.")
+   (xdoc::p
+    "In translated terms,
+     @(tsee mbe)s have the form @('(return-last 'acl2::mbe1-raw b a)')."))
+
+  (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
+                                           (logic? booleanp))
+    :returns (new-term "A @(tsee pseudo-termp).")
+    (b* (((when (variablep term)) term)
+         ((when (fquotep term)) term)
+         (fn (ffn-symb term))
+         (args (fargs term))
+         ((when (and (eq fn 'return-last)
+                     (equal (first args) '(quote acl2::mbe1-raw))))
+          (remove-mbe-logic/exec-from-term (if logic?
+                                               (second args)
+                                             (third args))
+                                           logic?))
+         (new-fn (if (symbolp fn)
+                     fn
+                   (make-lambda (lambda-formals fn)
+                                (remove-mbe-logic/exec-from-term
+                                 (lambda-body fn)
+                                 logic?))))
+         (new-args (remove-mbe-logic/exec-from-terms args logic?)))
+      (fcons-term new-fn new-args)))
+
+  (define remove-mbe-logic/exec-from-terms ((terms pseudo-term-listp)
+                                            (logic? booleanp))
+    :returns (new-terms "A @(tsee pseudo-term-listp).")
+    (b* (((when (endp terms)) nil)
+         ((cons term terms) terms)
+         (new-term (remove-mbe-logic/exec-from-term term logic?))
+         (new-terms (remove-mbe-logic/exec-from-terms terms logic?)))
+      (cons new-term new-terms))))
+
+(define remove-mbe-logic-from-term ((term pseudo-termp))
+  :returns (new-term "A @(tsee pseudo-termp).")
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':exec') part @('b')."
+  (remove-mbe-logic/exec-from-term term t))
+
+(define remove-mbe-exec-from-term ((term pseudo-termp))
+  :returns (new-term "A @(tsee pseudo-termp).")
+  :short "Turn every call @('(mbe :logic a :exec b)') in a term
+          into just its @(':logic') part @('a')."
+  (remove-mbe-logic/exec-from-term term nil))
+
+(define unquote-term ((term (and (pseudo-termp term)
+                                 (quotep term))))
+  :returns value
+  :short "Unquote a term that is a quoted constant."
+  :long
+  (xdoc::topstring-p
+   "The result is the quoted values, which may have any type.")
+  (unquote term))
+
+(define unquote-terms ((terms (and (pseudo-term-listp terms)
+                                   (quote-listp terms))))
+  :returns (values true-listp)
+  :short "Lift @(tsee unquote-term) to lists."
+  (cond ((endp terms) nil)
+        (t (cons (unquote-term (car terms))
+                 (unquote-terms (cdr terms))))))
+
 (define remove-unneeded-lambda-formals ((formals symbol-listp)
                                         (actuals pseudo-term-listp))
   :guard (= (len formals) (len actuals))
@@ -306,6 +318,10 @@
   :verify-guards nil ; done below
   ///
   (verify-guards all-free/bound-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Java:
 
 (defval *atj-java-keywords*
   :short "The keywords of the Java language, as ACL2 strings."
@@ -409,6 +425,10 @@
   (b* ((identifiers (decompose-at-dots string)))
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; AIJ:
 
 (defval *atj-aij-jpackage*
   :short "Name of the Java package of AIJ."
