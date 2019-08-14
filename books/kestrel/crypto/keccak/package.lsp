@@ -27,7 +27,8 @@
             bytes-to-bits-little
             chars=>nats
             define
-            defmap-simple
+            defxdoc
+	    defmap-simple
             firstn
             flatten
             getbit
