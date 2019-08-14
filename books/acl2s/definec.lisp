@@ -86,13 +86,13 @@ both expand into
 
 (defmacro definec (name &rest args)
   `(with-output
-    :stack :push :off :all :on (summary) :summary (acl2::time)
+    :stack :push :off :all :on (error)
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
           (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
-          (f-type (map-intern-type ,(second args) pkg))
+          (f-type (map-intern-type ',(second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
@@ -112,22 +112,23 @@ but ~x0 has an odd number of arguments: ~x1"
           (bad-type
            (find-bad-d-arg-types d-arg-types d-arg-preds))
           ((when bad-type)
-           (er hard 'definec "~%~x0 is not a type." bad-type))
+           (er hard 'definec "~%One of the argument types, ~x0, is not a type." bad-type))
           ((unless f-type-pred)
-           (er hard 'definec "~%~x0 is not a type." f-type)))
+           (er hard 'definec "~%The given return type, ~x0, is not a type." f-type)))
        `(with-output :stack :pop ,defunc)))))
 
 (defmacro definedc (name &rest args)
   `(with-output
-    :stack :push :off :all
+    :stack :push :off :all :on (error)
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
           (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
-          (f-type (map-intern-type ,(second args) pkg))
+          (f-type (map-intern-type ',(second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
+          (d-arg-types (map-intern-types d-arg-types pkg))
           (d-arg-preds (map-preds d-arg-types tbl atbl 'definedc))
           (f-type-pred (pred-of-type f-type tbl atbl 'definedc))
           (ic (make-input-contract d-args d-arg-preds))
@@ -135,7 +136,18 @@ but ~x0 has an odd number of arguments: ~x1"
           (defunc `(defundc ,',name ,d-args
                      :input-contract ,ic
                      :output-contract ,oc
-                     ,@(cddr ',args))))
+                     ,@(cddr ',args)))
+          ((when (oddp (len f-args)))
+           (er hard 'definedc
+               "~%The argumets to ~x0 should alternate between variables and types,
+but ~x0 has an odd number of arguments: ~x1"
+               ',name f-args))
+          (bad-type
+           (find-bad-d-arg-types d-arg-types d-arg-preds))
+          ((when bad-type)
+           (er hard 'definedc "~%~x0 is not a type." bad-type))
+          ((unless f-type-pred)
+           (er hard 'definedc "~%~x0 is not a type." f-type)))
        `(with-output :stack :pop ,defunc)))))
 
 #|
