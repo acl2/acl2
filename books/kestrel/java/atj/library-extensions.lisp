@@ -288,7 +288,7 @@
     (cond ((variablep term) (list term))
           ((fquotep term) nil)
           (t (b* ((fn/lambda (ffn-symb term))
-                  (fn/lambda-vars (and (acl2::flambdap fn/lambda)
+                  (fn/lambda-vars (and (flambdap fn/lambda)
                                        (union-eq (lambda-formals fn/lambda)
                                                  (all-free/bound-vars
                                                   (lambda-body fn/lambda)))))

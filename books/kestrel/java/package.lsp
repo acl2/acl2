@@ -51,6 +51,7 @@
                          fcons-term
                          ffn-symb
                          flambda-applicationp
+                         flambdap
                          fmt-hard-right-margin
                          fmt-soft-right-margin
                          formals
