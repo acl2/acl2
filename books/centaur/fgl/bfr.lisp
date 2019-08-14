@@ -28,7 +28,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
- (in-package "FGL")
+(in-package "FGL")
 (include-book "std/util/defenum" :dir :system)
 (include-book "nat-var-aig")
 (include-book "ubdd")
