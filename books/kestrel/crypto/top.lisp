@@ -14,6 +14,9 @@
 (include-book "ecdsa/top")
 (include-book "interfaces/top")
 
+;; Documentation for specific API functions.
+(include-book "keccak/documentation")
+
 ; The following is temporarily commented out,
 ; waiting for conflicts in the manual to be resolved.
 ;; (include-book "attachments/top")
