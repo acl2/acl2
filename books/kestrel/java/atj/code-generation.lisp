@@ -146,7 +146,9 @@
                               :name (car names))
                  (atj-gen-jparamlist-avalues (cdr names))))))
 
-(define atj-achar-to-jchars-id ((achar characterp) (startp booleanp))
+(define atj-achar-to-jchars-id ((achar characterp)
+                                (startp booleanp)
+                                (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (characterp achar))
   :short "Turn an ACL2 character into one or more Java characters
           of an ASCII Java identifier."
@@ -164,7 +166,13 @@
      compared to Java identifiers, notably the uppercase restriction.")
    (xdoc::p
     "If an ACL2 character (part of an ACL2 symbol or package name) is a letter,
-     we keep it unchanged in forming the Java identifier.
+     we keep it unchanged in forming the Java identifier,
+     but we flip it from uppercase to lowercase or from lowercase to uppercase
+     if the @('flip-case-p') flag is @('t'):
+     since ACL2 symbols often have uppercase letters,
+     by flipping them to lowercase we generate
+     more readable and idiomatic Java identifiers;
+     and flipping lowercase letters to uppercase letters avoids conflicts.
      If the ACL2 character is a digit, we keep it unchanged
      only if it is not at the start of the Java identifier:
      this is indicated by the @('startp') flag.
@@ -179,8 +187,12 @@
      Note that @('$') itself, which is valid in Java identifiers,
      is mapped to itself followed by its hex code (not just to itself)
      when it appears in the ACL2 symbol or package name."))
-  (cond ((or (str::down-alpha-p achar)
-             (str::up-alpha-p achar)) (list achar))
+  (cond ((str::up-alpha-p achar) (if flip-case-p
+                                     (list (str::downcase-char achar))
+                                   (list achar)))
+        ((str::down-alpha-p achar) (if flip-case-p
+                                       (list (str::upcase-char achar))
+                                     (list achar)))
         ((and (digit-char-p achar)
               (not startp)) (list achar))
         ((eql achar #\-) (list #\_))
@@ -188,7 +200,9 @@
                 ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
-(define atj-achars-to-jchars-id ((achars character-listp) (startp booleanp))
+(define atj-achars-to-jchars-id ((achars character-listp)
+                                 (startp booleanp)
+                                 (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (character-listp achars))
   :short "Lift @(tsee atj-achar-to-jchars-id) to lists."
   :long
@@ -200,8 +214,8 @@
     because after the first character
     we are no longer at the start of the Java identifier.")
   (cond ((endp achars) nil)
-        (t (append (atj-achar-to-jchars-id (car achars) startp)
-                   (atj-achars-to-jchars-id (cdr achars) nil)))))
+        (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
+                   (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
 
 (define atj-gen-jlocvar-indexed
   ((var-type jtypep "Type of the local variable.")
@@ -899,10 +913,11 @@
                                                  avars-by-name))))))
        (pname$$$-jchars (if omit-pname?
                             nil
-                          (append (atj-achars-to-jchars-id (explode apkg) t)
+                          (append (atj-achars-to-jchars-id (explode apkg) t t)
                                   (list #\$ #\$ #\$))))
        (name-jchars (atj-achars-to-jchars-id (explode (symbol-name avar))
-                                             (endp pname$$$-jchars)))
+                                             (endp pname$$$-jchars)
+                                             t))
        ($$index-jchars (if (= index 0)
                            nil
                          (append (list #\$ #\$)
@@ -1055,7 +1070,7 @@
      We also ensure that is is distinct from the main class generated.
      If the candidate Java class name is one of these,
      we add a @('$') at the end."))
-  (b* ((jchars (atj-achars-to-jchars-id (explode apkg) t))
+  (b* ((jchars (atj-achars-to-jchars-id (explode apkg) t nil))
        (jstring (implode jchars))
        (jstring (if (or (member-equal jstring *atj-disallowed-shallow-jclasses*)
                         (equal jstring java-class$))
@@ -1121,16 +1136,19 @@
   (b* ((apkg (symbol-package-name afn))
        (jclass.-jchars (if (equal apkg curr-apkg)
                            nil
-                         (append (atj-achars-to-jchars-id (explode apkg) t)
+                         (append (atj-achars-to-jchars-id (explode apkg) t nil)
                                  (list #\.))))
-       (jmethod-jchars (atj-achars-to-jchars-id (explode (symbol-name afn)) t))
-       (jmethod-jchars (if (member-equal jmethod-jchars
+       (jmethod-jchars (atj-achars-to-jchars-id (explode
+                                                 (symbol-name afn)) t t))
+       (jmethod-jchars (if (member-equal (implode jmethod-jchars)
                                          *atj-disallowed-shallow-jmethods*)
                            (rcons #\$ jmethod-jchars)
                          jmethod-jchars))
        (jchars (append jclass.-jchars jmethod-jchars))
        (jstring (implode jchars)))
-    jstring))
+    jstring)
+  :prepwork
+  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
 (define atj-gen-shallow-let-bindings ((avars symbol-listp)
                                       (jexprs msg-listp)
@@ -1721,7 +1739,7 @@
     which should be distinct from all the other methods
     generated for the same class.")
   (str::cat "$addPackageDef_"
-            (implode (atj-achars-to-jchars-id (explode apkg) nil))))
+            (implode (atj-achars-to-jchars-id (explode apkg) nil nil))))
 
 (define atj-gen-apkg-name ((apkg stringp))
   :returns (expr jexprp)
@@ -1855,9 +1873,10 @@
     generated for the same class.")
   (str::cat
    "$addFunctionDef_"
-   (implode (atj-achars-to-jchars-id (explode (symbol-package-name afn)) nil))
+   (implode (atj-achars-to-jchars-id (explode
+                                      (symbol-package-name afn)) nil nil))
    "$$$"
-   (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil))))
+   (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil t))))
 
 (defval *atj-jvar-formals*
   :short "Name of the Java local variable used to store

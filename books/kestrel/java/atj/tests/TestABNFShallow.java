@@ -19,7 +19,7 @@ public class TestABNFShallow {
             // record start time:
             long start = System.currentTimeMillis();
             // execute the call:
-            Acl2Value result = ABNFShallow.ACL2.PARSE_GRAMMAR(input);
+            Acl2Value result = ABNFShallow.ACL2.parse_grammar(input);
             // record end time:
             long end = System.currentTimeMillis();
             // prevent unwanted JIT compiler optimizations:
