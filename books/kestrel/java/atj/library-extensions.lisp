@@ -177,29 +177,31 @@
   :keyp-of-nil nil
   :valp-of-nil t)
 
-(define organize-fns-by-pkg ((fns symbol-listp))
-  :returns (fns-by-pkg "A @(tsee string-symbols-alistp).")
+(define organize-symbols-by-pkg ((syms symbol-listp))
+  :returns (syms-by-pkg "A @(tsee string-symbols-alistp).")
   :verify-guards nil
-  :short "Organize a list of function names by their packages."
+  :short "Organize a list of symbols by their packages."
   :long
   (xdoc::topstring-p
    "The result is an alist from package names (strings)
-    to the non-empty lists of the function symbols
+    to the non-empty lists of the symbols
     that are in the respective packages.")
-  (organize-fns-by-pkg-aux fns nil)
+  (organize-symbols-by-pkg-aux syms nil)
 
   :prepwork
-  ((define organize-fns-by-pkg-aux ((fns symbol-listp)
-                                    (acc string-symbols-alistp))
-     :returns fns-by-pkg ; STRING-SYMBOLS-ALISTP
+  ((define organize-symbols-by-pkg-aux ((syms symbol-listp)
+                                        (acc string-symbols-alistp))
+     :returns syms-by-pkg ; STRING-SYMBOLS-ALISTP
      :verify-guards nil
      :parents nil
-     (b* (((when (endp fns)) acc)
-          (fn (car fns))
-          (pkg (symbol-package-name fn))
-          (prev-fns-for-pkg (cdr (assoc-equal pkg acc))))
-       (organize-fns-by-pkg-aux (cdr fns)
-                                (acons pkg (cons fn prev-fns-for-pkg) acc))))))
+     (b* (((when (endp syms)) acc)
+          (sym (car syms))
+          (pkg (symbol-package-name sym))
+          (prev-syms-for-pkg (cdr (assoc-equal pkg acc))))
+       (organize-symbols-by-pkg-aux (cdr syms)
+                                    (acons pkg
+                                           (cons sym prev-syms-for-pkg)
+                                           acc))))))
 
 (define remove-unneeded-lambda-formals ((formals symbol-listp)
                                         (actuals pseudo-term-listp))

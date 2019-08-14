@@ -2381,7 +2381,7 @@
                 (remove-duplicates-eq
                  (append afns
                          (strip-cars *primitive-formals-and-guards*))))
-               (afns-by-apkg (organize-fns-by-pkg afns+primitives)))
+               (afns-by-apkg (organize-symbols-by-pkg afns+primitives)))
             (jclasses-to-jcmembers
              (atj-gen-shallow-afns-by-apkg afns-by-apkg
                                            guards$
