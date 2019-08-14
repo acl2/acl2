@@ -325,14 +325,22 @@
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 integer."
   :long
-  (xdoc::topstring-p
-   "If the ACL2 integer is representable as a Java integer,
-    we generate a Java integer literal.
-    Otherwise, if it is representable as a Java long integer,
-    we generate a Java long integer literal.
-    Otherwise, we generate a Java big integer
-    built out of the string representation of the ACL2 integer.")
-  (b* ((arg (cond ((signed-byte-p 32 ainteger)
+  (xdoc::topstring
+   (xdoc::p
+    "If the ACL2 integer is representable as a Java integer,
+     we generate a Java integer literal.
+     Otherwise, if it is representable as a Java long integer,
+     we generate a Java long integer literal.
+     Otherwise, we generate a Java big integer
+     built out of the string representation of the ACL2 integer.")
+   (xdoc::p
+    "These are passed to the @('Acl2Integer.make').
+     However, if the integer is 0 or 1,
+     we simply generate a reference to the respective Java static final fields
+     in the @('Acl2Integer') class."))
+  (b* (((when (= ainteger 0)) (jexpr-name "Acl2Integer.ZERO"))
+       ((when (= ainteger 1)) (jexpr-name "Acl2Integer.ONE"))
+       (arg (cond ((signed-byte-p 32 ainteger)
                    (if (< ainteger 0)
                        (jexpr-unary (junop-uminus)
                                     (jexpr-literal
