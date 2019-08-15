@@ -127,18 +127,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Centaur meta-reasoning library")
-
-   (xdoc::p "The @('centaur/meta') directory contains various new books focused
-     on meta-reasoning, differing from previous efforts in their use of
-     @('clause-processors/pseudo-term-fty.lisp') to treat pseudo-terms as a
-     sum-of-products type.  Among other things, this directory contains an
-     unconditional rewriter, a let-abstraction clause processor, and a clause
-     processor that quickly removes irrelevant parts of a clause during mutual
-     inductions using @('tools/flag.lisp').")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seeurl "defarbrec" "Arbitrary Recursion Library"))
 
    (xdoc::p
@@ -151,6 +139,18 @@
     ". See the "
     (xdoc::seeurl "defarbrec-related" "related tools section")
     " of the documentation of @(tsee defarbrec) for more information.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Centaur meta-reasoning library")
+
+   (xdoc::p "The @('centaur/meta') directory contains various new books focused
+     on meta-reasoning, differing from previous efforts in their use of
+     @('clause-processors/pseudo-term-fty.lisp') to treat pseudo-terms as a
+     sum-of-products type.  Among other things, this directory contains an
+     unconditional rewriter, a let-abstraction clause processor, and a clause
+     processor that quickly removes irrelevant parts of a clause during mutual
+     inductions using @('tools/flag.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
