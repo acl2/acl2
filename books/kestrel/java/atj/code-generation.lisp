@@ -2580,27 +2580,39 @@
   (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-fnname*)))
 
 (defval *atj-jvar-fnargs*
-  :short "Name of the Java local variables used to store
+  :short "Name of the Java local variable used to store
           the array of argument values of an ACL2 function call."
   "arguments"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-fnargs*)))
 
 (defval *atj-jvar-aresult*
-  :short "Name of the Java local variables used to store
-          the result of a test calculated in ACL2 (by ATJ)."
+  :short "Name of the Java local variable used to store
+          the result of a test calculated in ACL2."
   "resultAcl2"
   ///
-  (assert-event
-   (atj-string-ascii-java-identifier-p *atj-jvar-aresult*)))
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-aresult*)))
 
 (defval *atj-jvar-jresult*
-  :short "Name of the Java local variables used to store
-          the result of a test calculated in Java (by AIJ)."
+  :short "Name of the Java local variable used to store
+          the result of a test calculated in Java."
   "resultJava"
   ///
-  (assert-event
-   (atj-string-ascii-java-identifier-p *atj-jvar-jresult*)))
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-jresult*)))
+
+(defval *atj-jvar-start-time*
+  :short "Name of the Java local variable used to store
+          the start time of a test calculated in Java."
+  "startTime"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-start-time*)))
+
+(defval *atj-jvar-end-time*
+  :short "Name of the Java local variable used to store
+          the end time of a test calculated in Java."
+  "endTime"
+  ///
+  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-end-time*)))
 
 (define atj-gen-test-jmethod ((test$ atj-testp)
                               (deep$ booleanp)
@@ -2642,16 +2654,21 @@
       any of the generated Java classes that correspond to ACL2 packages,
       the Java method to call must be always preceded by the class name:
       thus, we use the empty string as the current package name,
-      which is guaranteed not to match any existing ACL2 package.")))
+      which is guaranteed not to match any existing ACL2 package."))
+   (xdoc::p
+    "The generated code also measures the time of the Java call,
+     by taking the current time just before and just after the call.
+     The two values are subtracted, and the time printed."))
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
        (jmethod-name (atj-gen-test-jmethod-name test.name))
        (message (str::cat "Testing '" test.name "'..."))
-       (print-jstatem (jstatem-expr
-                       (jexpr-imethod (jexpr-name "System.out")
-                                      "print"
-                                      (list (atj-gen-jstring message)))))
+       (print-testing-jstatem
+        (jstatem-expr
+         (jexpr-imethod (jexpr-name "System.out")
+                        "print"
+                        (list (atj-gen-jstring message)))))
        (function-jblock
         (and deep$
              (b* ((function-jexpr (atj-gen-asymbol test.function))
@@ -2673,6 +2690,14 @@
                                       :name *atj-jvar-fnargs*
                                       :init arguments-jexpr)))
                (list (jstatem-locvar arguments-jlocvar)))))
+       (time-jexpr (jexpr-smethod (jtype-class "System")
+                                  "currentTimeMillis"
+                                  nil))
+       (start-time-jstatem (jstatem-locvar
+                            (make-jlocvar :final? nil
+                                          :type (jtype-long)
+                                          :name *atj-jvar-start-time*
+                                          :init time-jexpr)))
        (jres-jexpr
         (if deep$
             (jexpr-smethod (jtype-class java-class$)
@@ -2687,6 +2712,11 @@
                                    :name *atj-jvar-jresult*
                                    :init jres-jexpr))
        (jres-jstatem (jstatem-locvar jres-jlocvar))
+       (end-time-jstatem (jstatem-locvar
+                          (make-jlocvar :final? nil
+                                        :type (jtype-long)
+                                        :name *atj-jvar-end-time*
+                                        :init time-jexpr)))
        ((mv ares-jblock
             ares-jexpr
             &) (atj-gen-avalue test.result jvar-value-index))
@@ -2698,11 +2728,11 @@
        (print-pass-jstatem (jstatem-expr
                             (jexpr-imethod (jexpr-name "System.out")
                                            "println"
-                                           (list (atj-gen-jstring "PASS")))))
+                                           (list (atj-gen-jstring " PASS")))))
        (print-fail-jstatem (jstatem-expr
                             (jexpr-imethod (jexpr-name "System.out")
                                            "println"
-                                           (list (atj-gen-jstring "FAIL")))))
+                                           (list (atj-gen-jstring " FAIL")))))
        (set-fail-jstatem (jstatem-expr
                           (jexpr-binary (jbinop-asg)
                                         (jexpr-name "failures")
@@ -2714,14 +2744,30 @@
                     (list print-pass-jstatem)
                     (list set-fail-jstatem
                           print-fail-jstatem)))
-       (jmethod-body (append (list print-jstatem)
+       (time-diff-jexpr (jexpr-binary (jbinop-sub)
+                                      (jexpr-name *atj-jvar-end-time*)
+                                      (jexpr-name *atj-jvar-start-time*)))
+       (time-seconds-jexpr (jexpr-binary (jbinop-div)
+                                         (jexpr-paren time-diff-jexpr)
+                                         (jexpr-literal
+                                          (jliteral-floating 1000))))
+       (print-time-jstatem
+        (jstatem-expr
+         (jexpr-imethod (jexpr-name "System.out")
+                        "format"
+                        (list (jexpr-literal (jliteral-string "  Time: %.3f%n"))
+                              time-seconds-jexpr))))
+       (jmethod-body (append (list print-testing-jstatem)
                              function-jblock
                              aargs-jblock
                              arguments-jblock
+                             (list start-time-jstatem)
                              (list jres-jstatem)
+                             (list end-time-jstatem)
                              ares-jblock
                              (list ares-jstatem)
-                             (list if-jstatem))))
+                             (list if-jstatem)
+                             (list print-time-jstatem))))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
