@@ -368,11 +368,7 @@
       These tests can be run via additional generated Java code
       (see below).")
     (xdoc::p
-     "Note that the @(':tests') input is evaluated.")
-    (xdoc::p
-     "This input may be present only if @(':deep') is @('t').
-      Test support for the shallow embedding approach
-      should be added in the future."))
+     "Note that the @(':tests') input is evaluated."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
