@@ -15,22 +15,13 @@
 
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "oslib/top" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-input-processing
-  :parents (atj-implementation)
-  :short "Input processing performed by @(tsee atj)."
-  :long
-  (xdoc::topstring-p
-   "This involves validating the inputs.
-    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
-    Thus, generally the input processing functions return
-    <see topic='@(url acl2::error-triple)'>error triples</see>.")
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-input-processing atj)
 
 (define atj-process-targets ((targets true-listp) ctx state)
   :returns (mv erp
@@ -204,7 +195,7 @@
                    t nil))
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
-          (args (unquote-list qcs))
+          (args (unquote-terms qcs))
           ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
@@ -354,9 +345,6 @@
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets ctx state))
-       ((when (and tests$ (not deep)))
-        (er-soft+ ctx t nil "The :TESTS input must be NIL ~
-                             when :DEEP is (perhaps by default) NIL."))
        ((er (list output-file$
                   output-file-test$)) (atj-process-output-dir
                                        output-dir java-class$ tests$ ctx state))

@@ -647,41 +647,95 @@ see (defdata foo rational)
 
 |#
 
-(defmacro defdata-alias (alias type &optional pred)
-  `(make-event
-    (b* ((pkg (current-package state))
-         (M (type-metadata-table (w state)))
-         (A (type-alias-table (w state)))
-         (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
-         (type (base-alias-type ',type A))
-         (predicate (acl2s::get-alist
-                     :predicate (acl2s::get-alist type M)))
-         (base-enum (enumerator-name type A M))
-         (base-enum/acc (enum/acc-name type A M))
-         (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
-         (alias-enum-acc (acl2s::make-symbl `(,alias-enum /acc) pkg))
-         (x (intern$ "X" pkg))
-         (seed (intern$ "SEED" pkg))
-         ((unless predicate)
-          (er hard 'defdata-alias
- "~%**Unknown type**: ~x0 is not a known type name.~%" ',type )))
-      `(encapsulate
-        ()
-        (table type-alias-table
-               ',',alias
-               '((:pred . ,pred)
-                 (:type . ,type)
-                 (:predicate . ,predicate))
-               :put)
-        (table pred-alias-table
-               ',pred
-               '((:alias . ,',alias)
-                 (:type . ,type)
-                 (:predicate . ,predicate))
-               :put)
-        (defmacro ,pred (,x) `(,',predicate ,,x))
-        (defmacro ,alias-enum (,x) `(,',base-enum ,,x))
-        (defmacro ,alias-enum-acc (,x ,seed) `(,',base-enum/acc ,,x ,,seed))))))
+(defmacro defdata-alias (alias type &rest args)
+  (b* ((verbosep (let ((lst (member :verbose args)))
+                   (and lst (cadr lst))))
+       (pred (let ((lst (member :pred args)))
+               (and lst (cadr lst))))
+       (- (cw "~%")))
+    `(with-output
+      ,@(and (not verbosep) '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+      :gag-mode t :stack :push
+      (make-event
+       (b* ((pkg (current-package state))
+            (M (type-metadata-table (w state)))
+            (A (type-alias-table (w state)))
+            (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
+            (type (base-alias-type ',type A))
+            (predicate (acl2s::get-alist
+                        :predicate (acl2s::get-alist type M)))
+            (base-enum (enumerator-name type A M))
+            (base-enum/acc (enum/acc-name type A M))
+            (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
+            (alias-enum-acc (acl2s::make-symbl `(,alias-enum /acc) pkg))
+            (x (intern$ "X" pkg))
+            (seed (intern$ "SEED" pkg))
+            ((unless predicate)
+             (er hard 'defdata-alias
+                 "~%**Unknown type**: ~x0 is not a known type name.~%" ',type)))
+         `(encapsulate
+           ()
+           (table type-alias-table
+                  ',',alias
+                  '((:pred . ,pred)
+                    (:type . ,type)
+                    (:predicate . ,predicate))
+                  :put)
+           (table pred-alias-table
+                  ',pred
+                  '((:alias . ,',alias)
+                    (:type . ,type)
+                    (:predicate . ,predicate))
+                  :put)
+           (defmacro ,pred (,x) `(,',predicate ,,x))
+           (defmacro ,alias-enum (,x) `(,',base-enum ,,x))
+           (defmacro ,alias-enum-acc (,x ,seed) `(,',base-enum/acc ,,x ,,seed))))))))
+
+#|
+(defmacro defdata-alias (alias type &rest args)
+  (b* ((verbosep (let ((lst (member :verbose args)))
+                   (and lst (cadr lst))))
+       (pred (let ((lst (member :pred args)))
+               (and lst (cadr lst))))
+       (- (cw "~%")))
+    `(make-event
+      (b* ((pkg (current-package state))
+           (M (type-metadata-table (w state)))
+           (A (type-alias-table (w state)))
+           (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
+           (type (base-alias-type ',type A))
+           (predicate (acl2s::get-alist
+                       :predicate (acl2s::get-alist type M)))
+           (base-enum (enumerator-name type A M))
+           (base-enum/acc (enum/acc-name type A M))
+           (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
+           (alias-enum-acc (acl2s::make-symbl `(,alias-enum /acc) pkg))
+           (x (intern$ "X" pkg))
+           (seed (intern$ "SEED" pkg))
+           ((unless predicate)
+            (er hard 'defdata-alias
+                "~%**Unknown type**: ~x0 is not a known type name.~%" ',type )))
+        `(with-output
+          ,@(and (not ,verbosep) '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+          :gag-mode t :stack :push
+          (encapsulate
+           ()
+           (table type-alias-table
+                  ',',alias
+                  '((:pred . ,pred)
+                    (:type . ,type)
+                    (:predicate . ,predicate))
+                  :put)
+           (table pred-alias-table
+                  ',pred
+                  '((:alias . ,',alias)
+                    (:type . ,type)
+                    (:predicate . ,predicate))
+                  :put)
+           (defmacro ,pred (,x) `(,',predicate ,,x))
+           (defmacro ,alias-enum (,x) `(,',base-enum ,,x))
+           (defmacro ,alias-enum-acc (,x ,seed) `(,',base-enum/acc ,,x ,,seed))))))))
+|#
 
 (defmacro predicate-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.

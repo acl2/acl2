@@ -29,11 +29,11 @@
      => ;sig
      _ ;range
 
-     defdata-subtype defdata-disjoint
-     defdatas-subtype defdatas-disjoint
+     defdata-subtype defdata-disjoint defdata-equal
+     defdatas-subtype defdatas-disjoint defdatas-equal
 
-     defdata-subtype-strict defdata-disjoint-strict
-     defdatas-subtype-strict defdatas-disjoint-strict
+     defdata-subtype-strict defdata-disjoint-strict defdata-equal-strict
+     defdatas-subtype-strict defdatas-disjoint-strict defdatas-equal-strict
 
      defdata-alias
      defdata defdata-attach ;long names -- just put them as ACL2 symbols.
@@ -64,12 +64,12 @@
     register-combinator
     register-type
 
-    defdata-subtype defdata-disjoint
-    defdatas-subtype defdatas-disjoint
+    defdata-subtype defdata-disjoint defdata-equal
+    defdatas-subtype defdatas-disjoint defdatas-equal
 
-    defdata-subtype-strict defdata-disjoint-strict
-    defdatas-subtype-strict defdatas-disjoint-strict
-
+    defdata-subtype-strict defdata-disjoint-strict defdata-equal-strict
+    defdatas-subtype-strict defdatas-disjoint-strict defdatas-equal-strict
+    
     defdata
     defdata-attach
     sig =>
@@ -150,6 +150,7 @@
       legal-constantp
       legal-variablep
       legal-variable-or-constant-namep
+      xdoc
       
       => ;sig
       _  ;range

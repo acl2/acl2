@@ -21,9 +21,23 @@
 (include-book "utilities")
 (include-book "definec" :ttags :all)
 (include-book "properties")
+(include-book "check-equal")
 
 (include-book "std/strings/top" :dir :system)
 (include-book "system/doc/developers-guide" :dir :system)
+
+(include-book "acl2s/ccg/ccg" :dir :system 
+  :uncertified-okp nil :ttags ((:ccg))
+  :load-compiled-file nil)
+
+(set-termination-method :ccg)
+
+; inhibit all ccg output.
+; comment out to debug termination failures in the book.
+(make-event
+ (er-progn
+  (set-ccg-inhibit-output-lst acl2::*ccg-valid-output-names*)
+  (value '(value-triple :invisible))))
 
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple
@@ -431,64 +445,314 @@ I commented out some disabled theorems that seem fine to me.
 
 (add-macro-fn ne-tlp non-empty-true-listp)
 
-(definec tail (x :ne-tl) :tl 
+; left and right are strict versions of car and cdr, i.e., they can
+; only be applied to conses.
+(definec left (x :cons) :all 
+  (car x))
+
+(definec right (x :cons) :all
   (cdr x))
 
+; head and tail are versions of car and cdr that are applied to only
+; true-lists and they are also strict, so the true-lists have to be
+; conses.
 (definec head (x :ne-tl) :all
   (car x))
 
+(definec tail (x :ne-tl) :tl 
+  (cdr x))
+
+; a strict version of nth requiring that the list have at least n+1
+; elements (since we use 0 indexing)
 (defunc snth (n l)
   :pre  (and (natp n) (tlp l) (< (len l) n))
   :post t
   (nth n l))
 
+; a strict version of nthcdr, requiring that we have at least n
+; elements ((nthcdr 0 l) is the identity)
 (defunc snthcdr (n l)
-  :pre (and (natp n) (tlp l) (< (len l) n))
+  :pre (and (natp n) (tlp l) (<= (len l) n))
   :post :tl
   (nthcdr n l))
 
-(defmacro scar (x) `(head ,x))
-(defmacro scdr (x) `(tail ,x))
+; The definitions below are used to define gen-car-cdr-macros.
+(defdata str-all (list string all))
+(defdata l-str-all (listof str-all))
 
-(defmacro scaar (x) `(head (head ,x)))
-(defmacro scadr (x) `(head (tail ,x)))
-(defmacro scdar (x) `(tail (head ,x)))
-(defmacro scddr (x) `(tail (tail ,x)))
+(definec-no-test gen-car-cdr-aux-1
+  (car :var cdr :var carstr :string cdrstr :string res :l-str-all) :l-str-all
+  (if (endp res)
+      res
+    (b* ((e (first res))
+         (str (first e))
+         (exp (second e)))
+      (list* `(,(str::cat carstr str)
+               `(,',car ,,exp))
+             `(,(str::cat cdrstr str)
+               `(,',cdr ,,exp))
+             (gen-car-cdr-aux-1 car cdr carstr cdrstr (cdr res))))))
 
-(defmacro scaaar (x) `(head (head (head ,x))))
-(defmacro scaadr (x) `(head (head (tail ,x))))
-(defmacro scadar (x) `(head (tail (head ,x))))
-(defmacro scaddr (x) `(head (tail (tail ,x))))
-(defmacro scdaar (x) `(tail (head (head ,x))))
-(defmacro scdadr (x) `(tail (head (tail ,x))))
-(defmacro scddar (x) `(tail (tail (head ,x))))
-(defmacro scdddr (x) `(tail (tail (tail ,x))))
+(check= (gen-car-cdr-aux-1 'head 'tail "h" "t" '(("" x)))
+        `(("h" `(head ,x))
+          ("t" `(tail ,x))))
 
-(defmacro scaaaar (x) `(head (head (head (head ,x)))))
-(defmacro scaaadr (x) `(head (head (head (tail ,x)))))
-(defmacro scaadar (x) `(head (head (tail (head ,x)))))
-(defmacro scaaddr (x) `(head (head (tail (tail ,x)))))
-(defmacro scadaar (x) `(head (tail (head (head ,x)))))
-(defmacro scadadr (x) `(head (tail (head (tail ,x)))))
-(defmacro scaddar (x) `(head (tail (tail (head ,x)))))
-(defmacro scadddr (x) `(head (tail (tail (tail ,x)))))
-(defmacro scdaaar (x) `(tail (head (head (head ,x)))))
-(defmacro scdaadr (x) `(tail (head (head (tail ,x)))))
-(defmacro scdadar (x) `(tail (head (tail (head ,x)))))
-(defmacro scdaddr (x) `(tail (head (tail (tail ,x)))))
-(defmacro scddaar (x) `(tail (tail (head (head ,x)))))
-(defmacro scddadr (x) `(tail (tail (head (tail ,x)))))
-(defmacro scdddar (x) `(tail (tail (tail (head ,x)))))
-(defmacro scddddr (x) `(tail (tail (tail (tail ,x)))))
+; The termination hint isn't need, but it saves 10 seconds and I
+; certify this file enough that it is worth annotating.
+(definec-no-test gen-car-cdr-aux
+  (car :var cdr :var carstr :string cdrstr :string
+       depth :nat res :l-str-all) :l-str-all
+  (declare (xargs :consider-only-ccms ( depth )))
+  (cond ((endp res) (gen-car-cdr-aux
+                     car
+                     cdr
+                     carstr
+                     cdrstr
+                     depth
+                     `(("" x))))
+        ((== depth 0) res)
+        (t (app (if (consp (cdr res)) res nil)
+                (gen-car-cdr-aux
+                 car
+                 cdr
+                 carstr
+                 cdrstr
+                 (1- depth)
+                 (gen-car-cdr-aux-1 car cdr carstr cdrstr res))))))
 
-(defmacro sfirst   (x) `(scar ,x))
-(defmacro ssecond  (x) `(scadr ,x))
-(defmacro sthird   (x) `(scaddr ,x))
-(defmacro sfourth  (x) `(scadddr ,x))
-(defmacro sfifth   (x) `(scar (scddddr ,x)))
-(defmacro ssixth   (x) `(scadr (scddddr ,x)))
-(defmacro sseventh (x) `(scaddr (scddddr ,x)))
-(defmacro seighth  (x) `(scadddr (scddddr ,x)))
-(defmacro sninth   (x) `(scar (scddddr (scddddr ,x))))
-(defmacro stenth   (x) `(scadr (scddddr (scddddr ,x))))
+(check= (gen-car-cdr-aux 'head 'tail "h" "t" 1 nil)
+        `(("h" `(head ,x))
+          ("t" `(tail ,x))))
 
+(check= (gen-car-cdr-aux 'head 'tail "h" "t" 2 nil)
+        `(("h" `(head ,x))
+          ("t" `(tail ,x))
+          ("hh" `(head (head ,x)))
+          ("th" `(tail (head ,x)))
+          ("ht" `(head (tail ,x)))
+          ("tt" `(tail (tail ,x)))))
+
+(defunc gen-car-cdr-defs-fn (l prefix suffix pkg)
+  :pre (and (l-str-allp l) (stringp prefix) (stringp suffix)
+            (stringp pkg) (!= pkg ""))
+  :post :all
+  (if (endp l)
+      l
+    (b* ((mname (defdata::s+ (str::cat prefix (caar l) suffix) :pkg pkg))
+         (x (intern$ "X" pkg)))
+      (cons 
+       `(defmacro ,mname (,x)
+          ,(cadar l))
+       (gen-car-cdr-defs-fn (cdr l) prefix suffix pkg)))))
+
+(defunc gen-car-cdr-macros-fn
+  (car cdr carstr cdrstr prefix suffix depth pkg)
+  :pre (and (varp car) (varp cdr) (stringp carstr)
+            (stringp cdrstr) (stringp prefix) (stringp suffix)
+            (natp depth) (stringp pkg) (!= pkg ""))
+  :post :all
+  :skip-tests t
+  (let ((l (gen-car-cdr-aux car cdr carstr cdrstr depth nil)))
+    `(encapsulate
+      ()
+      ,@(gen-car-cdr-defs-fn l prefix suffix pkg))))
+
+(check=
+ (gen-car-cdr-macros-fn 'head 'tail "A" "D" "SC" "R" 2 "ACL2S")
+ `(encapsulate
+   nil
+   (defmacro scar (x) `(head ,x))
+   (defmacro scdr (x) `(tail ,x))
+   (defmacro scaar (x) `(head (head ,x)))
+   (defmacro scdar (x) `(tail (head ,x)))
+   (defmacro scadr (x) `(head (tail ,x)))
+   (defmacro scddr (x) `(tail (tail ,x)))))
+
+(defmacro gen-car-cdr-macros
+  (car cdr carstr cdrstr prefix suffix depth)
+  `(make-event
+    (gen-car-cdr-macros-fn
+     ',car ',cdr ,carstr ,cdrstr ,prefix ,suffix ,depth
+     (current-package state))))
+
+(gen-car-cdr-macros left right "A" "D" "SC" "R" 4)
+
+; Generates the following redundant events, where "s" means "strict":
+
+
+(defmacro scar (x) `(left ,x))
+(defmacro scdr (x) `(right ,x))
+
+(defmacro scaar (x) `(left (left ,x)))
+(defmacro scadr (x) `(left (right ,x)))
+(defmacro scdar (x) `(right (left ,x)))
+(defmacro scddr (x) `(right (right ,x)))
+
+(defmacro scaaar (x) `(left (left (left ,x))))
+(defmacro scaadr (x) `(left (left (right ,x))))
+(defmacro scadar (x) `(left (right (left ,x))))
+(defmacro scaddr (x) `(left (right (right ,x))))
+(defmacro scdaar (x) `(right (left (left ,x))))
+(defmacro scdadr (x) `(right (left (right ,x))))
+(defmacro scddar (x) `(right (right (left ,x))))
+(defmacro scdddr (x) `(right (right (right ,x))))
+
+(defmacro scaaaar (x) `(left (left (left (left ,x)))))
+(defmacro scaaadr (x) `(left (left (left (right ,x)))))
+(defmacro scaadar (x) `(left (left (right (left ,x)))))
+(defmacro scaaddr (x) `(left (left (right (right ,x)))))
+(defmacro scadaar (x) `(left (right (left (left ,x)))))
+(defmacro scadadr (x) `(left (right (left (right ,x)))))
+(defmacro scaddar (x) `(left (right (right (left ,x)))))
+(defmacro scadddr (x) `(left (right (right (right ,x)))))
+(defmacro scdaaar (x) `(right (left (left (left ,x)))))
+(defmacro scdaadr (x) `(right (left (left (right ,x)))))
+(defmacro scdadar (x) `(right (left (right (left ,x)))))
+(defmacro scdaddr (x) `(right (left (right (right ,x)))))
+(defmacro scddaar (x) `(right (right (left (left ,x)))))
+(defmacro scddadr (x) `(right (right (left (right ,x)))))
+(defmacro scdddar (x) `(right (right (right (left ,x)))))
+(defmacro scddddr (x) `(right (right (right (right ,x)))))
+
+(gen-car-cdr-macros head tail "A" "D" "SLC" "R" 4)
+
+#|
+
+ Generates the following macros, where "sl" means strict list:
+
+ slcar:  (head x)
+ slcdr:  (tail x)
+ slcaar: (head (head x))
+ slcadr: (head (tail x))
+
+ ...
+
+ slcddddr: (tail (tail (tail (tail x))))
+
+|#
+
+; strict versions of first, ..., tenth: we require that x is a tl
+; with enough elements
+(defmacro sfirst   (x) `(slcar ,x))
+(defmacro ssecond  (x) `(slcadr ,x))
+(defmacro sthird   (x) `(slcaddr ,x))
+(defmacro sfourth  (x) `(slcadddr ,x))
+(defmacro sfifth   (x) `(slcar (slcddddr ,x)))
+(defmacro ssixth   (x) `(slcadr (slcddddr ,x)))
+(defmacro sseventh (x) `(slcaddr (slcddddr ,x)))
+(defmacro seighth  (x) `(slcadddr (slcddddr ,x)))
+(defmacro sninth   (x) `(slcar (slcddddr (slcddddr ,x))))
+(defmacro stenth   (x) `(slcadr (slcddddr (slcddddr ,x))))
+
+; A forward-chaining rule to deal with the relationship
+; between len and cdr.
+
+(defthm expand-len-with-trigger-cdr
+  (implies (and (<= c (len x))
+                (posp c))
+           (<= (1- c) (len (cdr x))))
+  :rule-classes ((:forward-chaining
+                  :trigger-terms ((< (len x) c) (cdr x)))))
+
+(defthm len-non-nil-with-trigger-cdr
+  (implies (and (<= c (len x))
+                (posp c))
+           x)
+  :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
+
+#|
+
+ This may be useful. I started with this, but used the above rule
+ instead.
+
+ (defthm exp-len
+   (implies (and (syntaxp (quotep c))
+                 (syntaxp (< (second c) 100))
+ 		 (posp c)
+ 		 (<= c (len x)))
+	    (and (<= (1- c) (len (cdr x)))
+		 x))
+   :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
+
+|#
+
+#|
+
+ A collection of forward-chaining rules that help with reasoning about
+ conses with car, cdr, head, tail, left, right.
+
+|#
+
+(defthm cddr-implies-cdr-trigger-cddr
+  (implies (cddr x)
+	   (cdr x))
+  :rule-classes ((:forward-chaining :trigger-terms ((cddr x)))))
+
+(defthm tlp-implies-tlpcdr-trigger-cdr
+  (implies (true-listp x)
+	   (true-listp (cdr x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((cdr x)))))
+
+(defthm tlp-consp-cdr-implies-tail-trigger-tail
+  (implies (and (true-listp x)
+		(consp (cdr x)))
+	   (tail x))
+  :rule-classes ((:forward-chaining :trigger-terms ((tail x)))))
+
+(defthm tlp-consp-implies-tlp-tail-trigger-tail
+  (implies (and (true-listp x) x)
+	   (true-listp (tail x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((tail x)))))
+
+(defthm consp-cdr-implies-right-trigger-right
+  (implies (consp (cdr x))
+	   (right x))
+  :rule-classes ((:forward-chaining :trigger-terms ((right x)))))
+
+(defthm tlp-consp-implies-tlp-right-trigger-right
+  (implies (and (true-listp x) x)
+	   (true-listp (right x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((right x)))))
+
+; Basic left-right theorems
+(defthm left-cons
+  (equal (left (cons x y))
+         x))
+
+(defthm right-cons
+  (equal (right (cons x y))
+         y))
+
+(defthm left-consp
+  (implies (force (consp x))
+           (equal (left x) (car x))))
+
+(defthm right-consp
+  (implies (force (consp x))
+           (equal (right x) (cdr x))))
+
+; Basic head-tail theorems
+(defthm head-cons
+  (implies (force (tlp y))
+           (equal (head (cons x y))
+                  x)))
+
+(defthm tail-cons
+  (implies (force (tlp y))
+           (equal (tail (cons x y))
+                  y)))
+
+(defthm head-consp
+  (implies (and (force (tlp x)) (force x))
+           (equal (head x) (car x))))
+
+(defthm tail-consp
+  (implies (and (force (tlp x)) (force x))
+           (equal (tail x) (cdr x))))
+
+; Disable tail, head, left, right so that it is easier to debug
+; proofs
+(in-theory (disable tail tail-definition-rule
+                    head head-definition-rule
+                    left left-definition-rule
+                    right right-definition-rule))

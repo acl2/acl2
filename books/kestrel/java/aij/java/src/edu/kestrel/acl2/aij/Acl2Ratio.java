@@ -49,10 +49,8 @@ final class Acl2Ratio extends Acl2Rational {
      */
     @Override
     public boolean equals(Object o) {
-        /* Since ratios are disjoint from integers and complex rationals,
-           only a ratio can be equal to another ratio.
-           Since the denominator is positive and coprime with the numerator,
-           two ratio are equal iff their numerator and denominator are. */
+        /* Since the denominator is positive and coprime with the numerator,
+           two ratios are equal iff their numerator and denominator are. */
         if (this == o) return true;
         if (!(o instanceof Acl2Ratio)) return false;
         Acl2Ratio that = (Acl2Ratio) o;
@@ -68,33 +66,6 @@ final class Acl2Ratio extends Acl2Rational {
         int result = numerator.hashCode();
         result = 31 * result + denominator.hashCode();
         return result;
-    }
-
-    /**
-     * Compares this ACL2 ratio with the argument ACL2 value for order.
-     * This is consistent with the {@code lexorder} ACL2 function.
-     *
-     * @return a negative integer, zero, or a positive integer as
-     * this ratio is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
-     */
-    @Override
-    public int compareTo(Acl2Value o) {
-        if (o == null)
-            throw new NullPointerException();
-        if (o instanceof Acl2Rational) {
-            // a/b is less than or equal to or greater than c/d iff
-            // a*d is less than or equal to or greater than c*b,
-            // since b and d are always positive:
-            Acl2Integer thisMultiplied =
-                    (Acl2Integer) this.numerator.multiplyValue(o.denominator());
-            Acl2Integer thatMultiplied =
-                    (Acl2Integer) o.numerator().multiplyValue(this.denominator);
-            return thisMultiplied.compareTo(thatMultiplied);
-        }
-        // ratios are less than
-        // complex rationals, characters, strings, symbols, and cons pairs:
-        return -1;
     }
 
     /**
@@ -137,4 +108,5 @@ final class Acl2Ratio extends Acl2Rational {
     public Acl2Integer getDenominator() {
         return denominator;
     }
+
 }

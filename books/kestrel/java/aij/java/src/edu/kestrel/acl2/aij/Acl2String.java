@@ -69,42 +69,6 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Coerce an ACL2 list of ACL2 characters to an ACL2 string.
-     * If the ACL2 argument value is an atom that is not {@code nil},
-     * it is treated as {@code nil}, i.e. the empty list.
-     * If any element of the list is not an ACL2 character,
-     * it is treated as the ACL2 character with code 0.
-     * This is consistent with the {@code coerce} ACL2 function,
-     * when its second argument is not {@code list}.
-     *
-     * @throws IllegalArgumentException if list is
-     *                                  longer than the maximum Java integer
-     */
-    static Acl2String coerceFromList(Acl2Value list) {
-        int len = 0;
-        Acl2Value savedList = list;
-        for (;
-             list instanceof Acl2ConsPair;
-             list = ((Acl2ConsPair) list).getCdr()) {
-            if (len == Integer.MAX_VALUE)
-                throw new IllegalArgumentException("Character list too long.");
-            else
-                ++len;
-        }
-        list = savedList;
-        char[] jcharacters = new char[len];
-        for (int i = 0; i < len; ++i) {
-            Acl2Value element = list.car();
-            if (element instanceof Acl2Character)
-                jcharacters[i] = ((Acl2Character) element).getJavaChar();
-            else
-                jcharacters[i] = 0;
-            list = list.cdr();
-        }
-        return make(new String(jcharacters));
-    }
-
-    /**
      * Coerces this ACL2 string to a list,
      * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
@@ -121,18 +85,14 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code intern-in-package-of-symbol} ACL2 function,
-     * where this ACL2 value is the first argument of that function.
+     * Interns this ACL2 value in the package of the argument ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the first argument of that function
+     * and the argument ACL2 value is the second argument of that function.
      */
     @Override
-    Acl2Symbol internInPackageOfSymbol(Acl2Value sym) {
-        if (sym instanceof Acl2Symbol) {
-            Acl2PackageName packageName = ((Acl2Symbol) sym).getPackageName();
-            return Acl2Symbol.make(packageName, this);
-        } else {
-            return Acl2Symbol.NIL;
-        }
+    Acl2Symbol internThisInPackageOf(Acl2Value sym) {
+        return sym.internInPackageOfThis(this);
     }
 
     /**
@@ -198,6 +158,98 @@ public final class Acl2String extends Acl2Value {
         return result;
     }
 
+    /**
+     * Compares this ACL2 string with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToCharacter(Acl2Character o) {
+        // strings are greater than characters:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToString(Acl2String o) {
+        // compare underlying Java strings:
+        return this.jstring.compareTo(o.jstring);
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToSymbol(Acl2Symbol o) {
+        // strings are less than symbols:
+        return -1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToNumber(Acl2Number o) {
+        // strings are greater than numbers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToRational(Acl2Rational o) {
+        // strings are greater than rationals:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToInteger(Acl2Integer o) {
+        // strings are greater than integers:
+        return 1;
+    }
+
+    /**
+     * Compares this ACL2 string with
+     * the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument
+     */
+    @Override
+    int compareToConsPair(Acl2ConsPair o) {
+        // strings are less than cons pairs:
+        return -1;
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -223,15 +275,7 @@ public final class Acl2String extends Acl2Value {
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        if (o instanceof Acl2Number || o instanceof Acl2Character)
-            // strings are greater than numbers and characters:
-            return 1;
-        if (o instanceof Acl2String) {
-            Acl2String that = (Acl2String) o;
-            return this.jstring.compareTo(that.jstring);
-        }
-        // strings are less than symbols and cons pairs:
-        return -1;
+        return - o.compareToString(this);
     }
 
     /**
@@ -302,4 +346,5 @@ public final class Acl2String extends Acl2Value {
     public String getJavaString() {
         return this.jstring;
     }
+
 }

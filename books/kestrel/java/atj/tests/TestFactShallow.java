@@ -19,7 +19,7 @@ public class TestFactShallow {
             // record start time:
             long start = System.currentTimeMillis();
             // execute the call:
-            Acl2Value result = FactShallow.ACL2.FACT(input);
+            Acl2Value result = FactShallow.ACL2.fact(input);
             // record end time:
             long end = System.currentTimeMillis();
             // prevent unwanted JIT compiler optimizations:

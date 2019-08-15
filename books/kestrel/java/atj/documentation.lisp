@@ -368,11 +368,7 @@
       These tests can be run via additional generated Java code
       (see below).")
     (xdoc::p
-     "Note that the @(':tests') input is evaluated.")
-    (xdoc::p
-     "This input may be present only if @(':deep') is @('t').
-      Test support for the shallow embedding approach
-      should be added in the future."))
+     "Note that the @(':tests') input is evaluated."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
@@ -482,4 +478,8 @@
      and then executes the code to run the tests described just above.
      Thus, this test class can be invoked as a Java application.
      This @('main') method also prints a final message saying whether
-     all the tests passed or there were any failures.")))
+     all the tests passed or there were any failures.
+     If all the tests passed, the method exits the JVM with return code 0;
+     otherwise, it exits the JVM with return code 1,
+     which is an error code when the test class
+     is invoked as a Java application in a shell script.")))

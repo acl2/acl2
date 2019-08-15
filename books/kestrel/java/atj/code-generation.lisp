@@ -40,7 +40,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We generate directly Java abstract syntax,
+    "We generate Java abstract syntax,
      which we then pretty-print to files.")
    (xdoc::p
     "We translate ACL2 values, expressions, and lambda expressions
@@ -51,7 +51,7 @@
      That is, the Java block provides the necessary code
      to ``prepare'' the evaluation of the Java expression.
      The Java block may include Java expressions and blocks
-     recursively produced.")
+     that are recursively generated.")
    (xdoc::p
     "To illustrate this concept,
      consider the generation of a Java expression to build
@@ -89,6 +89,56 @@
      The other functions are generally used for both approaches."))
   :order-subtopics t
   :default-parent t)
+
+(defsection atj-aij-class-consts
+  :short "ACL2 named constants for the AIJ class names."
+  (defconst *atj-jclass-char*      "Acl2Character")
+  (defconst *atj-jclass-complex*   "Acl2ComplexRational")
+  (defconst *atj-jclass-cons*      "Acl2ConsPair")
+  (defconst *atj-jclass-def-fn*    "Acl2DefinedFunction")
+  (defconst *atj-jclass-eval-exc*  "Acl2EvaluationException")
+  (defconst *atj-jclass-fn*        "Acl2Function")
+  (defconst *atj-jclass-fn-app*    "Acl2FunctionApplication")
+  (defconst *atj-jclass-int*       "Acl2Integer")
+  (defconst *atj-jclass-lambda*    "Acl2LambdaExpression")
+  (defconst *atj-jclass-named-fn*  "Acl2NamedFunction")
+  (defconst *atj-jclass-native-fn* "Acl2NativeFunction")
+  (defconst *atj-jclass-number*    "Acl2Number")
+  (defconst *atj-jclass-pkg*       "Acl2Package")
+  (defconst *atj-jclass-pkg-name*  "Acl2PackageName")
+  (defconst *atj-jclass-qconst*    "Acl2QuotedConstant")
+  (defconst *atj-jclass-ratio*     "Acl2Ratio")
+  (defconst *atj-jclass-rational*  "Acl2Rational")
+  (defconst *atj-jclass-string*    "Acl2String")
+  (defconst *atj-jclass-symbol*    "Acl2Symbol")
+  (defconst *atj-jclass-term*      "Acl2Term")
+  (defconst *atj-jclass-value*     "Acl2Value")
+  (defconst *atj-jclass-var*       "Acl2Variable"))
+
+(defsection atj-aij-type-consts
+  :short "ACL2 named constants for the AIJ (class) types."
+  (defconst *atj-jtype-char*      (jtype-class *atj-jclass-char*))
+  (defconst *atj-jtype-complex*   (jtype-class *atj-jclass-complex*))
+  (defconst *atj-jtype-cons*      (jtype-class *atj-jclass-cons*))
+  (defconst *atj-jtype-def-fn*    (jtype-class *atj-jclass-def-fn*))
+  (defconst *atj-jtype-eval-exc*  (jtype-class *atj-jclass-eval-exc*))
+  (defconst *atj-jtype-fn*        (jtype-class *atj-jclass-fn*))
+  (defconst *atj-jtype-fn-app*    (jtype-class *atj-jclass-fn-app*))
+  (defconst *atj-jtype-int*       (jtype-class *atj-jclass-int*))
+  (defconst *atj-jtype-lambda*    (jtype-class *atj-jclass-lambda*))
+  (defconst *atj-jtype-named-fn*  (jtype-class *atj-jclass-named-fn*))
+  (defconst *atj-jtype-native-fn* (jtype-class *atj-jclass-native-fn*))
+  (defconst *atj-jtype-number*    (jtype-class *atj-jclass-number*))
+  (defconst *atj-jtype-pkg*       (jtype-class *atj-jclass-pkg*))
+  (defconst *atj-jtype-pkg-name*  (jtype-class *atj-jclass-pkg-name*))
+  (defconst *atj-jtype-qconst*    (jtype-class *atj-jclass-qconst*))
+  (defconst *atj-jtype-ratio*     (jtype-class *atj-jclass-ratio*))
+  (defconst *atj-jtype-rational*  (jtype-class *atj-jclass-rational*))
+  (defconst *atj-jtype-string*    (jtype-class *atj-jclass-string*))
+  (defconst *atj-jtype-symbol*    (jtype-class *atj-jclass-symbol*))
+  (defconst *atj-jtype-term*      (jtype-class *atj-jclass-term*))
+  (defconst *atj-jtype-value*     (jtype-class *atj-jclass-value*))
+  (defconst *atj-jtype-var*       (jtype-class *atj-jclass-var*)))
 
 (define atj-achars-to-jhexcodes ((achars character-listp))
   :returns (jexprs jexpr-listp)
@@ -142,11 +192,13 @@
      to each name."))
   (cond ((endp names) nil)
         (t (cons (make-jparam :final? nil
-                              :type (jtype-class "Acl2Value")
+                              :type *atj-jtype-value*
                               :name (car names))
                  (atj-gen-jparamlist-avalues (cdr names))))))
 
-(define atj-achar-to-jchars-id ((achar characterp) (startp booleanp))
+(define atj-achar-to-jchars-id ((achar characterp)
+                                (startp booleanp)
+                                (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (characterp achar))
   :short "Turn an ACL2 character into one or more Java characters
           of an ASCII Java identifier."
@@ -164,7 +216,13 @@
      compared to Java identifiers, notably the uppercase restriction.")
    (xdoc::p
     "If an ACL2 character (part of an ACL2 symbol or package name) is a letter,
-     we keep it unchanged in forming the Java identifier.
+     we keep it unchanged in forming the Java identifier,
+     but we flip it from uppercase to lowercase or from lowercase to uppercase
+     if the @('flip-case-p') flag is @('t'):
+     since ACL2 symbols often have uppercase letters,
+     by flipping them to lowercase we generate
+     more readable and idiomatic Java identifiers;
+     and flipping lowercase letters to uppercase letters avoids conflicts.
      If the ACL2 character is a digit, we keep it unchanged
      only if it is not at the start of the Java identifier:
      this is indicated by the @('startp') flag.
@@ -179,8 +237,12 @@
      Note that @('$') itself, which is valid in Java identifiers,
      is mapped to itself followed by its hex code (not just to itself)
      when it appears in the ACL2 symbol or package name."))
-  (cond ((or (str::down-alpha-p achar)
-             (str::up-alpha-p achar)) (list achar))
+  (cond ((str::up-alpha-p achar) (if flip-case-p
+                                     (list (str::downcase-char achar))
+                                   (list achar)))
+        ((str::down-alpha-p achar) (if flip-case-p
+                                       (list (str::upcase-char achar))
+                                     (list achar)))
         ((and (digit-char-p achar)
               (not startp)) (list achar))
         ((eql achar #\-) (list #\_))
@@ -188,7 +250,9 @@
                 ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
-(define atj-achars-to-jchars-id ((achars character-listp) (startp booleanp))
+(define atj-achars-to-jchars-id ((achars character-listp)
+                                 (startp booleanp)
+                                 (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (character-listp achars))
   :short "Lift @(tsee atj-achar-to-jchars-id) to lists."
   :long
@@ -200,8 +264,8 @@
     because after the first character
     we are no longer at the start of the Java identifier.")
   (cond ((endp achars) nil)
-        (t (append (atj-achar-to-jchars-id (car achars) startp)
-                   (atj-achars-to-jchars-id (cdr achars) nil)))))
+        (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
+                   (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
 
 (define atj-gen-jlocvar-indexed
   ((var-type jtypep "Type of the local variable.")
@@ -252,14 +316,14 @@
                                        :long? nil
                                        :base (jintbase-decimal)))
        (expr (jexpr-cast (jtype-char) (jexpr-literal literal))))
-    (jexpr-smethod (jtype-class "Acl2Character")
+    (jexpr-smethod *atj-jtype-char*
                    "make"
                    (list expr))))
 
 (define atj-gen-astring ((astring stringp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 string."
-  (jexpr-smethod (jtype-class "Acl2String")
+  (jexpr-smethod *atj-jtype-string*
                  "make"
                  (list (atj-gen-jstring astring))))
 
@@ -314,7 +378,7 @@
    ((eq asymbol 'bad-atom<=)
     (jexpr-name "Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO"))
    ((eq asymbol 'or) (jexpr-name "Acl2Symbol.OR"))
-   (t (jexpr-smethod (jtype-class "Acl2Symbol")
+   (t (jexpr-smethod *atj-jtype-symbol*
                      "make"
                      (list (atj-gen-jstring
                             (symbol-package-name asymbol))
@@ -325,14 +389,22 @@
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 integer."
   :long
-  (xdoc::topstring-p
-   "If the ACL2 integer is representable as a Java integer,
-    we generate a Java integer literal.
-    Otherwise, if it is representable as a Java long integer,
-    we generate a Java long integer literal.
-    Otherwise, we generate a Java big integer
-    built out of the string representation of the ACL2 integer.")
-  (b* ((arg (cond ((signed-byte-p 32 ainteger)
+  (xdoc::topstring
+   (xdoc::p
+    "If the ACL2 integer is representable as a Java integer,
+     we generate a Java integer literal.
+     Otherwise, if it is representable as a Java long integer,
+     we generate a Java long integer literal.
+     Otherwise, we generate a Java big integer
+     built out of the string representation of the ACL2 integer.")
+   (xdoc::p
+    "These are passed to the @('Acl2Integer.make').
+     However, if the integer is 0 or 1,
+     we simply generate a reference to the respective Java static final fields
+     in the @('Acl2Integer') class."))
+  (b* (((when (= ainteger 0)) (jexpr-name "Acl2Integer.ZERO"))
+       ((when (= ainteger 1)) (jexpr-name "Acl2Integer.ONE"))
+       (arg (cond ((signed-byte-p 32 ainteger)
                    (if (< ainteger 0)
                        (jexpr-unary (junop-uminus)
                                     (jexpr-literal
@@ -363,14 +435,14 @@
                           (stringexpr (jexpr-literal stringlit)))
                        (jexpr-newclass (jtype-class "BigInteger")
                                        (list stringexpr)))))))
-    (jexpr-smethod (jtype-class "Acl2Integer")
+    (jexpr-smethod *atj-jtype-int*
                    "make"
                    (list arg))))
 
 (define atj-gen-arational ((arational rationalp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 rational."
-  (jexpr-smethod (jtype-class "Acl2Rational")
+  (jexpr-smethod *atj-jtype-rational*
                  "make"
                  (list (atj-gen-ainteger (numerator arational))
                        (atj-gen-ainteger (denominator arational)))))
@@ -378,7 +450,7 @@
 (define atj-gen-anumber ((anumber acl2-numberp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 number."
-  (jexpr-smethod (jtype-class "Acl2Number")
+  (jexpr-smethod *atj-jtype-number*
                  "make"
                  (list (atj-gen-arational (realpart anumber))
                        (atj-gen-arational (imagpart anumber)))))
@@ -395,7 +467,9 @@
      builds the @(tsee cdr),
      sets another local variable to it,
      and returns an expression that builds the pair
-     from the two local variables."))
+     from the two local variables.")
+   (xdoc::@def "atj-gen-avalue")
+   (xdoc::@def "atj-gen-aconspair"))
 
   (define atj-gen-aconspair ((aconspair consp) (jvar-value-index posp))
     :returns (mv (jblock jblockp)
@@ -410,8 +484,7 @@
                                                 jvar-value-index))
          ((mv car-jlocvardecl
               car-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed (jtype-class
-                                                          "Acl2Value")
+              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
                                                          *atj-jvar-value*
                                                          jvar-value-index
                                                          car-jexpr))
@@ -421,8 +494,7 @@
                                                 jvar-value-index))
          ((mv cdr-jlocvardecl
               cdr-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed (jtype-class
-                                                          "Acl2Value")
+              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
                                                          *atj-jvar-value*
                                                          jvar-value-index
                                                          cdr-jexpr))
@@ -430,7 +502,7 @@
                          (list (jstatem-locvar car-jlocvardecl))
                          cdr-jblock
                          (list (jstatem-locvar cdr-jlocvardecl))))
-         (jexpr (jexpr-smethod (jtype-class "Acl2ConsPair")
+         (jexpr (jexpr-smethod *atj-jtype-cons*
                                "make"
                                (list (jexpr-name car-jvar)
                                      (jexpr-name cdr-jvar)))))
@@ -465,6 +537,8 @@
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             avalue)
                      (mv nil (jexpr-name "irrelevant") jvar-value-index))))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-ACONSPAIR decreases:
     :measure (two-nats-measure (acl2-count avalue) 1))
 
   :verify-guards nil ; done below
@@ -504,7 +578,7 @@
             jvar-value-index) (atj-gen-avalue aqconst
                                               jvar-value-index))
        (jblock value-jblock)
-       (jexpr (jexpr-smethod (jtype-class "Acl2QuotedConstant")
+       (jexpr (jexpr-smethod *atj-jtype-qconst*
                              "make"
                              (list value-jexpr))))
     (mv jblock jexpr jvar-value-index)))
@@ -512,7 +586,7 @@
 (define atj-gen-deep-avar ((avar symbolp "The ACL2 variable."))
   :returns (jexpr jexprp)
   :short "Generate Java code to build a deeply embedded ACL2 variable."
-  (jexpr-smethod (jtype-class "Acl2Variable")
+  (jexpr-smethod *atj-jtype-var*
                  "make"
                  (list (atj-gen-asymbol avar))))
 
@@ -523,8 +597,9 @@
   :long
   (xdoc::topstring-p
    "The generated code builds an array of the formals as symbols.")
-  (jexpr-newarray (jtype-class "Acl2Symbol")
+  (jexpr-newarray *atj-jtype-symbol*
                   (atj-gen-asymbols aformals)))
+
 (defines atj-gen-deep-aterms+alambdas
   :short "Generate Java code to build
           deeply embedded ACL2 terms and lambda expressions."
@@ -578,7 +653,7 @@
               jvar-lambda-index)
           (if (symbolp afn)
               (mv nil
-                  (jexpr-smethod (jtype-class "Acl2NamedFunction")
+                  (jexpr-smethod *atj-jtype-named-fn*
                                  "make"
                                  (list (atj-gen-asymbol afn)))
                   jvar-value-index
@@ -597,14 +672,14 @@
                                                       jvar-value-index
                                                       jvar-term-index
                                                       jvar-lambda-index))
-         (aargs-jexpr (jexpr-newarray (jtype-class "Acl2Term") aarg-jexprs))
-         (afnapp-jexpr (jexpr-smethod (jtype-class "Acl2FunctionApplication")
+         (aargs-jexpr (jexpr-newarray *atj-jtype-term* aarg-jexprs))
+         (afnapp-jexpr (jexpr-smethod *atj-jtype-fn-app*
                                       "make"
                                       (list afn-jexpr
                                             aargs-jexpr)))
          ((mv afnapp-jlocvar
               afnapp-jvar
-              jvar-term-index) (atj-gen-jlocvar-indexed (jtype-class "Acl2Term")
+              jvar-term-index) (atj-gen-jlocvar-indexed *atj-jtype-term*
                                                         *atj-jvar-term*
                                                         jvar-term-index
                                                         afnapp-jexpr)))
@@ -615,6 +690,9 @@
           jvar-value-index
           jvar-term-index
           jvar-lambda-index))
+    ;; 2nd component is greater then the one of ATJ-GEN-DEEP-ALAMBDA
+    ;; so that the call of ATJ-GEN-DEEP-ALAMBDA decreases
+    ;; even when AFN is a non-symbol atom (impossible under the guard):
     :measure (two-nats-measure (+ (acl2-count afn) (acl2-count aargs)) 2))
 
   (define atj-gen-deep-alambda ((aformals symbol-listp)
@@ -647,14 +725,14 @@
                                                      jvar-value-index
                                                      jvar-term-index
                                                      jvar-lambda-index))
-         (alambda-jexpr (jexpr-smethod (jtype-class "Acl2LambdaExpression")
+         (alambda-jexpr (jexpr-smethod *atj-jtype-lambda*
                                        "make"
                                        (list aformals-jexpr
                                              abody-jexpr)))
          ((mv alambda-jlocvar
               alambda-jvar
               jvar-lambda-index) (atj-gen-jlocvar-indexed
-                                  (jtype-class "Acl2LambdaExpression")
+                                  *atj-jtype-lambda*
                                   *atj-jvar-lambda*
                                   jvar-lambda-index
                                   alambda-jexpr)))
@@ -664,6 +742,8 @@
           jvar-value-index
           jvar-term-index
           jvar-lambda-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-DEEP-ATERM decreases:
     :measure (two-nats-measure (acl2-count abody) 1))
 
   (define atj-gen-deep-aterm ((aterm pseudo-termp)
@@ -772,7 +852,10 @@
   (assert-event (string-listp *atj-disallowed-shallow-jvars*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jvars*)))
 
-(define atj-gen-shallow-avar ((avar symbolp) (index natp) (curr-apkg stringp))
+(define atj-gen-shallow-avar ((avar symbolp)
+                              (index natp)
+                              (curr-apkg stringp)
+                              (avars-by-name string-symbols-alistp))
   :returns (jvar-name stringp)
   :short "Generate a shallowly embedded ACL2 variable."
   :long
@@ -785,14 +868,15 @@
      from the ACL2 variable.")
    (xdoc::p
     "Each ACL2 function is turned into a Java method,
-     whose body is a shallowly embedded represented of the ACL2 function body.
+     whose body is a shallowly embedded representation
+     of the ACL2 function body.
      The ACL2 function body may reference the ACL2 function's parameter,
      as well as @(tsee let)-bound variables (via lambda expressions).
-     Thus, the same variable name may in fact denote different variables
+     Thus, the same variable symbol may in fact denote different variables
      in different parts of an ACL2 function body.
-     Java does not allow different local variables with the same
-     (in nested scopes in) the same method,
-     and so we need to map equally named ACL2 variables
+     Java does not allow different local variables with the same name
+     in (nested scopes in) the same method,
+     and so we need to map homonymous but different ACL2 variables
      in the same ACL2 function
      to differently named Java variables
      in the same Java method.
@@ -812,7 +896,7 @@
      every symbol name with the package prefix affects readability.
      In ACL2, package prefixes are normally omitted
      for symbols in the current ACL2 package.
-     We do something similar for the Java variable names,
+     Here we do something similar for the Java variable names,
      where the notion of current package is as follows.
      As mentioned above, each ACL2 function is turned into a Java method:
      this method is inside a Java class whose name is derived from
@@ -827,21 +911,39 @@
      @('<pname>$$$<name>$$<index>'),
      where @('<pname>') and @('<name>') are representations of the ACL2 names
      that are valid for Java identifiers,
-     and @('<index>') is a decimal representation of the numeric index.
-     If @('pname') is the same as the current package, we omit @('<pname>$$$').
-     If the index is 0, we omit @('$$<index>'),
+     and @('<index>') is a decimal representation of the numeric index.")
+   (xdoc::p
+    "If @('<pname>') is the same as the current package,
+     we omit @('<pname>$$$').
+     We omit @('<pname>$$$') also when the variable
+     is the only one with name @('<name>')
+     within the ``current'' ACL2 function:
+     since the scope of Java method parameters and local variables
+     is limited to the method where they occur,
+     no naming conflict may arise in this case.
+     The parameter @('avars-by-name') consists of
+     all the variables in the current ACL2 function,
+     organized by symbol name for easy lookup.
+     We retrieve the variables with the same name of the variable,
+     we remove the variables from them,
+     and we check if the result is empty:
+     in this case, this is the only variable with that name.
+     (The alist may have duplicate symbols in its values.)")
+   (xdoc::p
+    "If the index is 0, we omit @('$$<index>'),
      so that if there is just one variable with a certain name,
-     since we start with index 0, no index is added to the name.
-     Thus there are a few combinations possible with these three parts;
-     the use of triple and double @('$') characters guaranteee
+     since we start with index 0, no index is added to the name.")
+   (xdoc::p
+    "Thus there are a few combinations possible with these three parts;
+     the use of triple and double @('$') characters guarantees
      that there is no confusion with the @('$hh') escapes
      where @('hh') is the hex code of an ACL2 character
      that is not valid for a Java identifier.
-     Furthermore, if the resulting variable name if just @('<name>')
+     Furthermore, if the resulting variable name is just @('<name>')
      and happens to be a Java keyword or Java literal or empty,
      we add a single @('$') at the end, which again is unambiguous.")
    (xdoc::p
-    "This is a simple scheme to keep names unique,
+    "This is a relatively simple and uniform scheme to keep names unique,
      but we may improve it to generate more readable names.")
    (xdoc::p
     "We call @(tsee atj-achars-to-jchars-id) to create
@@ -852,12 +954,18 @@
      Otherwise, @('startp') is @('t') for @('name')
      if there is no package prefix."))
   (b* ((apkg (symbol-package-name avar))
-       (pname$$$-jchars (if (equal apkg curr-apkg)
+       (omit-pname? (or (equal apkg curr-apkg)
+                        (null (remove-eq
+                               avar
+                               (cdr (assoc-equal (symbol-name avar)
+                                                 avars-by-name))))))
+       (pname$$$-jchars (if omit-pname?
                             nil
-                          (append (atj-achars-to-jchars-id (explode apkg) t)
+                          (append (atj-achars-to-jchars-id (explode apkg) t t)
                                   (list #\$ #\$ #\$))))
        (name-jchars (atj-achars-to-jchars-id (explode (symbol-name avar))
-                                             (endp pname$$$-jchars)))
+                                             (endp pname$$$-jchars)
+                                             t))
        ($$index-jchars (if (= index 0)
                            nil
                          (append (list #\$ #\$)
@@ -871,9 +979,13 @@
 
 (define atj-gen-shallow-avars ((avars symbol-listp)
                                (jvar-var-indices symbol-nat-alistp)
-                               (curr-apkg stringp))
+                               (curr-apkg stringp)
+                               (avars-by-name string-symbols-alistp))
   :returns (mv (jvars symbol-string-alistp :hyp (symbol-listp avars))
-               (new-jvar-var-indices "A @(tsee symbol-nat-alistp)."))
+               (new-jvar-var-indices
+                symbol-nat-alistp
+                :hyp (and (symbol-listp avars)
+                          (symbol-nat-alistp jvar-var-indices))))
   :verify-guards nil
   :short "Generate a sequence of shallowly embedded ACL2 variables."
   :long
@@ -912,34 +1024,37 @@
        (jvar-var-indices (acons avar (1+ index) jvar-var-indices))
        ((mv jvars jvar-var-indices) (atj-gen-shallow-avars (cdr avars)
                                                            jvar-var-indices
-                                                           curr-apkg)))
-    (mv (acons avar (atj-gen-shallow-avar avar index curr-apkg) jvars)
+                                                           curr-apkg
+                                                           avars-by-name)))
+    (mv (acons avar
+               (atj-gen-shallow-avar avar index curr-apkg avars-by-name)
+               jvars)
         jvar-var-indices)))
 
 (defval *atj-aij-class-names*
   :short "Names of the Java classes that form AIJ."
-  (list "Acl2Character"
-        "Acl2ComplexRational"
-        "Acl2ConsPair"
-        "Acl2DefinedFunction"
-        "Acl2EvaluationException"
-        "Acl2Function"
-        "Acl2FunctionApplication"
-        "Acl2Integer"
-        "Acl2LambdaExpression"
-        "Acl2NamedFunction"
-        "Acl2NativeFunction"
-        "Acl2Number"
-        "Acl2Package"
-        "Acl2PackageName"
-        "Acl2QuotedConstant"
-        "Acl2Ratio"
-        "Acl2Rational"
-        "Acl2String"
-        "Acl2Symbol"
-        "Acl2Term"
-        "Acl2Value"
-        "Acl2Variable")
+  (list *atj-jclass-char*
+        *atj-jclass-complex*
+        *atj-jclass-cons*
+        *atj-jclass-def-fn*
+        *atj-jclass-eval-exc*
+        *atj-jclass-fn*
+        *atj-jclass-fn-app*
+        *atj-jclass-int*
+        *atj-jclass-lambda*
+        *atj-jclass-named-fn*
+        *atj-jclass-native-fn*
+        *atj-jclass-number*
+        *atj-jclass-pkg*
+        *atj-jclass-pkg-name*
+        *atj-jclass-qconst*
+        *atj-jclass-ratio*
+        *atj-jclass-rational*
+        *atj-jclass-string*
+        *atj-jclass-symbol*
+        *atj-jclass-term*
+        *atj-jclass-value*
+        *atj-jclass-var*)
   ///
   (assert-event (string-listp *atj-aij-class-names*))
   (assert-event (no-duplicatesp-equal *atj-aij-class-names*)))
@@ -1003,7 +1118,7 @@
      We also ensure that is is distinct from the main class generated.
      If the candidate Java class name is one of these,
      we add a @('$') at the end."))
-  (b* ((jchars (atj-achars-to-jchars-id (explode apkg) t))
+  (b* ((jchars (atj-achars-to-jchars-id (explode apkg) t nil))
        (jstring (implode jchars))
        (jstring (if (or (member-equal jstring *atj-disallowed-shallow-jclasses*)
                         (equal jstring java-class$))
@@ -1069,16 +1184,19 @@
   (b* ((apkg (symbol-package-name afn))
        (jclass.-jchars (if (equal apkg curr-apkg)
                            nil
-                         (append (atj-achars-to-jchars-id (explode apkg) t)
+                         (append (atj-achars-to-jchars-id (explode apkg) t nil)
                                  (list #\.))))
-       (jmethod-jchars (atj-achars-to-jchars-id (explode (symbol-name afn)) t))
-       (jmethod-jchars (if (member-equal jmethod-jchars
+       (jmethod-jchars (atj-achars-to-jchars-id (explode
+                                                 (symbol-name afn)) t t))
+       (jmethod-jchars (if (member-equal (implode jmethod-jchars)
                                          *atj-disallowed-shallow-jmethods*)
                            (rcons #\$ jmethod-jchars)
                          jmethod-jchars))
        (jchars (append jclass.-jchars jmethod-jchars))
        (jstring (implode jchars)))
-    jstring))
+    jstring)
+  :prepwork
+  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
 (define atj-gen-shallow-let-bindings ((avars symbol-listp)
                                       (jexprs msg-listp)
@@ -1111,7 +1229,7 @@
        (jexpr (car jexprs))
        (jvar (cdr (assoc-eq avar jvars)))
        (first-jlocvar (make-jlocvar :final? nil
-                                    :type (jtype-class"Acl2Value")
+                                    :type *atj-jtype-value*
                                     :name jvar
                                     :init jexpr))
        (first-jstatem (jstatem-locvar first-jlocvar))
@@ -1154,6 +1272,7 @@
 
 (defines atj-gen-shallow-aterms+alambdas
   :short "Generate shallowly embedded ACL2 terms and lambda expressions."
+  :verify-guards nil
 
   (define atj-gen-shallow-aifapp ((atest pseudo-termp)
                                   (athen pseudo-termp)
@@ -1162,13 +1281,13 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 @(tsee if) application."
     :long
@@ -1207,9 +1326,10 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          ((mv result-jlocvar jvar-result jvar-result-index)
-          (atj-gen-jlocvar-indexed (jtype-class "Acl2Value")
+          (atj-gen-jlocvar-indexed *atj-jtype-value*
                                    *atj-jvar-result*
                                    jvar-result-index
                                    (jexpr-literal (jliteral-null))))
@@ -1222,7 +1342,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          (else-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
                                                    (jexpr-name jvar-result)
                                                    else-jexpr)))
@@ -1235,7 +1356,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          (then-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
                                                    (jexpr-name jvar-result)
                                                    then-jexpr)))
@@ -1255,7 +1377,14 @@
           jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that each call of ATJ-GEN-SHALLOW-ATERM decreases
+    ;; even when the ACL2-COUNTs of the other two addends are 0:
+    :measure (two-nats-measure (+ (acl2-count atest)
+                                  (acl2-count athen)
+                                  (acl2-count aelse))
+                               1))
 
   (define atj-gen-shallow-aorapp ((afirst pseudo-termp)
                                   (asecond pseudo-termp)
@@ -1263,13 +1392,13 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 @('or') application."
     :long
@@ -1301,9 +1430,10 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          ((mv result-jlocvar jvar-result jvar-result-index)
-          (atj-gen-jlocvar-indexed (jtype-class "Acl2Value")
+          (atj-gen-jlocvar-indexed *atj-jtype-value*
                                    *atj-jvar-result*
                                    jvar-result-index
                                    (jexpr-literal (jliteral-null))))
@@ -1316,7 +1446,8 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg))
+                                                        curr-pkg
+                                                        avars-by-name))
          (second-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
                                                      (jexpr-name jvar-result)
                                                      second-jexpr)))
@@ -1338,7 +1469,13 @@
           jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that each call of ATJ-GEN-SHALLOW-ATERM decreases
+    ;; even when the ACL2-COUNT of the other addend is 0:
+    :measure (two-nats-measure (+ (acl2-count afirst)
+                                  (acl2-count asecond))
+                               1))
 
   (define atj-gen-shallow-afnapp ((afn pseudo-termfnp)
                                   (aargs pseudo-term-listp)
@@ -1346,13 +1483,13 @@
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 function application."
     :long
@@ -1378,7 +1515,8 @@
        (lambda expressions are strict too),
        and then use a separate code generation function
        for the lambda expression (applied to the computed arguments)."))
-    (b* (((when (eq afn 'if))
+    (b* (((when (and (eq afn 'if)
+                     (= (len aargs) 3)))
           (b* ((afirst (first aargs))
                (asecond (second aargs))
                (athird (third aargs)))
@@ -1389,7 +1527,8 @@
                                         jvar-var-indices
                                         jvar-value-index
                                         jvar-result-index
-                                        curr-pkg)
+                                        curr-pkg
+                                        avars-by-name)
               (atj-gen-shallow-aifapp afirst
                                       asecond
                                       athird
@@ -1397,7 +1536,8 @@
                                       jvar-var-indices
                                       jvar-value-index
                                       jvar-result-index
-                                      curr-pkg))))
+                                      curr-pkg
+                                      avars-by-name))))
          ((mv args-jblock
               arg-jexprs
               jvar-var-indices
@@ -1407,7 +1547,8 @@
                                                          jvar-var-indices
                                                          jvar-value-index
                                                          jvar-result-index
-                                                         curr-pkg))
+                                                         curr-pkg
+                                                         avars-by-name))
          ((when (symbolp afn))
           (mv args-jblock
               (jexpr-method (atj-gen-shallow-afnname afn curr-pkg)
@@ -1421,11 +1562,14 @@
               jvar-value-index
               jvar-result-index) (atj-gen-shallow-alambda (lambda-formals afn)
                                                           (lambda-body afn)
+                                                          aargs
                                                           arg-jexprs
+                                                          jvars
                                                           jvar-var-indices
                                                           jvar-value-index
                                                           jvar-result-index
-                                                          curr-pkg))
+                                                          curr-pkg
+                                                          avars-by-name))
          (jblock (append args-jblock
                          lambda-jblock))
          (jexpr lambda-jexpr))
@@ -1433,22 +1577,31 @@
           jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is greater than the one of ATJ-GEN-SHALLOW-ALAMBDA
+    ;; so that the call of ATJ-GEN-SHALLOW-ALAMBDA decreases
+    ;; even when AFN is a non-symbol atom (impossible under the guard):
+    :measure (two-nats-measure (+ (acl2-count afn)
+                                  (acl2-count aargs))
+                               2))
 
   (define atj-gen-shallow-alambda ((aformals symbol-listp)
                                    (abody pseudo-termp)
+                                   (aargs pseudo-term-listp)
                                    (jargs jexpr-listp)
+                                   (jvars symbol-string-alistp)
                                    (jvar-var-indices symbol-nat-alistp)
                                    (jvar-value-index posp)
                                    (jvar-result-index posp)
-                                   (curr-pkg stringp))
-    :guard (= (len jargs) (len aformals))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+                                   (curr-pkg stringp)
+                                   (avars-by-name string-symbols-alistp))
+    :guard (and (= (len aargs) (len aformals))
+                (= (len jargs) (len aformals)))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
@@ -1461,15 +1614,49 @@
        producing a new @('jvars') alist
        and updating the @('jvar-var-indices') alist.")
      (xdoc::p
-      "Then we assign to these Java local variables
-       the Java expressions for the actual arguments,
+      "ACL2 lambda expressions are always closed,
+       which means that often they include formal parameters
+       that are replaced by themselves (i.e. by the same symbols)
+       when the lambda expression is applied.
+       For instance, the untranslated term @('(let ((x 0)) (+ x y))')
+       is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
+       the lambda expression includes the extra formal parameter @('y')
+       (which is not bound by the @(tsee let)),
+       applied to @('y') itself,
+       making the lambda expression closed.
+       To avoid generating an extra Java local variable
+       for these additional formal parameters of lambda expressions
+       (e.g. to avoid generating a Java local variable
+       for the formal parameter @('y') in the example above,
+       given that one must already be in scope
+       for the @(tsee let) term to make sense),
+       we remove for consideration all the formal parameters
+       that are replaced by themselves when the lambda expression is applied.
+       We do that by looking at
+       the actual arguments @('aargs') of the lambda expression;
+       this is why @('aargs') is passed to this code generation function.")
+     (xdoc::p
+      "Since we only generate new Java local variables
+       for the lambda expression's formal parameters
+       that are not dropped as just explained,
+       in general we need to keep the Java local variables
+       associated to the dropped formal parameters.
+       We do that by simply appending the new @('jvars')
+       in front of the old one, achieving the desired ``overwriting''.")
+     (xdoc::p
+      "After generating the needed Java local variables,
+       we assign to them the Java expressions for the actual arguments,
        as in @(tsee let) bindings.")
      (xdoc::p
       "Finally, we generate Java code
        for the body of the lambda expression."))
-    (b* (((mv jvars jvar-var-indices) (atj-gen-shallow-avars aformals
-                                                             jvar-var-indices
-                                                             curr-pkg))
+    (b* ((aformals (remove-unneeded-lambda-formals aformals aargs))
+         ((mv new-jvars
+              jvar-var-indices) (atj-gen-shallow-avars aformals
+                                                       jvar-var-indices
+                                                       curr-pkg
+                                                       avars-by-name))
+         (jvars (append new-jvars jvars))
          (let-jblock (atj-gen-shallow-let-bindings aformals
                                                    jargs
                                                    jvars))
@@ -1482,25 +1669,29 @@
                                                         jvar-var-indices
                                                         jvar-value-index
                                                         jvar-result-index
-                                                        curr-pkg)))
+                                                        curr-pkg
+                                                        avars-by-name)))
       (mv (append let-jblock body-jblock)
           body-jexpr
           jvar-var-indices
           jvar-value-index
-          jvar-result-index)))
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-ATERM decreases:
+    :measure (two-nats-measure (acl2-count abody) 1))
 
   (define atj-gen-shallow-aterm ((aterm pseudo-termp)
                                  (jvars symbol-string-alistp)
                                  (jvar-var-indices symbol-nat-alistp)
                                  (jvar-value-index posp)
                                  (jvar-result-index posp)
-                                 (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexpr "A @(tsee jexprp).")
+                                 (curr-pkg stringp)
+                                 (avars-by-name string-symbols-alistp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Generate a shallowly embedded ACL2 term."
     :long
@@ -1536,20 +1727,22 @@
                                      jvar-var-indices
                                      jvar-value-index
                                      jvar-result-index
-                                     curr-pkg))))
+                                     curr-pkg
+                                     avars-by-name)))
+    :measure (two-nats-measure (acl2-count aterm) 0))
 
   (define atj-gen-shallow-aterms ((aterms pseudo-term-listp)
                                   (jvars symbol-string-alistp)
                                   (jvar-var-indices symbol-nat-alistp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp))
-    :returns (mv (jblock "A @(tsee jblockp).")
-                 (jexprs "A @(tsee jexpr-listp).")
+                                  (curr-pkg stringp)
+                                  (avars-by-name string-symbols-alistp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexpr-listp)
                  (new-jvar-var-indices "A @(tsee symbol-nat-alistp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :mode :program
     :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
     :short "Lift @(tsee atj-gen-shallow-aterm) to lists."
     (if (endp aterms)
@@ -1563,7 +1756,8 @@
                                                           jvar-var-indices
                                                           jvar-value-index
                                                           jvar-result-index
-                                                          curr-pkg))
+                                                          curr-pkg
+                                                          avars-by-name))
            ((mv rest-jblock
                 rest-jexprs
                 jvar-var-indices
@@ -1573,12 +1767,14 @@
                                                            jvar-var-indices
                                                            jvar-value-index
                                                            jvar-result-index
-                                                           curr-pkg)))
+                                                           curr-pkg
+                                                           avars-by-name)))
         (mv (append first-jblock rest-jblock)
             (cons first-jexpr rest-jexprs)
             jvar-var-indices
             jvar-value-index
-            jvar-result-index)))))
+            jvar-result-index)))
+    :measure (two-nats-measure (acl2-count aterms) 0)))
 
 (define atj-gen-apkg-jmethod-name ((apkg stringp))
   :returns (jmethod-name stringp)
@@ -1591,7 +1787,7 @@
     which should be distinct from all the other methods
     generated for the same class.")
   (str::cat "$addPackageDef_"
-            (implode (atj-achars-to-jchars-id (explode apkg) nil))))
+            (implode (atj-achars-to-jchars-id (explode apkg) nil nil))))
 
 (define atj-gen-apkg-name ((apkg stringp))
   :returns (expr jexprp)
@@ -1600,7 +1796,7 @@
   (xdoc::topstring-p
    "Note that package names
     can always be safely generated as Java string literals.")
-  (jexpr-smethod (jtype-class "Acl2PackageName")
+  (jexpr-smethod *atj-jtype-pkg-name*
                  "make"
                  (list (atj-gen-jstring apkg))))
 
@@ -1641,7 +1837,7 @@
        (imports-jblock (atj-gen-apkg-jmethod-aux aimports))
        (apkg-name-jexpr (atj-gen-apkg-name apkg))
        (defpkg-jstatem (jstatem-expr
-                        (jexpr-smethod (jtype-class "Acl2Package")
+                        (jexpr-smethod *atj-jtype-pkg*
                                        "define"
                                        (list apkg-name-jexpr
                                              (jexpr-name
@@ -1708,7 +1904,7 @@
   (xdoc::topstring-p
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
-  (jstatem-expr (jexpr-smethod (jtype-class "Acl2Package")
+  (jstatem-expr (jexpr-smethod *atj-jtype-pkg*
                                "setWitnessName"
                                (list (atj-gen-jstring *pkg-witness-name*)))))
 
@@ -1725,9 +1921,10 @@
     generated for the same class.")
   (str::cat
    "$addFunctionDef_"
-   (implode (atj-achars-to-jchars-id (explode (symbol-package-name afn)) nil))
+   (implode (atj-achars-to-jchars-id (explode
+                                      (symbol-package-name afn)) nil nil))
    "$$$"
-   (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil))))
+   (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil t))))
 
 (defval *atj-jvar-formals*
   :short "Name of the Java local variable used to store
@@ -1790,19 +1987,18 @@
        (aformals-jexpr (atj-gen-deep-aformals aformals))
        ((mv abody-jblock abody-jexpr & & &) (atj-gen-deep-aterm abody 1 1 1))
        (afn-jlocvar (make-jlocvar :final? nil
-                                  :type (jtype-class "Acl2NamedFunction")
+                                  :type *atj-jtype-named-fn*
                                   :name *atj-jvar-function*
                                   :init (jexpr-smethod
-                                         (jtype-class "Acl2NamedFunction")
+                                         *atj-jtype-named-fn*
                                          "make"
                                          (list afn-jexpr))))
        (aformals-jlocvar (make-jlocvar :final? nil
-                                       :type (jtype-array
-                                              (jtype-class "Acl2Symbol"))
+                                       :type (jtype-array *atj-jtype-symbol*)
                                        :name *atj-jvar-formals*
                                        :init aformals-jexpr))
        (abody-jlocvar (make-jlocvar :final? nil
-                                    :type (jtype-class "Acl2Term")
+                                    :type *atj-jtype-term*
                                     :name *atj-jvar-body*
                                     :init abody-jexpr))
        (def-jstatem (jstatem-expr
@@ -1932,7 +2128,7 @@
             equal
             bad-atom<=) (list "x" "y"))
           (t (list "x"))))
-       (jcall (jexpr-smethod (jtype-class "Acl2NativeFunction")
+       (jcall (jexpr-smethod *atj-jtype-native-fn*
                              jcall-method-name
                              (jexpr-name-list jcall-arg-names)))
        (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
@@ -1945,7 +2141,7 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (jtype-class "Acl2Value"))
+                  :result (jresult-type *atj-jtype-value*)
                   :name jmethod-name
                   :params jmethod-params
                   :throws (list "Acl2EvaluationException")
@@ -1958,8 +2154,8 @@
                                 (curr-pkg stringp)
                                 state)
   :guard (equal (symbol-package-name afn) curr-pkg)
-  :returns (jmethod "A @(tsee jmethodp).")
-  :mode :program
+  :returns (jmethod jmethodp)
+  :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
   (xdoc::topstring
@@ -1997,15 +2193,19 @@
         (cw "  ~s0~%" afn))
        (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
        (aformals (formals afn (w state)))
-       ((mv jvars
-            jvar-var-indices) (atj-gen-shallow-avars aformals nil curr-pkg))
-       (jmethod-params (atj-gen-jparamlist-avalues (strip-cdrs jvars)))
        (abody (getpropc afn 'unnormalized-body))
        (abody (if guards$
                   (remove-mbe-logic-from-term abody)
                 (remove-mbe-exec-from-term abody)))
+       (avars (union-eq aformals (all-free/bound-vars abody)))
+       (avars-by-name (organize-symbols-by-name avars))
+       ((mv jvars
+            jvar-var-indices) (atj-gen-shallow-avars
+                               aformals nil curr-pkg avars-by-name))
+       (jmethod-params (atj-gen-jparamlist-avalues (strip-cdrs jvars)))
        ((mv abody-jblock abody-jexpr & & &)
-        (atj-gen-shallow-aterm abody jvars jvar-var-indices 1 1 curr-pkg))
+        (atj-gen-shallow-aterm
+         abody jvars jvar-var-indices 1 1 curr-pkg avars-by-name))
        (jmethod-body (append abody-jblock
                              (list (jstatem-return abody-jexpr)))))
     (make-jmethod :access (jaccess-public)
@@ -2015,7 +2215,7 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (jtype-class "Acl2Value"))
+                  :result (jresult-type *atj-jtype-value*)
                   :name jmethod-name
                   :params jmethod-params
                   :throws (list "Acl2EvaluationException")
@@ -2027,8 +2227,8 @@
                              (curr-pkg stringp)
                              state)
   :guard (equal (symbol-package-name afn) curr-pkg)
-  :returns (jmethod "A @(tsee jmethodp).")
-  :mode :program
+  :returns (jmethod jmethodp)
+  :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 primitive function or function definition."
   (if (primitivep afn)
@@ -2042,8 +2242,8 @@
                               state)
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) curr-pkg))
-  :returns (jmethods "A @(tsee jmethod-listp).")
-  :mode :program
+  :returns (jmethods jmethod-listp)
+  :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-afn) to lists."
   (cond ((endp afns) nil)
         (t (b* ((first-jmethod (atj-gen-shallow-afn (car afns)
@@ -2066,8 +2266,8 @@
                                       state)
   :guard (equal (symbol-package-name-lst afns)
                 (repeat (len afns) apkg))
-  :returns (jclass "A @(tsee jclassp).")
-  :mode :program
+  :returns (jclass jclassp)
+  :verify-guards nil
   :short "Generate the shallowly embedded ACL2 functions
           in an ACL2 package."
   :long
@@ -2096,8 +2296,8 @@
                                       (java-class$ stringp)
                                       (verbose$ booleanp)
                                       state)
-  :returns (jclasses "A @(tsee jclass-listp).")
-  :mode :program
+  :returns (jclasses jclass-listp)
+  :verify-guards nil
   :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
   :long
   (xdoc::topstring
@@ -2117,8 +2317,8 @@
       (java-class$ stringp)
       (verbose$ booleanp)
       state)
-     :returns jclasses ; JCLASS-LISTP
-     :mode :program
+     :returns (jclasses jclass-listp)
+     :verify-guards nil
      (cond ((endp apkgs) nil)
            (t (b* ((apkg (car apkgs))
                    (afns (cdr (assoc-equal apkg afns-by-apkg)))
@@ -2174,8 +2374,7 @@
        (validate-jblock? (and deep$
                               (list
                                (jstatem-expr
-                                (jexpr-smethod (jtype-class
-                                                "Acl2NamedFunction")
+                                (jexpr-smethod *atj-jtype-named-fn*
                                                "validateAll"
                                                nil)))))
        (initialize-jstatem (jstatem-expr
@@ -2231,11 +2430,11 @@
      which provides the means for external Java code to call
      the deeply embedded Java representations of ACL2 functions."))
   (b* ((jmethod-param-function (make-jparam :final? nil
-                                            :type (jtype-class "Acl2Symbol")
+                                            :type *atj-jtype-symbol*
                                             :name "function"))
        (jmethod-param-arguments (make-jparam :final? nil
                                              :type (jtype-array
-                                                    (jtype-class "Acl2Value"))
+                                                    *atj-jtype-value*)
                                              :name "arguments"))
        (jmethod-params (list jmethod-param-function
                              jmethod-param-arguments))
@@ -2247,7 +2446,7 @@
        (if-jstatem (jstatem-if (jexpr-unary (junop-logcompl)
                                             (jexpr-name "initialized"))
                                (list throw-jstatem)))
-       (function-jexpr (jexpr-smethod (jtype-class "Acl2NamedFunction")
+       (function-jexpr (jexpr-smethod *atj-jtype-named-fn*
                                       "make"
                                       (list (jexpr-name "function"))))
        (call-jexpr (jexpr-imethod function-jexpr
@@ -2262,7 +2461,7 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (jtype-class "Acl2Value"))
+                  :result (jresult-type *atj-jtype-value*)
                   :name "call"
                   :params jmethod-params
                   :throws (list "Acl2EvaluationException")
@@ -2275,8 +2474,8 @@
                         (java-class$ stringp)
                         (verbose$ booleanp)
                         state)
-  :returns (jclass "A @(tsee jclassp).")
-  :mode :program
+  :returns (jclass jclassp)
+  :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration."
   :long
   (xdoc::topstring
@@ -2309,7 +2508,7 @@
                 (remove-duplicates-eq
                  (append afns
                          (strip-cars *primitive-formals-and-guards*))))
-               (afns-by-apkg (organize-fns-by-pkg afns+primitives)))
+               (afns-by-apkg (organize-symbols-by-pkg afns+primitives)))
             (jclasses-to-jcmembers
              (atj-gen-shallow-afns-by-apkg afns-by-apkg
                                            guards$
@@ -2403,7 +2602,74 @@
   (assert-event
    (atj-string-ascii-java-identifier-p *atj-jvar-jresult*)))
 
+(define atj-gen-test-jmethod-call ((afn symbolp)
+                                   (aargs-jexprs jexpr-listp)
+                                   (deep$ booleanp)
+                                   (java-class$ stringp))
+  :returns (jblock jblockp)
+  :short "Generate the calling code of
+          a Java method to run one of the specified tests."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the part of the method generated by @(tsee atj-gen-test-jmethod)
+     that varies between the deep and shallow embedding approaches.
+     This code is the one that makes the call to
+     (the Java representation of) the ACL2 function
+     that the method is testing.")
+   (xdoc::p
+    "This code generation function is given as inputs, among others,
+     the name of the ACL2 function to call
+     and the Java expressions for the arguments to pass to the function.")
+   (xdoc::p
+    "For the deep embedding,
+     we build the name of the function to call,
+     we put the argument values into an array,
+     and we produce the Java result
+     via the @('call') method generated by ATJ
+     (which uses the AIJ interpreter).")
+   (xdoc::p
+    "For the shallow embedding,
+     we just call the Java method that represents the ACL2 function.
+     Since this code is in a class that is different from
+     any of the generated Java classes that correspond to ACL2 packages,
+     the Java method to call must be always preceded by the class name:
+     thus, we use the empty string as the current package name,
+     which is guaranteed not to match any existing ACL2 package."))
+  (if deep$
+      (b* ((aargs-jexpr (jexpr-newarray *atj-jtype-value* aargs-jexprs))
+           (arguments-jlocvar (make-jlocvar :final? nil
+                                            :type (jtype-array *atj-jtype-value*)
+                                            :name *atj-jvar-fnargs*
+                                            :init aargs-jexpr))
+           (afnname-jexpr (atj-gen-asymbol afn))
+           (function-jlocvar (make-jlocvar :final? nil
+                                           :type *atj-jtype-symbol*
+                                           :name *atj-jvar-fnname*
+                                           :init afnname-jexpr))
+           (jres-jexpr (jexpr-smethod (jtype-class java-class$)
+                                      "call"
+                                      (list (jexpr-name *atj-jvar-fnname*)
+                                            (jexpr-name *atj-jvar-fnargs*))))
+           (jres-jlocvar (make-jlocvar :final? nil
+                                       :type *atj-jtype-value*
+                                       :name *atj-jvar-jresult*
+                                       :init jres-jexpr)))
+        (list (jstatem-locvar arguments-jlocvar)
+              (jstatem-locvar function-jlocvar)
+              (jstatem-locvar jres-jlocvar)))
+    (b* ((jmethod-to-call (atj-gen-shallow-afnname afn ""))
+         (jres-jexpr (jexpr-smethod (jtype-class java-class$)
+                                    jmethod-to-call
+                                    aargs-jexprs))
+         (jres-jlocvar (make-jlocvar :final? nil
+                                     :type *atj-jtype-value*
+                                     :name *atj-jvar-jresult*
+                                     :init jres-jexpr)))
+      (list (jstatem-locvar jres-jlocvar)))))
+
 (define atj-gen-test-jmethod ((test$ atj-testp)
+                              (deep$ booleanp)
                               (java-class$ stringp)
                               (verbose$ booleanp))
   :returns (jmethod jmethodp)
@@ -2433,35 +2699,18 @@
                        (jexpr-imethod (jexpr-name "System.out")
                                       "print"
                                       (list (atj-gen-jstring message)))))
-       (afnname-jexpr (atj-gen-asymbol test.function))
-       (function-jlocvar (make-jlocvar :final? nil
-                                       :type (jtype-class "Acl2Symbol")
-                                       :name *atj-jvar-fnname*
-                                       :init afnname-jexpr))
        ((mv aargs-jblock
             aargs-jexprs
             jvar-value-index) (atj-gen-test-jmethod-aux test.arguments 1))
-       (aargs-jexpr (jexpr-newarray (jtype-class "Acl2Value") aargs-jexprs))
-       (arguments-jlocvar (make-jlocvar :final? nil
-                                        :type (jtype-array
-                                               (jtype-class "Acl2Value"))
-                                        :name *atj-jvar-fnargs*
-                                        :init aargs-jexpr))
+       (call-jblock (atj-gen-test-jmethod-call
+                     test.function aargs-jexprs deep$ java-class$))
        ((mv ares-jblock
             ares-jexpr
             &) (atj-gen-avalue test.result jvar-value-index))
        (ares-jlocvar (make-jlocvar :final? nil
-                                   :type (jtype-class "Acl2Value")
+                                   :type *atj-jtype-value*
                                    :name *atj-jvar-aresult*
                                    :init ares-jexpr))
-       (jres-jexpr (jexpr-smethod (jtype-class java-class$)
-                                  "call"
-                                  (list (jexpr-name *atj-jvar-fnname*)
-                                        (jexpr-name *atj-jvar-fnargs*))))
-       (jres-jlocvar (make-jlocvar :final? nil
-                                   :type (jtype-class "Acl2Value")
-                                   :name *atj-jvar-jresult*
-                                   :init jres-jexpr))
        (print-pass-jstatem (jstatem-expr
                             (jexpr-imethod (jexpr-name "System.out")
                                            "println"
@@ -2482,12 +2731,10 @@
                     (list set-fail-jstatem
                           print-fail-jstatem)))
        (jmethod-body (append (list print-jstatem)
-                             (list (jstatem-locvar function-jlocvar))
                              aargs-jblock
-                             (list (jstatem-locvar arguments-jlocvar))
+                             call-jblock
                              ares-jblock
                              (list (jstatem-locvar ares-jlocvar))
-                             (list (jstatem-locvar jres-jlocvar))
                              (list if-jstatem))))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
@@ -2522,6 +2769,7 @@
            jvar-value-index)))))
 
 (define atj-gen-test-jmethods ((tests$ atj-test-listp)
+                               (deep$ booleanp)
                                (java-class$ stringp)
                                (verbose$ booleanp))
   :returns (jmethods jmethod-listp)
@@ -2533,9 +2781,9 @@
   (if (endp tests$)
       nil
     (b* ((first-jmethod
-          (atj-gen-test-jmethod (car tests$) java-class$ verbose$))
+          (atj-gen-test-jmethod (car tests$) deep$ java-class$ verbose$))
          (rest-jmethods
-          (atj-gen-test-jmethods (cdr tests$) java-class$ verbose$)))
+          (atj-gen-test-jmethods (cdr tests$) deep$ java-class$ verbose$)))
       (cons first-jmethod rest-jmethods))))
 
 (define atj-gen-run-tests ((tests$ atj-test-listp))
@@ -2586,9 +2834,29 @@
          (jexpr-imethod (jexpr-name "System.out")
                         "println"
                         (list (atj-gen-jstring "Some tests failed.")))))
+       (exit0-jstatem
+        (jstatem-expr
+         (jexpr-smethod (jtype-class "System")
+                        "exit"
+                        (list (jexpr-literal
+                               (make-jliteral-integer
+                                :value 0
+                                :long? nil
+                                :base (jintbase-decimal)))))))
+       (exit1-jstatem
+        (jstatem-expr
+         (jexpr-smethod (jtype-class "System")
+                        "exit"
+                        (list (jexpr-literal
+                               (make-jliteral-integer
+                                :value 1
+                                :long? nil
+                                :base (jintbase-decimal)))))))
        (if-jstatem (jstatem-ifelse (jexpr-name "failures")
-                                   (list print-some-fail-jstatem)
-                                   (list print-all-pass-jstatem)))
+                                   (list print-some-fail-jstatem
+                                         exit1-jstatem)
+                                   (list print-all-pass-jstatem
+                                         exit0-jstatem)))
        (jmethod-body (append (list init-jstatem)
                              tests-jblock
                              (list if-jstatem))))
@@ -2606,6 +2874,7 @@
                   :body jmethod-body)))
 
 (define atj-gen-test-jclass ((tests$ atj-test-listp)
+                             (deep$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp))
   :returns (jclass jclassp)
@@ -2622,7 +2891,7 @@
   (b* (((run-when verbose$)
         (cw "~%Generating Java code for the tests:~%"))
        (failures-jfield (atj-gen-test-failures-jfield))
-       (test-jmethods (atj-gen-test-jmethods tests$ java-class$ verbose$))
+       (test-jmethods (atj-gen-test-jmethods tests$ deep$ java-class$ verbose$))
        (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
        (body-jclass (append (list (jcmember-field failures-jfield))
                             (jmethods-to-jcmembers test-jmethods)
@@ -2645,8 +2914,8 @@
                         (afns symbol-listp)
                         (verbose$ booleanp)
                         state)
-  :returns (jcunit "A @(tsee jcunitp).")
-  :mode :program
+  :returns (jcunit jcunitp)
+  :verify-guards nil
   :short "Generate the main Java compilation unit."
   (make-jcunit :package? java-package$
                :imports (list (str::cat *atj-aij-jpackage* ".*")
@@ -2661,7 +2930,8 @@
                                             verbose$
                                             state))))
 
-(define atj-gen-test-jcunit ((java-package$ maybe-stringp)
+(define atj-gen-test-jcunit ((deep$ booleanp)
+                             (java-package$ maybe-stringp)
                              (java-class$ stringp)
                              (tests$ atj-test-listp)
                              (verbose$ booleanp))
@@ -2670,7 +2940,8 @@
   (make-jcunit :package? java-package$
                :imports (list (str::cat *atj-aij-jpackage* ".*")
                               "java.math.BigInteger")
-               :types (list (atj-gen-test-jclass tests$ java-class$ verbose$))))
+               :types (list (atj-gen-test-jclass
+                             tests$ deep$ java-class$ verbose$))))
 
 (define atj-gen-jfile ((deep$ booleanp)
                        (guards$ booleanp)
@@ -2695,7 +2966,8 @@
                   output-file$
                   state))
 
-(define atj-gen-test-jfile ((java-package$ maybe-stringp)
+(define atj-gen-test-jfile ((deep$ booleanp)
+                            (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (output-file-test$ stringp)
                             (tests$ atj-test-listp)
@@ -2704,7 +2976,8 @@
   :returns state
   :mode :program
   :short "Generate the test Java file."
-  (print-to-jfile (print-jcunit (atj-gen-test-jcunit java-package$
+  (print-to-jfile (print-jcunit (atj-gen-test-jcunit deep$
+                                                     java-package$
                                                      java-class$
                                                      tests$
                                                      verbose$))
@@ -2747,7 +3020,8 @@
                               verbose$
                               state))
         (state (if tests$
-                   (atj-gen-test-jfile java-package$
+                   (atj-gen-test-jfile deep$
+                                       java-package$
                                        java-class$
                                        output-file-test$
                                        tests$

@@ -60,9 +60,7 @@ final class Acl2ComplexRational extends Acl2Number {
      */
     @Override
     public boolean equals(Object o) {
-        /* Since complex rationals are disjoint from integers and rationals,
-           only a complex rational can be equal to another complex rational.
-           Two complex rationals are equal iff
+        /* Two complex rationals are equal iff
            their real and imaginary parts are. */
         if (this == o) return true;
         if (!(o instanceof Acl2ComplexRational)) return false;
@@ -79,37 +77,6 @@ final class Acl2ComplexRational extends Acl2Number {
         int result = realPart.hashCode();
         result = 31 * result + imaginaryPart.hashCode();
         return result;
-    }
-
-    /**
-     * Compares this ACL2 complex rational
-     * with the argument ACL2 value for order.
-     * This is consistent with the {@code lexorder} ACL2 function.
-     *
-     * @return a negative integer, zero, or a positive integer as
-     * this complex rational is
-     * less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
-     */
-    @Override
-    public int compareTo(Acl2Value o) {
-        if (o == null)
-            throw new NullPointerException();
-        if (o instanceof Acl2Rational)
-            // complex rationals are greater than rationals:
-            return 1;
-        if (o instanceof Acl2ComplexRational) {
-            // compare real and imaginary parts lexicographically:
-            Acl2ComplexRational that = (Acl2ComplexRational) o;
-            int realCmp = this.realPart.compareTo(that.realPart);
-            if (realCmp != 0)
-                return realCmp;
-            else
-                return this.imaginaryPart.compareTo(that.imaginaryPart);
-        }
-        // complex rationals are less than
-        // characters, strings, symbols, and cons pairs:
-        return -1;
     }
 
     /**
@@ -149,4 +116,5 @@ final class Acl2ComplexRational extends Acl2Number {
     public Acl2Rational getImaginaryPart() {
         return this.imaginaryPart;
     }
+
 }

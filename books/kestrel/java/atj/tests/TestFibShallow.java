@@ -19,7 +19,7 @@ public class TestFibShallow {
             // record start time:
             long start = System.currentTimeMillis();
             // execute the call:
-            Acl2Value result = FibShallow.ACL2.FIB(input);
+            Acl2Value result = FibShallow.ACL2.fib(input);
             // record end time:
             long end = System.currentTimeMillis();
             // prevent unwanted JIT compiler optimizations:

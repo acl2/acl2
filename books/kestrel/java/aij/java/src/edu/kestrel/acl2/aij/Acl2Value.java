@@ -158,7 +158,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Coerces this ACL2 value to a list,
+     * Coerces this ACL2 value to an ACL2 list,
      * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
      * It returns {@code nil} by default;
@@ -169,13 +169,37 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Supports the native implementation of
-     * the {@code intern-in-package-of-symbol} ACL2 function,
-     * where this ACL2 value is the first argument of that function.
+     * Coerces this ACL2 value to an ACL2 string,
+     * consistently with the {@code coerce} ACL2 function
+     * when the second argument is not {@code list}.
+     * It returns the empty Java string by default;
+     * it is overwritten in {@link Acl2ConsPair}.
+     */
+    Acl2String coerceToString() {
+        return Acl2String.EMPTY;
+    }
+
+    /**
+     * Interns this ACL2 value in the package of the argument ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the first argument of that function
+     * and the argument ACL2 value is the second argument of that function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2String}.
      */
-    Acl2Symbol internInPackageOfSymbol(Acl2Value sym) {
+    Acl2Symbol internThisInPackageOf(Acl2Value sym) {
+        return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Interns the argument ACL2 string in the package of this ACL2 value,
+     * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
+     * where this ACL2 value is the second argument of that function
+     * and the argument ACL2 value is the first argument of that function.
+     * It returns {@code nil} by default;
+     * it is overridden in {@link Acl2Symbol}.
+     */
+    Acl2Symbol internInPackageOfThis(Acl2String str) {
         return Acl2Symbol.NIL;
     }
 
@@ -429,6 +453,88 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
         return Acl2Integer.ZERO;
     }
 
+    /**
+     * Coerces this ACL2 value to an ACL2 character.
+     * It returns the character with code 0 by default;
+     * it is overridden in {@link Acl2Character}.
+     * This is consistent with
+     * the {@code char-fix} ACL2 (non-built-in) function.
+     */
+    Acl2Character charFix() {
+        return Acl2Character.CODE_0;
+    }
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 character for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToCharacter(Acl2Character o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 string for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToString(Acl2String o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 symbol for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToSymbol(Acl2Symbol o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 number for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToNumber(Acl2Number o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 rational for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToRational(Acl2Rational o);
+
+    /**
+     * Compares this ACL2 value with the argument ACL2 integer for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToInteger(Acl2Integer o);
+
+    /**
+     * Compares this ACL2 value with
+     * the argument ACL2 {@code cons} pair for order.
+     * This is consistent with the {@code lexorder} ACL2 function.
+     *
+     * @return a negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument
+     * @throws NullPointerException if the argument is null
+     */
+    abstract int compareToConsPair(Acl2ConsPair o);
+
     //////////////////////////////////////// public members:
 
     /**
@@ -451,4 +557,5 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     @Override
     public abstract int compareTo(Acl2Value o);
+
 }

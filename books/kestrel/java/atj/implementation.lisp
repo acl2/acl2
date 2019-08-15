@@ -84,6 +84,13 @@
       the non-empty lists of the functions in the respective packages.
       See @(tsee atj-code-generation).")
     (xdoc::li
+     "@('avars-by-name') consists of all the free and bound variables
+      that appear in the ACL2 function definition
+      for which code is being generated.
+      The variables are organized as an alist from symbol names
+      to the variables with the respective names.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
      "@('jvar-value-index'),
       @('jvar-term-index'), and
       @('jvar-lambda-index')

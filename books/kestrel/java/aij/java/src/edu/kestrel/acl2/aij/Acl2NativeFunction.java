@@ -1368,7 +1368,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         if (y.equals(Acl2Symbol.LIST))
             return x.coerceToList();
         else
-            return Acl2String.coerceFromList(x);
+            return x.coerceToString();
     }
 
     /**
@@ -1377,7 +1377,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Symbol execInternInPackageOfSymbol(Acl2Value str,
                                                          Acl2Value sym) {
-        return str.internInPackageOfSymbol(sym);
+        return str.internThisInPackageOf(sym);
     }
 
     /**
@@ -1553,4 +1553,5 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         else
             return y;
     }
+
 }

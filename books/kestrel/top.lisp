@@ -17,6 +17,7 @@
 (include-book "bitcoin/top")
 (include-book "built-in-theorems-doc")
 (include-book "crypto/top")
+;(include-book "hdwallet/top"); causes xdoc conflicts
 (include-book "ethereum/top")
 (include-book "fty/top")
 (include-book "java/top")

@@ -188,4 +188,5 @@ public abstract class Acl2NamedFunction extends Acl2Function {
                         ("Null value at index " + i + ".");
         return this.apply(values);
     }
+
 }

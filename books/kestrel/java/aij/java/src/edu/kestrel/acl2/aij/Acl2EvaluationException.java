@@ -34,4 +34,5 @@ public final class Acl2EvaluationException extends Exception {
     public Acl2EvaluationException(String message, Throwable cause) {
         super(message, cause);
     }
+
 }

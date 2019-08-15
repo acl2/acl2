@@ -330,6 +330,10 @@
     "XDOC constructors for documenting the implementation of event macros
      have been added.")
 
+   (xdoc::p
+    "More XDOC constructors for documenting event macros at the user level
+     have been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
@@ -392,6 +396,10 @@
      have been made more precise than the general type @('Acl2Value').
      For instance, the method for @(tsee equal)
      now returns @('Acl2Symbol').")
+
+   (xdoc::p
+    "Some of the native Java implementations of the ACL2 primitive functions
+     have been optimized.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,6 +538,9 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "Some @(see xdoc) string processing has been made a bit more efficient.")
 
    ))
 

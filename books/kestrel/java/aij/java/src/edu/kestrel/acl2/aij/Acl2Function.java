@@ -86,4 +86,5 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      */
     @Override
     public abstract int compareTo(Acl2Function o);
+
 }

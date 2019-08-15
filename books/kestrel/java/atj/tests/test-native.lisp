@@ -943,6 +943,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *all-tests*
+  (append *characterp-tests*
+          *stringp-tests*
+          *symbolp-tests*
+          *integerp-tests*
+          *rationalp-tests*
+          *complex-rationalp-tests*
+          *acl2-numberp-tests*
+          *consp-tests*
+          *unary---tests*
+          *unary-/-tests*
+          *binary-*-tests*
+          *binary-+-tests*
+          *char-code-tests*
+          *code-char-tests*
+          *coerce-tests*
+          *intern-in-package-of-symbol-tests*
+          *symbol-package-name-tests*
+          *symbol-name-tests*
+          *pkg-imports-tests*
+          *pkg-witness-tests*
+          *<-tests*
+          *complex-tests*
+          *realpart-tests*
+          *imagpart-tests*
+          *numerator-tests*
+          *denominator-tests*
+          *cons-tests*
+          *car-tests-tests*
+          *cdr-tests-tests*
+          *equal-tests*
+          *if-tests*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (java::atj characterp
            stringp
            symbolp
@@ -976,34 +1011,39 @@
            if
            :deep t
            :java-class "NativeDeep"
-           :tests (append *characterp-tests*
-                          *stringp-tests*
-                          *symbolp-tests*
-                          *integerp-tests*
-                          *rationalp-tests*
-                          *complex-rationalp-tests*
-                          *acl2-numberp-tests*
-                          *consp-tests*
-                          *unary---tests*
-                          *unary-/-tests*
-                          *binary-*-tests*
-                          *binary-+-tests*
-                          *char-code-tests*
-                          *code-char-tests*
-                          *coerce-tests*
-                          *intern-in-package-of-symbol-tests*
-                          *symbol-package-name-tests*
-                          *symbol-name-tests*
-                          *pkg-imports-tests*
-                          *pkg-witness-tests*
-                          *<-tests*
-                          *complex-tests*
-                          *realpart-tests*
-                          *imagpart-tests*
-                          *numerator-tests*
-                          *denominator-tests*
-                          *cons-tests*
-                          *car-tests-tests*
-                          *cdr-tests-tests*
-                          *equal-tests*
-                          *if-tests*))
+           :tests *all-tests*)
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
+           :deep nil
+           :java-class "NativeShallow"
+           :tests *all-tests*)

@@ -1946,12 +1946,6 @@
 ; it covered up the most recent command-landmark; indeed, sometimes there
 ; would be two successive bindings of it.)
 
-  (declare (xargs :guard (and (equal varname varname)
-                              (equal wrld wrld))))
-
-; Without the odd guard -- some term mentioning all the formals -- the formals
-; are recognized as irrelevant!  This body below always returns t.
-
 ; Parallelism wart: it's unclear whether we need to lock this array operation.
 ; By design, each array and theory is unique to the current subgoal, so this
 ; locking should be unnecessary.  However, we've seen some slow array access
@@ -1960,28 +1954,12 @@
 ; (with-acl2-lock
 ;  *acl2-par-arrays-lock*
 
-  (let* ((ges1 (getpropc varname 'global-value nil wrld))
-         (theory-array (access enabled-structure ges1 :theory-array))
-         (name (access enabled-structure ges1 :array-name)))
-
-; We would rather not pay the price of making a new array if the proper
-; association of array to alist is already set up.  Since this function is
-; logically a no-op (it is just a function that returns t), it is certainly
-; legitimate to punt if we like.  But it might be nice to abstract what we are
-; doing here and make it available to the ACL2 user.
-
-    #-acl2-loop-only
-    (when (let ((old-ar (get-acl2-array-property name)))
-            (and old-ar
-                 (eq (car old-ar) theory-array)))
-      (return-from recompress-global-enabled-structure t))
-    (let ((to-ignore
-           (cond (ges1
-                  (prog2$ (flush-compress name)
-                          (compress1 name theory-array)))
-                 (t nil))))
-      (declare (ignore to-ignore))
-      t)))
+  (let ((ges1 (getpropc varname 'global-value nil wrld)))
+    (cond (ges1 (prog2$ (maybe-flush-and-compress1
+                         (access enabled-structure ges1 :array-name)
+                         (access enabled-structure ges1 :theory-array))
+                        t))
+          (t t))))
 
 (defun recompress-stobj-accessor-arrays (stobj-names wrld)
 
@@ -1995,8 +1973,7 @@
     (let* ((st (car stobj-names))
            (ar (getpropc st 'accessor-names nil wrld)))
       (prog2$ (or (null ar)
-                  (prog2$ (flush-compress st)
-                          (compress1 st ar)))
+                  (maybe-flush-and-compress1 st ar))
               (recompress-stobj-accessor-arrays (cdr stobj-names) wrld)))))
 
 ; We have defined all the basic concepts having to do with theories

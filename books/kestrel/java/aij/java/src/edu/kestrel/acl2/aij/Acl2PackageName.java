@@ -204,4 +204,5 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
     public String getJavaString() {
         return this.name;
     }
+
 }
