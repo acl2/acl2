@@ -152,6 +152,19 @@
      processor that quickly removes irrelevant parts of a clause during mutual
      inductions using @('tools/flag.lisp').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "hdwallet::crypto-hdwallet"
+                           "Cryptocurrency Hierarchical Deterministic Wallet"))
+
+   (xdoc::p
+    "This is a simple proof of concept of
+     a hierarchical deterministic wallet for cryptocurrencies,
+     which makes use of the "
+    (xdoc::seeurl "crypto::cryptography" "cryptographic") ", "
+    (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin") ", and "
+    (xdoc::seeurl "ethereum::ethereum" "Ethereum") " libraries.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
