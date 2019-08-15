@@ -12,4 +12,9 @@
 (in-package "HDWALLET")
 
 (include-book "wallet")
-(include-book "wallet-executable")
+
+; temporarily exclude the following from the manual
+; until some conflicts between libraries
+; (indirectly included by the following file)
+; are resolved:
+;; (include-book "wallet-executable")
