@@ -298,17 +298,6 @@
              (posp (mv-nth 2 (atj-gen-jlocvar-indexed
                               var-type var-base var-index var-init))))))
 
-(defval *atj-jvar-value*
-  :short "Base name of the Java local variables used to build
-          Java representations of ACL2 values."
-  :long
-  (xdoc::topstring-p
-   "We start the name with a @('$') to avoid possible conflicts with
-    the Java variables generated for the shallow embedding approach.")
-  "$value"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-value*)))
-
 (define atj-gen-achar ((achar characterp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 character."
@@ -471,7 +460,9 @@
    (xdoc::@def "atj-gen-avalue")
    (xdoc::@def "atj-gen-aconspair"))
 
-  (define atj-gen-aconspair ((aconspair consp) (jvar-value-index posp))
+  (define atj-gen-aconspair ((aconspair consp)
+                             (jvar-value-base stringp)
+                             (jvar-value-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
@@ -481,21 +472,23 @@
          ((mv car-jblock
               car-jexpr
               jvar-value-index) (atj-gen-avalue (car aconspair)
+                                                jvar-value-base
                                                 jvar-value-index))
          ((mv car-jlocvardecl
               car-jvar
               jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
-                                                         *atj-jvar-value*
+                                                         jvar-value-base
                                                          jvar-value-index
                                                          car-jexpr))
          ((mv cdr-jblock
               cdr-jexpr
               jvar-value-index) (atj-gen-avalue (cdr aconspair)
+                                                jvar-value-base
                                                 jvar-value-index))
          ((mv cdr-jlocvardecl
               cdr-jvar
               jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
-                                                         *atj-jvar-value*
+                                                         jvar-value-base
                                                          jvar-value-index
                                                          cdr-jexpr))
          (jblock (append car-jblock
@@ -509,7 +502,9 @@
       (mv jblock jexpr jvar-value-index))
     :measure (two-nats-measure (acl2-count aconspair) 0))
 
-  (define atj-gen-avalue (avalue (jvar-value-index posp))
+  (define atj-gen-avalue (avalue
+                          (jvar-value-base stringp)
+                          (jvar-value-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
@@ -533,6 +528,7 @@
                                      (atj-gen-anumber avalue)
                                      jvar-value-index))
           ((consp avalue) (atj-gen-aconspair avalue
+                                             jvar-value-base
                                              jvar-value-index))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             avalue)
@@ -568,6 +564,7 @@
 
 (define atj-gen-deep-aqconst
   ((aqconst "(Unquoted) value of the ACL2 quoted constant.")
+   (jvar-value-base stringp)
    (jvar-value-index posp))
   :returns (mv (jblock jblockp)
                (jexpr jexprp)
@@ -576,6 +573,7 @@
   (b* (((mv value-jblock
             value-jexpr
             jvar-value-index) (atj-gen-avalue aqconst
+                                              jvar-value-base
                                               jvar-value-index))
        (jblock value-jblock)
        (jexpr (jexpr-smethod *atj-jtype-qconst*
@@ -606,6 +604,7 @@
 
   (define atj-gen-deep-afnapp ((afn pseudo-termfnp)
                                (aargs pseudo-term-listp)
+                               (jvar-value-base stringp)
                                (jvar-value-index posp)
                                (jvar-term-index posp)
                                (jvar-lambda-index posp))
@@ -661,6 +660,7 @@
                   jvar-lambda-index)
             (atj-gen-deep-alambda (lambda-formals afn)
                                   (lambda-body afn)
+                                  jvar-value-base
                                   jvar-value-index
                                   jvar-term-index
                                   jvar-lambda-index)))
@@ -669,6 +669,7 @@
               jvar-value-index
               jvar-term-index
               jvar-lambda-index) (atj-gen-deep-aterms aargs
+                                                      jvar-value-base
                                                       jvar-value-index
                                                       jvar-term-index
                                                       jvar-lambda-index))
@@ -697,6 +698,7 @@
 
   (define atj-gen-deep-alambda ((aformals symbol-listp)
                                 (abody pseudo-termp)
+                                (jvar-value-base stringp)
                                 (jvar-value-index posp)
                                 (jvar-term-index posp)
                                 (jvar-lambda-index posp))
@@ -722,6 +724,7 @@
               jvar-value-index
               jvar-term-index
               jvar-lambda-index) (atj-gen-deep-aterm abody
+                                                     jvar-value-base
                                                      jvar-value-index
                                                      jvar-term-index
                                                      jvar-lambda-index))
@@ -747,6 +750,7 @@
     :measure (two-nats-measure (acl2-count abody) 1))
 
   (define atj-gen-deep-aterm ((aterm pseudo-termp)
+                              (jvar-value-base stringp)
                               (jvar-value-index posp)
                               (jvar-term-index posp)
                               (jvar-lambda-index posp))
@@ -766,6 +770,7 @@
                                      jexpr
                                      jvar-value-index)
                                  (atj-gen-deep-aqconst (unquote aterm)
+                                                       jvar-value-base
                                                        jvar-value-index)))
                              (mv jblock
                                  jexpr
@@ -774,12 +779,14 @@
                                  jvar-lambda-index)))
           (t (atj-gen-deep-afnapp (ffn-symb aterm)
                                   (fargs aterm)
+                                  jvar-value-base
                                   jvar-value-index
                                   jvar-term-index
                                   jvar-lambda-index)))
     :measure (two-nats-measure (acl2-count aterm) 0))
 
   (define atj-gen-deep-aterms ((aterms pseudo-term-listp)
+                               (jvar-value-base stringp)
                                (jvar-value-index posp)
                                (jvar-term-index posp)
                                (jvar-lambda-index posp))
@@ -801,6 +808,7 @@
                 jvar-value-index
                 jvar-term-index
                 jvar-lambda-index) (atj-gen-deep-aterm (car aterms)
+                                                       jvar-value-base
                                                        jvar-value-index
                                                        jvar-term-index
                                                        jvar-lambda-index))
@@ -809,6 +817,7 @@
                 jvar-value-index
                 jvar-term-index
                 jvar-lambda-index) (atj-gen-deep-aterms (cdr aterms)
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-term-index
                                                         jvar-lambda-index)))
@@ -1279,6 +1288,7 @@
                                   (aelse pseudo-termp)
                                   (jvars symbol-string-alistp)
                                   (jvar-var-indices symbol-nat-alistp)
+                                  (jvar-value-base stringp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
@@ -1324,6 +1334,7 @@
               jvar-result-index) (atj-gen-shallow-aterm atest
                                                         jvars
                                                         jvar-var-indices
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-result-index
                                                         curr-pkg
@@ -1340,6 +1351,7 @@
               jvar-result-index) (atj-gen-shallow-aterm aelse
                                                         jvars
                                                         jvar-var-indices
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-result-index
                                                         curr-pkg
@@ -1354,6 +1366,7 @@
               jvar-result-index) (atj-gen-shallow-aterm athen
                                                         jvars
                                                         jvar-var-indices
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-result-index
                                                         curr-pkg
@@ -1390,6 +1403,7 @@
                                   (asecond pseudo-termp)
                                   (jvars symbol-string-alistp)
                                   (jvar-var-indices symbol-nat-alistp)
+                                  (jvar-value-base stringp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
@@ -1428,6 +1442,7 @@
               jvar-result-index) (atj-gen-shallow-aterm afirst
                                                         jvars
                                                         jvar-var-indices
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-result-index
                                                         curr-pkg
@@ -1444,6 +1459,7 @@
               jvar-result-index) (atj-gen-shallow-aterm asecond
                                                         jvars
                                                         jvar-var-indices
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-result-index
                                                         curr-pkg
@@ -1481,6 +1497,7 @@
                                   (aargs pseudo-term-listp)
                                   (jvars symbol-string-alistp)
                                   (jvar-var-indices symbol-nat-alistp)
+                                  (jvar-value-base stringp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
@@ -1525,6 +1542,7 @@
                                         athird
                                         jvars
                                         jvar-var-indices
+                                        jvar-value-base
                                         jvar-value-index
                                         jvar-result-index
                                         curr-pkg
@@ -1534,6 +1552,7 @@
                                       athird
                                       jvars
                                       jvar-var-indices
+                                      jvar-value-base
                                       jvar-value-index
                                       jvar-result-index
                                       curr-pkg
@@ -1545,6 +1564,7 @@
               jvar-result-index) (atj-gen-shallow-aterms aargs
                                                          jvars
                                                          jvar-var-indices
+                                                         jvar-value-base
                                                          jvar-value-index
                                                          jvar-result-index
                                                          curr-pkg
@@ -1566,6 +1586,7 @@
                                                           arg-jexprs
                                                           jvars
                                                           jvar-var-indices
+                                                          jvar-value-base
                                                           jvar-value-index
                                                           jvar-result-index
                                                           curr-pkg
@@ -1591,6 +1612,7 @@
                                    (jargs jexpr-listp)
                                    (jvars symbol-string-alistp)
                                    (jvar-var-indices symbol-nat-alistp)
+                                   (jvar-value-base stringp)
                                    (jvar-value-index posp)
                                    (jvar-result-index posp)
                                    (curr-pkg stringp)
@@ -1667,6 +1689,7 @@
               jvar-result-index) (atj-gen-shallow-aterm abody
                                                         jvars
                                                         jvar-var-indices
+                                                        jvar-value-base
                                                         jvar-value-index
                                                         jvar-result-index
                                                         curr-pkg
@@ -1683,6 +1706,7 @@
   (define atj-gen-shallow-aterm ((aterm pseudo-termp)
                                  (jvars symbol-string-alistp)
                                  (jvar-var-indices symbol-nat-alistp)
+                                 (jvar-value-base stringp)
                                  (jvar-value-index posp)
                                  (jvar-result-index posp)
                                  (curr-pkg stringp)
@@ -1715,6 +1739,7 @@
                                  jvar-result-index))
           ((fquotep aterm) (b* (((mv jblock jexpr jvar-value-index)
                                  (atj-gen-avalue (unquote aterm)
+                                                 jvar-value-base
                                                  jvar-value-index)))
                              (mv jblock
                                  jexpr
@@ -1725,6 +1750,7 @@
                                      (fargs aterm)
                                      jvars
                                      jvar-var-indices
+                                     jvar-value-base
                                      jvar-value-index
                                      jvar-result-index
                                      curr-pkg
@@ -1734,6 +1760,7 @@
   (define atj-gen-shallow-aterms ((aterms pseudo-term-listp)
                                   (jvars symbol-string-alistp)
                                   (jvar-var-indices symbol-nat-alistp)
+                                  (jvar-value-base stringp)
                                   (jvar-value-index posp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
@@ -1754,6 +1781,7 @@
                 jvar-result-index) (atj-gen-shallow-aterm (car aterms)
                                                           jvars
                                                           jvar-var-indices
+                                                          jvar-value-base
                                                           jvar-value-index
                                                           jvar-result-index
                                                           curr-pkg
@@ -1765,6 +1793,7 @@
                 jvar-result-index) (atj-gen-shallow-aterms (cdr aterms)
                                                            jvars
                                                            jvar-var-indices
+                                                           jvar-value-base
                                                            jvar-value-index
                                                            jvar-result-index
                                                            curr-pkg
@@ -1985,7 +2014,9 @@
                 (remove-mbe-exec-from-term abody)))
        (afn-jexpr (atj-gen-asymbol afn))
        (aformals-jexpr (atj-gen-deep-aformals aformals))
-       ((mv abody-jblock abody-jexpr & & &) (atj-gen-deep-aterm abody 1 1 1))
+       ((mv abody-jblock
+            abody-jexpr
+            & & &) (atj-gen-deep-aterm abody "value" 1 1 1))
        (afn-jlocvar (make-jlocvar :final? nil
                                   :type *atj-jtype-named-fn*
                                   :name *atj-jvar-function*
@@ -2182,6 +2213,11 @@
      the indices for the Java local variables
      with base names @(tsee *atj-jvar-value*) and @(tsee *atj-jvar-result*)
      are initialized to 1, since we are at the top level here.
+     We use @('$value') as the base name
+     for the Java local variables to build values,
+     so that they do not conflict with the Java local variables
+     generated from the ACL2 variables,
+     none of which starts with a @('$') not followed by two hexadecimal digits.
      The body of the Java method consists of those Java statements,
      followed by a @('return') statement with that Java expression.")
    (xdoc::p
@@ -2205,7 +2241,7 @@
        (jmethod-params (atj-gen-jparamlist-avalues (strip-cdrs jvars)))
        ((mv abody-jblock abody-jexpr & & &)
         (atj-gen-shallow-aterm
-         abody jvars jvar-var-indices 1 1 curr-pkg avars-by-name))
+         abody jvars jvar-var-indices "$value" 1 1 curr-pkg avars-by-name))
        (jmethod-body (append abody-jblock
                              (list (jstatem-return abody-jexpr)))))
     (make-jmethod :access (jaccess-public)
@@ -2719,7 +2755,7 @@
                                         :init time-jexpr)))
        ((mv ares-jblock
             ares-jexpr
-            &) (atj-gen-avalue test.result jvar-value-index))
+            &) (atj-gen-avalue test.result "value" jvar-value-index))
        (ares-jlocvar (make-jlocvar :final? nil
                                    :type *atj-jtype-value*
                                    :name *atj-jvar-aresult*
@@ -2791,7 +2827,7 @@
           (aarg (car aargs))
           ((mv first-jblock
                first-jexpr
-               jvar-value-index) (atj-gen-avalue aarg jvar-value-index))
+               jvar-value-index) (atj-gen-avalue aarg "value" jvar-value-index))
           ((mv rest-jblock
                rest-jexprs
                jvar-value-index) (atj-gen-test-jmethod-aux (cdr aargs)
