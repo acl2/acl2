@@ -1092,7 +1092,7 @@
      as opposed to porting the keys from another wallet
      via @(tsee init-from-mnemonic).")
    (xdoc::p
-    "The entropy is supplied as a hex string (see @(tsee string-to-bit-list)).
+    "The entropy is supplied as a hex string (see @(tsee string-to-byte-list)).
      After turning the string into a list of bytes and then a list of bits,
      we turn the resulting entropy into a mnemonic,
      and then we call @(tsee init-from-mnemonic)
@@ -1374,7 +1374,7 @@
      is consistent with the type name @(tsee stat).
      It emphasizes the wallet state, as opposed to the ACL2 @(tsee state).")
    (xdoc::p
-    "@(tsee serialize-rread) throws a hard error upon failure.
+    "@(tsee serialize-read) throws a hard error upon failure.
      This may acceptable if the shell script that calls the wallet
      can catch that and turn into a more user-oriented error message."))
   (b* (((mv stat? state) (serialize-read *stat-filepath*))

@@ -20,7 +20,7 @@
   :parents (crypto::attachments elliptic-curve-digital-signature-algorithm)
   :short (xdoc::topstring
           "Executable attachment for the "
-          (xdoc::seeurl "secp256k1-interface"
+          (xdoc::seeurl "secp256k1-ecdsa-interface"
                         "ECDSA interface for the curve secp256k1")
           ".")
   :long
