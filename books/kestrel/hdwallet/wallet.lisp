@@ -24,7 +24,7 @@
 
 (defxdoc+ crypto-hdwallet
 
-  :parents (kestrel-books)
+  :parents (acl2::kestrel-books)
 
   :short "A hierarchical deterministic wallet for cryptocurrencies."
 
