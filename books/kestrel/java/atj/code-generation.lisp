@@ -2632,11 +2632,6 @@
                        (jexpr-imethod (jexpr-name "System.out")
                                       "print"
                                       (list (atj-gen-jstring message)))))
-       (afnname-jexpr (atj-gen-asymbol test.function))
-       (function-jlocvar (make-jlocvar :final? nil
-                                       :type *atj-jtype-symbol*
-                                       :name *atj-jvar-fnname*
-                                       :init afnname-jexpr))
        ((mv aargs-jblock
             aargs-jexprs
             jvar-value-index) (atj-gen-test-jmethod-aux test.arguments 1))
@@ -2645,13 +2640,11 @@
                                         :type (jtype-array *atj-jtype-value*)
                                         :name *atj-jvar-fnargs*
                                         :init aargs-jexpr))
-       ((mv ares-jblock
-            ares-jexpr
-            &) (atj-gen-avalue test.result jvar-value-index))
-       (ares-jlocvar (make-jlocvar :final? nil
-                                   :type *atj-jtype-value*
-                                   :name *atj-jvar-aresult*
-                                   :init ares-jexpr))
+       (afnname-jexpr (atj-gen-asymbol test.function))
+       (function-jlocvar (make-jlocvar :final? nil
+                                       :type *atj-jtype-symbol*
+                                       :name *atj-jvar-fnname*
+                                       :init afnname-jexpr))
        (jres-jexpr (jexpr-smethod (jtype-class java-class$)
                                   "call"
                                   (list (jexpr-name *atj-jvar-fnname*)
@@ -2660,6 +2653,13 @@
                                    :type *atj-jtype-value*
                                    :name *atj-jvar-jresult*
                                    :init jres-jexpr))
+       ((mv ares-jblock
+            ares-jexpr
+            &) (atj-gen-avalue test.result jvar-value-index))
+       (ares-jlocvar (make-jlocvar :final? nil
+                                   :type *atj-jtype-value*
+                                   :name *atj-jvar-aresult*
+                                   :init ares-jexpr))
        (print-pass-jstatem (jstatem-expr
                             (jexpr-imethod (jexpr-name "System.out")
                                            "println"
@@ -2680,12 +2680,12 @@
                     (list set-fail-jstatem
                           print-fail-jstatem)))
        (jmethod-body (append (list print-jstatem)
-                             (list (jstatem-locvar function-jlocvar))
                              aargs-jblock
                              (list (jstatem-locvar arguments-jlocvar))
+                             (list (jstatem-locvar function-jlocvar))
+                             (list (jstatem-locvar jres-jlocvar))
                              ares-jblock
                              (list (jstatem-locvar ares-jlocvar))
-                             (list (jstatem-locvar jres-jlocvar))
                              (list if-jstatem))))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
