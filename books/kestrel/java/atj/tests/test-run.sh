@@ -50,3 +50,4 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
 
 # test AIJ's native implementations of ACL2 functions:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowTests

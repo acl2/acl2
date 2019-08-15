@@ -8,3 +8,5 @@ ABNFDeep.java
 ABNFShallow.java
 NativeDeep.java
 NativeDeepTests.java
+NativeShallow.java
+NativeShallowTests.java
