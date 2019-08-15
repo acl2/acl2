@@ -137,16 +137,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only need integer, boolean, string, and null literals for now.
-     We do not need floating point and character literals.")
+    "We only need integer, boolean, string, and null literals for now,
+     as well as a limited form of floating-point literals (see below).
+     We do not need character literals yet.")
    (xdoc::p
     "For an integer literal, we capture its value (a natural number)
      and whether there is an integer type suffix (@('l') or @('L')) or not,
      i.e. if the literal has type @('long').
      We do not restrict the natural number
      to the range of type @('int') or @('long'),
-     but ATJ always produces correct integer literals."))
+     but ATJ always produces correct integer literals.")
+   (xdoc::p
+    "We only support a very limited form of floating-point literals for now,
+     whose value is actually just a natural number."))
   (:integer ((value acl2::nat) (long? bool) (base jintbase)))
+  (:floating ((value acl2::nat)))
   (:boolean ((value bool)))
   (:string ((value string)))
   (:null ())

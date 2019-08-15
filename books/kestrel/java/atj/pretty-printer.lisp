@@ -146,6 +146,10 @@
 (define print-jliteral ((lit jliteralp))
   :returns (part msgp)
   :short "Pretty-print a Java literal."
+  :long
+  (xdoc::topstring-p
+   "We pretty-print our limited form of floating-point literals
+    just by appending @('.0') after their decimal integer digits.")
   (jliteral-case
    lit
    :integer (b* ((digits (jintbase-case
@@ -159,6 +163,8 @@
               (if lit.long?
                   (str::cat digits "L")
                 digits))
+   :floating (b* ((digits (str::natstr lit.value)))
+               (str::cat digits ".0"))
    :boolean (if lit.value "true" "false")
    :string (msg "\"~@0\"" (print-jstring-chars (explode lit.value)))
    :null "null"))
