@@ -415,6 +415,10 @@
   (cond ((member-eq 'unequiv (equiv-contexts-fix contexts)) '(unequiv))
         ((member-eq 'iff (equiv-contexts-fix contexts)) '(iff))))
 
+(define gl-interp-or-test-already-rewrittenp ((contexts equiv-contextsp))
+  (or (member-eq 'unequiv (equiv-contexts-fix contexts))
+      (member-eq 'iff (equiv-contexts-fix contexts))))
+
 ;; (define interp-st-checkpoint-p (chp interp-st)
 ;;   :enabled t
 ;;   (stobj-let ((pathcond (interp-st->pathcond interp-st))
@@ -1640,9 +1644,14 @@
                      new-interp-st new-state)
         (b* (((interp-st-bind
                (equiv-contexts (gl-interp-test-equiv-contexts (interp-st->equiv-contexts interp-st))))
+              (was-fncall-p (pseudo-term-case x :call))
               ((gl-interp-recursive-call xobj)
                (gl-interp-term-equivs x interp-st state))))
-          (gl-interp-simplify-if-test xobj interp-st state)))
+          ;; already-rewritten: xobj has probably already been rewritten under
+          ;; IFF if x was a function/lambda call, otherwise probably not.
+          ;; E.g. if x was a variable, it was probably not bound in an IFF
+          ;; context.
+          (gl-interp-simplify-if-test was-fncall-p xobj interp-st state)))
 
       (define gl-interp-term-equivs ((x pseudo-termp)
                                      (interp-st interp-st-bfrs-ok)
@@ -1843,7 +1852,9 @@
              (interp-st (interp-st-push-scratch-gl-objlist else-args interp-st))
              (interp-st (interp-st-push-scratch-gl-objlist then-args interp-st))
              ((gl-interp-recursive-call testbfr)
-              (gl-interp-simplify-if-test test interp-st state))
+              ;; already-rewritten: presumably since it already ended up as the
+              ;; test of an IF.
+              (gl-interp-simplify-if-test t test interp-st state))
              ((mv then-args interp-st) (interp-st-pop-scratch-gl-objlist interp-st))
              ((mv else-args interp-st) (interp-st-pop-scratch-gl-objlist interp-st)))
           (gl-interp-fncall-casesplit-branches testbfr fn then-args else-args interp-st state)))
@@ -2405,7 +2416,11 @@
              ;; ((when err) (mv nil interp-st state))
              (interp-st (interp-st-push-scratch-gl-obj testval interp-st))
              ((gl-interp-recursive-call testbfr)
-              (gl-interp-simplify-if-test testval interp-st state))
+              (gl-interp-simplify-if-test
+               ;; Already rewritten under IFF/unequiv if original contexts
+               ;; contained IFF/unequiv.
+               (gl-interp-or-test-already-rewrittenp equiv-contexts)
+               testval interp-st state))
              ;; ((when err)
              ;;  (b* ((interp-st (interp-st-pop-scratch interp-st)))
              ;;    (mv nil interp-st state)))
@@ -2614,7 +2629,7 @@
                  ((interp-st-bind
                    (reclimit (1- reclimit) reclimit))
                   ((fgl-interp-value ans)
-                   (gl-interp-simplify-if-test xobj interp-st state))))
+                   (gl-interp-simplify-if-test nil xobj interp-st state))))
               (fgl-interp-value nil ans))
           ;; Harder cases.
           (b* (((mv contra interp-st)
@@ -2632,14 +2647,15 @@
                ((interp-st-bind
                  (reclimit (1- reclimit) reclimit))
                 ((fgl-interp-value ans)
-                 (gl-interp-simplify-if-test xobj interp-st state)))
+                 (gl-interp-simplify-if-test nil xobj interp-st state)))
                (interp-st (interp-st-pathcond-rewind interp-st))
                ((when (eq (interp-st->errmsg interp-st) :unreachable))
                 (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
                   (fgl-interp-value t nil))))
             (fgl-interp-value nil ans))))
 
-      (define gl-interp-simplify-if-test ((xobj gl-object-p)
+      (define gl-interp-simplify-if-test ((already-rewrittenp)
+                                          (xobj gl-object-p)
                                           (interp-st interp-st-bfrs-ok)
                                           state)
         :guard (interp-st-bfr-listp (gl-object-bfrlist xobj))
@@ -2658,7 +2674,7 @@
           :g-var (b* (((mv ans interp-st) (interp-st-add-term-bvar-unique xobj interp-st state)))
                    (fgl-interp-value ans))
           :g-ite (gl-interp-simplify-if-test-ite xobj interp-st state)
-          :g-apply (gl-interp-simplify-if-test-fncall xobj interp-st state)
+          :g-apply (gl-interp-simplify-if-test-fncall already-rewrittenp xobj interp-st state)
           :g-map (fgl-interp-value (bool-fix xobj.alist))))
 
       ;; BOZO should we have a version of this for OR?
@@ -2681,7 +2697,7 @@
              (interp-st (interp-st-push-scratch-gl-obj xobj.then interp-st))
              ;; scratch: xobj.then, xobj.else
              ((gl-interp-recursive-call test-bfr)
-              (gl-interp-simplify-if-test xobj.test interp-st state))
+              (gl-interp-simplify-if-test t xobj.test interp-st state))
              ;; ((when err)
              ;;  (b* ((interp-st (interp-st-pop-scratch interp-st))
              ;;       (interp-st (interp-st-pop-scratch interp-st)))
@@ -2725,7 +2741,8 @@
       ;;                                   (fgl-interp-value ite))))
       ;; (mv nil ite interp-st state)))
 
-      (define gl-interp-simplify-if-test-fncall ((xobj gl-object-p)
+      (define gl-interp-simplify-if-test-fncall ((already-rewrittenp)
+                                                 (xobj gl-object-p)
                                                  (interp-st interp-st-bfrs-ok)
                                                  state)
         :guard (and (gl-object-case xobj :g-apply)
@@ -2744,7 +2761,7 @@
               (gl-apply-match-not xobj))
              ((when not-matched)
               (b* (((fgl-interp-value bfr)
-                    (gl-interp-simplify-if-test neg-arg interp-st state))
+                    (gl-interp-simplify-if-test nil neg-arg interp-st state))
                    ;; ((when err)
                    ;;  (mv nil interp-st state))
                    )
@@ -2753,8 +2770,6 @@
              ((gl-function-mode fn-mode)
               (gl-function-mode-lookup xobj.fn (glcp-config->function-modes
                                                 (interp-st->config interp-st))))
-
-             ;; BOZO support gl-interp-force-check.
 
              ;; We rewrite this fncall again because it presumably might not have
              ;; been done in IFF context before.  E.g.
@@ -2779,7 +2794,10 @@
                (reclimit (1- reclimit) reclimit)
                (equiv-contexts '(iff)))
               ((gl-interp-recursive-call successp ans)
-               (gl-rewrite-fncall xobj.fn xobj.args fn-mode.dont-rewrite-under-if-test interp-st state)))
+               (gl-rewrite-fncall xobj.fn xobj.args
+                                  (or** already-rewrittenp
+                                        fn-mode.dont-rewrite-under-if-test)
+                                  interp-st state)))
 
              ((mv xobj interp-st) (interp-st-pop-scratch-gl-obj interp-st))
              ;; ((when err)
@@ -2788,7 +2806,7 @@
               (b* (((interp-st-bind
                      (reclimit (1- reclimit) reclimit))
                     ((fgl-interp-value ans)
-                     (gl-interp-simplify-if-test ans interp-st state))))
+                     (gl-interp-simplify-if-test t ans interp-st state))))
                 (fgl-interp-value ans)))
 
              (xobj (hons-copy xobj))
