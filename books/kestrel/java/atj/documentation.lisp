@@ -478,4 +478,8 @@
      and then executes the code to run the tests described just above.
      Thus, this test class can be invoked as a Java application.
      This @('main') method also prints a final message saying whether
-     all the tests passed or there were any failures.")))
+     all the tests passed or there were any failures.
+     If all the tests passed, the method exits the JVM with return code 0;
+     otherwise, it exits the JVM with return code 1,
+     which is an error code when the test class
+     is invoked as a Java application in a shell script.")))

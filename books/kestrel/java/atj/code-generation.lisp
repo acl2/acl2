@@ -2834,9 +2834,29 @@
          (jexpr-imethod (jexpr-name "System.out")
                         "println"
                         (list (atj-gen-jstring "Some tests failed.")))))
+       (exit0-jstatem
+        (jstatem-expr
+         (jexpr-smethod (jtype-class "System")
+                        "exit"
+                        (list (jexpr-literal
+                               (make-jliteral-integer
+                                :value 0
+                                :long? nil
+                                :base (jintbase-decimal)))))))
+       (exit1-jstatem
+        (jstatem-expr
+         (jexpr-smethod (jtype-class "System")
+                        "exit"
+                        (list (jexpr-literal
+                               (make-jliteral-integer
+                                :value 1
+                                :long? nil
+                                :base (jintbase-decimal)))))))
        (if-jstatem (jstatem-ifelse (jexpr-name "failures")
-                                   (list print-some-fail-jstatem)
-                                   (list print-all-pass-jstatem)))
+                                   (list print-some-fail-jstatem
+                                         exit1-jstatem)
+                                   (list print-all-pass-jstatem
+                                         exit0-jstatem)))
        (jmethod-body (append (list init-jstatem)
                              tests-jblock
                              (list if-jstatem))))
