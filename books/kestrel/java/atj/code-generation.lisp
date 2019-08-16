@@ -548,20 +548,6 @@
         (t (cons (atj-gen-asymbol (car asymbols))
                  (atj-gen-asymbols (cdr asymbols))))))
 
-(defval *atj-jvar-term*
-  :short "Base name of the Java local variables used to build
-          deeply embedded Java representations of ACL2 terms."
-  "term"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-term*)))
-
-(defval *atj-jvar-lambda*
-  :short "Base name of the Java local variables used to build
-          deeply embedded Java representations of ACL2 lambda expressions."
-  "lambda"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-lambda*)))
-
 (define atj-gen-deep-aqconst
   ((aqconst "(Unquoted) value of the ACL2 quoted constant.")
    (jvar-value-base stringp)
@@ -606,7 +592,9 @@
                                (aargs pseudo-term-listp)
                                (jvar-value-base stringp)
                                (jvar-value-index posp)
+                               (jvar-term-base stringp)
                                (jvar-term-index posp)
+                               (jvar-lambda-base stringp)
                                (jvar-lambda-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -662,7 +650,9 @@
                                   (lambda-body afn)
                                   jvar-value-base
                                   jvar-value-index
+                                  jvar-term-base
                                   jvar-term-index
+                                  jvar-lambda-base
                                   jvar-lambda-index)))
          ((mv aargs-jblock
               aarg-jexprs
@@ -671,7 +661,9 @@
               jvar-lambda-index) (atj-gen-deep-aterms aargs
                                                       jvar-value-base
                                                       jvar-value-index
+                                                      jvar-term-base
                                                       jvar-term-index
+                                                      jvar-lambda-base
                                                       jvar-lambda-index))
          (aargs-jexpr (jexpr-newarray *atj-jtype-term* aarg-jexprs))
          (afnapp-jexpr (jexpr-smethod *atj-jtype-fn-app*
@@ -681,7 +673,7 @@
          ((mv afnapp-jlocvar
               afnapp-jvar
               jvar-term-index) (atj-gen-jlocvar-indexed *atj-jtype-term*
-                                                        *atj-jvar-term*
+                                                        jvar-term-base
                                                         jvar-term-index
                                                         afnapp-jexpr)))
       (mv (append afn-jblock
@@ -700,7 +692,9 @@
                                 (abody pseudo-termp)
                                 (jvar-value-base stringp)
                                 (jvar-value-index posp)
+                                (jvar-term-base stringp)
                                 (jvar-term-index posp)
+                                (jvar-lambda-base stringp)
                                 (jvar-lambda-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -726,7 +720,9 @@
               jvar-lambda-index) (atj-gen-deep-aterm abody
                                                      jvar-value-base
                                                      jvar-value-index
+                                                     jvar-term-base
                                                      jvar-term-index
+                                                     jvar-lambda-base
                                                      jvar-lambda-index))
          (alambda-jexpr (jexpr-smethod *atj-jtype-lambda*
                                        "make"
@@ -736,7 +732,7 @@
               alambda-jvar
               jvar-lambda-index) (atj-gen-jlocvar-indexed
                                   *atj-jtype-lambda*
-                                  *atj-jvar-lambda*
+                                  jvar-lambda-base
                                   jvar-lambda-index
                                   alambda-jexpr)))
       (mv (append abody-jblock
@@ -752,7 +748,9 @@
   (define atj-gen-deep-aterm ((aterm pseudo-termp)
                               (jvar-value-base stringp)
                               (jvar-value-index posp)
+                              (jvar-term-base stringp)
                               (jvar-term-index posp)
+                              (jvar-lambda-base stringp)
                               (jvar-lambda-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -781,14 +779,18 @@
                                   (fargs aterm)
                                   jvar-value-base
                                   jvar-value-index
+                                  jvar-term-base
                                   jvar-term-index
+                                  jvar-lambda-base
                                   jvar-lambda-index)))
     :measure (two-nats-measure (acl2-count aterm) 0))
 
   (define atj-gen-deep-aterms ((aterms pseudo-term-listp)
                                (jvar-value-base stringp)
                                (jvar-value-index posp)
+                               (jvar-term-base stringp)
                                (jvar-term-index posp)
+                               (jvar-lambda-base stringp)
                                (jvar-lambda-index posp))
     :returns (mv (jblock jblockp)
                  (jexprs jexpr-listp)
@@ -810,7 +812,9 @@
                 jvar-lambda-index) (atj-gen-deep-aterm (car aterms)
                                                        jvar-value-base
                                                        jvar-value-index
+                                                       jvar-term-base
                                                        jvar-term-index
+                                                       jvar-lambda-base
                                                        jvar-lambda-index))
            ((mv rest-jblock
                 jexprs
@@ -819,7 +823,9 @@
                 jvar-lambda-index) (atj-gen-deep-aterms (cdr aterms)
                                                         jvar-value-base
                                                         jvar-value-index
+                                                        jvar-term-base
                                                         jvar-term-index
+                                                        jvar-lambda-base
                                                         jvar-lambda-index)))
         (mv (append first-jblock
                     rest-jblock)
@@ -2016,7 +2022,7 @@
        (aformals-jexpr (atj-gen-deep-aformals aformals))
        ((mv abody-jblock
             abody-jexpr
-            & & &) (atj-gen-deep-aterm abody "value" 1 1 1))
+            & & &) (atj-gen-deep-aterm abody "value" 1 "term" 1 "lambda" 1))
        (afn-jlocvar (make-jlocvar :final? nil
                                   :type *atj-jtype-named-fn*
                                   :name *atj-jvar-function*

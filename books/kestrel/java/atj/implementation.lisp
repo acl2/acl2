@@ -91,9 +91,10 @@
       to the variables with the respective names.
       See @(tsee atj-code-generation).")
     (xdoc::li
-     "@('jvar-value-base')
-      is the base name of the Java local variables to use
-      to construct ACL2 values.")
+     "@('jvar-value-base') and
+      @('jvar-term-base')
+      are the base names of the Java local variables to use
+      to construct ACL2 values and terms.")
     (xdoc::li
      "@('jvar-value-index'),
       @('jvar-term-index'), and
