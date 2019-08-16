@@ -1835,13 +1835,6 @@
                  "make"
                  (list (atj-gen-jstring apkg))))
 
-(defval *atj-jvar-aimports*
-  :short "Name of the Java local variable used to build
-          the import lists of ACL2 packages."
-  "imports"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-aimports*)))
-
 (define atj-gen-apkg-jmethod ((apkg stringp) (verbose$ booleanp))
   :returns (jmethod jmethodp)
   :short "Generate a Java method that adds an ACL2 package definition."
@@ -1858,6 +1851,7 @@
     to add the ACL2 package definition with the calculated import list.")
   (b* (((run-when verbose$)
         (cw "  ~s0~%" apkg))
+       (jvar-aimports "imports")
        (jmethod-name (atj-gen-apkg-jmethod-name apkg))
        (aimports (pkg-imports apkg))
        (len-jliteral (make-jliteral-integer :value (len aimports)
@@ -1867,16 +1861,16 @@
                                       (list (jexpr-literal len-jliteral))))
        (imports-jlocvar (make-jlocvar :final? nil
                                       :type (jtype-class "List<Acl2Symbol>")
-                                      :name *atj-jvar-aimports*
+                                      :name jvar-aimports
                                       :init newlist-jexpr))
-       (imports-jblock (atj-gen-apkg-jmethod-aux aimports))
+       (imports-jblock (atj-gen-apkg-jmethod-aux aimports jvar-aimports))
        (apkg-name-jexpr (atj-gen-apkg-name apkg))
        (defpkg-jstatem (jstatem-expr
                         (jexpr-smethod *atj-jtype-pkg*
                                        "define"
                                        (list apkg-name-jexpr
                                              (jexpr-name
-                                              *atj-jvar-aimports*)))))
+                                              jvar-aimports)))))
        (jmethod-body (append (list (jstatem-locvar imports-jlocvar))
                              imports-jblock
                              (list defpkg-jstatem))))
@@ -1894,17 +1888,19 @@
                   :body jmethod-body))
 
   :prepwork
-  ((define atj-gen-apkg-jmethod-aux ((imports symbol-listp))
+  ((define atj-gen-apkg-jmethod-aux ((imports symbol-listp)
+                                     (jvar-aimports stringp))
      :returns (jblock jblockp)
      :parents nil
      (cond ((endp imports) nil)
            (t (b* ((import-jexpr (atj-gen-asymbol (car imports)))
                    (first-jstatem
                     (jstatem-expr
-                     (jexpr-imethod (jexpr-name *atj-jvar-aimports*)
+                     (jexpr-imethod (jexpr-name jvar-aimports)
                                     "add"
                                     (list import-jexpr))))
-                   (rest-jblock (atj-gen-apkg-jmethod-aux (cdr imports))))
+                   (rest-jblock (atj-gen-apkg-jmethod-aux (cdr imports)
+                                                          jvar-aimports)))
                 (cons first-jstatem rest-jblock)))))))
 
 (define atj-gen-apkg-jmethods ((apkgs string-listp) (verbose$ booleanp))
@@ -1961,27 +1957,6 @@
    "$$$"
    (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil t))))
 
-(defval *atj-jvar-formals*
-  :short "Name of the Java local variable used to store
-          the formal arguments of a deeply embedded ACL2 function definition."
-  "formals"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-formals*)))
-
-(defval *atj-jvar-body*
-  :short "Name of the Java local variable used to store
-          the body of a deeply embedded ACL2 function definition."
-  "body"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-body*)))
-
-(defval *atj-jvar-function*
-  :short "Name of the Java local variable used to store
-          a deeply embedded ACL2 function."
-  "function"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-function*)))
-
 (define atj-gen-deep-afndef-jmethod ((afn symbolp)
                                      (guards$ booleanp)
                                      (verbose$ booleanp)
@@ -2012,6 +1987,9 @@
      prior to generating code."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" afn))
+       (jvar-formals "formals")
+       (jvar-body "body")
+       (jvar-function "function")
        (jmethod-name (atj-gen-deep-afndef-jmethod-name afn))
        (aformals (formals afn (w state)))
        (abody (getpropc afn 'unnormalized-body))
@@ -2025,24 +2003,24 @@
             & & &) (atj-gen-deep-aterm abody "value" 1 "term" 1 "lambda" 1))
        (afn-jlocvar (make-jlocvar :final? nil
                                   :type *atj-jtype-named-fn*
-                                  :name *atj-jvar-function*
+                                  :name jvar-function
                                   :init (jexpr-smethod
                                          *atj-jtype-named-fn*
                                          "make"
                                          (list afn-jexpr))))
        (aformals-jlocvar (make-jlocvar :final? nil
                                        :type (jtype-array *atj-jtype-symbol*)
-                                       :name *atj-jvar-formals*
+                                       :name jvar-formals
                                        :init aformals-jexpr))
        (abody-jlocvar (make-jlocvar :final? nil
                                     :type *atj-jtype-term*
-                                    :name *atj-jvar-body*
+                                    :name jvar-body
                                     :init abody-jexpr))
        (def-jstatem (jstatem-expr
-                     (jexpr-imethod (jexpr-name *atj-jvar-function*)
+                     (jexpr-imethod (jexpr-name jvar-function)
                                     "define"
-                                    (list (jexpr-name *atj-jvar-formals*)
-                                          (jexpr-name *atj-jvar-body*)))))
+                                    (list (jexpr-name jvar-formals)
+                                          (jexpr-name jvar-body)))))
        (jmethod-body (append abody-jblock
                              (list (jstatem-locvar afn-jlocvar)
                                    (jstatem-locvar aformals-jlocvar)
@@ -2619,48 +2597,6 @@
     "The argument of this function is the name of the test."))
   (str::cat "test_" test-name))
 
-(defval *atj-jvar-fnname*
-  :short "Name of the Java local variable used to store
-          the function name of an ACL2 function call."
-  "name"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-fnname*)))
-
-(defval *atj-jvar-fnargs*
-  :short "Name of the Java local variable used to store
-          the array of argument values of an ACL2 function call."
-  "arguments"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-fnargs*)))
-
-(defval *atj-jvar-aresult*
-  :short "Name of the Java local variable used to store
-          the result of a test calculated in ACL2."
-  "resultAcl2"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-aresult*)))
-
-(defval *atj-jvar-jresult*
-  :short "Name of the Java local variable used to store
-          the result of a test calculated in Java."
-  "resultJava"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-jresult*)))
-
-(defval *atj-jvar-start-time*
-  :short "Name of the Java local variable used to store
-          the start time of a test calculated in Java."
-  "startTime"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-start-time*)))
-
-(defval *atj-jvar-end-time*
-  :short "Name of the Java local variable used to store
-          the end time of a test calculated in Java."
-  "endTime"
-  ///
-  (assert-event (atj-string-ascii-java-identifier-p *atj-jvar-end-time*)))
-
 (define atj-gen-test-jmethod ((test$ atj-testp)
                               (deep$ booleanp)
                               (java-class$ stringp)
@@ -2709,6 +2645,12 @@
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
+       (jvar-fnname "functionName")
+       (jvar-fnargs "functionArguments")
+       (jvar-aresult "resultAcl2")
+       (jvar-jresult "resultJava")
+       (jvar-start-time "startTime")
+       (jvar-end-time "endTime")
        (jmethod-name (atj-gen-test-jmethod-name test.name))
        (message (str::cat "Testing '" test.name "'..."))
        (print-testing-jstatem
@@ -2721,7 +2663,7 @@
              (b* ((function-jexpr (atj-gen-asymbol test.function))
                   (function-jlocvar (make-jlocvar :final? nil
                                                   :type *atj-jtype-symbol*
-                                                  :name *atj-jvar-fnname*
+                                                  :name jvar-fnname
                                                   :init function-jexpr)))
                (list (jstatem-locvar function-jlocvar)))))
        ((mv aargs-jblock
@@ -2734,7 +2676,7 @@
                   (arguments-jlocvar (make-jlocvar
                                       :final? nil
                                       :type (jtype-array *atj-jtype-value*)
-                                      :name *atj-jvar-fnargs*
+                                      :name jvar-fnargs
                                       :init arguments-jexpr)))
                (list (jstatem-locvar arguments-jlocvar)))))
        (time-jexpr (jexpr-smethod (jtype-class "System")
@@ -2743,33 +2685,33 @@
        (start-time-jstatem (jstatem-locvar
                             (make-jlocvar :final? nil
                                           :type (jtype-long)
-                                          :name *atj-jvar-start-time*
+                                          :name jvar-start-time
                                           :init time-jexpr)))
        (jres-jexpr
         (if deep$
             (jexpr-smethod (jtype-class java-class$)
                            "call"
-                           (list (jexpr-name *atj-jvar-fnname*)
-                                 (jexpr-name *atj-jvar-fnargs*)))
+                           (list (jexpr-name jvar-fnname)
+                                 (jexpr-name jvar-fnargs)))
           (jexpr-smethod (jtype-class java-class$)
                          (atj-gen-shallow-afnname test.function "")
                          aargs-jexprs)))
        (jres-jlocvar (make-jlocvar :final? nil
                                    :type *atj-jtype-value*
-                                   :name *atj-jvar-jresult*
+                                   :name jvar-jresult
                                    :init jres-jexpr))
        (jres-jstatem (jstatem-locvar jres-jlocvar))
        (end-time-jstatem (jstatem-locvar
                           (make-jlocvar :final? nil
                                         :type (jtype-long)
-                                        :name *atj-jvar-end-time*
+                                        :name jvar-end-time
                                         :init time-jexpr)))
        ((mv ares-jblock
             ares-jexpr
             &) (atj-gen-avalue test.result "value" jvar-value-index))
        (ares-jlocvar (make-jlocvar :final? nil
                                    :type *atj-jtype-value*
-                                   :name *atj-jvar-aresult*
+                                   :name jvar-aresult
                                    :init ares-jexpr))
        (ares-jstatem (jstatem-locvar ares-jlocvar))
        (print-pass-jstatem (jstatem-expr
@@ -2785,15 +2727,15 @@
                                         (jexpr-name "failures")
                                         (jexpr-literal (jliteral-boolean t)))))
        (if-jstatem (jstatem-ifelse
-                    (jexpr-imethod (jexpr-name *atj-jvar-aresult*)
+                    (jexpr-imethod (jexpr-name jvar-aresult)
                                    "equals"
-                                   (list (jexpr-name *atj-jvar-jresult*)))
+                                   (list (jexpr-name jvar-jresult)))
                     (list print-pass-jstatem)
                     (list set-fail-jstatem
                           print-fail-jstatem)))
        (time-diff-jexpr (jexpr-binary (jbinop-sub)
-                                      (jexpr-name *atj-jvar-end-time*)
-                                      (jexpr-name *atj-jvar-start-time*)))
+                                      (jexpr-name jvar-end-time)
+                                      (jexpr-name jvar-start-time)))
        (time-seconds-jexpr (jexpr-binary (jbinop-div)
                                          (jexpr-paren time-diff-jexpr)
                                          (jexpr-literal
