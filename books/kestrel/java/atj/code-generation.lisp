@@ -2159,7 +2159,7 @@
                   :result (jresult-type *atj-jtype-value*)
                   :name jmethod-name
                   :params jmethod-params
-                  :throws (list "Acl2EvaluationException")
+                  :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body))
   :guard-hints (("Goal" :in-theory (enable primitivep))))
 
@@ -2243,7 +2243,7 @@
                   :result (jresult-type *atj-jtype-value*)
                   :name jmethod-name
                   :params jmethod-params
-                  :throws (list "Acl2EvaluationException")
+                  :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
 
 (define atj-gen-shallow-afn ((afn symbolp)
@@ -2489,7 +2489,7 @@
                   :result (jresult-type *atj-jtype-value*)
                   :name "call"
                   :params jmethod-params
-                  :throws (list "Acl2EvaluationException")
+                  :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
 
 (define atj-gen-jclass ((apkgs string-listp)
@@ -2767,7 +2767,7 @@
                   :result (jresult-void)
                   :name jmethod-name
                   :params nil
-                  :throws (list "Acl2EvaluationException")
+                  :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body))
 
   :prepwork
@@ -2891,7 +2891,7 @@
                   :result (jresult-void)
                   :name "main"
                   :params (list jmethod-param)
-                  :throws (list "Acl2EvaluationException")
+                  :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
 
 (define atj-gen-test-jclass ((tests$ atj-test-listp)
