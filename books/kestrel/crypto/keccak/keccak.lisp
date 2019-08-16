@@ -722,7 +722,7 @@
           (<= w z))
       lane-acc
     (let ((lane-acc
-           (set-bit w z (k-theta-C-column-parity w state-array x z) lane-acc)))
+           (put-bit w z (k-theta-C-column-parity w state-array x z) lane-acc)))
       (make-k-theta-c-lane-aux (+ 1 z) x w state-array lane-acc))))
 
 (defthm k-lane-p-of-make-k-theta-c-lane-aux
@@ -821,7 +821,7 @@
       lane-acc
     (let* ((val (bitxor (k-theta-C w C-array (mod (- x 1) 5) z)
                         (k-theta-C w C-array (mod (+ x 1) 5) (mod (- z 1) w))))
-           (lane-acc (set-bit w z val lane-acc)))
+           (lane-acc (put-bit w z val lane-acc)))
       (make-k-theta-d-lane-aux (+ 1 z) x w C-array lane-acc))))
 
 (defthm k-lane-p-of-make-k-theta-d-lane-aux
@@ -1266,13 +1266,13 @@
            ;; b.  their (spec) R[0] is our (getbit 8 ..)
            ;; and their R[8] is our (getbit 0 ..).
            ;; Create a new 9-bit byte that has bit 8 replaced by bit 8 xor bit 0
-           (R-b (set-bit 9 8 (bitxor (getbit 8 R-a) (getbit 0 R-a)) R-a))
+           (R-b (put-bit 9 8 (bitxor (getbit 8 R-a) (getbit 0 R-a)) R-a))
            ;; c. their R[4] is also our (getbit 4 ..)
-           (R-c (set-bit 9 4 (bitxor (getbit 4 R-b) (getbit 0 R-b)) R-b))
+           (R-c (put-bit 9 4 (bitxor (getbit 4 R-b) (getbit 0 R-b)) R-b))
            ;; d. their R[5] is our (getbit 3 ..)
-           (R-d (set-bit 9 3 (bitxor (getbit 3 R-c) (getbit 0 R-c)) R-c))
+           (R-d (put-bit 9 3 (bitxor (getbit 3 R-c) (getbit 0 R-c)) R-c))
            ;; e. their R[6] is our (getbit 2 ..)
-           (R-e (set-bit 9 2 (bitxor (getbit 2 R-d) (getbit 0 R-d)) R-d))
+           (R-e (put-bit 9 2 (bitxor (getbit 2 R-d) (getbit 0 R-d)) R-d))
            ;; f. trunc8[R] is their R[0..7] which is
            ;; our (getbit 8 ..) down to (getbit 1 ..).
            ;; We could do it as a slice or as a right shift by 1
@@ -1314,7 +1314,7 @@
       RC-so-far
     (k-RC-aux w
               round-idx
-              (set-bit w
+              (put-bit w
                        (- (expt 2 j) 1)
                        (k-rcbit (+ j (* 7 round-idx)))
                        RC-so-far)

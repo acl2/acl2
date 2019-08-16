@@ -1,4 +1,4 @@
-; BV Library: set-bits and set-bit
+; BV Library: put-bits and put-bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2019 Kestrel Institute
@@ -17,7 +17,7 @@
 (local (include-book "../library-wrappers/arithmetic-inequalities"))
 
 ;; Set bits HIGH down to LOW to VAL in BV, returning a value of width WIDTH.
-(defun set-bits (width high low val bv)
+(defun put-bits (width high low val bv)
   (declare (type (integer 0 *) high)
            (type (integer 0 *) low)
            (type (integer 0 *) width)
@@ -34,27 +34,27 @@
                   low
                   (bvchop low bv)))))
 
-(defthm unsigned-byte-p-of-set-bits
-  (equal (unsigned-byte-p width (set-bits width high low val bv))
+(defthm unsigned-byte-p-of-put-bits
+  (equal (unsigned-byte-p width (put-bits width high low val bv))
          (natp width)))
 
 ;; Set bit N to VAL in BV, returning a value of width WIDTH.
-(defun set-bit (width n val bv)
+(defun put-bit (width n val bv)
   (declare (type (integer 0 *) n)
            (type (integer 0 *) width)
            (type integer bv)
            (type integer val)
            (xargs :guard (< n width)))
-  (set-bits width n n val bv))
+  (put-bits width n n val bv))
 
-(defthm unsigned-byte-p-of-set-bit
-  (equal (unsigned-byte-p width (set-bit width n val bv))
+(defthm unsigned-byte-p-of-put-bit
+  (equal (unsigned-byte-p width (put-bit width n val bv))
          (natp width)))
 
-(defthm getbit-of-set-bit
+(defthm getbit-of-put-bit
   (implies (and (natp width)
                 (natp n))
-           (equal (getbit n (set-bit width n val bv))
+           (equal (getbit n (put-bit width n val bv))
                   (if (< n width)
                       ;; the normal case:
                       (bvchop 1 val)
@@ -62,12 +62,12 @@
                     0))))
 
 ;the usual case
-(defthm slice-of-set-bits
+(defthm slice-of-put-bits
   (implies (and (natp width)
                 (natp high)
                 (natp low)
                 (<= low high) ;gen
                 (< high width) ;gen
                 )
-           (equal (slice high low (set-bits width high low val bv))
+           (equal (slice high low (put-bits width high low val bv))
                   (bvchop (+ 1 high (- low)) val))))

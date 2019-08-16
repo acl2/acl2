@@ -41,7 +41,7 @@
             patbind-when
             repeat
             reverse-list
-            set-bit
+            put-bit
             shr
             slice
             string=>nats
