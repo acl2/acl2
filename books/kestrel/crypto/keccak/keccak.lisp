@@ -149,7 +149,7 @@
 
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
 (include-book "kestrel/bv/defs-shifts" :dir :system)
-(include-book "kestrel/bv/set-bits" :dir :system)
+(include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 
