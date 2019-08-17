@@ -404,6 +404,52 @@
           (as an expression statement."
   (list (jstatem-expr expr)))
 
+(define jblock-method ((name stringp) (args jexpr-listp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java method call."
+  (jblock-expr (jexpr-method name args)))
+
+(define jblock-smethod ((type jtypep) (name stringp) (args jexpr-listp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java static method call."
+  (jblock-expr (jexpr-smethod type name args)))
+
+(define jblock-imethod ((target jexprp) (name stringp) (args jexpr-listp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java instance method call."
+  (jblock-expr (jexpr-imethod target name args)))
+
+(define jblock-asg ((left jexprp) (right jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java assignment."
+  (jblock-expr (jexpr-binary (jbinop-asg) left right)))
+
+(define jblock-asg-name ((left stringp) (right jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java assignment
+          where the left-hand side is a named expression."
+  (jblock-expr (jexpr-binary (jbinop-asg) (jexpr-name left) right)))
+
+(define jblock-return ((expr? maybe-jexprp))
+  :returns (block jblockp)
+  :short "Build a block consistingg of a single Java @('return') statement."
+  (list (jstatem-return expr?)))
+
+(define jblock-throw ((expr jexprp))
+  :returns (block jblockp)
+  :short "Build a block consistingg of a single Java @('throw') statement."
+  (list (jstatem-throw expr)))
+
+(define jblock-if ((test jexprp) (then jblockp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('if') statement."
+  (list (jstatem-if test then)))
+
+(define jblock-ifelse ((test jexprp) (then jblockp) (else jblockp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('if-else') statement."
+  (list (jstatem-ifelse test then else)))
+
 (fty::deftagsum jaccess
   :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
   (:public ())
