@@ -1347,9 +1347,11 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name))
-         (else-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
-                                                   (jexpr-name jvar-result)
-                                                   else-jexpr)))
+         (else-jblock (append else-jblock
+                              (jblock-expr (jexpr-binary
+                                            (jbinop-asg)
+                                            (jexpr-name jvar-result)
+                                            else-jexpr))))
          ((mv then-jblock
               then-jexpr
               jvar-var-indices
@@ -1363,17 +1365,17 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name))
-         (then-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
-                                                   (jexpr-name jvar-result)
-                                                   then-jexpr)))
+         (then-jblock (append then-jblock
+                              (jblock-expr (jexpr-binary
+                                            (jbinop-asg)
+                                            (jexpr-name jvar-result)
+                                            then-jexpr))))
          (if-jstatem (jstatem-ifelse
                       (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
                                      "equals"
                                      (list test-jexpr))
-                      (append else-jblock
-                              (list else-jstatem))
-                      (append then-jblock
-                              (list then-jstatem))))
+                      else-jblock
+                      then-jblock))
          (jblock (append test-jblock
                          result-locvar-jblock
                          (list if-jstatem)))
@@ -1459,19 +1461,20 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name))
-         (second-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
-                                                     (jexpr-name jvar-result)
-                                                     second-jexpr)))
-         (first-jstatem (jstatem-expr (jexpr-binary (jbinop-asg)
-                                                    (jexpr-name jvar-result)
-                                                    first-jexpr)))
+         (second-jblock (append second-jblock
+                                (jblock-expr (jexpr-binary
+                                              (jbinop-asg)
+                                              (jexpr-name jvar-result)
+                                              second-jexpr))))
+         (first-jblock-asg (jblock-expr (jexpr-binary (jbinop-asg)
+                                                      (jexpr-name jvar-result)
+                                                      first-jexpr)))
          (if-jstatem (jstatem-ifelse
                       (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
                                      "equals"
                                      (list first-jexpr))
-                      (append second-jblock
-                              (list second-jstatem))
-                      (list first-jstatem)))
+                      second-jblock
+                      first-jblock-asg))
          (jblock (append first-jblock
                          result-locvar-jblock
                          (list if-jstatem)))
@@ -1862,14 +1865,13 @@
                                (atj-gen-apkg-jmethod-aux aimports
                                                          jvar-aimports)))
        (apkg-name-jexpr (atj-gen-apkg-name apkg))
-       (defpkg-jstatem (jstatem-expr
-                        (jexpr-smethod *atj-jtype-pkg*
-                                       "define"
-                                       (list apkg-name-jexpr
-                                             (jexpr-name
-                                              jvar-aimports)))))
+       (defpkg-jblock (jblock-expr (jexpr-smethod *atj-jtype-pkg*
+                                                  "define"
+                                                  (list apkg-name-jexpr
+                                                        (jexpr-name
+                                                         jvar-aimports)))))
        (jmethod-body (append imports-jblock
-                             (list defpkg-jstatem))))
+                             defpkg-jblock)))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -1890,14 +1892,14 @@
      :parents nil
      (cond ((endp imports) nil)
            (t (b* ((import-jexpr (atj-gen-asymbol (car imports)))
-                   (first-jstatem
-                    (jstatem-expr
+                   (first-jblock
+                    (jblock-expr
                      (jexpr-imethod (jexpr-name jvar-aimports)
                                     "add"
                                     (list import-jexpr))))
                    (rest-jblock (atj-gen-apkg-jmethod-aux (cdr imports)
                                                           jvar-aimports)))
-                (cons first-jstatem rest-jblock)))))))
+                (append first-jblock rest-jblock)))))))
 
 (define atj-gen-apkg-jmethods ((apkgs string-listp) (verbose$ booleanp))
   :returns (jmethods jmethod-listp)
@@ -1920,20 +1922,20 @@
   (if (endp apkgs)
       nil
     (b* ((jmethod-name (atj-gen-apkg-jmethod-name (car apkgs)))
-         (first-jstatem (jstatem-expr (jexpr-method jmethod-name nil)))
+         (first-jblock (jblock-expr (jexpr-method jmethod-name nil)))
          (rest-jblock (atj-gen-apkgs (cdr apkgs))))
-      (cons first-jstatem rest-jblock))))
+      (append first-jblock rest-jblock))))
 
 (define atj-gen-apkg-witness ()
-  :returns (jstatem jstatemp)
+  :returns (jblock jblockp)
   :short "Generate Java code to set the name of the ACL2 package witness."
   :long
   (xdoc::topstring-p
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
-  (jstatem-expr (jexpr-smethod *atj-jtype-pkg*
-                               "setWitnessName"
-                               (list (atj-gen-jstring *pkg-witness-name*)))))
+  (jblock-expr (jexpr-smethod *atj-jtype-pkg*
+                              "setWitnessName"
+                              (list (atj-gen-jstring *pkg-witness-name*)))))
 
 (define atj-gen-deep-afndef-jmethod-name ((afn symbolp))
   :returns (method-name stringp)
@@ -2007,15 +2009,14 @@
                              (jblock-locvar *atj-jtype-term*
                                             jvar-body
                                             abody-jexpr)))
-       (def-jstatem (jstatem-expr
-                     (jexpr-imethod (jexpr-name jvar-function)
-                                    "define"
-                                    (list (jexpr-name jvar-formals)
-                                          (jexpr-name jvar-body)))))
+       (def-jblock (jblock-expr (jexpr-imethod (jexpr-name jvar-function)
+                                               "define"
+                                               (list (jexpr-name jvar-formals)
+                                                     (jexpr-name jvar-body)))))
        (jmethod-body (append afn-jblock
                              aformals-jblock
                              abody-jblock
-                             (list def-jstatem))))
+                             def-jblock)))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -2058,9 +2059,9 @@
   (if (endp afns)
       nil
     (b* ((jmethod-name (atj-gen-deep-afndef-jmethod-name (car afns)))
-         (first-jstatem (jstatem-expr (jexpr-method jmethod-name nil)))
+         (first-jblock (jblock-expr (jexpr-method jmethod-name nil)))
          (rest-jblock (atj-gen-deep-afndefs (cdr afns))))
-      (cons first-jstatem rest-jblock))))
+      (append first-jblock rest-jblock))))
 
 (define atj-gen-shallow-afnprimitive ((afn symbolp) (curr-pkg stringp))
   :guard (and (primitivep afn)
@@ -2382,27 +2383,24 @@
        (if-jstatem (jstatem-if (jexpr-name "initialized")
                                (list throw-jstatem)))
        (apkgs-jblock (atj-gen-apkgs apkgs))
-       (apkg-witness-jstatem (atj-gen-apkg-witness))
+       (apkg-witness-jblock (atj-gen-apkg-witness))
        (afns-jblock? (if deep$
                          (atj-gen-deep-afndefs afns)
                        nil))
-       (validate-jblock? (and deep$
-                              (list
-                               (jstatem-expr
-                                (jexpr-smethod *atj-jtype-named-fn*
-                                               "validateAll"
-                                               nil)))))
-       (initialize-jstatem (jstatem-expr
-                            (jexpr-binary (jbinop-asg)
-                                          (jexpr-name "initialized")
-                                          (jexpr-literal
-                                           (jliteral-boolean t)))))
+       (validate-jblock (and deep$
+                             (jblock-expr (jexpr-smethod *atj-jtype-named-fn*
+                                                         "validateAll"
+                                                         nil))))
+       (initialize-jblock (jblock-expr
+                           (jexpr-binary (jbinop-asg)
+                                         (jexpr-name "initialized")
+                                         (jexpr-literal (jliteral-boolean t)))))
        (jmethod-body (append (list if-jstatem)
                              apkgs-jblock
-                             (list apkg-witness-jstatem)
+                             apkg-witness-jblock
                              afns-jblock?
-                             validate-jblock?
-                             (list initialize-jstatem))))
+                             validate-jblock
+                             initialize-jblock)))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -2643,11 +2641,10 @@
        (jvar-start-time "startTime")
        (jvar-end-time "endTime")
        (message (str::cat "Testing '" test.name "'..."))
-       (print-testing-jstatem
-        (jstatem-expr
-         (jexpr-imethod (jexpr-name "System.out")
-                        "print"
-                        (list (atj-gen-jstring message)))))
+       (print-testing-jblock
+        (jblock-expr (jexpr-imethod (jexpr-name "System.out")
+                                    "print"
+                                    (list (atj-gen-jstring message)))))
        (fnname-jblock
         (and deep$
              (jblock-locvar *atj-jtype-symbol*
@@ -2692,25 +2689,25 @@
                             (jblock-locvar *atj-jtype-value*
                                            jvar-aresult
                                            ares-jexpr)))
-       (print-pass-jstatem (jstatem-expr
-                            (jexpr-imethod (jexpr-name "System.out")
-                                           "println"
-                                           (list (atj-gen-jstring " PASS")))))
-       (print-fail-jstatem (jstatem-expr
-                            (jexpr-imethod (jexpr-name "System.out")
-                                           "println"
-                                           (list (atj-gen-jstring " FAIL")))))
-       (set-fail-jstatem (jstatem-expr
-                          (jexpr-binary (jbinop-asg)
-                                        (jexpr-name "failures")
-                                        (jexpr-literal (jliteral-boolean t)))))
+       (print-pass-jblock (jblock-expr
+                           (jexpr-imethod (jexpr-name "System.out")
+                                          "println"
+                                          (list (atj-gen-jstring " PASS")))))
+       (print-fail-jblock (jblock-expr
+                           (jexpr-imethod (jexpr-name "System.out")
+                                          "println"
+                                          (list (atj-gen-jstring " FAIL")))))
+       (set-fail-jblock (jblock-expr
+                         (jexpr-binary (jbinop-asg)
+                                       (jexpr-name "failures")
+                                       (jexpr-literal (jliteral-boolean t)))))
        (if-jstatem (jstatem-ifelse
                     (jexpr-imethod (jexpr-name jvar-aresult)
                                    "equals"
                                    (list (jexpr-name jvar-jresult)))
-                    (list print-pass-jstatem)
-                    (list set-fail-jstatem
-                          print-fail-jstatem)))
+                    print-pass-jblock
+                    (append set-fail-jblock
+                            print-fail-jblock)))
        (time-diff-jexpr (jexpr-binary (jbinop-sub)
                                       (jexpr-name jvar-end-time)
                                       (jexpr-name jvar-start-time)))
@@ -2718,13 +2715,13 @@
                                          (jexpr-paren time-diff-jexpr)
                                          (jexpr-literal
                                           (jliteral-floating 1000))))
-       (print-time-jstatem
-        (jstatem-expr
+       (print-time-jblock
+        (jblock-expr
          (jexpr-imethod (jexpr-name "System.out")
                         "format"
                         (list (jexpr-literal (jliteral-string "  Time: %.3f%n"))
                               time-seconds-jexpr))))
-       (jmethod-body (append (list print-testing-jstatem)
+       (jmethod-body (append print-testing-jblock
                              fnname-jblock
                              aargs-jblock
                              start-time-jblock
@@ -2732,7 +2729,7 @@
                              end-time-jblock
                              ares-jblock
                              (list if-jstatem)
-                             (list print-time-jstatem))))
+                             print-time-jblock)))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -2798,9 +2795,9 @@
       nil
     (b* ((jmethod-name
           (atj-gen-test-jmethod-name (atj-test->name (car tests$))))
-         (first-jstatem (jstatem-expr (jexpr-method jmethod-name nil)))
+         (first-jblock (jblock-expr (jexpr-method jmethod-name nil)))
          (rest-jblock (atj-gen-run-tests (cdr tests$))))
-      (cons first-jstatem rest-jblock))))
+      (append first-jblock rest-jblock))))
 
 (define atj-gen-test-main-jmethod ((tests$ atj-test-listp)
                                    (java-class$ stringp))
@@ -2817,22 +2814,22 @@
   (b* ((jmethod-param (make-jparam :final? nil
                                    :type (jtype-array (jtype-class "String"))
                                    :name "args"))
-       (init-jstatem (jstatem-expr (jexpr-smethod (jtype-class java-class$)
-                                                  "initialize"
-                                                  nil)))
+       (init-jblock (jblock-expr (jexpr-smethod (jtype-class java-class$)
+                                                "initialize"
+                                                nil)))
        (tests-jblock (atj-gen-run-tests tests$))
-       (print-all-pass-jstatem
-        (jstatem-expr
+       (print-all-pass-jblock
+        (jblock-expr
          (jexpr-imethod (jexpr-name "System.out")
                         "println"
                         (list (atj-gen-jstring "All tests passed.")))))
-       (print-some-fail-jstatem
-        (jstatem-expr
+       (print-some-fail-jblock
+        (jblock-expr
          (jexpr-imethod (jexpr-name "System.out")
                         "println"
                         (list (atj-gen-jstring "Some tests failed.")))))
-       (exit0-jstatem
-        (jstatem-expr
+       (exit0-jblock
+        (jblock-expr
          (jexpr-smethod (jtype-class "System")
                         "exit"
                         (list (jexpr-literal
@@ -2840,8 +2837,8 @@
                                 :value 0
                                 :long? nil
                                 :base (jintbase-decimal)))))))
-       (exit1-jstatem
-        (jstatem-expr
+       (exit1-jblock
+        (jblock-expr
          (jexpr-smethod (jtype-class "System")
                         "exit"
                         (list (jexpr-literal
@@ -2850,11 +2847,11 @@
                                 :long? nil
                                 :base (jintbase-decimal)))))))
        (if-jstatem (jstatem-ifelse (jexpr-name "failures")
-                                   (list print-some-fail-jstatem
-                                         exit1-jstatem)
-                                   (list print-all-pass-jstatem
-                                         exit0-jstatem)))
-       (jmethod-body (append (list init-jstatem)
+                                   (append print-some-fail-jblock
+                                           exit1-jblock)
+                                   (append print-all-pass-jblock
+                                           exit0-jblock)))
+       (jmethod-body (append init-jblock
                              tests-jblock
                              (list if-jstatem))))
     (make-jmethod :access (jaccess-public)
