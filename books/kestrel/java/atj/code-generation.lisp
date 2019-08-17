@@ -541,6 +541,28 @@
   ///
   (verify-guards atj-gen-avalue))
 
+(define atj-gen-avalues ((avalues true-listp)
+                         (jvar-value-base stringp)
+                         (jvar-value-index posp))
+  :returns (mv (jblock jblockp)
+               (jexprs jexpr-listp)
+               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+  :short "Lift @(tsee atj-gen-avalue) to lists."
+  (cond ((endp avalues) (mv nil nil jvar-value-index))
+        (t (b* (((mv first-jblock
+                     first-jexpr
+                     jvar-value-index) (atj-gen-avalue (car avalues)
+                                                       jvar-value-base
+                                                       jvar-value-index))
+                ((mv rest-jblock
+                     rest-jexrps
+                     jvar-value-index) (atj-gen-avalues (cdr avalues)
+                                                        jvar-value-base
+                                                        jvar-value-index)))
+             (mv (append first-jblock rest-jblock)
+                 (cons first-jexpr rest-jexrps)
+                 jvar-value-index)))))
+
 (define atj-gen-asymbols ((asymbols symbol-listp))
   :returns (jexprs jexpr-listp)
   :short "Lift @(tsee atj-gen-asymbol) to lists."
@@ -2591,9 +2613,6 @@
      and prints a message of success or failure.
      It also sets the failures field to true if the test fails.")
    (xdoc::p
-    "We use an auxiliary recursive function to build the argument values.
-     We initialize the local variable index for values to 1.")
-   (xdoc::p
     "The code is slightly different based on whether
      we are using the deep or shallow embedding approach:")
    (xdoc::ul
@@ -2637,7 +2656,7 @@
                             (atj-gen-asymbol test.function))))
        ((mv aargs-jblock
             aargs-jexprs
-            jvar-value-index) (atj-gen-test-jmethod-aux test.arguments 1))
+            jvar-value-index) (atj-gen-avalues test.arguments "value" 1))
        (aargs-jblock
         (if deep$
             (append aargs-jblock
@@ -2722,26 +2741,7 @@
                   :name jmethod-name
                   :params nil
                   :throws (list *atj-jclass-eval-exc*)
-                  :body jmethod-body))
-
-  :prepwork
-  ((define atj-gen-test-jmethod-aux ((aargs true-listp) (jvar-value-index posp))
-     :returns (mv (jblock jblockp)
-                  (jexprs jexpr-listp)
-                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-     :parents nil
-     (b* (((when (endp aargs)) (mv nil nil jvar-value-index))
-          (aarg (car aargs))
-          ((mv first-jblock
-               first-jexpr
-               jvar-value-index) (atj-gen-avalue aarg "value" jvar-value-index))
-          ((mv rest-jblock
-               rest-jexprs
-               jvar-value-index) (atj-gen-test-jmethod-aux (cdr aargs)
-                                                           jvar-value-index)))
-       (mv (append first-jblock rest-jblock)
-           (cons first-jexpr rest-jexprs)
-           jvar-value-index)))))
+                  :body jmethod-body)))
 
 (define atj-gen-test-jmethods ((tests$ atj-test-listp)
                                (deep$ booleanp)
