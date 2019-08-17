@@ -438,6 +438,12 @@ I commented out some disabled theorems that seem fine to me.
 Useful for testing defunc/definec errors
 
 :trans1
+(definec in (a :all X :tl) :bool
+  (and (consp X)
+       (or (== a (car X))
+           (in a (cdr X)))))
+
+:trans1
 (DEFUNC IN (A X)
   :INPUT-CONTRACT (TRUE-LISTP X)
   :OUTPUT-CONTRACT (BOOLEANP (IN A X))
@@ -446,6 +452,7 @@ Useful for testing defunc/definec errors
 
 (redef+)
 (redef-)
+
 |#
 
 (definec in (a :all X :tl) :bool
