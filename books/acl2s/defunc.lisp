@@ -334,11 +334,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            `(implies ,ic ,def-rule-conc)))
        (def-rule
          `(with-output
-           :stack :push :off :all
+           :off :all
            (make-event
             (let ((controller-alist (acl2::controller-alist ',name (w state))))
               `(with-output
-                :stack :pop 
+                :off :all 
                 (,',defthmnotest ,(make-sym ',name 'definition-rule ',pkg)
                   ,',def-rule-body
                   :hints (("Goal" :use ,',name :in-theory nil))
@@ -470,37 +470,35 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            ,@(and instructions `(:instructions ,instructions))))
        (induct-rewrite-fc (wrap-skip-fun induct-rewrite-fc))
        (rewrite-fc ;; in case user wanted to completely override hints
-        (if hints
-            `(DEFTHM ,contract-name ,body-rm-hyps
-               ,@(and hints `(:hints ,hints))
-               ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
-               ,@(and otf-flg `(:otf-flg ,otf-flg))
-               ,@(and instructions `(:instructions ,instructions)))
-          '(acl2::fail-event :defunc t :fail-contract "No user-provided hints")))
-       (rewrite-fc (wrap-skip-fun rewrite-fc))
+        (and hints
+             `(DEFTHM ,contract-name ,body-rm-hyps
+                ,@(and hints `(:hints ,hints))
+                ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
+                ,@(and otf-flg `(:otf-flg ,otf-flg))
+                ,@(and instructions `(:instructions ,instructions)))))
+       (rewrite-fc (and rewrite-fc (list (wrap-skip-fun rewrite-fc))))
        (induct-rewrite-fc-h
         `(DEFTHM ,contract-name ,body-hyps ,@rhints
            ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
            ,@(and otf-flg `(:otf-flg ,otf-flg))
            ,@(and instructions `(:instructions ,instructions))))
        (induct-rewrite-fc-h (wrap-skip-fun induct-rewrite-fc-h))
-       (induct-rewrite-fc-h
-        (if (equal induct-rewrite-fc-h induct-rewrite-fc)
-            '(acl2::fail-event :defunc t :fail-contract "Duplicate")
-          induct-rewrite-fc-h))
        (rewrite-fc-h ;; in case user wanted to completely override hints
-        (if hints
-            `(DEFTHM ,contract-name ,body-hyps
-               ,@(and hints `(:hints ,hints))
-               ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
-               ,@(and otf-flg `(:otf-flg ,otf-flg))
-               ,@(and instructions `(:instructions ,instructions)))
-          '(acl2::fail-event :defunc t :fail-contract "No user-provided hints")))
-       (rewrite-fc-h (wrap-skip-fun rewrite-fc-h)) 
-       (rewrite-fc-h
-        (if (equal rewrite-fc-h rewrite-fc)
-            '(acl2::fail-event :defunc t :fail-contract "Duplicate")
-          rewrite-fc-h))
+        (and hints
+             `(DEFTHM ,contract-name ,body-hyps
+                ,@(and hints `(:hints ,hints))
+                ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
+                ,@(and otf-flg `(:otf-flg ,otf-flg))
+                ,@(and instructions `(:instructions ,instructions)))))
+       (rewrite-fc-h (and rewrite-fc-h (wrap-skip-fun rewrite-fc-h)))
+       (rewrite-fc-h (and rewrite-fc-h
+                          `((with-output :off :all :on (error)
+                                         ,rewrite-fc-h))))
+       (induct-rewrite-fc-h
+        (if rewrite-fc-h
+            `(,induct-rewrite-fc-h)
+          `((with-output :off :all :on (error)
+                         ,induct-rewrite-fc-h))))
        (tp-rule
         `(DEFTHM ,contract-tpname ,body-rm-hyps
            :rule-classes ((:type-prescription))
@@ -512,22 +510,50 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            :hints (("goal" :by ,contract-name))))
        (tp-rule-h (wrap-skip-fun tp-rule-h))
        (tp-rule-h
-        (if (equal tp-rule-h tp-rule)
-            '(acl2::fail-event :defunc t :fail-contract "Duplicate")
-          tp-rule-h)))
-    (if (or make-staticp function-contract-strictp)
-        `(encapsulate
-          ()
-          (make-event '(:or ,induct-rewrite-fc ,rewrite-fc ,induct-rewrite-fc-h ,rewrite-fc-h))
-          (make-event '(:or ,tp-rule ,tp-rule-h
-                            (value-triple :type-prescription-rule-failed))))
+        (and (not (equal tp-rule-h tp-rule))
+             `(,tp-rule-h))))
+    (cond
+     (skip-function-contractp
       `(encapsulate
         ()
-        (make-event '(:OR ,induct-rewrite-fc ,induct-rewrite-fc-h
-                          (value-triple :contract-failed)))
-        (make-event '(:OR ,tp-rule ,tp-rule-h
-                          (value-triple :Type-prescription-rule-failed)))))))
+        (with-output
+         :off :all :on (error)
+         ;; ,@induct-rewrite-fc-h)))
+         (test-then-skip-proofs ,@induct-rewrite-fc-h))))
+     ((or function-contract-strictp make-staticp)
+      `(encapsulate
+        ()
+        (with-output
+         :off :all
+         (make-event
+          '(:or ,induct-rewrite-fc
+                ,@rewrite-fc
+                ,@induct-rewrite-fc-h
+                ,@rewrite-fc-h)))
+        (with-output
+         :off :all 
+         (make-event
+          '(:or ,tp-rule
+                ,@tp-rule-h
+                (value-triple :type-prescription-rule-failed))))))
+     (t `(encapsulate
+          ()
+          (with-output
+           :off :all
+           (make-event
+            '(:OR ,induct-rewrite-fc
+                  ,@rewrite-fc
+                  ,@induct-rewrite-fc-h
+                  ,@rewrite-fc-h
+                  (value-triple :function-contract-failed))))
+          (with-output
+           :off :all
+           (make-event
+            '(:OR ,tp-rule
+                  ,@tp-rule-h
+                  (value-triple :Type-prescription-rule-failed)))))))))
 
+#|
 (defun make-verify-guards-ev (name kwd-alist)
   (b* ((hints (defdata::get1 :body-contracts-hints kwd-alist))
        ;; (defdata::get1 :guard-hints xargs{})
@@ -544,10 +570,42 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
              (not skip-body-contractsp))
         `(verify-guards ,name :guard-debug t :hints ,hints)
       `(make-event
-        '(:OR ,(wrap-test-skip
-                skip-body-contractsp
-                `(verify-guards ,name :guard-debug t :hints ,hints))
+        '(:OR (with-output
+               :off :all :on (summary error) :summary (time)
+               ,(wrap-test-skip
+                 skip-body-contractsp
+                 `(verify-guards ,name :guard-debug t :hints ,hints)))
               (value-triple :body-contracts-FAILED))))))
+|#
+
+(defun make-verify-guards-ev (name kwd-alist)
+  (b* ((hints (defdata::get1 :body-contracts-hints kwd-alist))
+       ;; (defdata::get1 :guard-hints xargs{})
+       (body-contracts-strictp
+        (defdata::get1 :body-contracts-strictp kwd-alist))
+       (skip-body-contractsp
+        (defdata::get1 :skip-body-contractsp kwd-alist))
+       (hints
+        (or hints
+            '(("Goal"
+               :do-not-induct t
+               :do-not '(acl2::generalize acl2::fertilize)))))
+       (skip? (or skip-body-contractsp (not body-contracts-strictp))))
+    (if skip?
+        `(encapsulate
+          ()
+          (with-output
+           :off :all
+           (make-event
+            '(:OR ,(wrap-test-skip
+                    skip-body-contractsp
+                    `(verify-guards ,name :guard-debug t :hints ,hints))
+                  (value-triple :body-contracts-FAILED)))))
+      `(encapsulate
+        ()
+        (with-output
+         :off :all :on (error) 
+         (verify-guards ,name :guard-debug t :hints ,hints))))))
 
 ; Sometimes counterexample generation winds up trying to evaluate a
 ; defunc-defined function outside of it's domain.  Now that defunc and
@@ -703,8 +761,17 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;them in a context where decls, guard are actual values, then you need
 ;to quote them.
 
+(defun print-time-taken (start end state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (b* ((- (cw "~|Elapsed Run Time: ")))
+    (pprogn (acl2::print-rational-as-decimal (rfix (- end start)) (standard-co state) state)
+            (princ$ " seconds" (standard-co state) state)
+            (newline (standard-co state) state)
+            (value :invisible))))
+
+#|
 (defun print-summary-ev (name oc kwd-alist pkg)
-  `(with-output :stack :push :off :all
+  `(with-output :off :all
      (make-event
       (b* ((symbol-class (acl2::symbol-class ',name (w state)))
            (contract-name (make-sym ',name 'contract ',pkg))
@@ -715,19 +782,85 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            ((er &) (if print (print-time-taken ,(defdata::get1 :start-time kwd-alist) end state) (value nil)))
            )
           (value
-           `(with-output :stack :pop
-                         :on (error summary)
-                         :summary (acl2::form acl2::value time)
+           `(with-output :on :all
               (value-triple
                (defdata::cw? ,print
-                 "~%~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
+                 "~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
                  ',',name
                  (print-*-or-space (not (eq :PROGRAM ,symbol-class)))
                  (print-*-or-space ,function-contract-proven-p)
                  (print-*-or-space (eq :COMMON-LISP-COMPLIANT ,symbol-class))))))))))
+|#
+
+#|
+(defun print-summary-ev (name oc kwd-alist pkg wrld state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (b* ((symbol-class (acl2::symbol-class name wrld))
+       (contract-name (make-sym name 'contract pkg))
+       (function-contract-proven-p
+        (or (c-is-t oc) (acl2::logical-namep contract-name wrld)))
+       (print (defdata::get1 :print-summary kwd-alist))
+       ((mv end state) (acl2::read-run-time state))
+       ((er &) (if print
+                   (print-time-taken (defdata::get1 :start-time kwd-alist) end state)
+                 (value nil))))
+    (value
+     `(value-triple
+       (defdata::cw? print
+         "~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
+         ',name
+         (print-*-or-space (not (eq :PROGRAM ,symbol-class)))
+         (print-*-or-space ,function-contract-proven-p)
+         (print-*-or-space (eq :COMMON-LISP-COMPLIANT ,symbol-class)))))))
+|#
+
+#|
+
+
+(defun print-summary-ev (name oc kwd-alist pkg)
+  `(b* ((symbol-class (acl2::symbol-class ',name (w state)))
+        (contract-name (make-sym ',name 'contract ,pkg))
+        (function-contract-proven-p
+         (or (c-is-t ',oc) (acl2::logical-namep contract-name (w state))))
+        (print (defdata::get1 :print-summary ',kwd-alist)))
+     (value
+      `(value-triple
+        (defdata::cw? ,print
+          "~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
+          ',',name
+          (print-*-or-space (not (eq :PROGRAM ,symbol-class)))
+          (print-*-or-space ,function-contract-proven-p)
+          (print-*-or-space (eq :COMMON-LISP-COMPLIANT ,symbol-class)))))))
+
+|#
+
+
+(defun print-summary-ev (name oc kwd-alist pkg)
+  `(b* ((symbol-class (acl2::symbol-class ',name (w state)))
+        (contract-name (make-sym ',name 'contract ,pkg))
+        (function-contract-proven-p
+         (or (c-is-t ',oc) (acl2::logical-namep contract-name (w state))))
+        (print (defdata::get1 :print-summary ',kwd-alist))
+        ((mv end state) (acl2::read-run-time state))
+        ((er &) (if print
+                    (print-time-taken ,(defdata::get1 :start-time kwd-alist)
+                                      end state)
+                  (value nil))))
+     (value
+      `(value-triple
+        (defdata::cw? ,print
+          "~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
+          ',',name
+          (print-*-or-space (not (eq :PROGRAM ,symbol-class)))
+          (print-*-or-space ,function-contract-proven-p)
+          (print-*-or-space (eq :COMMON-LISP-COMPLIANT ,symbol-class)))))))
 
 (defun print-*-or-space (b)
   (if b "*" " "))
+
+(defmacro me-assign (var val) ; make-event-assign
+  `(make-event (er-progn (assign ,var ,val)
+                         (value '(value-triple :invisible)))))
 
 (defun make-defun-no-guard-ev
     (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
@@ -736,13 +869,38 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (skip-admissibilityp 
         (defdata::get1 :skip-admissibilityp kwd-alist))
+       (termination-strictp
+        (defdata::get1 :termination-strictp kwd-alist))
        (decls (update-xargs-decls decls :guard ic))
        (defun (list* 'acl2::defun name formals
                      (append decls
                              (list (list 'acl2::mbe :logic lbody :exec
-                                         ebody)))))
-       (defun (wrap-test-skip skip-admissibilityp defun)))
-    defun))
+                                         ebody))))))
+    (cond (skip-admissibilityp
+           `(encapsulate
+             ()
+             (with-output
+              :off :all :on (error) 
+              (skip-proofs ,defun))))
+          (termination-strictp
+           `(encapsulate
+             ()
+             (with-output
+              :off :all :on (error)
+              ,defun)))
+          (t `(encapsulate
+               ()
+               (with-output
+                :off :all
+                (encapsulate
+                 ()
+                 (local (me-assign acl2::ccg-inhibit-output-lst
+                                   *ccg-valid-output-names*))
+                 (make-event
+                  '(:OR ,defun
+                        (acl2::fail-event
+                         :termination t
+                         :fail "Termination Proof Failed"))))))))))
 
 (defun timeout-abort-fn (start-time timeout-secs debug state)
   (declare (xargs :mode :program :stobjs (state)))
@@ -779,74 +937,102 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (make-contract-ev name formals ic oc kwd-alist make-staticp d? pkg wrld))
          (verify-guards-ev (make-verify-guards-ev name kwd-alist))
          (timeout-secs (defdata::get1 :timeout kwd-alist))
-         (test-subgoals-p (eq t (defdata::get1 :testing-enabled kwd-alist))))
-      `(with-time-limit
-        ,timeout-secs
-        (encapsulate
-         nil
-         (abort-this-event-sequence
-          ,(defdata::get1 :start-time kwd-alist)
-          ,timeout-secs
-          ,(defdata::get1 :debug kwd-alist))
-         ,@(and test-subgoals-p '((local (acl2s-defaults :set testing-enabled nil))))
-         (local (acl2s-defaults :set print-cgen-summary nil))
-         (with-output
-          :off :all
-          (make-event (er-progn
-                       (assign defunc-failure-reason :termination)
-                       (value '(value-triple :invisible)))))
-         ;;(with-time-limit ,timeout-secs ,defun/ng)
-         (with-output :on (summary error) :summary (acl2::form acl2::time)
-                      (with-time-limit ,(* 4/5 timeout-secs) ,defun/ng))
+         ;; PETE: make sure this makes sense
+         ;; We already tested the defunc, so why do it again?
+         (test-subgoals-p nil))
+;         (test-subgoals-p (eq t (defdata::get1 :testing-enabled kwd-alist))))
+      `(with-output
+        :off :all
+        (with-time-limit
+         ,timeout-secs
+         (encapsulate
+          nil
+          ,@(and test-subgoals-p
+                 '((local (acl2s-defaults :set testing-enabled nil))))
+          (local (acl2s-defaults :set print-cgen-summary nil))
+          (me-assign defunc-failure-reason :termination)
+          
+          ;;(with-time-limit ,timeout-secs ,defun/ng)
+          (value-triple
+           (cw "~|Form:  ( ADMIT-DEFINITION ~x0 ... )~%" ',name))
 
-         (with-output
-          :off :all
-          (make-event (er-progn (assign defunc-failure-reason :contract)
-                                (value '(value-triple :invisible)))))
-         ,@(and test-subgoals-p
-                '((local (acl2s-defaults :set testing-enabled t))))
-         ;;helps defeat generalizations
-         ,@(and contract-defthm ;(list contract-defthm))
-                `((with-output
-                   :on (summary error) :summary (acl2::form acl2::time)
-                   (with-time-limit ,(* 1/3 timeout-secs) ,contract-defthm))))
-         ,@(and test-subgoals-p '((local (acl2s-defaults :set testing-enabled nil))))
+          (with-output
+           :off :all :on (summary) :summary (time) 
+;           :off :all :on (error summary) :summary (time) 
+           (with-time-limit ,(* 4/5 timeout-secs) ,defun/ng))
 
-         (with-output
-          :off :all
-          (make-event (er-progn (assign defunc-failure-reason :guards)
-                                (value '(value-triple :invisible)))))
-         (with-output
-          :on (summary error) :summary (acl2::form acl2::time)
-          (with-time-limit ,(* 1/3 timeout-secs) ,verify-guards-ev))
+          (me-assign defunc-failure-reason :contract)
+
+;         ,@(and test-subgoals-p
+;                '((local (acl2s-defaults :set testing-enabled t))))
+          ;;helps defeat generalizations
+          (value-triple
+           (cw "~|Form:  ( PROVE-FUNCTION-CONTRACT ~x0 ... )~%" ',name))
+          ,@(and contract-defthm ;(list contract-defthm))
+                 `((with-output
+;                    :off :all :on (summary error) :summary (time)
+                    :off :all :on (summary) :summary (time)
+                    (with-time-limit ,(* 1/3 timeout-secs) ,contract-defthm))))
+;         ,@(and test-subgoals-p
+;                '((local (acl2s-defaults :set testing-enabled nil))))
+          (me-assign defunc-failure-reason :guards)
+
+          (value-triple
+           (cw "~|Form:  ( PROVE-BODY-CONTRACTS ~x0 ... )~%" ',name))
          
-         (with-output
-          :off :all
-          (make-event (er-progn (assign defunc-failure-reason
-                                        :generic-ev)
-                                (value '(value-triple :invisible)))))
-         ,@(make-generic-typed-defunc-events
-            name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
+          (with-output
+           :off :all :on (summary) :summary (time)
+           (with-time-limit
+            ,(* 1/3 timeout-secs) ,verify-guards-ev))
+         
+          (me-assign defunc-failure-reason :generic-ev)
+          
+          ,@(make-generic-typed-defunc-events
+             name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
+          
+          (me-assign defunc-failure-reason :none)
 
-         (with-output
-          :off :all
-          (make-event (er-progn (assign defunc-failure-reason :none)
-                                (value '(value-triple :invisible)))))
+          (make-event
+           ,(print-summary-ev name oc kwd-alist pkg))))))))
 
-         ,(print-summary-ev name oc kwd-alist pkg))))))
-
-
+#|
 (defun program-mode-defunc-events (name formals ic oc decls body kwd-alist d? wrld pkg)
   (declare (xargs :mode :program))
   (b* ((dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? pkg))
        (decls (update-xargs-decls decls :guard ic :mode :program)))
     `(with-output
-       :on (error summary) :summary (acl2::form)
+       :on (error summary) :summary (form)
        (PROGN
         (defun ,name ,formals
           ,@decls
           ,dynamic-body)
         ,(print-summary-ev name oc kwd-alist pkg)))))
+|#
+
+(defun program-mode-defunc-events
+    (name formals ic oc decls body kwd-alist d? wrld pkg)
+  (declare (xargs :mode :program))
+  (b* ((dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? pkg))
+       (decls (update-xargs-decls decls :guard ic :mode :program))
+       (timeout-secs (defdata::get1 :timeout kwd-alist)))
+    `(with-output
+      :off :all
+      (with-time-limit
+       ,timeout-secs
+       (encapsulate
+        nil
+        (local (acl2s-defaults :set testing-enabled t))
+        (local (acl2s-defaults :set print-cgen-summary nil))
+        (me-assign defunc-failure-reason :termination)
+        (value-triple
+         (cw "~|Form:  ( ADMIT-DEFINITION ~x0 ... )~%" ',name))
+        (with-output
+         :off :all :on (error summary) :summary (time) 
+         (defun ,name ,formals
+           ,@decls
+           ,dynamic-body))
+        (me-assign defunc-failure-reason :none)
+        (make-event ,(print-summary-ev name oc kwd-alist pkg)))))))
 
 (defun print-guard-extra-info-hyps (hyps yesp)
   (if (endp hyps)
@@ -911,14 +1097,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;; component, and reverting the logical world to its value just before
 ;; that call of ld.
 
-(defun print-time-taken (start end state)
-  (declare (xargs :mode :program :stobjs (state)))
-  (b* ((- (cw "~|Elapsed Run Time: ")))
-    (pprogn (acl2::print-rational-as-decimal (rfix (- end start)) (standard-co state) state)
-            (princ$ " seconds" (standard-co state) state)
-            (newline (standard-co state) state)
-            (value :invisible))))
-
 (defun test?-phase (parsed state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((list name formals ic oc decls body kwd-alist) parsed)
@@ -934,16 +1112,16 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (- (defdata::cw? debug "~|defun : ~x0 ~| ic : ~x1 ~| oc: ~x2~%" defun ic oc))
        (hints (defdata::get1 :body-contracts-hints kwd-alist))
        ((mv start state) (acl2::read-run-time state))
-       (- (cw "~%~|Testing: Defining function ... ~%"))
+       (- (cw "~%~|Form:  ( TEST-DEFINITION ~x0 ... )~%" name))
        ((er trval)
         (with-output!
-         :off :all ;:on (summary) :summary (acl2::time)
+         :off :all ;:on (summary) :summary (time)
          (acl2::trans-eval
           `(make-event
             (with-output 
              :off :all ;:on (error) 
              (b* (((er &) (with-output! :off :all :on (error) (skip-proofs ,defun)))
-                  (- (cw "~|Testing: Body contracts ... ~%"))
+                  (- (cw "~|Form:  ( TEST-BODY-CONTRACTS ~x0... ) ~%" ',name))
                   ((er guard-ob) (acl2::function-guard-obligation ',name state))
                   (- (defdata::cw? ,debug "~|Guard obligation: ~x0~%" guard-ob))
                   ((er &) (with-time-limit
@@ -955,7 +1133,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                          '(:print-cgen-summary nil :num-witnesses 0)
                                          ,testing-timeout
                                          state))))
-                  (- (cw "~|Testing: Function contract ... ~%"))
+                  (- (cw "~|Form:  ( TEST-FUNCTION-CONTRACT ~x0 ...) ~%" ',name))
                   ((er &) (with-time-limit
                            ,testing-timeout
                            (with-output!
@@ -1066,35 +1244,37 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;;       (mv t nil state))))
 
 (defun make-show-failure-msg-ev (start-time kwd-alist events-seen)
-  `(make-event
-    (b* ((body-contracts-strictp (defdata::get1 :body-contracts-strictp ',kwd-alist))
-         (function-contract-strictp (defdata::get1 :function-contract-strictp ',kwd-alist))
-         (termination-strictp (defdata::get1 :termination-strictp ',kwd-alist))
-         (timeout-secs (defdata::get1 :timeout ',kwd-alist))
-         ((mv end state) (acl2::read-run-time state))
-         ((er &) (print-time-taken ,start-time end state))
-         (time-elapsed (- end ,start-time))
-         (failure-reason (@ defunc-failure-reason))
-         (blame-msg
-          (or (and (or (> time-elapsed timeout-secs) (eq :timed-out failure-reason))
-                   "Defunc has TIMED OUT!! You can change the timeout default using :timeout option (also see :doc set-defunc-timeout). If you want to bypass this failure, you can modify defunc's default strictness (see :doc defunc).")
-              (and termination-strictp (eq :termination failure-reason)
-                   "Termination FAILED!")
-              (and function-contract-strictp (eq :contract failure-reason)
-                   "Function Contract FAILED! You can provide :function-contract-hints to help.")
-              (and body-contracts-strictp (eq :guards failure-reason)
-                   "Body Contracts FAILED! You can provide :body-contracts-hints to help.")
-              "Something that we could not assign blame to has FAILED! The failure might be due to the definition rule or the induction scheme associated with this function definition. Chances are that there is a problem with your definition. To debug this further, please consult an expert."))
-         )
+  `(with-output
+    :off :all :on (error)
+    (make-event
+     (b* ((body-contracts-strictp (defdata::get1 :body-contracts-strictp ',kwd-alist))
+          (function-contract-strictp (defdata::get1 :function-contract-strictp ',kwd-alist))
+          (termination-strictp (defdata::get1 :termination-strictp ',kwd-alist))
+          (timeout-secs (defdata::get1 :timeout ',kwd-alist))
+          ((mv end state) (acl2::read-run-time state))
+          ((er &) (print-time-taken ,start-time end state))
+          (time-elapsed (- end ,start-time))
+          (failure-reason (@ defunc-failure-reason))
+          (blame-msg
+           (or (and (or (> time-elapsed timeout-secs) (eq :timed-out failure-reason))
+                    "Defunc has TIMED OUT!! You can change the timeout default using :timeout option (also see :doc set-defunc-timeout). If you want to bypass this failure, you can modify defunc's default strictness (see :doc defunc).")
+               (and termination-strictp (eq :termination failure-reason)
+                    "Termination FAILED!")
+               (and function-contract-strictp (eq :contract failure-reason)
+                    "Function Contract FAILED! You can provide :function-contract-hints to help.")
+               (and body-contracts-strictp (eq :guards failure-reason)
+                    "Body Contracts FAILED! You can provide :body-contracts-hints to help.")
+               "Something that we could not assign blame to has FAILED! The failure might be due to the definition rule or the induction scheme associated with this function definition. Chances are that there is a problem with your definition. To debug this further, please consult an expert."))
+          )
 
-      (if (> time-elapsed timeout-secs)
-          (value
-           `(with-output
-              :stack :pop
+       (if (> time-elapsed timeout-secs)
+           (value
+            `(with-output
+              :off :all :on (error)
               (value-triple (er hard? 'defunc "~%~s0~%" ,blame-msg))))
-        (value
-         `(with-output
-            :stack :pop
+         (value
+          `(with-output
+            :off :all :on (error)
             (value-triple
              (progn$
               (fmt-to-comment-window
@@ -1102,8 +1282,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                (list (cons #\0 (list* 'ACL2::PROGN ',',events-seen))) 0 nil nil)
               (cw "~%~s0" ,blame-msg)
               (er hard? 'defunc
-                  "~|Submit the events shown above to replicate the failure.")))))))))
-
+                  "~|Submit the events shown above to replicate the failure."))))))))))
 
 (defun events-seen-list (parsed wrld make-staticp d? pkg)
   (declare (xargs :mode :program))
@@ -1560,6 +1739,32 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (verbosep (or verbosep
                      (let ((lst (member :debug args)))
                        (and lst (cadr lst))))))
+    `(with-output
+      ,@(and (not verbosep) '(:off :all))
+      :gag-mode ,(not verbosep)
+      :stack :push
+      (encapsulate
+       nil
+       (with-output
+        ,@(and (not verbosep) '(:off :all)) :on (error)
+        (make-event
+         (make-undefined ',name ',args t (current-package state) (w state))))
+       (make-event
+        (er-progn
+         ;; Test phase using trans-eval/make-event
+         (test?-phase
+          (parse-defunc ',name ',args (current-package state) (w state)) state)
+         ;; Generate events
+         (defunc-events
+           (parse-defunc ',name ',args (current-package state) (w state)) t state)))))))
+
+#|
+(defmacro defundc (name &rest args)
+  (b* ((verbosep (let ((lst (member :verbose args)))
+                   (and lst (cadr lst))))
+       (verbosep (or verbosep
+                     (let ((lst (member :debug args)))
+                       (and lst (cadr lst))))))
     `(encapsulate
       nil
       (make-event (make-undefined ',name ',args t (current-package state) (w state)))
@@ -1576,6 +1781,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          ;; Generate events
          (defunc-events
            (parse-defunc ',name ',args (current-package state) (w state)) t state)))))))
+|#
 
 (include-book "xdoc/top" :dir :system)
 
