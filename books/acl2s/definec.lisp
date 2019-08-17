@@ -42,7 +42,7 @@
 
 (defmacro definec (name &rest args)
   `(make-event
-    (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
+    (b* ((tbl (table-alist 'type-metadata-table (w state)))
          (f-args ',(car args))
          (pkg (current-package state))
          (f-type (intern$ ,(symbol-name (second args)) pkg))
@@ -88,8 +88,8 @@ both expand into
   `(with-output
     :stack :push :off :all :on (error)
     (make-event
-     (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
-          (atbl (table-alist 'defdata::type-alias-table (w state)))
+     (b* ((tbl (table-alist 'type-metadata-table (w state)))
+          (atbl (table-alist 'type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
           (f-type (map-intern-type ',(second args) pkg))
@@ -121,8 +121,8 @@ but ~x0 has an odd number of arguments: ~x1"
   `(with-output
     :stack :push :off :all :on (error)
     (make-event
-     (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
-          (atbl (table-alist 'defdata::type-alias-table (w state)))
+     (b* ((tbl (table-alist 'type-metadata-table (w state)))
+          (atbl (table-alist 'type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
           (f-type (map-intern-type ',(second args) pkg))
