@@ -384,6 +384,20 @@
     :elementp-of-nil nil
     :pred jblockp))
 
+(define jblock-locvar ((type jtypep) (name stringp) (init jexprp))
+  :returns (jblock jblockp)
+  :short "Build a block consisting of
+          a single (non-final) local variable declaration statement."
+  (list (jstatem-locvar
+         (make-jlocvar :final? nil :type type :name name :init init))))
+
+(define jblock-locvar-final ((type jtypep) (name stringp) (init jexprp))
+  :returns (jblock jblockp)
+  :short "Build a block consisting of
+          a single final local variable declaration statement."
+  (list (jstatem-locvar
+         (make-jlocvar :final? t :type type :name name :init init))))
+
 (fty::deftagsum jaccess
   :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
   (:public ())
