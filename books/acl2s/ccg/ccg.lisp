@@ -5955,11 +5955,21 @@ e2-e1+1.
            (let ((subset (access justification justification :subset))
                  (ccms-lst (fetch-dcl-field :consider-only-ccms
                                             (butlast (cddr def) 1))))
-             (if (and (consp ccms-lst)
-                      (null (cdr ccms-lst))
-                      (?-ccm-lstp (car ccms-lst))
-                      (set-equalp-eq (all-vars1-lst (car ccms-lst) nil)
-                                     subset))
+
+; Pete: Fri Aug 16 EDT 2019: Added the (null ccms-lst) case
+; below. This seems reasonable because we know that the existing
+; measured subset works, and this defun is not claiming some different
+; measured subset, so there's no difference between the case we're in
+; and the case where the user identified the exact justification in
+; the world. I need to come back to this later to make sure I'm not
+; missing something.
+               
+             (if (or (null ccms-lst)
+                     (and (consp ccms-lst)
+                          (null (cdr ccms-lst))
+                          (?-ccm-lstp (car ccms-lst))
+                          (set-equalp-eq (all-vars1-lst (car ccms-lst) nil)
+                                         subset)))
                  'redundant
                (msg "A redundant definition using CCG termination must use ~
                      the xarg :consider-only-ccms to declare a list of CCMs ~

@@ -963,7 +963,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                             (test? (implies ,ic ,oc)
                               :print-cgen-summary nil
                               :num-witnesses 0))))
-                  (- (cw "~|Testing: Done ... ~%")))
+                  (- (cw "~|Testing: Done ~%")))
                (value '(value-triple :invisible)))))
           'test?-phase state t)))
        ((when (eq T (cadr trval))) (mv t nil state)) ;abort with error

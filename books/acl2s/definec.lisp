@@ -86,13 +86,13 @@ both expand into
 
 (defmacro definec (name &rest args)
   `(with-output
-    :stack :push :off :all :on (summary) :summary (acl2::time)
+    :stack :push :off :all :on (error)
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
           (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
-          (f-type (map-intern-type ,(second args) pkg))
+          (f-type (map-intern-type ',(second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
@@ -112,31 +112,43 @@ but ~x0 has an odd number of arguments: ~x1"
           (bad-type
            (find-bad-d-arg-types d-arg-types d-arg-preds))
           ((when bad-type)
-           (er hard 'definec "~%~x0 is not a type." bad-type))
+           (er hard 'definec "~%One of the argument types, ~x0, is not a type." bad-type))
           ((unless f-type-pred)
-           (er hard 'definec "~%~x0 is not a type." f-type)))
+           (er hard 'definec "~%The given return type, ~x0, is not a type." f-type)))
        `(with-output :stack :pop ,defunc)))))
 
 (defmacro definedc (name &rest args)
   `(with-output
-    :stack :push :off :all
+    :stack :push :off :all :on (error)
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
           (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
-          (f-type (map-intern-type ,(second args) pkg))
+          (f-type (map-intern-type ',(second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
+          (d-arg-types (map-intern-types d-arg-types pkg))
           (d-arg-preds (map-preds d-arg-types tbl atbl 'definedc))
           (f-type-pred (pred-of-type f-type tbl atbl 'definedc))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-output-contract ',name d-args f-type-pred))
-          (defunc `(defundc ,',name ,d-args
-                     :input-contract ,ic
-                     :output-contract ,oc
-                     ,@(cddr ',args))))
-       `(with-output :stack :pop ,defunc)))))
+          (defundc `(defundc ,',name ,d-args
+                      :input-contract ,ic
+                      :output-contract ,oc
+                      ,@(cddr ',args)))
+          ((when (oddp (len f-args)))
+           (er hard 'definedc
+               "~%The argumets to ~x0 should alternate between variables and types,
+but ~x0 has an odd number of arguments: ~x1"
+               ',name f-args))
+          (bad-type
+           (find-bad-d-arg-types d-arg-types d-arg-preds))
+          ((when bad-type)
+           (er hard 'definedc "~%One of the argument types, ~x0, is not a type." bad-type))
+          ((unless f-type-pred)
+           (er hard 'definedc "~%The given return type, ~x0, is not a type." f-type)))
+       `(with-output :stack :pop ,defundc)))))
 
 #|
 
@@ -164,7 +176,6 @@ both expand into
   :RULE-CLASSES ((:FORWARD-CHAINING :TRIGGER-TERMS ((F X Y)))))
 
 |#
-
 
 (include-book "xdoc/top" :dir :system)
 
@@ -272,6 +283,15 @@ bells and whistles of @('acl2s::defunc').
        (disable
         ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
+(defmacro definedcd (name &rest args)
+  `(encapsulate
+    nil
+    (definedc ,name ,@args)
+    (make-event 
+     `(in-theory
+       (disable
+        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
+
 (defmacro definec-no-test (name &rest args)
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
@@ -282,15 +302,6 @@ bells and whistles of @('acl2s::defunc').
     (local (acl2s-defaults :set testing-enabled nil))
     (definecd ,name ,@args)))
 
-(defmacro definedcd (name &rest args)
-  `(encapsulate
-    nil
-    (definedc ,name ,@args)
-    (make-event 
-     `(in-theory
-       (disable
-        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
-
 (defmacro definedc-no-test (name &rest args)
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
@@ -300,3 +311,4 @@ bells and whistles of @('acl2s::defunc').
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
     (definedcd ,name ,@args)))
+

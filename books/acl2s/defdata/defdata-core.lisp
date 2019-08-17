@@ -443,17 +443,18 @@ Example use
 |#
 
 (defun defdata-events (a1 wrld)
-  (b* (((list D &) a1) ;a1 is the result of parse-defdata
+  (b* (((list D kwd-alist) a1) ;a1 is the result of parse-defdata
        (d-alist (cdar d))
        (name (get1 'name d-alist))
        (odef (get1 'odef (cdar d)))
        (pdef (get1 'pdef (cdar d)))
        (ndef (get1 'ndef (cdar d)))
+       (do-not-alias? (get1 :do-not-alias kwd-alist))
        (M (type-metadata-table wrld))
        (match-def (match-alist name :DEF odef M))
        (match-def (or match-def (match-alist name :PRETTYIFIED-DEF pdef M)))
        (match-def (or match-def (match-alist name :NORMALIZED-DEF ndef M))))
-    (if match-def
+    (if (and match-def (not do-not-alias?))
         `(defdata-alias ,name ,match-def)
       (defdata-core-events a1 wrld))))
 
@@ -896,7 +897,8 @@ Example use
             :debug :print-commentary :print-summary :time-track
             ;; :pre-pred-hook-fns :post-pred-hook-fns
             ;; :pre-hook-fns :post-hook-fns
-            :testing-enabled)
+            :testing-enabled
+            :do-not-alias)
           '(:hints :verbose)
           *per-def-keywords*
           ))

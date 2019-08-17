@@ -434,6 +434,20 @@ I commented out some disabled theorems that seem fine to me.
 (defmacro != (x y)
   `(not (equal ,x ,y)))
 
+#|
+Useful for testing defunc/definec errors
+
+:trans1
+(DEFUNC IN (A X)
+  :INPUT-CONTRACT (TRUE-LISTP X)
+  :OUTPUT-CONTRACT (BOOLEANP (IN A X))
+  (AND (CONSP X)
+       (OR (== A (CAR X)) (IN A (CDR X)))))
+
+(redef+)
+(redef-)
+|#
+
 (definec in (a :all X :tl) :bool
   (and (consp X)
        (or (== a (car X))
