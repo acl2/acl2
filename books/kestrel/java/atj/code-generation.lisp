@@ -2625,7 +2625,9 @@
       (which uses the AIJ interpreter).")
     (xdoc::li
      "For the shallow embedding,
-      we just call the Java method that represents the ACL2 function.
+      we put the argument values into local variables,
+      and we just call the Java method that represents the ACL2 function
+      on those local variables.
       Since this code is in a class that is different from
       any of the generated Java classes that correspond to ACL2 packages,
       the Java method to call must be always preceded by the class name:
@@ -2634,102 +2636,86 @@
    (xdoc::p
     "The generated code also measures the time of the Java call,
      by taking the current time just before and just after the call.
-     The two values are subtracted, and the time printed."))
+     The two values are subtracted, and the time printed.
+     The reason for storing the argument values into local variables
+     in the shallow embedding approach,
+     as opposed to passing the expressions directly to the method call,
+     is to accurately measure just the time of the call,
+     without the time needed to compute the argument expressions."))
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
        (jmethod-name (atj-gen-test-jmethod-name test.name))
-       (jvar-fnname "functionName")
-       (jvar-fnargs "functionArguments")
-       (jvar-aresult "resultAcl2")
-       (jvar-jresult "resultJava")
-       (jvar-start-time "startTime")
-       (jvar-end-time "endTime")
-       (message (str::cat "Testing '" test.name "'..."))
-       (print-testing-jblock (jblock-imethod (jexpr-name "System.out")
-                                             "print"
-                                             (list (atj-gen-jstring message))))
-       (fnname-jblock
-        (and deep$
-             (jblock-locvar *atj-jtype-symbol*
-                            jvar-fnname
-                            (atj-gen-asymbol test.function))))
        ((mv aargs-jblock
             aargs-jexprs
             jvar-value-index) (atj-gen-avalues test.arguments "value" 1))
-       (aargs-jblock
-        (if deep$
-            (append aargs-jblock
-                    (jblock-locvar (jtype-array *atj-jtype-value*)
-                                   jvar-fnargs
-                                   (jexpr-newarray *atj-jtype-value*
-                                                   aargs-jexprs)))
-          aargs-jblock))
-       (time-jexpr (jexpr-smethod (jtype-class "System")
-                                  "currentTimeMillis"
-                                  nil))
-       (start-time-jblock (jblock-locvar (jtype-long)
-                                         jvar-start-time
-                                         time-jexpr))
-       (jres-jblock
-        (jblock-locvar *atj-jtype-value*
-                       jvar-jresult
-                       (if deep$
-                           (jexpr-smethod (jtype-class java-class$)
-                                          "call"
-                                          (list (jexpr-name jvar-fnname)
-                                                (jexpr-name jvar-fnargs)))
-                         (jexpr-smethod (jtype-class java-class$)
-                                        (atj-gen-shallow-afnname
-                                         test.function "")
-                                        aargs-jexprs))))
-       (end-time-jblock (jblock-locvar (jtype-long)
-                                       jvar-end-time
-                                       time-jexpr))
        ((mv ares-jblock
             ares-jexpr
             &) (atj-gen-avalue test.result "value" jvar-value-index))
-       (ares-jblock (append ares-jblock
-                            (jblock-locvar *atj-jtype-value*
-                                           jvar-aresult
-                                           ares-jexpr)))
-       (print-pass-jblock (jblock-imethod (jexpr-name "System.out")
-                                          "println"
-                                          (list (atj-gen-jstring " PASS"))))
-       (print-fail-jblock (jblock-imethod (jexpr-name "System.out")
-                                          "println"
-                                          (list (atj-gen-jstring " FAIL"))))
-       (set-fail-jblock (jblock-asg-name "failures"
-                                         (jexpr-literal
-                                          (jliteral-boolean t))))
-       (if-jblock (jblock-ifelse
-                   (jexpr-imethod (jexpr-name jvar-aresult)
-                                  "equals"
-                                  (list (jexpr-name jvar-jresult)))
-                   print-pass-jblock
-                   (append set-fail-jblock
-                           print-fail-jblock)))
-       (time-diff-jexpr (jexpr-binary (jbinop-sub)
-                                      (jexpr-name jvar-end-time)
-                                      (jexpr-name jvar-start-time)))
-       (time-seconds-jexpr (jexpr-binary (jbinop-div)
-                                         (jexpr-paren time-diff-jexpr)
-                                         (jexpr-literal
-                                          (jliteral-floating 1000))))
-       (print-time-jblock
-        (jblock-imethod (jexpr-name "System.out")
-                        "format"
-                        (list (jexpr-literal (jliteral-string "  Time: %.3f%n"))
-                              time-seconds-jexpr)))
-       (jmethod-body (append print-testing-jblock
-                             fnname-jblock
-                             aargs-jblock
-                             start-time-jblock
-                             jres-jblock
-                             end-time-jblock
-                             ares-jblock
-                             if-jblock
-                             print-time-jblock)))
+       (current-time-jexpr (jexpr-smethod (jtype-class "System")
+                                  "currentTimeMillis"
+                                  nil))
+       (test-time-jexpr (jexpr-binary (jbinop-div)
+                                      (jexpr-paren
+                                       (jexpr-binary (jbinop-sub)
+                                                     (jexpr-name "endTime")
+                                                     (jexpr-name "startTime")))
+                                      (jexpr-literal (jliteral-floating 1000))))
+       ((mv shallow-arg-jblock shallow-arg-jvars)
+        (if deep$
+            (mv nil nil)
+          (atj-gen-test-jmethod-aux aargs-jexprs 1)))
+       (jmethod-body
+        (append
+         (jblock-imethod (jexpr-name "System.out")
+                         "print"
+                         (list (atj-gen-jstring
+                                (str::cat "Testing '" test.name "'..."))))
+         aargs-jblock
+         (if deep$
+             (jblock-locvar (jtype-array *atj-jtype-value*)
+                            "functionArguments"
+                            (jexpr-newarray *atj-jtype-value*
+                                            aargs-jexprs))
+           shallow-arg-jblock)
+         ares-jblock
+         (jblock-locvar *atj-jtype-value* "resultAcl2" ares-jexpr)
+         (and deep$
+              (jblock-locvar *atj-jtype-symbol*
+                             "functionName"
+                             (atj-gen-asymbol test.function)))
+         (jblock-locvar (jtype-long) "startTime" current-time-jexpr)
+         (jblock-locvar *atj-jtype-value*
+                        "resultJava"
+                        (if deep$
+                            (jexpr-smethod (jtype-class java-class$)
+                                           "call"
+                                           (list
+                                            (jexpr-name "functionName")
+                                            (jexpr-name "functionArguments")))
+                          (jexpr-smethod (jtype-class java-class$)
+                                         (atj-gen-shallow-afnname test.function
+                                                                  "")
+                                         (jexpr-name-list shallow-arg-jvars))))
+         (jblock-locvar (jtype-long) "endTime" current-time-jexpr)
+         (jblock-ifelse (jexpr-imethod (jexpr-name "resultAcl2")
+                                       "equals"
+                                       (list (jexpr-name "resultJava")))
+                        (jblock-imethod (jexpr-name "System.out")
+                                        "println"
+                                        (list (atj-gen-jstring " PASS")))
+                        (append
+                         (jblock-asg-name "failures"
+                                          (jexpr-literal
+                                           (jliteral-boolean t)))
+                         (jblock-imethod (jexpr-name "System.out")
+                                         "println"
+                                         (list (atj-gen-jstring " FAIL")))))
+         (jblock-imethod (jexpr-name "System.out")
+                         "format"
+                         (list (jexpr-literal
+                                (jliteral-string "  Time: %.3f%n"))
+                               test-time-jexpr)))))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -2741,7 +2727,23 @@
                   :name jmethod-name
                   :params nil
                   :throws (list *atj-jclass-eval-exc*)
-                  :body jmethod-body)))
+                  :body jmethod-body))
+
+  :prepwork
+  ((define atj-gen-test-jmethod-aux ((aargs-jexprs jexpr-listp)
+                                     (index posp))
+     :returns (mv (jblock jblockp)
+                  (jvars string-listp))
+     (cond ((endp aargs-jexprs) (mv nil nil))
+           (t (b* ((first-jvar (str::cat "argument" (str::natstr index)))
+                   (first-jblock (jblock-locvar *atj-jtype-value*
+                                                first-jvar
+                                                (car aargs-jexprs)))
+                   ((mv rest-jblock rest-jvars)
+                    (atj-gen-test-jmethod-aux (cdr aargs-jexprs)
+                                              (1+ index))))
+                (mv (append first-jblock rest-jblock)
+                    (cons first-jvar rest-jvars))))))))
 
 (define atj-gen-test-jmethods ((tests$ atj-test-listp)
                                (deep$ booleanp)
