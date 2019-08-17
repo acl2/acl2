@@ -182,7 +182,8 @@
     (union-eq 
      *ccg-exports*
      ;;*ccg-valid-output-names*
-     '(query basics performance build/refine size-change counter-example))
+     '(query basics performance build/refine size-change counter-example
+             *ccg-valid-output-names*))
     (union-eq
      defdata::*defdata-exports*
      (union-eq
