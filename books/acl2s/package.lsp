@@ -176,7 +176,19 @@
       proof-builder event history summary proof-tree
       stage
       form
+      formals
 
+      defdata::get1
+      defdata::cw?
+      defdata::extract-keywords
+      defdata::type-metadata-table 
+      defdata::type-alias-table 
+      defdata::pred-alias-table 
+      defdata::deffilter
+      defdata::remove1-assoc-eq-lst
+      
+      read-run-time
+      trans-eval
       )
    (union-eq
     (union-eq 
