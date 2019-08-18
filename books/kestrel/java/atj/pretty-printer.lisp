@@ -241,9 +241,13 @@
     (jexpr-case expr
                 :literal (print-jliteral expr.get)
                 :name expr.get
-                :newarray (msg "new ~@0[]{~@1}"
+                :newarray (msg "new ~@0[~@1]"
                                (print-jtype expr.type)
-                               (print-comma-sep (print-jexpr-list expr.init)))
+                               (print-jexpr expr.size))
+                :newarray-init (msg "new ~@0[]{~@1}"
+                                    (print-jtype expr.type)
+                                    (print-comma-sep
+                                     (print-jexpr-list expr.init)))
                 :array (msg "~@0[~@1]"
                             (print-jexpr expr.array)
                             (print-jexpr expr.index))
@@ -362,7 +366,19 @@
                      (print-jblock statem.then (1+ indent-level))
                      (list (print-jline "} else {" indent-level))
                      (print-jblock statem.else (1+ indent-level))
-                     (list (print-jline "}" indent-level))))
+                     (list (print-jline "}" indent-level)))
+     :do (append (list (print-jline "do {" indent-level))
+                 (print-jblock statem.body (1+ indent-level))
+                 (list (print-jline (msg "} while (~@0);"
+                                         (print-jexpr statem.test))
+                                    indent-level)))
+     :for (append (list (print-jline (msg "for (~@0; ~@1; ~@2) {"
+                                          (print-jexpr statem.init)
+                                          (print-jexpr statem.test)
+                                          (print-jexpr statem.update))
+                                     indent-level))
+                  (print-jblock statem.body (1+ indent-level))
+                  (list (print-jline "}" indent-level))))
     :measure (jstatem-count statem))
 
   (define print-jblock ((block jblockp) (indent-level natp))
