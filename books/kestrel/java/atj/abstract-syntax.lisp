@@ -354,6 +354,33 @@
   :short "Build a Java expression consisting of the integer literal 1."
   (jexpr-literal-integer-decimal 1))
 
+(define jexpr-floating ((value natp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of a floating-point literal."
+  (jexpr-literal (jliteral-floating value)))
+
+(define jexpr-literal-true ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of
+          the boolean literal @('true')."
+  (jexpr-literal (jliteral-boolean t)))
+
+(define jexpr-literal-false ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of
+          the boolean literal @('false')."
+  (jexpr-literal (jliteral-boolean nil)))
+
+(define jexpr-literal-string ((string stringp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of a string literal."
+  (jexpr-literal (jliteral-string string)))
+
+(define jexpr-literal-null ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of the null literal."
+  (jexpr-literal (jliteral-null)))
+
 (fty::defprod jlocvar
   :short "Local variable declarations [JLS:14.4]."
   :long
