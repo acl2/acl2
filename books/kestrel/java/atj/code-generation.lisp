@@ -2943,6 +2943,9 @@
                                          "println"
                                          (list (atj-gen-jstring
                                                 "Some tests failed.")))
+                         (jblock-imethod (jexpr-name "System.out")
+                                         "println"
+                                         nil)
                          (jblock-smethod (jtype-class "System")
                                          "exit"
                                          (list (jexpr-literal-1))))
@@ -2951,6 +2954,9 @@
                                          "println"
                                          (list (atj-gen-jstring
                                                 "All tests passed.")))
+                         (jblock-imethod (jexpr-name "System.out")
+                                         "println"
+                                         nil)
                          (jblock-smethod (jtype-class "System")
                                          "exit"
                                          (list (jexpr-literal-0))))))))

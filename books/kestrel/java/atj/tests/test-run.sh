@@ -37,10 +37,11 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibDeepTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibShallowTests 1
 
 # test the ABNF parser:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G TestABNFDeep 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G TestABNFShallow 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowTests 1
 
-# test AIJ's native implementations of ACL2 functions:
+# test AIJ's native implementations of ACL2 functions
+# (without timings because they are very fast, all print as 0.000):
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowTests
 
