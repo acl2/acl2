@@ -2595,6 +2595,41 @@
      and prints a message of success or failure.
      It also sets the failures field to true if the test fails.")
    (xdoc::p
+    "This method also measures the time of the Java call,
+     by taking the current time just before and just after the call,
+     and subtracting them.
+     It does that for the number of repetitions
+     specified by the integer argument of the method.
+     It stores the times of each call in an array,
+     and calculates the minimum, maximum, and sum of all the times.
+     At the end, it prints all the times,
+     along with minimum, maximum, and average
+     (where the average is obtained from the sum).
+     To prevent unwanted JIT optimizations,
+     a boolean flag is used to cumulatively check that
+     all the repeated calls succeed
+     (in the sense of computing the same result as ACL2);
+     since the code is deterministic,
+     we expect that either they will all succeed or they will all fail.
+     We note that
+     the reason for storing the argument values into local variables
+     in the shallow embedding approach,
+     as opposed to passing the expressions directly to the method call,
+     is to accurately measure just the time of each call,
+     without the time needed to compute the argument expressions.")
+   (xdoc::p
+    "As a special case, if the integer parameter of the method is 0,
+     times are not collected, and no minimum/maximum/sum is calculated,
+     and no time information is printed.
+     We use a @('do') loop to ensure that at least one call is made,
+     even when the parameter is 0.
+     The two values are subtracted, and the time printed.
+     The reason for storing the argument values into local variables
+     in the shallow embedding approach,
+     as opposed to passing the expressions directly to the method call,
+     is to accurately measure just the time of the call,
+     without the time needed to compute the argument expressions.")
+   (xdoc::p
     "The code is slightly different based on whether
      we are using the deep or shallow embedding approach:")
    (xdoc::ul
@@ -2616,15 +2651,10 @@
       thus, we use the empty string as the current package name,
       which is guaranteed not to match any existing ACL2 package."))
    (xdoc::p
-    "The generated code also measures the time of the Java call,
-     by taking the current time just before and just after the call.
-     The two values are subtracted, and the time printed.
-     The reason for storing the argument values into local variables
-     in the shallow embedding approach,
-     as opposed to passing the expressions directly to the method call,
-     is to accurately measure just the time of the call,
-     without the time needed to compute the argument expressions."))
-  :guard-debug t
+    "Examining any generated instance of this method
+     should make the above documentation,
+     and the implementation of this code generation function,
+     much clearer."))
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
@@ -2857,7 +2887,7 @@
       nil
     (b* ((jmethod-name
           (atj-gen-test-jmethod-name (atj-test->name (car tests$))))
-         (first-jblock (jblock-method jmethod-name (list (jexpr-literal-1))))
+         (first-jblock (jblock-method jmethod-name (list (jexpr-name "n"))))
          (rest-jblock (atj-gen-run-tests (cdr tests$))))
       (append first-jblock rest-jblock))))
 
@@ -2872,38 +2902,58 @@
    (xdoc::p
     "This method initializes the ACL2 environment
      and then calls each test method.
-     It also prints a message saying whether all tests passed or not."))
+     It also prints a message saying whether all tests passed or not.")
+   (xdoc::p
+    "If no argument is passed to this method
+     (the argument normally comes from the command line,
+     when the generated code is called as a Java application),
+     then the test methods are called with 0 as the repetition parameter:
+     that is, no time information is printed.
+     Otherwise, there must exactly one argument
+     that must parse to a positive integer,
+     which is passed as the repetition parameter to the test methods."))
   (b* ((jmethod-param (make-jparam :final? nil
                                    :type (jtype-array (jtype-class "String"))
                                    :name "args"))
-       (init-jblock (jblock-smethod (jtype-class java-class$)
-                                    "initialize"
-                                    nil))
-       (tests-jblock (atj-gen-run-tests tests$))
-       (print-all-pass-jblock
-        (jblock-imethod (jexpr-name "System.out")
-                        "println"
-                        (list (atj-gen-jstring "All tests passed."))))
-       (print-some-fail-jblock
-        (jblock-imethod (jexpr-name "System.out")
-                        "println"
-                        (list (atj-gen-jstring "Some tests failed."))))
-       (exit0-jblock
-        (jblock-smethod (jtype-class "System")
-                        "exit"
-                        (list (jexpr-literal-0))))
-       (exit1-jblock
-        (jblock-smethod (jtype-class "System")
-                        "exit"
-                        (list (jexpr-literal-1))))
-       (if-jblock (jblock-ifelse (jexpr-name "failures")
-                                 (append print-some-fail-jblock
-                                         exit1-jblock)
-                                 (append print-all-pass-jblock
-                                         exit0-jblock)))
-       (jmethod-body (append init-jblock
-                             tests-jblock
-                             if-jblock)))
+       (jmethod-body
+        (append
+         (jblock-locvar (jtype-int) "n" (jexpr-literal-0))
+         (jblock-if (jexpr-binary (jbinop-eq)
+                                  (jexpr-field (jexpr-name "args") "length")
+                                  (jexpr-literal-1))
+                    (jblock-asg (jexpr-name "n")
+                                (jexpr-smethod (jtype-class "Integer")
+                                               "parseInt"
+                                               (list
+                                                (jexpr-array
+                                                 (jexpr-name "args")
+                                                 (jexpr-literal-0))))))
+         (jblock-if (jexpr-binary (jbinop-gt)
+                                  (jexpr-field (jexpr-name "args") "length")
+                                  (jexpr-literal-1))
+                    (jblock-throw (jexpr-newclass
+                                   (jtype-class "IllegalArgumentException")
+                                   (list (jexpr-literal-string
+                                          "There must be 0 or 1 arguments.")))))
+         (jblock-smethod (jtype-class java-class$) "initialize" nil)
+         (atj-gen-run-tests tests$)
+         (jblock-ifelse (jexpr-name "failures")
+                        (append
+                         (jblock-imethod (jexpr-name "System.out")
+                                         "println"
+                                         (list (atj-gen-jstring
+                                                "Some tests failed.")))
+                         (jblock-smethod (jtype-class "System")
+                                         "exit"
+                                         (list (jexpr-literal-1))))
+                        (append
+                         (jblock-imethod (jexpr-name "System.out")
+                                         "println"
+                                         (list (atj-gen-jstring
+                                                "All tests passed.")))
+                         (jblock-smethod (jtype-class "System")
+                                         "exit"
+                                         (list (jexpr-literal-0))))))))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
