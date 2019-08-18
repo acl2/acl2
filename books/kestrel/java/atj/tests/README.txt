@@ -7,7 +7,7 @@ test-*.lisp (except test-times.lisp)
   of ATJ to generate Java code for those functions.
 
 
-test-times.lisp
+test-acl2-times.lisp
 
   Includes all the other test-*.lisp files, and provides utilities to run them
   while collecting, and printing on the screen, their execution times. This is
@@ -35,8 +35,9 @@ test-abnf-files/*.txt
 
 Test*.java
 
-  Java source files with test harnesses for the generated Java code. These files
-  are handwritten (not generated) and are under version control.
+  Java source files with test harnesses for some of the generated Java
+  code. These files are handwritten (not generated) and are under version
+  control.
 
 
 *.class

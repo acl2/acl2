@@ -1,9 +1,13 @@
 *.class
 
 FactDeep.java
+FactDeepTests.java
 FactShallow.java
+FactShallowTests.java
 FibDeep.java
+FibDeepTests.java
 FibShallow.java
+FibShallowTests.java
 ABNFDeep.java
 ABNFShallow.java
 NativeDeep.java

@@ -16,7 +16,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Define an ABNF grammar parser.
+; ABNF grammar parser.
+
 ; This is the same as the one in [books]/kestrel/abnf/parser.lisp,
 ; except that PARSE-ANY does not fix its input to NAT-LISTP (via MBE),
 ; because this makes the parser unduly slow when executed
@@ -30,7 +31,7 @@
 ; as a consequence, some symbols from the ABNF package have to be qualified.
 ; We also remove all the XDOCumentation.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The following functions are not part of the parser proper.
 ; They are variants of functions
@@ -63,7 +64,7 @@
       (equal nat (char-code (downcase char))))
   :no-function t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This is the parser proper.
 
@@ -2098,8 +2099,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the parser.
+; Generate Java code for the parser, without tests.
+; Currently, attempting to generate tests
+; for the grammar files under ./test-abnf-files
+; results in Java code whose test methods are too large to compile
+; (they exceed the maximum size allowed by the JVM),
+; because the contents of those files are built as lists of natural numbers.
+; Thus, for now we have a handwritten Java file to test the ABNF parser.
 
-(java::atj parse-grammar :deep t :java-class "ABNFDeep")
+(java::atj parse-grammar
+           :deep t
+           :java-class "ABNFDeep")
 
-(java::atj parse-grammar :deep nil :java-class "ABNFShallow")
+(java::atj parse-grammar
+           :deep nil
+           :java-class "ABNFShallow")
