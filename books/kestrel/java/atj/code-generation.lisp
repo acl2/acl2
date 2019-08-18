@@ -177,7 +177,7 @@
   (b* ((achars (explode astring)))
     (if (printable-charlist-p achars)
         (jexpr-literal (jliteral-string astring))
-      (jexpr-newarray (jtype-char) (atj-achars-to-jhexcodes achars)))))
+      (jexpr-newarray-init (jtype-char) (atj-achars-to-jhexcodes achars)))))
 
 (define atj-gen-jparamlist-avalues ((names string-listp))
   :returns (jparams jparam-listp)
@@ -301,13 +301,11 @@
 (define atj-gen-achar ((achar characterp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 character."
-  (b* ((literal (make-jliteral-integer :value (char-code achar)
-                                       :long? nil
-                                       :base (jintbase-decimal)))
-       (expr (jexpr-cast (jtype-char) (jexpr-literal literal))))
-    (jexpr-smethod *atj-jtype-char*
-                   "make"
-                   (list expr))))
+  (jexpr-smethod *atj-jtype-char*
+                 "make"
+                 (list (jexpr-cast (jtype-char)
+                                   (jexpr-literal-integer-decimal
+                                    (char-code achar))))))
 
 (define atj-gen-astring ((astring stringp))
   :returns (jexpr jexprp)
@@ -396,27 +394,15 @@
        (arg (cond ((signed-byte-p 32 ainteger)
                    (if (< ainteger 0)
                        (jexpr-unary (junop-uminus)
-                                    (jexpr-literal
-                                     (make-jliteral-integer
-                                      :value (- ainteger)
-                                      :long? nil
-                                      :base (jintbase-decimal))))
-                     (jexpr-literal (make-jliteral-integer
-                                     :value ainteger
-                                     :long? nil
-                                     :base (jintbase-decimal)))))
+                                    (jexpr-literal-integer-decimal
+                                     (- ainteger)))
+                     (jexpr-literal-integer-decimal ainteger)))
                   ((signed-byte-p 64 ainteger)
                    (if (< ainteger 0)
                        (jexpr-unary (junop-uminus)
-                                    (jexpr-literal
-                                     (make-jliteral-integer
-                                      :value (- ainteger)
-                                      :long? t
-                                      :base (jintbase-decimal))))
-                     (jexpr-literal (make-jliteral-integer
-                                     :value ainteger
-                                     :long? t
-                                     :base (jintbase-decimal)))))
+                                    (jexpr-literal-integer-long-decimal
+                                     (- ainteger)))
+                     (jexpr-literal-integer-long-decimal ainteger)))
                   (t (b* ((string (if (< ainteger 0)
                                       (str::cat "-" (str::natstr (- ainteger)))
                                     (str::natstr ainteger)))
@@ -603,8 +589,8 @@
   :long
   (xdoc::topstring-p
    "The generated code builds an array of the formals as symbols.")
-  (jexpr-newarray *atj-jtype-symbol*
-                  (atj-gen-asymbols aformals)))
+  (jexpr-newarray-init *atj-jtype-symbol*
+                       (atj-gen-asymbols aformals)))
 
 (defines atj-gen-deep-aterms+alambdas
   :short "Generate Java code to build
@@ -687,7 +673,7 @@
                                                       jvar-term-index
                                                       jvar-lambda-base
                                                       jvar-lambda-index))
-         (aargs-jexpr (jexpr-newarray *atj-jtype-term* aarg-jexprs))
+         (aargs-jexpr (jexpr-newarray-init *atj-jtype-term* aarg-jexprs))
          (afnapp-jexpr (jexpr-smethod *atj-jtype-fn-app*
                                       "make"
                                       (list afn-jexpr
@@ -1864,11 +1850,9 @@
        (jvar-aimports "imports")
        (jmethod-name (atj-gen-apkg-jmethod-name apkg))
        (aimports (pkg-imports apkg))
-       (len-jliteral (make-jliteral-integer :value (len aimports)
-                                            :long? nil
-                                            :base (jintbase-decimal)))
+       (len-jexpr (jexpr-literal-integer-decimal (len aimports)))
        (newlist-jexpr (jexpr-newclass (jtype-class "ArrayList<>")
-                                      (list (jexpr-literal len-jliteral))))
+                                      (list len-jexpr)))
        (imports-jblock (jblock-locvar (jtype-class "List<Acl2Symbol>")
                                       jvar-aimports
                                       newlist-jexpr))
@@ -2642,6 +2626,7 @@
      as opposed to passing the expressions directly to the method call,
      is to accurately measure just the time of the call,
      without the time needed to compute the argument expressions."))
+  :guard-debug t
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
@@ -2653,69 +2638,174 @@
             ares-jexpr
             &) (atj-gen-avalue test.result "value" jvar-value-index))
        (current-time-jexpr (jexpr-smethod (jtype-class "System")
-                                  "currentTimeMillis"
-                                  nil))
-       (test-time-jexpr (jexpr-binary (jbinop-div)
-                                      (jexpr-paren
-                                       (jexpr-binary (jbinop-sub)
-                                                     (jexpr-name "endTime")
-                                                     (jexpr-name "startTime")))
-                                      (jexpr-literal (jliteral-floating 1000))))
+                                          "currentTimeMillis"
+                                          nil))
        ((mv shallow-arg-jblock shallow-arg-jvars)
         (if deep$
             (mv nil nil)
           (atj-gen-test-jmethod-aux aargs-jexprs 1)))
+       (n!=0-jexpr (jexpr-binary (jbinop-ne)
+                                 (jexpr-name "n")
+                                 (jexpr-literal-0)))
        (jmethod-body
         (append
          (jblock-imethod (jexpr-name "System.out")
                          "print"
                          (list (atj-gen-jstring
                                 (str::cat "Testing '" test.name "'..."))))
-         aargs-jblock
+         aargs-jblock ; build test.arguments
          (if deep$
              (jblock-locvar (jtype-array *atj-jtype-value*)
                             "functionArguments"
-                            (jexpr-newarray *atj-jtype-value*
-                                            aargs-jexprs))
-           shallow-arg-jblock)
-         ares-jblock
+                            (jexpr-newarray-init *atj-jtype-value*
+                                                 aargs-jexprs))
+           shallow-arg-jblock) ; assign to argument1, argument2, ...
+         ares-jblock ; build test.result
          (jblock-locvar *atj-jtype-value* "resultAcl2" ares-jexpr)
          (and deep$
               (jblock-locvar *atj-jtype-symbol*
                              "functionName"
                              (atj-gen-asymbol test.function)))
-         (jblock-locvar (jtype-long) "startTime" current-time-jexpr)
-         (jblock-locvar *atj-jtype-value*
-                        "resultJava"
-                        (if deep$
+         (jblock-locvar (jtype-boolean) "pass" (jexpr-literal
+                                                (jliteral-boolean t)))
+         (jblock-locvar (jtype-array (jtype-long))
+                        "times"
+                        (jexpr-cond n!=0-jexpr
+                                    (jexpr-newarray (jtype-long)
+                                                    (jexpr-name "n"))
+                                    (jexpr-literal (jliteral-null))))
+         (jblock-locvar (jtype-long) "minTime" (jexpr-literal-0))
+         (jblock-locvar (jtype-long) "maxTime" (jexpr-literal-0))
+         (jblock-locvar (jtype-long) "sumTime" (jexpr-literal-0))
+         (jblock-locvar (jtype-int) "i" (jexpr-literal-0))
+         (jblock-do
+          ;; body of do loop:
+          (append
+           (jblock-locvar (jtype-long) "startTime" current-time-jexpr)
+           (jblock-locvar *atj-jtype-value*
+                          "resultJava"
+                          (if deep$
+                              (jexpr-smethod (jtype-class java-class$)
+                                             "call"
+                                             (list
+                                              (jexpr-name "functionName")
+                                              (jexpr-name "functionArguments")))
                             (jexpr-smethod (jtype-class java-class$)
-                                           "call"
-                                           (list
-                                            (jexpr-name "functionName")
-                                            (jexpr-name "functionArguments")))
-                          (jexpr-smethod (jtype-class java-class$)
-                                         (atj-gen-shallow-afnname test.function
-                                                                  "")
-                                         (jexpr-name-list shallow-arg-jvars))))
-         (jblock-locvar (jtype-long) "endTime" current-time-jexpr)
-         (jblock-ifelse (jexpr-imethod (jexpr-name "resultAcl2")
-                                       "equals"
-                                       (list (jexpr-name "resultJava")))
+                                           (atj-gen-shallow-afnname
+                                            test.function "")
+                                           (jexpr-name-list
+                                            shallow-arg-jvars))))
+           (jblock-locvar (jtype-long) "endTime" current-time-jexpr)
+           (jblock-asg (jexpr-name "pass")
+                       (jexpr-binary (jbinop-logand)
+                                     (jexpr-name "pass")
+                                     (jexpr-imethod (jexpr-name "resultAcl2")
+                                                    "equals"
+                                                    (list (jexpr-name
+                                                           "resultJava")))))
+           (jblock-if n!=0-jexpr
+                      (append
+                       (jblock-locvar (jtype-long)
+                                      "time"
+                                      (jexpr-binary (jbinop-sub)
+                                                    (jexpr-name "endTime")
+                                                    (jexpr-name "startTime")))
+                       (jblock-asg (jexpr-array (jexpr-name "times")
+                                                (jexpr-name "i"))
+                                   (jexpr-name "time"))
+                       (jblock-asg (jexpr-name "sumTime")
+                                   (jexpr-binary (jbinop-add)
+                                                 (jexpr-name "sumTime")
+                                                 (jexpr-name "time")))
+                       (jblock-if (jexpr-binary (jbinop-logor)
+                                                (jexpr-binary (jbinop-eq)
+                                                              (jexpr-name "i")
+                                                              (jexpr-literal-0))
+                                                (jexpr-binary (jbinop-lt)
+                                                              (jexpr-name
+                                                               "time")
+                                                              (jexpr-name
+                                                               "minTime")))
+                                  (jblock-asg (jexpr-name "minTime")
+                                              (jexpr-name "time")))
+                       (jblock-if (jexpr-binary (jbinop-gt)
+                                                (jexpr-name "time")
+                                                (jexpr-name "maxTime"))
+                                  (jblock-asg (jexpr-name "maxTime")
+                                              (jexpr-name "time")))))
+           (jblock-expr (jexpr-unary (junop-preinc) (jexpr-name "i"))))
+          ;; test of do loop:
+          (jexpr-binary (jbinop-lt) (jexpr-name "i") (jexpr-name "n")))
+         (jblock-ifelse (jexpr-name "pass")
                         (jblock-imethod (jexpr-name "System.out")
                                         "println"
                                         (list (atj-gen-jstring " PASS")))
                         (append
-                         (jblock-asg-name "failures"
-                                          (jexpr-literal
-                                           (jliteral-boolean t)))
                          (jblock-imethod (jexpr-name "System.out")
                                          "println"
-                                         (list (atj-gen-jstring " FAIL")))))
-         (jblock-imethod (jexpr-name "System.out")
-                         "format"
-                         (list (jexpr-literal
-                                (jliteral-string "  Time: %.3f%n"))
-                               test-time-jexpr)))))
+                                         (list (atj-gen-jstring " FAIL")))
+                         (jblock-asg-name "failures"
+                                          (jexpr-literal
+                                           (jliteral-boolean t)))))
+         (jblock-if n!=0-jexpr
+                    (append
+                     (jblock-imethod (jexpr-name "System.out")
+                                     "println"
+                                     (list (jexpr-literal
+                                            (jliteral-string "  Times:"))))
+                     (jblock-for (jexpr-binary (jbinop-asg)
+                                               (jexpr-name "i")
+                                               (jexpr-literal-0))
+                                 (jexpr-binary (jbinop-lt)
+                                               (jexpr-name "i")
+                                               (jexpr-name "n"))
+                                 (jexpr-unary (junop-preinc)
+                                              (jexpr-name "i"))
+                                 (jblock-imethod
+                                  (jexpr-name "System.out")
+                                  "format"
+                                  (list (jexpr-literal
+                                         (jliteral-string "    %.3f%n"))
+                                        (jexpr-binary (jbinop-div)
+                                                      (jexpr-array
+                                                       (jexpr-name "times")
+                                                       (jexpr-name "i"))
+                                                      (jexpr-literal
+                                                       (jliteral-floating
+                                                        1000))))))
+                     (jblock-imethod
+                      (jexpr-name "System.out")
+                      "format"
+                      (list (jexpr-literal
+                             (jliteral-string "  Minimum: %.3f%n"))
+                            (jexpr-binary (jbinop-div)
+                                          (jexpr-name "minTime")
+                                          (jexpr-literal
+                                           (jliteral-floating 1000)))))
+                     (jblock-imethod
+                      (jexpr-name "System.out")
+                      "format"
+                      (list (jexpr-literal
+                             (jliteral-string "  Average: %.3f%n"))
+                            (jexpr-binary (jbinop-div)
+                                          (jexpr-binary (jbinop-div)
+                                                        (jexpr-name "sumTime")
+                                                        (jexpr-literal
+                                                         (jliteral-floating
+                                                          1000)))
+                                          (jexpr-name "n"))))
+                     (jblock-imethod
+                      (jexpr-name "System.out")
+                      "format"
+                      (list (jexpr-literal
+                             (jliteral-string "  Maximum: %.3f%n"))
+                            (jexpr-binary (jbinop-div)
+                                          (jexpr-name "maxTime")
+                                          (jexpr-literal
+                                           (jliteral-floating 1000)))))
+                     (jblock-imethod (jexpr-name "System.out")
+                                     "println"
+                                     nil))))))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -2725,7 +2815,9 @@
                   :strictfp? nil
                   :result (jresult-void)
                   :name jmethod-name
-                  :params nil
+                  :params (list (make-jparam :final? nil
+                                             :type (jtype-int)
+                                             :name "n"))
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body))
 
@@ -2778,7 +2870,7 @@
       nil
     (b* ((jmethod-name
           (atj-gen-test-jmethod-name (atj-test->name (car tests$))))
-         (first-jblock (jblock-method jmethod-name nil))
+         (first-jblock (jblock-method jmethod-name (list (jexpr-literal-1))))
          (rest-jblock (atj-gen-run-tests (cdr tests$))))
       (append first-jblock rest-jblock))))
 
@@ -2812,19 +2904,11 @@
        (exit0-jblock
         (jblock-smethod (jtype-class "System")
                         "exit"
-                        (list (jexpr-literal
-                               (make-jliteral-integer
-                                :value 0
-                                :long? nil
-                                :base (jintbase-decimal))))))
+                        (list (jexpr-literal-0))))
        (exit1-jblock
         (jblock-smethod (jtype-class "System")
                         "exit"
-                        (list (jexpr-literal
-                               (make-jliteral-integer
-                                :value 1
-                                :long? nil
-                                :base (jintbase-decimal))))))
+                        (list (jexpr-literal-1))))
        (if-jblock (jblock-ifelse (jexpr-name "failures")
                                  (append print-some-fail-jblock
                                          exit1-jblock)
