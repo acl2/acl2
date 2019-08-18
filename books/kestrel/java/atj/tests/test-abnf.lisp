@@ -2105,7 +2105,7 @@
 ; results in Java code whose test methods are too large to compile
 ; (they exceed the maximum size allowed by the JVM),
 ; because the contents of those files are built as lists of natural numbers.
-; Thus, for now we have a handwritten Java file to test the ABNF parser.
+; Thus, for now we have handwritten Java files to test the ABNF parser.
 
 (java::atj parse-grammar
            :deep t

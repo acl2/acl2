@@ -37,15 +37,14 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibDeepTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibShallowTests 1
 
 # test the ABNF parser:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     TestABNFDeep 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     TestABNFShallow 1 abnf.txt json.txt uri.txt http.txt imf.txt smtp.txt imap.txt
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G TestABNFDeep 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G TestABNFShallow 1
 
 # test AIJ's native implementations of ACL2 functions:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowTests
 
 # printed only if all the tests succeed:
-echo "" # empty line
+echo "" # blank line
 echo "All the ATJ tests have succeeded."
+echo "" # blank line
