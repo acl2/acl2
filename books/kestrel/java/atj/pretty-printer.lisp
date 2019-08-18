@@ -409,7 +409,7 @@
                       (if field.volatile? "volatile " "")
                       (print-jtype field.type)
                       field.name
-                      (print-jliteral field.init))
+                      (print-jexpr field.init))
                  indent-level)))
 
 (define print-jresult ((result jresultp))

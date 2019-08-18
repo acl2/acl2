@@ -2419,7 +2419,7 @@
                :volatile? nil
                :type (jtype-boolean)
                :name "initialized"
-               :init (jliteral-boolean nil)))
+               :init (jexpr-literal-false)))
 
 (define atj-gen-call-jmethod ()
   :returns (jmethod jmethodp)
@@ -2554,7 +2554,7 @@
                :volatile? nil
                :type (jtype-boolean)
                :name "failures"
-               :init (jliteral-boolean nil)))
+               :init (jexpr-literal-false)))
 
 (define atj-gen-test-jmethod-name ((test-name stringp))
   :returns (jmethod-name stringp)

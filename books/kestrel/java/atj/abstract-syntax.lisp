@@ -354,7 +354,7 @@
   :short "Build a Java expression consisting of the integer literal 1."
   (jexpr-literal-integer-decimal 1))
 
-(define jexpr-floating ((value natp))
+(define jexpr-literal-floating ((value natp))
   :returns (expr jexprp)
   :short "Build a Java expression consisting of a floating-point literal."
   (jexpr-literal (jliteral-floating value)))
@@ -546,7 +546,7 @@
    (volatile? bool)
    (type jtype)
    (name string)
-   (init jliteral))
+   (init jexpr))
   :pred jfieldp)
 
 (fty::deftagsum jresult
