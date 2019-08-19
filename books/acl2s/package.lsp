@@ -273,7 +273,9 @@
 
               defthm thm defconst in-package defun table
 
-
+              declare
+              xargs
+              acl2s::allp
               error warning warning! observation prove
               proof-builder event history summary proof-tree
               )
