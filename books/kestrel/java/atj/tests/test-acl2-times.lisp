@@ -18,10 +18,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file collects the ATJ tests in this directory
+; This file collects some of the ATJ tests in this directory
 ; and provides utilities to measure their execution times in the ACL2 shell.
 ; Some of these utilities should be moved to more general libraries,
 ; perhaps after making some of them a little more general.
+; These times are useful to compare with execution in Java.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

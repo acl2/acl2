@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Define the Fibonacci function.
+; Fibonacci function.
 
 (defun fib (n)
   (declare (xargs :guard (natp n)))
@@ -25,8 +25,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the Fibonacci function.
+; Tests for the Fibonacci function.
 
-(java::atj fib :deep t :java-class "FibDeep")
+(defconst *fib-tests*
+  '(("Fib0" (fib 0))
+    ("Fib1" (fib 1))
+    ("Fib10" (fib 10))
+    ("Fib20" (fib 20))
+    ("Fib30" (fib 30))))
 
-(java::atj fib :deep nil :java-class "FibShallow")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code for the Fibonacci function, with testing code.
+
+(java::atj fib
+           :deep t
+           :java-class "FibDeep"
+           :tests *fib-tests*)
+
+(java::atj fib
+           :deep nil
+           :java-class "FibShallow"
+           :tests *fib-tests*)
