@@ -17,7 +17,8 @@
 
 (include-book "truncate-rem")
 
-(include-book "mod-expt-fast")
+;; Commented out to avoid name clashes:
+;; (include-book "mod-expt-fast")
 
 (include-book "more-floor-mod")
 

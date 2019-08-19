@@ -5,4 +5,6 @@
 
 (include-book "bind-free/top")
 (include-book "floor-mod/floor-mod")
-(include-book "floor-mod/mod-expt-fast")
+
+;; Commented out to avoid name clashes:
+;; (include-book "floor-mod/mod-expt-fast")
