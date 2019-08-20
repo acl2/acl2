@@ -290,7 +290,7 @@
      The parameters and the fixtypes that were previously part of the "
     (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
-    "have been removed from that interface,
+    " have been removed from that interface,
      which now includes the domain parameters and the fixtypes
      from the new sub-library.")
 
