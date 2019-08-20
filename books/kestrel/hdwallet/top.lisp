@@ -13,8 +13,4 @@
 
 (include-book "wallet")
 
-; temporarily exclude the following from the manual
-; until some conflicts between libraries
-; (indirectly included by the following file)
-; are resolved:
-;; (include-book "wallet-executable")
+(include-book "wallet-executable")

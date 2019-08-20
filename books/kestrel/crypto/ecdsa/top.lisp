@@ -12,8 +12,7 @@
 
 (include-book "secp256k1-interface")
 
-;; TODO: Uncomment once name clashes are fixed:
-;; (include-book "secp256k1-attachment")
+(include-book "secp256k1-attachment")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

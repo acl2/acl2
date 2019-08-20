@@ -11,9 +11,7 @@
 
 (in-package "KECCAK")
 
-;; There is currently a conflict with loading the Keccak specification
-;; at the same time as all the xdoc definitions.
-;; (include-book "keccak")
+(include-book "keccak")
 
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
