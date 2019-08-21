@@ -217,6 +217,37 @@
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
 
    (xdoc::p
+    "A sub-library for elliptic curves has been added,
+     which currently contains all the secp256k1 domain parameters,
+     and fixtypes for secp256k1 field elements, points, and keys.
+     The parameters and the fixtypes that were previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
+    " have been removed from that interface,
+     which now includes the domain parameters and the fixtypes
+     from the new sub-library.")
+
+   (xdoc::p
+    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
+     has been added, which curently contains the secp256k1 signing interface,
+     which was previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface") ".")
+
+   (xdoc::p
+    "A sub-library for KECCAK / SHA-3 hash functions
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "keccak::keccak")
+
+   (xdoc::p
+    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
+     as specified by RFC 8018, and specialized to use HMAC SHA-512,
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
+
+   (xdoc::p
     "A macro @(tsee crypto::definterface-hash) has been added
      to introduce interfaces of hash functions.")
 
@@ -282,37 +313,6 @@
     (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
-
-   (xdoc::p
-    "A sub-library for elliptic curves has been added,
-     which currently contains all the secp256k1 domain parameters,
-     and fixtypes for secp256k1 field elements, points, and keys.
-     The parameters and the fixtypes that were previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
-                  "elliptic curve secp256k1 interface")
-    " have been removed from that interface,
-     which now includes the domain parameters and the fixtypes
-     from the new sub-library.")
-
-   (xdoc::p
-    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
-     has been added, which curently contains the secp256k1 signing interface,
-     which was previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
-                  "elliptic curve secp256k1 interface") ".")
-
-   (xdoc::p
-    "A sub-library for KECCAK / SHA-3 hash functions
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "keccak::keccak")
-
-   (xdoc::p
-    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
-     as specified by RFC 8018, and specialized to use HMAC SHA-512,
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
    (xdoc::p
     "Executable attachments have been added for
