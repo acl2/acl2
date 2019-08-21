@@ -152,10 +152,8 @@ odd:     (not recognizer)
 even:    (not recognizer)
 z:       (not recognizer)
 integer: rational
-neg-ratio: non-pos-ratio, non-pos-rational
-pos-ratio: non-neg-ratio, non-neg-rational
-non-neg-ratio: ratio
-non-pos-ratio: ratio
+neg-ratio: non-pos-rational
+pos-ratio: non-neg-rational
 ratio: rational
 neg-rational: non-pos-rational
 pos-rational: non-neg-rational
@@ -294,7 +292,7 @@ so instead I use computed hints.
 
 (in-theory
  (disable negp posp natp non-pos-integerp
-          neg-ratiop pos-ratiop non-neg-ratiop non-pos-ratiop ratiop
+          neg-ratiop pos-ratiop ratiop
           neg-rationalp pos-rationalp non-neg-rationalp
           non-pos-rationalp))
 
@@ -686,13 +684,20 @@ Useful for testing defunc/definec errors
  This may be useful. I started with this, but used the above rule
  instead.
 
- (defthm exp-len
+ (defthm exp-len1
    (implies (and (syntaxp (quotep c))
                  (syntaxp (< (second c) 100))
  		 (posp c)
  		 (<= c (len x)))
-	    (and (<= (1- c) (len (cdr x)))
-		 x))
+            (<= (1- c) (len (cdr x))))
+   :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
+
+ (defthm exp-len2
+   (implies (and (syntaxp (quotep c))
+                 (syntaxp (< (second c) 100))
+ 		 (posp c)
+ 		 (<= c (len x)))
+	    x)
    :rule-classes ((:forward-chaining :trigger-terms ((< (len x) c)))))
 
 |#
