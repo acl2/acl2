@@ -203,6 +203,23 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Arithmetic-3")
+
+   (xdoc::p "The inclusion of @('arithmetic-3/floor-mod/mod-expt-fast') in
+   @('arithmetic-3/top') has been commented out to prevent clashes with
+   @('arithmetic-5').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arithmetic-5")
+
+   (xdoc::p "The inclusion of @('arithmetic-5/lib/floor-mod/mod-expt-fast') in
+   @('arithmetic-5/lib/floor-mod/top'), which is in turn included by
+   @('arithmetic-5/top'), has been commented out to prevent clashes with
+   @('arithmetic-3').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
