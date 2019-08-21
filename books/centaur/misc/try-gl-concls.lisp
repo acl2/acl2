@@ -61,14 +61,18 @@
 (set-irrelevant-formals-ok t)
 (program)
 
-(defun try-gl-concl-1 (name hyps concl g-bindings kwd-alist state)
+(defun try-gl-concl-1 (name hyps concl g-bindings evisc-tuple kwd-alist state)
 
   (b* ((form `(gl::gl-thm ,name
                           :hyp ,hyps
                           :concl ,concl
                           :g-bindings ,g-bindings
                           ,@kwd-alist))
-       (- (cw "~%Trying this form: ~p0~%" form))
+       (state (fms "~%TRY-GL-CONCL: trying this form: ~p0~%"
+                   (list (cons #\0 form))
+                   (proofs-co state)
+                   state
+                   evisc-tuple))
        ;; Try the new event.
        ((mv trans-eval-erp stobjs-out/replaced-val state)
         (trans-eval form 'try-gl-concl-1 state t))
@@ -79,23 +83,28 @@
                 (car replaced-val))))
     (mv err state)))
 
-(defun try-gl-concls-aux (name hyps concls g-bindings kwd-alist ok-concls state)
+(defun try-gl-concls-aux
+  (name hyps concls g-bindings evisc-tuple quit-on-success kwd-alist ok-concls state)
   (if (endp concls)
       (value ok-concls)
     (b* ((this-concl (car concls))
          (rest-concl (cdr concls))
          ((mv err state)
-          (try-gl-concl-1 name hyps this-concl g-bindings kwd-alist state))
-         ((when (not err))
-          ;; gl-thm succeeded, save concl in ok-concls and recur.
-          (try-gl-concls-aux
-           name hyps rest-concl g-bindings kwd-alist (cons this-concl ok-concls) state)))
+          (try-gl-concl-1 name hyps this-concl g-bindings evisc-tuple kwd-alist state))
+         ((when (not err))         
+          ;; gl-thm succeeded.
+          ;; If quit-on-success, return this-concl.
+          ;; Otherwise, save concl in ok-concls and recur.
+          (if quit-on-success
+              (value this-concl)
+            (try-gl-concls-aux
+             name hyps rest-concl g-bindings quit-on-success evisc-tuple kwd-alist (cons this-concl ok-concls) state))))
       ;; gl-thm failed, just recur.
       (try-gl-concls-aux
-       name hyps rest-concl g-bindings kwd-alist ok-concls state))))
+       name hyps rest-concl g-bindings evisc-tuple quit-on-success kwd-alist ok-concls state))))
 
 (defconst *try-gl-concls-permissible-keywords*
-  '(:hyp :concls :g-bindings :rest))
+  '(:hyp :concls :g-bindings :evisc-tuple :quit-on-success :rest))
 
 (defun try-gl-concls-fn (name args state)
   (b* (((mv args-alist rest)
@@ -111,8 +120,10 @@
         (er soft 'try-gl-concls
             "Non-keyword arg(s) to TRY-GL-CONCLS: ~x0~%"
             rest))
-       (hyp          (std::getarg :hyp          t args-alist))
-       (concls       (std::getarg :concls     nil args-alist))
+       (hyp             (std::getarg :hyp               t args-alist))
+       (concls          (std::getarg :concls          nil args-alist))
+       (quit-on-success (std::getarg :quit-on-success nil args-alist))
+       (evisc-tuple     (std::getarg :evisc-tuple     nil args-alist))
        ((when (not (true-list-listp concls)))
         (er soft 'try-gl-concls
             "CONCLS must be a list of terms. Instead, it is ~p0.~%"
@@ -120,11 +131,24 @@
        (g-bindings   (std::getarg :g-bindings nil args-alist))
        (g-rest-alist (std::getarg :rest       nil args-alist))
        ((mv erp ok-concls state)
-        (try-gl-concls-aux name hyp concls g-bindings g-rest-alist nil state))
-       (- (cw "~%Hyp:~%~p0~%" hyp))
-       (- (if ok-concls
-              (cw "~%Successful conclusion(s):~%")
-            (cw "~%No conclusion was successful!~%"))))
+        (try-gl-concls-aux
+         name hyp concls g-bindings evisc-tuple quit-on-success g-rest-alist nil state))
+       (state (fms "~%TRY-GL-CONCL: Hyp: ~p0~%"
+                   (list (cons #\0 hyp))
+                   (proofs-co state)
+                   state
+                   evisc-tuple))
+       (state (if ok-concls
+                  (fms "~%TRY-GL-CONCL: Conclusion(s) successful!~%"
+                       nil
+                       (proofs-co state)
+                       state
+                       evisc-tuple)
+                (fms "~%TRY-GL-CONCL: No conclusion was successful!~%"
+                     nil
+                     (proofs-co state)
+                     state
+                     evisc-tuple))))
     (mv erp ok-concls state)))
 
 (defmacro try-gl-concls (name &rest args)
@@ -136,7 +160,7 @@
 
 (try-gl-concls test
                :hyp (and (unsigned-byte-p 1 a) (unsigned-byte-p 1 b))
-               :concls (not (equal (+ a b) 0))
+               :concls ((not (equal (+ a b) 0)))
                :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
 
 (try-gl-concls test
@@ -149,11 +173,13 @@
 
 (try-gl-concls test
                :hyp (and (unsigned-byte-p 1 a) (unsigned-byte-p 1 b))
-               :concls ((not (equal (+ a b) 0))
+               :concls ((not (equal (+ a b) 3))
+                        (not (equal (+ a b) 0))
                         (not (equal (+ a b) 1))
-                        (not (equal (+ a b) 2))
-                        (not (equal (+ a b) 3)))
-               :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8))))
+                        (not (equal (+ a b) 2)))               
+               :g-bindings (gl::auto-bindings (:mix (:nat a 8) (:nat b 8)))
+               :quit-on-success t               
+               :evisc-tuple (evisc-tuple 3 4 nil nil))
 
 ||#
 
