@@ -25,7 +25,7 @@
   (if (mbe :logic (or (endp weights)
                       (endp old-results))
            :exec (endp weights))
-    nil
+      nil
     (let ((weight (car weights)))
       (cons (+ (* weight (car old-results))
                (rem x weight))
@@ -518,11 +518,12 @@
               (2+-weights (scale weights 2)))
          (weighted-split-nat1 2+-weights (product-list 2+-weights) x))))
 
-(local ; weighted-split-nat will later be automatically rewritten, so these
-       ; become useless 
- (defthm weighted-split-nat--len
-   (equal (len (weighted-split-nat weights x))
-          (max 1 (len weights)))))
+; Pete 2019-08-20: not useless; needed in base.lisp
+;(local ; weighted-split-nat will later be automatically rewritten, so these
+;       ; become useless 
+(defthm weighted-split-nat--len
+  (equal (len (weighted-split-nat weights x))
+         (max 1 (len weights)))) ;)
 
 (local
  (defthm weighted-split-nat--consp
