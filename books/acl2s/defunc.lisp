@@ -935,6 +935,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             name formals ic oc decls body kwd-alist wrld make-staticp d? pkg))
          (contract-defthm
           (make-contract-ev name formals ic oc kwd-alist make-staticp d? pkg wrld))
+         (contract-defthm
+          (or contract-defthm
+              '(encapsulate
+                ()
+                (value-triple :trivial-contract-thm))))
          (verify-guards-ev (make-verify-guards-ev name kwd-alist))
          (timeout-secs (get1 :timeout kwd-alist))
          ;; PETE: make sure this makes sense
