@@ -203,6 +203,23 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Arithmetic-3")
+
+   (xdoc::p "The inclusion of @('arithmetic-3/floor-mod/mod-expt-fast') in
+   @('arithmetic-3/top') has been commented out to prevent clashes with
+   @('arithmetic-5').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arithmetic-5")
+
+   (xdoc::p "The inclusion of @('arithmetic-5/lib/floor-mod/mod-expt-fast') in
+   @('arithmetic-5/lib/floor-mod/top'), which is in turn included by
+   @('arithmetic-5/top'), has been commented out to prevent clashes with
+   @('arithmetic-3').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
@@ -215,6 +232,48 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
+
+   (xdoc::p
+    "A sub-library for elliptic curves has been added,
+     which currently contains all the secp256k1 domain parameters,
+     and fixtypes for secp256k1 field elements, points, and keys.
+     The parameters and the fixtypes that were previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
+    " have been removed from that interface,
+     which now includes the domain parameters and the fixtypes
+     from the new sub-library.")
+
+   (xdoc::p
+    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
+     has been added, which curently contains the secp256k1 signing interface,
+     which was previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface") ".")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for the
+    SHA-2 hash functions: SHA-224, SHA-256, SHA-384, and SHA-512.  The new
+    sub-library is in @('[books]/kestrel/crypto/sha-2/').")
+
+   (xdoc::p
+    "A sub-library for KECCAK / SHA-3 hash functions
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "keccak::keccak")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for
+    HMAC-SHA-256 and HMAC-SHA-512, i.e., for the HMAC keyed-hash message
+    authentication code, using either SHA-256 or SHA-512 as the underlying hash
+    function.  The new sub-library is in @('[books]/kestrel/crypto/hmac/').")
+
+   (xdoc::p
+    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
+     as specified by RFC 8018, and specialized to use HMAC SHA-512,
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
    (xdoc::p
     "A macro @(tsee crypto::definterface-hash) has been added
@@ -282,37 +341,6 @@
     (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
-
-   (xdoc::p
-    "A sub-library for elliptic curves has been added,
-     which currently contains all the secp256k1 domain parameters,
-     and fixtypes for secp256k1 field elements, points, and keys.
-     The parameters and the fixtypes that were previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
-                  "elliptic curve secp256k1 interface")
-    "have been removed from that interface,
-     which now includes the domain parameters and the fixtypes
-     from the new sub-library.")
-
-   (xdoc::p
-    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
-     has been added, which curently contains the secp256k1 signing interface,
-     which was previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
-                  "elliptic curve secp256k1 interface") ".")
-
-   (xdoc::p
-    "A sub-library for KECCAK / SHA-3 hash functions
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "keccak::keccak")
-
-   (xdoc::p
-    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
-     as specified by RFC 8018, and specialized to use HMAC SHA-512,
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
    (xdoc::p
     "Executable attachments have been added for
