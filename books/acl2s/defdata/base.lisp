@@ -41,6 +41,7 @@
 
 (include-book "var-book" :ttags :all)
 
+
 ;; (make-event ;TODO make sure to get this working
 ;;  (er-progn
 ;;   (defdata::set-acl2s-defdata-verbose t)
@@ -253,8 +254,6 @@
   (nth (mod n 2) *boolean-values*))
 ;(define-enumeration-type boolean '(t nil))
 
-
-
 ;-------- define some enumerators --------;
 
 (defun nth-nat-builtin (n)
@@ -342,7 +341,7 @@
 
 (defun nth-non-pos-integer-builtin (n)
   (declare (xargs :guard (natp n)))
-  (+ 1 n))
+  (- n))
 
 ;;integers
 (defun nth-integer-builtin (n)
@@ -357,7 +356,8 @@
 (defun nth-integer-between (n lo hi)
   (declare (xargs :guard (and (natp n)
                               (integerp lo)
-                              (integerp hi))))
+                              (integerp hi)
+                              (<= lo hi))))
   (let ((range (nfix (- hi lo))))
     (+ lo (mod n (1+ range)))))
 
@@ -367,7 +367,7 @@
     (1+ (* (- (1+ i)) 2))
     (* i 2)))
 
-#||
+#|
 (encapsulate nil
   (local 
    (include-book "arithmetic-5/top" :dir :system))
@@ -406,17 +406,184 @@
        (not (integerp x))
        (< x 0)))
 
-(defun nth-neg-ratio-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (if (or (zp n)
-          (<= n 2))
-      -1/2
-    (let* ((two-n-list (defdata::split-nat 2 n))
-           (alpha  (car two-n-list))
-           (beta (cadr two-n-list))
-           (den (+ 2 alpha))
-           (num (+ (floor beta den) beta)))
-      (- (/ num den)))))
+(defun base-defdata-insert (e l)
+  (declare (xargs :guard (and (natp e) (nat-listp l))))
+  (cond ((endp l) (list e))
+        ((<= e (car l)) (cons e l))
+        (t (cons (car l) (base-defdata-insert e (cdr l))))))
+
+(defun base-defdata-isort (l)
+  (declare (xargs :guard (nat-listp l)))
+  (if (endp l)
+      l
+    (base-defdata-insert (car l) (base-defdata-isort (cdr l)))))
+
+#|
+ (defthm base-defdata-isort-listp
+   (implies (nat-listp l)
+            (nat-listp (base-defdata-isort l)))
+   :rule-classes ((:forward-chaining) (:rewrite)))
+
+  (defthm len-base-defdata-isort
+   (equal (len (base-defdata-isort l)) (len l))
+   :rule-classes ((:forward-chaining :trigger-terms ((base-defdata-isort l))) (:rewrite)))
+
+ (defthm len-base-defdata-isort1
+   (implies (and (nat-listp l) l) (base-defdata-isort l))
+   :rule-classes ((:forward-chaining) (:rewrite)))
+
+ (defthm len-base-defdata-isort2
+   (implies (and (nat-listp l) (cdr l)) (cdr (base-defdata-isort l)))
+   :rule-classes ((:forward-chaining) (:rewrite)))
+
+ (defthm len-base-defdata-isort3
+   (implies (and (nat-listp l) (cddr l)) (cddr (base-defdata-isort l)))
+   :rule-classes ((:forward-chaining) (:rewrite)))
+  
+ (defthm weighted-split-nat--nat-listp-fc
+   (nat-listp (defdata::weighted-split-nat weights x))
+   :rule-classes ((:forward-chaining
+                   :trigger-terms
+                   ((defdata::weighted-split-nat weights x)))))
+
+(skip-proofs
+ (defthm len-wsn1
+   (implies (and (nat-listp l) l (natp n))
+            (defdata::weighted-split-nat l n))
+   :rule-classes ((:forward-chaining) (:rewrite))))
+
+(skip-proofs
+ (defthm len-wsn2
+   (implies (and (nat-listp l) (cdr l) (natp n))
+            (cdr (defdata::weighted-split-nat l n)))
+   :rule-classes ((:forward-chaining) (:rewrite))))
+
+(skip-proofs
+ (defthm len-wsn3
+   (implies (and (nat-listp l) (cddr l) (natp n))
+            (cddr (defdata::weighted-split-nat l n)))
+   :rule-classes ((:forward-chaining) (:rewrite))))
+
+(defthm base-defdata-isort-elements1
+  (implies (and (nat-listp l)
+                l)
+           (natp (car l)))
+  :rule-classes ((:rewrite)
+                 (:forward-chaining :trigger-terms ((car l)))))
+                                                     
+(defthm base-defdata-isort-elements2
+  (implies (and (nat-listp l)
+                (cdr l))
+           (natp (cadr l)))
+  :rule-classes ((:rewrite)
+                 (:forward-chaining :trigger-terms ((cadr l)))))
+
+(defthm base-defdata-isort-elements3
+  (implies (and (nat-listp l)
+                (cddr l))
+           (natp (caddr l)))
+  :rule-classes ((:rewrite)
+                 (:forward-chaining :trigger-terms ((caddr l)))))
+
+(defthm wsn-elements1
+  (implies (and (nat-listp l)
+                l
+                (natp n))
+           (natp (car )))
+  :rule-classes ((:rewrite)
+                 (:forward-chaining :trigger-terms ((car l)))))
+                                                     
+(defthm wsn-elements2
+  (implies (and (nat-listp l)
+                (cdr l))
+           (natp (cadr l)))
+  :rule-classes ((:rewrite)
+                 (:forward-chaining :trigger-terms ((cadr l)))))
+
+(defthm wsn-elements3
+  (implies (and (nat-listp l)
+                (cddr l))
+           (natp (caddr l)))
+  :rule-classes ((:rewrite)
+                 (:forward-chaining :trigger-terms ((caddr l)))))
+
+#|
+(i-am-here) ; proving stuff about weighted-split-nat is going to be a pain.
+(thm
+  (implies (and (posp k)
+                (natp n))
+           (nat-listp (defdata::split-nat k n))))
+
+(thm (implies (natp k)
+              (equal (len (acl2::repeat k n))
+                     k)))
+
+(skip-proofs
+(defthm weighted-split-nat--len
+  (equal (len (defdata::weighted-split-nat weights x))
+         (max 1 (len weights)))))
+
+(thm 
+  (EQUAL (LEN (DEFDATA::WEIGHTED-SPLIT-NAT l n))
+         (max 1 (len l)))
+  :hints (("goal" :in-theory (enable defdata::weighted-split-nat)))))
+
+
+(thm
+  (implies (posp k)
+           (equal (len (defdata::split-nat k n)) k)))
+|#
+
+(local
+ (defthm natp-implies-acl2-numberp
+  (implies (natp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+
+(defthm posp-implies-acl2-numberp
+  (implies (posp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+ 
+(defthm integerp-implies-acl2-numberp
+  (implies (integerp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+
+(defthm rationalp-implies-acl2-numberp2
+  (implies (rationalp x)
+           (acl2-numberp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+
+(defthm natp-implies-rationalp
+  (implies (natp x)
+           (rationalp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+
+(defthm posp-implies-rationalp
+  (implies (posp x)
+           (rationalp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+
+(defthm integerp-implies-rationalp
+  (implies (integerp x)
+           (rationalp x))
+  :rule-classes ((:rewrite) (:forward-chaining)))
+)
+
+(defthm split-nat-len
+  (implies (and (posp k)
+                (natp n))
+           (equal (len (defdata::split-nat k n)) k))
+  :rule-classes ((:forward-chaining
+                  :trigger-terms ((defdata::split-nat k n)))))
+
+(in-theory (enable defdata::nthcdr-weighted-split-nat defdata::split-nat))
+(in-theory (disable
+            DEFDATA::WEIGHTED-SPLIT-NAT--TO--NTHCDR-WEIGHTED-SPLIT-NAT
+;            defdata::split-nat
+            ))
+|#
 
 (defun pos-ratiop (x)
   (declare (xargs :guard t))
@@ -425,16 +592,23 @@
        (> x 0)))
 
 (defun nth-pos-ratio-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (if (or (zp n)
-          (<= n 2))
-      1/2
-    (let* ((two-n-list (defdata::split-nat 2 n))
-           (alpha  (car two-n-list))
-           (beta (cadr two-n-list))
-           (den (+ 2 alpha))
-           (num (+ (floor beta den) beta)))
-      (/ num den))))
+  (declare (xargs :guard (natp n) :verify-guards nil))
+  (let* ((two-n-list (base-defdata-isort (defdata::split-nat 3 n)))
+         (a (first two-n-list))
+         (b (1+ (second two-n-list)))
+         (c (1+ (third two-n-list)))
+         (c (if (< b c) c (1+ c))))
+    (+ a (/ b c))))
+
+(defun nth-neg-ratio-builtin (n)
+  (declare (xargs :guard (natp n) :verify-guards nil))
+  (- (nth-pos-ratio-builtin n)))
+
+#|
+
+Notice that this is the same as pos-ratio, since
+a ratio can't be an integer! So, I'm removing
+this as a type.
 
 (defun non-neg-ratiop (x)
   (declare (xargs :guard t))
@@ -442,17 +616,13 @@
        (not (integerp x))
        (>= x 0)))
 
-(defun nth-non-neg-ratio-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (cond
-   ((zp n) 0)
-   ((<= n 2) 1/2)
-   (t (let* ((two-n-list (defdata::split-nat 2 n))
-             (alpha  (car two-n-list))
-             (beta (cadr two-n-list))
-             (den (+ 2 alpha))
-             (num (+ (floor beta den) beta)))
-        (/ num den)))))
+|#
+
+#|
+
+Notice that this is the same as neg-ratio, since a 
+ratio can't be an integer! So, I'm removing this 
+as a type.
 
 (defun non-pos-ratiop (x)
   (declare (xargs :guard t))
@@ -461,16 +631,11 @@
        (<= x 0)))
 
 (defun nth-non-pos-ratio-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (cond
-   ((zp n) 0)
-   ((<= n 2) -1/2)
-   (t (let* ((two-n-list (defdata::split-nat 2 n))
-             (alpha  (car two-n-list))
-             (beta (cadr two-n-list))
-             (den (+ 2 alpha))
-             (num (+ (floor beta den) beta)))
-        (- (/ num den))))))
+  (declare (xargs :guard (natp n) :verify-guards nil))
+  (if (zp n)
+      0
+    (nth-neg-ratio-builtin n)))
+|#
 
 ;(defdata rat (oneof 0 pos-ratio neg-ratio))
 ;DOESNT WORK so pos/neg ratio are not consistent types ;TODO
@@ -528,7 +693,7 @@
 (defun nth-non-pos-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (* -1 (nth-nat-builtin (car two-n-list))))
+         (num (nth-neg-builtin (car two-n-list)))
          (den (nth-pos-builtin (cadr two-n-list))))
     (/ num den)))
 
@@ -550,13 +715,13 @@
 (defun nth-rational-between (n lo hi);inclusive
   (declare (xargs :guard (and (natp n)
                               (rationalp lo)
-                              (rationalp hi))))
-
+                              (rationalp hi)
+                              (<= lo hi))))
   (let* ((two-n-list (defdata::split-nat 2 n))
          (den (nth-pos-builtin (car two-n-list)))
-         (num (nth-integer-between (cadr two-n-list) 0 (1+ den)))
+         (num (nth-integer-between (cadr two-n-list) 0 den))
          (range (- hi lo)))
-    (+ lo (* (/ num den) range))))       
+    (+ lo (* (/ num den) range))))
 
 (defun nth-complex-rational-builtin (n)
   (declare (xargs :guard (natp n)))
@@ -566,7 +731,11 @@
     (complex rpart ipart)))
 
 (defun nth-complex-rational-between (n lo hi)
-  (declare (xargs :guard (and (natp n) (complex/complex-rationalp lo) (complex/complex-rationalp hi))))
+  (declare (xargs :guard (and (natp n)
+                              (complex/complex-rationalp lo)
+                              (complex/complex-rationalp hi)
+                              (<= (realpart lo) (realpart hi))
+                              (<= (imagpart lo) (imagpart hi)))))
   (b* ((rlo (realpart lo))
        (rhi (realpart hi))
        (ilo (imagpart lo))
@@ -752,15 +921,25 @@
                       nth-pos-ratio-builtin
                       pos-ratiop)
 
+#|
+
+Same as pos-ratio
+
 (register-custom-type non-neg-ratio
                       t
                       nth-non-neg-ratio-builtin
                       non-neg-ratiop)
+|#
+
+#|
+
+Same as neg-ratio
 
 (register-custom-type non-pos-ratio
                       t
                       nth-non-pos-ratio-builtin
                       non-pos-ratiop)
+|#
 
 (defdata ratio (oneof pos-ratio neg-ratio)) 
 
@@ -784,9 +963,20 @@
                       nth-non-pos-rational-builtin
                       non-pos-rationalp)
 
-(register-custom-type rational t nth-rational-builtin  rationalp )
-(register-custom-type complex-rational t nth-complex-rational-builtin  complex-rationalp )
-(register-custom-type acl2-number t nth-acl2-number-builtin  acl2-numberp )
+(register-custom-type rational
+                      t
+                      nth-rational-builtin
+                      rationalp)
+
+(register-custom-type complex-rational
+                      t
+                      nth-complex-rational-builtin
+                      complex-rationalp)
+
+(register-custom-type acl2-number
+                      t
+                      nth-acl2-number-builtin
+                      acl2-numberp)
 
 (defconst *number-testing-limit* 1000)
 
@@ -817,27 +1007,31 @@
     (nth-integer-builtin n-small)))
 
 (defun nth-neg-ratio-testing (n)
-  (declare (xargs :guard (natp n)))
+  (declare (xargs :guard (natp n) :verify-guards nil))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-neg-ratio-builtin n-small)))
 
 (defun nth-pos-ratio-testing (n)
-  (declare (xargs :guard (natp n)))
+  (declare (xargs :guard (natp n) :verify-guards nil))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-pos-ratio-builtin n-small)))
 
+#|
+
+No longer needed.
 (defun nth-non-neg-ratio-testing (n)
-  (declare (xargs :guard (natp n)))
+  (declare (xargs :guard (natp n) :verify-guards nil))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-non-neg-ratio-builtin n-small)))
 
 (defun nth-non-pos-ratio-testing (n)
-  (declare (xargs :guard (natp n)))
+  (declare (xargs :guard (natp n) :verify-guards nil))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-non-pos-ratio-builtin n-small)))
+|#
 
 (defun nth-ratio-testing (n)
-  (declare (xargs :guard (natp n) :mode :program))
+  (declare (xargs :guard (natp n) :verify-guards nil :mode :program))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-ratio-builtin n-small)))
 
@@ -1000,6 +1194,8 @@
 
 (defdata-subtype-strict integer rational)
 
+#|
+No longer defined
 (defdata-subtype-strict neg-ratio non-pos-ratio)
 (defdata-subtype-strict neg-ratio non-pos-rational)
 
@@ -1008,6 +1204,7 @@
 
 (defdata-subtype-strict non-neg-ratio ratio)
 (defdata-subtype-strict non-pos-ratio ratio)
+|#
 
 (defdata-subtype-strict ratio rational)
   
