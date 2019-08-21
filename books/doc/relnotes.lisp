@@ -235,10 +235,21 @@
                   "elliptic curve secp256k1 interface") ".")
 
    (xdoc::p
+    "A sub-library has been added that includes formal specifications for the
+    SHA-2 hash functions: SHA-224, SHA-256, SHA-384, and SHA-512.  The new
+    sub-library is in @('[books]/kestrel/crypto/sha-2/').")
+
+   (xdoc::p
     "A sub-library for KECCAK / SHA-3 hash functions
      has been added.")
    ;; xdoc to be added later
    ;; (xdoc::seeurl "keccak::keccak")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for
+    HMAC-SHA-256 and HMAC-SHA-512, i.e., for the HMAC keyed-hash message
+    authentication code, using either SHA-256 or SHA-512 as the underlying hash
+    function.  The new sub-library is in @('[books]/kestrel/crypto/hmac/').")
 
    (xdoc::p
     "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
