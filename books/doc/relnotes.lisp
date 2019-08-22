@@ -142,6 +142,29 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Arithmetic-light library")
+
+   (xdoc::p "The @('[books]/kestrel/arithmetic-light') directory contains a
+   library about arithmetic that aims to be as lightweight as possible.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV (bit vector) library")
+
+   (xdoc::p "The @('[books]/kestrel/bv') directory contains a formalization of
+   bit vectors as natural numbers that underlies several tools developed by
+   Kestrel researchers.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV-Lists library")
+
+   (xdoc::p "The @('[books]/kestrel/bv-lists') directory contains a library
+   about lists of bit vectors, including packing, unpacking, and conversions
+   between lists of bits and lists of bytes.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Centaur meta-reasoning library")
 
    (xdoc::p "The @('centaur/meta') directory contains various new books focused
@@ -164,6 +187,29 @@
     (xdoc::seeurl "crypto::cryptography" "cryptographic") ", "
     (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin") ", and "
     (xdoc::seeurl "ethereum::ethereum" "Ethereum") " libraries.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Library-wrappers library")
+
+   (xdoc::p "The @('[books]/kestrel/library-wrappers') directory contains books
+   that aim to improve other libraries by including them and then disabling
+   or replacing rules that may be problematic.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Lists-light library")
+
+   (xdoc::p "The @('[books]/kestrel/lists-light') directory contains a
+   library about lists that aims to be as lightweight as possible.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Prime-fields library")
+
+   (xdoc::p "The @('[books]/kestrel/prime-fields') directory contains a
+   formalization of prime fields and associated operations.  A prime field is a
+   finite field consisting of the integers modulo some prime p.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,6 +320,11 @@
      has been added.")
    ;; xdoc to be added later
    ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for
+    several common padding operations used in cryptography.  The new
+    sub-library is in @('[books]/kestrel/crypto/padding/').")
 
    (xdoc::p
     "A macro @(tsee crypto::definterface-hash) has been added
@@ -441,6 +492,19 @@
    (xdoc::p
     "Some of the native Java implementations of the ACL2 primitive functions
      have been optimized.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Kestrel Utilities")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/smaller-termp'), contains
+     a utility to compare the sizes of terms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/equal-of-booleans'), contains
+     rules to break an equality of two booleans into the equivalent conjunction
+     of two implications.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
