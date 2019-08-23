@@ -33,6 +33,7 @@
 (include-book "copying")
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "std/util/termhints" :dir :system)
+(include-book "transform-stub")
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -163,37 +164,7 @@
              (equal (len new-bitarr) (num-fanins aignet)))))
 
 
-(encapsulate
-  (((aignet-cube-sat-transform aignet * state) => (mv aignet state)
-    :guard t :formals (aignet config state)))
 
-  (local (define aignet-cube-sat-transform (aignet config state)
-           :returns (mv new-aignet new-state)
-           (Declare (ignore config))
-           (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                             :exec aignet)))
-             (mv aignet state))))
-
-  (local (in-theory (enable aignet-cube-sat-transform)))
-
-  (defret comb-equiv-of-<fn>
-    (comb-equiv new-aignet
-                aignet))
-
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet)
-           (stype-count :pi aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet)
-           (stype-count :po aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet)
-           (stype-count :reg aignet)))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state) (w state))))
 
 
 (define aignet-copy-dfs-list ((lits lit-listp)
@@ -757,8 +728,8 @@
 ;;                                     OUTS-COMB-EQUIV-IMPLIES-EQUAL-OUTPUT-EVAL-4)))))
 ;;     :rule-classes nil)
 
-;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-cube-sat-transform
-;;     (b* ((aignet2 (aignet-cube-sat-transform aignet config)))
+;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-comb-transform-stub
+;;     (b* ((aignet2 (aignet-comb-transform-stub aignet config)))
 ;;       (equal (aignet-eval-conjunction
 ;;               (aignet-outputs->cube n aignet2 nil)
 ;;               invals regvals aignet2)
@@ -766,7 +737,7 @@
 ;;               (aignet-outputs->cube n aignet nil)
 ;;               invals regvals aignet)))
 ;;     :hints (("goal" :use ((:instance aignet-eval-conjunction-of-aignet-outputs->cube-under-comb-equiv
-;;                            (aignet (aignet-cube-sat-transform aignet config))
+;;                            (aignet (aignet-comb-transform-stub aignet config))
 ;;                            (aignet2 aignet))))))
 
 ;;   (local (fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (nthcdr n x) x
@@ -931,7 +902,7 @@
         ;; 
         (mv status bitarr state aignet2 vals))
        (aignet2 (aignet-copy-with-conjoined-output cube aignet aignet2))
-       ((mv aignet2 state) (aignet-cube-sat-transform aignet2 xform-config state))
+       ((mv aignet2 state) (aignet-comb-transform-stub aignet2 xform-config state))
        (new-cube (list (outnum->fanin 0 aignet2)))
        ((acl2::hintcontext :sat))
        ((mv status vals)
