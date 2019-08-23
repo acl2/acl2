@@ -310,20 +310,3 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
 (defmacro defenum (name members &rest keys)
   `(make-event (defenum-fn ',name ',members ',keys state)))
-
-
-;; Primitive tests
-(local
- (encapsulate
-   ()
-   (defenum day-p
-     (:monday :tuesday :wednesday :thursday :friday :saturday :sunday))
-
-   (defenum chartest-p
-     (#\a #\b #\c))
-
-   (defenum strsymtest-p
-     ("foo" "bar" foo bar))
-
-   (defenum universal-ts-test-p
-     (0 1 -1 1/2 -1/2 #c(3 4) nil t foo (1 . 2) (1) "foo" #\a))))
