@@ -7,7 +7,9 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 ;; Note: This book just gathers in one place all ACL2 books
-;; that need to be certified for acl2s-mode to be used in emacs.
+;; that should be certified to build ACL2s.
+
+;; Books ACL2s depends on.
 (in-package "ACL2")
 
 (include-book "misc/expander" :dir :system)
@@ -53,3 +55,4 @@
 ;;         (include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all)
 ;;         (include-book "centaur/satlink/check-config" :dir :system))
 ;;    '(value-triple :invisible)))
+
