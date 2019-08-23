@@ -127,18 +127,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Centaur meta-reasoning library")
-
-   (xdoc::p "The @('centaur/meta') directory contains various new books focused
-     on meta-reasoning, differing from previous efforts in their use of
-     @('clause-processors/pseudo-term-fty.lisp') to treat pseudo-terms as a
-     sum-of-products type.  Among other things, this directory contains an
-     unconditional rewriter, a let-abstraction clause processor, and a clause
-     processor that quickly removes irrelevant parts of a clause during mutual
-     inductions using @('tools/flag.lisp').")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seeurl "defarbrec" "Arbitrary Recursion Library"))
 
    (xdoc::p
@@ -151,6 +139,77 @@
     ". See the "
     (xdoc::seeurl "defarbrec-related" "related tools section")
     " of the documentation of @(tsee defarbrec) for more information.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arithmetic-light library")
+
+   (xdoc::p "The @('[books]/kestrel/arithmetic-light') directory contains a
+   library about arithmetic that aims to be as lightweight as possible.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV (bit vector) library")
+
+   (xdoc::p "The @('[books]/kestrel/bv') directory contains a formalization of
+   bit vectors as natural numbers that underlies several tools developed by
+   Kestrel researchers.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV-Lists library")
+
+   (xdoc::p "The @('[books]/kestrel/bv-lists') directory contains a library
+   about lists of bit vectors, including packing, unpacking, and conversions
+   between lists of bits and lists of bytes.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Centaur meta-reasoning library")
+
+   (xdoc::p "The @('centaur/meta') directory contains various new books focused
+     on meta-reasoning, differing from previous efforts in their use of
+     @('clause-processors/pseudo-term-fty.lisp') to treat pseudo-terms as a
+     sum-of-products type.  Among other things, this directory contains an
+     unconditional rewriter, a let-abstraction clause processor, and a clause
+     processor that quickly removes irrelevant parts of a clause during mutual
+     inductions using @('tools/flag.lisp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "hdwallet::crypto-hdwallet"
+                           "Cryptocurrency Hierarchical Deterministic Wallet"))
+
+   (xdoc::p
+    "This is a simple proof of concept of
+     a hierarchical deterministic wallet for cryptocurrencies,
+     which makes use of the "
+    (xdoc::seeurl "crypto::cryptography" "cryptographic") ", "
+    (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin") ", and "
+    (xdoc::seeurl "ethereum::ethereum" "Ethereum") " libraries.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Library-wrappers library")
+
+   (xdoc::p "The @('[books]/kestrel/library-wrappers') directory contains books
+   that aim to improve other libraries by including them and then disabling
+   or replacing rules that may be problematic.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Lists-light library")
+
+   (xdoc::p "The @('[books]/kestrel/lists-light') directory contains a
+   library about lists that aims to be as lightweight as possible.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Prime-fields library")
+
+   (xdoc::p "The @('[books]/kestrel/prime-fields') directory contains a
+   formalization of prime fields and associated operations.  A prime field is a
+   finite field consisting of the integers modulo some prime p.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,6 +249,23 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Arithmetic-3")
+
+   (xdoc::p "The inclusion of @('arithmetic-3/floor-mod/mod-expt-fast') in
+   @('arithmetic-3/top') has been commented out to prevent clashes with
+   @('arithmetic-5').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Arithmetic-5")
+
+   (xdoc::p "The inclusion of @('arithmetic-5/lib/floor-mod/mod-expt-fast') in
+   @('arithmetic-5/lib/floor-mod/top'), which is in turn included by
+   @('arithmetic-5/top'), has been commented out to prevent clashes with
+   @('arithmetic-3').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
@@ -202,6 +278,53 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
+
+   (xdoc::p
+    "A sub-library for elliptic curves has been added,
+     which currently contains all the secp256k1 domain parameters,
+     and fixtypes for secp256k1 field elements, points, and keys.
+     The parameters and the fixtypes that were previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
+    " have been removed from that interface,
+     which now includes the domain parameters and the fixtypes
+     from the new sub-library.")
+
+   (xdoc::p
+    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
+     has been added, which curently contains the secp256k1 signing interface,
+     which was previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface") ".")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for the
+    SHA-2 hash functions: SHA-224, SHA-256, SHA-384, and SHA-512.  The new
+    sub-library is in @('[books]/kestrel/crypto/sha-2/').")
+
+   (xdoc::p
+    "A sub-library for KECCAK / SHA-3 hash functions
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "keccak::keccak")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for
+    HMAC-SHA-256 and HMAC-SHA-512, i.e., for the HMAC keyed-hash message
+    authentication code, using either SHA-256 or SHA-512 as the underlying hash
+    function.  The new sub-library is in @('[books]/kestrel/crypto/hmac/').")
+
+   (xdoc::p
+    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
+     as specified by RFC 8018, and specialized to use HMAC SHA-512,
+     has been added.")
+   ;; xdoc to be added later
+   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
+
+   (xdoc::p
+    "A sub-library has been added that includes formal specifications for
+    several common padding operations used in cryptography.  The new
+    sub-library is in @('[books]/kestrel/crypto/padding/').")
 
    (xdoc::p
     "A macro @(tsee crypto::definterface-hash) has been added
@@ -269,37 +392,6 @@
     (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
-
-   (xdoc::p
-    "A sub-library for elliptic curves has been added,
-     which currently contains all the secp256k1 domain parameters,
-     and fixtypes for secp256k1 field elements, points, and keys.
-     The parameters and the fixtypes that were previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
-                  "elliptic curve secp256k1 interface")
-    "have been removed from that interface,
-     which now includes the domain parameters and the fixtypes
-     from the new sub-library.")
-
-   (xdoc::p
-    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
-     has been added, which curently contains the secp256k1 signing interface,
-     which was previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
-                  "elliptic curve secp256k1 interface") ".")
-
-   (xdoc::p
-    "A sub-library for KECCAK / SHA-3 hash functions
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "keccak::keccak")
-
-   (xdoc::p
-    "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
-     as specified by RFC 8018, and specialized to use HMAC SHA-512,
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
 
    (xdoc::p
     "Executable attachments have been added for
@@ -400,6 +492,19 @@
    (xdoc::p
     "Some of the native Java implementations of the ACL2 primitive functions
      have been optimized.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Kestrel Utilities")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/smaller-termp'), contains
+     a utility to compare the sizes of terms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/equal-of-booleans'), contains
+     rules to break an equality of two booleans into the equivalent conjunction
+     of two implications.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

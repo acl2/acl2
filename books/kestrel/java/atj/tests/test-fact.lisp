@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Define the factorial function.
+; Factorial function.
 
 (defun fact (n)
   (declare (xargs :guard (natp n)))
@@ -24,8 +24,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the factorial function.
+; Tests for the factorial function.
 
-(java::atj fact :deep t :java-class "FactDeep")
+(defconst *fact-tests*
+  '(("Fact0" (fact 0))
+    ("Fact1" (fact 1))
+    ("Fact10" (fact 10))
+    ("Fact100" (fact 100))
+    ("Fact1000" (fact 1000))
+    ("Fact10000" (fact 10000))))
 
-(java::atj fact :deep nil :java-class "FactShallow")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code for the factorial function, with testing code.
+
+(java::atj fact
+           :deep t
+           :java-class "FactDeep"
+           :tests *fact-tests*)
+
+(java::atj fact
+           :deep nil
+           :java-class "FactShallow"
+           :tests *fact-tests*)

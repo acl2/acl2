@@ -17588,7 +17588,7 @@
                               ((t)
                                `((verify-guards ,name
                                    ,@(and guard-hints
-                                          (list :guard-hints guard-hints)))))
+                                          (list :hints guard-hints)))))
                               ((nil)
                                nil)
                               (otherwise ; '?
@@ -17596,7 +17596,7 @@
                                   ,guard-p
                                   ,name
                                   ,@(and guard-hints
-                                         (list :guard-hints
+                                         (list :hints
                                                guard-hints))))))))))))))))))
 
 (defmacro defun-sk (&whole form name args &rest rest)

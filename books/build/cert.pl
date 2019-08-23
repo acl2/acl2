@@ -572,7 +572,7 @@ sub add_command {
     my $runlist;
     # opt_name is not a string to begin with, coerce it to one
     $opt_name = "$opt_name";
-    if ($opt_name eq "source_cmd") {
+    if ($opt_name eq "source-cmd") {
 	$runlist = \@run_sources;
     } elsif ($opt_name eq "otherdep-cmd") {
 	$runlist = \@run_otherdeps;
@@ -585,7 +585,7 @@ sub add_command {
     } elsif ($opt_name eq "all-out-of-date-cmd") {
 	$runlist = \@run_all_out_of_date;
     } else {
-	die "Programming error in add_command";
+	die "Programming error in add_command: opt_name = $opt_name";
     }
     push (@$runlist,
     	  sub { my $target = shift;

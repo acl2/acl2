@@ -1,0 +1,17 @@
+; HDWALLET Library -- Certification Instructions
+;
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Eric McCarthy (mccarthy@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "portcullis") ; for HDWALLET package
+(include-book "kestrel/crypto/sha-2/portcullis" :dir :system) ; for SHA2 package
+(include-book "kestrel/crypto/hmac/portcullis" :dir :system) ; for HMAC package
+(include-book "kestrel/crypto/kdf/portcullis" :dir :system) ; for KDF package
+(include-book "kestrel/bitcoin/portcullis" :dir :system) ; for BITCOIN package
+(include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)

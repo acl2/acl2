@@ -332,8 +332,7 @@
   (defbitstruct evex-byte1
     ((mm 2bits
          "Identical to low two bits of VEX.m-mmmm.")
-     (res 2bits
-          "Reserved; must be zero.")
+     (res 2bits "Reserved; must be zero." :default '0)
      (r-prime bitp
               "High-16 register specifier modifier -- combine with EVEX.R and
               ModR/M.reg.")
@@ -342,8 +341,7 @@
      ;; modifiers --- combine with ModR/M.reg,
      ;; ModR/M.r/m (base, index/vidx).
      (b bitp)
-     (x bitp
-        "Must be set to @('1') in 32-bit mode, otherwise instruction is
+     (x bitp "Must be set to @('1') in 32-bit mode, otherwise instruction is
          BOUND.")
      (r bitp "Must be set to @('1') in 32-bit mode. otherwise instruction is
       BOUND."))
@@ -352,30 +350,21 @@
     :xvar byte1)
 
   (defbitstruct evex-byte2
-    ((pp 2bits
-         "Compressed legacy escape -- identical to low two bits of VEX.pp.")
-     (res bitp
-          "Reserved; Must be one.")
-     (vvvv
-      4bits
-      "NDS register specifier --- same as VEX.vvvv.")
-     (w bitp
-        "Osize promotion/opcode extension"))
+    ((pp 2bits "Compressed legacy escape -- identical to low two bits of VEX.pp.")
+     (res bitp "Reserved; Must be one." :default '1)
+     (vvvv 4bits "NDS register specifier --- same as VEX.vvvv.")
+     (w bitp "Osize promotion/opcode extension"))
     :inline t
     :msb-first nil)
 
   (defbitstruct evex-byte3
-    ((aaa 3bits
-          "Embedded opmask register specifier")
+    ((aaa 3bits "Embedded opmask register specifier")
      (v-prime bitp
               "High-16 NDS/VIDX register specifier -- combine with EVEX.vvvv or
       when VSIB present")
-     (b bitp
-        "Broadcast/RC/SAE Context")
-     (vl/rc 2bits
-            "Vector length/RC (denoted as L'L in the Intel manuals")
-     (z bitp
-        "Zeroing/Merging"))
+     (b bitp "Broadcast/RC/SAE Context")
+     (vl/rc 2bits "Vector length/RC (denoted as L'L in the Intel manuals")
+     (z bitp "Zeroing/Merging"))
     :inline t
     :msb-first nil)
 
@@ -469,11 +458,11 @@
 (defbitstruct rflagsBits
   :long "<p>Source: Intel Manual, Feb-14, Vol. 1, Section 3.4.3</p>"
   ((cf bitp)      ; carry flag
-   (res1 bitp)    ; 1 (reserved)
+   (res1 bitp :default '1)    ; 1 (reserved)
    (pf bitp)      ; parity flag
-   (res2 bitp)    ; 0 (reserved)
+   (res2 bitp :default '0)    ; 0 (reserved)
    (af bitp)      ; auxiliary-carry flag
-   (res3 bitp)    ; 0 (reserved)
+   (res3 bitp :default '0)    ; 0 (reserved)
    (zf bitp)      ; zero flag
    (sf bitp)      ; sign flag
    (tf bitp)      ; trap flag
@@ -482,7 +471,7 @@
    (of bitp)      ; overflow flag
    (iopl 2bits)  ; i/o privilege level
    (nt bitp)      ; nested task
-   (res4 bitp)    ; 0 (reserved)
+   (res4 bitp :default '0)    ; 0 (reserved)
    (rf bitp)      ; resume flag
    (vm bitp)      ; virtual-8086 mode
    (ac bitp)      ; alignment check

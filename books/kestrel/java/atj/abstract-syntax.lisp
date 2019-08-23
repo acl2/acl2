@@ -137,16 +137,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only need integer, boolean, string, and null literals for now.
-     We do not need floating point and character literals.")
+    "We only need integer, boolean, string, and null literals for now,
+     as well as a limited form of floating-point literals (see below).
+     We do not need character literals yet.")
    (xdoc::p
     "For an integer literal, we capture its value (a natural number)
      and whether there is an integer type suffix (@('l') or @('L')) or not,
      i.e. if the literal has type @('long').
      We do not restrict the natural number
      to the range of type @('int') or @('long'),
-     but ATJ always produces correct integer literals."))
+     but ATJ always produces correct integer literals.")
+   (xdoc::p
+    "We only support a very limited form of floating-point literals for now,
+     whose value is actually just a natural number."))
   (:integer ((value acl2::nat) (long? bool) (base jintbase)))
+  (:floating ((value acl2::nat)))
   (:boolean ((value bool)))
   (:string ((value string)))
   (:null ())
@@ -250,9 +255,9 @@
      which allow dot-separated identifiers,
      as well as @('this') and @('super').")
    (xdoc::p
-    "We only capture array creation expressions
-     with one (implicit) dimension
-     and whith an array initializer that is a sequence of expressions.
+    "We only capture monodimensional array creation expressions
+     with either an explicit size that is an expression
+     or an array initializer that is a sequence of expressions.
      The type field is the primitive or class/interface element type,
      not the array type, which is implicitly the one
      whose element type if the one in the type field.")
@@ -290,7 +295,8 @@
   (fty::deftagsum jexpr
     (:literal ((get jliteral)))
     (:name ((get string)))
-    (:newarray ((type jtype) (init jexpr-list)))
+    (:newarray ((type jtype) (size jexpr)))
+    (:newarray-init ((type jtype) (init jexpr-list)))
     (:array ((array jexpr) (index jexpr)))
     (:newclass ((type jtype) (args jexpr-list)))
     (:field ((target jexpr) (name string)))
@@ -323,6 +329,57 @@
   jexpr
   :short "Java expressions or @('nil')."
   :pred maybe-jexprp)
+
+(define jexpr-literal-integer-decimal ((value natp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of an integer literal
+          in base 10 without integer type prefix (i.e. of type @('int')."
+  (jexpr-literal
+   (make-jliteral-integer :value value :long? nil :base (jintbase-decimal))))
+
+(define jexpr-literal-integer-long-decimal ((value natp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of an integer literal
+          in base 10 with integer type prefix (i.e. of type @('long')."
+  (jexpr-literal
+   (make-jliteral-integer :value value :long? t :base (jintbase-decimal))))
+
+(define jexpr-literal-0 ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of the integer literal 0."
+  (jexpr-literal-integer-decimal 0))
+
+(define jexpr-literal-1 ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of the integer literal 1."
+  (jexpr-literal-integer-decimal 1))
+
+(define jexpr-literal-floating ((value natp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of a floating-point literal."
+  (jexpr-literal (jliteral-floating value)))
+
+(define jexpr-literal-true ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of
+          the boolean literal @('true')."
+  (jexpr-literal (jliteral-boolean t)))
+
+(define jexpr-literal-false ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of
+          the boolean literal @('false')."
+  (jexpr-literal (jliteral-boolean nil)))
+
+(define jexpr-literal-string ((string stringp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of a string literal."
+  (jexpr-literal (jliteral-string string)))
+
+(define jexpr-literal-null ()
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of the null literal."
+  (jexpr-literal (jliteral-null)))
 
 (fty::defprod jlocvar
   :short "Local variable declarations [JLS:14.4]."
@@ -357,12 +414,20 @@
      @('break'),
      @('continue'),
      @('while'),
-     @('do'),
      @('synchronized'), and
      @('try').")
    (xdoc::p
-    "We only capture @('if')
-     whose @('then') (and @('else'), if present) parts are blocks."))
+    "We only capture @('if') statements
+     whose @('then') (and @('else'), if present) parts are blocks.
+     (This is not a significant limitation.)")
+   (xdoc::p
+    "We only capture @('for') statements
+     with single initialization and update expressions,
+     and whose bodies are block.
+     (The latter is not a significant limitation.)")
+   (xdoc::p
+    "We only capture @('do') statements whose bodies are block.
+     (This is not a significant limitation.)"))
 
   (fty::deftagsum jstatem
     (:locvar ((get jlocvar)))
@@ -371,6 +436,8 @@
     (:throw ((expr jexpr)))
     (:if ((test jexpr) (then jblock)))
     (:ifelse ((test jexpr) (then jblock) (else jblock)))
+    (:do ((body jblock) (test jexprp)))
+    (:for ((init jexpr) (test jexpr) (update jexpr) (body jblock)))
     :pred jstatemp)
 
   (fty::deflist jblock
@@ -378,6 +445,82 @@
     :true-listp t
     :elementp-of-nil nil
     :pred jblockp))
+
+(define jblock-locvar ((type jtypep) (name stringp) (init jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of
+          a single (non-final) local variable declaration statement."
+  (list (jstatem-locvar
+         (make-jlocvar :final? nil :type type :name name :init init))))
+
+(define jblock-locvar-final ((type jtypep) (name stringp) (init jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of
+          a single final local variable declaration statement."
+  (list (jstatem-locvar
+         (make-jlocvar :final? t :type type :name name :init init))))
+
+(define jblock-expr ((expr jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java expression
+          (as an expression statement."
+  (list (jstatem-expr expr)))
+
+(define jblock-method ((name stringp) (args jexpr-listp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java method call."
+  (jblock-expr (jexpr-method name args)))
+
+(define jblock-smethod ((type jtypep) (name stringp) (args jexpr-listp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java static method call."
+  (jblock-expr (jexpr-smethod type name args)))
+
+(define jblock-imethod ((target jexprp) (name stringp) (args jexpr-listp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java instance method call."
+  (jblock-expr (jexpr-imethod target name args)))
+
+(define jblock-asg ((left jexprp) (right jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java assignment."
+  (jblock-expr (jexpr-binary (jbinop-asg) left right)))
+
+(define jblock-asg-name ((left stringp) (right jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java assignment
+          where the left-hand side is a named expression."
+  (jblock-expr (jexpr-binary (jbinop-asg) (jexpr-name left) right)))
+
+(define jblock-return ((expr? maybe-jexprp))
+  :returns (block jblockp)
+  :short "Build a block consistingg of a single Java @('return') statement."
+  (list (jstatem-return expr?)))
+
+(define jblock-throw ((expr jexprp))
+  :returns (block jblockp)
+  :short "Build a block consistingg of a single Java @('throw') statement."
+  (list (jstatem-throw expr)))
+
+(define jblock-if ((test jexprp) (then jblockp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('if') statement."
+  (list (jstatem-if test then)))
+
+(define jblock-ifelse ((test jexprp) (then jblockp) (else jblockp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('if-else') statement."
+  (list (jstatem-ifelse test then else)))
+
+(define jblock-do ((body jblockp) (test jexprp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('do') statement."
+  (list (jstatem-do body test)))
+
+(define jblock-for ((init jexprp) (test jexprp) (update jexprp) (body jblockp))
+  :returns (block jblockp)
+  :short "Bulid a block consisting of a single Java @('for') statement."
+  (list (jstatem-for init test update body)))
 
 (fty::deftagsum jaccess
   :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
@@ -403,7 +546,7 @@
    (volatile? bool)
    (type jtype)
    (name string)
-   (init jliteral))
+   (init jexpr))
   :pred jfieldp)
 
 (fty::deftagsum jresult

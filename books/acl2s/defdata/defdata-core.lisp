@@ -443,17 +443,18 @@ Example use
 |#
 
 (defun defdata-events (a1 wrld)
-  (b* (((list D &) a1) ;a1 is the result of parse-defdata
+  (b* (((list D kwd-alist) a1) ;a1 is the result of parse-defdata
        (d-alist (cdar d))
        (name (get1 'name d-alist))
        (odef (get1 'odef (cdar d)))
        (pdef (get1 'pdef (cdar d)))
        (ndef (get1 'ndef (cdar d)))
+       (do-not-alias? (get1 :do-not-alias kwd-alist))
        (M (type-metadata-table wrld))
        (match-def (match-alist name :DEF odef M))
        (match-def (or match-def (match-alist name :PRETTYIFIED-DEF pdef M)))
        (match-def (or match-def (match-alist name :NORMALIZED-DEF ndef M))))
-    (if match-def
+    (if (and match-def (not do-not-alias?))
         `(defdata-alias ,name ,match-def)
       (defdata-core-events a1 wrld))))
 
@@ -896,7 +897,8 @@ Example use
             :debug :print-commentary :print-summary :time-track
             ;; :pre-pred-hook-fns :post-pred-hook-fns
             ;; :pre-hook-fns :post-hook-fns
-            :testing-enabled)
+            :testing-enabled
+            :do-not-alias)
           '(:hints :verbose)
           *per-def-keywords*
           ))
@@ -1015,17 +1017,25 @@ Example use
                      (assoc-eq T2 M)))
 ;if not existing typenames raise error
         (er hard ctx  "~|One of ~x0 and ~x1 is not a defined type!~%" T1 T2))
+       (x (intern$ "X" curr-pkg))
 
 ;; ((when (and rule-classes
 ;;                    (or (eq T1 'ACL2::ALL)
 ;;                        (eq T2 'ACL2::ALL))))
 ;; ;if not existing typenames raise error
 ;;         (er hard ctx  "~|Subtype/disjoint relation not allowed on predicate ALL with non-empty rule-classes~%"))
-       (rule-classes (if (or (is-allp-alias T1p wrld)
-                             (is-allp-alias T2p wrld))
-                         '()
+       (rule-classes
+        (cond ((or (is-allp-alias T1p wrld)
+                   (is-allp-alias T2p wrld)
+                   (equal T1p T2p))
+               '())
+              ((eq ctx 'defdata-equal)
+               `((:rewrite)
+                 (:tau-system :corollary (implies (,T1p ,x) (,T2p ,x)))
+                 (:tau-system :corollary (implies (,T2p ,x) (,T1p ,x)))))
+              (t rule-classes)))
+
 ; force not to be a tau-rule bcos tau complains
-                          rule-classes))
 #|
 PETE: removed this to force the generation of rules
 because the rule-classes may matter.
@@ -1036,7 +1046,6 @@ because the rule-classes may matter.
                        (subtype-p T1p T2p wrld))))
           '(value-triple :redundant))
 |#
-       (x (intern$ "X" curr-pkg))
        (form (cond ((eq ctx 'defdata-disjoint)
                     `(implies (,T1p ,x) (not (,T2p ,x))))
                    ((eq ctx 'defdata-subtype)

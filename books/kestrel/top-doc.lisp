@@ -36,3 +36,9 @@
 
 (xdoc::archive-matching-topics
  (str::strprefixp "[books]/kestrel/" (cdr (assoc :from x))))
+
+(make-event
+ #!xdoc
+ `(table xdoc 'resource-dirs
+    (append ',(cdr (assoc 'resource-dirs (table-alist 'xdoc (w state))))
+            (cdr (assoc 'resource-dirs (table-alist 'xdoc world))))))

@@ -345,9 +345,6 @@
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets ctx state))
-       ((when (and tests$ (not deep)))
-        (er-soft+ ctx t nil "The :TESTS input must be NIL ~
-                             when :DEEP is (perhaps by default) NIL."))
        ((er (list output-file$
                   output-file-test$)) (atj-process-output-dir
                                        output-dir java-class$ tests$ ctx state))

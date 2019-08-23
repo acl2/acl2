@@ -21,6 +21,7 @@
 
      error warning warning! observation prove
      proof-builder event history summary proof-tree
+     form
 
      ;more acl2 exports
      aconsp
@@ -95,6 +96,7 @@
 
      error warning warning! observation prove
      proof-builder event history summary proof-tree
+     form
 
      test? ;for acl2s-hooks query categorization
      
@@ -151,7 +153,7 @@
       legal-variablep
       legal-variable-or-constant-namep
       xdoc
-      
+
       => ;sig
       _  ;range
 
@@ -173,13 +175,27 @@
       error warning warning! observation prove
       proof-builder event history summary proof-tree
       stage
+      form
+      formals
+
+      defdata::get1
+      defdata::cw?
+      defdata::extract-keywords
+      defdata::type-metadata-table 
+      defdata::type-alias-table 
+      defdata::pred-alias-table 
+      defdata::deffilter
+      defdata::remove1-assoc-eq-lst
       
+      read-run-time
+      trans-eval
       )
    (union-eq
     (union-eq 
      *ccg-exports*
      ;;*ccg-valid-output-names*
-     '(query basics performance build/refine size-change counter-example))
+     '(query basics performance build/refine size-change counter-example
+             *ccg-valid-output-names*))
     (union-eq
      defdata::*defdata-exports*
      (union-eq
@@ -251,12 +267,15 @@
               with-time-limit
               
               stage
-              
+              form
+     
               trace* trace$
 
               defthm thm defconst in-package defun table
 
-
+              declare
+              xargs
+              acl2s::allp
               error warning warning! observation prove
               proof-builder event history summary proof-tree
               )
@@ -301,6 +320,7 @@
               
               with-time-limit
               stage
+              form
               trace*
               )
             '()))
@@ -347,6 +367,7 @@
               cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
               
               stage
+              form
               trace* trace$
               with-time-limit
 
