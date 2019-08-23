@@ -1,6 +1,7 @@
 ; Matt Kaufmann
 ; Copyright (C) 2019, Regents of the University of Texas
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 (in-package "ACL2")
 
@@ -214,3 +215,18 @@
 (defun-sk f-exec (x)
   (declare (xargs :non-executable nil))
   (exists y (equal y (cons x x))))
+
+;;; Test the correct generation of the :hints keyword in the generated
+;;; verify-guards or verify-guards? events.
+
+(defun-sk fa-guard-hints (x)
+  (declare (xargs :guard t
+                  :verify-guards t
+                  :guard-hints (("Goal" :in-theory (enable len)))))
+  (forall y (equal y x)))
+
+(defun-sk ex-guard-hints (x)
+  (declare (xargs :guard t
+                  :verify-guards t
+                  :guard-hints (("Goal" :in-theory (enable len)))))
+  (exists y (equal y x)))
