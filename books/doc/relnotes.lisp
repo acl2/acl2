@@ -280,7 +280,8 @@
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
 
    (xdoc::p
-    "A sub-library for elliptic curves has been added,
+    "A " (xdoc::seeurl "ecurve::elliptic-curves" "sub-library for elliptic curves")
+    " has been added,
      which currently contains all the secp256k1 domain parameters,
      and fixtypes for secp256k1 field elements, points, and keys.
      The parameters and the fixtypes that were previously part of the "
@@ -291,8 +292,10 @@
      from the new sub-library.")
 
    (xdoc::p
-    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
-     has been added, which curently contains the secp256k1 signing interface,
+    "A " (xdoc::seeurl "ecdsa::elliptic-curve-digital-signature-algorithm"
+		       "sub-library for ECDSA")
+    " (Elliptic Curve Digital Signature Algorithm)
+     has been added, which now contains the secp256k1 signing interface,
      which was previously part of the "
     (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface") ".")
@@ -303,10 +306,8 @@
     sub-library is in @('[books]/kestrel/crypto/sha-2/').")
 
    (xdoc::p
-    "A sub-library for KECCAK / SHA-3 hash functions
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seeurl "keccak::keccak")
+    "A " (xdoc::seeurl "keccak::keccak" "sub-library for KECCAK / SHA-3 hash functions")
+     " has been added.")
 
    (xdoc::p
     "A sub-library has been added that includes formal specifications for
