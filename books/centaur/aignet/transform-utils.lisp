@@ -182,6 +182,14 @@
                              :const aignet2)))
                (aignet-raw-copy-fanins (+ 1 (lnfix n)) aignet aignet2))))
 
+(define aignet-raw-copy-fanins-top (aignet aignet2)
+  :enabled t
+  (mbe :logic (non-exec (aignet-fanins aignet))
+       :exec (b* ((aignet2 (aignet-init 0 (num-regs aignet) (num-ins aignet)
+                                        (num-fanins aignet)
+                                        aignet2)))
+               (aignet-raw-copy-fanins 1 aignet aignet2))))
+
 (local (defthm fanin-count-of-append
          (equal (fanin-count (append a b))
                 (+ (fanin-count a) (fanin-count b)))))

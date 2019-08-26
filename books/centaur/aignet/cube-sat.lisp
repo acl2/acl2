@@ -728,8 +728,8 @@
 ;;                                     OUTS-COMB-EQUIV-IMPLIES-EQUAL-OUTPUT-EVAL-4)))))
 ;;     :rule-classes nil)
 
-;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-comb-transform-stub
-;;     (b* ((aignet2 (aignet-comb-transform-stub aignet config)))
+;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-comb-transform!-stub
+;;     (b* ((aignet2 (aignet-comb-transform!-stub aignet config)))
 ;;       (equal (aignet-eval-conjunction
 ;;               (aignet-outputs->cube n aignet2 nil)
 ;;               invals regvals aignet2)
@@ -737,7 +737,7 @@
 ;;               (aignet-outputs->cube n aignet nil)
 ;;               invals regvals aignet)))
 ;;     :hints (("goal" :use ((:instance aignet-eval-conjunction-of-aignet-outputs->cube-under-comb-equiv
-;;                            (aignet (aignet-comb-transform-stub aignet config))
+;;                            (aignet (aignet-comb-transform!-stub aignet config))
 ;;                            (aignet2 aignet))))))
 
 ;;   (local (fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (nthcdr n x) x
@@ -902,7 +902,7 @@
         ;; 
         (mv status bitarr state aignet2 vals))
        (aignet2 (aignet-copy-with-conjoined-output cube aignet aignet2))
-       ((mv aignet2 state) (aignet-comb-transform-stub aignet2 xform-config state))
+       ((mv aignet2 state) (aignet-comb-transform!-stub aignet2 xform-config state))
        (new-cube (list (outnum->fanin 0 aignet2)))
        ((acl2::hintcontext :sat))
        ((mv status vals)
