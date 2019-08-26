@@ -160,30 +160,98 @@
 (include-book "definec" :ttags :all)
 (include-book "defintrange" :ttags :all)
 
+
+#|
+(defmacro acl2s-common-settings ()
+`(er-progn
+  (assign checkpoint-processors
+          (set-difference-eq (@ checkpoint-processors)
+                             '(ELIMINATE-DESTRUCTORS-CLAUSE)))
+  
+  ;;CCG settings
+  (set-ccg-print-proofs nil)     
+  (set-ccg-inhibit-output-lst
+   '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
+
+  ;; PETE: for debugging          
+  ;; (acl2::set-guard-checking :nowarn)
+  (acl2::set-guard-checking :all)
+
+  (assign acl2::splitter-output nil)
+
+  (set-default-hints
+   '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
+     (acl2s::stage acl2s::negp)
+     (acl2s::stage acl2s::posp)
+     (acl2s::stage acl2s::natp)
+     (acl2s::stage acl2s::non-pos-integerp)
+     (acl2s::stage acl2s::neg-ratiop)
+     (acl2s::stage acl2s::pos-ratiop)
+     (acl2s::stage acl2s::non-neg-ratiop)
+     (acl2s::stage acl2s::non-pos-ratiop)
+     (acl2s::stage acl2s::ratiop)
+     (acl2s::stage acl2s::neg-rationalp)
+     (acl2s::stage acl2s::pos-rationalp)
+     (acl2s::stage acl2s::non-neg-rationalp)
+     (acl2s::stage acl2s::non-pos-rationalp)))
+
+  ;; Other events:
+  (set-well-founded-relation l<)
+  (if (member-eq 'ruler-extenders-lst
+                 (getprop 'put-induction-info 'formals nil
+                          'current-acl2-world (w state)))
+      (value '(set-ruler-extenders :all))
+    (value '(value-triple :invisible)))
+
+  ;;CCG events
+  (set-termination-method :ccg)
+  (set-ccg-time-limit nil)
+
+  ;;Cgen settings
+  (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
+  (acl2s::acl2s-defaults :set acl2s::num-trials 500)
+
+  (make-event '(dont-print-thanks-message-override-hint))
+  (value '(value-triple :invisible))
+  ))
+|#
+
+
 #!ACL2
 (defmacro acl2s-common-settings ()
 `(progn
+
+   ;; There doesn't seem to be a good way to set guard-checking
+   ;; here. Previously, we were doing this inside of the er-progn
+   ;; which is inside of the make-event, but while that works for
+   ;; set-ccg-print-proofs, etc, it does not work for
+   ;; set-guard-checking because it is in
+   ;; *protected-system-state-globals* so any changes are reverted
+   ;; back to what they were when there is a make-event involved. In
+   ;; order to keep this interface, one option is to use progn!, but I
+   ;; decided to pull this out from here and put it into
+   ;; acl2s-mode.lsp to avoid requiring a trust tag for
+   ;; acl2s-common-settings.
+   
+   ;; How to check (f-get-global 'guard-checking-on state)
+   ;; (acl2::set-guard-checking :nowarn)
+
+   ;; (acl2::set-guard-checking :nowarn)
+   ;; (acl2::set-guard-checking :all)
+
   (make-event
    (er-progn
     (assign checkpoint-processors
             (set-difference-eq (@ checkpoint-processors)
                                '(ELIMINATE-DESTRUCTORS-CLAUSE)))
-     
+  
     ;;CCG settings
     (set-ccg-print-proofs nil)     
     (set-ccg-inhibit-output-lst
      '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
-
-    ;;Misc
-    (set-guard-checking :nowarn)
-;; PETE: for debugging          
-;;  (set-guard-checking :all)
+    (assign acl2::splitter-output nil)
     (value '(value-triple :invisible))))
-   
-  (make-event
-   (er-progn (assign acl2::splitter-output nil)
-             (value '(value-triple nil))))
-   
+      
   (set-default-hints
    '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
      (acl2s::stage acl2s::negp)
@@ -221,6 +289,7 @@
 
   ))
 
+
 #!ACL2
 (defmacro acl2s-beginner-settings ()
   `(er-progn
@@ -242,8 +311,6 @@
     (assign triple-print-prefix "; ")
 
     ))
-
-
 
 #!ACL2
 (defmacro acl2s-bare-bones-settings ()
