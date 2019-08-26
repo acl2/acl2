@@ -248,8 +248,8 @@ typically be @(see memoize)d in some way or another.</p>"
 
 (defthm svex-fix-nonnil
   (svex-fix x)
-  :hints(("Goal" :use (RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)
-          :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))
+  :hints(("Goal" :use (RETURN-TYPE-OF-SVEX-FIX.NEW-X)
+          :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))
   :rule-classes :type-prescription)
 
 (fty::defoption maybe-svex svex)

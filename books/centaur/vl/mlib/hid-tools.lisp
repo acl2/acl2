@@ -1432,8 +1432,8 @@ instance, in this case the @('tail') would be
     (b* (((mv err res) (vl-usertype-lookup x ss :scopes scopes :rec-limit rec-limit)))
       (implies (not err)
                res))
-    :hints (("goal" :use ((:instance return-type-of-vl-usertype-lookup-fn.type))
-             :in-theory (disable return-type-of-vl-usertype-lookup-fn.type)))
+    :hints (("goal" :use ((:instance return-type-of-vl-usertype-lookup.type))
+             :in-theory (disable return-type-of-vl-usertype-lookup.type)))
     :rule-classes
     ((:type-prescription :typed-term (mv-nth 1 (vl-usertype-lookup
                                                 x ss :scopes scopes :rec-limit rec-limit)))))

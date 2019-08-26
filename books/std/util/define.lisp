@@ -1872,6 +1872,7 @@ the names.</li>
        (ign-names (make-symbols-ignorable names))
        (formals (look-up-formals guts.name-fn world))
        ((mv body-subst hint-subst) (returnspec-return-value-subst fn guts.name-fn formals names))
+       (strsubst (returnspec-strsubst fn guts.name-fn))
        (binding `((,(if (consp (cdr ign-names))
                         `(mv . ,ign-names)
                       (car ign-names))
@@ -1883,21 +1884,28 @@ the names.</li>
        (rule-classes? (assoc :rule-classes kwd-alist))
        (hints? (assoc :hints kwd-alist))
        (otf-flg? (assoc :otf-flg kwd-alist))
-       (pre-bind (cdr (assoc :pre-bind kwd-alist)))
-       (concl `(b* (,@pre-bind ,@binding) ,concl-term))
+       (pre-bind (returnspec-sublis body-subst nil (cdr (assoc :pre-bind kwd-alist))))
+       (concl-subst (returnspec-sublis body-subst nil concl-term))
+       ((mv ?err concl-trans) (acl2::translate-cmp concl-subst t nil nil 'defret world
+                                                   (acl2::default-state-vars nil)))
+       ;; Ignore any error from translate, just want to find out if any of the bindings are needed.
+       ;; Omit the binding if none of the bound variables are used.
+       (binding (and (not err)
+                     (intersectp-eq names (acl2::all-vars concl-trans))
+                     binding))
+       (concl `(b* (,@pre-bind ,@binding) ,concl-subst))
        (thm (if hyp?
-                `(implies ,hyp ,concl)
+                `(implies ,(returnspec-sublis body-subst nil hyp)
+                          ,concl)
               concl))
        (thmname (intern-in-package-of-symbol
-                 (dumb-str-sublis `(("<FN>" . ,(symbol-name fn))
-                                    ("<FN!>" . ,(symbol-name guts.name-fn)))
-                                  (symbol-name name))
+                 (dumb-str-sublis strsubst (symbol-name name))
                  name)))
     `(,(if disablep 'defthmd 'defthm) ,thmname
-      ,(returnspec-sublis body-subst thm)
-      ,@(and hints?        `(:hints ,(returnspec-sublis hint-subst (cdr hints?))))
+      ,thm
+      ,@(and hints?        `(:hints ,(returnspec-sublis hint-subst strsubst (cdr hints?))))
       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
-      ,@(and rule-classes? `(:rule-classes ,(returnspec-sublis hint-subst (cdr rule-classes?)))))))
+      ,@(and rule-classes? `(:rule-classes ,(returnspec-sublis hint-subst nil (cdr rule-classes?)))))))
 
 
 (defun defret-fn (name args disablep world)

@@ -665,8 +665,8 @@ substitution are left in place."
 
   (local (defthm svex-fix-under-iff
            (svex-fix x)
-           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
-                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))))
 
   (defthm svex-lookup-of-svex-alist-compose
     (iff (svex-lookup v (svex-alist-compose x a))

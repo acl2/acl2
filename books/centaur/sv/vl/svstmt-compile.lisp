@@ -77,8 +77,8 @@
 
 (defthm svex-fix-nonnil
   (svex-fix x)
-  :hints(("Goal" :use (RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)
-          :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))
+  :hints(("Goal" :use (RETURN-TYPE-OF-SVEX-FIX.NEW-X)
+          :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))
   :rule-classes :type-prescription)
 
 (define svstack-to-svex-alist ((x svstack-p))
@@ -851,8 +851,8 @@ exists there.</p>"
 
 ;;   (local (defthm svex-fix-under-iff
 ;;            (iff (svex-fix x) t)
-;;            :hints (("goal" :use ((:instance return-type-of-svex-fix$inline.new-x))
-;;                     :in-theory (disable return-type-of-svex-fix$inline.new-x)))))
+;;            :hints (("goal" :use ((:instance return-type-of-svex-fix.new-x))
+;;                     :in-theory (disable return-type-of-svex-fix.new-x)))))
 
 ;;   (local (defthm svex-vars-of-hons-assoc-equal
 ;;            (implies (and (not (member v (svex-alist-vars x)))
@@ -1143,8 +1143,8 @@ exists there.</p>"
   ///
   (local (defthm svex-fix-under-iff
            (iff (svex-fix x) t)
-           :hints (("Goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
-                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+           :hints (("Goal" :use RETURN-TYPE-OF-SVEX-FIX.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))))
 
   (local (defthm 4vec-?*-when-reduction-or-true
            (implies (equal (4vec-reduction-or test) -1)
@@ -1190,8 +1190,8 @@ exists there.</p>"
 
   (local (defthm svex-fix-under-iff
            (iff (svex-fix x) t)
-           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
-                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))))
 
   (defret svex-svstmt-ite-when-cond-true
     (implies (equal (4vec-reduction-or (svex-eval test env)) -1)
