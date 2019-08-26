@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "STD")
 (include-book "support")
@@ -153,7 +154,7 @@ fast alist or other schemes, based on the elements it is given.</p>")
                                      name)
       name)))
 
-(defconst *defenum-keywords* 
+(defconst *defenum-keywords*
   '(:mode
     :parents
     :short
@@ -209,9 +210,9 @@ fast alist or other schemes, based on the elements it is given.</p>")
                (declare (xargs :guard t))
                ,body))
 
-       (long (str::cat (or long "")
-                       "<p>This is an ordinary @(see std::defenum).</p>"
-                       "@(def " (symbol-name name) ")"))
+       (long `(str::cat ,(or long "")
+                        "<p>This is an ordinary @(see std::defenum).</p>"
+                        "@(def " ,(symbol-name name) ")"))
 
        (doc `(defxdoc ,name
                :parents ,parents
@@ -225,7 +226,7 @@ fast alist or other schemes, based on the elements it is given.</p>")
            ,doc
            ,def))
 
-       (long (str::cat long "@(gthm type-when-" (symbol-name name) ")"))
+       (long `(str::cat ,long "@(gthm type-when-" ,(symbol-name name) ")"))
 
        (doc `(defxdoc ,name
                :parents ,parents
@@ -309,21 +310,3 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
 (defmacro defenum (name members &rest keys)
   `(make-event (defenum-fn ',name ',members ',keys state)))
-
-
-;; Primitive tests
-(local
- (encapsulate
-   ()
-   (defenum day-p
-     (:monday :tuesday :wednesday :thursday :friday :saturday :sunday))
-
-   (defenum chartest-p
-     (#\a #\b #\c))
-
-   (defenum strsymtest-p
-     ("foo" "bar" foo bar))
-
-   (defenum universal-ts-test-p
-     (0 1 -1 1/2 -1/2 #c(3 4) nil t foo (1 . 2) (1) "foo" #\a))))
-
