@@ -378,3 +378,35 @@
                 (rtl::primep p))
            (not (equal (add x1 x1 p) 0)))
   :hints (("Goal" :in-theory (enable pfield::add-same fep))))
+
+(defthm not-equal-of-inv-and-0
+  (implies (and (fep a p)
+                (not (equal 0 a))
+                (rtl::primep p))
+           (not (equal 0 (inv a p))))
+  :hints (("Goal" :use (:instance inv-correct
+                                  (a (mod a p))
+                                  (p p))
+           :in-theory (e/d (fep inv)
+                           (inv-correct)))))
+
+;; Turns 1/a=b into 1=a*b.
+(defthm equal-of-inv
+  (implies (and (not (equal 0 a))
+                (fep a p)
+                (rtl::primep p))
+           (equal (equal (inv a p) b)
+                  (and (equal 1 (mul a b p))
+                       (fep b p))))
+  :hints (("Goal" :use (:instance mul-of-inv-mul-of-inv
+                                  (a a)
+                                  (x b)
+                                  (p p))
+           :in-theory (disable mul-of-inv-mul-of-inv))))
+
+(defthm inv-of-inv
+  (implies (and (not (equal 0 a))
+                (fep a p)
+                (rtl::primep p))
+           (equal (inv (inv a p) p)
+                  a)))
