@@ -117,8 +117,8 @@
                  (and (bfr-listp (major-stack-bfrlist (stack-extract stack)))
                       (bfr-listp (constraint-db-bfrlist constraint-db))
                       (bfr-listp (cgraph-bfrlist cgraph))
-                      (ec-call (logicman-pathcond-p-fn pathcond logicman))
-                      (ec-call (logicman-pathcond-p-fn constraint-pathcond logicman))
+                      (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
+                      (ec-call (bfr-pathcond-p-fn constraint-pathcond (logicman->bfrstate)))
                       (bfr-listp (bvar-db-bfrlist bvar-db))
                       (ec-call (bvar-db-boundedp bvar-db logicman))
                       (equal (next-bvar bvar-db) (bfr-nvars logicman))
@@ -210,12 +210,12 @@
 
   (defthm interp-st-bfrs-ok-of-update-pathcond
     (implies (And (interp-st-bfrs-ok interp-st)
-                  (logicman-pathcond-p-fn new-pathcond (interp-st->logicman interp-st)))
+                  (logicman-pathcond-p new-pathcond (interp-st->logicman interp-st)))
              (interp-st-bfrs-ok (update-interp-st->pathcond new-pathcond interp-st))))
 
   (defthm interp-st-bfrs-ok-of-update-constraint
     (implies (And (interp-st-bfrs-ok interp-st)
-                  (logicman-pathcond-p-fn new-constraint (interp-st->logicman interp-st)))
+                  (logicman-pathcond-p new-constraint (interp-st->logicman interp-st)))
              (interp-st-bfrs-ok (update-interp-st->constraint new-constraint interp-st))))
 
   (defthm interp-st-bfrs-ok-of-update-bvar-db

@@ -71,7 +71,7 @@
   (defthm nbalist-lookup-of-cons
     (equal (nbalist-lookup id (cons (cons key val) x))
            (b* ((rest-lookup (nbalist-lookup id x)))
-             (if (and (equal (nfix id) (nfix key))
+             (if (and (equal (pos-fix id) (pos-fix key))
                       (not rest-lookup))
                  (bfix val)
                rest-lookup)))
@@ -80,7 +80,7 @@
   (defthm nbalist-fix-of-cons
     (equal (nbalist-fix (cons pair x))
            (let* ((rest (nbalist-fix x))
-                  (first-key (nfix (car pair)))
+                  (first-key (pos-fix (car pair)))
                   (first-val (bfix (cdr pair))))
              (if (or (not (consp pair))
                      (nbalist-lookup first-key x))
@@ -92,7 +92,7 @@
     (equal (nbalist-lookup k x)
            (b* ((x (nbalist-fix x))
                 ((unless (consp x)) nil)
-                ((when (equal (nfix k) (caar x))) (cdar x)))
+                ((when (equal (pos-fix k) (caar x))) (cdar x)))
              (nbalist-lookup k (cdr x))))
     :hints(("Goal" :expand ((hons-assoc-equal (nfix k) (nbalist-fix x)))))
     :rule-classes :definition)
@@ -100,35 +100,110 @@
   (defthm nbalist-lookup-in-cdr-when-car
     (implies (and (nbalistp x)
                   (consp x)
-                  (equal (nfix k) (caar x)))
+                  (equal (pos-fix k) (caar x)))
              (not (nbalist-lookup k (cdr x))))
     :hints(("Goal" :in-theory (enable nbalist-lookup nbalistp)))))
 
 (local (in-theory (disable nbalist-fix-of-acons)))
 
 
-(defsection aignet-pathcond-p
-  (defun-sk aignet-pathcond-p (nbalist aignet)
+(local (defthmd cdar-when-nbalistp
+         (implies (and (nbalistp nbalist)
+                       (consp nbalist))
+                  (cdar nbalist))
+         :hints(("Goal" :in-theory (enable nbalistp)))))
+
+(defsection bounded-pathcond-p
+  (defun-sk bounded-pathcond-p (nbalist num-fanins)
     (forall id
             (implies (nbalist-lookup id nbalist)
-                     (aignet-idp id aignet)))
+                     (< (pos-fix id) (nfix num-fanins))))
     :rewrite :direct)
 
-  (in-theory (disable aignet-pathcond-p))
+  (in-theory (disable bounded-pathcond-p
+                      bounded-pathcond-p-necc))
 
-  (defthm aignet-pathcond-p-of-aignet-extension
+  (defthmd bounded-pathcond-p-implies-aignet-idp
+    (implies (and (bounded-pathcond-p nbalist (+ 1 (fanin-count aignet)))
+                  (nbalist-lookup id nbalist))
+             (aignet-idp id aignet))
+    :hints(("Goal" :in-theory (enable aignet-idp)
+            :use ((:instance bounded-pathcond-p-necc
+                   (num-fanins (+ 1 (fanin-count aignet))))))))
+
+  (defthm bounded-pathcond-p-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-pathcond-p nbalist orig))
-             (aignet-pathcond-p nbalist new))
-    :hints (("goal" :expand ((aignet-pathcond-p nbalist new)))))
+                  (bounded-pathcond-p nbalist (+ 1 (fanin-count orig))))
+             (bounded-pathcond-p nbalist (+ 1 (fanin-count new))))
+    :hints (("goal" :expand ((bounded-pathcond-p nbalist (+ 1 (fanin-count new))))
+             :use ((:instance bounded-pathcond-p-necc
+                    (num-fanins (+ 1 (fanin-count orig)))
+                    (id (bounded-pathcond-p-witness nbalist (+ 1 (fanin-count new)))))))))
 
-  (defthm aignet-pathcond-p-of-nbalist-fix
-    (iff (aignet-pathcond-p (nbalist-fix nbalist) aignet)
-         (aignet-pathcond-p nbalist aignet))
+  (defthm bounded-pathcond-p-when-greater
+    (implies (and (bounded-pathcond-p nbalist old)
+                  (<= (nfix old) (nfix new)))
+             (bounded-pathcond-p nbalist new))
+    :hints (("Goal" :expand ((bounded-pathcond-p nbalist new))
+             :use ((:instance bounded-pathcond-p-necc
+                    (num-fanins old)
+                    (id (bounded-pathcond-p-witness nbalist new)))))))
+
+  (defthm bounded-pathcond-p-of-nbalist-fix
+    (iff (bounded-pathcond-p (nbalist-fix nbalist) num-fanins)
+         (bounded-pathcond-p nbalist num-fanins))
     :hints ((and stable-under-simplificationp
-                 (let ((lit (assoc 'aignet-pathcond-p clause)))
-                   `(:expand (,lit)))))))
+                 (let ((lit (assoc 'bounded-pathcond-p clause)))
+                   `(:expand (,lit)
+                     :use ((:instance bounded-pathcond-p-necc
+                            (id (bounded-pathcond-p-witness . ,(cdr lit)))
+                            (nbalist ,(if (eq (cadr lit) 'nbalist)
+                                          '(nbalist-fix nbalist)
+                                        'nbalist)))))))))
 
+  (defthmd bounded-pathcond-p-of-aignet-redef
+    (implies (acl2::rewriting-positive-literal `(bounded-pathcond-p ,nbalist (binary-+ '1 (fanin-count ,aignet))))
+             (iff (bounded-pathcond-p nbalist (+ 1 (fanin-count aignet)))
+                  (let ((id (pos-fix (bounded-pathcond-p-witness nbalist (+ 1 (fanin-count aignet))))))
+                    (implies (nbalist-lookup id nbalist)
+                             (aignet-idp id aignet)))))
+    :hints(("Goal" :in-theory (enable bounded-pathcond-p aignet-idp))))
+
+
+  (defthmd bounded-pathcond-p-redef
+    (equal (bounded-pathcond-p nbalist num-fanins)
+           (b* ((nbalist (nbalist-fix nbalist)))
+             (or (atom nbalist)
+                 (and (< (caar nbalist) (nfix num-fanins))
+                      (bounded-pathcond-p (cdr nbalist) num-fanins)))))
+    :hints (("goal" :in-theory (e/d (nbalist-lookup-redef
+                                     cdar-when-nbalistp)
+                                    (bounded-pathcond-p
+                                     bounded-pathcond-p-necc)))
+            (acl2::use-termhint
+             (b* ((pathcond-p (bounded-pathcond-p nbalist num-fanins))
+                  (witness (bounded-pathcond-p-witness nbalist num-fanins))
+                  (nbalist (nbalist-fix nbalist))
+                  ;; (pathcond-p2 (bounded-pathcond-p (cdr nbalist) num-fanins))
+                  (witness2 (bounded-pathcond-p-witness (cdr nbalist) num-fanins)))
+               (if pathcond-p
+                   (cond ((atom nbalist) nil)
+                         ((not (< (caar nbalist) (nfix num-fanins)))
+                          `(:use ((:instance bounded-pathcond-p-necc
+                                   (id ,(acl2::hq (caar nbalist)))))))
+                         (t `(:use ((:instance bounded-pathcond-p-necc
+                                     (id ,(acl2::hq witness2))))
+                              :expand ((bounded-pathcond-p ,(acl2::hq (cdr nbalist)) num-fanins)))))
+                 (if (atom nbalist)
+                     '(:expand ((bounded-pathcond-p nbalist num-fanins)))
+                   `(:expand ((bounded-pathcond-p nbalist num-fanins))
+                     :use ((:instance bounded-pathcond-p-necc
+                            (nbalist ,(acl2::hq (cdr nbalist)))
+                            (id ,(acl2::hq witness))))))))))
+    :rule-classes :definition))
+                  
+
+(local (in-theory (enable bounded-pathcond-p-implies-aignet-idp)))
 
 (defsection aignet-pathcond-eval
   (defun-sk aignet-pathcond-eval (aignet
@@ -137,7 +212,7 @@
     (forall id 
             (implies (nbalist-lookup id nbalist)
                      (equal (nbalist-lookup id nbalist)
-                            (id-eval id invals regvals aignet))))
+                            (id-eval (pos-fix id) invals regvals aignet))))
     :rewrite :direct)
 
   (in-theory (disable aignet-pathcond-eval))
@@ -173,7 +248,7 @@
                   (not (nbalist-lookup key nbalist)))
              (iff (aignet-pathcond-eval aignet (cons (cons key val) nbalist)
                                         invals regvals)
-                  (equal (id-eval key invals regvals aignet) (bfix val))))
+                  (equal (id-eval (pos-fix key) invals regvals aignet) (bfix val))))
     :hints ((and stable-under-simplificationp
                  (let ((lit (assoc 'aignet-pathcond-eval clause)))
                    (if lit
@@ -201,7 +276,7 @@
 
   (defthm aignet-pathcond-eval-implies-lookup-not-opposite
     (implies (and (aignet-pathcond-eval aignet nbalist invals regvals)
-                  (equal b (b-not (id-eval id invals regvals aignet))))
+                  (equal b (b-not (id-eval (pos-fix id) invals regvals aignet))))
              (not (equal (nbalist-lookup id nbalist) b)))
     :hints (("goal" :use aignet-pathcond-eval-necc
              :in-theory (disable aignet-pathcond-eval-necc))))
@@ -222,7 +297,7 @@
 
   (defthm aignet-pathcond-eval-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-pathcond-p nbalist orig))
+                  (bounded-pathcond-p nbalist (+ 1 (fanin-count orig))))
              (equal (aignet-pathcond-eval new nbalist invals regvals)
                     (aignet-pathcond-eval orig nbalist invals regvals)))
     :hints (("goal" :cases ((aignet-pathcond-eval new nbalist invals regvals)))
@@ -500,7 +575,7 @@
 (defthm nbalistp-of-cons-when-lookup
   (equal (nbalistp (cons a x))
          (and (consp a)
-              (natp (car a))
+              (posp (car a))
               (bitp (cdr a))
               (not (nbalist-lookup (car a) x))
               (nbalistp x)))
@@ -554,6 +629,11 @@
     (nbalist-extension-p x x)))
 
 
+(local (defthm caar-of-nbalist-fix
+         (implies (consp (nbalist-fix x))
+                  (posp (caar (nbalist-fix x))))
+         :rule-classes :type-prescription))
+
 (define nbalist-bound ((x nbalistp))
   :measure (len (nbalist-fix x))
   :returns (bound natp :rule-classes :type-prescription)
@@ -579,7 +659,7 @@
   (defun-sk nbalist-depends-on (v nbalist aignet)
     (exists id
             (and (nbalist-lookup id nbalist)
-                 (depends-on id (innum->id v aignet) aignet))))
+                 (depends-on (pos-fix id) (innum->id v aignet) aignet))))
 
   (in-theory (disable nbalist-depends-on
                       nbalist-depends-on-suff))
@@ -603,8 +683,8 @@
                           :use ((:instance aignet-pathcond-eval-necc
                                  (id (aignet-pathcond-eval-witness . ,(cdr lit)))
                                  (invals ,(if (eq (fourth lit) 'invals)
-                                               '(update-nth v val invals)
-                                             'invals)))
+                                              '(update-nth v val invals)
+                                            'invals)))
                                 (:instance nbalist-depends-on-suff
                                  (id (aignet-pathcond-eval-witness . ,(cdr lit)))))
                           :in-theory (disable aignet-pathcond-eval-necc)))))))
@@ -613,7 +693,7 @@
     (equal (nbalist-depends-on v (cons (cons key val) nbalist) aignet)
            (or (nbalist-depends-on v nbalist aignet)
                (and (not (nbalist-lookup key nbalist))
-                    (depends-on key (innum->id v aignet) aignet))))
+                    (depends-on (pos-fix key) (innum->id v aignet) aignet))))
     :hints (("goal" :cases ((nbalist-depends-on v (cons (cons key val) nbalist) aignet)))
             (and stable-under-simplificationp
                  (b* ((lit (assoc 'nbalist-depends-on clause))
@@ -625,7 +705,7 @@
                    `(:expand (,other-lit)
                      :use ((:instance nbalist-depends-on-suff
                             (nbalist ,lit-nbalist)
-                            (id (if (depends-on key (innum->id v aignet) aignet)
+                            (id (if (depends-on (pos-fix key) (innum->id v aignet) aignet)
                                     key
                                   (nbalist-depends-on-witness . ,(cdr other-lit))))))
                      :in-theory (disable nbalist-depends-on-suff)))))
@@ -687,7 +767,7 @@
 
   (defthm nbalist-depends-on-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-pathcond-p nbalist orig))
+                  (bounded-pathcond-p nbalist (+ 1 (fanin-count orig))))
              (equal (nbalist-depends-on v nbalist new)
                     (nbalist-depends-on v nbalist orig)))
     :hints ((acl2::use-termhint
@@ -695,20 +775,20 @@
                    (if (nbalist-depends-on v nbalist new)
                        (mv new orig)
                      (mv orig new)))
-                  (witness (nbalist-depends-on-witness v nbalist does)))
+                  (witness (pos-fix (nbalist-depends-on-witness v nbalist does))))
                `(:expand ((nbalist-depends-on v nbalist ,(acl2::hq does)))
                  :use ((:instance nbalist-depends-on-suff
                         (aignet ,(acl2::hq doesnt))
                         (id ,(acl2::hq witness)))
-                       (:instance aignet-pathcond-p-necc
+                       (:instance bounded-pathcond-p-implies-aignet-idp
                         (aignet orig)
                         (id ,(acl2::hq witness)))
                        (:instance fanin-count-of-lookup-in-extension-when-not-in-orig
                         (old orig) (stype :pi)))
                  :cases ((< (nfix v) (stype-count :pi orig)))
                  :in-theory (e/d (aignet-idp)
-                                 (aignet-pathcond-p-necc
-                                     nbalist-depends-on-suff)))))))
+                                 (bounded-pathcond-p-implies-aignet-idp
+                                  nbalist-depends-on-suff)))))))
 
   (defthm nbalist-depends-on-of-nfix
     (equal (nbalist-depends-on (nfix v) nbalist aignet)
@@ -755,15 +835,15 @@
        ((when contradictionp) (mv contradictionp nbalist-stobj)))
     (aignet-pathcond-assume-logic (snode->fanin slot1) aignet nbalist-stobj))
   ///
-  (defret aignet-pathcond-p-of-aignet-pathcond-assume-logic
-    (implies (and (aignet-pathcond-p nbalist-stobj aignet)
+  (defret bounded-pathcond-p-of-aignet-pathcond-assume-logic
+    (implies (and (bounded-pathcond-p nbalist-stobj (+ 1 (fanin-count aignet)))
                   (aignet-litp lit aignet))
-             (aignet-pathcond-p new-nbalist-stobj aignet))
-    :hints (("goal" :induct <call> :expand (<call>))
+             (bounded-pathcond-p new-nbalist-stobj (+ 1 (fanin-count aignet))))
+    :hints (("goal" :induct <call> :expand (<call>)
+             :in-theory (disable aignet-idp))
             (and stable-under-simplificationp
-                 (let ((lit (car (last clause))))
-                   (and (eq (car lit) 'aignet-pathcond-p)
-                        `(:expand (,lit)))))))
+                 '(:in-theory (e/d (bounded-pathcond-p-of-aignet-redef)
+                                   (aignet-idp))))))
 
   (defret nbalist-assume-correct
     (implies (and (aignet-pathcond-eval aignet nbalist-stobj invals regvals)
@@ -941,7 +1021,7 @@
   :enabled t
   (car (nth n (nbalist-fix aignet-pathcond$a))))
 
-(define aignet-pathcond-lookup$a ((n natp)
+(define aignet-pathcond-lookup$a ((n posp)
                                   (aignet-pathcond$a nbalist-stobj$ap))
   :enabled t
   (nbalist-lookup n aignet-pathcond$a))
@@ -955,7 +1035,7 @@
              (nbalist-stobj-nthkey n nbalist-stobj)
              key))
 
-(define aignet-pathcond-lookup$c ((n natp)
+(define aignet-pathcond-lookup$c ((n posp)
                                   aignet-pathcond$c)
   :enabled t
   (stobj-let ((nbalist-stobj (aignet-pathcond-nbalist$c aignet-pathcond$c)))
@@ -1009,5 +1089,95 @@
                                       :exec aignet-pathcond-lookup$c)
               (aignet-pathcond->nbalist :logic aignet-pathcond->nbalist$a
                                        :exec aignet-pathcond->nbalist$c))))
+
+
+
+(defthmd aignet-pathcond-eval-redef
+  (equal (aignet-pathcond-eval aignet nbalist invals regvals)
+         (b* ((nbalist (nbalist-fix nbalist)))
+           (or (atom nbalist)
+               (and (equal (id-eval (caar nbalist) invals regvals aignet)
+                           (cdar nbalist))
+                    (aignet-pathcond-eval aignet (cdr nbalist) invals regvals)))))
+  :hints (("goal" :in-theory (e/d (nbalist-lookup-redef
+                                   cdar-when-nbalistp)
+                                  (aignet-pathcond-eval
+                                   aignet-pathcond-eval-necc)))
+          (acl2::use-termhint
+           (b* ((pathcond-eval (aignet-pathcond-eval aignet nbalist invals regvals))
+                (witness (aignet-pathcond-eval-witness aignet nbalist invals regvals))
+                (nbalist (nbalist-fix nbalist))
+                ;; (pathcond-p2 (bounded-pathcond-p (cdr nbalist) aignet))
+                (eq (equal (id-eval (caar nbalist) invals regvals aignet)
+                           (cdar nbalist)))
+                (witness2 (aignet-pathcond-eval-witness aignet (cdr nbalist) invals regvals)))
+             (if pathcond-eval
+                 (cond ((atom nbalist) nil)
+                       ((not eq)
+                        `(:use ((:instance aignet-pathcond-eval-necc
+                                 (id ,(acl2::hq (caar nbalist)))))))
+                       (t `(:use ((:instance aignet-pathcond-eval-necc
+                                   (id ,(acl2::hq witness2))))
+                            :expand ((aignet-pathcond-eval aignet ,(acl2::hq (cdr nbalist)) invals regvals)))))
+               (if (atom nbalist)
+                   '(:expand ((aignet-pathcond-eval aignet nbalist invals regvals)))
+                 `(:expand ((aignet-pathcond-eval aignet nbalist invals regvals))
+                   :use ((:instance aignet-pathcond-eval-necc
+                          (nbalist ,(acl2::hq (cdr nbalist)))
+                          (id ,(acl2::hq witness))))))))))
+  :rule-classes :definition)
+
+(define nbalist-to-cube ((nbalist nbalistp))
+  :measure (len (nbalist-fix nbalist))
+  :returns (cube lit-listp)
+  (b* ((nbalist (nbalist-fix nbalist))
+       ((when (atom nbalist))
+        nil))
+    (cons (make-lit (caar nbalist)
+                    (b-not (cdar nbalist)))
+          (nbalist-to-cube (cdr nbalist))))
+  ///
+  (local (defthm cdar-of-nbalist-fix-type
+         (let ((nbalist (nbalist-fix nbalist)))
+           (implies (consp nbalist)
+                    (bitp (cdar nbalist))))
+         :hints(("Goal" :in-theory (enable nbalistp)))
+         :rule-classes ((:type-prescription :typed-term (cdar (nbalist-fix nbalist))))))
+
+  (local (defthm natp-caar-of-nbalist-fix
+           (implies (consp (nbalist-fix x))
+                    (natp (caar (nbalist-fix x))))
+           :rule-classes :type-prescription))
+
+  (defret nbalist-to-cube-correct
+    (equal (aignet-eval-conjunction cube invals regvals aignet)
+           (bool->bit (aignet-pathcond-eval aignet nbalist invals regvals)))
+    :hints(("Goal" :in-theory (enable aignet-pathcond-eval-redef
+                                      aignet-eval-conjunction
+                                      lit-eval))))
+
+  (defret aignet-lit-listp-of-<fn>
+    (implies (bounded-pathcond-p nbalist (+ 1 (fanin-count aignet)))
+             (aignet-lit-listp cube aignet))
+    :hints(("Goal" :in-theory (enable bounded-pathcond-p-redef
+                                      aignet-lit-listp
+                                      aignet-idp))))
+
+  (defret len-of-<fn>
+    (equal (len cube)
+           (len (nbalist-fix nbalist))))
+  
+  (local (defun nth-of-nbalist-ind (n x)
+           (if (zp n)
+               x
+             (nth-of-nbalist-ind (1- n) (cdr (nbalist-fix x))))))
+  (defthm nth-of-nbalist-to-cube
+    (implies (< (nfix n) (len (nbalist-fix nbalist)))
+             (equal (nth n (nbalist-to-cube nbalist))
+                    (make-lit (car (nth n (nbalist-fix nbalist)))
+                              (b-not (cdr (nth n (nbalist-fix nbalist)))))))
+    :hints(("Goal" :in-theory (enable nth nbalist-to-cube)
+            :induct (nth-of-nbalist-ind n nbalist)
+            :expand ((nbalist-to-cube nbalist))))))
 
 

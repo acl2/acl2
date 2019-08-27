@@ -216,7 +216,7 @@
   ;;                             (pathcond-fix))))))))
 
   (local (in-theory (disable pathcond-fix-of-pathcond-fix-pathcond-normalize-const
-                             logicman-pathcond-p-fn-of-pathcond-fix-pathcond-normalize-const
+                             bfr-pathcond-p-fn-of-pathcond-fix-pathcond-normalize-const
                               LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
                              (pathcond-fix)
                              (update-logicman->mode))))
@@ -224,7 +224,7 @@
   (local (in-theory (enable  interp-st-bfrs-ok
                              logicman-pathcond-p
                              logicman-invar
-                             aignet::aignet-pathcond-p
+                             aignet::bounded-pathcond-p
                              ipasir::ipasir-init$a
                              bvar-db-bfrlist
                              bvar-db-bfrlist-aux

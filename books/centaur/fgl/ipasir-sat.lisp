@@ -790,7 +790,7 @@
                         (& nil))
                       (cnf))
                      (cnf-for-aignet aignet cnf sat-lits)
-                     (aignet-pathcond-p nbalist aignet)
+                     (bounded-pathcond-p nbalist (num-fanins aignet))
                      (nbalist-has-sat-lits nbalist sat-lits)
                      (equal 1 (satlink::eval-formula cnf cnf-vals))
                      (equal (stype-count :reg aignet) 0))
@@ -805,8 +805,9 @@
   (local (defthm aignet-pathcond-p-when-logicman-pathcond-p
            (implies (and (logicman-pathcond-p pathcond logicman)
                          (lbfr-mode-is :aignet))
-                    (aignet::aignet-pathcond-p (nth *pathcond-aignet* pathcond) 
-                                               (logicman->aignet logicman)))
+                    (aignet::bounded-pathcond-p
+                     (nth *pathcond-aignet* pathcond) 
+                     (+ 1 (aignet::fanin-count (logicman->aignet logicman)))))
            :hints(("Goal" :in-theory (enable logicman-pathcond-p)))))
 
   (local
@@ -830,7 +831,7 @@
                         (& nil))
                       (cnf))
                      (cnf-for-aignet aignet cnf sat-lits)
-                     (aignet-pathcond-p nbalist aignet)
+                     (bounded-pathcond-p nbalist (num-fanins aignet))
                      (nbalist-has-sat-lits nbalist sat-lits))
                 (equal (satlink::eval-cube
                         (aignet-lits->sat-lits (nbalist-to-cube nbalist) sat-lits)
@@ -839,7 +840,7 @@
                        ;; (lit-eval lit invals regvals aignet)
                        )))
      :hints(("Goal" :in-theory (enable nbalist-has-sat-lits
-                                       aignet-pathcond-p-redef
+                                       bounded-pathcond-p-redef
                                        aignet-pathcond-eval-redef
                                        nbalist-to-cube
                                        eval-cube

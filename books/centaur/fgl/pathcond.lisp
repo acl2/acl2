@@ -40,26 +40,28 @@
 
 
 
-(define logicman-pathcond-p (pathcond &optional (logicman 'logicman))
+(define bfr-pathcond-p (pathcond &optional (bfrstate 'bfrstate))
   (declare (xargs :non-executable t))
   :no-function t
   :verify-guards nil
-  (prog2$ (acl2::throw-nonexec-error 'logicman-pathcond-p-fn (list pathcond logicman))
-          (lbfr-case
+  (prog2$ (acl2::throw-nonexec-error 'bfr-pathcond-p-fn (list pathcond bfrstate))
+          (bfrstate-case
             :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
                                (ans)
-                               (stobj-let ((aignet (logicman->aignet logicman)))
-                                          (ans)
-                                          (aignet::aignet-pathcond-p aignet-pathcond aignet)
-                                          ans)
+                               (aignet::bounded-pathcond-p aignet-pathcond (1+ (bfrstate->bound bfrstate)))
                                ans)
-            :bdd (and (lbfr-p (acl2::ubdd-fix (pathcond-bdd pathcond)))
-                      (lbfr-listp (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
+            :bdd (and (bfr-p (acl2::ubdd-fix (pathcond-bdd pathcond)))
+                      (bfr-listp (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
             :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
                             (ans)
-                            (lbfr-listp (alist-keys (calist-stobj-access calist-stobj)))
+                            (bfr-listp (alist-keys (calist-stobj-access calist-stobj)))
                             ans)))
   ///
+  (defmacro logicman-pathcond-p (pathcond &optional (logicman 'logicman))
+    `(bfr-pathcond-p ,pathcond (logicman->bfrstate ,logicman)))
+
+  (add-macro-alias logicman-pathcond-p bfr-pathcond-p-fn)
+
   (defthm logicman-pathcond-p-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (logicman-pathcond-p pathcond old))
@@ -89,27 +91,29 @@
                     (bfr-listp (ubdd-list-fix x)))
            :hints(("Goal" :in-theory (enable bfr-listp$ ubdd-list-fix)))))
 
-  (defthm logicman-pathcond-p-of-pathcond-rewind
-    (implies (and (logicman-pathcond-p x)
+  (defthm bfr-pathcond-p-of-pathcond-rewind
+    (implies (and (bfr-pathcond-p x)
                   (equal (bfr-mode-fix bfr-mode)
-                         (bfr-mode-fix (lbfr-mode))))
-             (logicman-pathcond-p (pathcond-rewind bfr-mode x)))
+                         (bfr-mode-fix (bfrstate->mode bfrstate))))
+             (bfr-pathcond-p (pathcond-rewind bfr-mode x)))
     :hints(("Goal" :in-theory (e/d (pathcond-rewind)
                                    (aignet::nbalist-extension-of-nbalist-stobj-rewind
-                                    aignet::aignet-pathcond-p-necc)))
+                                    aignet::bounded-pathcond-p-necc)))
            (and stable-under-simplificationp
                 (let ((lit (car (last clause))))
-                  `(:expand ((:with aignet::aignet-pathcond-p ,lit))
-                    :use ((:instance aignet::aignet-pathcond-p-necc
+                  `(:expand ((:with aignet::bounded-pathcond-p ,lit))
+                    :use ((:instance aignet::bounded-pathcond-p-necc
                            (nbalist (nth *pathcond-aignet* x))
-                           (aignet (logicman->aignet logicman))
-                           (id (aignet::aignet-pathcond-p-witness . ,(cdr lit))))
+                           (num-fanins (+ 1 (bfrstate->bound bfrstate)))
+                           (id (aignet::bounded-pathcond-p-witness . ,(cdr lit))))
                           (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
                            (x (nth *pathcond-aignet* x))
                            (len (car (nth *pathcond-checkpoint-ptrs* x))))
                           (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
                            (x (nth *pathcond-aignet* x))
                            (len 0)))))))))
+
+
 
 
 
@@ -900,7 +904,7 @@
 
 
 (define logicman-pathcond-to-ipasir ((ipasir-index natp) pathcond logicman)
-  :guard (and (ec-call (logicman-pathcond-p-fn pathcond logicman))
+  :guard (and (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
               (< ipasir-index (logicman->ipasir-length logicman))
               (logicman-invar logicman)
               (lbfr-mode-is :aignet)
@@ -1120,7 +1124,7 @@
                                            sat-lits
                                            (cnf satlink::lit-list-listp)
                                            (cube satlink::lit-listp))
-  :guard (and (ec-call (logicman-pathcond-p-fn pathcond logicman))
+  :guard (and (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
               (lbfr-mode-is :aignet)
               (stobj-let ((aignet (logicman->aignet logicman)))
                          (ok)

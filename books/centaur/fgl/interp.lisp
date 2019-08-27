@@ -1027,8 +1027,8 @@
 
   (local (defthm bfr-listp-gl-object-bfrlist-of-gl-bfr-object-fix
            (bfr-listp (gl-object-bfrlist (gl-bfr-object-fix x)))
-           :hints (("goal" :use ((:instance return-type-of-gl-bfr-object-fix-fn.new-x))
-                    :in-theory (disable return-type-of-gl-bfr-object-fix-fn.new-x)))))
+           :hints (("goal" :use ((:instance return-type-of-gl-bfr-object-fix.new-x))
+                    :in-theory (disable return-type-of-gl-bfr-object-fix.new-x)))))
 
   (defret logicman-extension-p-of-<fn>
     (logicman-extension-p new-logicman logicman)

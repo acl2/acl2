@@ -71,6 +71,33 @@
 
   (defcong logicman-equiv equal (fgl-objectlist-concretize x env logicman) 3))
 
+(define fgl-object-alist-concretize ((x gl-object-alist-p)
+                      (env gl-env-p)
+                      &optional (logicman 'logicman))
+  :guard (lbfr-listp (gl-object-alist-bfrlist x))
+  :prepwork ((local (in-theory (enable gl-object-alist-bfrlist
+                                       gl-object-alist-fix))))
+  :returns (new-x gl-object-alist-p)
+  (if (atom x)
+      x
+    (if (mbt (consp (car x)))
+        (cons (cons (caar x)
+                    (fgl-object-concretize (cdar x) env))
+              (fgl-object-alist-concretize (cdr x) env))
+      (fgl-object-alist-concretize (cdr x) env)))
+  ///
+
+  (defthm fgl-object-alist-concretize-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (gl-object-alist-bfrlist x) old))
+             (equal (fgl-object-alist-concretize x env new)
+                    (fgl-object-alist-concretize x env old)))
+    :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist)
+            :induct t
+            :expand ((gl-object-alist-bfrlist x)))))
+
+  (defcong logicman-equiv equal (fgl-object-alist-concretize x env logicman) 3))
+
 
 
 

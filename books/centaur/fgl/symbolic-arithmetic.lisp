@@ -417,7 +417,8 @@ for computing:</p>
           ,@(and ;; (not (cdr (assoc :enabled kwd-alist)))
                  (not (cdr (assoc :no-define kwd-alist)))
                  `((defret trivial-theorem-about-<fn>
-                     t
+                     (b* ((?ignore (,exec-name . ,formal-vars)))
+                       t)
                      :rule-classes nil
                      :hints nil)))
 
