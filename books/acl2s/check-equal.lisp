@@ -99,7 +99,7 @@
 
 (defun fcheck (form state)
   (declare (xargs :mode :program :stobjs (state)))
-  (b* (((er res) (trans-eval form 'check state t))
+  (b* (((er res) (with-output! :on error (trans-eval form 'check state t)))
        ((when (not (equal (cdr res) t)))
         (prog2$
          (cw "~%ACL2s Error in CHECK: The form evaluates to: ~x0, not T!~%"
@@ -109,8 +109,8 @@
 
 (defun fcheck= (form1 form2 state)
   (declare (xargs :mode :program :stobjs (state)))
-  (b* (((er res1) (trans-eval form1 'check= state t))
-       ((er res2) (trans-eval form2 'check= state t))
+  (b* (((er res1) (with-output! :on error (trans-eval form1 'check= state t)))
+       ((er res2) (with-output! :on error (trans-eval form2 'check= state t)))
        ((when (not (equal (car res1) (car res2))))
         (prog2$
          (cw "~%ACL2s Error in CHECK=: The forms return a different number or stobj types.~%")
@@ -152,5 +152,7 @@
 
 (check= (+ 0 1) 1)
 (check= 1 2)
+
+(check= (head nil) t)
 
 |#
