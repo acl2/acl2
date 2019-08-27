@@ -202,10 +202,10 @@
                (equal (interp-st->errmsg new-interp-st)
                       (interp-st->errmsg interp-st))))
 
-    (defret interp-st->errmsg-equal-unreachable-of-<fn>
-      (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
-               (not (equal (interp-st->errmsg new-interp-st)
-                           :unreachable))))
+    ;; (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    ;;   (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+    ;;            (not (equal (interp-st->errmsg new-interp-st)
+    ;;                        :unreachable))))
 
     (defret interp-st->equiv-contexts-of-<fn>
       (equal (interp-st->equiv-contexts new-interp-st)
@@ -246,6 +246,16 @@
                        env
                        (interp-st->pathcond interp-st)
                        (interp-st->logicman interp-st)))))
+
+    (defret interp-st->errmsg-equal-unreachable-of-<fn>
+      (implies (and (not (equal (interp-st->errmsg interp-st) :unreachable))
+                    (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                            (interp-st->logicman interp-st))
+                    (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                            (interp-st->logicman interp-st))
+                    (interp-st-bfrs-ok interp-st))
+               (not (equal (interp-st->errmsg new-interp-st)
+                           :unreachable))))
 
     (defret constraint-eval-of-<fn>
       (implies (interp-st-bfrs-ok interp-st)

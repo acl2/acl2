@@ -8528,6 +8528,17 @@
      (equal (stack$a-bindings (stack$a-pop-scratch stack))
             (stack$a-bindings stack))
      :hints(("Goal" :in-theory (enable stack$a-bindings stack$a-pop-scratch))))
+
+   (defret unreachable-of-gl-primitive-fncall
+     (implies (and (bind-free '((env . (gl-env->bfr-vals$inline env))) (env))
+                   (not (equal (interp-st->errmsg interp-st) :unreachable))
+                   (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                           (interp-st->logicman interp-st))
+                   (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                           (interp-st->logicman interp-st))
+                   (interp-st-bfrs-ok interp-st))
+              (not (Equal (interp-st->errmsg new-interp-st) :unreachable)))
+     :fn gl-primitive-fncall)
    
    (local (in-theory (disable not)))
 
