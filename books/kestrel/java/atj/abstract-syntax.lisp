@@ -196,6 +196,13 @@
   (:array ((comp jtype)))
   :pred jtypep)
 
+(fty::deflist jtype-list
+  :short "True lists of Java types."
+  :elt-type jtype
+  :true-listp t
+  :elementp-of-nil nil
+  :pred jtype-listp)
+
 (fty::deftagsum junop
   :short "Java unary operators [JLS:15.15]."
   (:preinc ()) ; ++
