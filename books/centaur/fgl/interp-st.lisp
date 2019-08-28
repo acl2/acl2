@@ -960,3 +960,29 @@
      ,(if (eql nvals 0)
           '(mv interp-st state)
         `(mv ,@(acl2::repeat nvals nil) interp-st state))))
+
+
+(define interp-st-set-error (msg interp-st)
+  :returns new-interp-st
+  (if (interp-st->errmsg interp-st)
+      interp-st
+    (update-interp-st->errmsg msg interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-of-<fn>
+    (implies msg
+             (interp-st->errmsg new-interp-st)))
+
+  (defret errmsg-differs-of-<fn>
+    (implies (and msg2 (not (equal msg2 msg)))
+             (equal (equal (interp-st->errmsg new-interp-st) msg2)
+                    (equal (interp-st->errmsg interp-st) msg2)))))
