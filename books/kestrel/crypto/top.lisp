@@ -17,6 +17,10 @@
 ;; Documentation for specific API functions.
 (include-book "keccak/documentation")
 
+(include-book "hmac/doc")
+(include-book "padding/doc")
+(include-book "sha-2/doc")
+
 (include-book "attachments/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
