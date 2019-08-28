@@ -73,13 +73,15 @@
 
 
 ;todo: this must be proved somewhere else
-(defthm subsetp-equal-transitive
-  (implies (and (subsetp-equal x y)
+;The -alt avoids a name clash
+(defthm subsetp-equal-transitive-alt
+  (implies (and (subsetp-equal x y) ;y is a free var
                 (subsetp-equal y z))
            (subsetp-equal x z))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
-(defthm subsetp-equal-transitive-2
+;The -alt avoids a name clash
+(defthm subsetp-equal-transitive-2-alt
   (implies (and (subsetp-equal y z) ;y is a free var
                 (subsetp-equal x y))
            (subsetp-equal x z))
