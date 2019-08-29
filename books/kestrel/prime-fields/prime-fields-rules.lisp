@@ -410,3 +410,22 @@
                 (rtl::primep p))
            (equal (inv (inv a p) p)
                   a)))
+
+(defthm mul-of-0
+  (equal (mul 0 y p)
+         0)
+  :hints (("Goal" :in-theory (enable mul))))
+
+;; a cancellation rule
+(defthm equal-of-mul-and-mul-same
+  (implies (and (fep x p)
+                (fep y p)
+                (fep z p)
+                (primep p))
+           (equal (equal (mul x y p) (mul x z p))
+                  (if (equal 0 x)
+                      t
+                    (equal y z))))
+  :hints (("Goal" :use ((:instance mul-of-inv-mul-of-inv (a x) (x y))
+                        (:instance mul-of-inv-mul-of-inv (a x) (x z)))
+           :in-theory (disable mul-of-inv-mul-of-inv))))

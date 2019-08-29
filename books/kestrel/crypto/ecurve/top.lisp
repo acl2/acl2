@@ -26,3 +26,9 @@
 (defxdoc elliptic-curves
   :parents (crypto::cryptography)
   :short "Elliptic curve cryptography.")
+
+(xdoc::order-subtopics elliptic-curves
+  (short-weierstrass secp256k1-domain-parameters secp256k1-types
+   secp256k1 secp256k1-interface secp256k1-attachment))
+
+

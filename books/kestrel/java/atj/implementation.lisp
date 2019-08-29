@@ -109,14 +109,14 @@
       and deeply embedded ACL2 lambda expressions.
       See @(tsee atj-code-generation).")
     (xdoc::li
-     "@('jvar-var-indices') is an alist with the indices
+     "@('jvar-indices') is an alist with the indices
       of the next Java local variable to use, for each ACL2 variable,
       to construct shallowly embedded ACL2 terms and lambda expressions.")
     (xdoc::li
      "@('jvar-result-index') is the index of the next Java local variable to use
       to store the results of arguments of non-strict ACL2 functions.")
     (xdoc::li
-     "@('jvars') is an alist with the names
+     "@('jvar-names') is an alist with the names
       of the current Java local variables
       that represent ACL2 variables
       when constructing shallowly embedded ACL2 terms and lambda expressions."))

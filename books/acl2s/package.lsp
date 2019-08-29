@@ -189,6 +189,12 @@
       
       read-run-time
       trans-eval
+
+      flg
+      sort
+      guard-checking-on
+      current-flg
+      raw-mode-p
       )
    (union-eq
     (union-eq 
