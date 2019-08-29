@@ -34,10 +34,10 @@
      The input can be any number of bits and the output length is the number
      in the function name.  There are four variants defined:")
    (xdoc::@{}
-    "keccak-224(bit-list)
-keccak-256(bit-list)
-keccak-384(bit-list)
-keccak-512(bit-list)")
+    "(keccak-224 bit-list)
+(keccak-256 bit-list)
+(keccak-384 bit-list)
+(keccak-512 bit-list)")
    (xdoc::p
     "More commonly, callers prefer to work with bytes.  The following functions
      accept and return \"hexadecimal strings with an even number of digits\",
@@ -45,10 +45,10 @@ keccak-512(bit-list)")
      of bytes and the output length in bytes is the number in the function name
      divided by 8.  There are four variants defined:")
    (xdoc::@{}
-    "keccak-224-bytes(byte-list)
-keccak-256-bytes(byte-list)
-keccak-384-bytes(byte-list)
-keccak-512-bytes(byte-list)")
+    "(keccak-224-bytes byte-list)
+(keccak-256-bytes byte-list)
+(keccak-384-bytes byte-list)
+(keccak-512-bytes byte-list)")
    (xdoc::p
     "For more details, please refer to the source file, which is extensively
      commented.")
