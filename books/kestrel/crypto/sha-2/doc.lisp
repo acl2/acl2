@@ -20,8 +20,10 @@
    (xdoc::p
     "The SHA-2 library contains executable formal specifications of several
     hash functions: SHA-224, SHA-256, SHA-384, and SHA-512.  These algorithms
-    are described in NIST publication " (xdoc::a :href "FIPS PUB
-    180-4" "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf") ".")
+    are described in NIST publication "
+    (xdoc::a :href "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf"
+             "FIPS PUB 180-4")
+    ".")
    (xdoc::p
     "The library also includes tests of the specifications.")
    (xdoc::p

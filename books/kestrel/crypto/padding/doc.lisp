@@ -20,7 +20,10 @@
    (xdoc::p
     "The padding library contains executable formal specifications of several
     cryptographic padding operations.  These operations are described in, for example,
-    Section 5.1.1 of " (xdoc::a :href "FIPS PUB 180-4" "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf") ".")
+    Section 5.1.1 of "
+    (xdoc::a :href "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf"
+             "FIPS PUB 180-4")
+    ".")
    (xdoc::p
     "The library also includes tests and validation theorems about the padding operations.")
    (xdoc::p
