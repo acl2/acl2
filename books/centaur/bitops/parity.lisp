@@ -115,21 +115,20 @@ hacks</a> page.  The number @('#x6996') acts as a lookup table for the parity
 of the numbers between 0 and 15, so we can simply index into it to get the
 answer.</p>
 
-<p>In practice this doesn't perform so well on CCL, presumably because the
-compiler doesn't really optimize @(see logbitp) for fixnums, or at least it
-doesn't do so in the face of the @(see logbit) wrapper.  Because of this, we
-don't currently use this function in the definition of @(see parity32).  But
-maybe we should, some day, if the compiler improves or we figure out some other
-way to make it faster.</p>"
+<p>It seems that using @('ash') and @('logand') is slightly faster than
+@('logbit') in ccl.  Could perhaps be faster still if we found a way to get CCL
+to optimize away the @('ash') function call.</p>
+"
 
   (mbe :logic (parity 4 x)
        :exec
-       ;; (the bit (logand 1
-       ;;                  (the (unsigned-byte 32)
-       ;;                    (ash (the (unsigned-byte 32) #x6996)
-       ;;                         (the (integer -16 0) (- (the (unsigned-byte 4) x)))))))
-       (the bit (logbit (the (unsigned-byte 5) x)
-                        (the (unsigned-byte 16) #x6996))))
+       (the bit (logand 1
+                        (the (unsigned-byte 32)
+                          (ash (the (unsigned-byte 32) #x6996)
+                               (the (integer -16 0) (- (the (unsigned-byte 4) x)))))))
+       ;; (the bit (logbit (the (unsigned-byte 5) x)
+       ;;                  (the (unsigned-byte 16) #x6996)))
+       )
   ///
   (local (fty::deffixequiv parity4 :args ((x integerp))))
   (local (defun check-parity4 (x)
@@ -145,6 +144,8 @@ way to make it faster.</p>"
                     (equal (logbit x #x6996)
                            (parity4 x)))
            :hints(("Goal" :in-theory (disable parity4)))))
+  (local (defthm minus-minus
+           (equal (- (- x)) (fix x))))
   (verify-guards parity4$inline
     :hints (("goal" :use ((:instance check-parity4-correct (n 16)))))))
 
