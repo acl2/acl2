@@ -222,6 +222,19 @@
      with existing utilities factored out of some Kestrel Books with system
      utilities.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "std/typed-alists"
+                           "Standards Typed Alists Library"))
+
+   (xdoc::p
+    "A new library has been added,
+     to collect recognizers and theorems for typed alists,
+     i.e. alists whose keys and values have specified types.
+     This is analogous to "
+    (xdoc::seeurl "std/typed-lists" "the library for typed lists")
+    ".")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
