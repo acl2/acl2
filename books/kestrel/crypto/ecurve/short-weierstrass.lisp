@@ -19,6 +19,9 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "short-weierstrass-closure-simp"))
 
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Elliptic Curves over Prime Fields in Short Weierstrass Form
@@ -55,6 +58,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Top xdoc topic for this file.
+
+(defxdoc short-weierstrass
+  :parents (ecurve::elliptic-curves)
+  :short "A library for Short Weierstrass elliptic curves."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The below executable functions implement elliptic curve operations
+     on Short Weierstrass curves, which have the form")
+   (xdoc::@[] "y^2=x^3+ax+b")
+   (xdoc::p "where @('x') and @('y') are integers in @('\{0,..,p-1\}')
+             for an appropriate prime number @('p').")
+   (xdoc::p "For details see "
+            (xdoc::a :href "http://www.secg.org/sec1-v2.pdf"
+                     "Standards for Efficient Cryptography 1 (SEC 1)")
+            ".")
+   (xdoc::p "The arguments @('a') and @('b') to the functions below
+             always refer to the coefficients in the equation above.")
+   (xdoc::p "The argument @('p') always refers to the prime number
+             that is the field order.")
+   (xdoc::p "See the source code for more extensive
+             discussion, references, and proved theorems.")
+   ))
+
+;; Order the subtopics according to the order in which they were defined.
+(xdoc::order-subtopics short-weierstrass
+  nil
+  t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Valid elliptic curve.
 ;; sec1-v2 section 2.2.1
 ;; field size must be an odd prime greater than 3,
@@ -62,12 +97,19 @@
 ;; (sec1-v2 does not mention the condition p > 3,
 ;; presumably because the recommended curves all satisfy that anyhow)
 
-(defund weierstrass-elliptic-curve-p (p a b)
-  (and (rtl::primep p)
-       (< 3 p)
-       (fep a p)
-       (fep b p)
-       (posp (mod (+ (* 4 a a a) (* 27 b b)) p))))
+(defsection weierstrass-elliptic-curve-p
+  :parents (short-weierstrass)
+  :short "Test if curve parameters are valid."
+  :long "@(call weierstrass-elliptic-curve-p) tests whether
+         the Short Weierstrass curve defined by
+         @('p'), @('a'), and @('b') is a valid elliptic curve."
+  (defund weierstrass-elliptic-curve-p (p a b)
+    (and (rtl::primep p)
+         (< 3 p)
+         (fep a p)
+         (fep b p)
+         (posp (mod (+ (* 4 a a a) (* 27 b b)) p))))
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,31 +119,42 @@
 
 ;; Tests if a point is on an elliptic curve of the form explained above.
 
-(defund point-on-elliptic-curve-p (point p a b)
-  (declare (xargs :guard (and (rtl::primep p)
-                              (< 3 p)
-                              (fep a p)
-                              (fep b p)
-                              (not (= b 0))
-                              (pointp point)
-                              (point-in-pxp-p point p))
-                  :guard-hints (("Goal"
-                                 :in-theory
-                                 (enable fep pointp point-in-pxp-p)))))
-  (let ((x (car point))
-        (y (cdr point)))
-    ;; We represent the infinity point as (0,0).  This is safe as long as b
-    ;; is nonzero: if b is nonzero, then (0,0) cannot be a solution to
-    ;; y^2 = x^3 + ax + b.
-    (or (and (= x 0) (= y 0))
-        (let ((y^2 (mul y y p))
-              (x^3 (mul x (mul x x p) p)))
-          (let ((x^3+ax+b (add x^3
-                               (add (mul a x p)
-                                    b
-                                    p)
-                               p)))
-            (equal y^2 x^3+ax+b))))))
+(defsection point-on-elliptic-curve-p
+  :parents (short-weierstrass)
+  :short "Test if a point is on an elliptic curve."
+  :long "@(call point-on-elliptic-curve-p) tests whether
+          @('point') is on the Short Weierstrass elliptic curve
+          defined by @('p'), @('a'), and @('b').
+         <p/>
+         @('point') is an ordered pair (a cons) of two integers
+         in @('\{0,..,p-1\}').  The infinity point is represented
+         by the cons pair @('(0 . 0)').  We require @('b') to be nonzero."
+  (defund point-on-elliptic-curve-p (point p a b)
+    (declare (xargs :guard (and (rtl::primep p)
+                                (< 3 p)
+                                (fep a p)
+                                (fep b p)
+                                (not (= b 0))
+                                (pointp point)
+                                (point-in-pxp-p point p))
+                    :guard-hints (("Goal"
+                                   :in-theory
+                                   (enable fep pointp point-in-pxp-p)))))
+    (let ((x (car point))
+          (y (cdr point)))
+      ;; We represent the infinity point as (0,0).  This is safe as long as b
+      ;; is nonzero: if b is nonzero, then (0,0) cannot be a solution to
+      ;; y^2 = x^3 + ax + b.
+      (or (and (= x 0) (= y 0))
+          (let ((y^2 (mul y y p))
+                (x^3 (mul x (mul x x p) p)))
+            (let ((x^3+ax+b (add x^3
+                                 (add (mul a x p)
+                                      b
+                                      p)
+                                 p)))
+              (equal y^2 x^3+ax+b))))))
+)
 
 ;; The infinity point is on the curve.
 
@@ -133,69 +186,80 @@
 ;;   This is so we can represent the infinity point as (0,0).
 ;; In this definition, slope is lambda in SEC 1.
 
-(defund curve-group-+ (point1 point2 p a b)
-  (declare (xargs :guard (and (rtl::primep p)
-                              (< 3 p)
-                              (fep a p)
-                              (fep b p)
-                              (not (= b 0))
-                              (pointp point1)
-                              (pointp point2)
-                              (point-in-pxp-p point1 p)
-                              (point-in-pxp-p point2 p)
-                              (point-on-elliptic-curve-p point1 p a b)
-                              (point-on-elliptic-curve-p point2 p a b))
-                  :guard-hints (("Goal"
-                                 :in-theory
-                                 (enable fep
-                                         pointp
-                                         point-in-pxp-p
-                                         point-on-elliptic-curve-p)))))
-  (declare (ignore b))
-  (if (equal point1 '(0 . 0))
-      point2 ; handles rule 1 (0+0=0) and half of rule 2 (0+Q=Q)
-    (if (equal point2 '(0 . 0))
-        point1 ; handles the other half of rule 2 (P+0=P)
-      (let ((x1 (car point1))
-            (y1 (cdr point1))
-            (x2 (car point2))
-            (y2 (cdr point2)))
-        (if (= x1 x2)
-            (if (= (add y1 y2 p) 0)
-                '(0 . 0) ; rule 3, y1 = -y2 (mod p)
-              ;; rule 5, doubling the point
-              (let* ((slope (div (add (mul 3
-                                           (mul x1 x1 p)
-                                           p)
-                                      a
-                                      p)
-                                 (mul 2 y1 p)
-                                 p))
-                     (x3 (sub (mul slope slope p)
-                              (mul 2 x1 p)
-                              p))
-                     (y3 (sub (mul slope
-                                   (sub x1 x3 p)
-                                   p)
-                              y1
-                              p)))
-                (cons x3 y3)))
-          ;; rule 4, adding two points that are not any of the
-          ;; other special cases
-          (let* ((slope (div (sub y2 y1 p)
-                             (sub x2 x1 p)
-                             p))
-                 (x3 (sub (sub (mul slope slope p)
-                               x1
-                               p)
-                          x2
-                          p))
-                 (y3 (sub (mul slope
-                               (sub x1 x3 p)
-                               p)
-                          y1
-                          p)))
-            (cons x3 y3)))))))
+(defsection curve-group-+
+  :parents (short-weierstrass)
+  :short "Add two elliptic curve points."
+  :long "@(call curve-group-+) adds
+         @('point1') and @('point2') using the elliptic curve group operation.
+         The two input points must be on the Short Weierstrass elliptic curve
+         defined by @('p'), @('a'), and @('b').  If either is not, a guard
+         violation occurs.
+         <p/>
+         The result is a point on the elliptic curve."
+  (defund curve-group-+ (point1 point2 p a b)
+    (declare (xargs :guard (and (rtl::primep p)
+                                (< 3 p)
+                                (fep a p)
+                                (fep b p)
+                                (not (= b 0))
+                                (pointp point1)
+                                (pointp point2)
+                                (point-in-pxp-p point1 p)
+                                (point-in-pxp-p point2 p)
+                                (point-on-elliptic-curve-p point1 p a b)
+                                (point-on-elliptic-curve-p point2 p a b))
+                    :guard-hints (("Goal"
+                                   :in-theory
+                                   (enable fep
+                                           pointp
+                                           point-in-pxp-p
+                                           point-on-elliptic-curve-p)))))
+    (declare (ignore b))
+    (if (equal point1 '(0 . 0))
+        point2 ; handles rule 1 (0+0=0) and half of rule 2 (0+Q=Q)
+      (if (equal point2 '(0 . 0))
+          point1 ; handles the other half of rule 2 (P+0=P)
+        (let ((x1 (car point1))
+              (y1 (cdr point1))
+              (x2 (car point2))
+              (y2 (cdr point2)))
+          (if (= x1 x2)
+              (if (= (add y1 y2 p) 0)
+                  '(0 . 0) ; rule 3, y1 = -y2 (mod p)
+                ;; rule 5, doubling the point
+                (let* ((slope (div (add (mul 3
+                                             (mul x1 x1 p)
+                                             p)
+                                        a
+                                        p)
+                                   (mul 2 y1 p)
+                                   p))
+                       (x3 (sub (mul slope slope p)
+                                (mul 2 x1 p)
+                                p))
+                       (y3 (sub (mul slope
+                                     (sub x1 x3 p)
+                                     p)
+                                y1
+                                p)))
+                  (cons x3 y3)))
+            ;; rule 4, adding two points that are not any of the
+            ;; other special cases
+            (let* ((slope (div (sub y2 y1 p)
+                               (sub x2 x1 p)
+                               p))
+                   (x3 (sub (sub (mul slope slope p)
+                                 x1
+                                 p)
+                            x2
+                            p))
+                   (y3 (sub (mul slope
+                                 (sub x1 x3 p)
+                                 p)
+                            y1
+                            p)))
+              (cons x3 y3)))))))
+)
 
 ;; The file short-weierstrass-validation.lisp contains theorems
 ;; that more explicitly link this definition to rules 1-5 in SEC 1.
@@ -412,26 +476,44 @@
 ;; (equal (curve-scalar-* s g p a b)
 ;;        (curve-group-+ g (curve-scalar-* (1- s) g p a b)))
 
-(defund curve-scalar-* (s point p a b)
-  (declare (xargs :guard (and (natp s)
-                              (rtl::primep p)
-                              (< 3 p)
-                              (fep a p)
-                              (fep b p)
-                              (not (= b 0))
-                              (pointp point)
-                              (point-in-pxp-p point p)
-                              (point-on-elliptic-curve-p point p a b))
-                  :verify-guards nil)) ; done below
-  (declare (xargs :measure (nfix s)))
-  (if (zp s)
-      '(0 . 0)
-    (if (= s 1)
-        point
-      (if (evenp s)
-          (let ((half-curve-scalar-* (curve-scalar-* (/ s 2) point p a b)))
-            (curve-group-+ half-curve-scalar-* half-curve-scalar-* p a b))
-        (curve-group-+ point (curve-scalar-* (- s 1) point p a b) p a b)))))
+(defsection curve-scalar-*
+  :parents (short-weierstrass)
+  :short "Multiply an elliptic curve point by a scalar."
+  :long "@(call curve-scalar-*) applies the elliptic group operation to @('s')
+         copies of @('point').
+         <p/>
+         Since we use @('+') to describe the group operation, this
+         operation can be thought of as multiplying @('point') by the scalar @('s').
+         <p/>
+         (Alternatively, for those who think of the group operation as
+         multiplication, this operation can be thought of as exponentiation.)
+         <p/>
+         @('point') must be on the Short Weierstrass elliptic curve
+         defined by @('p'), @('a'), and @('b').  If it is not, a guard
+         violation occurs.
+         <p/>
+         The result is a point on the elliptic curve."
+  (defund curve-scalar-* (s point p a b)
+    (declare (xargs :guard (and (natp s)
+                                (rtl::primep p)
+                                (< 3 p)
+                                (fep a p)
+                                (fep b p)
+                                (not (= b 0))
+                                (pointp point)
+                                (point-in-pxp-p point p)
+                                (point-on-elliptic-curve-p point p a b))
+                    :verify-guards nil)) ; done below
+    (declare (xargs :measure (nfix s)))
+    (if (zp s)
+        '(0 . 0)
+      (if (= s 1)
+          point
+        (if (evenp s)
+            (let ((half-curve-scalar-* (curve-scalar-* (/ s 2) point p a b)))
+              (curve-group-+ half-curve-scalar-* half-curve-scalar-* p a b))
+          (curve-group-+ point (curve-scalar-* (- s 1) point p a b) p a b)))))
+)
 
 ;; Prove closure of scalar multiplication by induction
 ;; (needed to verify guards).
@@ -493,18 +575,31 @@
 ;; Inverse (of addition) in the elliptic curve group.
 
 ;;  The negation of point (x,y) is (x,-y).
+;;  Given x and y are in [0, .. p-1],
+;;  -y = (p - y) mod p.
 
-(defund curve-negate (point p)
-  (declare (xargs :guard (and (rtl::primep p)
-                              (< 3 p)
-                              (pointp point)
-                              (point-in-pxp-p point p))
-                  :guard-hints (("Goal"
-                                 :in-theory
-                                 (enable fep pointp point-in-pxp-p)))))
-  (if (equal point '(0 . 0))
-      point
-    (cons (car point) (neg (cdr point) p))))
+(defsection curve-negate
+  :parents (short-weierstrass)
+  :short "Negate an elliptic curve point."
+  :long "@(call curve-negate) finds the inverse of @('point') with
+         respect to the elliptic curve group operation.
+         <p/>
+         The result is a point on the elliptic curve.
+         <p/>
+         Note that the curve parameters @('a') and @('b') are irrelevant to
+         this operation, so they are not parameters of this function."
+  (defund curve-negate (point p)
+    (declare (xargs :guard (and (rtl::primep p)
+                                (< 3 p)
+                                (pointp point)
+                                (point-in-pxp-p point p))
+                    :guard-hints (("Goal"
+                                   :in-theory
+                                   (enable fep pointp point-in-pxp-p)))))
+    (if (equal point '(0 . 0))
+        point
+      (cons (car point) (neg (cdr point) p))))
+)
 
 ;; Prove closure of negation.
 

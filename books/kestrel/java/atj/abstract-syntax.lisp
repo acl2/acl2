@@ -158,6 +158,7 @@
   :pred jliteralp)
 
 (fty::deflist jliteral-list
+  :short "True lists of Java literals."
   :elt-type jliteral
   :true-listp t
   :elementp-of-nil nil
@@ -194,6 +195,13 @@
   (:class ((name string)))
   (:array ((comp jtype)))
   :pred jtypep)
+
+(fty::deflist jtype-list
+  :short "True lists of Java types."
+  :elt-type jtype
+  :true-listp t
+  :elementp-of-nil nil
+  :pred jtype-listp)
 
 (fty::deftagsum junop
   :short "Java unary operators [JLS:15.15]."
@@ -570,6 +578,7 @@
   :pred jparamp)
 
 (fty::deflist jparam-list
+  :short "True lists of Java formal parameters."
   :elt-type jparam
   :true-listp t
   :elementp-of-nil nil
@@ -622,6 +631,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist jcmember-list
+    :short "True lists of Java class member declarations."
     :elt-type jcmember
     :true-listp t
     :elementp-of-nil nil
@@ -651,6 +661,7 @@
     :measure (two-nats-measure (acl2-count x) 1)))
 
 (fty::deflist jclass-list
+  :short "True lists of Java class declarations."
   :elt-type jclass
   :true-listp t
   :elementp-of-nil nil

@@ -25,7 +25,7 @@
 
 (defxdoc+ bip39
   :parents (bitcoin)
-  :short "Bitcion Improvement Proposal (BIP) 39."
+  :short "Bitcoin Improvement Proposal (BIP) 39."
   :long
   (xdoc::topstring
    (xdoc::p

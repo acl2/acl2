@@ -15,6 +15,10 @@
 #+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading ACL2s customizations book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
 (include-book "acl2s/custom" :dir :system :ttags :all)
 
+;Settings common to all ACL2s modes
+(acl2s-common-settings)
+;(acl2::xdoc acl2s::defunc) ;; 3 seconds is too much time to spare -- commenting out [2015-02-01 Sun]
+
 ;; guard-checking-on is in *protected-system-state-globals* so any
 ;; changes are reverted back to what they were if you try setting this
 ;; with make-event. So, in order to avoid the use of progn! and trust
@@ -24,10 +28,6 @@
 ;; How to check (f-get-global 'guard-checking-on state)
 ;; (acl2::set-guard-checking :nowarn)
 (acl2::set-guard-checking :all)
-
-;Settings common to all ACL2s modes
-(acl2s-common-settings)
-;(acl2::xdoc acl2s::defunc) ;; 3 seconds is too much time to spare -- commenting out [2015-02-01 Sun]
 
 #+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading ACL2s customizations book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
 (include-book "acl2s/acl2s-sigs" :dir :system :ttags :all)
