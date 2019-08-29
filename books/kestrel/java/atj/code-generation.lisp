@@ -832,7 +832,7 @@
 (define atj-gen-shallow-avar ((avar symbolp)
                               (index natp)
                               (curr-apkg stringp)
-                              (avars-by-name string-symbols-alistp))
+                              (avars-by-name string-symbollist-alistp))
   :returns (jvar-name stringp)
   :short "Generate a shallowly embedded ACL2 variable."
   :long
@@ -957,7 +957,7 @@
 (define atj-gen-shallow-avars ((avars symbol-listp)
                                (jvar-indices symbol-nat-alistp)
                                (curr-apkg stringp)
-                               (avars-by-name string-symbols-alistp))
+                               (avars-by-name string-symbollist-alistp))
   :returns (mv (jvar-names symbol-string-alistp :hyp (symbol-listp avars))
                (new-jvar-indices
                 symbol-nat-alistp
@@ -1282,7 +1282,7 @@
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
-                                  (avars-by-name string-symbols-alistp)
+                                  (avars-by-name string-symbollist-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -1420,7 +1420,7 @@
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
-                                  (avars-by-name string-symbols-alistp)
+                                  (avars-by-name string-symbollist-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -1530,7 +1530,7 @@
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
-                                  (avars-by-name string-symbols-alistp)
+                                  (avars-by-name string-symbollist-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -1688,7 +1688,7 @@
                                    (jvar-result-base stringp)
                                    (jvar-result-index posp)
                                    (curr-pkg stringp)
-                                   (avars-by-name string-symbols-alistp)
+                                   (avars-by-name string-symbollist-alistp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (and (= (len aargs) (len aformals))
@@ -1796,7 +1796,7 @@
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
                                  (curr-pkg stringp)
-                                 (avars-by-name string-symbols-alistp)
+                                 (avars-by-name string-symbollist-alistp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -2534,7 +2534,7 @@
                  :superinterfaces nil
                  :body (jmethods-to-jcmembers jclass-methods))))
 
-(define atj-gen-shallow-afns-by-apkg ((afns-by-apkg string-symbols-alistp)
+(define atj-gen-shallow-afns-by-apkg ((afns-by-apkg string-symbollist-alistp)
                                       (guards$ booleanp)
                                       (java-class$ stringp)
                                       (verbose$ booleanp)
@@ -2555,7 +2555,7 @@
   :prepwork
   ((define atj-gen-shallow-afns-by-apkg-aux
      ((apkgs string-listp)
-      (afns-by-apkg string-symbols-alistp)
+      (afns-by-apkg string-symbollist-alistp)
       (guards$ booleanp)
       (java-class$ stringp)
       (verbose$ booleanp)

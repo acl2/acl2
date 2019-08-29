@@ -80,8 +80,11 @@
                          sbyte8
                          sort-symbol-listp
                          string-downcase
+                         string-symbollist-alistp
                          string-upcase
                          string=>nats
+                         symbol-nat-alistp
+                         symbol-string-alistp
                          symbol-package-name-lst
                          trans-eval
                          tuplep

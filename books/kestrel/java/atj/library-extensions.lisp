@@ -10,6 +10,9 @@
 
 (in-package "JAVA")
 
+(include-book "kestrel/std/typed-alists/string-symbollist-alistp" :dir :system)
+(include-book "kestrel/std/typed-alists/symbol-nat-alistp" :dir :system)
+(include-book "kestrel/std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
@@ -32,38 +35,8 @@
 
 ; basic:
 
-(std::defalist symbol-nat-alistp (x)
-  :short "Recognize alists from symbols to natural numbers."
-  :key (symbolp x)
-  :val (natp x)
-  :true-listp t
-  :keyp-of-nil t
-  :valp-of-nil nil
-  ///
-
-  (defrule natp-of-cdr-of-assoc-equal-when-symbol-nat-alistp
-    (implies (and (symbol-nat-alistp alist)
-                  (assoc-equal key alist))
-             (natp (cdr (assoc-equal key alist))))))
-
-(std::defalist symbol-string-alistp (x)
-  :short "Recognize alists from symbols to strings."
-  :key (symbolp  x)
-  :val (stringp x)
-  :true-listp t
-  :keyp-of-nil t
-  :valp-of-nil nil)
-
-(std::defalist string-symbols-alistp (x)
-  :short "Recognize alists from strings to true lists of symbols."
-  :key (stringp x)
-  :val (symbol-listp x)
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil t)
-
 (define organize-symbols-by-pkg ((syms symbol-listp))
-  :returns (syms-by-pkg "A @(tsee string-symbols-alistp).")
+  :returns (syms-by-pkg "A @(tsee string-symbollist-alistp).")
   :verify-guards nil
   :short "Organize a list of symbols by their packages."
   :long
@@ -75,8 +48,8 @@
 
   :prepwork
   ((define organize-symbols-by-pkg-aux ((syms symbol-listp)
-                                        (acc string-symbols-alistp))
-     :returns syms-by-pkg ; STRING-SYMBOLS-ALISTP
+                                        (acc string-symbollist-alistp))
+     :returns syms-by-pkg ; STRING-SYMBOLLIST-ALISTP
      :verify-guards nil
      :parents nil
      (b* (((when (endp syms)) acc)
@@ -89,7 +62,7 @@
                                            acc))))))
 
 (define organize-symbols-by-name ((syms symbol-listp))
-  :returns (syms-by-name "A @(tsee string-symbols-alistp).")
+  :returns (syms-by-name "A @(tsee string-symbollist-alistp).")
   :verify-guards nil
   :short "Organize a list of symbols by their names."
   :long
@@ -101,8 +74,8 @@
 
   :prepwork
   ((define organize-symbols-by-name-aux ((syms symbol-listp)
-                                         (acc string-symbols-alistp))
-     :returns syms-by-name ; STRING-SYMBOLS-ALISTP
+                                         (acc string-symbollist-alistp))
+     :returns syms-by-name ; STRING-SYMBOLLIST-ALISTP
      :verify-guards nil
      :parents nil
      (b* (((when (endp syms)) acc)
