@@ -39,7 +39,7 @@
 (include-book "bvar-db-bfrlist")
 (include-book "bvar-db-equivs")
 (local (include-book "std/lists/resize-list" :dir :system))
-
+(local (std::add-default-post-define-hook :fix))
 
 
 (defret ipasirs-assumption-free-of-<fn>
@@ -162,15 +162,13 @@
                  (t (get-bvar->term$a n bvar-db))))))
 
 
-(defret len-of-gl-objectlist-map-bfrs
-  (equal (len (gl-objectlist-map-bfrs x litarr))
-         (len x))
-  :hints(("Goal" :in-theory (enable gl-objectlist-map-bfrs)
-          :induct (len x))))
+
 
 (defthm bvar-db-bfrlist-of-init-bvar-db
   (equal (bvar-db-bfrlist (init-bvar-db$a base-bvar bvar-db)) nil)
   :hints(("Goal" :in-theory (enable bvar-db-bfrlist bvar-db-bfrlist-aux))))
+
+
 
 
 
@@ -185,7 +183,7 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable bfr-pathcond-p logicman->bfrstate))))
 
-  :prepwork ((local (in-theory (disable member-equal
+  :prepwork ((local (in-theory (disable member-equal remove
                                         acl2::member-equal-append
                                         acl2::member-of-append
                                         bfr-listp$-when-subsetp-equal
@@ -272,7 +270,8 @@
                     
                     ((acl2::hintcontext :transform)))
                  (mv bitarr litarr
-                     (or contra1 contra2)
+                     (or* (and** contra1 (pathcond-enabledp pathcond))
+                          (and** contra2 (pathcond-enabledp constraint-pathcond)))
                      constraint-db
                      logicman
                      bvar-db
@@ -332,10 +331,106 @@
                       (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
                                     (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
                                     (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond)))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond)))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
                       (env (gl-env->bfr-vals ,(acl2::hq env)))
+                      (logicman ,(acl2::hq old-logicman))
+                      (bitarr ,(acl2::hq bitarr))
+                      (litarr ,(acl2::hq old-litarr))
+                      (config ,(acl2::hq config))
+                      (state ,(acl2::hq old-state)))))))))
+
+  (local (defret logicman-pathcond-eval-checkpoints!-of-<fn>-match-any
+           (implies (and ;; (not contra)
+                     (bfr-litarr-correct-p some-bfrs
+                                           env litarr logicman2 logicman)
+                     (bfr-litarr-correct-p (aignet::nbalist-to-cube (pathcond-aignet pathcond))
+                                           env litarr logicman2 logicman)
+                     (lbfr-mode-is :aignet logicman)
+                     (lbfr-mode-is :aignet logicman2)
+                     (equal (aignet::num-ins (logicman->aignet logicman))
+                            (aignet::num-ins (logicman->aignet logicman2))))
+                    (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman2)
+                           (logicman-pathcond-eval-checkpoints! env pathcond logicman)))
+           :hints (("Goal" :use logicman-pathcond-eval-checkpoints!-of-<fn>
+                    :in-theory (disable logicman-pathcond-eval-checkpoints!-of-<fn>)))
+           :fn logicman-pathcond-map-bfrs))
+
+  (defret pathcond-eval-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (bfr-mode-is :aignet (interp-st-bfr-mode)))
+             (equal (logicman-pathcond-eval-checkpoints! env
+                                                         (interp-st->pathcond new-interp-st)
+                                                         (interp-st->logicman new-interp-st))
+                    (logicman-pathcond-eval-checkpoints! env
+                                                         (interp-st->pathcond interp-st)
+                                                         (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (enable interp-st-bfrs-ok))
+           (acl2::function-termhint
+            interp-st-global-transform
+            (:transform
+             `(:in-theory (e/d (logicman->bfrstate
+                                bfr-pathcond-p)
+                               (bfr-litarr-correct-p-of-logicman-comb-transform
+                                bfr-litarr-correct-p-all-envs-of-logicman-comb-transform))
+               :use ((:instance bfr-litarr-correct-p-of-logicman-comb-transform
+                      (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
+                                    (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
+                                    (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
+                      (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
+                      (env ,(acl2::hq env))
+                      (logicman ,(acl2::hq old-logicman))
+                      (bitarr ,(acl2::hq bitarr))
+                      (litarr ,(acl2::hq old-litarr))
+                      (config ,(acl2::hq config))
+                      (state ,(acl2::hq old-state))))
+               :do-not-induct t
+               :do-not '(fertilize eliminate-destructors generalize))))))
+
+  ;; (local (defret logicman-pathcond-eval-of-<fn>-match
+  ;;          (implies (and ;; (not contra)
+  ;;                    (bfr-litarr-correct-p some-bfrs
+  ;;                                          env litarr logicman2 logicman)
+  ;;                    (bfr-litarr-correct-p (aignet::nbalist-to-cube (pathcond-aignet pathcond))
+  ;;                                          env litarr logicman2 logicman)
+  ;;                    (lbfr-mode-is :aignet logicman)
+  ;;                    (lbfr-mode-is :aignet logicman2)
+  ;;                    (equal (aignet::num-ins (logicman->aignet logicman))
+  ;;                           (aignet::num-ins (logicman->aignet logicman2))))
+  ;;                   (equal (logicman-pathcond-eval env new-pathcond logicman2)
+  ;;                          (logicman-pathcond-eval env pathcond logicman)))
+  ;;          :hints (("goal" :use logicman-pathcond-eval-of-<fn>
+  ;;                   :in-theory (disable logicman-pathcond-eval-of-<fn>)))
+  ;;          :fn logicman-pathcond-map-bfrs))
+
+  (defret constraint-eval-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (bfr-mode-is :aignet (interp-st-bfr-mode)))
+             (equal (logicman-pathcond-eval env
+                                            (interp-st->constraint new-interp-st)
+                                            (interp-st->logicman new-interp-st))
+                    (logicman-pathcond-eval env
+                                            (interp-st->constraint interp-st)
+                                            (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (enable interp-st-bfrs-ok))
+           (acl2::function-termhint
+            interp-st-global-transform
+            (:transform
+             `(:in-theory (e/d (logicman->bfrstate
+                                bfr-pathcond-p)
+                               (bfr-litarr-correct-p-of-logicman-comb-transform
+                                bfr-litarr-correct-p-all-envs-of-logicman-comb-transform))
+               :use ((:instance bfr-litarr-correct-p-of-logicman-comb-transform
+                      (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
+                                    (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
+                                    (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
+                      (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
+                      (env ,(acl2::hq env))
                       (logicman ,(acl2::hq old-logicman))
                       (bitarr ,(acl2::hq bitarr))
                       (litarr ,(acl2::hq old-litarr))
@@ -442,8 +537,8 @@
                       (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
                                     (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
                                     (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond)))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond)))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
                       (env (gl-env->bfr-vals ,(acl2::hq env)))
                       (logicman ,(acl2::hq old-logicman))
@@ -485,8 +580,8 @@
                       (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
                                     (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
                                     (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond)))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond)))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
                       (logicman ,(acl2::hq old-logicman))
                       (bitarr ,(acl2::hq bitarr))
@@ -523,8 +618,8 @@
                       (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
                                     (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
                                     (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond)))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond)))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
                       (logicman ,(acl2::hq old-logicman))
                       (bitarr ,(acl2::hq bitarr))
@@ -535,9 +630,74 @@
                       (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
                                     (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
                                     (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond)))
-                                    (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond)))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
+                      (logicman ,(acl2::hq old-logicman))
+                      (bitarr ,(acl2::hq bitarr))
+                      (litarr ,(acl2::hq old-litarr))
+                      (config ,(acl2::hq config))
+                      (state ,(acl2::hq old-state)))))))))
+
+  (defret interp-st-get-of-<fn>
+    (implies (not (member (interp-st-field-fix key)
+                          '(:cgraph :cgraph-memo :cgraph-index :fgarrays :next-fgarray
+                            :logicman :bvar-db :stack :pathcond :constraint :constraint-db)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret scratch-isomorphic-of-<fn>
+    (interp-st-scratch-isomorphic new-interp-st interp-st)
+    :hints(("Goal" :in-theory (enable interp-st-scratch-isomorphic))))
+
+  (defret logicman->mode-of-<fn>
+    (equal (logicman->mode (interp-st->logicman new-interp-st))
+           (logicman->mode (interp-st->logicman interp-st))))
+
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars (interp-st->logicman new-interp-st))
+           (bfr-nvars (interp-st->logicman interp-st))))
+
+  (defret pathcond-enabledp-of-<fn>
+    (equal (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+           (nth *pathcond-enabledp* (interp-st->pathcond interp-st))))
+
+  (defret constraint-enabledp-of-<fn>
+    (equal (nth *pathcond-enabledp* (interp-st->constraint new-interp-st))
+           (nth *pathcond-enabledp* (interp-st->constraint interp-st))))
+
+  (defret pathcond-rewind-stack-len-of-<fn>
+    (equal (pathcond-rewind-stack-len (bfrmode :aignet) (interp-st->pathcond new-interp-st))
+           (pathcond-rewind-stack-len (bfrmode :aignet) (interp-st->pathcond interp-st))))
+
+  (defret pathcond-rewind-ok-of-<fn>
+    (equal (pathcond-rewind-ok (bfrmode :aignet) (interp-st->pathcond new-interp-st))
+           (pathcond-rewind-ok (bfrmode :aignet) (interp-st->pathcond interp-st))))
+
+  (defret contra-of-<fn>
+    (implies (and (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bfrs-ok interp-st)
+                  (bfr-mode-is :aignet (interp-st-bfr-mode)))
+             (not contra))
+    :hints(("Goal" :in-theory (enable interp-st-bfrs-ok or* and*))
+           (acl2::function-termhint
+            interp-st-global-transform
+            (:transform
+             `(:in-theory (e/d (logicman->bfrstate
+                                bfr-pathcond-p)
+                               (bfr-litarr-correct-p-all-envs-of-logicman-comb-transform
+                                bfr-litarr-correct-p-of-logicman-comb-transform))
+               :use ((:instance bfr-litarr-correct-p-of-logicman-comb-transform
+                      (bfrs (append (major-stack-bfrlist ,(acl2::hq old-stack-obj))
+                                    (constraint-db-bfrlist ,(acl2::hq old-constraint-db))
+                                    (bvar-db-bfrlist ,(acl2::hq old-bvar-db))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
+                                    (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
+                      (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
+                      (env ,(acl2::hq env))
                       (logicman ,(acl2::hq old-logicman))
                       (bitarr ,(acl2::hq bitarr))
                       (litarr ,(acl2::hq old-litarr))
@@ -546,6 +706,7 @@
 
 
 (define fgl-global-transform (config)
+  :enabled t
   (declare (ignore config))
   nil)
 
@@ -556,8 +717,13 @@
 (def-formula-checks global-trans-formula-checks
   (fgl-global-transform))
 
+(local (include-book "primitive-lemmas"))
+
 (def-gl-primitive fgl-global-transform (config)
-  (b* (((unless (gl-object-case config :g-concrete))
+  (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
+        (cw "Warning: skipping global transform because we're not in aignet mode~%")
+        (mv t nil interp-st state))
+       ((unless (gl-object-case config :g-concrete))
         (gl-interp-error :msg "Fgl-global-transform: config must be a concrete object"
                          :debug-obj config
                          :nvals 2))
@@ -570,3 +736,5 @@
     (mv t nil interp-st state))
   :updates-state t
   :formula-check global-trans-formula-checks)
+
+

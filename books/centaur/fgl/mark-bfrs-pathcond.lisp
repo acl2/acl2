@@ -33,10 +33,10 @@
 (include-book "pathcond-aignet")
 (include-book "mark-bfrs-base")
 
-(local (defthm posp-car-nth-of-nbalist
+(local (defthm natp-car-nth-of-nbalist
          (implies (and (nbalistp x)
                        (< (nfix n) (len x)))
-                  (posp (car (nth n x))))))
+                  (natp (car (nth n x))))))
 
 (local (defthm hons-assoc-equal-of-nth-when-nbalistp
          (implies (and (nbalistp x)
@@ -45,12 +45,28 @@
                          (nth n x)))
          :hints(("Goal" :in-theory (enable nth nbalistp)))))
 
+(local (defthmd hons-assoc-equal-when-equal-car-nth
+         (implies (and (nbalistp x)
+                       (equal a (car (nth n x)))
+                       (< (nfix n) (len x)))
+                  (equal (hons-assoc-equal a x)
+                         (nth n x)))))
+
+(local (defthm consp-nth-when-nbalistp
+         (implies (and (nbalistp x)
+                       (< n (len x))
+                       (natp n))
+                  (consp (nth n x)))
+         :rule-classes :type-prescription))
+         
+
 (local (defthm nbalist-lookup-of-nth-n
          (implies (and (nbalistp x)
                        (< (nfix n) (len x)))
                   (equal (nbalist-lookup (car (nth n x)) x)
                          (cdr (nth n x))))
-         :hints(("Goal" :in-theory (enable nbalist-lookup nbalistp nth hons-assoc-equal)
+         :hints(("Goal" :in-theory (enable nbalist-lookup nbalistp nth hons-assoc-equal
+                                           hons-assoc-equal-when-equal-car-nth)
                  :induct (nth n x)))))
 
 (local (defthm nthcdr-of-nil
@@ -114,10 +130,15 @@
            (acl2::rev (nbalist-to-cube aignet-pathcond)))))
 
 
-(local (defthm posp-caar-of-nbalist-fix
+(local (defthm natp-caar-of-nbalist-fix
          (implies (consp (nbalist-fix x))
-                  (posp (caar (nbalist-fix x))))
+                  (natp (caar (nbalist-fix x))))
          :rule-classes :type-prescription))
+
+(local (defthm cdar-of-nbalist-fix-when-caar-zero
+         (implies (equal (caar (nbalist-fix x)) 0)
+                  (equal (cdar (nbalist-fix x)) 1))
+         :hints(("Goal" :in-theory (enable nbalist-fix)))))
 
 (defsection nbalist-to-cube
   (local (std::set-define-current-function nbalist-to-cube))
@@ -125,7 +146,8 @@
 
   (defthm bfr-listp-of-nbalist-to-cube
     (implies (bounded-pathcond-p x (+ 1 (nfix num-fanins)))
-             (fgl::bfr-listp (nbalist-to-cube x) (fgl::bfrstate (fgl::bfrmode :aignet) num-fanins)))
+             (fgl::bfr-listp (remove 0 (nbalist-to-cube x))
+                             (fgl::bfrstate (fgl::bfrmode :aignet) num-fanins)))
     :hints(("Goal" :in-theory (enable fgl::bfr-p fgl::bfr-listp
                                       bounded-pathcond-p-redef
                                       satlink::equal-of-make-lit)))))
@@ -142,11 +164,11 @@
          :hints(("Goal" :in-theory (enable bounded-pathcond-p-redef
                                            nth)))))
 
-(local (defthm posp-car-nth-of-nbalist-type
+(local (defthm natp-car-nth-of-nbalist-type
          (implies (and (nbalistp x)
                        (< n (len x))
                        (natp n))
-                  (posp (car (nth n x))))
+                  (natp (car (nth n x))))
          :rule-classes :type-prescription))
 
 ;; (defthm nbalist-lookup-of-car-nth
@@ -183,6 +205,16 @@
                (bfrs-markedp y bitarr)))
      :hints ((acl2::witness)))))
 
+#!fgl
+(defthm bfrs-markedp-of-remove-0
+  (iff (bfrs-markedp (remove 0 bfrs) bitarr)
+       (bfrs-markedp bfrs bitarr))
+  :hints ((and stable-under-simplificationp
+               (let ((lit (assoc 'bfrs-markedp clause)))
+                 `(:expand (,lit)
+                   :in-theory (enable bfrs-markedp-necc)
+                   :cases ((equal 0 (bfrs-markedp-witness . ,(cdr lit)))))))))
+
 (define aignet-pathcond-mark-bfrs-aux ((n natp)
                                        (aignet-pathcond)
                                        bitarr)
@@ -195,6 +227,8 @@
                    :exec (eql (aignet-pathcond-len aignet-pathcond) n)))
         bitarr)
        (id (aignet-pathcond-nthkey n aignet-pathcond))
+       ((when (eql id 0))
+        (aignet-pathcond-mark-bfrs-aux (1+ (lnfix n)) aignet-pathcond bitarr))
        ;; For a pathcond to eval to true, each ID has to evaluate to its
        ;; corresponding bit from the nbalist.  For the corresponding lit to
        ;; eval to true, we need to NOT negate it if the resulting evaluation is
@@ -215,15 +249,49 @@
   (local (in-theory (disable nth-of-nbalist-to-cube)))
 
   (local (defthm bfr-listp-nthcdr-implies-bfr-p-nth
-           (implies (fgl::bfr-listp (nthcdr n x))
+           (implies (and (fgl::bfr-listp (remove 0 (nthcdr n x)))
+                         (not (equal (nth n x) 0)))
                     (fgl::bfr-p (nth n x)))
-           :hints(("Goal" :expand ((fgl::bfr-listp (nthcdr n x)))))))
+           :hints(("Goal" :expand ((fgl::bfr-listp (remove 0 (nthcdr n x))))))))
+
+  (local (defun nth-of-nbalist-ind (n nbalist)
+           (if (zp n)
+               nbalist
+             (nth-of-nbalist-ind (1- n) (cdr (nbalist-fix nbalist))))))
+
+  
+
+  (local (defthm cdr-nth-of-nbalist-fix-when-car-nth-0
+           (implies (equal (car (nth n (nbalist-fix x))) 0)
+                    (equal (cdr (nth n (nbalist-fix x))) 1))
+           :hints(("Goal" :in-theory (enable nbalist-fix nth)
+                   :induct (nth-of-nbalist-ind n x)))))
+
+  (local (defthm nth-of-nbalist-to-cube-equal-0
+           (iff (equal (nth n (nbalist-to-cube nbalist)) 0)
+                (equal (car (nth n (nbalist-fix nbalist))) 0))
+           :hints(("Goal" :in-theory (enable nbalist-to-cube nth
+                                             satlink::equal-of-make-lit)
+                   :induct (nth-of-nbalist-ind n nbalist)
+                   :expand ((nbalist-to-cube nbalist))))))
+
+  (local (defthm nth-of-nbalist-to-cube-equal-0-rw
+           (implies (equal (car (nth n (nbalist-fix nbalist))) 0)
+                    (equal (nth n (nbalist-to-cube nbalist)) 0))
+           :hints(("Goal" :in-theory (enable nbalist-to-cube nth
+                                             satlink::equal-of-make-lit)
+                   :induct (nth-of-nbalist-ind n nbalist)
+                   :expand ((nbalist-to-cube nbalist))))))
   
   (defret length-of-<fn>
-    (implies (fgl::bfr-listp (nthcdr n (nbalist-to-cube aignet-pathcond))
+    (implies (fgl::bfr-listp (remove 0 (nthcdr n (nbalist-to-cube aignet-pathcond)))
                              (fgl::bfrstate (fgl::bfrmode :aignet) (1- (len bitarr))))
              (equal (len new-bitarr) (len bitarr)))
-    :hints(("Goal" :in-theory (enable fgl::bfr-listp))))
+    :hints(("Goal" :in-theory (disable member remove
+                                       fgl::bfr-listp$-when-subsetp-equal)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:expand ((remove-equal 0 (nthcdr n (nbalist-to-cube aignet-pathcond))))))))
 
   (defret length-of-<fn>-incr
     (>= (len new-bitarr) (len bitarr))
@@ -252,6 +320,7 @@
                            (cons (nth n x)
                                  (nthcdr n (cdr x)))))))
 
+
   (defret <fn>-marks-bfrs
     (fgl::bfrs-markedp (nthcdr n (nbalist-to-cube aignet-pathcond)) new-bitarr)
     :hints (("goal" :induct <call>)
@@ -275,7 +344,7 @@
   (aignet-pathcond-mark-bfrs-aux 0 aignet-pathcond bitarr)
   ///
   (defret length-of-<fn>
-    (implies (fgl::bfr-listp (nbalist-to-cube aignet-pathcond)
+    (implies (fgl::bfr-listp (remove 0 (nbalist-to-cube aignet-pathcond))
                              (fgl::bfrstate (fgl::bfrmode :aignet) (1- (len bitarr))))
              (equal (len new-bitarr) (len bitarr))))
 
@@ -302,5 +371,3 @@
     :hints (("Goal" :use ((:instance aignet-pathcond-mark-bfrs-aux-marks-bfrs
                            (n 0)))
              :in-theory (disable aignet-pathcond-mark-bfrs-aux-marks-bfrs)))))
-
-

@@ -266,12 +266,6 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
 
-(local (defthm fgl-objectlist-eval-when-atom
-         (implies (not (consp x))
-                  (equal (fgl-objectlist-eval x env) nil))
-         :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))
-         :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
 (local (defthm boolean-listp-of-aig-eval-list
          (boolean-listp (acl2::aig-eval-list x env))))
 

@@ -42,14 +42,17 @@
   :guard-hints (("Goal" :in-theory (enable bfr-p)))
   (cond ((eq bfr t) t)
         ((eq bfr nil) nil)
-        (t (b* ((lit (aignet::lit-copy bfr litarr)))
-             (cond ((eql lit 0) nil)
-                   ((eql lit 1) t)
-                   (t lit)))))
+        (t (if (mbt (not (eql bfr 0)))
+               (b* ((lit (aignet::lit-copy bfr litarr)))
+                 (cond ((eql lit 0) nil)
+                       ((eql lit 1) t)
+                       (t lit)))
+             nil)))
   ///
   (defthm bfr-map-of-consts
     (and (equal (bfr-map nil litarr) nil)
-         (equal (bfr-map t litarr)   t))))
+         (equal (bfr-map t litarr)   t)
+         (equal (bfr-map 0 litarr)   nil))))
 
 
 (define bfrlist-map (bfrs litarr)
@@ -118,7 +121,16 @@
     (implies (and (bfr-litarr-p bfrs litarr bound)
                   (subsetp bfrs1 bfrs))
              (bfr-litarr-p bfrs1 litarr bound))
-    :hints(("Goal" :in-theory (enable subsetp)))))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (defthm bfr-litarr-p-of-remove-0
+    (iff (bfr-litarr-p (remove 0 bfrs) litarr bound)
+         (bfr-litarr-p bfrs litarr bound))
+    :hints(("Goal" :in-theory (enable bfr-litarr-p
+                                      bfr->aignet-lit
+                                      bfr-fix len remove)
+            :induct (len bfrs)
+            :expand ((bfr-eval 0 env))))))
              
 
 (define bfr-litarr-p-witness (bfrs litarr (bfrstate-bound natp))
@@ -207,7 +219,18 @@
     (implies (and (bfr-litarr-correct-p bfrs env litarr logicman2 logicman)
                   (subsetp bfrs1 bfrs))
              (bfr-litarr-correct-p bfrs1 env litarr logicman2 logicman))
-    :hints(("Goal" :in-theory (enable subsetp)))))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (defthm bfr-litarr-correct-p-of-remove-0
+    (implies (and (lbfr-mode-is :aignet)
+                  (lbfr-mode-is :aignet logicman2))
+             (iff (bfr-litarr-correct-p (remove 0 bfrs) env litarr logicman2 logicman)
+                  (bfr-litarr-correct-p bfrs env litarr logicman2 logicman)))
+    :hints(("Goal" :in-theory (enable bfr-litarr-correct-p
+                                      bfr->aignet-lit
+                                      bfr-fix)
+            :induct (len bfrs)
+            :expand ((bfr-eval 0 env))))))
 
 
 (define bfr-litarr-correct-p-witness (bfrs env litarr logicman2 logicman)
@@ -372,9 +395,23 @@
     :hints(("Goal" :in-theory (enable bfr-p bfr-map bfr-markedp aignet::lit-copy)
             :do-not-induct t)))
 
+  (local (defthm bfr-p-of-bfr-map-when-0
+           (implies (case-split (equal bfr 0))
+                    (bfr-p (bfr-map bfr litarr) bfrstate))))
+
+  (local (defthm bfr-map-nonzero
+           (not (equal (bfr-map bfr litarr) 0))
+           :hints(("Goal" :in-theory (enable bfr-map)))))
+
   (local (defthm bfr-p-when-member-bfr-listp
            (implies (and (member bfr bfrs)
                          (bfr-listp bfrs))
+                    (bfr-p bfr))))
+
+  (local (defthm bfr-p-when-member-bfr-listp-0
+           (implies (and (bfr-listp (remove 0 bfrs))
+                         (member bfr bfrs)
+                         (not (equal 0 bfr)))
                     (bfr-p bfr))))
 
   (defret bfr-mode-of-<fn>
@@ -392,7 +429,7 @@
   (defret bfr-litarr-p-of-<fn>
     (implies (and (bfrs-markedp bfrs bitarr)
                   (lbfr-mode-is :aignet)
-                  (lbfr-listp bfrs logicman)
+                  (lbfr-listp (remove 0 bfrs) logicman)
                   (<= (len bitarr) (aignet::num-fanins (logicman->aignet logicman)))
                   (equal bound (bfrstate->bound (logicman->bfrstate new-logicman))))
              (bfr-litarr-p bfrs new-litarr bound))
@@ -400,6 +437,7 @@
                                     bfrs-markedp-necc)
                                    (<fn>))
             :do-not-induct t)))
+
 
   (defret litarr-length-of-<fn>
     (equal (len new-litarr)
@@ -475,7 +513,15 @@
     (implies (logicman-invar logicman)
              (logicman-invar new-logicman))
     :hints(("Goal" :in-theory (enable logicman-invar
-                                      logicman-ipasir-sat-lits-invar)))))
+                                      logicman-ipasir-sat-lits-invar))))
+
+  (defret stype-counts-of-<fn>
+    (and (equal (aignet::stype-count :pi (logicman->aignet new-logicman))
+                (aignet::stype-count :pi (logicman->aignet logicman)))
+         (equal (aignet::stype-count :po (logicman->aignet new-logicman))
+                0)
+         (equal (aignet::stype-count :reg (logicman->aignet new-logicman))
+                (aignet::stype-count :reg (logicman->aignet logicman))))))
 
 
 

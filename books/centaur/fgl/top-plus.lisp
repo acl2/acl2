@@ -35,6 +35,7 @@
 (include-book "svex")
 (include-book "member-equal")
 (include-book "enums")
+(include-book "transform")
 
 (local (in-theory (disable w)))
 

@@ -89,7 +89,8 @@
 
   (defthm pathcondp-of-update-aignet
     (implies (and (pathcondp x)
-                  (aignet::nbalistp nbalist))
+                  (aignet::nbalistp nbalist)
+                  (not (equal (aignet::nbalist-lookup 0 nbalist) 0)))
              (pathcondp (update-nth *pathcond-aignet* nbalist x)))))
 
 (define ubdd-list-fix ((x acl2::ubdd-listp))
@@ -108,6 +109,7 @@
   (defthm len-of-ubdd-list-fix
     (equal (len (ubdd-list-fix x))
            (len x))))
+
 
 (define pathcond-fix (pathcond)
   :returns (new-pathcond pathcondp)

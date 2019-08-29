@@ -50,8 +50,15 @@
   :guard (and (< 0 (bits-length bitarr))
               (bfr-p x (bfrstate (bfrmode :aignet) (1- (bits-length bitarr)))))
   :guard-hints (("goal" :in-theory (enable bfr-p)))
-  (b* (((when (or (eq x t) (eq x nil))) t))
-    (equal 1 (get-bit (satlink::lit->var x) bitarr))))
+  (b* (((when (mbe :logic (or (eq x t) (eq x nil) (eql x 0))
+                   :exec (or (eq x t) (eq x nil))))
+        t))
+    (equal 1 (get-bit (satlink::lit->var x) bitarr)))
+  ///
+  (defthm bfr-markedp-of-consts
+    (and (bfr-markedp t bitarr)
+         (bfr-markedp nil bitarr)
+         (bfr-markedp 0 bitarr))))
 
 (define bfr-mark (x bitarr)
   :prepwork ((local (in-theory (enable bfr-p)))

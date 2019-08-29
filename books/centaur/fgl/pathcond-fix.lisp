@@ -937,11 +937,6 @@
 ;;   (
 
 
-(local (defthm fgl-objectlist-eval-when-atom
-         (implies (not (consp x))
-                  (equal (fgl-objectlist-eval x env) nil))
-         :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
-
 (local
  (set-default-hints
   '((and stable-under-simplificationp

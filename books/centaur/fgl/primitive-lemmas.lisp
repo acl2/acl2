@@ -261,3 +261,8 @@
   :hints(("Goal" :in-theory (enable gobj-syntactic-consp
                                     gobj-syntactic-list->cdr
                                     gobj-syntactic-list->car))))
+
+(defthm fgl-objectlist-eval-when-atom
+  (implies (not (consp x))
+           (equal (fgl-objectlist-eval x env) nil))
+  :hints(("Goal" :in-theory (enable fgl-objectlist-eval))))

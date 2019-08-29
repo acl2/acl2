@@ -94,10 +94,6 @@
                               (hons-assoc-equal k x))))))
     :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-(local (defthm fgl-objectlist-eval-when-atom
-         (implies (not (consp x))
-                  (equal (fgl-objectlist-eval x env) nil))
-         :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
 
 (def-gl-primitive hons-get (key x)
   (b* (((when (gl-object-case x '(:g-integer :g-boolean)))

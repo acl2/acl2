@@ -48,7 +48,9 @@
           (bfrstate-case
             :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
                                (ans)
-                               (aignet::bounded-pathcond-p aignet-pathcond (1+ (bfrstate->bound bfrstate)))
+                               (aignet::bounded-pathcond-p
+                                (aignet::nbalist-fix aignet-pathcond)
+                                (1+ (bfrstate->bound bfrstate)))
                                ans)
             :bdd (and (bfr-p (acl2::ubdd-fix (pathcond-bdd pathcond)))
                       (bfr-listp (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
@@ -91,6 +93,7 @@
                     (bfr-listp (ubdd-list-fix x)))
            :hints(("Goal" :in-theory (enable bfr-listp$ ubdd-list-fix)))))
 
+
   (defthm bfr-pathcond-p-of-pathcond-rewind
     (implies (and (bfr-pathcond-p x)
                   (equal (bfr-mode-fix bfr-mode)
@@ -103,16 +106,15 @@
                 (let ((lit (car (last clause))))
                   `(:expand ((:with aignet::bounded-pathcond-p ,lit))
                     :use ((:instance aignet::bounded-pathcond-p-necc
-                           (nbalist (nth *pathcond-aignet* x))
+                           (nbalist (aignet::nbalist-fix (nth *pathcond-aignet* x)))
                            (num-fanins (+ 1 (bfrstate->bound bfrstate)))
                            (id (aignet::bounded-pathcond-p-witness . ,(cdr lit))))
                           (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
-                           (x (nth *pathcond-aignet* x))
+                           (x (aignet::nbalist-fix (nth *pathcond-aignet* x)))
                            (len (car (nth *pathcond-checkpoint-ptrs* x))))
                           (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
-                           (x (nth *pathcond-aignet* x))
+                           (x (aignet::nbalist-fix (nth *pathcond-aignet* x)))
                            (len 0)))))))))
-
 
 
 
@@ -227,6 +229,9 @@
   :hints(("Goal" :in-theory (enable bounded-lit-fix aignet::aignet-lit-fix
                                     aignet::aignet-idp
                                     aignet::aignet-id-fix))))
+
+
+
 
 (define logicman-pathcond-implies ((x lbfr-p)
                                    pathcond

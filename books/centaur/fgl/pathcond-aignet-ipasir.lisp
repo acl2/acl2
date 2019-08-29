@@ -80,9 +80,9 @@
                 (b-xor neg (eval-lit lit env)))
          :hints(("Goal" :in-theory (enable lit-negate-cond eval-lit)))))
 
-(local (defthm posp-caar-of-nbalist-fix
+(local (defthm natp-caar-of-nbalist-fix
          (implies (consp (nbalist-fix x))
-                  (posp (caar (nbalist-fix x))))
+                  (natp (caar (nbalist-fix x))))
          :rule-classes :type-prescription))
 
 (defsection nbalist-to-cube
@@ -255,7 +255,7 @@
 
   (defret aignet-id-has-sat-var-of-<fn>-when-nbalist-lookup
     (implies (and (nbalist-lookup id nbalist)
-                  (posp id)
+                  (natp id)
                   (sat-lits-wfp sat-lits aignet)
                   (bounded-pathcond-p nbalist (num-fanins aignet)))
              (aignet-id-has-sat-var id new-sat-lits))
@@ -482,10 +482,10 @@
 ;;            (sat-lit-list-listp (append x y) sat-lits)))
 
 
-(local (defthm posp-car-nth-when-nbalistp
+(local (defthm natp-car-nth-when-nbalistp
          (implies (and (nbalistp x)
                        (< (nfix n) (len x)))
-                  (posp (car (nth n x))))
+                  (natp (car (nth n x))))
          :hints(("Goal" :in-theory (enable nbalistp)))))
 
 (local (defthm bitp-cdr-nth-when-nbalistp
@@ -550,11 +550,11 @@
          (equal (cdr (nthcdr n x))
                 (nthcdr n (cdr x)))))
 
-(local (defthm posp-car-nth-when-nbalistp-type
+(local (defthm natp-car-nth-when-nbalistp-type
          (implies (and (nbalistp x)
                        (< n (len x))
                        (natp n))
-                  (posp (car (nth n x))))
+                  (natp (car (nth n x))))
          :rule-classes :type-prescription))
 
 (local (defthm <-0-minus

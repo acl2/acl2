@@ -33,7 +33,13 @@
 (include-book "logicman-transform")
 (include-book "stack-ev")
 (include-book "constraint-db")
+(include-book "scratch-isomorphic")
 
+(defthm len-of-gl-objectlist-map-bfrs
+  (equal (len (gl-objectlist-map-bfrs x litarr))
+         (len x))
+  :hints(("Goal" :in-theory (enable gl-objectlist-map-bfrs)
+          :induct (len x))))
 
 (local (std::add-default-post-define-hook :fix))
 

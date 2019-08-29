@@ -55,10 +55,6 @@
 
 
 
-(local (defthm fgl-objectlist-eval-when-atom
-         (implies (not (consp x))
-                  (equal (fgl-objectlist-eval x env) nil))
-         :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
 
 (local (defthm gobj-bfr-list-eval-of-append
          (equal (gobj-bfr-list-eval (append x y) env)
