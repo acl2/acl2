@@ -36,9 +36,9 @@
     "(include-book \"kestrel/crypto/hmac/top\" :dir :system)")
    (xdoc::p "The interface functions are:")
    (xdoc::ul
-     (xdoc::li (xdoc::tt "(hmac-sha-256 k text)") " applies HMAC-SHA-256 to key K (a list of bytes) and data TEXT (a list of bits).  Returns a list of 32 bytes.")
-     (xdoc::li (xdoc::tt "(hmac-sha-512 k text)") " applies HMAC-SHA-512 to key K (a list of bytes) and data TEXT (a list of bits).  Returns a list of 64 bytes."))
-   (xdoc::p "See RFC 2104 for guidance on the length of the keys used.")
+     (xdoc::li (xdoc::tt "(hmac-sha-256 k text)") " applies HMAC-SHA-256 to key " (xdoc::tt "k") " (a list of bytes) and data " (xdoc::tt "text") " (a list of bits).  Returns a list of 32 bytes.")
+     (xdoc::li (xdoc::tt "(hmac-sha-512 k text)") " applies HMAC-SHA-512 to key " (xdoc::tt "k") " (a list of bytes) and data " (xdoc::tt "text") " (a list of bits).  Returns a list of 64 bytes."))
+   (xdoc::p "See " (xdoc::a :href "https://tools.ietf.org/html/rfc2104" "RFC 2104") " for guidance on the length of the keys used.")
    (xdoc::p
     "See the comments in the source files for more information on the HMAC library.")
    (xdoc::p
