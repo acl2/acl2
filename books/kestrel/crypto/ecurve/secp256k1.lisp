@@ -143,13 +143,44 @@ h = 01
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Top xdoc topic for this file.
+
+(defxdoc secp256k1
+  :parents (elliptic-curves)
+  :short "A library for the Short Weierstrass elliptic curve secp256k1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The below executable functions implement elliptic curve operations
+     on secp256k1, which is a
+     <see topic=\"ECURVE____SHORT-WEIERSTRASS\">Short Weierstrass</see>
+     elliptic curve with @('a=0') and @('b=7'):")
+   (xdoc::@[] "y^2=x^3+7")
+   (xdoc::p "secp256k1 is used for Bitcoin and Ethereum.")
+   (xdoc::p "For more information on secp256k1, see @(see secp256k1-domain-parameters).")
+   (xdoc::p "See also the source code for more extensive
+             discussion, references, and proved theorems.")
+   ))
+
+;; Order the subtopics according to the order in which they were defined.
+(xdoc::order-subtopics secp256k1
+  nil
+  t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The generator point for the curve (an ordered pair).
 
-(defund secp256k1-generator ()
-  (declare (xargs :guard t))
-  (cons
-   (secp256k1-generator-x)
-   (secp256k1-generator-y)))
+(defsection secp256k1-generator
+  :parents (secp256k1)
+  :short "The generator point @('G')."
+  :long "The nullary function call @(call secp256k1-generator)
+         returns the standard generator point for the curve secp256k1."
+  (defund secp256k1-generator ()
+    (declare (xargs :guard t))
+    (cons
+     (secp256k1-generator-x)
+     (secp256k1-generator-y))))
 
 (in-theory (disable (:e secp256k1-generator)))
 
@@ -270,12 +301,23 @@ h = 01
 ;; or "a is a residue of p" or just "a R p"
 ;; to mean "a has a square root mod p".
 
-(defun secp256k1-has-square-root? (a)
-  (declare (xargs :guard (and (natp a) (< a (secp256k1-prime)))
-                  :guard-hints (("Goal" :in-theory (enable secp256k1-prime fep)))))
-  (let ((p (secp256k1-prime)))
-    (equal (pow a (/ (- p 1) 2) p)
-           1)))
+(defsection secp256k1-has-square-root?
+  :parents (secp256k1)
+  :short "Test if @('a') has a square root in secp256k1's prime field @('p')."
+  :long "@(call secp256k1-has-square-root?) tests whether @('a') is
+         a quadratic residue of @('p'), i.e., whether there exists
+         an element @($x$) of the prime field such that @($x^2 = a\\ (mod\\ p)$).
+         <p/>
+         Note that this function is about the prime field @('p') used
+         to define secp256k1.  It is independent of
+         the other secp256k1 domain parameters."
+  (defun secp256k1-has-square-root? (a)
+    (declare (xargs :guard (and (natp a) (< a (secp256k1-prime)))
+                    :guard-hints (("Goal" :in-theory (enable secp256k1-prime fep)))))
+    (let ((p (secp256k1-prime)))
+      (equal (pow a (/ (- p 1) 2) p)
+             1)))
+)
 
 ;; There is a reasonably simple formula for finding mod-sqrt(a)
 ;; when p = 3 (mod 4), which is the case here.
@@ -295,39 +337,62 @@ h = 01
 ;; if we already have a possible square root, it is easier
 ;; to just square it to check.
 
-(defun secp256k1-sqrt (a)
-  (declare (xargs :guard (and (natp a) (< a (secp256k1-prime)))
-                  :guard-hints (("Goal"
-                                 :in-theory (enable secp256k1-prime fep)))))
-  (let ((p (secp256k1-prime)))
-    (let ((poss-root (pow a (/ (+ p 1) 4) p)))
-      (if (equal (mod (* poss-root poss-root) p) a)
-          poss-root
-        ':invalid))))
+(defsection secp256k1-sqrt
+  :parents (secp256k1)
+  :short "Compute the modular square root of @('a') in the field @('p')."
+  :long "@(call secp256k1-sqrt) finds an @($x$) such that
+         @($x^2 = a\\ (mod\\ p)$), if such exists, where @($p$) is the prime
+         field used for secp256k1.  If there is no square root, the symbol
+         @(':invalid') is returned.
+         <p/>
+         Note that this function is about the prime field @('p') used
+         to define secp256k1.  It is independent of
+         the other secp256k1 domain parameters."
+
+  (defun secp256k1-sqrt (a)
+    (declare (xargs :guard (and (natp a) (< a (secp256k1-prime)))
+                    :guard-hints (("Goal"
+                                   :in-theory (enable secp256k1-prime fep)))))
+    (let ((p (secp256k1-prime)))
+      (let ((poss-root (pow a (/ (+ p 1) 4) p)))
+        (if (equal (mod (* poss-root poss-root) p) a)
+            poss-root
+          ':invalid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Addition in secp256k1.
 
-(defund secp256k1+ (point1 point2)
-  (declare (xargs :guard (and (pointp point1) (pointp point2)
-                              (point-in-pxp-p point1 (secp256k1-prime))
-                              (point-in-pxp-p point2 (secp256k1-prime))
-                              (point-on-elliptic-curve-p point1
-                                                         (secp256k1-prime)
-                                                         (secp256k1-a)
-                                                         (secp256k1-b))
-                              (point-on-elliptic-curve-p point2
-                                                         (secp256k1-prime)
-                                                         (secp256k1-a)
-                                                         (secp256k1-b)))
-                  :guard-hints (("Goal"
-                                 :in-theory (enable secp256k1-prime
-                                                    secp256k1-a
-                                                    secp256k1-b)
-                                 :use secp256k1-prime-is-prime))
-                  :normalize nil)) ; to prevent SECP256K1-A from becoming 0
-  (curve-group-+ point1 point2 (secp256k1-prime) (secp256k1-a) (secp256k1-b)))
+(defsection secp256k1+
+  :parents (secp256k1)
+  :short "Add two elliptic curve points."
+  :long "@(call secp256k1+) adds
+         @('point1') and @('point2') using the elliptic curve group operation.
+         The two input points must be on the secp256k1 elliptic curve.
+         If either is not, a guard violation occurs.
+         <p/>
+         The result is a point on the elliptic curve."
+  (defund secp256k1+ (point1 point2)
+    (declare (xargs :guard (and (pointp point1) (pointp point2)
+                                (point-in-pxp-p point1 (secp256k1-prime))
+                                (point-in-pxp-p point2 (secp256k1-prime))
+                                (point-on-elliptic-curve-p point1
+                                                           (secp256k1-prime)
+                                                           (secp256k1-a)
+                                                           (secp256k1-b))
+                                (point-on-elliptic-curve-p point2
+                                                           (secp256k1-prime)
+                                                           (secp256k1-a)
+                                                           (secp256k1-b)))
+                    :guard-hints (("Goal"
+                                   :in-theory (enable secp256k1-prime
+                                                      secp256k1-a
+                                                      secp256k1-b)
+                                   :use secp256k1-prime-is-prime))
+                    :normalize nil)) ; to prevent SECP256K1-A from becoming 0
+    (curve-group-+ point1 point2 (secp256k1-prime) (secp256k1-a)
+  (secp256k1-b)))
+)
 
 (defthm pointp-of-secp256k1+
   (implies (and (pointp point1)
@@ -374,23 +439,39 @@ h = 01
 ;; Multiplication in secp256k1.
 
 ;; This is O(log(s)) since for even S it splits in half and recurses.
-(defund secp256k1* (s point)
-  (declare (xargs :guard (and (natp s)
-                              (pointp point)
-                              (point-in-pxp-p point (secp256k1-prime))
-                              (point-on-elliptic-curve-p point
-                                                         (secp256k1-prime)
-                                                         (secp256k1-a)
-                                                         (secp256k1-b)))
-                  :guard-hints (("Goal"
-                                 :in-theory (e/d (secp256k1-prime
-                                                  secp256k1-a
-                                                  secp256k1-b)
-                                                 (curve-scalar-*))
-                                 :use (secp256k1-prime-is-prime
-                                       secp256k1-prime>2)))
-                  :normalize nil)) ; to prevent SECP256K1-A from becoming 0
-  (curve-scalar-* s point (secp256k1-prime) (secp256k1-a) (secp256k1-b)))
+(defsection secp256k1*
+  :parents (secp256k1)
+  :short "Multiply an elliptic curve point by a scalar."
+  :long "@(call secp256k1*) applies the elliptic group operation to @('s')
+         copies of @('point').
+         <p/>
+         Since we use @('+') to describe the group operation, this
+         operation can be thought of as multiplying @('point') by the scalar @('s').
+         <p/>
+         (Alternatively, for those who think of the group operation as
+         multiplication, this operation can be thought of as exponentiation.)
+         <p/>
+         @('point') must be on the secp256k1 elliptic curve.  If it is not,
+         a guard violation occurs.
+         <p/>
+         The result is a point on the elliptic curve."
+  (defund secp256k1* (s point)
+    (declare (xargs :guard (and (natp s)
+                                (pointp point)
+                                (point-in-pxp-p point (secp256k1-prime))
+                                (point-on-elliptic-curve-p point
+                                                           (secp256k1-prime)
+                                                           (secp256k1-a)
+                                                           (secp256k1-b)))
+                    :guard-hints (("Goal"
+                                   :in-theory (e/d (secp256k1-prime
+                                                    secp256k1-a
+                                                    secp256k1-b)
+                                                   (curve-scalar-*))
+                                   :use (secp256k1-prime-is-prime
+                                         secp256k1-prime>2)))
+                    :normalize nil)) ; to prevent SECP256K1-A from becoming 0
+    (curve-scalar-* s point (secp256k1-prime) (secp256k1-a) (secp256k1-b))))
 
 (defthm pointp-of-secp256k1*
   (implies (pointp point)
@@ -446,11 +527,19 @@ h = 01
 
 ;; Negation in secp256k1.
 
-(defund secp256k1-negate (point)
-  (declare (xargs :guard (and (pointp point)
-                              (point-in-pxp-p point (secp256k1-prime)))
-                  :guard-hints (("Goal" :in-theory (enable fep)))))
-  (curve-negate point (secp256k1-prime)))
+(defsection secp256k1-negate
+  :parents (secp256k1)
+  :short "Negate an elliptic curve point."
+  :long "@(call secp256k1-negate) finds the inverse of @('point') with
+         respect to the secp256k1 elliptic curve group operation.
+         <p/>
+         The result is a point on the elliptic curve."
+  (defund secp256k1-negate (point)
+    (declare (xargs :guard (and (pointp point)
+                                (point-in-pxp-p point (secp256k1-prime)))
+                    :guard-hints (("Goal" :in-theory (enable fep)))))
+    (curve-negate point (secp256k1-prime)))
+)
 
 (defthm pointp-of-secp256k1-negate
   (implies (pointp point)
