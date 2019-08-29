@@ -26,7 +26,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
-; Updated by:      Mertcan Temel (8/29/2019)
+; Updated by:      Mertcan Temel (7/23/2019)
 
 (in-package "CMR")
 
@@ -118,13 +118,11 @@
   (declare (xargs :mode :program))
   (b* ((recursivep (fgetprop name 'acl2::recursivep nil wrld))
        (formals (acl2::formals name wrld))
-       ((mv name formals name2 formals2) ;; for 2 mutually recursive functions
+       ((mv formals name2) ;; for 2 mutually recursive functions
         (if (>= (len recursivep) 2)
-            (mv (car recursivep)
-                (acl2::formals (car recursivep) wrld)
-                (cadr recursivep)
-                (acl2::formals (cadr recursivep) wrld))
-          (mv name formals nil nil))))
+            (mv (acl2::formals (cadr recursivep) wrld)
+                (cadr recursivep))
+          (mv nil nil))))
     (acl2::template-subst
      (cond
       ((equal recursivep nil)
@@ -167,35 +165,31 @@
                                             (:@proj <formals> (<formal> (<evl> <formal> env)))))
                     :in-theory (enable <evl>-of-fncall-args))))))
       ((equal (len recursivep) 2)
-       (b* ((flag-fns (table-alist 'flag::flag-fns wrld))
+       (b* ((flag-fns (table-alist flag::flag-fns wrld))
             (entry (assoc-equal (car recursivep) flag-fns))
-            (- (if entry nil
-                 (hard-error 'def-formula-checks
-                             "You need to have make-flag for ~p0 ~%"
-                             (list (cons #\0 recursivep)))))
             (flags (nth 2 entry))
             (macro-name (nth 3 entry)))
          `(encapsulate
             nil
             (local
              (,macro-name
-              (defthmd <evl>-of-<name>-lemma
+              (defthm <evl>-of-<name>-lemma
                 (implies (and (<formula-check> state)
                               (<evl>-meta-extract-global-facts))
-                         (equal (<evl> '(<name> . <formals>)
+                         (equal (<evl> '( . <formals>)
                                        (list (:@proj <formals> (cons '<formal> <formal>))))
                                 (<name> . <formals>)))
                 :flag ,(cdr (assoc-equal name flags)))
-              (defthmd <evl>-of-<name2>-lemma
+              (defthm <evl>-of-<name2>-lemma
                 (implies (and (<formula-check> state)
                               (<evl>-meta-extract-global-facts))
-                         (equal (<evl> '(<name2> . <formals2>)
+                         (equal (<evl> '( . <formals2>)
                                        (list (:@proj <formals2> (cons '<formal> <formal>))))
                                 (<name2> . <formals2>)))
-                :flag ,(cdr (assoc-equal name2 flags)))
-              :hints (("Goal"
-                       :in-theory (e/d (<name> <name2>)
-                                       ()))
+                :flag ,(cdr (assoc-equal name2 flags))))
+             :hints (("Goal"
+                      :in-theory (e/d (<name> <name2>)
+                                      ())
                       '(:use ((:instance <evl>-meta-extract-formula
                                          (acl2::name '<name>)
                                          (acl2::a
@@ -223,14 +217,14 @@
               (implies (and (<formula-check> state)
                             (<evl>-meta-extract-global-facts))
                        (equal (<evl> (list '<name2> . <formals2>) env)
-                              (<name2> (:@proj <formals2>
-                                               (<evl> <formal> env)))))
+                              (<name> (:@proj <formals2>
+                                              (<evl> <formal> env)))))
               :hints(("Goal" :use ((:instance <evl>-of-<name2>-lemma
                                               (:@proj <formals2> (<formal> (<evl> <formal> env)))))
                       :in-theory (enable <evl>-of-fncall-args)))))))
-      (t `(value-triple (cw  "~%~%WARNING! DEF-FORMULA-CHECKS DOES NOT ~
-              SUPPORT MUTUALLY RECURSIVE DEFINITIONS WITH MORE THAN 2 FUNCTIONS ~
-              IN A CLIQUE YET. PROCEED WITH CAUTION. THIS HAPPENED WITH ~p0 ~% ~%" ',recursivep))))
+      (t `(mv nil (cw  "Def formula checks does not support mutually
+              recursive definitions with more than 2 functions in a clique
+              yet. ~p0 ~%" ',recursivep) state)))
      :str-alist `(("<NAME>" . ,(symbol-name name))
                   ("<NAME2>" . ,(symbol-name name2))
                   ("<EVL>" . ,(symbol-name evl))
@@ -305,57 +299,57 @@
 
 ;; EXAMPLE USE
 
-;; Let's define the base function set to create the evaluator.
+;; Let's define the base function that the evaluator will have
 (defconst
-  *ex-evl-base-fns*
-  '(acl2-numberp binary-* binary-+
-                 unary-- unary-/ < char-code characterp
-                 code-char complex complex-rationalp
-                 coerce consp denominator imagpart
-                 integerp intern-in-package-of-symbol
-                 numerator rationalp realpart
-                 stringp symbol-name symbol-package-name
-                 symbolp
-                 equal not if iff
-                 return-last synp cons car cdr
-                 typespec-check implies))
+*ex-evl-base-fnc*
+'(acl2-numberp binary-* binary-+
+unary-- unary-/ < char-code characterp
+code-char complex complex-rationalp
+coerce consp denominator imagpart
+integerp intern-in-package-of-symbol
+numerator rationalp realpart
+stringp symbol-name symbol-package-name
+symbolp
+equal not if iff
+return-last synp cons car cdr
+typespec-check implies))
 
 ;; Create the evaluator. It has to be created with :namedp t.
 (make-event
- `(defevaluator ex-evl ex-evl-list
-    ,(b* ((w (w state))) (loop$ for x in *ex-evl-base-fns*
-                                collect (cons x (acl2::formals x w))))
-    :namedp t))
+`(defevaluator ex-evl ex-evl-list
+,(b* ((w (w state))) (loop$ for x in *ex-evl-base-fnc*
+collect (cons x (acl2::formals x w))))
+:namedp t))
 
 ;; Create meta-extract
 (acl2::def-meta-extract ex-evl ex-evl-list)
 
-;; Option 1 to create def-formula-checks
+;; First way to call def-formula-checks
 (def-formula-checks
-  example-formula-checks-1
-  (subsetp-equal
-   assoc-equal)
-  :evl ex-evl
-  :evl-base-fns *ex-evl-base-fns*)
+example-formula-checks-1
+(subsetp-equal
+assoc-equal)
+:evl ex-evl
+:evl-base-fns *ex-evl-base-fnc*)
 
-;; Option 2: You can set the evaluator to be the default to be used by def-formula-checks
+;; Another way is: You can set the evaluator to be the default to be used by def-formula-checks
 (def-formula-checks-default-evl
-  ex-evl ;;evaluator name
-  *ex-evl-base-fns*) ;;base functions of the evaluator.
+ex-evl ;;evaluator name
+*ex-evl-base-fnc*) ;;base functions of the evaluator.
 
-(include-book "std/lists/rev" :dir :system)
-
+(include-book
+"std/lists/rev" :dir :system)
+;; Sometimes some rewrite rules may cause def-formula-checks to fail. So we disable them.
 (encapsulate
-  nil
-  ;; Sometimes some rewrite rules may cause def-formula-checks to fail. So we disable them.
-  (local
-   (in-theory (disable
-               acl2::revappend-removal
-               acl2::rev-when-not-consp
-               acl2::rev-of-cons)))
-  (def-formula-checks
-    example-formula-checks-2
-    (acl2::rev)))
+nil
+(local
+(in-theory (disable
+acl2::revappend-removal
+acl2::rev-when-not-consp
+acl2::rev-of-cons)))
+(def-formula-checks
+example-formula-checks-2
+(acl2::rev)))
 
 ;; revappend is a function used by rev. Under these hypotheses, now ex-evl
 ;; recognize revappend.
@@ -363,11 +357,11 @@
 ;; in meta-rule/clause-processor functions.
 
 (defthm ex-evl-rev-test
-  (implies (and (ex-evl-meta-extract-global-facts)
-                (example-formula-checks-2 state))
-           (equal (ex-evl `(revappend ,x ,y) a)
-                  (revappend (ex-evl x a)
-                             (ex-evl y a)))))
+(implies (and (ex-evl-meta-extract-global-facts)
+(example-formula-checks-2 state))
+(equal (ex-evl `(revappend ,x ,y) a)
+(revappend (ex-evl x a)
+(ex-evl y a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
