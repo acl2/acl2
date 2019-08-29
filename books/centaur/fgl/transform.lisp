@@ -38,6 +38,7 @@
 (include-book "stack-import")
 (include-book "bvar-db-bfrlist")
 (include-book "bvar-db-equivs")
+(include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -196,92 +197,106 @@
                                         bfrs-markedp-when-bitarr-subsetp
                                         nth len
                                         acl2::repeat-when-zp))))
-                                          
-  (b* ((interp-st (update-interp-st->cgraph nil interp-st))
-       (interp-st (update-interp-st->cgraph-memo nil interp-st))
-       (interp-st (update-interp-st->cgraph-index 0 interp-st))
+  (time$
+   (b* ((interp-st (update-interp-st->cgraph nil interp-st))
+        (interp-st (update-interp-st->cgraph-memo nil interp-st))
+        (interp-st (update-interp-st->cgraph-index 0 interp-st))
 
-       ;; BOZO what should we do with fgarrays?
-       (interp-st (resize-interp-st->fgarrays 0 interp-st))
-       (interp-st (update-interp-st->next-fgarray 0 interp-st))
+        ;; BOZO what should we do with fgarrays?
+        (interp-st (resize-interp-st->fgarrays 0 interp-st))
+        (interp-st (update-interp-st->next-fgarray 0 interp-st))
 
-       (constraint-db (interp-st->constraint-db interp-st)))
-    (stobj-let ((logicman (interp-st->logicman interp-st))
-                (bvar-db (interp-st->bvar-db interp-st))
-                (stack (interp-st->stack interp-st))
-                (pathcond (interp-st->pathcond interp-st))
-                (constraint-pathcond (interp-st->constraint interp-st)))
-               (contra constraint-db logicman bvar-db stack pathcond constraint-pathcond state)
-               (b* ((stack-obj (stack-extract stack))
-                    (base-bvar (base-bvar bvar-db))
-                    (bvar-db-objs (bvar-db-objectlist base-bvar bvar-db))
+        (constraint-db (interp-st->constraint-db interp-st)))
+     (stobj-let ((logicman (interp-st->logicman interp-st))
+                 (bvar-db (interp-st->bvar-db interp-st))
+                 (stack (interp-st->stack interp-st))
+                 (pathcond (interp-st->pathcond interp-st))
+                 (constraint-pathcond (interp-st->constraint interp-st)))
+                (contra constraint-db logicman bvar-db stack pathcond constraint-pathcond state)
+                (b* ((stack-obj (stack-extract stack))
+                     (base-bvar (base-bvar bvar-db))
+                     (bvar-db-objs (bvar-db-objectlist base-bvar bvar-db))
+                     ((mv constraint-db stack-obj bvar-db-objs)
+                      (mbe :logic (mv constraint-db stack-obj bvar-db-objs)
+                           :exec (b* ((lst (hons-copy (list constraint-db stack-obj bvar-db-objs))))
+                                   (mv (car lst) (cadr lst) (caddr lst)))))
 
-                    ((acl2::local-stobjs bitarr litarr)
-                     (mv bitarr litarr contra constraint-db logicman bvar-db stack pathcond constraint-pathcond state))
+                     ((acl2::local-stobjs bitarr litarr)
+                      (mv bitarr litarr contra constraint-db logicman bvar-db stack pathcond constraint-pathcond state))
 
-                    (arr-size (+ 1 (bfrstate->bound (logicman->bfrstate logicman))))
-                    (bitarr (resize-bits arr-size bitarr))
-                    (seen nil)
+                     (arr-size (+ 1 (bfrstate->bound (logicman->bfrstate logicman))))
+                     (bitarr (resize-bits arr-size bitarr))
+                     (seen nil)
 
-                    ((mv bitarr seen) (constraint-db-mark-bfrs constraint-db bitarr seen))
-                    ((mv bitarr seen) (major-stack-mark-bfrs stack-obj bitarr seen))
-                    ((mv bitarr seen) (gl-objectlist-mark-bfrs bvar-db-objs bitarr seen))
-                    (- (fast-alist-free seen))
+                     ((mv bitarr seen) (acl2::cwtime (constraint-db-mark-bfrs constraint-db bitarr seen)))
+                     ((mv bitarr seen) (acl2::cwtime (major-stack-mark-bfrs stack-obj bitarr seen)))
+                     ((mv bitarr seen) (acl2::cwtime (gl-objectlist-mark-bfrs bvar-db-objs bitarr seen)))
+                     (- (fast-alist-free seen))
 
-                    (bitarr
-                     (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                                (bitarr)
-                                (aignet::aignet-pathcond-mark-bfrs aignet-pathcond bitarr)
-                                bitarr))
-                    (bitarr
-                     (stobj-let ((aignet-pathcond (pathcond-aignet constraint-pathcond)))
-                                (bitarr)
-                                (aignet::aignet-pathcond-mark-bfrs aignet-pathcond bitarr)
-                                bitarr))
+                     (bitarr
+                      (time$ (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                                        (bitarr)
+                                        (aignet::aignet-pathcond-mark-bfrs aignet-pathcond bitarr)
+                                        bitarr)
+                             :msg "; ~s0 (pathcond): ~st seconds, ~sa bytes.~%"
+                             :args '(aignet::aignet-pathcond-mark-bfrs)))
+                     (bitarr
+                      (time$ (stobj-let ((aignet-pathcond (pathcond-aignet constraint-pathcond)))
+                                        (bitarr)
+                                        (aignet::aignet-pathcond-mark-bfrs aignet-pathcond bitarr)
+                                        bitarr)
+                             :msg "; ~s0 (constraint): ~st seconds, ~sa bytes.~%"
+                             :args '(aignet::aignet-pathcond-mark-bfrs)))
 
-                    ((acl2::hintcontext-bind ((old-logicman logicman)
-                                              (old-litarr litarr)
-                                              (old-state state)
-                                              (old-stack-obj stack-obj)
-                                              (old-constraint-db constraint-db)
-                                              (old-bvar-db bvar-db)
-                                              (old-pathcond pathcond)
-                                              (old-constraint-pathcond constraint-pathcond))))
-                    ((mv logicman litarr state)
-                     (logicman-comb-transform logicman bitarr litarr config state))
-                    
-                    (memo nil)
+                     ((acl2::hintcontext-bind ((old-logicman logicman)
+                                               (old-litarr litarr)
+                                               (old-state state)
+                                               (old-stack-obj stack-obj)
+                                               (old-constraint-db constraint-db)
+                                               (old-bvar-db bvar-db)
+                                               (old-pathcond pathcond)
+                                               (old-constraint-pathcond constraint-pathcond))))
+                     ((mv logicman litarr state)
+                      (acl2::cwtime (logicman-comb-transform logicman bitarr litarr config state)))
+                     
+                     (memo nil)
 
-                    ((mv constraint-db memo) (constraint-db-map-bfrs constraint-db litarr memo))
-                    ((mv stack-obj memo) (major-stack-map-bfrs stack-obj litarr memo))
-                    ((mv bvar-db-objs memo) (gl-objectlist-map-bfrs-memo bvar-db-objs litarr memo))
+                     ((mv constraint-db memo) (acl2::cwtime (constraint-db-map-bfrs constraint-db litarr memo)))
+                     ((mv stack-obj memo) (acl2::cwtime (major-stack-map-bfrs stack-obj litarr memo)))
+                     ((mv bvar-db-objs memo) (acl2::cwtime (gl-objectlist-map-bfrs-memo bvar-db-objs litarr memo)))
 
-                    (- (fast-alist-free memo))
+                     (- (fast-alist-free memo))
 
-                    ((mv contra1 pathcond)
-                     (logicman-pathcond-map-bfrs pathcond litarr logicman))
-                    ((mv contra2 constraint-pathcond)
-                     (logicman-pathcond-map-bfrs constraint-pathcond litarr logicman))
+                     ((mv contra1 pathcond)
+                      (time$ (logicman-pathcond-map-bfrs pathcond litarr logicman)
+                             :msg "; ~s0 (pathcond): ~st seconds, ~sa bytes.~%"
+                             :args '(logicman-pathcond-map-bfrs)))
+                     ((mv contra2 constraint-pathcond)
+                      (time$ (logicman-pathcond-map-bfrs constraint-pathcond litarr logicman)
+                             :msg "; ~s0 (constraint): ~st seconds, ~sa bytes.~%"
+                             :args '(logicman-pathcond-map-bfrs)))
 
-                    (bvar-db (init-bvar-db base-bvar bvar-db))
-                    (bvar-db (bvar-db-from-objectlist bvar-db-objs bvar-db state))
+                     (bvar-db (init-bvar-db base-bvar bvar-db))
+                     (bvar-db (bvar-db-from-objectlist bvar-db-objs bvar-db state))
 
-                    (stack (stack-import stack-obj stack))
-                    
-                    ((acl2::hintcontext :transform)))
-                 (mv bitarr litarr
-                     (or* (and** contra1 (pathcond-enabledp pathcond))
-                          (and** contra2 (pathcond-enabledp constraint-pathcond)))
-                     constraint-db
-                     logicman
-                     bvar-db
-                     stack
-                     pathcond
-                     constraint-pathcond
-                     state))
+                     (stack (stack-import stack-obj stack))
+                     
+                     ((acl2::hintcontext :transform)))
+                  (mv bitarr litarr
+                      (or* (and** contra1 (pathcond-enabledp pathcond))
+                           (and** contra2 (pathcond-enabledp constraint-pathcond)))
+                      constraint-db
+                      logicman
+                      bvar-db
+                      stack
+                      pathcond
+                      constraint-pathcond
+                      state))
 
-               (b* ((interp-st (update-interp-st->constraint-db constraint-db interp-st)))
-                 (mv contra interp-st state))))
+                (b* ((interp-st (update-interp-st->constraint-db constraint-db interp-st)))
+                  (mv contra interp-st state))))
+   :msg "; ~s0: ~st seconds, ~sa bytes.~%"
+   :args '(interp-st-global-transform))
   ///
   (defret w-state-of-<fn>
     (equal (w new-state) (w state)))
