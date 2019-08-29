@@ -39,6 +39,8 @@
 (include-book "bvar-db-bfrlist")
 (include-book "bvar-db-equivs")
 (include-book "centaur/vl/util/cwtime" :dir :system)
+(include-book "add-primitives")
+(include-book "def-gl-rewrite")
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -725,8 +727,8 @@
   (declare (ignore config))
   nil)
 
+(disable-execution fgl-global-transform)
 
-(include-book "add-primitives")
 
 
 (def-formula-checks global-trans-formula-checks
