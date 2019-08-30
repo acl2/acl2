@@ -613,8 +613,8 @@
                          (cnf-vals (resize-bits (sat-next-var
                                                  (mv-nth 3 (aig->cnf aig sat-lits aignet :transform-config transform-config :gatesimp gatesimp)))
                                                 nil))))
-           :in-theory (e/d* (aignet-regvals->vals
-                             aignet-regvals->vals-iter
+           :in-theory (e/d* (;; aignet-regvals->vals
+                             ;; aignet-regvals->vals-iter
                              lookup-stype-in-bounds)
                             (aignet-satisfying-assign-induces-cnf-satisfying-assign)))
           (and stable-under-simplificationp

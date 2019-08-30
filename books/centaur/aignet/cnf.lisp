@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-(include-book "eval")
+(include-book "semantics")
 (include-book "lit-lists")
 (include-book "refcounts")
 (include-book "centaur/satlink/cnf" :dir :system)
@@ -1540,7 +1540,7 @@ correctness criterion we've described.</p>
              (equal (sat-lits->aignet-lits lits sat-lits2)
                     (sat-lits->aignet-lits lits sat-lits1))))
 
-  (local (in-theory (disable aignet-eval)))
+  ;(local (in-theory (disable aignet-eval)))
 
   (local (defthm integerp-when-ifix-nonzero
            (implies (not (equal 0 (ifix n)))
@@ -2208,8 +2208,9 @@ correctness criterion we've described.</p>
     :hints (("goal" :cases ((aignet-idp id orig))
              :in-theory (e/d
                          (sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp)
-                         (aignet-vals->invals
-                          aignet-vals->regvals)))))
+                         ;; (aignet-vals->invals
+                         ;;  aignet-vals->regvals)
+                         ))))
 
   (local (in-theory (enable aignet-agrees-with-cnf-of-aignet-extension-lemma)))
 
@@ -2248,8 +2249,8 @@ correctness criterion we've described.</p>
              :in-theory (disable aignet-agrees-with-cnf-necc))))
 
 
-  (local (in-theory (disable aignet-vals->invals
-                             aignet-vals->regvals)))
+  ;; (local (in-theory (disable aignet-vals->invals
+  ;;                            aignet-vals->regvals)))
 
   (defthm aignet-eval-conjunction-when-aignet-agrees-with-cnf-with-sat-lit-extension
     (implies (and (sat-lit-extension-binding)
@@ -2911,8 +2912,8 @@ correctness criterion we've described.</p>
     :hints ((expand-aignet-lit->cnf-flg)))
 
 
-  (local (in-theory (disable aignet-vals->regvals
-                             aignet-vals->invals)))
+  ;; (local (in-theory (disable aignet-vals->regvals
+  ;;                            aignet-vals->invals)))
 
   ;; A few lemmas for the final couple of theorems.
   (local (defthmd b-and-equal-1
@@ -3100,7 +3101,7 @@ correctness criterion we've described.</p>
                                id-eval-when-id-is-mux)))))
 
 
-  (local (in-theory (disable aignet-eval)))
+  ;; (local (in-theory (disable aignet-eval)))
 
   (local (in-theory (enable lit-eval)))
 
@@ -3239,7 +3240,7 @@ correctness criterion we've described.</p>
     (cnf-for-aignet aignet nil (create-sat-lits))
     :hints(("Goal" :in-theory (enable cnf-for-aignet))))
 
-  (local (in-theory (disable aignet-eval)))
+  ; (local (in-theory (disable aignet-eval)))
 
   (defthm cnf-for-aignet-preserved-by-aignet-lit->cnf
     (b* (((mv new-sat-lits new-cnf)
@@ -3306,8 +3307,8 @@ correctness criterion we've described.</p>
     :otf-flg t)
 
 
-  (local (in-theory (disable aignet-invals->vals
-                             aignet-regvals->vals)))
+  ;; (local (in-theory (disable aignet-invals->vals
+  ;;                            aignet-regvals->vals)))
 
   ;; When cnf-for-aignet holds and a cube of literals are all marked, a
   ;; satisfying assignment of the CNF + cube literals gives a satisfying
@@ -3471,17 +3472,17 @@ correctness criterion we've described.</p>
   ;; BOZO this is probably a good logical definition for this but it might be
   ;; nice to have an exec that iterates over the sat-lits/cnf-vals instead of
   ;; having to skip all the IDs with no sat-vars in vals
-  (defiteration cnf->aignet-vals (vals cnf-vals sat-lits aignet)
-    (declare (xargs :stobjs (vals cnf-vals sat-lits aignet)
+  (defiteration cnf->aignet-vals (bitarr cnf-vals sat-lits aignet)
+    (declare (xargs :stobjs (bitarr cnf-vals sat-lits aignet)
                     :guard (and (sat-lits-wfp sat-lits aignet)
-                                (<= (num-fanins aignet) (bits-length vals)))))
+                                (<= (num-fanins aignet) (bits-length bitarr)))))
     (b* ((id n)
          ((unless (aignet-id-has-sat-var id sat-lits))
-          vals)
+          bitarr)
          (lit (aignet-id->sat-lit id sat-lits))
          (val (satlink::eval-lit lit cnf-vals)))
-      (set-bit n val vals))
-    :returns vals
+      (set-bit n val bitarr))
+    :returns bitarr
     :last (num-fanins aignet))
 
   (in-theory (disable cnf->aignet-vals))

@@ -13,3 +13,4 @@
 (include-book "prime-fields")
 ;(include-book "prime-fields-alt") ;incompatible
 (include-book "prime-fields-rules")
+(include-book "doc")
