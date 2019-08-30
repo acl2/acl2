@@ -12,3 +12,4 @@
 
 (include-book "pad-to-448")
 (include-book "pad-to-896")
+(include-book "doc")
