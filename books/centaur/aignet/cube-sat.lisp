@@ -31,6 +31,7 @@
 (in-package "AIGNET")
 (include-book "cnf")
 (include-book "copying")
+(include-book "eval")
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "std/util/termhints" :dir :system)
 (include-book "transform-stub")
