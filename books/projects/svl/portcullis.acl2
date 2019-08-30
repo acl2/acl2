@@ -2,7 +2,7 @@
 
 (include-book "centaur/sv/portcullis" :dir :system)
 
-(include-book "projects/rp-rewriter/top" :dir :system)
+(include-book "projects/rp-rewriter/portcullis" :dir :system)
 
 (defpkg "SVL"
   (union$ *acl2-exports*

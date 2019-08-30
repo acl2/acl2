@@ -325,7 +325,7 @@
                     :stobjs (state)))
     (magic-ev-fncall ACL2::FN ARGS STATE
                      ACL2::HARD-ERROR-RETURNS-NILP ACL2::AOK))
-  
+
   (defun rp-ex-counterpart (term exc-rules rp-state state)
     (declare (xargs  :mode :logic
                      :guard (and (symbol-alistp exc-rules))
@@ -372,7 +372,7 @@
              (rp-extract-context b)))
     ;; NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ;; here there could be another case for ('if a ''nil b) and extract context
-    ;; for (negate a) and b. Will implement later... 
+    ;; for (negate a) and b. Will implement later...
     (('if & & &)
      (progn$
       (cw "WARNING! (if a b c) unsupported case-split may be required. ~%")
@@ -757,29 +757,27 @@ returns (mv rule rules-rest bindings rp-context)"
        (progn$
         (rp-state-print-rules-used rp-state)
         (hard-error ctx str (rp-rw-fix-hard-error-alist alist))))
-      (('fmt-to-comment-window ('quote str) ('pairlis2 'acl2::*base-10-chars* list)  ''0 ''nil ''nil)
+      (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 ''(#\0 #\1 #\2 #\3 #\4
+                                                                #\5 #\6 #\7 #\8 #\9)
+                                                             list)
+                               ('quote col)
+                               ('quote evisc)
+                               ('quote print-base))
        (fmt-to-comment-window
         str
         (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list))
-        0 nil nil))
+        col evisc print-base))
+      (('fmt-to-comment-window ('quote str) alist
+                               ('quote col) ('quote evisc) ('quote print-base))
+       (fmt-to-comment-window
+        str (rp-rw-fix-hard-error-alist alist) col evisc print-base))
       (& nil))))
 
-#|(rp-rw-check-hard-error-or-cw '(FMT-TO-COMMENT-WINDOW '"This is a test ~%"
-                                                      (PAIRLIS2
-                                                       acl2::*BASE-10-CHARS*
-                                                       (cons 'test-p0 'nil))
-                                                      '0 'NIL 'NIL))||#
-
-#|(define is-bits-of-sbits-loose (term)
-  (case-match term
-    (('svl::bits & & ('svl::sbits & & & &))
-     t)
-    (& nil)))||#
 
 (local
- (in-theory (disable #|RP-RW-APPLY-FALIST-META||#
-             RP-EX-COUNTERPART
-             UNQUOTE-ALL
+ (in-theory (disable 
+             rp-ex-counterpart
+             unquote-all
              w)))
 
 (mutual-recursion
@@ -841,7 +839,7 @@ returns (mv rule rules-rest bindings rp-context)"
             ((mv hyp-rewritten rp-state)
              (rp-rw hyp
                     (rp-hyp rule)
-                    ;(rp-hyp rule)  ;rp-get-dont-rw
+;(rp-hyp rule)  ;rp-get-dont-rw
                     rp-context
                     (1- limit) rules-alist exc-rules
                     meta-rules t rp-state state))
@@ -996,7 +994,7 @@ returns (mv rule rules-rest bindings rp-context)"
     (t
      (b* (;; exit right away if said to not rewrite
           ((when (should-not-rw dont-rw)
-                      ;(equal dont-rw t)
+;(equal dont-rw t)
              )
            (mv term rp-state))
           ;; update the term to see if it simplifies with respect to the

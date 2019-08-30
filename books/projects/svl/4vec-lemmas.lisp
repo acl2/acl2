@@ -29,6 +29,8 @@
 
 (include-book "centaur/sv/svex/4vec" :dir :system)
 
+(include-book "projects/rp-rewriter/top" :dir :system)
+
 (include-book "macros")
 
 (local

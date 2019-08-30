@@ -198,27 +198,49 @@
     (& (mv (resolve-assoc-eq-vals term) t))))
 
 (def-formula-checks-default-evl
- rp-evl
- (strip-cars *small-evl-fncs*))
+  rp-evl
+  (strip-cars *small-evl-fncs*))
 
 (def-formula-checks
- hons-get-meta-formula-checks
- (hons-get
-  hons-get-meta
-  assoc-eq-vals
-  assoc-equal
-  assoc-eq-val
-  assoc-eq-vals
-  resolve-assoc-eq-val-rec
-  resolve-assoc-eq-vals-rec
-  resolve-assoc-eq-vals
-  assoc-eq-vals-meta))
+  hons-get-meta-formula-checks
+  (hons-get
+   hons-get-meta
+   assoc-eq-vals
+   assoc-equal
+   assoc-eq-val
+   assoc-eq-vals
+   resolve-assoc-eq-val-rec
+   resolve-assoc-eq-vals-rec
+   resolve-assoc-eq-vals
+   assoc-eq-vals-meta))
 
 (local
  (defthm pseudo-termp2-hons-get-falist
    (implies (and (falist-syntaxp falist)
                  (consp (hons-get key falist)))
             (pseudo-termp2 (cdr (hons-get key falist))))))
+
+(local
+ (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
+                     (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                     (:REWRITE PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                     (:DEFINITION TRUE-LISTP)
+                     (:DEFINITION SUBSETP-EQUAL)
+                     (:DEFINITION MEMBER-EQUAL)
+                     (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                     (:REWRITE PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
+                     (:REWRITE
+                      ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                     (:REWRITE DEFAULT-CDR)
+                     (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
+                     (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2)
+                     (:REWRITE DEFAULT-CAR)
+                     (:TYPE-PRESCRIPTION MEMBER-EQUAL)
+                     (:DEFINITION NATP)
+                     (:REWRITE
+                      ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
+                     (:REWRITE
+                      ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-2))))
 
 (local
  (encapsulate
@@ -242,23 +264,46 @@
                (pseudo-termp2 alist))
               (pseudo-termp2 (resolve-assoc-eq-val-rec key alist)))
      :hints (("Goal"
-              :in-theory (e/d (resolve-assoc-eq-val-rec) ()))))
+              :induct (resolve-assoc-eq-val-rec key alist)
+              :do-not-induct t
+              :in-theory (e/d (resolve-assoc-eq-val-rec)
+                              ((:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:REWRITE PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
+                               (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                               (:DEFINITION TRUE-LISTP)
+                               (:TYPE-PRESCRIPTION PSEUDO-TERMP2)
+                               (:REWRITE PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE IS-IF-PSEUDO-TERMP2)
+                               (:REWRITE DEFAULT-CAR)
+                               (:TYPE-PRESCRIPTION ACL2::APPLY$-BADGEP))))))
 
    (defthm pseudo-termp2-hons-get-meta
      (implies (and (pseudo-termp2 term)
                    (all-falist-consistent term))
               (pseudo-termp2 (mv-nth 0 (hons-get-meta term))))
      :hints (("goal"
+              :do-not-induct t
               :use ((:instance falist-consistent-implies-falist-syntaxp
                                (term (caddr (ex-from-rp (caddr term))))
                                (falist (cadr (cadr (ex-from-rp (caddr term)))))))
-              :in-theory (e/d (hons-get-meta) (hons-get)))))
+              :in-theory (e/d (hons-get-meta)
+                              (hons-get
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:REWRITE PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                               (:DEFINITION SUBSETP-EQUAL)
+                               (:DEFINITION MEMBER-EQUAL)
+                               (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)(:REWRITE
+                                                                            ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))))
 
    (defthm pseudo-termp2-resolve-assoc-eq-vals-rec
      (implies (and (pseudo-termp2 keys)
                    (pseudo-termp2 alist))
               (pseudo-termp2 (resolve-assoc-eq-vals-rec keys alist)))
      :hints (("Goal"
+              :do-not-induct t
+              :induct (resolve-assoc-eq-vals-rec keys alist)
               :in-theory (e/d (RESOLVE-ASSOC-EQ-VALS-REC) ()))))
 
    (local
@@ -282,6 +327,7 @@
                       (& nil)))
                (all-falist-consistent (EX-FROM-RP (CADDR TERM))))))
 
+   
    (local
     (defthm lemma3
       (implies (and (all-falist-consistent term)
@@ -298,6 +344,12 @@
                :use ((:instance lemma3-lemma))
                :in-theory (e/d (ex-from-rp is-rp is-falist)
                                (lemma3-lemma
+                                (:DEFINITION FALIST-SYNTAXP)
+                                (:TYPE-PRESCRIPTION O<)
+                                (:TYPE-PRESCRIPTION PSEUDO-TERMP2)
+                                (:REWRITE ACL2::O-P-O-INFP-CAR)
+                                (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP2)
+                                (:TYPE-PRESCRIPTION O-P)
                                 (:REWRITE DEFAULT-CDR)
                                 (:REWRITE DEFAULT-CAR)
                                 (:REWRITE

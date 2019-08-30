@@ -50,10 +50,21 @@
 
 (include-book "proofs/guards")
 
-(defun rp-clause-processor-aux (cl runes meta-rules rp-state state)
+(encapsulate
+  nil
+  (defrec rp-cl-hints
+    (runes . new-synps)
+    t)
+  (defun rp-cl-hints-p (hints)
+    (declare (xargs :guard t))
+    (and  (weak-rp-cl-hints-p hints)
+          (alistp (access rp-cl-hints hints :new-synps)))))
+
+(defun rp-clause-processor-aux (cl hints meta-rules rp-state state)
   (declare #|(ignorable rule-names)||#
    (xargs
-    :guard (and (rp-meta-rule-recs-p meta-rules state))
+    :guard (and (rp-meta-rule-recs-p meta-rules state)
+                (rp-cl-hints-p hints))
     :stobjs (rp-state state)
     :guard-hints (("Goal"
                    :in-theory (e/d ()
@@ -69,9 +80,10 @@
             ;; we have to have it here because pseudo-termp allows nil to
             ;; appear in the term but pseudo-termp2 does not.
             (mv nil (list cl) rp-state state))
-           (runes runes)
+           (runes (access rp-cl-hints hints :runes))
+           (new-synps (access rp-cl-hints hints :new-synps))
            (enabled-exec-rules (get-enabled-exec-rules runes))
-           (rules-alist (get-rules runes state))
+           (rules-alist (get-rules runes state :new-synps new-synps))
            ((when (not (rules-alistp rules-alist)))
             (progn$ (hard-error 'rp-clause-precessor-aux
                                 "format of rules-alist is bad ~%" nil)
@@ -132,20 +144,21 @@
 ;; because we need to use resolve-b+-order-is-valid-rp-meta-rulep proved in
 ;; proofs/apply-meta-lemmas.lisp. We need to verify the guards because
 ;; rp-clause-processor-aux is not executable (its guards call a defun-sk).
-(defun rp-clause-processor (cl runes rp-state state)
+(defun rp-clause-processor (cl hints rp-state state)
   (declare
-   (ignorable runes)
    (xargs :stobjs (rp-state state)
           :guard t
           :guard-hints (("goal"
                          :in-theory (e/d (rp-meta-valid-syntax-listp)
                                          (rp-meta-valid-syntaxp-sk))))
           :verify-guards nil))
-  (rp-clause-processor-aux
-   cl runes
-   nil
-   rp-state
-   state))
+  (if (rp-cl-hints-p hints)
+      (rp-clause-processor-aux
+       cl hints
+       nil
+       rp-state
+       state)
+    (mv nil (list cl) rp-state state)))
 
 (verify-guards rp-clause-processor)
 
@@ -154,6 +167,16 @@
 
   (table rp-rw 'rp-clause-processor
          'rp-clause-processor))
+
+(defthm correctness-of-rp-clause-processor-lemma
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (rp-evl (acl2::conjoin-clauses
+                         (acl2::clauses-result (list nil (list cl) rp-state state)))
+                        a))
+           (rp-evl (acl2::disjoin cl) a))
+  :hints (("goal"
+           :in-theory (e/d (acl2::disjoin acl2::conjoin-clauses) ()))))
 
 (defthm correctness-of-rp-clause-processor
   (implies
@@ -173,6 +196,7 @@
                             rp-meta-valid-syntax-listp
                             rp-rw-aux-is-correct)
                            (rp-clause-processor-aux
+                            rp-cl-hints-p
                             valid-rp-meta-rulep
                             rp-meta-valid-syntaxp-sk
                             acl2::conjoin-clauses

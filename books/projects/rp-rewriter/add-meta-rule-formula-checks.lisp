@@ -57,20 +57,21 @@
 
 (defun create-rp-clause-proc (cl-name-prefix appended-meta-rules)
   (list
-   `(defun ,(sa cl-name-prefix "RP-CLAUSE-PROCESSOR") (cl runes rp-state state)
+   `(defun ,(sa cl-name-prefix "RP-CLAUSE-PROCESSOR") (cl hints rp-state state)
       (declare
-       (ignorable runes)
        (xargs :stobjs (rp-state state)
               :guard t
               :guard-hints (("goal"
                              :in-theory (e/d (rp-meta-valid-syntax-listp)
                                              (rp-meta-valid-syntaxp-sk))))
               :verify-guards nil))
-      (rp-clause-processor-aux
-       cl runes
-       ,appended-meta-rules
-       rp-state
-       state))
+      (if (rp-cl-hints-p hints)
+          (rp-clause-processor-aux
+           cl hints
+           ,appended-meta-rules
+           rp-state
+           state)
+        (mv nil (list cl) rp-state state)))
 
    `(defthm ,(sa 'correctness-of-rp-clause-processor cl-name-prefix)
       (implies

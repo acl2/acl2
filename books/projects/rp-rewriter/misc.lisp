@@ -234,6 +234,26 @@ Try using (rp::update-rp-brr t rp::rp-state) and
   (defmacro enable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name t)))
 
+
+(defun translate1-vals-in-alist (alist state)
+  (declare (xargs :guard (alistp alist)
+                  :stobjs (state)
+                  :mode :program ))
+  (if (atom alist)
+      (mv nil state)
+    (b* ((c (cdar alist))
+         ((mv err c & state)
+          (acl2::translate1 c t nil nil 'top-level (w state) state))
+         (- (if err
+                (hard-error 'translate1-vals-in-alist
+                                "Error translating term ~p0~%"
+                                (list (cons #\0 c)))
+              nil))
+         ((mv rest state)
+          (translate1-vals-in-alist (cdr alist) state)))
+      (mv (acons (caar alist) c rest)
+          state))))
+
 (defmacro rp-thm (term &key
                        extra-rules
                        (untranslate 't)
@@ -268,7 +288,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
            (runes (append (let ((world (w state))) (current-theory :here))
                           ,extra-rules))
            (enabled-exec-rules (get-enabled-exec-rules runes))
-           (rules-alist (get-rules runes state :new-synps ,new-synps))
+           ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
+           (rules-alist (get-rules runes state :new-synps new-synps))
            (rp-state (rp-state-new-run rp-state))
            (meta-rules  (make-fast-alist (cdr (assoc-equal 'meta-rules-list (table-alist
                                                                              'rp-rw (w state))))))
@@ -298,12 +319,16 @@ Try using (rp::update-rp-brr t rp::rp-state) and
 ;;                                 '"booth2_partial_product_signed_first$MULTIPLICAND_BITS=64"))
 ;;                   'nil))
 
-(defmacro rp-cl (&key extra-rules (cl-name-prefix '0))
+(defmacro rp-cl (&key extra-rules
+                      (new-synps 'nil)
+                      (cl-name-prefix '0))
   (declare (ignorable extra-rules))
   `(,(sa (if (equal cl-name-prefix 0) nil cl-name-prefix) "RP-CLAUSE-PROCESSOR")
     clause
-    (append (let ((world (w state))) (current-theory :here))
-            ,extra-rules)
+    (make rp-cl-hints
+          :runes (append (let ((world (w state))) (current-theory :here))
+                         ,extra-rules)
+          :new-synps ,new-synps)
     rp-state state))
 
 (defmacro defthmrp (name term
@@ -311,19 +336,21 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                          extra-rules
                          (rule-classes ':rewrite)
                          (use-opener-error-rules 't)
+                         (new-synps 'nil)
                          (in-theory 'nil))
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
          (cl-name-prefix (cdr (assoc-eq 'cl-name-prefix (table-alist 'rp-rw (w state)))))
          (body `(defthm ,',name ,',term
                   :rule-classes ,',rule-classes
-                  :hints (("goal"
+                  :hints (("Goal"
                            :do-not-induct t
                            :rw-cache-state nil
                            :do-not '(preprocess generalize fertilize)
                            :clause-processor
                            (rp-cl :extra-rules ,',extra-rules
-                                  :cl-name-prefix ,cl-name-prefix)))))
+                                  :cl-name-prefix ,cl-name-prefix
+                                  :new-synps ,',new-synps)))))
          (opener-error-rules-alist (table-alist 'rw-opener-error-rules  (w state)))
          (?opener-error-rules
           (loop$ for x in opener-error-rules-alist when (cdr x) collect (car x))))
@@ -366,12 +393,16 @@ Try using (rp::update-rp-brr t rp::rp-state) and
            (removed-events (set-difference$ old-current-theory
                                             new-current-theory
                                             :test 'equal)))
+        (if (and (not removed-events)
+                 (not added-events))
+            `(value-triple (cw "~%Event did not change current theory, not ~
+    creating macro ~p0. ~%" ',',macro-name))
         `(defmacro ,',macro-name (use)
            (if use
                `(in-theory (e/d ,',added-events
                                 ,',removed-events))
              `(in-theory (e/d ,',removed-events
-                              ,',added-events)))))))
+                              ,',added-events))))))))
 
   (defmacro fetch-new-events (event macro-name &key (disabled 'nil) )
     `(with-output
@@ -383,5 +414,6 @@ Try using (rp::update-rp-brr t rp::rp-state) and
          ,@(if disabled
                `((,macro-name nil))
              nil)))))
+
 
 

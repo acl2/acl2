@@ -109,12 +109,15 @@
                             (cons (cons ',key ,val)
                                   ,falist))
                    t))
-            (mv term nil)))
+            (mv term '(nil t t t))))
          (&
           (progn$
-           (cw "Invalid hons-acons term ~p0 ~%"
-               term)
-           (mv  term nil))))))
+           #|(FMT-TO-COMMENT-WINDOW "Invalid hons-acons term ~p0 ~%"
+                                  (list (cons #\0 term))
+                                  0
+                                  '(nil 8 10 nil)
+                                  nil)||#
+           (mv  term '(nil t t t)))))))
     (& ;; otherwise return the term as is and let rewrite rules work it out.
      (progn$ (cw "Invalid hons-acons term (2) ~p0 ~%"
                  term)

@@ -597,9 +597,9 @@
 (encapsulate
   nil
 
-  (def-rw-opener-error
+  #|(def-rw-opener-error
     mv-nth_opener-error
-    (mv-nth n term))
+    (mv-nth n term))||#
 
   (defthm mv-nth-def-1
     (implies (not (zp n))

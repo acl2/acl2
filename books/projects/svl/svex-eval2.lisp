@@ -30,7 +30,7 @@
 
 (include-book "centaur/sv/svex/eval" :dir :system)
 (include-book "std/util/defines" :dir :system)
-
+(include-book "projects/rp-rewriter/top" :dir :system)
 (include-book "macros")
 
 (define svex-kind2 (x)
