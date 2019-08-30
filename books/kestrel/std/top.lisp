@@ -12,6 +12,7 @@
 
 (include-book "basic/top")
 (include-book "system/top")
+(include-book "typed-alists/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
