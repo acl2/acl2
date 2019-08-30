@@ -11,8 +11,6 @@
 
 (in-package "KECCAK")
 
-(include-book "keccak")
-
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 (defxdoc keccak

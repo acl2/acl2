@@ -9483,118 +9483,119 @@
       free-vars))
    (t
     (er-let*@par
-     ((term (translate@par form t t t ctx wrld state)))
-     (cond
-      ((or (variablep term)
-           (fquotep term))
-       (er@par soft ctx
-         "The term ~x0 is not expandable.  See the :expand discussion in :DOC ~
-          hints."
-         form))
-      ((flambda-applicationp term)
+     ((term1 (translate@par form t t t ctx wrld state)))
+     (let ((term (remove-guard-holders term1 wrld)))
        (cond
-        (name (er@par soft ctx
-                "An :expand hint may only specify :WITH for an expression ~
-                 that is the application of a function, unlike ~x0."
-                form))
-        (t (value@par (make expand-hint
-                            :pattern term
-                            :alist (if (null free-vars)
-                                       :none
-                                     (let ((bound-vars
-                                            (set-difference-eq (all-vars term)
-                                                               free-vars)))
-                                       (pairlis$ bound-vars bound-vars)))
-                            :rune nil
-                            :equiv 'equal
-                            :hyp nil
-                            :lhs term
-                            :rhs (subcor-var (lambda-formals (ffn-symb term))
-                                             (fargs term)
-                                             (lambda-body (ffn-symb term))))))))
-      (t
-       (mv-let
-        (er-msg rune equiv hyp lhs rhs)
-        (cond
-         (name
-          (let* ((fn (ffn-symb term))
-                 (lemmas (getpropc fn 'lemmas nil wrld))
-                 (lemma (cond ((symbolp name)
-                               (find-named-lemma
-                                (deref-macro-name name (macro-aliases wrld))
-                                lemmas
-                                t))
-                              (t (find-runed-lemma name lemmas)))))
-            (cond
-             (lemma
-              (let* ((hyps (access rewrite-rule lemma :hyps))
-                     (lhs (access rewrite-rule lemma :lhs))
-                     (lhs-vars (all-vars lhs))
-                     (rhs (access rewrite-rule lemma :rhs)))
-                (cond
-                 ((or (free-varsp-member-lst hyps lhs-vars)
-                      (free-varsp-member rhs lhs-vars))
-                  (mv (msg "The ~@0 of a rule given to :with in an :expand ~
-                            hint must not contain free variables that are not ~
-                            among the variables on its left-hand side.  The ~
-                            ~#1~[variable ~&1 violates~/variables ~&1 ~
-                            violate~] this requirement."
-                           (if (free-varsp-member rhs lhs-vars)
-                               "left-hand side"
-                             "hypotheses")
-                           (if (free-varsp-member rhs lhs-vars)
-                               (reverse
-                                (set-difference-eq (all-vars rhs) lhs-vars))
-                             (reverse
-                              (set-difference-eq (all-vars1-lst hyps nil)
-                                                 lhs-vars))))
-                      nil nil nil nil nil))
-                 (t (mv nil
-                        (access rewrite-rule lemma :rune)
-                        (access rewrite-rule lemma :equiv)
-                        (and hyps (conjoin hyps))
-                        lhs
-                        rhs)))))
-             (t (mv (msg "Unable to find a lemma for :expand hint (:WITH ~x0 ~
-                          ...)."
-                         name)
-                    nil nil nil nil nil)))))
-         (t (let ((def-body (def-body (ffn-symb term) wrld)))
-              (cond
-               (def-body
-                 (let ((formals (access def-body def-body :formals)))
-                   (mv nil
-                       (access def-body def-body :rune)
-                       (access def-body def-body :equiv)
-                       (access def-body def-body :hyp)
-                       (cons-term (ffn-symb term) formals)
-                       (access def-body def-body :concl))))
-               (t (mv (msg "The :expand hint for ~x0 is illegal, because ~x1 ~
-                            is not a defined function."
-                           form
-                           (ffn-symb term))
-                      nil nil nil nil nil))))))
+        ((or (variablep term)
+             (fquotep term))
+         (er@par soft ctx
+           "The term ~x0 is not expandable.  See the :expand discussion in ~
+            :DOC hints."
+           form))
+        ((flambda-applicationp term)
+         (cond
+          (name (er@par soft ctx
+                  "An :expand hint may only specify :WITH for an expression ~
+                   that is the application of a function, unlike ~x0."
+                  form))
+          (t (value@par (make expand-hint
+                              :pattern term
+                              :alist (if (null free-vars)
+                                         :none
+                                       (let ((bound-vars
+                                              (set-difference-eq (all-vars term)
+                                                                 free-vars)))
+                                         (pairlis$ bound-vars bound-vars)))
+                              :rune nil
+                              :equiv 'equal
+                              :hyp nil
+                              :lhs term
+                              :rhs (subcor-var (lambda-formals (ffn-symb term))
+                                               (fargs term)
+                                               (lambda-body (ffn-symb term))))))))
+        (t
+         (mv-let
+           (er-msg rune equiv hyp lhs rhs)
+           (cond
+            (name
+             (let* ((fn (ffn-symb term))
+                    (lemmas (getpropc fn 'lemmas nil wrld))
+                    (lemma (cond ((symbolp name)
+                                  (find-named-lemma
+                                   (deref-macro-name name (macro-aliases wrld))
+                                   lemmas
+                                   t))
+                                 (t (find-runed-lemma name lemmas)))))
+               (cond
+                (lemma
+                 (let* ((hyps (access rewrite-rule lemma :hyps))
+                        (lhs (access rewrite-rule lemma :lhs))
+                        (lhs-vars (all-vars lhs))
+                        (rhs (access rewrite-rule lemma :rhs)))
+                   (cond
+                    ((or (free-varsp-member-lst hyps lhs-vars)
+                         (free-varsp-member rhs lhs-vars))
+                     (mv (msg "The ~@0 of a rule given to :with in an :expand ~
+                               hint must not contain free variables that are ~
+                               not among the variables on its left-hand side. ~
+                               ~ The ~#1~[variable ~&1 violates~/variables ~
+                               ~&1 violate~] this requirement."
+                              (if (free-varsp-member rhs lhs-vars)
+                                  "left-hand side"
+                                "hypotheses")
+                              (if (free-varsp-member rhs lhs-vars)
+                                  (reverse
+                                   (set-difference-eq (all-vars rhs) lhs-vars))
+                                (reverse
+                                 (set-difference-eq (all-vars1-lst hyps nil)
+                                                    lhs-vars))))
+                         nil nil nil nil nil))
+                    (t (mv nil
+                           (access rewrite-rule lemma :rune)
+                           (access rewrite-rule lemma :equiv)
+                           (and hyps (conjoin hyps))
+                           lhs
+                           rhs)))))
+                (t (mv (msg "Unable to find a lemma for :expand hint (:WITH ~
+                             ~x0 ...)."
+                            name)
+                       nil nil nil nil nil)))))
+            (t (let ((def-body (def-body (ffn-symb term) wrld)))
+                 (cond
+                  (def-body
+                    (let ((formals (access def-body def-body :formals)))
+                      (mv nil
+                          (access def-body def-body :rune)
+                          (access def-body def-body :equiv)
+                          (access def-body def-body :hyp)
+                          (cons-term (ffn-symb term) formals)
+                          (access def-body def-body :concl))))
+                  (t (mv (msg "The :expand hint for ~x0 is illegal, because ~
+                               ~x1 is not a defined function."
+                              form
+                              (ffn-symb term))
+                         nil nil nil nil nil))))))
 
 ; We could do an extra check that the lemma has some chance of applying.  This
 ; would involve a call of (one-way-unify lhs term) unless :free was specified,
 ; in which case we would need to call a full unification routine.  That doesn't
 ; seem worth the trouble merely for early user feedback.
 
-        (cond
-         (er-msg (er@par soft ctx "~@0" er-msg))
-         (t (value@par (make expand-hint
-                             :pattern term
-                             :alist (if (null free-vars)
-                                        :none
-                                      (let ((bound-vars
-                                             (set-difference-eq (all-vars term)
-                                                                free-vars)))
-                                        (pairlis$ bound-vars bound-vars)))
-                             :rune rune
-                             :equiv equiv
-                             :hyp hyp
-                             :lhs lhs
-                             :rhs rhs)))))))))))
+           (cond
+            (er-msg (er@par soft ctx "~@0" er-msg))
+            (t (value@par (make expand-hint
+                                :pattern term
+                                :alist (if (null free-vars)
+                                           :none
+                                         (let ((bound-vars
+                                                (set-difference-eq (all-vars term)
+                                                                   free-vars)))
+                                           (pairlis$ bound-vars bound-vars)))
+                                :rune rune
+                                :equiv equiv
+                                :hyp hyp
+                                :lhs lhs
+                                :rhs rhs))))))))))))
 
 (defun@par translate-expand-term (x ctx wrld state)
 

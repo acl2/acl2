@@ -184,7 +184,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define secp256k1-cofactor ()
-  :short "The order @($h$) of the group of the curve."
+  :short "The cofactor @($h$) of the group of the curve."
   :long
   (xdoc::topstring
    (xdoc::p

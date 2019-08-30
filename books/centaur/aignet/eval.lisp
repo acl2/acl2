@@ -30,6 +30,7 @@
 
 (in-package "AIGNET")
 (include-book "semantics")
+(include-book "lit-lists")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -101,8 +102,6 @@ literal:</p>
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
 
-
-  (defstobj-clone vals bitarr :strsubst (("BIT" . "AIGNET-VAL")))
 
   ;; (local (in-theory (disable acl2::nth-with-large-index)))
 
