@@ -1339,8 +1339,8 @@
       nil
     (b* ((module (sv->svl-module (car sv-modules)
                                  vl-insouts))
-         ;(- (fast-alist-free (SVL-module->occs (cdr module)))) ;;BREAKING 
-         ;(- (fast-alist-free (SVL-module->listeners (cdr module))))
+         (- (fast-alist-free (SVL-module->occs (cdr module)))) ;;BREAKING 
+         (- (fast-alist-free (SVL-module->listeners (cdr module))))
          ) ;; BREAKING
       (if module
           (cons
@@ -1472,7 +1472,7 @@
          (res (sv->svl-add-delayed-ins-and-ranks-aux svl-modules
                                                      ranks-alist
                                                      first-pass-results))
-         ;(- (fast-alist-free res)) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BREAKING
+         (- (fast-alist-free res)) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BREAKING
          (- (fast-alist-free ranks-alist)))
       res)))
 
@@ -1572,3 +1572,12 @@
       (and (or (svl-listeners-loopfreep (svl-listeners (car svl-design)))
                (cw "Loop in module = ~p0 ~%" (caar svl-design)))
            (svl-loopfreep (cdr svl-design))))))
+
+
+ 
+(defun cons-deep-copy (term)
+  (declare (xargs :guard t))
+  (cond ((atom term) term)
+        ((quotep term) term)
+        (t (cons (cons-deep-copy (car term))
+                 (cons-deep-copy (cdr term))))))

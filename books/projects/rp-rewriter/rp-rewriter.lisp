@@ -757,25 +757,33 @@ returns (mv rule rules-rest bindings rp-context)"
        (progn$
         (rp-state-print-rules-used rp-state)
         (hard-error ctx str (rp-rw-fix-hard-error-alist alist))))
+      (('fmt-to-comment-window ('quote &) ('quote &)
+                               ('quote &) ('quote &) ('quote &))
+       ;; if all arguments are quoted, then executable counterpart will be
+       ;; triggered anyways.
+       nil)
       (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 ''(#\0 #\1 #\2 #\3 #\4
                                                                 #\5 #\6 #\7 #\8 #\9)
                                                              list)
                                ('quote col)
                                ('quote evisc)
                                ('quote print-base))
-       (fmt-to-comment-window
-        str
-        (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list))
-        col evisc print-base))
+       (progn$
+        ;(cw "here1 ~p0 ~%" term)
+        (fmt-to-comment-window
+         str
+         (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list))
+         col evisc print-base)))
       (('fmt-to-comment-window ('quote str) alist
                                ('quote col) ('quote evisc) ('quote print-base))
-       (fmt-to-comment-window
-        str (rp-rw-fix-hard-error-alist alist) col evisc print-base))
+       (progn$
+        ;(cw "here2 ~p0 ~%" term)
+        (fmt-to-comment-window
+         str (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
       (& nil))))
 
-
 (local
- (in-theory (disable 
+ (in-theory (disable
              rp-ex-counterpart
              unquote-all
              w)))
@@ -1017,9 +1025,6 @@ returns (mv rule rules-rest bindings rp-context)"
            (rp-rw-if term dont-rw context (1- limit) rules-alist exc-rules
                      meta-rules iff-flg rp-state state))
 
-          ;; check if it is a cw or hard-error statements.
-          (- (rp-rw-check-hard-error-or-cw term rp-state))
-
           ;; rewrite the subterm
           ((mv subterms rp-state)
            (if (is-hide term)
@@ -1027,8 +1032,13 @@ returns (mv rule rules-rest bindings rp-context)"
              (rp-rw-subterms (cdr term) (if (consp dont-rw) (cdr dont-rw) nil)
                              context (1- limit) rules-alist exc-rules
                              meta-rules rp-state state)))
+
           ;; put back the term together after subterm is rewritten
           (term (cons-with-hint (car term) subterms term))
+
+          ;; check if it is a cw or hard-error statements.
+          (- (rp-rw-check-hard-error-or-cw term rp-state))
+
           #|((when (is-lambda term))
           (b* ((new-dont-rw (rp-get-dont-rw (caddr (car term))))
           (term (rp-beta-reduce-main term)))
@@ -1040,11 +1050,8 @@ returns (mv rule rules-rest bindings rp-context)"
           ((when (or (atom term)
                      (eq (car term) 'quote)))
            (mv term rp-state))
-          ;; run falist related functions + rp-equal on equal
-          #|((mv falist-meta-changed-term-flg term) (rp-rw-apply-falist-meta term))||#
-          #|((when falist-meta-changed-term-flg)
-          (mv term rp-state))||#
-          ;; run used defined meta rules (support might be dropped)
+         
+          ;; run used defined meta rules 
           ((mv meta-changed-term-flg term meta-dont-rw rp-state)
            (rp-rw-meta-rules term meta-rules rp-state state))
           ((when meta-changed-term-flg)
