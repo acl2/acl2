@@ -1115,8 +1115,8 @@
       (if (hons-get (car keys) alist)
           (add-to-fast-alist-unique (cdr keys) (cdr vals)
                                     alist)
-        (hons-acons (car keys) (car vals)
-                    (add-to-fast-alist-unique (cdr keys) (cdr vals)
+        (add-to-fast-alist-unique (cdr keys) (cdr vals)
+                                  (hons-acons (car keys) (car vals)
                                               alist)))))
 
   (defun union-entries-of-fast-alist  (keys alist)
