@@ -2162,27 +2162,28 @@
          (rest-jblock (atj-gen-deep-afndefs (cdr afns))))
       (append first-jblock rest-jblock))))
 
-(define atj-gen-shallow-afnprimitive ((afn symbolp) (curr-pkg stringp))
-  :guard (and (primitivep afn)
+(define atj-gen-shallow-afnnative ((afn symbolp) (curr-pkg stringp))
+  :guard (and (aij-nativep afn)
               (equal (symbol-package-name afn) curr-pkg))
   :returns (jmethod jmethodp)
-  :short "Generate a shallowly embedded ACL2 primitive function."
+  :short "Generate a shallowly embedded ACL2 function
+          that is natively implemented in AIJ."
   :long
   (xdoc::topstring
    (xdoc::p
     "AIJ's @('Acl2NativeFunction') class provides native Java implementations
-     of the ACL2 primitive functions, as public static Java methods.
+     of some ACL2 functions, as public static Java methods.
      Thus, in the shallow embedding approach,
-     we could translate each reference to an ACL2 primitive function
+     we could translate references to these ACL2 functions
      to the names of those public static Java methods.
      However, for greater uniformity,
-     we generate Java methods for the ACL2 primitive functions
-     whose names are constructed in the same way as
-     the Java methods for the non-primitive ACL2 functions,
-     and that reside in the Java classes generated for
-     the @('\"COMMON-LISP\"') and @('\"ACL2\"') ACL2 packages.
-     These Java methods for the ACL2 primitive functions
-     simply call the aforementioned public methods."))
+     we generate Java methods for these natively implemented ACL2 functions:
+     the names of these methods are constructed in the same way as
+     the Java methods for the non-natively implemented ACL2 functions;
+     these methods reside in the Java classes generated for
+     the ACL2 packages of the ACL2 functions.
+     The bodies of these Java methods simply call
+     the aforementioned public methods of AIJ."))
   (b* ((jcall-method-name
         (case afn
           (characterp "execCharacterp")
@@ -2253,7 +2254,7 @@
                   :params jmethod-params
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body))
-  :guard-hints (("Goal" :in-theory (enable primitivep))))
+  :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
 
 (define atj-gen-shallow-afndef ((afn symbolp)
                                 (guards$ booleanp)
@@ -2370,9 +2371,10 @@
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded
-          ACL2 primitive function or function definition."
-  (if (primitivep afn)
-      (atj-gen-shallow-afnprimitive afn curr-pkg)
+          ACL2 function natively implemented in AIJ
+          or ACL2 function definition."
+  (if (aij-nativep afn)
+      (atj-gen-shallow-afnnative afn curr-pkg)
     (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
@@ -2627,7 +2629,9 @@
      If @(':deep') is @('nil'), we generate the Java classes and methods
      for the shallowly embedded ACL2 functions,
      and no @('call') method.
-     In the latter case, we ensure that the ACL2 primitives are included,
+     In the latter case, we ensure that
+     the ACL2 functions natively implemented in AIJ are included
+     (currently the ACL2 primitive functions),
      we organize the resulting functions by packages,
      and we proceed to generate the Java nested classes and methods."))
   (b* ((init-jfield (atj-gen-init-jfield))
@@ -2640,11 +2644,11 @@
         (if deep$
             (jmethods-to-jcmembers
              (atj-gen-deep-afndef-jmethods afns guards$ verbose$ state))
-          (b* ((afns+primitives
+          (b* ((afns+natives
                 (remove-duplicates-eq
                  (append afns
                          (strip-cars *primitive-formals-and-guards*))))
-               (afns-by-apkg (organize-symbols-by-pkg afns+primitives)))
+               (afns-by-apkg (organize-symbols-by-pkg afns+natives)))
             (jclasses-to-jcmembers
              (atj-gen-shallow-afns-by-apkg afns-by-apkg
                                            guards$
