@@ -12,8 +12,7 @@
 
 (include-book "conjoin")
 (include-book "function-symbolp")
-
-(include-book "xdoc/constructors" :dir :system)
+(include-book "macro-required-args")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
