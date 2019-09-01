@@ -99,10 +99,13 @@
 
 ;; JSON formatted reports
 
+#| moved to json.lisp with changes..
 (define vl-jp-location ((x vl-location-p) &key (ps 'ps))
   (jp-str (vl-location-string x)))
 
 (add-json-encoder vl-location-p vl-jp-location)
+|#
+
 (def-vl-jp-list location :newlines 8)
 
 (define vl-split-def-contextlist ((x        vl-def-context-list-p)
