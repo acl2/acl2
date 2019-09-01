@@ -435,3 +435,11 @@
   "edu.kestrel.acl2.aij"
   ///
   (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))
+
+(define aij-nativep ((fn symbolp))
+  :returns (yes/no booleanp)
+  :short "ACL2 functions natively implemented in AIJ."
+  :long
+  (xdoc::topstring-p
+   "Currently these are exactly the ACL2 primitive functions.")
+  (primitivep fn))
