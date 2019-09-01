@@ -713,14 +713,9 @@ TEXT versions of the message.</p>"
 (add-json-encoder vl-maybe-direction-p vl-jp-maybe-direction)
 
 (define vl-jp-location ((x vl-location-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :inline t
-  (jp-object :tag  (jp-str "location")
-             :file (jp-str (vl-location->filename x))
-             :line (jp-nat (vl-location->line x))))
+  (jp-str (vl-location-string x)))
 
 (add-json-encoder vl-location-p vl-jp-location)
-;; (def-vl-jp-aggregate location)
 
 #||
 (top-level
@@ -2214,10 +2209,10 @@ which could not hold such large values.</p>"
 
 (in-package "ACL2")
 
-(include-book "oslib/top"             :dir :system)
-(include-book "centaur/vl/loader/top" :dir :system)
-(include-book "centaur/vl/util/print" :dir :system)
-(include-book "centaur/vl/mlib/json"  :dir :system)
+;;(include-book "oslib/top"             :dir :system)
+;;(include-book "centaur/vl/loader/top" :dir :system)
+;;(include-book "centaur/vl/util/print" :dir :system)
+;;(include-book "centaur/vl/mlib/json"  :dir :system)
 
 (encapsulate 
  (((compute-vl-conf *) => * 
