@@ -12,6 +12,7 @@
 
 (include-book "conjoin")
 (include-book "function-symbolp")
+(include-book "macro-keyword-args")
 (include-book "macro-required-args")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
