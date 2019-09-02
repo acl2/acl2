@@ -269,19 +269,20 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
              "**Output contract violation**: ~x0 with argument list ~x1 returned ~x2.~%"
              ',fun-name (list ,@fun-args) ,return-var)))))
 
-(defun get-undef-name (pred d? pkg w)
+(defun get-undef-name (pred d? typed-undef pkg w)
   (declare (xargs :mode :program :guard (symbolp pred)))
   (b* ((tbl (type-metadata-table w))
        (ptbl (pred-alias-table w))
        (type (type-of-pred pred tbl ptbl))
-       (undef-name (if type
+       (undef-name (if (and type typed-undef)
                        (make-symbl `(acl2s - ,type ,(if d? '-d- '-) undefined) pkg)
-                     (if d? 'acl2s::acl2s-d-undefined 'acl2s::acl2s-undefined))))
+                     (if d? 'acl2s-d-undefined 'acl2s-undefined))))
     (if (acl2::arity undef-name w)
         undef-name
       'acl2s::acl2s-undefined)))
 
-(defun make-defun-body/logic (name formals ic oc body wrld make-staticp d? pkg)
+(defun make-defun-body/logic
+    (name formals ic oc body wrld make-staticp d? typed-undef pkg)
   (b* ((ptbl (pred-alias-table wrld))
        (with-ic-body
         (if (c-is-t ic)
@@ -289,8 +290,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           `(if ,ic
                ,body
              ,(if d?
-                  `(,(get-undef-name (pred-of-oc name formals oc ptbl) d? pkg wrld))
-                `(,(get-undef-name (pred-of-oc name formals oc ptbl) d? pkg wrld)
+                  `(,(get-undef-name (pred-of-oc name formals oc ptbl) d? typed-undef pkg wrld))
+                `(,(get-undef-name (pred-of-oc name formals oc ptbl) d? typed-undef pkg wrld)
                   (quote ,name)
                   (list ,@formals)))))))
     (if make-staticp
@@ -310,8 +311,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (get1 :force-ic-hyps-in-definitionp kwd-alist))
        (skip-admissibilityp 
         (get1 :skip-admissibilityp kwd-alist))
+       (typed-undef (get1 :typed-undef kwd-alist))
        (ic (if force-ic-hyps-in-definitionp (map-force-ic ic) ic))
-       (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? pkg))
+       (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? typed-undef pkg))
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (fun-ind-name (make-sym name 'induction-scheme-from-definition pkg))
        (ind-scheme-name (make-sym name 'induction-scheme pkg))
@@ -387,19 +389,19 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (logic)
 
-(defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? pkg w)
+(defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? typed-undef pkg w)
   (declare (xargs :mode :program))
   (b* ((ptbl (pred-alias-table w))
        (pred (pred-of-oc name formals oc ptbl))
-       (undef-name (get-undef-name pred d? pkg w)))
+       (undef-name (get-undef-name pred d? typed-undef pkg w)))
     (if (or (c-is-t ic)
             (and rem-hyps?
-                 (not (member undef-name '(acl2s::acl2s-undefined
-                                           acl2s::acl2s-d-undefined)))))
+                 (not (member undef-name '(acl2s-undefined
+                                           acl2s-d-undefined)))))
         (mv oc t)
       (mv `(implies ,(if f-c-thm? (map-force-ic ic) ic) ,oc) nil))))
 
-(defun make-contract-defthm (name ic oc kwd-alist formals d? pkg w)
+(defun make-contract-defthm (name ic oc kwd-alist formals d? typed-undef pkg w)
   (declare (xargs :mode :program))
   (b* ((instructions (get1 :instructions kwd-alist))
        (otf-flg (get1 :otf-flg kwd-alist))
@@ -407,7 +409,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (rule-classes (get1 :rule-classes kwd-alist))
        (f-c-thm?
         (get1 :force-ic-hyps-in-contract-thmp kwd-alist))
-       ((mv body &) (make-contract-body name ic oc formals d? nil f-c-thm? pkg w))
+       ((mv body &)
+        (make-contract-body name ic oc formals d? nil f-c-thm? typed-undef pkg w))
        (skip-function-contractp
         (get1 :skip-function-contractp kwd-alist))
        (defthm
@@ -427,18 +430,19 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (b* (((when (c-is-t oc)) nil) ;trivially satisfied
        (function-contract-strictp
         (get1 :function-contract-strictp kwd-alist))
-       (f-c-thm?
-        (get1 :force-ic-hyps-in-contract-thmp kwd-alist))
+       (f-c-thm? (get1 :force-ic-hyps-in-contract-thmp kwd-alist))
        (instructions (get1 :instructions kwd-alist))
        (otf-flg (get1 :otf-flg kwd-alist))
        (hints (get1 :function-contract-hints kwd-alist))
        (rule-classes (get1 :rule-classes kwd-alist))
        (skip-function-contractp
         (get1 :skip-function-contractp kwd-alist))
+       (gen? (get1 :generalize-contract-thm kwd-alist))
+       (typed-undef (get1 :typed-undef kwd-alist))
        ((mv body-rm-hyps no-hyps?-rm-hyps)
-        (make-contract-body name ic oc formals d? t f-c-thm? pkg w))
+        (make-contract-body name ic oc formals d? t f-c-thm? typed-undef pkg w))
        ((mv body-hyps no-hyps?-hyps)
-        (make-contract-body name ic oc formals d? nil f-c-thm? pkg w))
+        (make-contract-body name ic oc formals d? nil f-c-thm? typed-undef pkg w))
        (contract-name (make-sym name 'CONTRACT pkg))
        (contract-tpname (make-sym name 'CONTRACT-TP pkg))
        (recursivep (get1 :recursivep kwd-alist))
@@ -464,13 +468,16 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (rclass-rm-hyps (or rule-classes rclass-rm-hyps)) ; rule-classes overrides rclass
        (rclass-hyps (or rule-classes rclass-hyps)) ; rule-classes overrides rclass
        (induct-rewrite-fc
-        `(DEFTHM ,contract-name ,body-rm-hyps ,@rhints
-           ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
-           ,@(and otf-flg `(:otf-flg ,otf-flg))
-           ,@(and instructions `(:instructions ,instructions))))
-       (induct-rewrite-fc (wrap-skip-fun induct-rewrite-fc))
+        (and gen?
+             `(DEFTHM ,contract-name ,body-rm-hyps ,@rhints
+                ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
+                ,@(and otf-flg `(:otf-flg ,otf-flg))
+                ,@(and instructions `(:instructions ,instructions)))))
+       (induct-rewrite-fc
+        (and gen? (list (wrap-skip-fun induct-rewrite-fc))))
        (rewrite-fc ;; in case user wanted to completely override hints
-        (and hints
+        (and gen?
+             hints
              `(DEFTHM ,contract-name ,body-rm-hyps
                 ,@(and hints `(:hints ,hints))
                 ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
@@ -499,19 +506,19 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             `(,induct-rewrite-fc-h)
           `((with-output :off :all :on (error)
                          ,induct-rewrite-fc-h))))
-       (tp-rule
-        `(DEFTHM ,contract-tpname ,body-rm-hyps
-           :rule-classes ((:type-prescription))
-           :hints (("goal" :by ,contract-name))))
-       (tp-rule (wrap-skip-fun tp-rule))
+       (tp-rule (and gen? 
+                     `(DEFTHM ,contract-tpname ,body-rm-hyps
+                        :rule-classes ((:type-prescription))
+                        :hints (("goal" :by ,contract-name)))))
+       (tp-rule (and gen? (list (wrap-skip-fun tp-rule))))
        (tp-rule-h
         `(DEFTHM ,contract-tpname ,body-hyps
            :rule-classes ((:type-prescription))
            :hints (("goal" :by ,contract-name))))
-       (tp-rule-h (wrap-skip-fun tp-rule-h))
+       (tp-rule-h (list (wrap-skip-fun tp-rule-h)))
        (tp-rule-h
         (and (not (equal tp-rule-h tp-rule))
-             `(,tp-rule-h))))
+             tp-rule-h)))
     (cond
      (skip-function-contractp
       `(encapsulate
@@ -526,14 +533,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (with-output
          :off :all
          (make-event
-          '(:or ,induct-rewrite-fc
+          '(:or ,@induct-rewrite-fc
                 ,@rewrite-fc
                 ,@induct-rewrite-fc-h
                 ,@rewrite-fc-h)))
         (with-output
          :off :all 
          (make-event
-          '(:or ,tp-rule
+          '(:or ,@tp-rule
                 ,@tp-rule-h
                 (value-triple :type-prescription-rule-failed))))))
      (t `(encapsulate
@@ -541,7 +548,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (with-output
            :off :all
            (make-event
-            '(:OR ,induct-rewrite-fc
+            '(:OR ,@induct-rewrite-fc
                   ,@rewrite-fc
                   ,@induct-rewrite-fc-h
                   ,@rewrite-fc-h
@@ -549,7 +556,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (with-output
            :off :all
            (make-event
-            '(:OR ,tp-rule
+            '(:OR ,@tp-rule
                   ,@tp-rule-h
                   (value-triple :Type-prescription-rule-failed)))))))))
 
@@ -647,16 +654,17 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
    *input-contract-alias*
    *output-contract-alias*
    '(:sig ;:sig unsupported now
-     :verbose :debug
-     :rule-classes :instructions :function-contract-hints :otf-flg ;for contract defthm
-     :body-contracts-hints ;for verify-guards event
+     :verbose :debug :print-summary
      :skip-tests
-     :force-ic-hyps-in-definitionp
-     :force-ic-hyps-in-contract-thmp
-     :skip-admissibilityp
-     :skip-function-contractp
-     :skip-body-contractsp
-     :timeout :termination-strictp :function-contract-strictp :body-contracts-strictp
+     :typed-undef
+     :generalize-contract-thm 
+     :timeout
+     :termination-strictp :function-contract-strictp :body-contracts-strictp
+     :force-ic-hyps-in-definitionp :force-ic-hyps-in-contract-thmp
+     :skip-admissibilityp :skip-function-contractp :skip-body-contractsp
+     :rule-classes
+     :instructions :function-contract-hints :otf-flg ;for contract defthm
+     :body-contracts-hints ;for verify-guards event
      )))
 
 (deffilter filter-keywords (xs) keywordp)
@@ -865,7 +873,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun make-defun-no-guard-ev
     (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
   (declare (xargs :mode :program))
-  (b* ((lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? pkg))
+  (b* ((typed-undef (get1 :typed-undef kwd-alist))
+       (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? typed-undef pkg))
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (skip-admissibilityp 
         (get1 :skip-admissibilityp kwd-alist))
@@ -1017,7 +1026,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun program-mode-defunc-events
     (name formals ic oc decls body kwd-alist d? wrld pkg)
   (declare (xargs :mode :program))
-  (b* ((dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? pkg))
+  (b* ((typed-undef (get1 :typed-undef kwd-alist))
+       (dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? typed-undef pkg))
        (decls (update-xargs-decls decls :guard ic :mode :program))
        (timeout-secs (get1 :timeout kwd-alist)))
     `(with-output
@@ -1314,7 +1324,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (defun/ng
          (make-defun-no-guard-ev name formals ic oc decls body
                                  kwd-alist wrld make-staticp d? pkg))
-       (contract-defthm (make-contract-defthm name ic oc kwd-alist formals d? pkg wrld))
+       (typed-undef (get1 :typed-undef kwd-alist))
+       (contract-defthm (make-contract-defthm name ic oc kwd-alist formals d? typed-undef pkg wrld))
        (verify-guards-ev (make-verify-guards-ev name kwd-alist))
        (function-contract-strictp (get1 :function-contract-strictp kwd-alist))
        (body-contracts-strictp (get1 :body-contracts-strictp kwd-alist)))
@@ -1365,10 +1376,12 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (deffilter filter-strings (xs) stringp)
 
 (table defunc-defaults-table nil
-       '((:debug       .  nil)
-         (:verbose     . nil)
+       '((:verbose     . nil)
+         (:debug       .  nil)
          (:print-summary  . t)
          (:skip-tests . nil)
+         (:typed-undef . t)
+         (:generalize-contract-thm . t)
          (:timeout . 50)
          (:termination-strictp . t)
          (:function-contract-strictp . t)
@@ -1524,14 +1537,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (ptbl (pred-alias-table w))
        (skip-admissibilityp 
         (get1 :skip-admissibilityp kwd-alist))
+       (typed-undef (get1 :typed-undef kwd-alist))
        (pred (pred-of-oc name formals oc ptbl))
        (type (type-of-pred pred tbl ptbl))
-       (undef-name (if type
+       (undef-name (if (and type typed-undef)
                        (make-symbl `(acl2s - ,type ,(if d? '-d- '-) undefined) pkg)
-                     (if d? 'acl2s::acl2s-d-undefined 'acl2s::acl2s-undefined)))
-       (attch-name (make-symbl `(,undef-name ,(if d? '-d- '-) attached) pkg))
-       (thm-name (make-symbl `(,undef-name ,(if d? '-d- '-) ,pred) pkg))
-       (base-val (and type (base-val-of-type type tbl)))
+                     (if d? 'acl2s-d-undefined 'acl2s-undefined)))
+       (attch-name (make-symbl `(,undef-name -attached) pkg))
+       (thm-name (make-symbl `(,undef-name - ,pred) pkg))
+       (base-val (and type typed-undef (base-val-of-type type tbl)))
        (defthm-d? `(defthm ,thm-name (,pred (,undef-name))
                      :rule-classes ((:type-prescription) (:rewrite))))
        (defthm-d? (if skip-admissibilityp
@@ -1583,6 +1597,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       `(value-triple :program-mode))
      ((and (not do-it)
            (acl2::arity undef-name w))
+      `(value-triple ',undef-name))
+     ((member-equal undef-name '(acl2s-d-undefined acl2s-undefined))
       `(value-triple ',undef-name))
      (d? d?-form)
      (t no-d?-form))))
