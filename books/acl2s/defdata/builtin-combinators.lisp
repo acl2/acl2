@@ -566,7 +566,7 @@ Mainly to be used for evaluating enum lists "
        (list 'acl2s::range domain (list lo lo-rel-sym '_ hi-rel-sym hi))))
     (& (bad-range-syntax rexp1)))))
 
-
+#|
 (defun parse-enum-exp (eexp ctx w)
   (declare (xargs :mode :program))
   (b* (((when (proper-symbolp eexp)) eexp) ;name TODO.Bug -- But what if its not a name! We should catch this error...
@@ -576,3 +576,20 @@ Mainly to be used for evaluating enum lists "
        ((unless (and (true-listp list-val) (consp list-val)))
         (er hard ctx "Enum argument ~x0 expected to be a non-empty list expression.~%" eexp)))
     (list 'acl2s::member (kwote list-val))))
+|#
+
+;; This removes duplicate elements and uses 'or, which works better
+;; with tau because we can exactly characterize the type.
+(defun parse-enum-exp (eexp ctx w)
+  (declare (xargs :mode :program))
+  (b* (((when (proper-symbolp eexp)) eexp) ;name TODO.Bug -- But what if its not a name! We should catch this error...
+       ((mv erp list-val) (trans-my-ev-w eexp ctx w nil))
+       ((when erp)
+        (er hard ctx "Evaluating list expression ~x0 failed!~%" eexp))
+       ((unless (and (true-listp list-val) (consp list-val)))
+        (er hard ctx "Enum argument ~x0 expected to be a non-empty list expression.~%" eexp))
+       (list-val (remove-duplicates list-val)))
+    (if (consp (cdr list-val))
+        (cons 'or (kwote-lst list-val))
+      (car list-val))))
+
