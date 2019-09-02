@@ -157,10 +157,11 @@
      based on their @('unnormalized-body') properties.
      It does so recursively,
      starting from the top-level functions specified by the user
-     and stopping at the primitive functions,
-     which have no @('unnormalized-body') property.
+     and stopping at the ACL2 functions implemented natively in AIJ,
+     which currently are the ACL2 primitive functions
+     (which have no @('unnormalized-body') property).
      If a function is encountered that
-     is not among the primitives
+     is not natively implemented in AIJ
      and has no @('unnormalized-body') property,
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code
@@ -207,7 +208,7 @@
      These methods are executed without using AIJ's interpreter.
      However, the shallowly embedded ACL2 functions still use
      AIJ's representation of the ACL2 values
-     and AIJ's native implementation of the ACL2 primitive functions.")
+     and AIJ's native implementations of ACL2 functions.")
 
    (xdoc::p
     "This shallow embedding approach
@@ -241,11 +242,13 @@
      "Each @('fni') must be a symbol that names a function that
       either has an @('unnormalized-body') property
       and no raw Lisp code (unless it is in the whitelist),
-      or is a " (xdoc::seeurl "acl2::primitive" "primitive") " function.
+      or is natively implemented in AIJ
+      (currently, this is equivalent to the function being "
+     (xdoc::seeurl "acl2::primitive" "primitive") ").
       Each of these functions must have
       no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
-      (in the unnormalized body, if non-primitive)
+      (in the unnormalized body, if not natively implemented in AIJ)
       only functions that satisfy the same constraints.")
     (xdoc::p
      "None of the @('fni') functions may be @(tsee return-last).
@@ -428,14 +431,14 @@
      and returns an ACL2 value.
      The called ACL2 function must be among @('fn1'), ..., @('fnp')
      and the functions that they transitively call,
-     or it may be any of the primitive ACL2 functions.")
+     or it may be natively implemented in AIJ.")
 
    (xdoc::p
     "In the shallow embedding approach,
      the Java class contains one public static method
      for each function among @('fn1'), ..., @('fnp'),
      the functions that they transitively call,
-     and the primitive ACL2 functions.
+     and the ACL2 functions natively implemented in AIJ.
      Each method has the same number of parameters as the ACL2 function,
      all ACL2 values, and returns an ACL2 value.
      These methods are declared in nested public classes,

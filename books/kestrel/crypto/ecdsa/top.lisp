@@ -14,6 +14,8 @@
 
 (include-book "secp256k1-attachment")
 
+(include-book "deterministic-ecdsa-secp256k1")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc elliptic-curve-digital-signature-algorithm

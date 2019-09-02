@@ -7,10 +7,13 @@
 package edu.kestrel.acl2.aij;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Representation of ACL2 native functions in ACL2 terms.
+ * Representation of ACL2 native functions in ACL2 terms,
+ * and implementation of these functions in Java.
  * These are functions that are natively implemented  in Java,
  * as opposed to the functions that are defined via ACL2 terms
  * (see {@link Acl2DefinedFunction}).
@@ -1354,10 +1357,31 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code char-code} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Integer execCharCodeUnderGuard(Acl2Character x) {
+        // it is not clear how this compares to x.charCode() in speed:
+        return Acl2Integer.make(x.getJavaChar());
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code code-char} ACL2 primitive function.
      */
     public static Acl2Character execCodeChar(Acl2Value x) {
         return x.codeChar();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code code-char} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Character execCodeCharUnderGuard(Acl2Integer x) {
+        // this should be faster than x.codeChar()
+        // because we can avoid checking that the integer is in range:
+        return Acl2Character.make((char) x.getJavaInt());
     }
 
     /**
@@ -1373,6 +1397,34 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code coerce} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Value execCoerceUnderGuard(Acl2Value x, Acl2Symbol y) {
+        if (y.equals(Acl2Symbol.LIST)) {
+            // it is not clear if this can be made faster
+            // by knowing that x is an ACL2 string:
+            return x.coerceToList();
+        } else {
+            // similar to the code in Acl2ConsPair.coerceToString(),
+            // with some optimizations enabled by the fact that
+            // x is known to be an ACL2 list of characters:
+            List<Acl2Character> charList = new LinkedList<>();
+            for (Acl2Value list = x;
+                 !list.equals(Acl2Symbol.NIL);
+                 list = list.cdr()) {
+                charList.add((Acl2Character) list.car());
+            }
+            int size = charList.size();
+            char[] charArray = new char[size];
+            for (int i = 0; i < size; ++i)
+                charArray[i] = charList.get(i).getJavaChar();
+            return Acl2String.make(new String(charArray));
+        }
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code intern-in-package-of-symbol} ACL2 primitive function.
      */
     public static Acl2Symbol execInternInPackageOfSymbol(Acl2Value str,
@@ -1382,9 +1434,32 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code intern-in-package-of-symbol} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Symbol execInternInPackageOfSymbolUnderGuard
+    (Acl2String str, Acl2Symbol sym) {
+        // this may be faster than str.internThisInPackageOf(sym),
+        // followed by sym.internInPackageOfThis(str):
+        return Acl2Symbol.make(sym.getPackageName(), str);
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code symbol-package-name} ACL2 primitive function.
      */
     public static Acl2String execSymbolPackageName(Acl2Value x) {
+        return x.symbolPackageName();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code symbol-package-name} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2String execSymbolPackageNameUnderGuard(Acl2Symbol x) {
+        // it is not clear if this can be made faster
+        // by knowing that x is an ACL2 symbol:
         return x.symbolPackageName();
     }
 
@@ -1398,10 +1473,32 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code symbol-name} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2String execSymbolNameUnderGuard(Acl2Symbol x) {
+        // it is not clear how this compares to x.symbolName() in speed:
+        return x.getName();
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code pkg-imports} ACL2 primitive function.
      */
     public static Acl2Value execPkgImports(Acl2Value pkg)
             throws Acl2EvaluationException {
+        return pkg.pkgImports();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code pkg-imports} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Value execPkgImportsUnderGuard(Acl2String pkg)
+            throws Acl2EvaluationException {
+        // it is not clear if this can be made faster
+        // by knowing that pkg is an ACL2 string:
         return pkg.pkgImports();
     }
 
@@ -1416,9 +1513,32 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code pkg-witness} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Symbol execPkgWitnessUnderGuard(Acl2String pkg)
+            throws Acl2EvaluationException {
+        // it is not clear if this can be made faster
+        // by knowing that pkg is an ACL2 string:
+        return pkg.pkgWitness();
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code unary--} ACL2 primitive function.
      */
     public static Acl2Number execUnaryMinus(Acl2Value x) {
+        return x.negate();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code unary--} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Number execUnaryMinusUnderGuard(Acl2Number x) {
+        // it is not clear if this can be made faster
+        // by knowing that pkg is an ACL2 number:
         return x.negate();
     }
 
@@ -1432,6 +1552,17 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code unary-/} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Number execUnarySlashUnderGuard(Acl2Number x) {
+        // it is not clear if this can be made faster
+        // by knowing that pkg is an ACL2 number:
+        return x.reciprocate();
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code binary-+} ACL2 primitive function.
      */
     public static Acl2Number execBinaryPlus(Acl2Value x, Acl2Value y) {
@@ -1440,10 +1571,34 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code binary-+} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Number execBinaryPlusUnderGuard(Acl2Number x,
+                                                      Acl2Number y) {
+        // this should be slightly faster than x.addValue(y),
+        // which in turn calls y.addNumber(x):
+        return x.addNumber(y);
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code binary-*} ACL2 primitive function.
      */
     public static Acl2Number execBinaryStar(Acl2Value x, Acl2Value y) {
         return x.multiplyValue(y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code binary-*} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Number execBinaryStarUnderGuard(Acl2Number x,
+                                                      Acl2Number y) {
+        // this should be slightly faster than x.multiplyValue(y),
+        // which in turn calls y.multiplyNumber(x):
+        return x.multiplyNumber(y);
     }
 
     /**
@@ -1461,10 +1616,35 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code <} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Symbol execLessThanUnderGuard(Acl2Rational x,
+                                                    Acl2Rational y) {
+        // this should be generally faster than the code in execLessThan():
+        if (x.compareToRational(y) < 0)
+            return Acl2Symbol.T;
+        else
+            return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code complex} ACL2 primitive function.
      */
     public static Acl2Number execComplex(Acl2Value x, Acl2Value y) {
         return Acl2Number.make(x.rfix(), y.rfix());
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code complex} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Number execComplexUnderGuard(Acl2Rational x,
+                                                   Acl2Rational y) {
+        // this avoids calling rfix():
+        return Acl2Number.make(x, y);
     }
 
     /**
@@ -1477,10 +1657,30 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code realpart} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Rational execRealPartUnderGuard(Acl2Number x) {
+        // it is not clear how this compares to x.realpart() in speed:
+        return x.getRealPart();
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code imagpart} ACL2 primitive function.
      */
     public static Acl2Rational execImagPart(Acl2Value x) {
         return x.imagpart();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code imagpart} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Rational execImagPartUnderGuard(Acl2Number x) {
+        // it is not clear how this compares to x.imagpart() in speed:
+        return x.getImaginaryPart();
     }
 
     /**
@@ -1493,10 +1693,30 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code numerator} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Integer execNumeratorUnderGuard(Acl2Rational x) {
+        // it is not clear how this compares to x.numerator() in speed:
+        return x.getNumerator();
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code denominator} ACL2 primitive function.
      */
     public static Acl2Integer execDenominator(Acl2Value x) {
         return x.denominator();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code denominator} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Integer execDenominatorUnderGuard(Acl2Rational x) {
+        // it is not clear how this compares to x.denominator() in speed:
+        return x.getDenominator();
     }
 
     /**
@@ -1517,10 +1737,30 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code car} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Value execCarUnderGuard(Acl2ConsPair x) {
+        // it is not clear how this compares to x.car() in speed:
+        return x.getCar();
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code cdr} ACL2 primitive function.
      */
     public static Acl2Value execCdr(Acl2Value x) {
         return x.cdr();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code cdr} ACL2 primitive function,
+     * assuming that its guard is satisfied.
+     */
+    public static Acl2Value execCdrUnderGuard(Acl2ConsPair x) {
+        // it is not clear how this compares to x.car() in speed:
+        return x.getCdr();
     }
 
     /**
