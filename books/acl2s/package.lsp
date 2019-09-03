@@ -153,7 +153,8 @@
       legal-variablep
       legal-variable-or-constant-namep
       xdoc
-
+      get-tau-runes
+      
       => ;sig
       _  ;range
 

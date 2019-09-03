@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "kestrel/std/system/macro-keyword-args" :dir :system)
+(include-book "kestrel/std/system/macro-required-args" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

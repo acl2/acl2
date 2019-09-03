@@ -79,7 +79,8 @@
      "@('afns') is the list of ACL2 functions to be translated to Java.")
     (xdoc::li
      "@('afns-by-apkg') consists of @('afns'),
-      plus all the ACL2 primitive functions,
+      plus all the ACL2 functions natively implemented in AIJ
+      (which currently are the ACL2 primitive functions)
       organized as an alist from ACL2 package names to
       the non-empty lists of the functions in the respective packages.
       See @(tsee atj-code-generation).")

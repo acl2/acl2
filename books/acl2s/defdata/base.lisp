@@ -96,7 +96,34 @@
                            ((allp car) (allp cdr))
                            :rule-classes nil
                            :verbose t)
-                
+
+#|
+
+Adding app as a constructor is problematic because we have to be able
+to deconstruct lists and we don't know how to do that, i.e., we don't
+know where to split them up. 
+
+If this turns out to be important, one can define constructor
+on a per data definition basis or 
+
+;; App is a non-proper constructor that allows us to define
+;; datatypes such as
+;; (defdata infix (or 'x 'y (app (list infix) (cons '+ infix))))
+(defun append-dest1 (l)
+  (declare (xargs :guard (consp l)))
+  (list (car l)))
+
+(defun append-dest2 (l )
+  (declare (xargs :guard (consp l)))
+  (cdr l))
+
+(register-data-constructor
+ (consp append)
+ ((consp append-dest1) (allp append-dest2))
+ :rule-classes nil
+ :proper nil)
+|#
+
 
 ;;jared's oset implementation
 ;; (defun set::non-empty-setp (x)

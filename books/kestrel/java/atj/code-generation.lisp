@@ -275,53 +275,59 @@
     we just reference the appropriate constant
     if the symbol in question is among those symbols.
     Otherwise, we build it in the general way.
-    Overall, this makes the generated Java code faster.")
-  (cond
-   ((eq asymbol 't) (jexpr-name "Acl2Symbol.T"))
-   ((eq asymbol 'nil) (jexpr-name "Acl2Symbol.NIL"))
-   ((eq asymbol 'list) (jexpr-name "Acl2Symbol.LIST"))
-   ((eq asymbol 'if) (jexpr-name "Acl2Symbol.IF"))
-   ((eq asymbol 'characterp) (jexpr-name "Acl2Symbol.CHARACTERP"))
-   ((eq asymbol 'stringp) (jexpr-name "Acl2Symbol.STRINGP"))
-   ((eq asymbol 'symbolp) (jexpr-name "Acl2Symbol.SYMBOLP"))
-   ((eq asymbol 'integerp) (jexpr-name "Acl2Symbol.INTEGERP"))
-   ((eq asymbol 'rationalp) (jexpr-name "Acl2Symbol.RATIONALP"))
-   ((eq asymbol 'complex-rationalp) (jexpr-name "Acl2Symbol.COMPLEX_RATIONALP"))
-   ((eq asymbol 'acl2-numberp) (jexpr-name "Acl2Symbol.ACL2_NUMBERP"))
-   ((eq asymbol 'consp) (jexpr-name "Acl2Symbol.CONSP"))
-   ((eq asymbol 'char-code) (jexpr-name "Acl2Symbol.CHAR_CODE"))
-   ((eq asymbol 'code-char) (jexpr-name "Acl2Symbol.CODE_CHAR"))
-   ((eq asymbol 'coerce) (jexpr-name "Acl2Symbol.COERCE"))
-   ((eq asymbol 'intern-in-package-of-symbol)
-    (jexpr-name "Acl2Symbol.INTERN_IN_PACKAGE_OF_SYMBOL"))
-   ((eq asymbol 'symbol-package-name)
-    (jexpr-name "Acl2Symbol.SYMBOL_PACKAGE_NAME"))
-   ((eq asymbol 'symbol-name) (jexpr-name "Acl2Symbol.SYMBOL_NAME"))
-   ((eq asymbol 'pkg-imports) (jexpr-name "Acl2Symbol.PKG_IMPORTS"))
-   ((eq asymbol 'pkg-witness) (jexpr-name "Acl2Symbol.PKG_WITNESS"))
-   ((eq asymbol 'unary--) (jexpr-name "Acl2Symbol.UNARY_MINUS"))
-   ((eq asymbol 'unary-/) (jexpr-name "Acl2Symbol.UNARY_SLASH"))
-   ((eq asymbol 'binary-+) (jexpr-name "Acl2Symbol.BINARY_PLUS"))
-   ((eq asymbol 'binary-*) (jexpr-name "Acl2Symbol.BINARY_STAR"))
-   ((eq asymbol '<) (jexpr-name "Acl2Symbol.LESS_THAN"))
-   ((eq asymbol 'complex) (jexpr-name "Acl2Symbol.COMPLEX"))
-   ((eq asymbol 'realpart) (jexpr-name "Acl2Symbol.REALPART"))
-   ((eq asymbol 'imagpart) (jexpr-name "Acl2Symbol.IMAGPART"))
-   ((eq asymbol 'numerator) (jexpr-name "Acl2Symbol.NUMERATOR"))
-   ((eq asymbol 'denominator) (jexpr-name "Acl2Symbol.DENOMINATOR"))
-   ((eq asymbol 'cons) (jexpr-name "Acl2Symbol.CONS"))
-   ((eq asymbol 'car) (jexpr-name "Acl2Symbol.CAR"))
-   ((eq asymbol 'cdr) (jexpr-name "Acl2Symbol.CDR"))
-   ((eq asymbol 'equal) (jexpr-name "Acl2Symbol.EQUAL"))
-   ((eq asymbol 'bad-atom<=)
-    (jexpr-name "Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO"))
-   ((eq asymbol 'or) (jexpr-name "Acl2Symbol.OR"))
-   (t (jexpr-smethod *atj-jtype-symbol*
+    Overall, this makes the generated Java code faster.
+    We introduce and use an alist to specify
+    the correspondence between ACL2 symbols and AIJ static final fields.")
+  (b* ((pair (assoc-eq asymbol *atj-gen-asymbol-alist*)))
+    (if pair
+        (jexpr-name (cdr pair))
+      (jexpr-smethod *atj-jtype-symbol*
                      "make"
                      (list (atj-gen-jstring
                             (symbol-package-name asymbol))
                            (atj-gen-jstring
-                            (symbol-name asymbol)))))))
+                            (symbol-name asymbol))))))
+
+  :prepwork
+  ((defval *atj-gen-asymbol-alist*
+     '((t . "Acl2Symbol.T")
+       (nil . "Acl2Symbol.NIL")
+       (list . "Acl2Symbol.LIST")
+       (if . "Acl2Symbol.IF")
+       (characterp . "Acl2Symbol.CHARACTERP")
+       (stringp . "Acl2Symbol.STRINGP")
+       (symbolp . "Acl2Symbol.SYMBOLP")
+       (integerp . "Acl2Symbol.INTEGERP")
+       (rationalp . "Acl2Symbol.RATIONALP")
+       (complex-rationalp . "Acl2Symbol.COMPLEX_RATIONALP")
+       (acl2-numberp . "Acl2Symbol.ACL2_NUMBERP")
+       (consp . "Acl2Symbol.CONSP")
+       (char-code . "Acl2Symbol.CHAR_CODE")
+       (code-char . "Acl2Symbol.CODE_CHAR")
+       (coerce . "Acl2Symbol.COERCE")
+       (intern-in-package-of-symbol . "Acl2Symbol.INTERN_IN_PACKAGE_OF_SYMBOL")
+       (symbol-package-name . "Acl2Symbol.SYMBOL_PACKAGE_NAME")
+       (symbol-name . "Acl2Symbol.SYMBOL_NAME")
+       (pkg-imports . "Acl2Symbol.PKG_IMPORTS")
+       (pkg-witness . "Acl2Symbol.PKG_WITNESS")
+       (unary-- . "Acl2Symbol.UNARY_MINUS")
+       (unary-/ . "Acl2Symbol.UNARY_SLASH")
+       (binary-+ . "Acl2Symbol.BINARY_PLUS")
+       (binary-* . "Acl2Symbol.BINARY_STAR")
+       (< . "Acl2Symbol.LESS_THAN")
+       (complex . "Acl2Symbol.COMPLEX")
+       (realpart . "Acl2Symbol.REALPART")
+       (imagpart . "Acl2Symbol.IMAGPART")
+       (numerator . "Acl2Symbol.NUMERATOR")
+       (denominator . "Acl2Symbol.DENOMINATOR")
+       (cons . "Acl2Symbol.CONS")
+       (car . "Acl2Symbol.CAR")
+       (cdr . "Acl2Symbol.CDR")
+       (equal . "Acl2Symbol.EQUAL")
+       (bad-atom<= . "Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
+       (or . "Acl2Symbol.OR"))
+     ///
+     (assert-event (symbol-string-alistp *atj-gen-asymbol-alist*)))))
 
 (define atj-gen-ainteger ((ainteger integerp))
   :returns (jexpr jexprp)
@@ -2162,27 +2168,28 @@
          (rest-jblock (atj-gen-deep-afndefs (cdr afns))))
       (append first-jblock rest-jblock))))
 
-(define atj-gen-shallow-afnprimitive ((afn symbolp) (curr-pkg stringp))
-  :guard (and (primitivep afn)
+(define atj-gen-shallow-afnnative ((afn symbolp) (curr-pkg stringp))
+  :guard (and (aij-nativep afn)
               (equal (symbol-package-name afn) curr-pkg))
   :returns (jmethod jmethodp)
-  :short "Generate a shallowly embedded ACL2 primitive function."
+  :short "Generate a shallowly embedded ACL2 function
+          that is natively implemented in AIJ."
   :long
   (xdoc::topstring
    (xdoc::p
     "AIJ's @('Acl2NativeFunction') class provides native Java implementations
-     of the ACL2 primitive functions, as public static Java methods.
+     of some ACL2 functions, as public static Java methods.
      Thus, in the shallow embedding approach,
-     we could translate each reference to an ACL2 primitive function
+     we could translate references to these ACL2 functions
      to the names of those public static Java methods.
      However, for greater uniformity,
-     we generate Java methods for the ACL2 primitive functions
-     whose names are constructed in the same way as
-     the Java methods for the non-primitive ACL2 functions,
-     and that reside in the Java classes generated for
-     the @('\"COMMON-LISP\"') and @('\"ACL2\"') ACL2 packages.
-     These Java methods for the ACL2 primitive functions
-     simply call the aforementioned public methods."))
+     we generate Java methods for these natively implemented ACL2 functions:
+     the names of these methods are constructed in the same way as
+     the Java methods for the non-natively implemented ACL2 functions;
+     these methods reside in the Java classes generated for
+     the ACL2 packages of the ACL2 functions.
+     The bodies of these Java methods simply call
+     the aforementioned public methods of AIJ."))
   (b* ((jcall-method-name
         (case afn
           (characterp "execCharacterp")
@@ -2253,7 +2260,7 @@
                   :params jmethod-params
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body))
-  :guard-hints (("Goal" :in-theory (enable primitivep))))
+  :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
 
 (define atj-gen-shallow-afndef ((afn symbolp)
                                 (guards$ booleanp)
@@ -2370,9 +2377,10 @@
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded
-          ACL2 primitive function or function definition."
-  (if (primitivep afn)
-      (atj-gen-shallow-afnprimitive afn curr-pkg)
+          ACL2 function natively implemented in AIJ
+          or ACL2 function definition."
+  (if (aij-nativep afn)
+      (atj-gen-shallow-afnnative afn curr-pkg)
     (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
@@ -2627,7 +2635,9 @@
      If @(':deep') is @('nil'), we generate the Java classes and methods
      for the shallowly embedded ACL2 functions,
      and no @('call') method.
-     In the latter case, we ensure that the ACL2 primitives are included,
+     In the latter case, we ensure that
+     the ACL2 functions natively implemented in AIJ are included
+     (currently the ACL2 primitive functions),
      we organize the resulting functions by packages,
      and we proceed to generate the Java nested classes and methods."))
   (b* ((init-jfield (atj-gen-init-jfield))
@@ -2640,11 +2650,11 @@
         (if deep$
             (jmethods-to-jcmembers
              (atj-gen-deep-afndef-jmethods afns guards$ verbose$ state))
-          (b* ((afns+primitives
+          (b* ((afns+natives
                 (remove-duplicates-eq
                  (append afns
                          (strip-cars *primitive-formals-and-guards*))))
-               (afns-by-apkg (organize-symbols-by-pkg afns+primitives)))
+               (afns-by-apkg (organize-symbols-by-pkg afns+natives)))
             (jclasses-to-jcmembers
              (atj-gen-shallow-afns-by-apkg afns-by-apkg
                                            guards$

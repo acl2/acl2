@@ -384,19 +384,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This has to be used on the functions of interest prior to calling ATJ,
+    "This has to be used on the functions of interest
+     (i.e. functions for which we want to generate Java code)
+     prior to calling ATJ,
      so that ATJ can take advantage of the type information
      recorded for the functions.")
    (xdoc::p
-    "The file @('types-for-built-ins.lisp') does that
-     for a number of ACL2 built-in functions.
-     That file can be included prior to calling ATJ,
-     but this macro should be called on other functions of interest,
-     i.e. functions for which we want to generate Java code.")
+    "For instance, the file @('types-for-natives.lisp') uses this macro
+     on the ACL2 functions that are implemented natively in AIJ.")
    (xdoc::p
     "If ATJ encounters a function that is not in the table,
      it assumes the wider possible type (i.e. the one for all ACL2 values)
-     for inputs and output of the function.")
+     for inputs and output of the function.
+     See the code generation functions for details.")
    (xdoc::@def "def-atj-function-type"))
   (defmacro def-atj-function-type (fn in-tys out-ty)
     `(make-event (def-atj-function-type-fn ',fn ',in-tys ',out-ty (w state)))))

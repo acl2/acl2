@@ -211,6 +211,17 @@
    formalization of prime fields and associated operations.  A prime field is a
    finite field consisting of the integers modulo some prime p.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "A new library for standard system utilities has been started. This is
+     currently under the Kestrel books, but it could be moved directly under
+     @('[books]/std/system') eventually. This new library will be populated
+     with existing utilities factored out of some Kestrel Books with system
+     utilities.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")

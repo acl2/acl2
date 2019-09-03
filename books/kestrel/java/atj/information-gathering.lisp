@@ -30,7 +30,8 @@
       These are used to initialize
       the Java representation of the ACL2 environment.")
     (xdoc::li
-     "The names of all the non-primitive functions to be translated to Java,
+     "The names of all the ACL2 functions to be translated to Java,
+      excluding the ones natively implemented in AIJ,
       as determined by @('fn1'), ..., @('fnp').")))
   :order-subtopics t
   :default-parent t)
@@ -158,12 +159,14 @@
     "The iteration ends successfully when the worklist is empty;
      it ends with an error if the next function in the worklist
      either (1) has raw Lisp code and is not in the whitelist,
-     or (2) has no @('unnormalized-body') property and is not primitive,
+     or (2) has no @('unnormalized-body') property
+     and is not natively implemented in AIJ,
      or (3) has input or output stobjs.
-     When the next function in the worklist is primitive,
+     When the next function in the worklist is natively implemented in AIJ,
      it is just removed from the worklist
-     (primitive functions have no input or output stobjs).
-     When the next function in the worklist is not primitive
+     (note that currently the ACL2 functions natively implemented in AIJ
+     have no input or output stobjs, because they are all primitive functions).
+     When the next function in the worklist is not natively implemented in AIJ
      but it has an @('unnormalized-body') property and no raw Lisp code
      (or is in the whitelist),
      and has no input or output stobjs,
@@ -212,7 +215,7 @@
      :parents nil
      (b* (((when (endp worklist)) (value acc))
           ((cons fn worklist) worklist)
-          ((when (primitivep fn))
+          ((when (aij-nativep fn))
            (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state))
           ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
                           (member-eq fn (@ logic-fns-with-raw-code)))
@@ -224,7 +227,7 @@
           ((unless body)
            (er-soft+ ctx t nil
                      "The function ~x0 has no UNNORMALIZED-BODY property ~
-                      and is not an ACL2 primitive function; ~
+                      and is not implemented natively in AIJ; ~
                       therefore, code generation cannot proceed." fn))
           ((unless (no-stobjs-p fn (w state)))
            (er-soft+ ctx t nil

@@ -12,11 +12,13 @@
 
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "kestrel/utilities/system/world-queries" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/lists/rev" :dir :system)
 (include-book "std/strings/coerce" :dir :system)
 (include-book "std/util/defalist" :dir :system)
 (include-book "std/util/defines" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -435,3 +437,11 @@
   "edu.kestrel.acl2.aij"
   ///
   (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))
+
+(define aij-nativep ((fn symbolp))
+  :returns (yes/no booleanp)
+  :short "ACL2 functions natively implemented in AIJ."
+  :long
+  (xdoc::topstring-p
+   "Currently these are exactly the ACL2 primitive functions.")
+  (primitivep fn))
