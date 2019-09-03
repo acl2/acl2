@@ -537,7 +537,6 @@ ADDED_BOOKS := \
 # projects/include-doc.cert
 # projects/doc.cert
 # projects/top-doc.cert
-# kestrel/auto-termination/defunt-tests.cert
 # ALSO, directory projects/async/gcd/ (perhaps even projects/async/)
 # AND   directory projects/arm/
 # could be added as x86isa is below.
