@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "library-extensions")
+(include-book "aij-notions")
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
@@ -215,7 +215,7 @@
      :parents nil
      (b* (((when (endp worklist)) (value acc))
           ((cons fn worklist) worklist)
-          ((when (aij-nativep fn))
+          ((when (atj-aij-nativep fn))
            (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state))
           ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
                           (member-eq fn (@ logic-fns-with-raw-code)))

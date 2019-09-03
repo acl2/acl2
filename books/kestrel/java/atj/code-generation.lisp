@@ -14,6 +14,7 @@
 ; cert_param: non-acl2r
 
 (include-book "library-extensions")
+(include-book "aij-notions")
 (include-book "types")
 (include-book "test-structures")
 (include-book "pretty-printer")
@@ -1009,34 +1010,6 @@
                (atj-gen-shallow-avar avar index curr-apkg avars-by-name)
                jvar-names)
         jvar-indices)))
-
-(defval *atj-aij-class-names*
-  :short "Names of the Java classes that form AIJ."
-  (list *atj-jclass-char*
-        *atj-jclass-complex*
-        *atj-jclass-cons*
-        *atj-jclass-def-fn*
-        *atj-jclass-eval-exc*
-        *atj-jclass-fn*
-        *atj-jclass-fn-app*
-        *atj-jclass-int*
-        *atj-jclass-lambda*
-        *atj-jclass-named-fn*
-        *atj-jclass-native-fn*
-        *atj-jclass-number*
-        *atj-jclass-pkg*
-        *atj-jclass-pkg-name*
-        *atj-jclass-qconst*
-        *atj-jclass-ratio*
-        *atj-jclass-rational*
-        *atj-jclass-string*
-        *atj-jclass-symbol*
-        *atj-jclass-term*
-        *atj-jclass-value*
-        *atj-jclass-var*)
-  ///
-  (assert-event (string-listp *atj-aij-class-names*))
-  (assert-event (no-duplicatesp-equal *atj-aij-class-names*)))
 
 (defval *atj-disallowed-shallow-jclasses*
   :short "Disallowed Java class names
@@ -2169,7 +2142,7 @@
       (append first-jblock rest-jblock))))
 
 (define atj-gen-shallow-afnnative ((afn symbolp) (curr-pkg stringp))
-  :guard (and (aij-nativep afn)
+  :guard (and (atj-aij-nativep afn)
               (equal (symbol-package-name afn) curr-pkg))
   :returns (jmethod jmethodp)
   :short "Generate a shallowly embedded ACL2 function
@@ -2260,7 +2233,7 @@
                   :params jmethod-params
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body))
-  :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
+  :guard-hints (("Goal" :in-theory (enable atj-aij-nativep primitivep))))
 
 (define atj-gen-shallow-afndef ((afn symbolp)
                                 (guards$ booleanp)
@@ -2379,7 +2352,7 @@
   :short "Generate a shallowly embedded
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
-  (if (aij-nativep afn)
+  (if (atj-aij-nativep afn)
       (atj-gen-shallow-afnnative afn curr-pkg)
     (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
 

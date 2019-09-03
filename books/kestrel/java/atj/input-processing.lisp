@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "library-extensions")
+(include-book "aij-notions")
 (include-book "test-structures")
 
 (include-book "kestrel/utilities/doublets" :dir :system)
