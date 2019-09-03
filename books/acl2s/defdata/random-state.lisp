@@ -286,7 +286,6 @@
                     random-natural-seed/0.5
                     ))
 
-
 (defun random-index-list-seed (k max seed.)
   (declare (type (unsigned-byte 31) seed.))
   (declare (xargs :verify-guards nil
@@ -296,6 +295,35 @@
     (b* (((mv rest seed.) (random-index-list-seed (1- k) max seed.))
          ((mv n1 seed.)   (if (zp max) (mv 0 seed.) (random-index-seed max seed.))))
       (mv (cons n1 rest) seed.))))
+
+#|
+
+There are lots of guard problems here. See below. 
+On todo list for fixing.
+
+(defun random-index-list-seed (k max seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :verify-guards nil
+                  :guard (and (natp k) (unsigned-byte-p 31 max) (unsigned-byte-p 31 seed.))))
+  (if (zp k)
+      (mv '() seed.)
+    (b* (((mv rest seed.) (random-index-list-seed (1- k) max seed.))
+         ((mv n1 seed.)   (if (zp max) (mv 0 seed.) (random-index-seed max seed.))))
+      (mv (cons n1 rest) seed.))))
+
+(in-theory (enable mv-nth))
+
+(defthm random-index-seed-thm1
+  (implies (and (posp k) (natp max) (unsigned-byte-p 31 seed.))
+           (natp (caar (random-index-list-seed k max seed.)))))
+
+(defthm random-index-seed-thm1
+  (implies (and (posp k) (< k 1) (natp max) (unsigned-byte-p 31 seed.))
+           (natp (cadar (random-index-list-seed k max seed.)))))
+
+(verify-guards random-index-list-seed :guard-debug t )
+
+|#
 
 (defun random-natural-list-seed (k seed.)
   (declare (type (unsigned-byte 31) seed.))
