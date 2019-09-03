@@ -47,7 +47,7 @@
       However, since we use arbitrary ACL2 strings for types,
       @('<') and @('>') may be included as part of these strings.")
     (xdoc::li
-     "We use ACL2 strings to capture Java strings,
+     "We use ACL2 strings and characters to capture Java strings and characters,
       which is more restrictive because ACL2 characters are 8-bit,
       while Java characters are 16-bit.
       However, 8-bit characters suffice for ATJ's purposes,
@@ -137,10 +137,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only need integer, boolean, string, and null literals for now,
-     as well as a limited form of floating-point literals (see below).
-     We do not need character literals yet.")
-   (xdoc::p
     "For an integer literal, we capture its value (a natural number)
      and whether there is an integer type suffix (@('l') or @('L')) or not,
      i.e. if the literal has type @('long').
@@ -153,6 +149,7 @@
   (:integer ((value acl2::nat) (long? bool) (base jintbase)))
   (:floating ((value acl2::nat)))
   (:boolean ((value bool)))
+  (:character ((value character)))
   (:string ((value string)))
   (:null ())
   :pred jliteralp)
@@ -378,6 +375,11 @@
   :short "Build a Java expression consisting of
           the boolean literal @('false')."
   (jexpr-literal (jliteral-boolean nil)))
+
+(define jexpr-literal-character ((char characterp))
+  :returns (expr jexprp)
+  :short "Build a Java expression consisting of a character literal."
+  (jexpr-literal (jliteral-character char)))
 
 (define jexpr-literal-string ((string stringp))
   :returns (expr jexprp)
