@@ -254,9 +254,7 @@
   :short "Generate Java code to build an ACL2 character."
   (jexpr-smethod *atj-jtype-char*
                  "make"
-                 (list (jexpr-cast (jtype-char)
-                                   (jexpr-literal-integer-decimal
-                                    (char-code achar))))))
+                 (list (jexpr-literal-character achar))))
 
 (define atj-gen-astring ((astring stringp))
   :returns (jexpr jexprp)
