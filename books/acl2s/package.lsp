@@ -126,7 +126,7 @@
 
 #!CGEN
 (defconst *cgen-exports*
-  '(cgen
+  '(;cgen
      ;API export
      test? prove/cgen
      stopping-condition
@@ -190,7 +190,9 @@
       
       read-run-time
       trans-eval
-
+      cgen
+      ccg 
+      
       flg
       sort
       guard-checking-on
@@ -218,7 +220,8 @@
     cgen::*cgen-exports*
     '(acl2s-defaults
       acl2s-defaults-table
-
+      ccg
+      cgen
       stage
       
      ;defunc defaults
