@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "constants")
+(include-book "aij-notions")
 
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
