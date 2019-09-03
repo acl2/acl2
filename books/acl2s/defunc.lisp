@@ -1062,9 +1062,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;; ((acl2::fun (check-syntax form logicp state)) ;flet
 ;;          (acl2::state-global-let*
 ;;           ((acl2::inhibit-output-lst acl2::*valid-output-names*))
-;;           (acl2::translate form T logicp T "test-guards" (w state) state)))
+;;           (acl2::translate form T logicp T "test-body-contracts" (w state) state)))
 
-(defun test-guards1 (guards hints override-defaults timeout state)
+(defun test-body-contracts1 (guards hints override-defaults timeout state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (endp guards)
       (value nil)
@@ -1076,40 +1076,37 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (with-time-limit
            timeout
            (test?-fn (car guards) hints override-defaults state)))
-
-         (- (cgen::cw? erp "~|Body contract falsified in: ~%"))
+         ((when erp)
+          (b* ((- (cw "~|Body contract falsified in: ~%"))
 
 ; [2015-02-04 Wed] Add extra support to blame the falsified body contract by looking through lambda/let/assumptions/etc
-
-         ((mv & gterm state)
-          ;; Only simplify (car guards) if there is an error.
-          (if erp
-              (cgen::check-syntax (car guards) NIL state)
-            (mv nil nil state)))
-         ((mv hyps concl state)
-          (cgen::partition-hyps-concl gterm "test-guards" state))
+            
+               ((mv & gterm state)
+                ;; Only simplify (car guards) if there is an error.
+                (cgen::check-syntax (car guards) NIL state))
+               ((mv hyps concl state)
+                (cgen::partition-hyps-concl gterm "test-body-contracts" state))
 ; This takes a long time sometimes, so don't do this unless there is
 ; an error, but may also want to remove this simplification
 ; and instead add a keyword setting. the code for removing it is
 ; commented out below. 
-         ((mv & nconcl state)
-          (cgen::simplify-term (list 'not concl) hyps nil state))
-;         (nconcl (list 'not concl))
-         (hyps1 (acl2::expand-assumptions-1 nconcl))
+               ((mv & nconcl state)
+                (cgen::simplify-term (list 'not concl) hyps nil state))
+               ;; (nconcl (list 'not concl))
+               (hyps1 (acl2::expand-assumptions-1 nconcl))
+               (- (print-guard-extra-info-hyps (append hyps hyps1) erp)))
+            (mv t nil state))))
+      (test-body-contracts1 (cdr guards) hints override-defaults timeout state))))
 
-         (- (print-guard-extra-info-hyps (append hyps hyps1) erp))
-         ((when erp) (mv t nil state)))
-      (test-guards1 (cdr guards) hints override-defaults timeout state))))
 
-
-(defun test-guards (guard-obligation hints override-defaults timeout state)
+(defun test-body-contracts (guard-obligation hints override-defaults timeout state)
   "This is just a looping test?-fn over multiple guards, and on error, printing out the appropriate guard-info."
   (declare (xargs :mode :program :stobjs (state)))
   (b* ((guards (if (and (consp guard-obligation)
                         (eq 'ACL2::AND (car guard-obligation)))
                    (cdr guard-obligation)
                  (list guard-obligation))))
-    (test-guards1 guards hints override-defaults timeout state)))
+    (test-body-contracts1 guards hints override-defaults timeout state)))
 
 ;; If ld-error-action is :error, ld stops and returns, signalling an
 ;; error to its caller by returning an error triple with non-nil error
@@ -1166,11 +1163,12 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                            ,testing-timeout
                            (with-output!
                             :off :all :on (error)
-                            (test-guards guard-ob
-                                         ',hints
-                                         '(:print-cgen-summary nil :num-witnesses 0)
-                                         ,testing-timeout
-                                         state))))
+                            (test-body-contracts
+                             guard-ob
+                             ',hints
+                             '(:print-cgen-summary nil :num-witnesses 0)
+                             ,testing-timeout
+                             state))))
                   (- (cw "~|Form:  ( TEST-FUNCTION-CONTRACT ~x0 ...) ~%" ',name))
                   ((er &) (with-time-limit
                            ,testing-timeout
@@ -1244,7 +1242,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                           :on (error)
                           (with-time-limit
                            ,testing-timeout
-                           (test-guards guard-ob
+                           (test-body-contracts 
+                                        guard-ob
                                         ',hints
                                         '(:print-cgen-summary nil :num-witnesses 0)
                                         ,testing-timeout
