@@ -1907,12 +1907,35 @@
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 package name."
   :long
-  (xdoc::topstring-p
-   "Note that package names
-    can always be safely generated as Java string literals.")
-  (jexpr-smethod *atj-jtype-pkg-name*
-                 "make"
-                 (list (atj-gen-jstring apkg))))
+  (xdoc::topstring
+   (xdoc::p
+    "Since AIJ has a number of constants (i.e. static final fields)
+     for a number of common ACL2 package names,
+     we just reference the appropriate constant
+     if the package name in question is among those.
+     Otherwise, we build it in the general way;
+     note that ACL2 package names can always be safely generated
+     as Java string literals.
+     Using the constants when possible makes the generated Java code faster.
+     We introduce and use an alist to specify
+     the correspondence between ACL2 package symbols
+     and AIJ static final fields."))
+  (b* ((pair (assoc-equal apkg *atj-gen-apkg-name-alist*)))
+    (if pair
+        (jexpr-name (cdr pair))
+      (jexpr-smethod *atj-jtype-pkg-name*
+                     "make"
+                     (list (atj-gen-jstring apkg)))))
+
+  :prepwork
+  ((defval *atj-gen-apkg-name-alist*
+     '(("KEYWORD"             . "Acl2PackageName.KEYWORD")
+       ("COMMON-LISP"         . "Acl2PackageName.LISP")
+       ("ACL2"                . "Acl2PackageName.ACL2")
+       ("ACL2-OUTPUT-CHANNEL" . "Acl2PackageName.ACL2_OUTPUT")
+       ("ACL2-INPUT-CHANNEL"  . "Acl2PackageName.ACL2_INPUT")
+       ("ACL2-PC"             . "Acl2PackageName.ACL2_PC")
+       ("ACL2-USER"           . "Acl2PackageName.ACL2_USER")))))
 
 (define atj-gen-apkg-jmethod ((apkg stringp) (verbose$ booleanp))
   :returns (jmethod jmethodp)
