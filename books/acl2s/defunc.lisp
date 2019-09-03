@@ -1296,7 +1296,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (or (and (or (> time-elapsed timeout-secs) (eq :timed-out failure-reason))
                     "Defunc has TIMED OUT!! You can change the timeout default using :timeout option (also see :doc set-defunc-timeout). If you want to bypass this failure, you can modify defunc's default strictness (see :doc defunc).")
                (and termination-strictp (eq :termination failure-reason)
-                    "Termination FAILED!")
+                    "Function Definition FAILED!")
                (and function-contract-strictp (eq :contract failure-reason)
                     "Function Contract FAILED! You can provide :function-contract-hints to help.")
                (and body-contracts-strictp (eq :guards failure-reason)
