@@ -6,8 +6,7 @@
 
 (include-book "projects/apply/top" :dir :system)
 
-(defmacro svl-name (module)
-  `(nth 0 ,module))
+
 
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
@@ -126,8 +125,8 @@
         x
       ""))
 
-  ;(defprod 
-  
+;(defprod
+
   (defthm occ-name-p-occ-name-FIX-X
     (occ-name-p (occ-name-fix ACL2::X))
     :hints (("Goal"
@@ -142,7 +141,6 @@
              :in-theory (e/d (occ-name-p
                               occ-name-fix) ()))))
 
-  
   (fty::deffixtype occ-name
                    :pred  occ-name-p
                    :fix   occ-name-fix
@@ -156,6 +154,9 @@
   (fty::defalist occ-name-alist
                  :val-type occ-name-list
                  :key-type occ-name))
+
+(defmacro svl-name (module)
+  `(nth 0 ,module))
 
 (fty::deftagsum
  occ
@@ -989,15 +990,15 @@
         ((endp l2) (revappend acc l1))
         ((listener-comperator (car l1) (car l2))
          (merge-listener-comperator (cdr l1)
-                           l2 (cons (car l1) acc)
-                           ))
+                                    l2 (cons (car l1) acc)
+                                    ))
         (t (merge-listener-comperator l1 (cdr l2)
-                             (cons (car l2) acc)))))
+                                      (cons (car l2) acc)))))
 
 (defun merge-listener-sort (l)
   (declare (xargs :guard (and (true-listp l))
                   :measure (len l)
-                  :mode :program 
+                  :mode :program
                   :verify-guards nil))
   (cond ((endp (cdr l)) l)
         (t (merge-listener-comperator (merge-listener-sort (evens l))
@@ -1105,6 +1106,33 @@
        (- (fast-alist-free relevant-occ-names)))
     (hons-acons ':initial entry listeners)))
 
+(progn
+  (defun get-reverse-listeners-aux (lst source-occ rest)
+    (declare (xargs :mode :program))
+    (if (atom lst)
+        rest
+      (get-reverse-listeners-aux (cdr lst)
+                                 source-occ
+                                 (hons-acons (car lst)
+                                             (cons source-occ
+                                                   (cdr (hons-get (car lst)
+                                                                  rest)))
+                                             rest))))
+
+  (defun get-reverse-listeners (listeners)
+    (declare (xargs :mode :program))
+    (if (atom listeners)
+        nil
+      (b* ((rest (get-reverse-listeners (cdr listeners))))
+        (get-reverse-listeners-aux (cdr (car listeners)) (caar listeners)
+                                   rest))))
+
+  (defun get-reverse-listeners-main (listeners)
+    (declare (xargs :mode :program))
+    (fast-alist-clean (get-reverse-listeners listeners))))
+
+;; (fast-alist-clean (get-reverse-listeners '((a b c d e) (d e f g a))))
+
 (encapsulate
   nil
 
@@ -1128,15 +1156,19 @@
                                   nil
                                   (union-entries-of-fast-alist (cdr keys) alist)))))
 
+  (defun member-wrap (x y)
+    (declare (xargs :mode :program))
+    (member-equal x y))
+
   (mutual-recursion
    (defun shrink-occ-listeners-would-calls (occ-name trace orig-listeners acc)
      (declare (xargs :mode :program)
               (ignorable trace))
-     (if (or  (hons-get occ-name acc)
-              (member-equal occ-name trace))
+     (if (or  (member-wrap occ-name trace)
+              (hons-get occ-name acc))
          acc
        (b* ((trace (cons occ-name trace))
-;(acc (hons-acons occ-name nil acc))
+            ;;(acc (hons-acons occ-name nil acc))
             (other-occs (cdr (hons-get occ-name orig-listeners)))
             (acc (shrink-occ-listeners-would-calls-lst
                   other-occs
@@ -1158,17 +1190,13 @@
         (cdr occ-lst) trace orig-listeners
         (shrink-occ-listeners-would-calls (car occ-lst) trace orig-listeners acc)))))
 
-  #|(shrink-occ-listeners-would-calls
-  ':initial nil
-  (make-fast-alist '((:initial a b d)
-  (a b c)
-  (b a c)
-  (d a)))
-  nil)||#
-
-  (defun member-wrap (x y)
+  (defun add-keys-to-fast-alist (keys alist)
     (declare (xargs :mode :program))
-    (member-equal x y))
+    (if (atom keys)
+        alist
+      (hons-acons (car keys)
+                  nil
+                  (add-keys-to-fast-alist (cdr keys) alist))))
 
   (defun sv->svl-shrink-occ-listeners-each-aux (occ-names cur-would-calls
                                                           would-call-alist
@@ -1179,7 +1207,7 @@
          (fast-alist-free visited)
          nil)
       (b* ((cur (car occ-names))
-           ((when (hons-get cur visited))
+           ((when  (hons-get cur visited))
             (sv->svl-shrink-occ-listeners-each-aux (cdr occ-names)
                                                    cur-would-calls
                                                    would-call-alist
@@ -1190,9 +1218,10 @@
                                                          cur-would-calls
                                                          would-call-alist
                                                          (hons-acons cur nil visited))))
-           (visited (add-to-fast-alist-unique (hons-get cur would-call-alist)
-                                              nil
-                                              visited)))
+           (visited
+            (add-to-fast-alist-unique (hons-get cur would-call-alist)
+                                      nil
+                                      visited)))
         (cons cur
               (sv->svl-shrink-occ-listeners-each-aux (cdr occ-names)
                                                      cur-would-calls
@@ -1207,13 +1236,13 @@
            (cur-name (car cur))
            (cur-list (cdr cur))
            (cur-would-calls (cdr (hons-get cur-name would-call-alist)))
-           (cur-would-calls (add-to-fast-alist-unique cur-would-calls nil
-                                                      (* 2 (len cur-would-calls))))
+           (cur-would-calls (make-fast-alist (pairlis$ cur-would-calls nil)))
            (new-listener-occs (sv->svl-shrink-occ-listeners-each-aux
                                cur-list
                                cur-would-calls
                                would-call-alist
-                               nil))
+                               nil;(* 2 (len would-call-alist))
+                               ))
            (- (fast-alist-free cur-would-calls)))
         (hons-acons cur-name
                     new-listener-occs
@@ -1225,7 +1254,9 @@
     (b* ((orig-listeners (make-fast-alist orig-listeners))
          (would-call-alist
           (shrink-occ-listeners-would-calls ':initial nil
-                                            orig-listeners nil))
+                                            orig-listeners
+                                            nil;(* 2 (len orig-listeners))
+                                            ))
          (- (fast-alist-free orig-listeners))
          (listeners (sv->svl-shrink-occ-listeners-each orig-listeners
                                                        would-call-alist)))
@@ -1339,7 +1370,7 @@
       nil
     (b* ((module (sv->svl-module (car sv-modules)
                                  vl-insouts))
-         (- (fast-alist-free (SVL-module->occs (cdr module)))) ;;BREAKING 
+         (- (fast-alist-free (SVL-module->occs (cdr module)))) ;;BREAKING
          (- (fast-alist-free (SVL-module->listeners (cdr module))))
          ) ;; BREAKING
       (if module
@@ -1573,8 +1604,6 @@
                (cw "Loop in module = ~p0 ~%" (caar svl-design)))
            (svl-loopfreep (cdr svl-design))))))
 
-
- 
 (defun cons-deep-copy (term)
   (declare (xargs :guard t))
   (cond ((atom term) term)
