@@ -1068,32 +1068,36 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program :stobjs (state)))
   (if (endp guards)
       (value nil)
-    (b* (((mv erp & state)
+    (b* ((vl (acl2s-defaults :get verbosity-level))
+         ((unless (cgen::normal-output-flag vl)) (value nil))
+         ;; if we don't have to generate output don't do any work.
+         ((mv erp & state)
           ;; test?-fn will use a timeout and if there is a timeout, erp=nil
           (with-time-limit
            timeout
            (test?-fn (car guards) hints override-defaults state)))
-         (vl  (acl2s-defaults :get verbosity-level))
-         (show-falsified-guards-p (and erp (cgen::normal-output-flag vl)))
-         ;; If there is a timeout, then show-falsified-guards-p=nil,
-         ;; so don't do potentially expensive simplification work.
-         ((unless show-falsified-guards-p) (value nil))
 
-         (- (cgen::cw? show-falsified-guards-p "~|Body contract falsified in: ~%"))
+         (- (cgen::cw? erp "~|Body contract falsified in: ~%"))
 
 ; [2015-02-04 Wed] Add extra support to blame the falsified body contract by looking through lambda/let/assumptions/etc
 
-         ((mv & gterm state) (cgen::check-syntax (car guards) NIL state))
-         ((mv hyps concl state) (cgen::partition-hyps-concl gterm "test-guards" state))
-; This takes a long time sometimes, so quit before getting here with
-; unless checke above, but may also want to remove this simplification
+         ((mv & gterm state)
+          ;; Only simplify (car guards) if there is an error.
+          (if erp
+              (cgen::check-syntax (car guards) NIL state)
+            (mv nil nil state)))
+         ((mv hyps concl state)
+          (cgen::partition-hyps-concl gterm "test-guards" state))
+; This takes a long time sometimes, so don't do this unless there is
+; an error, but may also want to remove this simplification
 ; and instead add a keyword setting. the code for removing it is
 ; commented out below. 
-         ((mv & nconcl state) (cgen::simplify-term (list 'not concl) hyps nil state))
+         ((mv & nconcl state)
+          (cgen::simplify-term (list 'not concl) hyps nil state))
 ;         (nconcl (list 'not concl))
          (hyps1 (acl2::expand-assumptions-1 nconcl))
 
-         (- (print-guard-extra-info-hyps (append hyps hyps1) show-falsified-guards-p))
+         (- (print-guard-extra-info-hyps (append hyps hyps1) erp))
          ((when erp) (mv t nil state)))
       (test-guards1 (cdr guards) hints override-defaults timeout state))))
 
