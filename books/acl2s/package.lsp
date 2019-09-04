@@ -191,7 +191,7 @@
       read-run-time
       trans-eval
       cgen
-      ccg 
+      tests-and-calls
       
       flg
       sort
@@ -203,8 +203,9 @@
     (union-eq 
      *ccg-exports*
      ;;*ccg-valid-output-names*
-     '(query basics performance build/refine size-change counter-example
-             *ccg-valid-output-names*))
+     '(query basics performance build/refine size-change
+      counter-example ccg ccg-xargs 
+      *ccg-valid-output-names*))
     (union-eq
      defdata::*defdata-exports*
      (union-eq
