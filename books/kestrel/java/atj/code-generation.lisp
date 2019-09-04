@@ -1858,7 +1858,7 @@
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
-                                  (avars-by-name string-symbols-alistp)
+                                  (avars-by-name string-symbollist-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
