@@ -1283,6 +1283,7 @@
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
                                   (avars-by-name string-symbols-alistp)
+                                  (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -1340,6 +1341,7 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name
+                                                        guards$
                                                         wrld))
          ((mv else-jblock
               else-jexpr
@@ -1356,6 +1358,7 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name
+                                                        guards$
                                                         wrld))
          ((mv then-jblock
               then-jexpr
@@ -1372,6 +1375,7 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name
+                                                        guards$
                                                         wrld))
          (type (atj-type-join else-type then-type))
          (jtype (atj-type-to-jtype type))
@@ -1417,6 +1421,7 @@
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
                                   (avars-by-name string-symbols-alistp)
+                                  (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -1465,6 +1470,7 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name
+                                                        guards$
                                                         wrld))
          ((mv second-jblock
               second-jexpr
@@ -1481,6 +1487,7 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name
+                                                        guards$
                                                         wrld))
          (type (atj-type-join first-type second-type))
          (jtype (atj-type-to-jtype type))
@@ -1524,6 +1531,7 @@
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
                                   (avars-by-name string-symbols-alistp)
+                                  (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -1581,6 +1589,7 @@
                                         jvar-result-index
                                         curr-pkg
                                         avars-by-name
+                                        guards$
                                         wrld)
               (atj-gen-shallow-aifapp afirst
                                       asecond
@@ -1594,6 +1603,7 @@
                                       jvar-result-index
                                       curr-pkg
                                       avars-by-name
+                                      guards$
                                       wrld))))
          ((mv args-jblock
               arg-jexprs
@@ -1610,14 +1620,19 @@
                                                          jvar-result-index
                                                          curr-pkg
                                                          avars-by-name
+                                                         guards$
                                                          wrld))
          ((when (symbolp afn))
-          (b* ((afn-type (atj-get-function-type afn wrld))
-               (arg-jexprs (atj-adapt-jexprs-to-types
-                            arg-jexprs
-                            arg-types
-                            (atj-function-type->inputs afn-type)))
-               (type (atj-function-type->output afn-type)))
+          (b* (((mv type arg-jexprs)
+                (if guards$
+                    (b* ((afn-type (atj-get-function-type afn wrld))
+                         (arg-jexprs (atj-adapt-jexprs-to-types
+                                      arg-jexprs
+                                      arg-types
+                                      (atj-function-type->inputs afn-type)))
+                         (type (atj-function-type->output afn-type)))
+                      (mv type arg-jexprs))
+                  (mv :value arg-jexprs))))
             (mv args-jblock
                 (jexpr-method (atj-gen-shallow-afnname afn curr-pkg)
                               arg-jexprs)
@@ -1644,6 +1659,7 @@
                                                           jvar-result-index
                                                           curr-pkg
                                                           avars-by-name
+                                                          guards$
                                                           wrld)))
       (mv (append args-jblock
                   lambda-jblock)
@@ -1673,6 +1689,7 @@
                                    (jvar-result-index posp)
                                    (curr-pkg stringp)
                                    (avars-by-name string-symbols-alistp)
+                                   (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (and (= (len aargs) (len aformals))
                 (= (len jargs) (len aformals)))
@@ -1758,6 +1775,7 @@
                                                         jvar-result-index
                                                         curr-pkg
                                                         avars-by-name
+                                                        guards$
                                                         wrld)))
       (mv (append let-jblock body-jblock)
           body-jexpr
@@ -1779,6 +1797,7 @@
                                  (jvar-result-index posp)
                                  (curr-pkg stringp)
                                  (avars-by-name string-symbols-alistp)
+                                 (guards$ booleanp)
                                  (wrld plist-worldp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -1826,6 +1845,7 @@
                                      jvar-result-index
                                      curr-pkg
                                      avars-by-name
+                                     guards$
                                      wrld)))
     :measure (two-nats-measure (acl2-count aterm) 0))
 
@@ -1839,6 +1859,7 @@
                                   (jvar-result-index posp)
                                   (curr-pkg stringp)
                                   (avars-by-name string-symbols-alistp)
+                                  (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
                  (jexpr jexpr-listp)
@@ -1865,6 +1886,7 @@
                                                           jvar-result-index
                                                           curr-pkg
                                                           avars-by-name
+                                                          guards$
                                                           wrld))
            ((mv rest-jblock
                 rest-jexprs
@@ -1881,6 +1903,7 @@
                                                            jvar-result-index
                                                            curr-pkg
                                                            avars-by-name
+                                                           guards$
                                                            wrld)))
         (mv (append first-jblock rest-jblock)
             (cons first-jexpr rest-jexprs)
@@ -2413,6 +2436,7 @@
                                "$result" 1
                                curr-pkg
                                avars-by-name
+                               guards$
                                wrld))
        (abody-jexpr (atj-adapt-jexpr-to-type
                      abody-jexpr abody-type afn-out-type))
