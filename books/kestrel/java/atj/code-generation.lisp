@@ -2161,7 +2161,9 @@
          (rest-jblock (atj-gen-deep-afndefs (cdr afns))))
       (append first-jblock rest-jblock))))
 
-(define atj-gen-shallow-afnnative ((afn symbolp) (curr-pkg stringp))
+(define atj-gen-shallow-afnnative ((afn symbolp)
+                                   (guards$ booleanp)
+                                   (curr-pkg stringp))
   :guard (and (atj-aij-nativep afn)
               (equal (symbol-package-name afn) curr-pkg))
   :returns (jmethod jmethodp)
@@ -2176,13 +2178,27 @@
      we could translate references to these ACL2 functions
      to the names of those public static Java methods.
      However, for greater uniformity,
-     we generate Java methods for these natively implemented ACL2 functions:
-     the names of these methods are constructed in the same way as
-     the Java methods for the non-natively implemented ACL2 functions;
-     these methods reside in the Java classes generated for
-     the ACL2 packages of the ACL2 functions.
-     The bodies of these Java methods simply call
-     the aforementioned public methods of AIJ."))
+     we generate wrapper Java methods
+     for these natively implemented ACL2 functions.
+     The names of these methods are constructed in the same way as
+     the Java methods for the non-natively implemented ACL2 functions.
+     These methods reside in the Java classes generated for
+     the ACL2 packages of the ACL2 functions.")
+   (xdoc::p
+    "If the @(':guards') input is @('nil'),
+     all the method's parameters and the method's result
+     have type @('Acl2Value').
+     We call the corresponding method in AIJ's @('Acl2NativeFunction').")
+   (xdoc::p
+    "If instead @(':guards') is @('t'),
+     the parameter and result type are determined from
+     the ACL2 function's input and output types,
+     retrieved from the @(tsee def-atj-function-type) table.
+     We call the corresponding method in AIJ's @('Acl2NativeFunction'),
+     and in particular the one with @('UnderGuard') in its name,
+     if one is available.
+     We also insert some type casts when the argument types of the method
+     do not quite match the ones of the generated wrapper method."))
   (b* ((jcall-method-name
         (case afn
           (characterp "execCharacterp")
@@ -2193,27 +2209,68 @@
           (complex-rationalp "execComplexRationalp")
           (acl2-numberp "execAcl2Numberp")
           (consp "execConsp")
-          (char-code "execCharCode")
-          (code-char "execCodeChar")
-          (coerce "execCoerce")
-          (intern-in-package-of-symbol "execInternInPackageOfSymbol")
-          (symbol-package-name "execSymbolPackageName")
-          (symbol-name "execSymbolName")
-          (pkg-imports "execPkgImports")
-          (pkg-witness "execPkgWitness")
-          (unary-- "execUnaryMinus")
-          (unary-/ "execUnarySlash")
-          (binary-+ "execBinaryPlus")
-          (binary-* "execBinaryStar")
-          (< "execLessThan")
-          (complex "execComplex")
-          (realpart "execRealPart")
-          (imagpart "execImagPart")
-          (numerator "execNumerator")
-          (denominator "execDenominator")
+          (char-code (if guards$
+                         "execCharCodeUnderGuard"
+                       "execCharCode"))
+          (code-char (if guards$
+                         "execCoceCharUnderGuard"
+                       "execCodeChar"))
+          (coerce (if guards$
+                      "execCoerceUnderGuard"
+                    "execCoerce"))
+          (intern-in-package-of-symbol
+           (if guards$
+               "execInternInPackageOfSymbolUnderGuard"
+             "execInternInPackageOfSymbol"))
+          (symbol-package-name (if guards$
+                                   "execSymbolPackageNameUnderGuard"
+                                 "execSymbolPackageName"))
+          (symbol-name (if guards$
+                           "execSymbolNameUnderGuard"
+                         "execSymbolName"))
+          (pkg-imports (if guards$
+                           "execPkgImportsUnderGuard"
+                         "execPkgImports"))
+          (pkg-witness (if guards$
+                           "execPkgWitnessUnderGuard"
+                         "execPkgWitness"))
+          (unary-- (if guards$
+                       "execUnaryMinusUnderGuard"
+                     "execUnaryMinus"))
+          (unary-/ (if guards$
+                       "execUnarySlashUnderGuard"
+                     "execUnarySlash"))
+          (binary-+ (if guards$
+                        "execBinaryPlusUnderGuard"
+                      "execBinaryPlus"))
+          (binary-* (if guards$
+                        "execBinaryStarUnderGuard"
+                      "execBinaryStar"))
+          (< (if guards$
+                 "execLessThanUnderGuard"
+               "execLessThan"))
+          (complex (if guards$
+                       "execComplexUnderGuard"
+                     "execComplex"))
+          (realpart (if guards$
+                        "execRealPartUnderGuard"
+                      "execRealPart"))
+          (imagpart (if guards$
+                        "execImagPartUnderGuard"
+                      "execImagPart"))
+          (numerator (if guards$
+                         "execNumeratorUnderGuard"
+                       "execNumerator"))
+          (denominator (if guards$
+                           "execDenominatorUnderGuard"
+                         "execDenominator"))
           (cons "execCons")
-          (car "execCar")
-          (cdr "execCdr")
+          (car (if guards$
+                   "execCarUnderGuard"
+                 "execCar"))
+          (cdr (if guards$
+                   "execCdrUnderGuard"
+                 "execCdr"))
           (equal "execEqual")
           (bad-atom<= "execBadAtomLessThanOrEqualTo")
           (if "execIf")
@@ -2233,9 +2290,22 @@
             equal
             bad-atom<=) (list "x" "y"))
           (t (list "x"))))
+       (jcall-arg-jexprs
+        (if guards$
+            (case afn
+              (code-char (list (jexpr-cast *atj-jtype-int* (jexpr-name "x"))))
+              ((< complex)
+               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "X"))
+                     (jexpr-cast *atj-jtype-rational* (jexpr-name "Y"))))
+              ((numerator denominator)
+               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "X"))))
+              ((car cdr)
+               (list (jexpr-cast *atj-jtype-cons* (jexpr-name "X"))))
+              (t (jexpr-name-list jcall-arg-names)))
+          (jexpr-name-list jcall-arg-names)))
        (jcall (jexpr-smethod *atj-jtype-native-fn*
                              jcall-method-name
-                             (jexpr-name-list jcall-arg-names)))
+                             jcall-arg-jexprs))
        (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
        (jmethod-params (atj-gen-jparamlist jcall-arg-names
                                            (repeat (len jcall-arg-names)
@@ -2373,7 +2443,7 @@
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
   (if (atj-aij-nativep afn)
-      (atj-gen-shallow-afnnative afn curr-pkg)
+      (atj-gen-shallow-afnnative afn guards$ curr-pkg)
     (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
