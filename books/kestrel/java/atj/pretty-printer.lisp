@@ -139,7 +139,7 @@
 
 (define print-jchars ((chars character-listp))
   :returns (part msgp)
-  :short "Lift @(tsee print-jstring-char) to lists."
+  :short "Lift @(tsee print-jchar) to lists."
   :long
   (xdoc::topstring-p
    "The representations of the characters are juxtaposed one after the other.
