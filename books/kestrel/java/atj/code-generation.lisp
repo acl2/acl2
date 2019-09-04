@@ -3089,10 +3089,13 @@
                   (jvars string-listp))
      (cond ((endp aargs-jexprs) (mv nil nil))
            (t (b* ((first-jvar (str::cat "argument" (str::natstr index)))
-                   (first-jtype (atj-type-to-jtype (car types)))
+                   (first-type (car types))
+                   (first-jtype (atj-type-to-jtype first-type))
+                   (first-jexpr (jexpr-cast (atj-type-to-jtype first-type)
+                                            (car aargs-jexprs)))
                    (first-jblock (jblock-locvar first-jtype
                                                 first-jvar
-                                                (car aargs-jexprs)))
+                                                first-jexpr))
                    ((mv rest-jblock rest-jvars)
                     (atj-gen-test-jmethod-aux (cdr aargs-jexprs)
                                               (cdr types)
