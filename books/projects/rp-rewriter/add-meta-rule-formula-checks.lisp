@@ -203,6 +203,11 @@
     (add-meta-rules-fn ',formal-checks-fn ,new-meta-rules ',cl-name-prefix)))
 
 (defun is-rp-clause-processor-up-to-date (world)
+  (declare (xargs :guard (and (PLIST-WORLDP world)
+                              (alistp (table-alist 'rp-rw world)))
+                  :guard-hints (("Goal"
+                                 :in-theory (e/d (assoc-equal
+                                                  ACL2::PLIST-WORLDP-WITH-FORMALS) ())))))
   (b* ((all-rp-rw-meta-rules (table-alist 'rp-rw-meta-rules world))
        (added-meta-formal-checks-fn-list (cdr (assoc-equal
                                                'formal-checks-fn-list
@@ -210,7 +215,12 @@
     (equal (len all-rp-rw-meta-rules)
            (len added-meta-formal-checks-fn-list))))
 
-(defun check-if-clause-processor-up-to-date (world)
+(define check-if-clause-processor-up-to-date (world)
+  (declare (xargs :guard (and (PLIST-WORLDP world)
+                              (alistp (table-alist 'rp-rw world)))
+                  :guard-hints (("Goal"
+                                 :in-theory (e/d (assoc-equal
+                                                  ACL2::PLIST-WORLDP-WITH-FORMALS) ())))))
   (if (is-rp-clause-processor-up-to-date world)
       nil
     (hard-error 'defthmrp

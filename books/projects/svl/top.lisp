@@ -40,3 +40,5 @@
 (include-book "proofs/svl-return-vals")
 
 (include-book "macros")
+
+(include-book "sv-update")

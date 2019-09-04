@@ -353,7 +353,11 @@
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (if err
                 (progn$
-                 (cw "Error with ex. counterpart: ~p0 for term: ~p1 ~%" val term)
+                 (fmt-to-comment-window "Error with ex. counterpart: ~p0 for term: ~p1 ~%"
+                        (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST VAL TERM))
+                        0
+                        '(nil 8 10 nil)
+                        NIL)
                  term)
               (list 'quote val))
             rp-state)))))
