@@ -1390,11 +1390,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (:function-contract-strictp . t)
          (:body-contracts-strictp . t)
          (:force-ic-hyps-in-contract-thmp . t)
-         (:force-ic-hyps-in-definitionp . nil)
+         (:force-ic-hyps-in-definitionp . t)
          (:skip-admissibilityp . nil)
          (:skip-function-contractp . nil)
-         (:skip-body-contractsp . nil)
-         )
+         (:skip-body-contractsp . nil))
        :clear)
 
 (verify-termination remove1-assoc-eq-lst)
@@ -1407,7 +1406,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   "api to get the alist representing defun-defaults-table"
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'defunc-defaults-table wrld))
-
 
 (defloop thereis-programp (fns wrld)
   (for ((fn in fns)) (thereis (acl2::programp fn wrld))))
@@ -1423,6 +1421,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (eq (cdr (assoc-eq :defun-mode (table-alist 'acl2::acl2-defaults-table wrld)))
             :program)
         (thereis-programp sub-fns wrld))))
+
 #|
 
 (defun type-of-type (type tbl atbl ctx)
