@@ -566,6 +566,7 @@
   (define xdoc::evmac-topic-design-notes-make-bullets
     ((correspondences xdoc::tree-listp))
     :returns (bullets xdoc::tree-listp :hyp :guard)
+    :parents nil
     (cond ((endp correspondences) nil)
           (t (cons (xdoc::li (car correspondences))
                    (xdoc::evmac-topic-design-notes-make-bullets
