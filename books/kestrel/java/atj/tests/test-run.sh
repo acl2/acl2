@@ -30,20 +30,28 @@ set -e
 
 # test the factorial function:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactDeepTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactDeepUnderGuardsTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactShallowTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactShallowUnderGuardsTests 1
 
 # test the Fibonacci function:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibDeepTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibDeepUnderGuardsTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibShallowTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibShallowUnderGuardsTests 1
 
 # test the ABNF parser:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepUnderGuardsTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowUnderGuardsTests 1
 
 # test AIJ's native implementations of ACL2 functions
 # (without timings because they are very fast, all print as 0.000):
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepUnderGuardsTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowUnderGuardsTests
 
 # printed only if all the tests succeed:
 echo "" # blank line

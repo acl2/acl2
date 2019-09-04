@@ -14,7 +14,7 @@
 ; cert_param: non-acl2r
 
 (include-book "aij-notions")
-(include-book "types")
+(include-book "types-for-natives")
 (include-book "test-structures")
 (include-book "pretty-printer")
 
@@ -2186,9 +2186,11 @@
 
 (define atj-gen-shallow-afnnative ((afn symbolp)
                                    (guards$ booleanp)
-                                   (curr-pkg stringp))
+                                   (curr-pkg stringp)
+                                   (wrld plist-worldp))
   :guard (and (atj-aij-nativep afn)
               (equal (symbol-package-name afn) curr-pkg))
+  :verify-guards nil
   :returns (jmethod jmethodp)
   :short "Generate a shallowly embedded ACL2 function
           that is natively implemented in AIJ."
@@ -2222,7 +2224,32 @@
      if one is available.
      We also insert some type casts when the argument types of the method
      do not quite match the ones of the generated wrapper method."))
-  (b* ((jcall-method-name
+  (b* ((jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
+       (jmethod-param-names
+        (case afn
+          (intern-in-package-of-symbol (list "str" "sym"))
+          (if (list "x" "y" "z"))
+          ((pkg-imports
+            pkg-witness) (list "pkg"))
+          ((coerce
+            binary-+
+            binary-*
+            <
+            complex
+            cons
+            equal
+            bad-atom<=) (list "x" "y"))
+          (t (list "x"))))
+       ((mv afn-in-types
+            afn-out-type) (if guards$
+                              (b* ((afn-type (atj-get-function-type afn wrld)))
+                                (mv (atj-function-type->inputs afn-type)
+                                    (atj-function-type->output afn-type)))
+                            (mv (repeat (len jmethod-param-names) :value)
+                                :value)))
+       (jmethod-params (atj-gen-jparamlist jmethod-param-names
+                                           (atj-types-to-jtypes afn-in-types)))
+       (jcall-method-name
         (case afn
           (characterp "execCharacterp")
           (stringp "execStringp")
@@ -2236,7 +2263,7 @@
                          "execCharCodeUnderGuard"
                        "execCharCode"))
           (code-char (if guards$
-                         "execCoceCharUnderGuard"
+                         "execCodeCharUnderGuard"
                        "execCodeChar"))
           (coerce (if guards$
                       "execCoerceUnderGuard"
@@ -2298,41 +2325,22 @@
           (bad-atom<= "execBadAtomLessThanOrEqualTo")
           (if "execIf")
           (t (impossible))))
-       (jcall-arg-names
-        (case afn
-          (intern-in-package-of-symbol (list "str" "sym"))
-          (if (list "x" "y" "z"))
-          ((pkg-imports
-            pkg-witness) (list "pkg"))
-          ((coerce
-            binary-+
-            binary-*
-            <
-            complex
-            cons
-            equal
-            bad-atom<=) (list "x" "y"))
-          (t (list "x"))))
        (jcall-arg-jexprs
         (if guards$
             (case afn
               (code-char (list (jexpr-cast *atj-jtype-int* (jexpr-name "x"))))
               ((< complex)
-               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "X"))
-                     (jexpr-cast *atj-jtype-rational* (jexpr-name "Y"))))
+               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "x"))
+                     (jexpr-cast *atj-jtype-rational* (jexpr-name "y"))))
               ((numerator denominator)
-               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "X"))))
+               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "x"))))
               ((car cdr)
-               (list (jexpr-cast *atj-jtype-cons* (jexpr-name "X"))))
-              (t (jexpr-name-list jcall-arg-names)))
-          (jexpr-name-list jcall-arg-names)))
+               (list (jexpr-cast *atj-jtype-cons* (jexpr-name "x"))))
+              (t (jexpr-name-list jmethod-param-names)))
+          (jexpr-name-list jmethod-param-names)))
        (jcall (jexpr-smethod *atj-jtype-native-fn*
                              jcall-method-name
                              jcall-arg-jexprs))
-       (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
-       (jmethod-params (atj-gen-jparamlist jcall-arg-names
-                                           (repeat (len jcall-arg-names)
-                                                   *atj-jtype-value*)))
        (jmethod-body (jblock-return jcall)))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
@@ -2341,7 +2349,7 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type *atj-jtype-value*)
+                  :result (jresult-type (atj-type-to-jtype afn-out-type))
                   :name jmethod-name
                   :params jmethod-params
                   :throws (list *atj-jclass-eval-exc*)
@@ -2467,7 +2475,7 @@
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
   (if (atj-aij-nativep afn)
-      (atj-gen-shallow-afnnative afn guards$ curr-pkg)
+      (atj-gen-shallow-afnnative afn guards$ curr-pkg (w state))
     (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
@@ -2808,8 +2816,10 @@
 (define atj-gen-test-jmethod ((test$ atj-testp)
                               (deep$ booleanp)
                               (java-class$ stringp)
-                              (verbose$ booleanp))
+                              (verbose$ booleanp)
+                              (wrld plist-worldp))
   :returns (jmethod jmethodp)
+  :verify-guards nil
   :short "Generate a Java method to run one of the specified tests."
   :long
   (xdoc::topstring
@@ -2898,10 +2908,12 @@
        (current-time-jexpr (jexpr-smethod (jtype-class "System")
                                           "currentTimeMillis"
                                           nil))
+       (fn-type (atj-get-function-type test.function wrld))
+       (in-types (atj-function-type->inputs fn-type))
        ((mv shallow-arg-jblock shallow-arg-jvars)
         (if deep$
             (mv nil nil)
-          (atj-gen-test-jmethod-aux aargs-jexprs 1)))
+          (atj-gen-test-jmethod-aux aargs-jexprs in-types 1)))
        (n!=0-jexpr (jexpr-binary (jbinop-ne)
                                  (jexpr-name "n")
                                  (jexpr-literal-0)))
@@ -3070,16 +3082,20 @@
 
   :prepwork
   ((define atj-gen-test-jmethod-aux ((aargs-jexprs jexpr-listp)
+                                     (types atj-type-listp)
                                      (index posp))
+     :guard (= (len aargs-jexprs) (len types))
      :returns (mv (jblock jblockp)
                   (jvars string-listp))
      (cond ((endp aargs-jexprs) (mv nil nil))
            (t (b* ((first-jvar (str::cat "argument" (str::natstr index)))
-                   (first-jblock (jblock-locvar *atj-jtype-value*
+                   (first-jtype (atj-type-to-jtype (car types)))
+                   (first-jblock (jblock-locvar first-jtype
                                                 first-jvar
                                                 (car aargs-jexprs)))
                    ((mv rest-jblock rest-jvars)
                     (atj-gen-test-jmethod-aux (cdr aargs-jexprs)
+                                              (cdr types)
                                               (1+ index))))
                 (mv (append first-jblock rest-jblock)
                     (cons first-jvar rest-jvars))))))))
@@ -3087,8 +3103,10 @@
 (define atj-gen-test-jmethods ((tests$ atj-test-listp)
                                (deep$ booleanp)
                                (java-class$ stringp)
-                               (verbose$ booleanp))
+                               (verbose$ booleanp)
+                               (wrld plist-worldp))
   :returns (jmethods jmethod-listp)
+  :verify-guards nil
   :short "Generate all the Java methods to run the specified tests."
   :long
   (xdoc::topstring
@@ -3097,9 +3115,9 @@
   (if (endp tests$)
       nil
     (b* ((first-jmethod
-          (atj-gen-test-jmethod (car tests$) deep$ java-class$ verbose$))
+          (atj-gen-test-jmethod (car tests$) deep$ java-class$ verbose$ wrld))
          (rest-jmethods
-          (atj-gen-test-jmethods (cdr tests$) deep$ java-class$ verbose$)))
+          (atj-gen-test-jmethods (cdr tests$) deep$ java-class$ verbose$ wrld)))
       (cons first-jmethod rest-jmethods))))
 
 (define atj-gen-run-tests ((tests$ atj-test-listp))
@@ -3206,8 +3224,10 @@
 (define atj-gen-test-jclass ((tests$ atj-test-listp)
                              (deep$ booleanp)
                              (java-class$ stringp)
-                             (verbose$ booleanp))
+                             (verbose$ booleanp)
+                             (wrld plist-worldp))
   :returns (jclass jclassp)
+  :verify-guards nil
   :short "Generate the test Java class declaration."
   :long
   (xdoc::topstring
@@ -3221,7 +3241,8 @@
   (b* (((run-when verbose$)
         (cw "~%Generating Java code for the tests:~%"))
        (failures-jfield (atj-gen-test-failures-jfield))
-       (test-jmethods (atj-gen-test-jmethods tests$ deep$ java-class$ verbose$))
+       (test-jmethods (atj-gen-test-jmethods
+                       tests$ deep$ java-class$ verbose$ wrld))
        (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
        (body-jclass (append (list (jcmember-field failures-jfield))
                             (jmethods-to-jcmembers test-jmethods)
@@ -3264,14 +3285,16 @@
                              (java-package$ maybe-stringp)
                              (java-class$ stringp)
                              (tests$ atj-test-listp)
-                             (verbose$ booleanp))
+                             (verbose$ booleanp)
+                             (wrld plist-worldp))
   :returns (jcunit jcunitp)
+  :verify-guards nil
   :short "Generate the test Java compilation unit."
   (make-jcunit :package? java-package$
                :imports (list (str::cat *atj-aij-jpackage* ".*")
                               "java.math.BigInteger")
                :types (list (atj-gen-test-jclass
-                             tests$ deep$ java-class$ verbose$))))
+                             tests$ deep$ java-class$ verbose$ wrld))))
 
 (define atj-gen-jfile ((deep$ booleanp)
                        (guards$ booleanp)
@@ -3310,7 +3333,8 @@
                                                      java-package$
                                                      java-class$
                                                      tests$
-                                                     verbose$))
+                                                     verbose$
+                                                     (w state)))
                   output-file-test$
                   state))
 

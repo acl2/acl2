@@ -40,10 +40,24 @@
 
 (java::atj fact
            :deep t
+           :guards nil
            :java-class "FactDeep"
            :tests *fact-tests*)
 
 (java::atj fact
+           :deep t
+           :guards t
+           :java-class "FactDeepUnderGuards"
+           :tests *fact-tests*)
+
+(java::atj fact
            :deep nil
+           :guards nil
            :java-class "FactShallow"
+           :tests *fact-tests*)
+
+(java::atj fact
+           :deep nil
+           :guards t
+           :java-class "FactShallowUnderGuards"
            :tests *fact-tests*)

@@ -2109,8 +2109,20 @@
 
 (java::atj parse-grammar
            :deep t
+           :guards nil
            :java-class "ABNFDeep")
 
 (java::atj parse-grammar
+           :deep t
+           :guards t
+           :java-class "ABNFDeepUnderGuards")
+
+(java::atj parse-grammar
            :deep nil
+           :guards nil
            :java-class "ABNFShallow")
+
+(java::atj parse-grammar
+           :deep nil
+           :guards t
+           :java-class "ABNFShallowUnderGuards")

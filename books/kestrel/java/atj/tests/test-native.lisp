@@ -1010,6 +1010,7 @@
            equal
            if
            :deep t
+           :guards nil
            :java-class "NativeDeep"
            :tests *all-tests*)
 
@@ -1044,6 +1045,79 @@
            cdr
            equal
            if
+           :deep t
+           :guards t
+           :java-class "NativeDeepUnderGuards"
+           :tests *all-tests*)
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
            :deep nil
+           :guards nil
            :java-class "NativeShallow"
+           :tests *all-tests*)
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
+           :deep nil
+           :guards t
+           :java-class "NativeShallowUnderGuards"
            :tests *all-tests*)

@@ -40,10 +40,24 @@
 
 (java::atj fib
            :deep t
+           :guards nil
            :java-class "FibDeep"
            :tests *fib-tests*)
 
 (java::atj fib
+           :deep t
+           :guards t
+           :java-class "FibDeepUnderGuards"
+           :tests *fib-tests*)
+
+(java::atj fib
            :deep nil
+           :guards nil
            :java-class "FibShallow"
+           :tests *fib-tests*)
+
+(java::atj fib
+           :deep nil
+           :guards t
+           :java-class "FibShallowUnderGuards"
            :tests *fib-tests*)
