@@ -33,7 +33,7 @@ if [ -f td-cands.lisp ] ; then \
 fi
 
 echo "Starting $ACL2 to run write-td-cands.lsp."
-echo "  Note that this starts by including system book doc/top, which"
+echo "  Note that this starts by including system book doc/top-slow, which"
 echo "  can take several minutes.  The rest should take only seconds."
 
 exec $ACL2 < write-td-cands.lsp > write-td-cands.out 2>&1
