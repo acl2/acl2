@@ -11647,6 +11647,7 @@
      ,@(if otf-flg (list :otf-flg otf-flg) nil)
      ,@(if doc (list :doc doc) nil)))
 
+#|
 (defmacro defcong (&whole x
                           equiv1 equiv2 fn-args k
                           &key (rule-classes '(:CONGRUENCE))
@@ -11695,3 +11696,87 @@
          ,@(if hints (list :hints hints) nil)
          ,@(if otf-flg (list :otf-flg otf-flg) nil)
          ,@(if doc (list :doc doc) nil))))))
+|#
+
+(defmacro defcong1 (equiv1 equiv2 fn-args k
+                           &key (rule-classes '(:CONGRUENCE))
+                           instructions
+                           hints
+                           otf-flg
+                           event-name
+                           doc)
+  (let ((sym (if (equal (symbol-package-name (car fn-args))
+                        *main-lisp-package-name*)
+                 (pkg-witness "ACL2")
+               (car fn-args))))
+    `(defthm
+       ,(or event-name
+            (intern-in-package-of-symbol
+             (coerce (packn1 (list equiv1 "-IMPLIES-"
+                                   equiv2 "-" (car fn-args) "-" k)) 'string)
+             sym))
+       ,(let ((arg-k-equiv (intern-in-package-of-symbol
+                            (coerce (packn1 (list (nth k fn-args) '-equiv))
+                                    'string)
+                            sym)))
+          `(implies (,equiv1 ,(nth k fn-args)
+                             ,arg-k-equiv)
+                    (,equiv2 ,fn-args
+                             ,(update-nth k arg-k-equiv fn-args))))
+       :rule-classes
+       ,(extend-rule-classes :CONGRUENCE rule-classes)
+       ,@(if instructions (list :instructions instructions) nil)
+       ,@(if hints (list :hints hints) nil)
+       ,@(if otf-flg (list :otf-flg otf-flg) nil)
+       ,@(if doc (list :doc doc) nil))))
+
+(defmacro defcong (&whole x
+                          equiv1 equiv2 fn-args k
+                          &key (rule-classes '(:CONGRUENCE))
+                          use-current-pkg
+                          instructions
+                          hints
+                          otf-flg
+                          event-name
+                          doc)
+  (cond
+   ((not (and (symbolp equiv1)
+              (symbolp equiv2)
+              (integerp k)
+              (< 0 k)
+              (symbol-listp fn-args)
+              (no-duplicatesp-equal (cdr fn-args))
+              (< k (length fn-args))))
+    `(er soft 'defcong
+         "The form of a defcong event is (defcong equiv1 equiv2 term k ...), ~
+          where equiv1 and equiv2 are symbols and k is a positive integer less ~
+          than the length of term, where term should be a call of a function ~
+          symbol on distinct variable arguments.  However, ~x0 does not have ~
+          this form.  See :DOC defcong."
+         ',x))
+   ((not use-current-pkg) `(defcong1 ,@(cdr x)))
+   (t
+    `(make-event
+      (let ((sym (pkg-witness (current-package state))))
+	`(defthm
+           ,(or ,event-name
+		(intern-in-package-of-symbol
+		 ,(coerce (packn1 (list equiv1 "-IMPLIES-"
+                                       equiv2 "-" (car fn-args) "-" k)) 'string)
+		 sym))
+           ,(let ((arg-k-equiv (intern-in-package-of-symbol
+				,(coerce (packn1 (list (nth k fn-args) '-equiv))
+					'string)
+				sym)))
+              `(implies (,',equiv1 ,(nth ,k ',fn-args)
+				 ,arg-k-equiv)
+			(,',equiv2 ,',fn-args
+				 ,(update-nth ,k arg-k-equiv ',fn-args))))
+           :rule-classes
+           ,(extend-rule-classes :CONGRUENCE ',rule-classes)
+           ,@(if ',instructions (list :instructions ',instructions) nil)
+           ,@(if ',hints (list :hints ',hints) nil)
+           ,@(if ',otf-flg (list :otf-flg ',otf-flg) nil)
+           ,@(if ',doc (list :doc ',doc) nil)))))))
+
+
