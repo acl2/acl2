@@ -1737,30 +1737,10 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code car} ACL2 primitive function,
-     * assuming that its guard is satisfied.
-     */
-    public static Acl2Value execCarUnderGuard(Acl2ConsPair x) {
-        // it is not clear how this compares to x.car() in speed:
-        return x.getCar();
-    }
-
-    /**
-     * Executes the native implementation of
      * the {@code cdr} ACL2 primitive function.
      */
     public static Acl2Value execCdr(Acl2Value x) {
         return x.cdr();
-    }
-
-    /**
-     * Executes the native implementation of
-     * the {@code cdr} ACL2 primitive function,
-     * assuming that its guard is satisfied.
-     */
-    public static Acl2Value execCdrUnderGuard(Acl2ConsPair x) {
-        // it is not clear how this compares to x.car() in speed:
-        return x.getCdr();
     }
 
     /**

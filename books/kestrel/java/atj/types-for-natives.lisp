@@ -32,19 +32,19 @@
 
 (def-atj-function-type unary-/ (:number) :number)
 
-(def-atj-function-type < (:number :number) :symbol)
+(def-atj-function-type < (:rational :rational) :symbol)
 
 (def-atj-function-type car (:value) :value)
 
 (def-atj-function-type cdr (:value) :value)
 
-(def-atj-function-type char-code (:character) :number)
+(def-atj-function-type char-code (:character) :integer)
 
 (def-atj-function-type characterp (:value) :symbol)
 
-(def-atj-function-type code-char (:number) :character)
+(def-atj-function-type code-char (:integer) :character)
 
-(def-atj-function-type complex (:number :number) :number)
+(def-atj-function-type complex (:rational :rational) :number)
 
 (def-atj-function-type complex-rationalp (:value) :symbol)
 
@@ -54,19 +54,19 @@
 
 (def-atj-function-type consp (:value) :symbol)
 
-(def-atj-function-type denominator (:number) :number)
+(def-atj-function-type denominator (:rational) :integer)
 
 (def-atj-function-type equal (:value :value) :symbol)
 
 (def-atj-function-type if (:value :value :value) :value)
 
-(def-atj-function-type imagpart (:number) :number)
+(def-atj-function-type imagpart (:number) :rational)
 
 (def-atj-function-type integerp (:value) :symbol)
 
 (def-atj-function-type intern-in-package-of-symbol (:string :symbol) :symbol)
 
-(def-atj-function-type numerator (:number) :number)
+(def-atj-function-type numerator (:rational) :integer)
 
 (def-atj-function-type pkg-imports (:string) :value)
 
@@ -74,7 +74,7 @@
 
 (def-atj-function-type rationalp (:value) :symbol)
 
-(def-atj-function-type realpart (:number) :number)
+(def-atj-function-type realpart (:number) :rational)
 
 (def-atj-function-type stringp (:value) :symbol)
 
