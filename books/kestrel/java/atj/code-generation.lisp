@@ -1216,8 +1216,7 @@
      the Java expression is returned unchanged.
      Otherwise, the expression is wrapped with
      a cast to the narrower destination type."))
-  (if (or (eq src-type dst-type)
-          (eq dst-type :value))
+  (if (atj-type-subeqp src-type dst-type)
       jexpr
     (jexpr-cast (atj-type-to-jtype dst-type) jexpr)))
 
@@ -1239,6 +1238,60 @@
                  (atj-adapt-jexprs-to-types (cdr jexprs)
                                             (cdr src-types)
                                             (cdr dst-types))))))
+
+(define atj-trim-alambda ((aformals symbol-listp)
+                          (aargs pseudo-term-listp)
+                          (jargs jexpr-listp)
+                          (types atj-type-listp))
+  :guard (and (= (len aformals) (len aargs))
+              (= (len aargs) (len jargs))
+              (= (len jargs) (len types)))
+  :returns (mv (trimmed-aformals symbol-listp :hyp :guard)
+               (trimmed-jargs jexpr-listp :hyp :guard)
+               (trimmed-types atj-type-listp :hyp :guard))
+  :short "Remove unneeded arguments from an ACL2 lambda expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "ACL2 lambda expressions are always closed,
+     which means that often they include formal parameters
+     that are replaced by themselves (i.e. by the same symbols)
+     when the lambda expression is applied.
+     For instance, the untranslated term @('(let ((x 0)) (+ x y))')
+     is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
+     the lambda expression includes the extra formal parameter @('y')
+     which is not bound by the @(tsee let),
+     applied to @('y') itself,
+     making the lambda expression closed.")
+   (xdoc::p
+    "When generating shallowly embedded lambda expressions,
+     to avoid generating Java local variables
+     for formal parameters such as @('y') in the above example,
+     we remove such parameters for consideration.
+     This function does that.
+     It removes not only the formal parameters from @('aformals')
+     that are the same as the corresponding actual parameters @('aargs'),
+     but it also removed the corresponding elements from @('jargs')
+     (i.e. the Java expressions generated from @('aargs'))
+     and from @('types') (i.e. the ATJ types of the actual arguments.
+     These all come from @(tsee atj-gen-shallow-alambda):
+     looking at that function and how it calls this function
+     should make the purpose of this function clearer."))
+  (cond ((endp aformals) (mv nil nil nil))
+        (t (if (eq (car aformals) (car aargs))
+               (atj-trim-alambda (cdr aformals)
+                                 (cdr aargs)
+                                 (cdr jargs)
+                                 (cdr types))
+             (b* (((mv rest-aformals
+                       rest-jargs
+                       rest-types) (atj-trim-alambda (cdr aformals)
+                                                     (cdr aargs)
+                                                     (cdr jargs)
+                                                     (cdr types))))
+               (mv (cons (car aformals) rest-aformals)
+                   (cons (car jargs) rest-jargs)
+                   (cons (car types) rest-types)))))))
 
 (defines atj-gen-shallow-aterms+alambdas
   :short "Generate shallowly embedded ACL2 terms and lambda expressions."
@@ -1692,7 +1745,8 @@
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (and (= (len aargs) (len aformals))
-                (= (len jargs) (len aformals)))
+                (= (len jargs) (len aformals))
+                (= (len types) (len aformals)))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (type "An @(tsee atj-typep).")
@@ -1713,35 +1767,14 @@
        The types of these local variables are
        the types of the expressions assigned to them.")
      (xdoc::p
-      "ACL2 lambda expressions are always closed,
-       which means that often they include formal parameters
-       that are replaced by themselves (i.e. by the same symbols)
-       when the lambda expression is applied.
-       For instance, the untranslated term @('(let ((x 0)) (+ x y))')
-       is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
-       the lambda expression includes the extra formal parameter @('y')
-       (which is not bound by the @(tsee let)),
-       applied to @('y') itself,
-       making the lambda expression closed.
-       To avoid generating an extra Java local variable
-       for these additional formal parameters of lambda expressions
-       (e.g. to avoid generating a Java local variable
-       for the formal parameter @('y') in the example above,
-       given that one must already be in scope
-       for the @(tsee let) term to make sense),
-       we remove for consideration all the formal parameters
-       that are replaced by themselves when the lambda expression is applied.
-       We do that by looking at
-       the actual arguments @('aargs') of the lambda expression;
-       this is why @('aargs') is passed to this code generation function.")
-     (xdoc::p
       "Since we only generate new Java local variables
        for the lambda expression's formal parameters
-       that are not dropped as just explained,
+       that are not removed by @(tsee atj-trim-alambda),
        in general we need to keep the Java local variables
        associated to the dropped formal parameters.
-       We do that by simply appending the new @('jvar-names')
-       in front of the old one, achieving the desired ``overwriting''.")
+       We do that by simply appending the new associations for
+       variable names and types in front of the old ones,
+       achieving the desired ``overwriting''.")
      (xdoc::p
       "After generating the needed Java local variables,
        we assign to them the Java expressions for the actual arguments,
@@ -1749,13 +1782,16 @@
      (xdoc::p
       "Finally, we generate Java code
        for the body of the lambda expression."))
-    (b* ((aformals (remove-unneeded-lambda-formals aformals aargs))
+    (b* (((mv aformals jargs types)
+          (atj-trim-alambda aformals aargs jargs types))
          ((mv new-jvar-names
               jvar-indices) (atj-gen-shallow-avars aformals
                                                    jvar-indices
                                                    curr-pkg
                                                    avars-by-name))
          (jvar-names (append new-jvar-names jvar-names))
+
+         (jvar-types (append (pairlis$ aformals types) jvar-types))
          (let-jblock (atj-gen-shallow-let-bindings aformals
                                                    jargs
                                                    types
@@ -2221,9 +2257,7 @@
      retrieved from the @(tsee def-atj-function-type) table.
      We call the corresponding method in AIJ's @('Acl2NativeFunction'),
      and in particular the one with @('UnderGuard') in its name,
-     if one is available.
-     We also insert some type casts when the argument types of the method
-     do not quite match the ones of the generated wrapper method."))
+     if one is available."))
   (b* ((jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
        (jmethod-param-names
         (case afn
@@ -2315,29 +2349,13 @@
                            "execDenominatorUnderGuard"
                          "execDenominator"))
           (cons "execCons")
-          (car (if guards$
-                   "execCarUnderGuard"
-                 "execCar"))
-          (cdr (if guards$
-                   "execCdrUnderGuard"
-                 "execCdr"))
+          (car "execCar")
+          (cdr "execCdr")
           (equal "execEqual")
           (bad-atom<= "execBadAtomLessThanOrEqualTo")
           (if "execIf")
           (t (impossible))))
-       (jcall-arg-jexprs
-        (if guards$
-            (case afn
-              (code-char (list (jexpr-cast *atj-jtype-int* (jexpr-name "x"))))
-              ((< complex)
-               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "x"))
-                     (jexpr-cast *atj-jtype-rational* (jexpr-name "y"))))
-              ((numerator denominator)
-               (list (jexpr-cast *atj-jtype-rational* (jexpr-name "x"))))
-              ((car cdr)
-               (list (jexpr-cast *atj-jtype-cons* (jexpr-name "x"))))
-              (t (jexpr-name-list jmethod-param-names)))
-          (jexpr-name-list jmethod-param-names)))
+       (jcall-arg-jexprs (jexpr-name-list jmethod-param-names))
        (jcall (jexpr-smethod *atj-jtype-native-fn*
                              jcall-method-name
                              jcall-arg-jexprs))

@@ -215,48 +215,6 @@
         (t (cons (unquote-term (car terms))
                  (unquote-terms (cdr terms))))))
 
-(define remove-unneeded-lambda-formals ((formals symbol-listp)
-                                        (actuals pseudo-term-listp))
-  :guard (= (len formals) (len actuals))
-  :returns (new-formals symbol-listp :hyp (symbol-listp formals))
-  :short "Remove ``unneeded'' formal parameters of a lambda expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "ACL2 lambda expressions are always closed,
-     which means that often they include formal parameters
-     that are replaced by themselves (i.e. by the same symbols)
-     when the lambda expression is applied.
-     For instance, the untranslated term @('(let ((x 0)) (+ x y))')
-     is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
-     the lambda expression includes the extra formal parameter @('y')
-     which is not bound by the @(tsee let),
-     applied to @('y') itself,
-     making the lambda expression closed.")
-   (xdoc::p
-    "For certain purposes,
-     these additional formal parameters are ``unneeded'',
-     in the sense that they are not bound in the @(tsee let) expression
-     that the applied lambda expression represents.
-     This function removes such unneeded formal parameters:
-     it goes through the formal parameters of a lambda expression
-     and through the corresponding actual arguments,
-     and drops the formal parameters
-     that are equal to the corresponding actual arguments,
-     keeping the rest.")
-   (xdoc::p
-    "This function can be turn into a more general list utility,
-     which goes through two lists of equal length
-     and drops from the first list all the elements
-     that are equal to the corresponding ones in the second list."))
-  (cond ((endp formals) nil)
-        (t (if (eq (car formals) (car actuals))
-               (remove-unneeded-lambda-formals (cdr formals)
-                                               (cdr actuals))
-             (cons (car formals)
-                   (remove-unneeded-lambda-formals (cdr formals)
-                                                   (cdr actuals)))))))
-
 (defines all-free/bound-vars
   :short "Return all the free and bound variables that occur in a term."
   :long

@@ -78,7 +78,7 @@
      (the table being constructed via calls of the macro),
      ATJ performs a type analysis of the ACL2 terms in function bodies
      as it translates them to Java.
-     Critically, ATJ can compare
+     Critically, ATJ compares
      the type inferred for the actual argument of a function
      (this type is inferred by analyzing terms recursively)
      with the type of the corresponding formal argument of a function
@@ -100,7 +100,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum atj-typep
-  (:character :string :symbol :number :value)
+  (:integer :rational :number :character :string :symbol :cons :value)
   :short "Recognize the ATJ types."
   :long
   (xdoc::topstring
@@ -109,25 +109,143 @@
     (xdoc::seeurl "atj-types" "here")
     ".")
    (xdoc::p
-    "For now ATJ uses types for ACL2 characters, strings, symbols, and numbers,
-     as well as a type for all values.
-     The latter is a supertype of the former types, which are all disjoint.")))
+    "Currently ATJ uses types corresponding to
+     all the public AIJ class types for ACL2 values:
+     integers,
+     rationals,
+     numbers,
+     characters,
+     strings,
+     symbols,
+     @(tsee cons) pairs,
+     and all values.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-of-value (value)
-  :returns (type atj-typep)
-  :short "ATJ type of an ACL2 value."
+(define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
+  :returns (yes/no booleanp)
+  :short "Partial order over the ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is really the minimum type of an ACL2 value,
-     because every ACL2 always has the type of all values."))
-  (cond ((characterp value) :character)
-        ((stringp value) :string)
-        ((symbolp value) :symbol)
-        ((acl2-numberp value) :number)
-        (t :value)))
+    "The subtype/supertype relationship corresponds to
+     the subclass/superclass relationship in AIJ."))
+  (case sub
+    (:integer (and (member-eq sup '(:integer :rational :number :value)) t))
+    (:rational (and (member-eq sup '(:rational :number :value)) t))
+    (:number (and (member-eq sup '(:number :value)) t))
+    (:character (and (member-eq sup '(:character :value)) t))
+    (:string (and (member-eq sup '(:string :value)) t))
+    (:symbol (and (member-eq sup '(:symbol :value)) t))
+    (:cons (and (member-eq sup '(:cons :value)) t))
+    (:value (eq sup :value)))
+  ///
+
+  (defrule atj-type-subeqp-reflexive
+    (implies (atj-typep x)
+             (atj-type-subeqp x x))
+    :rule-classes nil)
+
+  (defrule atj-type-subeqp-antisymmetric
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-type-subeqp x y)
+                  (atj-type-subeqp y x))
+             (equal x y))
+    :rule-classes nil)
+
+  (defrule atj-type-subeqp-transitive
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-typep z)
+                  (atj-type-subeqp x y)
+                  (atj-type-subeqp y z))
+             (atj-type-subeqp x z))
+    :rule-classes nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-subp ((sub atj-typep) (sup atj-typep))
+  :returns (yes/no booleanp)
+  :short "Strict variant of @(tsee atj-type-subeqp)."
+  (and (atj-type-subeqp sub sup)
+       (not (equal sub sup))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-join ((type1 atj-typep) (type2 atj-typep))
+  :returns (type atj-typep :hyp :guard)
+  :short "Least upper bound of two ATJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "ATJ types form a join semilattice."))
+  (case type1
+    (:character (case type2
+                  (:character :character)
+                  (t :value)))
+    (:string (case type2
+               (:string :string)
+               (t :value)))
+    (:symbol (case type2
+               (:symbol :symbol)
+               (t :value)))
+    (:integer (case type2
+                (:integer :integer)
+                (:rational :rational)
+                (:number :number)
+                (t :value)))
+    (:rational (case type2
+                 ((:integer :rational) :rational)
+                 (:number :number)
+                 (t :value)))
+    (:number (case type2
+               ((:integer :rational :number) :number)
+               (t :value)))
+    (:cons (case type2
+             (:cons :cons)
+             (t :value)))
+    (:value :value))
+  ///
+
+  (defrule atj-type-join-commutative
+    (implies (and (atj-typep x)
+                  (atj-typep y))
+             (equal (atj-type-join x y)
+                    (atj-type-join y x)))
+    :rule-classes nil)
+
+  (defrule atj-type-join-associative
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-typep z))
+             (equal (atj-type-join (atj-type-join x y) z)
+                    (atj-type-join x (atj-type-join y z))))
+    :rule-classes nil)
+
+  (defrule atj-type-join-idempotent
+    (implies (atj-typep x)
+             (equal (atj-type-join x x)
+                    x))
+    :rule-classes nil)
+
+  (defrule atj-type-join-upper-bound
+    (implies (and (atj-typep x)
+                  (atj-typep y))
+             (and (atj-type-subeqp x (atj-type-join x y))
+                  (atj-type-subeqp y (atj-type-join x y))))
+    :rule-classes nil
+    :enable atj-type-subeqp)
+
+  (defrule atj-type-join-least
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-typep z)
+                  (atj-type-subeqp x z)
+                  (atj-type-subeqp y z))
+             (atj-type-subeqp (atj-type-join x y) z))
+    :rule-classes nil
+    :enable atj-type-subeqp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -138,31 +256,11 @@
     (:character *atj-jtype-char*)
     (:string *atj-jtype-string*)
     (:symbol *atj-jtype-symbol*)
+    (:integer *atj-jtype-int*)
+    (:rational *atj-jtype-rational*)
     (:number *atj-jtype-number*)
-    (:value *atj-jtype-value*)
-    (t (impossible))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-type-join ((type1 atj-typep) (type2 atj-typep))
-  :returns (type atj-typep :hyp :guard)
-  :short "Least upper bound of two ATJ types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When the `then' and `else' branches of an @(tsee if)
-     have different ATJ types,
-     the @(tsee if) has the least upper bound of the two types.
-     That is, the ATJ types must form a join semilattice,
-     corresponding to the lattice of the sets of values denoted by the types.")
-   (xdoc::p
-    "With the current "
-    (xdoc::seeurl "atj-typep" "types")
-    ", the semilattice has @(':value') at the top
-     and all the other types just below it."))
-  (if (eq type1 type2)
-      type2
-    :value))
+    (:cons *atj-jtype-cons*)
+    (:value *atj-jtype-value*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,9 +275,30 @@
     (:character 'characterp)
     (:string 'stringp)
     (:symbol 'symbolp)
+    (:integer 'integerp)
+    (:rational 'rationalp)
     (:number 'acl2-numberp)
-    (:value '(lambda (_) 't))
-    (t (impossible))))
+    (:cons 'consp)
+    (:value '(lambda (_) 't))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-of-value (value)
+  :returns (type atj-typep)
+  :short "ATJ type of an ACL2 value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is really the minimum type of an ACL2 value,
+     because every ACL2 always has the type of all values."))
+  (cond ((characterp value) :character)
+        ((stringp value) :string)
+        ((symbolp value) :symbol)
+        ((integerp value) :integer)
+        ((rationalp value) :rational)
+        ((acl2-numberp value) :number)
+        ((consp value) :cons)
+        (t :value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
