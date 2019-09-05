@@ -492,15 +492,9 @@
    (xdoc::p
     "ATJ has been extended with an option to generate Java code
      under the assumption that the guards are always satisfied.
-     Currently the only difference that this option makes is that
-     Java code is generated only for the @(':exec') parts of @(tsee mbe),
-     instead of only for the @(':logic') parts,
-     but it opens the door to faster execution under the guards.
      This option should be used only with guard-verified ACL2 code
      and with external Java code that calls the generated Java code
-     always with values that satisfy the guards.
-     This is just a start towards handling guards in ATJ (and AIJ);
-     more sophisticated support will be added in the future.")
+     always with values that satisfy the guards.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
