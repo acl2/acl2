@@ -80,7 +80,7 @@
       it may be better to use tags and directives within a string
       rather than the corresponding XDOC constructors,
       e.g.</p>
-   <code>(xdoc::p \"This is in \<i\>italics\</i\>.\")</code>
+   @({(xdoc::p \"This is in <i>italics</i>.\")})
    <p>rather than</p>
    <code>(xdoc::p \"This is in \" (xdoc::i \"italics\") \".\")</code>
    <p>In other words,
@@ -775,10 +775,10 @@
   "Construct an XDOC tree for an HTML list item @('<li>...</li>').")
 
 (generate-primitive-constructor-for-tag :ul
-  "Construct an XDOC tree for an HTML unordered list @('<ul>...</ul>').")
+  "Construct an XDOC tree for an HTML unordered (bulleted) list @('<ul>...</ul>').")
 
 (generate-primitive-constructor-for-tag :ol
-  "Construct an XDOC tree for an HTML unordered list @('<ol>...</ol>').")
+  "Construct an XDOC tree for an HTML ordered (numbered) list @('<ol>...</ol>').")
 
 (generate-primitive-constructor-for-tag :dt
   "Construct an XDOC tree for an HTML term @('<dt>...</dt>').")
