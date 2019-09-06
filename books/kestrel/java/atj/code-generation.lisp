@@ -944,7 +944,7 @@
      all the variables in the current ACL2 function,
      organized by symbol name for easy lookup.
      We retrieve the variables with the same name of the variable,
-     we remove the variables from them,
+     we remove the variable being processed from them,
      and we check if the result is empty:
      in this case, this is the only variable with that name.
      (The alist may have duplicate symbols in its values.)")
