@@ -172,6 +172,8 @@
             (cw "~%Generated Java file:~%  ~x0~%" output-file$))))
     (value '(value-triple :invisible))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atj-macro-definition
   :parents (atj-implementation)
   :short "Definition of the @(tsee atj) macro."

@@ -36,6 +36,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-allowed-raws*
   :short "ACL2 functions with raw Lisp code that are accepted by ATJ."
   :long
@@ -141,6 +143,8 @@
   (assert-event (symbol-listp *atj-allowed-raws*))
   (assert-event (no-duplicatesp-eq *atj-allowed-raws*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-fns-to-translate ((targets$ symbol-listp)
                               (guards$ booleanp)
                               (verbose$ booleanp)
@@ -243,6 +247,8 @@
           (fns-to-add-to-worklist (set-difference-eq called-fns acc))
           (worklist (union-eq fns-to-add-to-worklist worklist)))
        (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gather-info ((targets$ symbol-listp)
                          (guards$ booleanp)
