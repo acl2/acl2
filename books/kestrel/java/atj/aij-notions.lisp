@@ -14,7 +14,7 @@
 
 (include-book "abstract-syntax")
 
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
