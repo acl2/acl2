@@ -23,6 +23,7 @@
 
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -73,18 +74,6 @@
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define theorem-symbolp ((sym symbolp) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Check if a symbol names a theorem,
-          i.e. it has a @('theorem') property."
-  :long
-  "<p>
-   This function is named in analogy to
-   the @(tsee function-symbolp) built-in system utility.
-   </p>"
-  (not (eq t (getpropc sym 'theorem t wrld))))
 
 (define macro-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)

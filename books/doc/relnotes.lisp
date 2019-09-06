@@ -218,7 +218,7 @@
    (xdoc::p
     "A new library for standard system utilities has been started. This is
      currently under the Kestrel books, but it could be moved directly under
-     @('[books]/std/system') eventually. This new library will be populated
+     @('[books]/std/system') eventually. This new library is being populated
      with existing utilities factored out of some Kestrel Books with system
      utilities.")
 
