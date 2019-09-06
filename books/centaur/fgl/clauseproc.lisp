@@ -608,7 +608,9 @@
                (new-state))
   (b* ((vars (term-vars goal))
        ((mv interp-st state) (initialize-interp-st config interp-st state))
-       
+       (interp-st (update-interp-st->user-scratch (hons-acons :goal-term goal
+                                                              (interp-st->user-scratch interp-st))
+                                                  interp-st))
        (interp-st (interp-st-set-bindings (variable-g-bindings vars) interp-st))
        ((acl2::hintcontext-bind ((init-interp-st interp-st)
                                  (init-interp-state state))))

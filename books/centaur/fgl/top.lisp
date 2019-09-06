@@ -42,7 +42,7 @@
 (include-book "doc")
 (include-book "pathcond-fix")
 (include-book "def-fgl-thm")
-
+(include-book "centaur/aignet/transform-utils" :dir :system)
 (local (in-theory (disable w)))
 
 ;; ----------------------------------------------------------------------
@@ -85,6 +85,25 @@
 
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
+
+(fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
+
+(define interp-st-print-aignet-stats ((name stringp) interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (ans)
+             (stobj-let ((aignet (logicman->aignet logicman)))
+                        (ans)
+                        (aignet::print-aignet-stats name aignet)
+                        ans)
+             ans))
+
+(fancy-ev-add-primitive interp-st-print-aignet-stats (stringp name))
+
+(fancy-ev-add-primitive magitastic-ev (and (pseudo-termp x)
+                                           (symbol-alistp alist)
+                                           (natp reclimit)))
+
+(fancy-ev-add-primitive interp-st->user-scratch$inline t)
 
 (fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
 
