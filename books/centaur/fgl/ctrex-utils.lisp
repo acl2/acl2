@@ -2439,6 +2439,31 @@
                   (symbol-listp (alist-keys x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+(define bfr-env$-fix (env$ (bfrstate bfrstate-p))
+  :prepwork ((local (in-theory (enable bfr-env$-p))))
+  :returns (new-env$ (bfr-env$-p new-env$ bfrstate))
+  (bfrstate-case
+    :bdd (stobj-let ((bitarr (env$->bitarr env$)))
+                    (bitarr)
+                    (if (<= (bfrstate->bound bfrstate) (bits-length bitarr))
+                        bitarr
+                      (resize-bits (max (bfrstate->bound bfrstate) (* 2 (bits-length bitarr)))
+                                   bitarr))
+                    env$)
+    :aig env$
+    :aignet (stobj-let ((bitarr (env$->bitarr env$)))
+                    (bitarr)
+                    (if (< (bfrstate->bound bfrstate) (bits-length bitarr))
+                        bitarr
+                      (resize-bits (max (+ 1 (bfrstate->bound bfrstate)) (* 2 (bits-length bitarr)))
+                                   bitarr))
+                    env$))
+  ///
+  (defthm bfr-env$-fix-when-bfr-env$-p
+    (implies (and (bfr-env$-p env$ bfrstate)
+                  (env$p env$))
+             (equal (bfr-env$-fix env$ bfrstate) env$))))
+
 (define interp-st-infer-ctrex-var-assignments ((vars pseudo-var-list-p)
                                                (interp-st interp-st-bfrs-ok)
                                                (state))
@@ -2460,8 +2485,7 @@
                      (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable
                                             (logicman->bfrstate)
                                             (w state)))
-                    ((unless (bfr-env$-p env$ (logicman->bfrstate)))
-                     (mv "Bad env$ -- not bfr-env$-p" cgraph memo (next-bvar bvar-db) env$))
+                    (env$ (bfr-env$-fix env$ (logicman->bfrstate)))
                     ((mv var-vals assigns sts)
                      (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
                     (- (fast-alist-free assigns))
@@ -2744,4 +2768,3 @@
     (implies (interp-st-bfrs-ok interp-st)
              (interp-st-bfrs-ok new-interp-st))
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
-
