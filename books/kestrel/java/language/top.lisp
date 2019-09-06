@@ -10,6 +10,9 @@
 
 (in-package "JAVA")
 
+; the order of the following INCLUDE-BOOKs determines
+; the order of the subtopics of the LANGUAGE topic below:
+(include-book "grammar")
 (include-book "primitive-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -19,9 +22,6 @@
   :short "A formal model of some aspects of the Java language."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "Currently this consists of
-     an initial model of the Java primitive values.")
    (xdoc::p
     "It is expected that more aspects of the Java language
      will be formalized here."))

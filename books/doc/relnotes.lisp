@@ -512,6 +512,20 @@
     "Some of the native Java implementations of the ACL2 primitive functions
      have been optimized.")
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seeurl "java::language" "Java Language Formalization"))
+
+   (xdoc::p
+    "An ABNF grammar has been added for the whole Java language,
+     consisting of the lexical and syntactic sub-grammars
+     from the Java language specification.
+     The grammar files have been parser with "
+    (xdoc::seeurl "abnf::grammar-parser" "the verified ABNF grammar parser")
+    ", obtaining a formal representation of the grammar of Java,
+     which can be used to formally specify. at a very high and assured level,
+     the concrete syntax of Java.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Kestrel Utilities")
