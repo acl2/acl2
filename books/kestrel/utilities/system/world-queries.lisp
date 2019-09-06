@@ -24,6 +24,7 @@
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
+(include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -343,16 +344,6 @@
   (definedp fn wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define primitivep ((fn symbolp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Check if a named function is @(see primitive)."
-  :long
-  "<p>
-   See @(tsee primitivep+) for a logic-friendly variant of this utility.
-   </p>"
-  (and (member-eq fn (strip-cars *primitive-formals-and-guards*)) t))
 
 (define primitivep+ ((fn (function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)

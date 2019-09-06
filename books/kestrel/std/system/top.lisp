@@ -15,6 +15,7 @@
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
 (include-book "macro-symbolp")
+(include-book "primitivep")
 (include-book "theorem-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
