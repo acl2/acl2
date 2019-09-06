@@ -34,7 +34,12 @@
    (xdoc::p
     "According to the aforementioned specification,
      the output of Keccak-512 is a sequence of exactly 512 bits,
-     or 64 bytes.")))
+     or 64 bytes.")
+   (xdoc::p
+    "See also:"
+    (xdoc::ul
+     (xdoc::li (xdoc::seeurl "keccak::keccak" "Keccak-512 executable specification"))))
+   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
