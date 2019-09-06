@@ -1512,45 +1512,49 @@
 
 (defsection ecdsa-sign-deterministic-prehashed
   :parents (deterministic-ecdsa-secp256k1)
-  :short "Sign a prehashed message using sha-256."
-  :long "@(call ecdsa-sign-deterministic-prehashed) signs the already-hashed message @('mh')
-         using SHA-256 when
-         applying <see topic=\"HMAC____HMAC\">HMAC</see>.
-         <p/>
-         Arguments:
-         <p/>
-         @('mh') -- the already-hashed message to be signed, a list of bits.
-         <p/>
-         @('privkey') -- the signer's private key, which is a positive integer
-         less than the elliptic curve order.
-         <p/>
-         @('small-x?') -- a boolean flag that, when true, restricts the
-         ephemeral public key x coordinate
-         to be to be less than the elliptic curve order.
-         <p/>
-         @('small-s?') -- a boolean flag that, when true, restricts the returned
-         @('s') value to be less than @($q/2$), where @($q$) is the elliptic
-         curve order.
-         <p/>
-         Return values (using mv):
-         <p/>
-         @('error?') -- a flag indicating any sort of error was detected.
-         Please report errors, but do not send a private key that is in use.
-         <p/>
-         @('x-index') -- an index from 0 to the curve cofactor @('h'),
-         which can be used to recover the x coordinate of the ephemeral public
-         key from @('r').  If @('small-x?') is true, @('x-index') will be 0.
-         <p/>
-         @('y-even?') -- a flag indicating whether the y coordinate of the
-         ephemeral public key was even or odd.  This, along with @('r') and
-         @('x-index'), can be used to recover the y coordinate of the ephemeral
-         public key.
-         <p/>
-         @('r') -- the x coordinate of the ephemeral public key, modulo the
-         elliptic curve group order, considered the first part of the signature.
-         <p/>
-         @('s') -- the second part of the signature.
-         "
+  :short "Sign a prehashed message using <see topic=\"SHA2____SHA-2\">SHA-256</see>."
+  :long
+  (xdoc::topstring
+   (xdoc::p "The call")
+   (xdoc::blockquote (xdoc::@call "ecdsa-sign-deterministic-prehashed"))
+   (xdoc::p "signs the already-hashed message @('mh')
+             using <see topic=\"SHA2____SHA-2\">SHA-256</see> when
+             applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
+   (xdoc::p "Arguments:")
+   (xdoc::ol
+    (xdoc::li
+     "@('mh') -- the already-hashed message to be signed, a list of bits.")
+    (xdoc::li
+     "@('privkey') -- the signer's private key, which is a positive integer
+      less than the elliptic curve order.")
+    (xdoc::li
+     "@('small-x?') -- a boolean flag that, when true, restricts the
+      ephemeral public key x coordinate
+      to be to be less than the elliptic curve order.")
+    (xdoc::li
+     "@('small-s?') -- a boolean flag that, when true, restricts the returned
+      @('s') value to be less than @($q/2$), where @($q$) is the elliptic
+      curve order."))
+    (xdoc::p
+     "Return values (using <see topic=\"ACL2____MV\">mv</see>):")
+    (xdoc::ol
+     (xdoc::li
+      "@('error?') -- a flag indicating any sort of error was detected.
+       Please report errors, but do not send a private key that is in use.")
+     (xdoc::li
+      "@('x-index') -- an index from 0 to the curve cofactor @('h'),
+       which can be used to recover the x coordinate of the ephemeral public
+       key from @('r').  If the argument @('small-x?') is true, @('x-index') will be 0.")
+     (xdoc::li
+      "@('y-even?') -- a flag indicating whether the y coordinate of the
+       ephemeral public key was even or odd.  This, along with @('r') and
+       @('x-index'), can be used to recover the y coordinate of the ephemeral
+       public key.")
+     (xdoc::li
+      "@('r') -- the x coordinate of the ephemeral public key, modulo the
+       elliptic curve group order, considered the first part of the signature.")
+     (xdoc::li
+      "@('s') -- the second part of the signature.")))
   (defund ecdsa-sign-deterministic-prehashed (mh privkey small-x? small-s?)
     (declare (xargs :guard (and (true-listp mh)
                                 (acl2::all-unsigned-byte-p 1 mh)
@@ -1637,49 +1641,54 @@
 
 (defsection ecdsa-sign-deterministic-sha-256
   :parents (deterministic-ecdsa-secp256k1)
-  :short "Sign a message using sha-256."
-  :long "@(call ecdsa-sign-deterministic-sha-256) signs the message @('m')
-         using SHA-256 both for hashing the input message and when
-         applying <see topic=\"HMAC____HMAC\">HMAC</see>.
-         <p/>
-         Arguments:
-         <p/>
-         @('m') -- the message to be signed, a list of bits.  Note,
-         to convert a list of bytes to a list of bits prior to calling this,
-         each byte should be converted to a big-endian list of bits
-         which are then appended.  (This is different from when KECCAK-256 is
-         used to hash the message).
-         <p/>
-         @('privkey') -- the signer's private key, which is a positive integer
-         less than the elliptic curve order.
-         <p/>
-         @('small-x?') -- a boolean flag that, when true, restricts the
-         ephemeral public key x coordinate
-         to be to be less than the elliptic curve order.
-         <p/>
-         @('small-s?') -- a boolean flag that, when true, restricts the returned
-         @('s') value to be less than @($q/2$), where @($q$) is the elliptic
-         curve order.
-         <p/>
-         Return values (using mv):
-         <p/>
-         @('error?') -- a flag indicating any sort of error was detected.
-         Please report errors, but do not send a private key that is in use.
-         <p/>
-         @('x-index') -- an index from 0 to the curve cofactor @('h'),
-         which can be used to recover the x coordinate of the ephemeral public
-         key from @('r').  If @('small-x?') is true, @('x-index') will be 0.
-         <p/>
-         @('y-even?') -- a flag indicating whether the y coordinate of the
-         ephemeral public key was even or odd.  This, along with @('r') and
-         @('x-index'), can be used to recover the y coordinate of the ephemeral
-         public key.
-         <p/>
-         @('r') -- the x coordinate of the ephemeral public key, modulo the
-         elliptic curve group order, considered the first part of the signature.
-         <p/>
-         @('s') -- the second part of the signature.
-         "
+  :short "Sign a message using <see topic=\"SHA2____SHA-2\">SHA-256</see>."
+  :long
+  (xdoc::topstring
+   (xdoc::p "The call")
+   (xdoc::blockquote (xdoc::@call "ecdsa-sign-deterministic-sha-256"))
+   (xdoc::p "signs the message @('m')
+	     using <see topic=\"SHA2____SHA-2\">SHA-256</see> both for hashing
+	     the input message and when
+	     applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
+   (xdoc::p "Arguments:")
+   (xdoc::ol
+    (xdoc::li
+     "@('m') -- the message to be signed, a list of bits.  Note,
+      to convert a list of bytes to a list of bits prior to calling this,
+      each byte should be converted to a big-endian list of bits
+      which are then appended.  (This is different from when KECCAK-256 is
+      used to hash the message).")
+    (xdoc::li
+     "@('privkey') -- the signer's private key, which is a positive integer
+      less than the elliptic curve order.")
+    (xdoc::li
+     "@('small-x?') -- a boolean flag that, when true, restricts the
+      ephemeral public key x coordinate
+      to be to be less than the elliptic curve order.")
+    (xdoc::li
+     "@('small-s?') -- a boolean flag that, when true, restricts the returned
+      @('s') value to be less than @($q/2$), where @($q$) is the elliptic
+      curve order."))
+    (xdoc::p
+     "Return values (using <see topic=\"ACL2____MV\">mv</see>):")
+    (xdoc::ol
+     (xdoc::li
+      "@('error?') -- a flag indicating any sort of error was detected.
+       Please report errors, but do not send a private key that is in use.")
+     (xdoc::li
+      "@('x-index') -- an index from 0 to the curve cofactor @('h'),
+       which can be used to recover the x coordinate of the ephemeral public
+       key from @('r').  If the argument @('small-x?') is true, @('x-index') will be 0.")
+     (xdoc::li
+      "@('y-even?') -- a flag indicating whether the y coordinate of the
+       ephemeral public key was even or odd.  This, along with @('r') and
+       @('x-index'), can be used to recover the y coordinate of the ephemeral
+       public key.")
+     (xdoc::li
+      "@('r') -- the x coordinate of the ephemeral public key, modulo the
+       elliptic curve group order, considered the first part of the signature.")
+     (xdoc::li
+      "@('s') -- the second part of the signature.")))
   (defund ecdsa-sign-deterministic-sha-256 (m privkey small-x? small-s?)
     (declare (xargs :guard (and (true-listp m)
                                 (acl2::all-unsigned-byte-p 1 m)
@@ -1751,50 +1760,54 @@
 
 (defsection ecdsa-sign-deterministic-keccak-256
   :parents (deterministic-ecdsa-secp256k1)
-  :short "Sign a message using keccak/sha-256."
-  :long "@(call ecdsa-sign-deterministic-keccak-256) signs the message @('m')
-         using KECCAK-256 for hashing the input message, but using
-         SHA-256 when
-         applying <see topic=\"HMAC____HMAC\">HMAC</see>.
-         <p/>
-         Arguments:
-         <p/>
-         @('m') -- the message to be signed, a list of bits.  Note,
-         to convert a list of bytes to a list of bits prior to calling this,
-         each byte should be converted to a little-endian list of bits
-         which are then appended.  (This is different from when SHA-256 is
-         used to hash the message).
-         <p/>
-         @('privkey') -- the signer's private key, which is a positive integer
-         less than the elliptic curve order.
-         <p/>
-         @('small-x?') -- a boolean flag that, when true, restricts the
-         ephemeral public key x coordinate
-         to be to be less than the elliptic curve order.
-         <p/>
-         @('small-s?') -- a boolean flag that, when true, restricts the returned
-         @('s') value to be less than @($q/2$), where @($q$) is the elliptic
-         curve order.
-         <p/>
-         Return values (using mv):
-         <p/>
-         @('error?') -- a flag indicating any sort of error was detected.
-         Please report errors, but do not send a private key that is in use.
-         <p/>
-         @('x-index') -- an index from 0 to the curve cofactor @('h'),
-         which can be used to recover the x coordinate of the ephemeral public
-         key from @('r').  If @('small-x?') is true, @('x-index') will be 0.
-         <p/>
-         @('y-even?') -- a flag indicating whether the y coordinate of the
-         ephemeral public key was even or odd.  This, along with @('r') and
-         @('x-index'), can be used to recover the y coordinate of the ephemeral
-         public key.
-         <p/>
-         @('r') -- the x coordinate of the ephemeral public key, modulo the
-         elliptic curve group order, considered the first part of the signature.
-         <p/>
-         @('s') -- the second part of the signature.
-         "
+  :short "Sign a message using <see topic=\"KECCAK____KECCAK\">KECCAK-256</see>/<see topic=\"SHA2____SHA-2\">SHA-256</see>."
+  :long
+  (xdoc::topstring
+   (xdoc::p "The call")
+   (xdoc::blockquote (xdoc::@call "ecdsa-sign-deterministic-keccak-256"))
+   (xdoc::p "signs the message @('m')
+	     using <see topic=\"KECCAK____KECCAK\">KECCAK-256</see> for hashing the input message,
+	     but using <see topic=\"SHA2____SHA-2\">SHA-256</see> when
+	     applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
+   (xdoc::p "Arguments:")
+   (xdoc::ol
+    (xdoc::li
+     "@('m') -- the message to be signed, a list of bits.  Note,
+      to convert a list of bytes to a list of bits prior to calling this,
+      each byte should be converted to a little-endian list of bits
+      which are then appended.  (This is different from when SHA-256 is
+      used to hash the message).")
+    (xdoc::li
+     "@('privkey') -- the signer's private key, which is a positive integer
+      less than the elliptic curve order.")
+    (xdoc::li
+     "@('small-x?') -- a boolean flag that, when true, restricts the
+      ephemeral public key x coordinate
+      to be to be less than the elliptic curve order.")
+    (xdoc::li
+     "@('small-s?') -- a boolean flag that, when true, restricts the returned
+      @('s') value to be less than @($q/2$), where @($q$) is the elliptic
+      curve order."))
+    (xdoc::p
+     "Return values (using <see topic=\"ACL2____MV\">mv</see>):")
+    (xdoc::ol
+     (xdoc::li
+      "@('error?') -- a flag indicating any sort of error was detected.
+       Please report errors, but do not send a private key that is in use.")
+     (xdoc::li
+      "@('x-index') -- an index from 0 to the curve cofactor @('h'),
+       which can be used to recover the x coordinate of the ephemeral public
+       key from @('r').  If the argument @('small-x?') is true, @('x-index') will be 0.")
+     (xdoc::li
+      "@('y-even?') -- a flag indicating whether the y coordinate of the
+       ephemeral public key was even or odd.  This, along with @('r') and
+       @('x-index'), can be used to recover the y coordinate of the ephemeral
+       public key.")
+     (xdoc::li
+      "@('r') -- the x coordinate of the ephemeral public key, modulo the
+       elliptic curve group order, considered the first part of the signature.")
+     (xdoc::li
+      "@('s') -- the second part of the signature.")))
   (defund ecdsa-sign-deterministic-keccak-256 (m privkey small-x? small-s?)
     (declare (xargs :guard (and (true-listp m)
                                 (acl2::all-unsigned-byte-p 1 m)
