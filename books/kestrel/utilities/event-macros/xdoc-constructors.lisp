@@ -534,6 +534,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::evmac-desc-function/lambda/macro
+  :short "Construct a common description text for an input that must be
+          a function name or a lambda expression or a macro name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This text expresses some common requirements
+     on this kind of inputs to event macros.")
+   (xdoc::p
+    "This utility provides some customization facilities:")
+   (xdoc::ul
+    (xdoc::li
+     "The @('subject') parameter must be XDOC text
+      that describes the subject of the assertion of the requirements.
+      The default is the string @('\"It\"'),
+      which should be appropriate if this text follows
+      some preceding text that describes what the input is for.")
+    (xdoc::li
+     "The @('1arg') parameter must be a boolean
+      that specifies whether the function or lambda expression
+      must be unary (i.e. take one argument) or not.")
+    (xdoc::li
+     "The @('1res') parameter must be a boolean
+      that specifies whether the function or lambda expression
+      must return a single (i.e. non-@(tsee mv)) result or not.")
+    (xdoc::li
+     "The @('guard') parameter must be one of the following:
+      (i) XDOC text that describes the condition under which
+      the guards must be verified;
+      (ii) @('t'), to indicate that the guards must always be verified;
+      (iii) @('nil'), to indicate that there are no requirements
+      on the guards being verified.
+      The default is @('nil').")
+    (xdoc::li
+     "The @('additional-function') parameter must be one of the following:
+      (i) XDOC text that describes additional requirements
+      for the function (typically a sentence);
+      (ii) @('nil') (the default) for no additional text.")
+    (xdoc::li
+     "The @('additional-lambda') parameter must be one of the following:
+      (i) XDOC text that describes additional requirements
+      for the lambda expression (typically a sentence);
+      (ii) @('nil') (the default) for no additional text.")
+    (xdoc::li
+     "The @('additional-forms') parameter must consist of
+      XDOC list items that describe additional possible forms of the input,
+      besides the function and lambda expression forms.
+      For instance, an additional form could be a keyword @(':auto')
+      to infer the function or lambda expression automatically.
+      The default is the empty string, i.e. no additional forms."))
+   (xdoc::p
+    "Looking at some uses of this utility should make it clearer.")
+   (xdoc::p
+    "This utility may need to be extended and generalized in the future,
+     in particular with more customization facilities."))
+
+  (defmacro xdoc::evmac-desc-function/lambda/macro (&key
+                                                    (subject '"It")
+                                                    (1arg 'nil)
+                                                    (1res 'nil)
+                                                    (guard 'nil)
+                                                    (additional-function 'nil)
+                                                    (additional-lambda 'nil)
+                                                    (additional-forms '""))
+    `(xdoc::&&
+      (xdoc::p
+       ,subject " must be one of the following:")
+      (xdoc::ul
+       (xdoc::li
+        "The name of a "
+        ,(if 1arg "unary " "")
+        "logic-mode function.
+         This function must have no input or output @(see acl2::stobj)s."
+        ,(if 1res
+             " This function must return
+              a single (i.e. non-@(tsee acl2::mv)) result."
+           "")
+        ,(cond ((eq guard t) " This function must be guard-verified.")
+               ((eq guard nil) "")
+               (t `(xdoc::&&
+                    " If "
+                    ,guard
+                    ", then this function must be guard-verified.")))
+        ,(if additional-function
+             `(xdoc::&& " " ,additional-function)
+           ""))
+       (xdoc::li
+        "A "
+        ,(if 1arg "unary " "")
+        "closed lambda expression
+         that only references logic-mode functions.
+         This lambda expression must have
+         no input or output @(see acl2::stobj)s."
+        ,(if 1res
+             " This lambda expression must return
+              a single (i.e. non-@(tsee acl2::mv)) result."
+           "")
+        ,(cond ((eq guard t) " This lambda expression must be guard-verified.")
+               ((eq guard nil) "")
+               (t `(xdoc::&&
+                    " If " ,guard ", then the body of this lambda expression
+                     must only call guard-verified functions,
+                     except possibly
+                     in the @(':logic') subterms of @(tsee acl2::mbe)s
+                     or via @(tsee acl2::ec-call).")))
+        " As an abbreviation, the name @('mac') of a macro stands for
+         the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
+         where @('z1'), @('z2'), ... are the required parameters of @('mac');
+         that is, a macro name abbreviates its eta-expansion
+         (considering only the macro's required parameters)."
+        ,(if additional-lambda
+             `(xdoc::&& " " ,additional-lambda)
+           ""))
+       ,additional-forms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::evmac-topic-design-notes
   :short "Generate an XDOC topic for the design notes of an event macro."
   :long
