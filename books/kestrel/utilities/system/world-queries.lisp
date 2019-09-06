@@ -23,6 +23,7 @@
 
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -72,20 +73,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-symbolp ((sym symbolp) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Check if a symbol names a macro,
-          i.e. it has a @('macro-args') property."
-  :long
-  "<p>
-   This function is named in analogy to
-   the @(tsee function-symbolp) built-in system utility.
-   </p>"
-  (not (eq t (getpropc sym 'macro-args t wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
