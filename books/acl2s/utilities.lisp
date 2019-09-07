@@ -332,6 +332,29 @@ functions over natural numbers.
          (t (cons (subst-fun-sym new old (car l))
                   (subst-fun-lst new old (cdr l)))))))
 
+(mutual-recursion
+ (defun subst-expr1 (new old term)
+   (declare (xargs :guard (all-tlps term) :guard-debug t))
+   (cond
+    ((equal term old) new)
+    ((atom term) term)
+    ((quotep term) term)
+    (t (cons (car term)
+             (subst-expr1-lst new old (cdr term))))))
+
+ (defun subst-expr1-lst (new old args)
+   (declare (xargs :guard (and (true-listp args) (all-tlps args))))
+   (if (endp args)
+       nil
+     (cons (subst-expr1 new old (car args))
+           (subst-expr1-lst new old (cdr args))))))
+
+(defun subst-expr (new old term)
+  (declare (xargs :guard (and (not (quotep old)) (all-tlps term))))
+  (if (atom old)
+      (subst-var new old term)
+    (subst-expr1 new old term)))
+
 #|
 
 ;; PETE: These functions were leading to errors. For example, in
