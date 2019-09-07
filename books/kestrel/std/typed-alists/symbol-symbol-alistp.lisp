@@ -10,13 +10,19 @@
 
 (in-package "ACL2")
 
-(include-book "string-symbollist-alistp")
-(include-book "symbol-nat-alistp")
-(include-book "symbol-string-alistp")
-(include-book "symbol-symbol-alistp")
+(include-book "std/util/defalist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/typed-alists
-  :parents (std)
-  :short "Typed alists.")
+(std::defalist symbol-symbol-alistp (x)
+  :short "Recognize alists from symbols to symbols."
+  :key (symbolp x)
+  :val (symbolp x)
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil t
+  ///
+
+  (defthm symbolp-of-cdr-of-assoc-equal-when-symbol-symbol-alistp
+    (implies (symbol-symbol-alistp alist)
+             (symbolp (cdr (assoc-equal key alist))))))
