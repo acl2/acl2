@@ -568,6 +568,12 @@
       on the guards being verified.
       The default is @('nil').")
     (xdoc::li
+     "The @('dont-be-or-call') parameter must be one of the following:
+      (i) XDOC text that describes functions that
+      the input (if a function) must differ from
+      or that the input (if a lambda expression) must not reference;
+      (ii) @('nil') (the default), to indicate no such requirements.")
+    (xdoc::li
      "The @('additional-function') parameter must be one of the following:
       (i) XDOC text that describes additional requirements
       for the function (typically a sentence);
@@ -595,6 +601,7 @@
                                                     (1arg 'nil)
                                                     (1res 'nil)
                                                     (guard 'nil)
+                                                    (dont-be-or-call 'nil)
                                                     (additional-function 'nil)
                                                     (additional-lambda 'nil)
                                                     (additional-forms '""))
@@ -617,6 +624,11 @@
                     " If "
                     ,guard
                     ", then this function must be guard-verified.")))
+        ,(if dont-be-or-call
+             `(xdoc::&& " This function must be distinct from "
+                        ,dont-be-or-call
+                        ".")
+           "")
         ,(if additional-function
              `(xdoc::&& " " ,additional-function)
            ""))
@@ -648,6 +660,11 @@
          where @('z1'), @('z2'), ... are the required parameters of @('mac');
          that is, a macro name abbreviates its eta-expansion
          (considering only the macro's required parameters)."
+        ,(if dont-be-or-call
+             `(xdoc::&& " This lambda expression must not reference "
+                        ,dont-be-or-call
+                        ".")
+           "")
         ,(if additional-lambda
              `(xdoc::&& " " ,additional-lambda)
            ""))
