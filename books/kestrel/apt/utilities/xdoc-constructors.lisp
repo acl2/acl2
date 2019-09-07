@@ -10,7 +10,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

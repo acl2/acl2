@@ -85,6 +85,7 @@
                          string=>nats
                          symbol-nat-alistp
                          symbol-string-alistp
+                         symbol-symbol-alistp
                          symbol-package-name-lst
                          trans-eval
                          tuplep

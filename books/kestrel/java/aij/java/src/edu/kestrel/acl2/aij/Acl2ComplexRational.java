@@ -50,7 +50,7 @@ final class Acl2ComplexRational extends Acl2Number {
      * Checks if this ACL2 complex rational is an ACL2 complex rational.
      * This is consistent with the {@code complex-rationalp} ACL2 function.
      *
-     * @return Always the ACL2 symbol {@code t}.
+     * @return The ACL2 symbol {@code t}.
      */
     @Override
     Acl2Symbol complexRationalp() {
@@ -65,8 +65,8 @@ final class Acl2ComplexRational extends Acl2Number {
      * This is consistent with the {@code equal} ACL2 function.
      *
      * @param o The ACL2 object to compare this ACL2 complex rational with.
-     * @return {@code true} if the ACL2 object is equal to this ACL2 complex
-     * rational, otherwise {@code false}.
+     * @return {@code true} if the ACL2 object is equal to
+     * this ACL2 complex rational, otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
@@ -82,7 +82,7 @@ final class Acl2ComplexRational extends Acl2Number {
     /**
      * Returns a hash code for this ACL2 complex rational.
      *
-     * @return A hash code for this ACL2 complex rational.
+     * @return The hash code for this ACL2 complex rational.
      */
     @Override
     public int hashCode() {
@@ -96,7 +96,7 @@ final class Acl2ComplexRational extends Acl2Number {
      * We return a Java string that
      * conforms to ACL2's notation for complex rationals.
      *
-     * @return A printable representation of this ACL2 complex rational.
+     * @return The printable representation of this ACL2 complex rational.
      */
     @Override
     public String toString() {
@@ -121,6 +121,7 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Returns the real part of this ACL2 complex rational.
+     * This is consistent with the {@code realpart} ACL2 function.
      *
      * @return The real part of this ACL2 complex rational.
      */
@@ -131,6 +132,7 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Returns the imaginary part of this ACL2 complex rational.
+     * This is consistent with the {@code imagpart} ACL2 function.
      *
      * @return The imaginary part of this ACL2 complex rational.
      */

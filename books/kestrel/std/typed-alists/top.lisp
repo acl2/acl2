@@ -13,6 +13,7 @@
 (include-book "string-symbollist-alistp")
 (include-book "symbol-nat-alistp")
 (include-book "symbol-string-alistp")
+(include-book "symbol-symbol-alistp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -91,6 +91,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-achars-to-jhexcodes ((achars character-listp))
   :returns (jexprs jexpr-listp)
   :short "Turn a list of ACL2 characters
@@ -103,6 +105,8 @@
                                          :long? nil
                                          :base (jintbase-hexadecimal)))
                  (atj-achars-to-jhexcodes (cdr achars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-jstring ((astring stringp))
   :returns (jexpr jexprp)
@@ -130,6 +134,8 @@
         (jexpr-literal-string astring)
       (jexpr-newarray-init (jtype-char) (atj-achars-to-jhexcodes achars)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-jparamlist ((names string-listp) (jtypes jtype-listp))
   :guard (= (len names) (len jtypes))
   :returns (jparams jparam-listp)
@@ -146,6 +152,8 @@
                               :type (car jtypes)
                               :name (car names))
                  (atj-gen-jparamlist (cdr names) (cdr jtypes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-achar-to-jchars-id ((achar characterp)
                                 (startp booleanp)
@@ -201,6 +209,8 @@
                 ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-achars-to-jchars-id ((achars character-listp)
                                  (startp booleanp)
                                  (flip-case-p booleanp))
@@ -217,6 +227,8 @@
   (cond ((endp achars) nil)
         (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
                    (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-jlocvar-indexed
   ((var-type jtypep "Type of the local variable.")
@@ -249,6 +261,8 @@
              (posp (mv-nth 2 (atj-gen-jlocvar-indexed
                               var-type var-base var-index var-init))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-achar ((achar characterp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 character."
@@ -256,12 +270,16 @@
                  "make"
                  (list (jexpr-literal-character achar))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-astring ((astring stringp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 string."
   (jexpr-smethod *atj-jtype-string*
                  "make"
                  (list (atj-gen-jstring astring))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-asymbol ((asymbol symbolp))
   :returns (jexpr jexprp)
@@ -327,6 +345,8 @@
      ///
      (assert-event (symbol-string-alistp *atj-gen-asymbol-alist*)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-ainteger ((ainteger integerp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 integer."
@@ -368,6 +388,8 @@
                    "make"
                    (list arg))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-arational ((arational rationalp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 rational."
@@ -376,6 +398,8 @@
                  (list (atj-gen-ainteger (numerator arational))
                        (atj-gen-ainteger (denominator arational)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-anumber ((anumber acl2-numberp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 number."
@@ -383,6 +407,8 @@
                  "make"
                  (list (atj-gen-arational (realpart anumber))
                        (atj-gen-arational (imagpart anumber)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-gen-avalue
   :short "Generate Java code to build an ACL2 value."
@@ -481,6 +507,8 @@
   ///
   (verify-guards atj-gen-avalue))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-avalues ((avalues true-listp)
                          (jvar-value-base stringp)
                          (jvar-value-index posp))
@@ -503,12 +531,16 @@
                  (cons first-jexpr rest-jexrps)
                  jvar-value-index)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-asymbols ((asymbols symbol-listp))
   :returns (jexprs jexpr-listp)
   :short "Lift @(tsee atj-gen-asymbol) to lists."
   (cond ((endp asymbols) nil)
         (t (cons (atj-gen-asymbol (car asymbols))
                  (atj-gen-asymbols (cdr asymbols))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-aqconst
   ((aqconst "(Unquoted) value of the ACL2 quoted constant.")
@@ -529,12 +561,16 @@
                              (list value-jexpr))))
     (mv jblock jexpr jvar-value-index)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-deep-avar ((avar symbolp "The ACL2 variable."))
   :returns (jexpr jexprp)
   :short "Generate Java code to build a deeply embedded ACL2 variable."
   (jexpr-smethod *atj-jtype-var*
                  "make"
                  (list (atj-gen-asymbol avar))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-aformals ((aformals symbol-listp))
   :returns (jexpr jexprp)
@@ -545,6 +581,8 @@
    "The generated code builds an array of the formals as symbols.")
   (jexpr-newarray-init *atj-jtype-symbol*
                        (atj-gen-asymbols aformals)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-gen-deep-aterms+alambdas
   :short "Generate Java code to build
@@ -802,6 +840,8 @@
   (verify-guards atj-gen-deep-aterm
     :hints (("Goal" :in-theory (enable pseudo-termfnp acl2::pseudo-lambdap)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-disallowed-shallow-jvars*
   :short "Disallowed Java variable names
           for the shallowly embedded ACL2 variables."
@@ -828,6 +868,8 @@
   ///
   (assert-event (string-listp *atj-disallowed-shallow-jvars*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jvars*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-avar ((avar symbolp)
                               (index natp)
@@ -902,7 +944,7 @@
      all the variables in the current ACL2 function,
      organized by symbol name for easy lookup.
      We retrieve the variables with the same name of the variable,
-     we remove the variables from them,
+     we remove the variable being processed from them,
      and we check if the result is empty:
      in this case, this is the only variable with that name.
      (The alist may have duplicate symbols in its values.)")
@@ -953,6 +995,8 @@
                  (str::cat jvar "$")
                jvar)))
     jvar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-avars ((avars symbol-listp)
                                (jvar-indices symbol-nat-alistp)
@@ -1008,6 +1052,8 @@
                jvar-names)
         jvar-indices)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-disallowed-shallow-jclasses*
   :short "Disallowed Java class names
           for the shallowly embedded ACL2 packages."
@@ -1045,6 +1091,8 @@
   (assert-event (string-listp *atj-disallowed-shallow-jclasses*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jclasses*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-apkgname ((apkg stringp) (java-class$ stringp))
   :returns (jclass-name stringp)
   :short "Generate a shallowly embedded ACL2 package name."
@@ -1075,6 +1123,8 @@
                   jstring)))
     jstring))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-disallowed-shallow-jmethods*
   :short "Disallowed Java method names
           for the shallowly embedded ACL2 functions."
@@ -1098,6 +1148,8 @@
   ///
   (assert-event (string-listp *atj-disallowed-shallow-jmethods*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jmethods*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afnname ((afn symbolp) (curr-apkg stringp))
   :returns (jmethod-name stringp)
@@ -1147,6 +1199,8 @@
   :prepwork
   ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-let-bindings ((avars symbol-listp)
                                       (jexprs jexpr-listp)
                                       (types atj-type-listp)
@@ -1191,6 +1245,8 @@
                                                   jvar-names)))
     (append first-jblock rest-jblock)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-adapt-jexpr-to-type ((jexpr jexprp)
                                  (src-type atj-typep)
                                  (dst-type atj-typep))
@@ -1220,6 +1276,8 @@
       jexpr
     (jexpr-cast (atj-type-to-jtype dst-type) jexpr)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-adapt-jexprs-to-types ((jexprs jexpr-listp)
                                    (src-types atj-type-listp)
                                    (dst-types atj-type-listp))
@@ -1238,6 +1296,8 @@
                  (atj-adapt-jexprs-to-types (cdr jexprs)
                                             (cdr src-types)
                                             (cdr dst-types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-trim-alambda ((aformals symbol-listp)
                           (aargs pseudo-term-listp)
@@ -1292,6 +1352,8 @@
                (mv (cons (car aformals) rest-aformals)
                    (cons (car jargs) rest-jargs)
                    (cons (car types) rest-types)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-gen-shallow-aterms+alambdas
   :short "Generate shallowly embedded ACL2 terms and lambda expressions."
@@ -1790,7 +1852,6 @@
                                                    curr-pkg
                                                    avars-by-name))
          (jvar-names (append new-jvar-names jvar-names))
-
          (jvar-types (append (pairlis$ aformals types) jvar-types))
          (let-jblock (atj-gen-shallow-let-bindings aformals
                                                    jargs
@@ -1949,6 +2010,8 @@
             jvar-result-index)))
     :measure (two-nats-measure (acl2-count aterms) 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-apkg-jmethod-name ((apkg stringp))
   :returns (jmethod-name stringp)
   :short "Name of the Java method that adds an ACL2 package definition."
@@ -1961,6 +2024,8 @@
     generated for the same class.")
   (str::cat "$addPackageDef_"
             (implode (atj-achars-to-jchars-id (explode apkg) nil nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-apkg-name ((apkg stringp))
   :returns (expr jexprp)
@@ -1995,6 +2060,8 @@
        ("ACL2-INPUT-CHANNEL"  . "Acl2PackageName.ACL2_INPUT")
        ("ACL2-PC"             . "Acl2PackageName.ACL2_PC")
        ("ACL2-USER"           . "Acl2PackageName.ACL2_USER")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-apkg-jmethod ((apkg stringp) (verbose$ booleanp))
   :returns (jmethod jmethodp)
@@ -2058,6 +2125,8 @@
                                                           jvar-aimports)))
                 (append first-jblock rest-jblock)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-apkg-jmethods ((apkgs string-listp) (verbose$ booleanp))
   :returns (jmethods jmethod-listp)
   :short "Generate all the Java methods that add the ACL2 package definitions."
@@ -2066,6 +2135,8 @@
     (b* ((first-jmethod (atj-gen-apkg-jmethod (car apkgs) verbose$))
          (rest-jmethods (atj-gen-apkg-jmethods (cdr apkgs) verbose$)))
       (cons first-jmethod rest-jmethods))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-apkgs ((apkgs string-listp))
   :returns (jblock jblockp)
@@ -2083,6 +2154,8 @@
          (rest-jblock (atj-gen-apkgs (cdr apkgs))))
       (append first-jblock rest-jblock))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-apkg-witness ()
   :returns (jblock jblockp)
   :short "Generate Java code to set the name of the ACL2 package witness."
@@ -2093,6 +2166,8 @@
   (jblock-smethod *atj-jtype-pkg*
                   "setWitnessName"
                   (list (atj-gen-jstring *pkg-witness-name*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-afndef-jmethod-name ((afn symbolp))
   :returns (method-name stringp)
@@ -2111,6 +2186,8 @@
                                       (symbol-package-name afn)) nil nil))
    "$$$"
    (implode (atj-achars-to-jchars-id (explode (symbol-name afn)) nil t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-afndef-jmethod ((afn symbolp)
                                      (guards$ booleanp)
@@ -2187,6 +2264,8 @@
                   :throws nil
                   :body jmethod-body)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-deep-afndef-jmethods ((afns symbol-listp)
                                       (guards$ booleanp)
                                       (verbose$ booleanp)
@@ -2202,6 +2281,8 @@
          (rest-jmethods
           (atj-gen-deep-afndef-jmethods (cdr afns) guards$ verbose$ state)))
       (cons first-jmethod rest-jmethods))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-afndefs ((afns symbol-listp))
   :returns (jblock jblockp)
@@ -2219,6 +2300,8 @@
          (first-jblock (jblock-method jmethod-name nil))
          (rest-jblock (atj-gen-deep-afndefs (cdr afns))))
       (append first-jblock rest-jblock))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afnnative ((afn symbolp)
                                    (guards$ booleanp)
@@ -2374,6 +2457,8 @@
                   :body jmethod-body))
   :guard-hints (("Goal" :in-theory (enable atj-aij-nativep primitivep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-afndef ((afn symbolp)
                                 (guards$ booleanp)
                                 (verbose$ booleanp)
@@ -2481,6 +2566,8 @@
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-afn ((afn symbolp)
                              (guards$ booleanp)
                              (verbose$ booleanp)
@@ -2495,6 +2582,8 @@
   (if (atj-aij-nativep afn)
       (atj-gen-shallow-afnnative afn guards$ curr-pkg (w state))
     (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
                               (guards$ booleanp)
@@ -2518,6 +2607,8 @@
                                                      curr-pkg
                                                      state)))
              (cons first-jmethod rest-jmethods)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afns-in-apkg ((afns symbol-listp)
                                       (apkg stringp)
@@ -2551,6 +2642,8 @@
                  :superclass? nil
                  :superinterfaces nil
                  :body (jmethods-to-jcmembers jclass-methods))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afns-by-apkg ((afns-by-apkg string-symbollist-alistp)
                                       (guards$ booleanp)
@@ -2592,6 +2685,8 @@
                                                                     verbose$
                                                                     state)))
                 (cons first-jclass rest-jclasses)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-init-jmethod ((apkgs string-listp)
                               (afns symbol-listp)
@@ -2657,6 +2752,8 @@
                   :throws nil
                   :body jmethod-body)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-init-jfield ()
   :returns (jfield jfieldp)
   :short "Generate the Java field for the initialization flag."
@@ -2674,6 +2771,8 @@
                :type (jtype-boolean)
                :name "initialized"
                :init (jexpr-literal-false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-call-jmethod ()
   :returns (jmethod jmethodp)
@@ -2723,6 +2822,8 @@
                   :params jmethod-params
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-jclass ((apkgs string-listp)
                         (afns symbol-listp)
@@ -2792,6 +2893,8 @@
                  :superinterfaces nil
                  :body body-jclass)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-test-failures-jfield ()
   :returns (jfield jfieldp)
   :short "Generate the Java field that keeps track of failures
@@ -2812,6 +2915,8 @@
                :name "failures"
                :init (jexpr-literal-false)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-test-jmethod-name ((test-name stringp))
   :returns (jmethod-name stringp)
   :short "Name of the Java method to run one of the specified tests."
@@ -2830,6 +2935,8 @@
    (xdoc::p
     "The argument of this function is the name of the test."))
   (str::cat "test_" test-name))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-jmethod ((test$ atj-testp)
                               (deep$ booleanp)
@@ -3121,6 +3228,8 @@
                 (mv (append first-jblock rest-jblock)
                     (cons first-jvar rest-jvars))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-test-jmethods ((tests$ atj-test-listp)
                                (deep$ booleanp)
                                (java-class$ stringp)
@@ -3141,6 +3250,8 @@
           (atj-gen-test-jmethods (cdr tests$) deep$ java-class$ verbose$ wrld)))
       (cons first-jmethod rest-jmethods))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-run-tests ((tests$ atj-test-listp))
   :returns (jblock jblockp)
   :short "Generate Java code to run the specified tests."
@@ -3159,6 +3270,8 @@
          (first-jblock (jblock-method jmethod-name (list (jexpr-name "n"))))
          (rest-jblock (atj-gen-run-tests (cdr tests$))))
       (append first-jblock rest-jblock))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-main-jmethod ((tests$ atj-test-listp)
                                    (java-class$ stringp))
@@ -3242,6 +3355,8 @@
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-test-jclass ((tests$ atj-test-listp)
                              (deep$ booleanp)
                              (java-class$ stringp)
@@ -3278,6 +3393,8 @@
                  :superinterfaces nil
                  :body body-jclass)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-jcunit ((deep$ booleanp)
                         (guards$ booleanp)
                         (java-package$ maybe-stringp)
@@ -3302,6 +3419,8 @@
                                             verbose$
                                             state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-test-jcunit ((deep$ booleanp)
                              (java-package$ maybe-stringp)
                              (java-class$ stringp)
@@ -3316,6 +3435,8 @@
                               "java.math.BigInteger")
                :types (list (atj-gen-test-jclass
                              tests$ deep$ java-class$ verbose$ wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-jfile ((deep$ booleanp)
                        (guards$ booleanp)
@@ -3340,6 +3461,8 @@
                   output-file$
                   state))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-test-jfile ((deep$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
@@ -3358,6 +3481,8 @@
                                                      (w state)))
                   output-file-test$
                   state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)

@@ -10,12 +10,12 @@
 
 (in-package "ACL2")
 
-(include-book "std/alists/top" :dir :system)
 (include-book "std/util/defalist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defalist symbol-nat-alistp (x)
+  :parents (std/typed-alists)
   :short "Recognize alists from symbols to natural numbers."
   :key (symbolp x)
   :val (natp x)

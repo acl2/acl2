@@ -23,6 +23,8 @@
 
 (xdoc::evmac-topic-input-processing atj)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-process-targets ((targets true-listp) ctx state)
   :returns (mv erp
                (result "Always @('nil').")
@@ -43,6 +45,8 @@
                                                 targets)
                                            t nil)))
     (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
@@ -66,6 +70,8 @@
                    the name of the Java package of AIJ ~x1."
                   java-package *atj-aij-jpackage*)))
     (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-default-java-class*
   :short "Default Java class name to use if @(':java-class') is @('nil')."
@@ -92,6 +98,8 @@
        (name (or java-class *atj-default-java-class*)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-ensure-terms-quoted-constants
   ((qcs pseudo-term-listp "@('qc1'), @('qc2'), etc.")
    (fn symbolp "The @('fn') in @('(fn qc1 qc2 ...)'); just for error messages.")
@@ -113,6 +121,8 @@
                    must be a quoted constant."
                   qc fn term)))
     (atj-ensure-terms-quoted-constants (cdr qcs) fn term ctx state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-tests (tests (targets$ symbol-listp) ctx state)
   :returns (mv erp
@@ -201,6 +211,8 @@
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
        (value (cons agg aggs))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-process-output-dir (output-dir
                                 (java-class$ stringp)
                                 (tests$ atj-test-listp)
@@ -269,6 +281,8 @@
                  (value :this-is-irrelevant))))
     (value (list file file-test))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-allowed-options*
   :short "Keyword options accepted by @(tsee atj)."
   (list :deep
@@ -281,6 +295,8 @@
   ///
   (assert-event (symbol-listp *atj-allowed-options*))
   (assert-event (no-duplicatesp-eq *atj-allowed-options*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp

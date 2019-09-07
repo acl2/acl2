@@ -14,16 +14,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist string-symbollist-alistp (x)
+(std::defalist symbol-symbol-alistp (x)
   :parents (std/typed-alists)
-  :short "Recognize alists from strings to true lists of symbols."
-  :key (stringp x)
-  :val (symbol-listp x)
+  :short "Recognize alists from symbols to symbols."
+  :key (symbolp x)
+  :val (symbolp x)
   :true-listp t
-  :keyp-of-nil nil
+  :keyp-of-nil t
   :valp-of-nil t
   ///
 
-  (defthm symbol-listp-of-cdr-of-assoc-equal-when-string-symbollist-alistp
-    (implies (string-symbollist-alistp alist)
-             (symbol-listp (cdr (assoc-equal key alist))))))
+  (defthm symbolp-of-cdr-of-assoc-equal-when-symbol-symbol-alistp
+    (implies (symbol-symbol-alistp alist)
+             (symbolp (cdr (assoc-equal key alist))))))

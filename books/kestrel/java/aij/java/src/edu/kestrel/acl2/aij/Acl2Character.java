@@ -49,7 +49,7 @@ public final class Acl2Character extends Acl2Value {
      * Checks if this ACL2 character is an ACL2 character.
      * This is consistent with the {@code characterp} ACL2 function.
      *
-     * @return Always the ACL2 symbol {@code t}.
+     * @return The ACL2 symbol {@code t}.
      */
     @Override
     Acl2Symbol characterp() {
@@ -60,7 +60,7 @@ public final class Acl2Character extends Acl2Value {
      * Returns the ACL2 integer code of this ACL2 character.
      * This is consistent with the {@code char-code} ACL2 function.
      *
-     * @return The code of this ACL2 character, as an ACL2 integer.
+     * @return The code of this ACL2 character.
      */
     @Override
     Acl2Integer charCode() {
@@ -72,7 +72,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with
      * the {@code char-fix} ACL2 (non-built-in) function.
      *
-     * @return Always this ACL2 character, unchanged.
+     * @return This ACL2 character, unchanged.
      */
     @Override
     Acl2Character charFix() {

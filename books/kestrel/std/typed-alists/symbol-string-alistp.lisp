@@ -10,12 +10,12 @@
 
 (in-package "ACL2")
 
-(include-book "std/alists/top" :dir :system)
 (include-book "std/util/defalist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defalist symbol-string-alistp (x)
+  :parents (std/typed-alists)
   :short "Recognize alists from symbols to strings."
   :key (symbolp  x)
   :val (stringp x)
