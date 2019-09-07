@@ -1852,7 +1852,6 @@
                                                    curr-pkg
                                                    avars-by-name))
          (jvar-names (append new-jvar-names jvar-names))
-
          (jvar-types (append (pairlis$ aformals types) jvar-types))
          (let-jblock (atj-gen-shallow-let-bindings aformals
                                                    jargs
