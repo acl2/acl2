@@ -631,7 +631,11 @@
              " This lambda expression must return
               a single (i.e. non-@(tsee acl2::mv)) result."
            "")
-        ,(cond ((eq guard t) " This lambda expression must be guard-verified.")
+        ,(cond ((eq guard t) " The body of this lambda expression
+                              must only call guard-verified functions,
+                              except possibly
+                              in the @(':logic') subterms of @(tsee acl2::mbe)s
+                              or via @(tsee acl2::ec-call).")
                ((eq guard nil) "")
                (t `(xdoc::&&
                     " If " ,guard ", then the body of this lambda expression
