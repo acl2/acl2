@@ -258,9 +258,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (avoid-lst (union-eq fun-args vars))
        (return-var (acl2::generate-variable '_ret avoid-lst nil nil wrld)))
     `(let ((,return-var ,body))
-       (if ,(acl2::subst-expr return-var
-                              `(,fun-name ,@fun-args)
-                              output-contract)
+       (if ,(subst-expr return-var
+                        `(,fun-name ,@fun-args)
+                        output-contract)
            ,return-var
          (er hard ',fun-name
              ;; harshrc-- Should we really give an hard
