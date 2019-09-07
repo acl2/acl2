@@ -124,7 +124,6 @@ on a per data definition basis or
  :proper nil)
 |#
 
-
 ;;jared's oset implementation
 ;; (defun set::non-empty-setp (x)
 ;;   (declare (xargs :guard t))

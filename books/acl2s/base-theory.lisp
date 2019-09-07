@@ -782,3 +782,37 @@ Useful for testing defunc/definec errors
                     head head-definition-rule
                     left left-definition-rule
                     right right-definition-rule))
+
+#||
+
+ Suppose I want to define a datatype corresponding to a non-empty list of
+ integers that ends with a natural number. Here's one way to do that.
+
+ (defdata loin (oneof (list nat)
+                      (cons integer loin)))
+
+ By defining the snoc constructor, we can instead 
+
+ (defdata loi (listof int))
+ (defdata loins (snoc loi nat))
+
+ (defdata-equal-strict loin loins)
+
+||#
+
+(definec snoc (l :tl e :all) :ne-tl
+  (append l (list e)))
+
+(definec snocl (l :ne-tl) :tl
+  (butlast l 1))
+
+(definec snocr (l :ne-tl) :all
+  (car (last l)))
+
+(register-data-constructor
+ (ne-tlp snoc)
+ ((tlp snocl) (allp snocr))
+ :rule-classes nil
+ :proper nil)
+
+
