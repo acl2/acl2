@@ -655,6 +655,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::evmac-desc-term
+  :short "Construct a common description text for an input that must be a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This text expresses some common requirements
+     on this kind of inputs to event macros.")
+   (xdoc::p
+    "This utility provides some customization facilities:")
+   (xdoc::ul
+    (xdoc::li
+     "The @('subject') parameter must be XDOC text
+      that describes the subject of the assertion of the requirements.
+      The default is the string @('\"It\"'),
+      which should be appropriate if this text follows
+      some preceding text that describes what the input is for.")
+    (xdoc::li
+     "The @('free-vars') parameter must be one of the following:
+      (i) XDOC text that describes the allowed free variables in the term;
+      (ii) @('nil') (the default) for no requirements on free variables.")
+    (xdoc::li
+     "The @('1res') parameter must be a boolean
+      that specifies whether the term
+      must return a single (i.e. non-@(tsee mv)) value or not.")
+    (xdoc::li
+     "The @('guard') parameter must be one of the following:
+      (i) XDOC text that describes the condition under which
+      the guards must be verified;
+      (ii) @('t'), to indicate that the guards must always be verified;
+      (iii) @('nil'), to indicate that there are no requirements
+      on the guards being verified.
+      The default is @('nil').")
+    (xdoc::li
+     "The @('dont-call') parameters must one of the following:
+      (i) XDOC text that describes functions that this term must not call;
+      (ii) @('nil') (the default),
+      to indicate that the term may call any function.")
+    (xdoc::li
+     "The @('additional') parameter must be one of the following:
+      (i) XDOC text that describes additional requirements
+      for the term (typically a sentence);
+      (ii) @('nil') (the default) for no additional text."))
+   (xdoc::p
+    "Looking at some uses of this utility should make it clearer.")
+   (xdoc::p
+    "This utility may need to be extended and generalized in the future,
+     in particular with more customization facilities."))
+
+  (defmacro xdoc::evmac-desc-term (&key
+                                   (subject '"It")
+                                   (free-vars 'nil)
+                                   (1res 'nil)
+                                   (guard 'nil)
+                                   (dont-call 'nil)
+                                   (additional 'nil))
+    `(xdoc::&&
+      (xdoc::p
+       ,subject
+       " must be a term that only references logic-mode functions"
+       ,(if free-vars
+            `(xdoc::&&
+              " and that includes no free variables other than "
+              ,free-vars)
+          "")
+       ". This term must have no output @(see acl2::stobj)s."
+       ,(if 1res
+            " This term must return
+              a single (i.e. non-@(tsee acl2::mv)) value."
+          "")
+       ,(cond ((eq guard t) " This term
+                             must only call guard-verified functions,
+                             except possibly
+                             in the @(':logic') subterms of @(tsee acl2::mbe)s
+                             or via @(tsee acl2::ec-call).")
+              ((eq guard nil) "")
+              (t `(xdoc::&&
+                   " If " ,guard ", then this term
+                    must only call guard-verified functions,
+                    except possibly
+                    in the @(':logic') subterms of @(tsee acl2::mbe)s
+                    or via @(tsee acl2::ec-call).")))
+       ,(if dont-call
+            `(xdoc::&& " This term must not reference " ,dont-call ".")
+          "")
+       ,(if additional
+            `(xdoc::&& " " ,additional)
+          "")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::evmac-topic-design-notes
   :short "Generate an XDOC topic for the design notes of an event macro."
   :long
