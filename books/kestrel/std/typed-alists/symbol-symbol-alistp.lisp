@@ -15,6 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defalist symbol-symbol-alistp (x)
+  :parents (std/typed-alists)
   :short "Recognize alists from symbols to symbols."
   :key (symbolp x)
   :val (symbolp x)

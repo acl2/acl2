@@ -15,6 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defalist symbol-nat-alistp (x)
+  :parents (std/typed-alists)
   :short "Recognize alists from symbols to natural numbers."
   :key (symbolp x)
   :val (natp x)
