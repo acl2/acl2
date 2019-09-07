@@ -106,18 +106,12 @@
       "Denotes the restricting predicate for the domain of @('old'),
        i.e. the predicate that will be added to the guard
        and as the test that wraps the body.")
-     (xdoc::p
-      "It must be a term
-       that includes no free variables other than @('x1'), ..., @('xn'),
-       that only calls logic-mode functions,
-       that returns a non-" (xdoc::seeurl "mv" "multiple") " value,
-       and that has no output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
-      "If the generated function is guard-verified
-       (which is determined by the @(':verify-guards') input; see below),
-       then the term must only call guard-verified functions,
-       except possibly in the @(':logic') subterms of @(tsee mbe)s
-       and via @(tsee ec-call).
-       The term must not include any calls to @('old').")
+     (xdoc::evmac-desc-term
+      :free-vars "@('x1'), ..., @('xn')"
+      :1res t
+      :guard "the generated function is guard-verified
+              (which is determined by the @(':verify-guards') input; see below)"
+      :dont-call "@('old')")
      (xdoc::p
       "The term denotes the predicate @('(lambda (x1 ... xn) restriction)').")
      (xdoc::p
@@ -130,19 +124,15 @@
      (xdoc::p
       "Denotes the value that the generated new function must return
        outside of the domain restriction.")
-     (xdoc::p
-      "It must be a term
-       that includes no free variables other than @('x1'), ..., @('xn'),
-       that only calls logic-mode functions,
-       that returns a non-" (xdoc::seeurl "mv" "multiple") " value,
-       and that has no output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
-      "The term must not include any calls to @('old').")
+     (xdoc::evmac-desc-term
+      :free-vars "@('x1'), ..., @('xn')"
+      :1res t
+      :guard nil
+      :dont-call "@('old')")
      (xdoc::p
       "Even if the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
-       the term may call non-guard-verified functions
-       outside of the @(':logic') subterms of @(tsee mbe)s
-       and not via @(tsee ec-call).
+       the term may call non-guard-verified functions.
        Since the term is governed by the negation of the guard
        (see the generated new function, below),
        the verification of its guards always succeeds trivially.")
