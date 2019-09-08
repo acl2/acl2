@@ -1382,6 +1382,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afnname ((afn symbolp) (curr-apkg stringp))
+  :guard (not (equal curr-apkg ""))
   :returns (jmethod-name stringp)
   :short "Generate a shallowly embedded ACL2 function name."
   :long
@@ -1621,6 +1622,7 @@
                                   (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (type "An @(tsee atj-typep).")
@@ -1742,6 +1744,7 @@
                                   (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (type "An @(tsee atj-typep).")
@@ -1839,6 +1842,7 @@
                                   (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (type "An @(tsee atj-typep).")
@@ -1979,7 +1983,8 @@
                                    (wrld plist-worldp))
     :guard (and (= (len aargs) (len aformals))
                 (= (len jargs) (len aformals))
-                (= (len types) (len aformals)))
+                (= (len types) (len aformals))
+                (not (equal curr-apkg "")))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (type "An @(tsee atj-typep).")
@@ -2040,6 +2045,7 @@
                                  (curr-apkg stringp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (type "An @(tsee atj-typep).")
@@ -2094,6 +2100,7 @@
                                   (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexpr-listp)
                  (types "An @(tsee atj-type-listp).")
@@ -2434,7 +2441,8 @@
                                    (curr-apkg stringp)
                                    (wrld plist-worldp))
   :guard (and (atj-aij-nativep afn)
-              (equal (symbol-package-name afn) curr-apkg))
+              (equal (symbol-package-name afn) curr-apkg)
+              (not (equal curr-apkg "")))
   :verify-guards nil
   :returns (jmethod jmethodp)
   :short "Generate a shallowly embedded ACL2 function
@@ -2590,7 +2598,8 @@
                                 (verbose$ booleanp)
                                 (curr-apkg stringp)
                                 state)
-  :guard (equal (symbol-package-name afn) curr-apkg)
+  :guard (and (equal (symbol-package-name afn) curr-apkg)
+              (not (equal curr-apkg "")))
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
@@ -2690,7 +2699,8 @@
                              (verbose$ booleanp)
                              (curr-apkg stringp)
                              state)
-  :guard (equal (symbol-package-name afn) curr-apkg)
+  :guard (and (equal (symbol-package-name afn) curr-apkg)
+              (not (equal curr-apkg "")))
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded
@@ -2707,8 +2717,9 @@
                               (verbose$ booleanp)
                               (curr-apkg stringp)
                               state)
-  :guard (equal (symbol-package-name-lst afns)
-                (repeat (len afns) curr-apkg))
+  :guard (and (equal (symbol-package-name-lst afns)
+                     (repeat (len afns) curr-apkg))
+              (not (equal curr-apkg "")))
   :returns (jmethods jmethod-listp)
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-afn) to lists."
