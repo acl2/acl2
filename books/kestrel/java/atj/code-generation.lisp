@@ -129,11 +129,17 @@
     "If the ACL2 string consists of only pritable ASCII characters
      (i.e. space and visible ASCII characters),
      we turn it into a Java string literal.
-     Otherwise, we turn it into a Java array creation expression."))
+     Otherwise, we turn it into a Java array creation expression
+     that is passed as argument to a Java class instance creation expression
+     for a @('String') object."))
   (b* ((achars (explode astring)))
     (if (printable-charlist-p achars)
         (jexpr-literal-string astring)
-      (jexpr-newarray-init (jtype-char) (atj-achars-to-jhexcodes achars)))))
+      (jexpr-newclass (jtype-class "String")
+                      (list
+                       (jexpr-newarray-init (jtype-char)
+                                            (atj-achars-to-jhexcodes
+                                             achars)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
