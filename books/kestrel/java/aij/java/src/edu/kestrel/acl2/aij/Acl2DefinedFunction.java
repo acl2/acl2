@@ -66,8 +66,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * Returns the number of parameters of this defined function.
      *
      * @return The number of parameters of this defined function.
-     * @throws IllegalStateException if this defined function
-     *                               has no actual definition yet
+     * @throws IllegalStateException If this defined function
+     *                               has no actual definition yet.
      */
     @Override
     int getArity() {
@@ -85,7 +85,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * (see @{@link Acl2Term#validateFunctionCalls()}).
      * Returns quickly if the function is already validated.
      *
-     * @throws IllegalStateException if the check fails
+     * @throws IllegalStateException If the check fails.
      */
     void validateDefinition() {
         if (validated)
@@ -112,7 +112,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * This is never the case, because that function is represented as
      * an instance of {@link Acl2NativeFunction}.
      *
-     * @return {@code false}
+     * @return {@code false}.
      */
     @Override
     boolean isIf() {
@@ -125,7 +125,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * This is never the case, because that function is represented as
      * an instance of {@link Acl2NativeFunction}.
      *
-     * @return {@code false}
+     * @return {@code false}.
      */
     @Override
     boolean isOr() {
@@ -139,8 +139,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      *
      * @param values The actual arguments to pass to the function.
      * @return The result of the function on the given arguments.
-     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails
+     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails.
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
@@ -173,12 +173,12 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      *
      * @param parameters The formal parameters of the function definition.
      * @param body       The body of the function definition.
-     * @throws IllegalArgumentException if parameters or body is null
+     * @throws IllegalArgumentException If parameters or body is null
      *                                  or the function definition is malformed
      *                                  in a way that
-     *                                  some valid variable index cannot be set
-     * @throws IllegalStateException    if the function is already defined,
-     *                                  or some variable index is already set
+     *                                  some valid variable index cannot be set.
+     * @throws IllegalStateException    If the function is already defined,
+     *                                  or some variable index is already set.
      */
     @Override
     public void define(Acl2Symbol[] parameters, Acl2Term body) {

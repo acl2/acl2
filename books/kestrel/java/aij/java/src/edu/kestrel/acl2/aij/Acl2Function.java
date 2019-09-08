@@ -27,15 +27,16 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Validates all the function calls in this function.
      * See the overriding methods for details.
      *
-     * @throws IllegalStateException if validation fails
+     * @throws IllegalStateException If validation fails.
      */
     abstract void validateFunctionCalls();
 
     /**
      * Returns the number of parameters of this function.
      *
-     * @throws IllegalStateException if this is a defined function
-     *                               without an actual definition yet
+     * @return The number of parameters of this function.
+     * @throws IllegalStateException If this is a defined function
+     *                               without an actual definition yet.
      */
     abstract int getArity();
 
@@ -43,17 +44,15 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Sets the indices of all the variables in this function.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException if this function is malformed
+     * @throws IllegalArgumentException If this function is malformed
      *                                  in a way that
-     *                                  some valid index cannot be set
-     * @throws IllegalStateException    if some index is already set
+     *                                  some valid index cannot be set.
+     * @throws IllegalStateException    If some index is already set.
      */
     abstract void setVariableIndices();
 
     /**
      * Checks if this function is the {@code if} ACL2 primitive function.
-     *
-     * @throws IllegalStateException if the "ACL2" package is not defined yet
      */
     abstract boolean isIf();
 
@@ -67,7 +66,10 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     /**
      * Applies this ACL2 function to the given ACL2 values.
      *
-     * @throws Acl2EvaluationException if the application fails
+     * @param values The actual arguments to pass to the function.
+     * @return The result of the function on the given arguments.
+     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails.
      */
     abstract Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException;
 
@@ -80,9 +82,9 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * then lambda expressions, ordered lexicographically according to
      * their list of formal parameters followed by their body.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this function is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @return A negative integer, zero, or a positive integer as
+     * this function is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public abstract int compareTo(Acl2Function o);
