@@ -1618,7 +1618,7 @@
                                   (jvar-value-index posp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp)
+                                  (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -1671,7 +1671,7 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-pkg
+                                                        curr-apkg
                                                         guards$
                                                         wrld))
          ((mv else-jblock
@@ -1684,7 +1684,7 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-pkg
+                                                        curr-apkg
                                                         guards$
                                                         wrld))
          ((mv then-jblock
@@ -1697,7 +1697,7 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-pkg
+                                                        curr-apkg
                                                         guards$
                                                         wrld))
          (type (atj-type-join else-type then-type))
@@ -1739,7 +1739,7 @@
                                   (jvar-value-index posp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp)
+                                  (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -1783,7 +1783,7 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-pkg
+                                                        curr-apkg
                                                         guards$
                                                         wrld))
          ((mv second-jblock
@@ -1796,7 +1796,7 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-pkg
+                                                        curr-apkg
                                                         guards$
                                                         wrld))
          (type (atj-type-join first-type second-type))
@@ -1836,7 +1836,7 @@
                                   (jvar-value-index posp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp)
+                                  (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -1890,7 +1890,7 @@
                                         jvar-value-index
                                         jvar-result-base
                                         jvar-result-index
-                                        curr-pkg
+                                        curr-apkg
                                         guards$
                                         wrld)
               (atj-gen-shallow-aifapp afirst
@@ -1901,7 +1901,7 @@
                                       jvar-value-index
                                       jvar-result-base
                                       jvar-result-index
-                                      curr-pkg
+                                      curr-apkg
                                       guards$
                                       wrld))))
          ((mv args-jblock
@@ -1914,7 +1914,7 @@
                                                          jvar-value-index
                                                          jvar-result-base
                                                          jvar-result-index
-                                                         curr-pkg
+                                                         curr-apkg
                                                          guards$
                                                          wrld))
          ((when (symbolp afn))
@@ -1929,7 +1929,7 @@
                       (mv type arg-jexprs))
                   (mv :value arg-jexprs))))
             (mv args-jblock
-                (jexpr-method (atj-gen-shallow-afnname afn curr-pkg)
+                (jexpr-method (atj-gen-shallow-afnname afn curr-apkg)
                               arg-jexprs)
                 type
                 jvar-value-index
@@ -1948,7 +1948,7 @@
                                                           jvar-value-index
                                                           jvar-result-base
                                                           jvar-result-index
-                                                          curr-pkg
+                                                          curr-apkg
                                                           guards$
                                                           wrld)))
       (mv (append args-jblock
@@ -1974,7 +1974,7 @@
                                    (jvar-value-index posp)
                                    (jvar-result-base stringp)
                                    (jvar-result-index posp)
-                                   (curr-pkg stringp)
+                                   (curr-apkg stringp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (and (= (len aargs) (len aformals))
@@ -2019,7 +2019,7 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-pkg
+                                                        curr-apkg
                                                         guards$
                                                         wrld)))
       (mv (append let-jblock body-jblock)
@@ -2037,7 +2037,7 @@
                                  (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
-                                 (curr-pkg stringp)
+                                 (curr-apkg stringp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -2080,7 +2080,7 @@
                                      jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
-                                     curr-pkg
+                                     curr-apkg
                                      guards$
                                      wrld)))
     :measure (two-nats-measure (acl2-count aterm) 0))
@@ -2091,7 +2091,7 @@
                                   (jvar-value-index posp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
-                                  (curr-pkg stringp)
+                                  (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (jblock jblockp)
@@ -2113,7 +2113,7 @@
                                                           jvar-value-index
                                                           jvar-result-base
                                                           jvar-result-index
-                                                          curr-pkg
+                                                          curr-apkg
                                                           guards$
                                                           wrld))
            ((mv rest-jblock
@@ -2126,7 +2126,7 @@
                                                            jvar-value-index
                                                            jvar-result-base
                                                            jvar-result-index
-                                                           curr-pkg
+                                                           curr-apkg
                                                            guards$
                                                            wrld)))
         (mv (append first-jblock rest-jblock)
@@ -2431,10 +2431,10 @@
 
 (define atj-gen-shallow-afnnative ((afn symbolp)
                                    (guards$ booleanp)
-                                   (curr-pkg stringp)
+                                   (curr-apkg stringp)
                                    (wrld plist-worldp))
   :guard (and (atj-aij-nativep afn)
-              (equal (symbol-package-name afn) curr-pkg))
+              (equal (symbol-package-name afn) curr-apkg))
   :verify-guards nil
   :returns (jmethod jmethodp)
   :short "Generate a shallowly embedded ACL2 function
@@ -2467,7 +2467,7 @@
      We call the corresponding method in AIJ's @('Acl2NativeFunction'),
      and in particular the one with @('UnderGuard') in its name,
      if one is available."))
-  (b* ((jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
+  (b* ((jmethod-name (atj-gen-shallow-afnname afn curr-apkg))
        (jmethod-param-names
         (case afn
           (intern-in-package-of-symbol (list "str" "sym"))
@@ -2588,9 +2588,9 @@
 (define atj-gen-shallow-afndef ((afn symbolp)
                                 (guards$ booleanp)
                                 (verbose$ booleanp)
-                                (curr-pkg stringp)
+                                (curr-apkg stringp)
                                 state)
-  :guard (equal (symbol-package-name afn) curr-pkg)
+  :guard (equal (symbol-package-name afn) curr-apkg)
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
@@ -2641,13 +2641,13 @@
   (b* ((wrld (w state))
        ((run-when verbose$)
         (cw "  ~s0~%" afn))
-       (jmethod-name (atj-gen-shallow-afnname afn curr-pkg))
+       (jmethod-name (atj-gen-shallow-afnname afn curr-apkg))
        (aformals (formals afn wrld))
        (abody (getpropc afn 'unnormalized-body))
        (abody (if guards$
                   (remove-mbe-logic-from-term abody)
                 (remove-mbe-exec-from-term abody)))
-       ((mv aformals abody) (atj-rename-aformals+abody aformals abody curr-pkg))
+       ((mv aformals abody) (atj-rename-aformals+abody aformals abody curr-apkg))
        ((mv afn-in-types
             afn-out-type) (if guards$
                               (b* ((afn-type (atj-get-function-type afn wrld)))
@@ -2663,7 +2663,7 @@
                                jvar-types
                                "$value" 1
                                "$result" 1
-                               curr-pkg
+                               curr-apkg
                                guards$
                                wrld))
        (abody-jexpr (atj-adapt-jexpr-to-type
@@ -2688,27 +2688,27 @@
 (define atj-gen-shallow-afn ((afn symbolp)
                              (guards$ booleanp)
                              (verbose$ booleanp)
-                             (curr-pkg stringp)
+                             (curr-apkg stringp)
                              state)
-  :guard (equal (symbol-package-name afn) curr-pkg)
+  :guard (equal (symbol-package-name afn) curr-apkg)
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
   (if (atj-aij-nativep afn)
-      (atj-gen-shallow-afnnative afn guards$ curr-pkg (w state))
-    (atj-gen-shallow-afndef afn guards$ verbose$ curr-pkg state)))
+      (atj-gen-shallow-afnnative afn guards$ curr-apkg (w state))
+    (atj-gen-shallow-afndef afn guards$ verbose$ curr-apkg state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-afns ((afns symbol-listp)
                               (guards$ booleanp)
                               (verbose$ booleanp)
-                              (curr-pkg stringp)
+                              (curr-apkg stringp)
                               state)
   :guard (equal (symbol-package-name-lst afns)
-                (repeat (len afns) curr-pkg))
+                (repeat (len afns) curr-apkg))
   :returns (jmethods jmethod-listp)
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-afn) to lists."
@@ -2716,12 +2716,12 @@
         (t (b* ((first-jmethod (atj-gen-shallow-afn (car afns)
                                                     guards$
                                                     verbose$
-                                                    curr-pkg
+                                                    curr-apkg
                                                     state))
                 (rest-jmethods (atj-gen-shallow-afns (cdr afns)
                                                      guards$
                                                      verbose$
-                                                     curr-pkg
+                                                     curr-apkg
                                                      state)))
              (cons first-jmethod rest-jmethods)))))
 
