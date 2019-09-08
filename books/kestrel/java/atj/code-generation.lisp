@@ -2656,7 +2656,7 @@
                             (mv (repeat (len aformals) :value)
                                 :value)))
        (jvar-types (pairlis$ aformals afn-in-types))
-       (jmethod-params (atj-gen-jparamlist (acl2::symbol-name-lst aformals)
+       (jmethod-params (atj-gen-jparamlist (symbol-name-lst aformals)
                                            (atj-types-to-jtypes afn-in-types)))
        ((mv abody-jblock abody-jexpr abody-type & &)
         (atj-gen-shallow-aterm abody

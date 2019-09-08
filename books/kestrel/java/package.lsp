@@ -83,6 +83,7 @@
                          string-symbollist-alistp
                          string-upcase
                          string=>nats
+                         symbol-name-lst
                          symbol-nat-alistp
                          symbol-string-alistp
                          symbol-symbol-alistp
