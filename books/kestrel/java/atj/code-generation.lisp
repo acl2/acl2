@@ -843,7 +843,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-disallowed-shallow-jvars*
+(defval *atj-disallowed-jvar-names*
   :short "Disallowed Java variable names
           for the shallowly embedded ACL2 variables."
   :long
@@ -867,8 +867,8 @@
           (list *atj-java-null-literal*)
           (list ""))
   ///
-  (assert-event (string-listp *atj-disallowed-shallow-jvars*))
-  (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jvars*)))
+  (assert-event (string-listp *atj-disallowed-jvar-names*))
+  (assert-event (no-duplicatesp-equal *atj-disallowed-jvar-names*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1000,7 +1000,7 @@
                                  (str::natchars index))))
        (jchars (append pname$$$-jchars name-jchars $$index-jchars))
        (new-name (implode jchars))
-       (new-name (if (member-equal new-name *atj-disallowed-shallow-jvars*)
+       (new-name (if (member-equal new-name *atj-disallowed-jvar-names*)
                      (str::cat new-name "$")
                    new-name)))
     (intern$ new-name curr-apkg)))
@@ -1284,7 +1284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-disallowed-shallow-jclasses*
+(defval *atj-disallowed-jclass-names*
   :short "Disallowed Java class names
           for the shallowly embedded ACL2 packages."
   :long
@@ -1318,8 +1318,8 @@
                 "ArrayList"
                 "List"))
   ///
-  (assert-event (string-listp *atj-disallowed-shallow-jclasses*))
-  (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jclasses*)))
+  (assert-event (string-listp *atj-disallowed-jclass-names*))
+  (assert-event (no-duplicatesp-equal *atj-disallowed-jclass-names*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1341,13 +1341,13 @@
      The resulting Java class name
      must not be a keyword, a boolean or null literal,
      or any of the imported Java classes
-     (see @(tsee *atj-disallowed-shallow-jclasses*)).
+     (see @(tsee *atj-disallowed-jclass-names*)).
      We also ensure that is is distinct from the main class generated.
      If the candidate Java class name is one of these,
      we add a @('$') at the end."))
   (b* ((jchars (atj-achars-to-jchars-id (explode apkg) t nil))
        (jstring (implode jchars))
-       (jstring (if (or (member-equal jstring *atj-disallowed-shallow-jclasses*)
+       (jstring (if (or (member-equal jstring *atj-disallowed-jclass-names*)
                         (equal jstring java-class$))
                     (str::cat jstring "$")
                   jstring)))
@@ -1355,7 +1355,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-disallowed-shallow-jmethods*
+(defval *atj-disallowed-jmethod-names*
   :short "Disallowed Java method names
           for the shallowly embedded ACL2 functions."
   :long
@@ -1376,8 +1376,8 @@
           (list *atj-java-null-literal*)
           (list ""))
   ///
-  (assert-event (string-listp *atj-disallowed-shallow-jmethods*))
-  (assert-event (no-duplicatesp-equal *atj-disallowed-shallow-jmethods*)))
+  (assert-event (string-listp *atj-disallowed-jmethod-names*))
+  (assert-event (no-duplicatesp-equal *atj-disallowed-jmethod-names*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1421,7 +1421,7 @@
        (jmethod-jchars (atj-achars-to-jchars-id (explode
                                                  (symbol-name afn)) t t))
        (jmethod-jchars (if (member-equal (implode jmethod-jchars)
-                                         *atj-disallowed-shallow-jmethods*)
+                                         *atj-disallowed-jmethod-names*)
                            (rcons #\$ jmethod-jchars)
                          jmethod-jchars))
        (jchars (append jclass.-jchars jmethod-jchars))
