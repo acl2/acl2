@@ -162,81 +162,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-achar-to-jchars-id ((achar characterp)
-                                (startp booleanp)
-                                (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (characterp achar))
-  :short "Turn an ACL2 character into one or more Java characters
-          of an ASCII Java identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For various purposes,
-     we want to turn ACL2 symbols and package names into Java identifiers.
-     ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
-     while Java identifiers may only contain certain Unicode characters;
-     when Unicode is restricted to ASCII,
-     Java identifiers are much more restricted than ACL2 symbols.
-     They are also more restricted than ACL2 package names,
-     although ACL2 package names have restrictions of their own
-     compared to Java identifiers, notably the uppercase restriction.")
-   (xdoc::p
-    "If an ACL2 character (part of an ACL2 symbol or package name) is a letter,
-     we keep it unchanged in forming the Java identifier,
-     but we flip it from uppercase to lowercase or from lowercase to uppercase
-     if the @('flip-case-p') flag is @('t'):
-     since ACL2 symbols often have uppercase letters,
-     by flipping them to lowercase we generate
-     more readable and idiomatic Java identifiers;
-     and flipping lowercase letters to uppercase letters avoids conflicts.
-     If the ACL2 character is a digit, we keep it unchanged
-     only if it is not at the start of the Java identifier:
-     this is indicated by the @('startp') flag.
-     Otherwise, we turn it into an ``escape'' consisting of
-     @('$') followed by two hexadecimal digits for the ASCII code of the digit.
-     We use this same mapping for all the ACL2 characters
-     that are neither letters nor digits,
-     except for dash, which is very common in ACL2 symbols and package names,
-     and which we map into an underscore in Java,
-     which is allowed in Java identifiers.
-     The hexadecimal digits greater than 9 are uppercase.
-     Note that @('$') itself, which is valid in Java identifiers,
-     is mapped to itself followed by its hex code (not just to itself)
-     when it appears in the ACL2 symbol or package name."))
-  (cond ((str::up-alpha-p achar) (if flip-case-p
-                                     (list (str::downcase-char achar))
-                                   (list achar)))
-        ((str::down-alpha-p achar) (if flip-case-p
-                                       (list (str::upcase-char achar))
-                                     (list achar)))
-        ((and (digit-char-p achar)
-              (not startp)) (list achar))
-        ((eql achar #\-) (list #\_))
-        (t (b* ((acode (char-code achar))
-                ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
-             (list #\$ hi-char lo-char)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-achars-to-jchars-id ((achars character-listp)
-                                 (startp booleanp)
-                                 (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (character-listp achars))
-  :short "Lift @(tsee atj-achar-to-jchars-id) to lists."
-  :long
-  (xdoc::topstring-p
-   "This is used on the sequence of characters
-    that form an ACL2 symbol or package name;
-    see the callers of this function for details.
-    The @('startp') flag becomes @('nil') at the first recursive call,
-    because after the first character
-    we are no longer at the start of the Java identifier.")
-  (cond ((endp achars) nil)
-        (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
-                   (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-gen-jlocvar-indexed
   ((var-type jtypep "Type of the local variable.")
    (var-base stringp "Base name of the local variable.")
@@ -846,6 +771,81 @@
   ///
   (verify-guards atj-gen-deep-aterm
     :hints (("Goal" :in-theory (enable pseudo-termfnp acl2::pseudo-lambdap)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-achar-to-jchars-id ((achar characterp)
+                                (startp booleanp)
+                                (flip-case-p booleanp))
+  :returns (jchars character-listp :hyp (characterp achar))
+  :short "Turn an ACL2 character into one or more Java characters
+          of an ASCII Java identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For various purposes,
+     we want to turn ACL2 symbols and package names into Java identifiers.
+     ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
+     while Java identifiers may only contain certain Unicode characters;
+     when Unicode is restricted to ASCII,
+     Java identifiers are much more restricted than ACL2 symbols.
+     They are also more restricted than ACL2 package names,
+     although ACL2 package names have restrictions of their own
+     compared to Java identifiers, notably the uppercase restriction.")
+   (xdoc::p
+    "If an ACL2 character (part of an ACL2 symbol or package name) is a letter,
+     we keep it unchanged in forming the Java identifier,
+     but we flip it from uppercase to lowercase or from lowercase to uppercase
+     if the @('flip-case-p') flag is @('t'):
+     since ACL2 symbols often have uppercase letters,
+     by flipping them to lowercase we generate
+     more readable and idiomatic Java identifiers;
+     and flipping lowercase letters to uppercase letters avoids conflicts.
+     If the ACL2 character is a digit, we keep it unchanged
+     only if it is not at the start of the Java identifier:
+     this is indicated by the @('startp') flag.
+     Otherwise, we turn it into an ``escape'' consisting of
+     @('$') followed by two hexadecimal digits for the ASCII code of the digit.
+     We use this same mapping for all the ACL2 characters
+     that are neither letters nor digits,
+     except for dash, which is very common in ACL2 symbols and package names,
+     and which we map into an underscore in Java,
+     which is allowed in Java identifiers.
+     The hexadecimal digits greater than 9 are uppercase.
+     Note that @('$') itself, which is valid in Java identifiers,
+     is mapped to itself followed by its hex code (not just to itself)
+     when it appears in the ACL2 symbol or package name."))
+  (cond ((str::up-alpha-p achar) (if flip-case-p
+                                     (list (str::downcase-char achar))
+                                   (list achar)))
+        ((str::down-alpha-p achar) (if flip-case-p
+                                       (list (str::upcase-char achar))
+                                     (list achar)))
+        ((and (digit-char-p achar)
+              (not startp)) (list achar))
+        ((eql achar #\-) (list #\_))
+        (t (b* ((acode (char-code achar))
+                ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
+             (list #\$ hi-char lo-char)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-achars-to-jchars-id ((achars character-listp)
+                                 (startp booleanp)
+                                 (flip-case-p booleanp))
+  :returns (jchars character-listp :hyp (character-listp achars))
+  :short "Lift @(tsee atj-achar-to-jchars-id) to lists."
+  :long
+  (xdoc::topstring-p
+   "This is used on the sequence of characters
+    that form an ACL2 symbol or package name;
+    see the callers of this function for details.
+    The @('startp') flag becomes @('nil') at the first recursive call,
+    because after the first character
+    we are no longer at the start of the Java identifier.")
+  (cond ((endp achars) nil)
+        (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
+                   (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
