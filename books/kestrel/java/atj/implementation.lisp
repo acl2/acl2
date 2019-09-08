@@ -128,7 +128,10 @@
       (i.e. the name of the Java variable generated from this ACL2 variable).
       This is used when renaming ACL2 variables to their Java names,
       in the shallow embedding approach.
-      See @(tsee atj-code-generation)."))
+      See @(tsee atj-code-generation).")
+    (xdoc::li
+     "@('curr-apkg') is the name of the ACL2 package of the ACL2 function
+      for which Java code is being generated."))
    (xdoc::p
     "The parameters of implementation functions that are not listed above
      are described in, or clear from, those functions' documentation."))
