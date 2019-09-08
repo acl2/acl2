@@ -88,7 +88,7 @@
      "@('avars-by-name') consists of all the free and bound variables
       that appear in the ACL2 function definition
       for which code is being generated.
-      The variables are organized as an alist from symbol names
+      These variables are organized as an alist from symbol names
       to the variables with the respective names.
       See @(tsee atj-code-generation).")
     (xdoc::li
@@ -101,6 +101,9 @@
       and deeply embedded ACL2 lambda expressions.
       See @(tsee atj-code-generation).")
     (xdoc::li
+     "@('jvar-result-base') is the base name of the Java local variable to use
+      to store the results of arguments of non-strict ACL2 functions.")
+    (xdoc::li
      "@('jvar-value-index'),
       @('jvar-term-index'), and
       @('jvar-lambda-index')
@@ -110,17 +113,22 @@
       and deeply embedded ACL2 lambda expressions.
       See @(tsee atj-code-generation).")
     (xdoc::li
-     "@('jvar-indices') is an alist with the indices
-      of the next Java local variable to use, for each ACL2 variable,
-      to construct shallowly embedded ACL2 terms and lambda expressions.")
-    (xdoc::li
      "@('jvar-result-index') is the index of the next Java local variable to use
       to store the results of arguments of non-strict ACL2 functions.")
     (xdoc::li
-     "@('jvar-names') is an alist with the names
-      of the current Java local variables
-      that represent ACL2 variables
-      when constructing shallowly embedded ACL2 terms and lambda expressions."))
+     "@('indices') is an alist from symbols to natural numbers,
+      which associates to each ACL2 variable the next index to use
+      to disambiguate a new instance of that variable from previous instances.
+      This is used when renaming ACL2 variables to their Java names,
+      in the shallow embedding approach.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
+     "@('renaming') is an alist from symbols to symbols,
+      which associates to each ACL2 variable its Java name
+      (i.e. the name of the Java variable generated from this ACL2 variable).
+      This is used when renaming ACL2 variables to their Java names,
+      in the shallow embedding approach.
+      See @(tsee atj-code-generation)."))
    (xdoc::p
     "The parameters of implementation functions that are not listed above
      are described in, or clear from, those functions' documentation."))
