@@ -22,7 +22,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Name of this function.
+     * Name of this ACL2 function.
      * This is never {@code null}.
      */
     private final Acl2Symbol name;
