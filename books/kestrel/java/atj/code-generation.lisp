@@ -14,7 +14,7 @@
 ; cert_param: non-acl2r
 
 (include-book "aij-notions")
-(include-book "types-for-natives")
+(include-book "types")
 (include-book "test-structures")
 (include-book "pretty-printer")
 
@@ -2458,11 +2458,11 @@
   (xdoc::topstring
    (xdoc::p
     "AIJ's @('Acl2NativeFunction') class provides native Java implementations
-     of some ACL2 functions, as public static Java methods.
+     of certain ACL2 functions, as public static Java methods.
      Thus, in the shallow embedding approach,
      we could translate references to these ACL2 functions
      to the names of those public static Java methods.
-     However, for greater uniformity,
+     However, for greater uniformity and readability,
      we generate wrapper Java methods
      for these natively implemented ACL2 functions.
      The names of these methods are constructed in the same way as
@@ -2470,18 +2470,27 @@
      These methods reside in the Java classes generated for
      the ACL2 packages of the ACL2 functions.")
    (xdoc::p
-    "If the @(':guards') input is @('nil'),
-     all the method's parameters and the method's result
-     have type @('Acl2Value').
-     We call the corresponding method in AIJ's @('Acl2NativeFunction').")
-   (xdoc::p
-    "If instead @(':guards') is @('t'),
-     the parameter and result type are determined from
-     the ACL2 function's input and output types,
+    "For each of these natively implemented ACL2 functions,
+     @('Acl2NativeFunction') has a corresponding Java method
+     that takes @('Acl2Value') objects as arguments.
+     For some of these functions,
+     @('Acl2NativeFunction') also has a variant Java method implementation
+     that takes argument objects of narrower types,
+     based on the guards of the functions:
+     these Java methods have @('UnderGuard') in their names.
+     For each of the latter functions,
+     the generated wrapper Java methods
+     call one or the other variant implementation
+     based on the ATJ input and output types
      retrieved from the @(tsee def-atj-function-type) table.
-     We call the corresponding method in AIJ's @('Acl2NativeFunction'),
-     and in particular the one with @('UnderGuard') in its name,
-     if one is available."))
+     If the @(':guards') input is @('nil'),
+     the table is not consulted,
+     and @(':value') is the type of every input and output.
+     If instead the @(':guards') is @('t'),
+     then the narrower types are used
+     only if the file @('types-for-natives.lisp') is included
+     prior to calling ATJ;
+     otherwise, @(':value') is the type of every input and output."))
   (b* ((jmethod-name (atj-gen-shallow-afnname afn curr-apkg))
        (jmethod-param-names
         (case afn
@@ -2517,59 +2526,59 @@
           (complex-rationalp "execComplexRationalp")
           (acl2-numberp "execAcl2Numberp")
           (consp "execConsp")
-          (char-code (if guards$
+          (char-code (if (equal afn-in-types '(:character))
                          "execCharCodeUnderGuard"
                        "execCharCode"))
-          (code-char (if guards$
+          (code-char (if (equal afn-in-types '(:integer))
                          "execCodeCharUnderGuard"
                        "execCodeChar"))
-          (coerce (if guards$
+          (coerce (if (equal afn-in-types '(:value :symbol))
                       "execCoerceUnderGuard"
                     "execCoerce"))
           (intern-in-package-of-symbol
-           (if guards$
+           (if (equal afn-in-types '(:string :symbol))
                "execInternInPackageOfSymbolUnderGuard"
              "execInternInPackageOfSymbol"))
-          (symbol-package-name (if guards$
+          (symbol-package-name (if (equal afn-in-types '(:symbol))
                                    "execSymbolPackageNameUnderGuard"
                                  "execSymbolPackageName"))
-          (symbol-name (if guards$
+          (symbol-name (if (equal afn-in-types '(:symbol))
                            "execSymbolNameUnderGuard"
                          "execSymbolName"))
-          (pkg-imports (if guards$
+          (pkg-imports (if (equal afn-in-types '(:string))
                            "execPkgImportsUnderGuard"
                          "execPkgImports"))
-          (pkg-witness (if guards$
+          (pkg-witness (if (equal afn-in-types '(:string))
                            "execPkgWitnessUnderGuard"
                          "execPkgWitness"))
-          (unary-- (if guards$
+          (unary-- (if (equal afn-in-types '(:number))
                        "execUnaryMinusUnderGuard"
                      "execUnaryMinus"))
-          (unary-/ (if guards$
+          (unary-/ (if (equal afn-in-types '(:number))
                        "execUnarySlashUnderGuard"
                      "execUnarySlash"))
-          (binary-+ (if guards$
+          (binary-+ (if (equal afn-in-types '(:number :number))
                         "execBinaryPlusUnderGuard"
                       "execBinaryPlus"))
-          (binary-* (if guards$
+          (binary-* (if (equal afn-in-types '(:number :number))
                         "execBinaryStarUnderGuard"
                       "execBinaryStar"))
-          (< (if guards$
+          (< (if (equal afn-in-types '(:rational :rational))
                  "execLessThanUnderGuard"
                "execLessThan"))
-          (complex (if guards$
+          (complex (if (equal afn-in-types '(:rational :rational))
                        "execComplexUnderGuard"
                      "execComplex"))
-          (realpart (if guards$
+          (realpart (if (equal afn-in-types '(:number))
                         "execRealPartUnderGuard"
                       "execRealPart"))
-          (imagpart (if guards$
+          (imagpart (if (equal afn-in-types '(:number))
                         "execImagPartUnderGuard"
                       "execImagPart"))
-          (numerator (if guards$
+          (numerator (if (equal afn-in-types '(:rational))
                          "execNumeratorUnderGuard"
                        "execNumerator"))
-          (denominator (if guards$
+          (denominator (if (equal afn-in-types '(:rational))
                            "execDenominatorUnderGuard"
                          "execDenominator"))
           (cons "execCons")
