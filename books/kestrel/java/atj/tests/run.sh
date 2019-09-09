@@ -2,7 +2,7 @@
 
 ################################################################################
 
-# Java Library -- ATJ -- Tests -- Execution
+# Java Library
 #
 # Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 #
@@ -29,29 +29,29 @@
 set -e
 
 # test the factorial function:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepUnderGuardsTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowUnderGuardsTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowGuardedTests 1
 
 # test the Fibonaccionacci function:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepUnderGuardsTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowUnderGuardsTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowGuardedTests 1
 
 # test the ABNF parser:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepUnderGuardsTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowUnderGuardsTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowGuardedTests 1
 
 # test AIJ's native implementations of ACL2 functions
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepUnderGuardsTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowUnderGuardsTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowGuardedTests
 
 # printed only if all the tests succeed:
 echo "" # blank line

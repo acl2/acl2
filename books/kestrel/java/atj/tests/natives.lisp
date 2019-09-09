@@ -1013,7 +1013,7 @@
            if
            :deep t
            :guards nil
-           :java-class "NativesDeep"
+           :java-class "NativesDeepUnguarded"
            :tests *all-tests*)
 
 (java::atj characterp
@@ -1049,7 +1049,7 @@
            if
            :deep t
            :guards t
-           :java-class "NativesDeepUnderGuards"
+           :java-class "NativesDeepGuarded"
            :tests *all-tests*)
 
 (java::atj characterp
@@ -1085,7 +1085,7 @@
            if
            :deep nil
            :guards nil
-           :java-class "NativesShallow"
+           :java-class "NativesShallowUnguarded"
            :tests *all-tests*)
 
 (java::atj characterp
@@ -1121,5 +1121,5 @@
            if
            :deep nil
            :guards t
-           :java-class "NativesShallowUnderGuards"
+           :java-class "NativesShallowGuarded"
            :tests *all-tests*)

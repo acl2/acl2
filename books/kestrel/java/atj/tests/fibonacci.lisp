@@ -43,23 +43,23 @@
 (java::atj fib
            :deep t
            :guards nil
-           :java-class "FibonacciDeep"
+           :java-class "FibonacciDeepUnguarded"
            :tests *fib-tests*)
 
 (java::atj fib
            :deep t
            :guards t
-           :java-class "FibonacciDeepUnderGuards"
+           :java-class "FibonacciDeepGuarded"
            :tests *fib-tests*)
 
 (java::atj fib
            :deep nil
            :guards nil
-           :java-class "FibonacciShallow"
+           :java-class "FibonacciShallowUnguarded"
            :tests *fib-tests*)
 
 (java::atj fib
            :deep nil
            :guards t
-           :java-class "FibonacciShallowUnderGuards"
+           :java-class "FibonacciShallowGuarded"
            :tests *fib-tests*)

@@ -10,7 +10,7 @@
 
 import edu.kestrel.acl2.aij.*;
 
-public class ABNFShallowTests {
+public class ABNFDeepGuardedTests {
 
     // Obtain an ACL2 list of natural numbers from the specified file.
     private static Acl2Value getInputFromFile(String filename)
@@ -36,6 +36,8 @@ public class ABNFShallowTests {
         throws Acl2EvaluationException,
                java.io.FileNotFoundException, java.io.IOException {
         System.out.print("Testing '" + testName + "'...");
+        Acl2Value[] functionArguments = new Acl2Value[]{input};
+        Acl2Symbol functionName = Acl2Symbol.make("ACL2", "PARSE-GRAMMAR");
         boolean pass = true;
         long[] times = n != 0 ? new long[n] : null;
         long minTime = 0;
@@ -44,7 +46,8 @@ public class ABNFShallowTests {
         int i = 0;
         do {
             long startTime = System.currentTimeMillis();
-            Acl2Value resultJava = ABNFShallow.ACL2.parse_grammar(input);
+            Acl2Value resultJava = ABNFDeepGuarded.call(functionName,
+                                                        functionArguments);
             long endTime = System.currentTimeMillis();
             // we just check that the result is not nil:
             pass = pass && !Acl2Symbol.NIL.equals(resultJava);
@@ -145,7 +148,7 @@ public class ABNFShallowTests {
         if (args.length > 1) {
             throw new IllegalArgumentException("There must be 0 or 1 arguments.");
         }
-        ABNFShallow.initialize();
+        ABNFDeepGuarded.initialize();
         test_ParseABNF(n);
         test_ParseJSON(n);
         test_ParseURI(n);

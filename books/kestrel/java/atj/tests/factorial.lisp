@@ -43,23 +43,23 @@
 (java::atj fact
            :deep t
            :guards nil
-           :java-class "FactorialDeep"
+           :java-class "FactorialDeepUnguarded"
            :tests *fact-tests*)
 
 (java::atj fact
            :deep t
            :guards t
-           :java-class "FactorialDeepUnderGuards"
+           :java-class "FactorialDeepGuarded"
            :tests *fact-tests*)
 
 (java::atj fact
            :deep nil
            :guards nil
-           :java-class "FactorialShallow"
+           :java-class "FactorialShallowUnguarded"
            :tests *fact-tests*)
 
 (java::atj fact
            :deep nil
            :guards t
-           :java-class "FactorialShallowUnderGuards"
+           :java-class "FactorialShallowGuarded"
            :tests *fact-tests*)
