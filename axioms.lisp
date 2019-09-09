@@ -13464,6 +13464,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     check-sum-obj
     verify-guards-fn1 ; to update *cl-cache*
     ev-fncall+-w
+    extend-current-theory
     ))
 
 (defconst *initial-logic-fns-with-raw-code*

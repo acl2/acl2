@@ -1512,6 +1512,7 @@
                     (nonconstructive-axiom-names nil)
                     (standard-theories (nil nil nil nil))
                     (current-theory nil)
+                    (current-theory-length 0)
                     (current-theory-augmented nil)
                     (current-theory-index -1)
                     (generalize-rules nil)
@@ -3189,7 +3190,8 @@
                    'table-alist
                    *initial-return-last-table*
                    (initialize-invariant-risk wrld)))))
-         (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1)))
+         (thy (current-theory1 wrld nil nil))
+         (wrld2 (update-current-theory thy (length thy) wrld1)))
     (add-command-landmark
      :logic
      '(exit-boot-strap-mode)
@@ -3326,32 +3328,35 @@
           (t
            (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
                                                state)))
-             (mv-let (theory theory-augmented-ignore)
+             (let ((length0 (length theory0)))
+               (mv-let (theory theory-augmented-ignore)
 
 ; The following call is similar to the one in update-current-theory.  But here,
 ; our aim is just to create an appropriate theory, without extending the
 ; world.
 
-               (extend-current-theory
-                (global-val 'current-theory wrld)
-                theory0
-                :none
-                wrld)
-               (declare (ignore theory-augmented-ignore))
-               (let ((wrld2 (putprop name 'theory theory wrld1)))
+                 (extend-current-theory
+                  (global-val 'current-theory wrld)
+                  (global-val 'current-theory-length wrld)
+                  theory0
+                  length0
+                  :none
+                  wrld)
+                 (declare (ignore theory-augmented-ignore))
+                 (let ((wrld2 (putprop name 'theory theory wrld1)))
 
 ; Note:  We do not permit DEFTHEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
 
-                 (install-event (length theory)
-                                event-form
-                                'deftheory
-                                name
-                                nil
-                                nil
-                                nil ; global theory is unchanged
-                                nil
-                                wrld2 state))))))))))))
+                   (install-event length0
+                                  event-form
+                                  'deftheory
+                                  name
+                                  nil
+                                  nil
+                                  nil ; global theory is unchanged
+                                  nil
+                                  wrld2 state)))))))))))))
 
 ; And now we move on to the in-theory event, in which we process a theory
 ; expression into a theory and then load it into the global enabled
@@ -3404,11 +3409,13 @@
         (t
          (let* ((ens1 (ens state))
                 (force-xnume-en1 (enabled-numep *force-xnume* ens1))
-                (imm-xnume-en1 (enabled-numep *immediate-force-modep-xnume* ens1))
-                (wrld1 (update-current-theory theory0 wrld))
+                (imm-xnume-en1 (enabled-numep *immediate-force-modep-xnume*
+                                              ens1))
+                (theory0-length (length theory0))
+                (wrld1 (update-current-theory theory0 theory0-length wrld))
                 (val (if (f-get-global 'script-mode state)
                          :CURRENT-THEORY-UPDATED
-                       (list :NUMBER-OF-ENABLED-RUNES (length theory0)))))
+                       (list :NUMBER-OF-ENABLED-RUNES theory0-length))))
 
 ; Note:  We do not permit IN-THEORY to be made redundant.  If this
 ; is changed, change the text of the :doc for redundant-events.
@@ -3448,8 +3455,9 @@
 
 ; After Version_3.0, the following differs from the fancier in-theory-fn.  The
 ; latter calls update-current-theory to deal with the 'current-theory and
-; related properties, 'current-theory-augmented and 'current-theory-index.
-; Someday we may want to make analogous changes to the present function.
+; related properties: 'current-theory-augmented, 'current-theory-length, and
+; 'current-theory-index.  Someday we may want to make analogous changes to the
+; present function.
 
   (when-logic
    "IN-ARITHMETIC-THEORY"

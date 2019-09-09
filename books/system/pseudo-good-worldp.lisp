@@ -908,7 +908,8 @@
 ; -----------------------------------------------------------------
 ; CURRENT-THEORY-INDEX [GLOBAL-VALUE]
 
-; The current-theory-index is the highest nume in use as of the setting of current-theory.
+; The current-theory-index is the highest nume in use as of the setting of
+; current-theory.
 
 (defun pseudo-current-theory-indexp (val)
   (or (pseudo-numep val)
@@ -1805,6 +1806,7 @@
     (NONCONSTRUCTIVE-AXIOM-NAMES (nonconstructive-axiom-namesp val))
     (STANDARD-THEORIES (pseudo-standard-theoriesp val))
     (CURRENT-THEORY (pseudo-current-theoryp val))
+    (CURRENT-THEORY-LENGTH (natp val))
     (CURRENT-THEORY-AUGMENTED (pseudo-current-theory-augmentedp val))
     (CURRENT-THEORY-INDEX (pseudo-current-theory-indexp val))
     (GENERALIZE-RULES (pseudo-generalize-rulesp val))
