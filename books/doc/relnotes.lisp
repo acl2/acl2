@@ -526,6 +526,10 @@
      which can be used to formally specify. at a very high and assured level,
      the concrete syntax of Java.")
 
+   (xdoc::p
+    "A model of Java Unicode characters has been added,
+     along with a model of their ASCII subset.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Kestrel Utilities")

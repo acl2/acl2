@@ -13,6 +13,7 @@
 ; the order of the following INCLUDE-BOOKs determines
 ; the order of the subtopics of the LANGUAGE topic below:
 (include-book "grammar")
+(include-book "unicode")
 (include-book "primitive-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

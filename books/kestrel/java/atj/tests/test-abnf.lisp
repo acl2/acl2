@@ -14,6 +14,8 @@
 
 (include-book "kestrel/abnf/concrete-syntax" :dir :system)
 
+(include-book "../types-for-natives")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; ABNF grammar parser.

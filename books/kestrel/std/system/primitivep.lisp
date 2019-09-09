@@ -17,7 +17,7 @@
 
 (define primitivep ((fn symbolp))
   :returns (yes/no booleanp)
-  :parents (world-queries)
+  :parents (std/system)
   :short "Check if a named function is @(see primitive)."
   :long
   (xdoc::topstring-p

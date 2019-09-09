@@ -12,6 +12,7 @@
 
 (include-book "aij-notions")
 
+(include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
 
