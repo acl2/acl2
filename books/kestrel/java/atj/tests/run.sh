@@ -29,16 +29,16 @@
 set -e
 
 # test the factorial function:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactDeepTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactDeepUnderGuardsTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactShallowTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactShallowUnderGuardsTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepUnderGuardsTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowUnderGuardsTests 1
 
-# test the Fibonacci function:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibDeepTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibDeepUnderGuardsTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibShallowTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibShallowUnderGuardsTests 1
+# test the Fibonaccionacci function:
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepUnderGuardsTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowUnderGuardsTests 1
 
 # test the ABNF parser:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepTests 1
@@ -48,10 +48,10 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowUnderG
 
 # test AIJ's native implementations of ACL2 functions
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeDeepUnderGuardsTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativeShallowUnderGuardsTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepUnderGuardsTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowUnderGuardsTests
 
 # printed only if all the tests succeed:
 echo "" # blank line

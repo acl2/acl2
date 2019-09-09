@@ -1,43 +1,45 @@
 *.class
 
-FactDeep.java
-FactDeepTests.java
+FactorialDeep.java
+FactorialDeepTests.java
 
-FactDeepUnderGuards.java
-FactDeepUnderGuardsTests.java
+FactorialDeepUnderGuards.java
+FactorialDeepUnderGuardsTests.java
 
-FactShallow.java
-FactShallowTests.java
+FactorialShallow.java
+FactorialShallowTests.java
 
-FactShallowUnderGuards.java
-FactShallowUnderGuardsTests.java
+FactorialShallowUnderGuards.java
+FactorialShallowUnderGuardsTests.java
 
-FibDeep.java
-FibDeepTests.java
+FibonacciDeep.java
+FibonacciDeepTests.java
 
-FibDeepUnderGuards.java
-FibDeepUnderGuardsTests.java
+FibonacciDeepUnderGuards.java
+FibonacciDeepUnderGuardsTests.java
 
-FibShallow.java
-FibShallowTests.java
+FibonacciShallow.java
+FibonacciShallowTests.java
 
-FibShallowUnderGuards.java
-FibShallowUnderGuardsTests.java
+FibonacciShallowUnderGuards.java
+FibonacciShallowUnderGuardsTests.java
 
 ABNFDeep.java
+
 ABNFDeepUnderGuards.java
 
 ABNFShallow.java
+
 ABNFShallowUnderGuards.java
 
-NativeDeep.java
-NativeDeepTests.java
+NativesDeep.java
+NativesDeepTests.java
 
-NativeDeepUnderGuards.java
-NativeDeepUnderGuardsTests.java
+NativesDeepUnderGuards.java
+NativesDeepUnderGuardsTests.java
 
-NativeShallow.java
-NativeShallowTests.java
+NativesShallow.java
+NativesShallowTests.java
 
-NativeShallowUnderGuards.java
-NativeShallowUnderGuardsTests.java
+NativesShallowUnderGuards.java
+NativesShallowUnderGuardsTests.java

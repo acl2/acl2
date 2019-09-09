@@ -29,12 +29,12 @@
 ; Tests for the factorial function.
 
 (defconst *fact-tests*
-  '(("Fact0" (fact 0))
-    ("Fact1" (fact 1))
-    ("Fact10" (fact 10))
-    ("Fact100" (fact 100))
-    ("Fact1000" (fact 1000))
-    ("Fact10000" (fact 10000))))
+  '(("Factorial0" (fact 0))
+    ("Factorial1" (fact 1))
+    ("Factorial10" (fact 10))
+    ("Factorial100" (fact 100))
+    ("Factorial1000" (fact 1000))
+    ("Factorial10000" (fact 10000))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,23 +43,23 @@
 (java::atj fact
            :deep t
            :guards nil
-           :java-class "FactDeep"
+           :java-class "FactorialDeep"
            :tests *fact-tests*)
 
 (java::atj fact
            :deep t
            :guards t
-           :java-class "FactDeepUnderGuards"
+           :java-class "FactorialDeepUnderGuards"
            :tests *fact-tests*)
 
 (java::atj fact
            :deep nil
            :guards nil
-           :java-class "FactShallow"
+           :java-class "FactorialShallow"
            :tests *fact-tests*)
 
 (java::atj fact
            :deep nil
            :guards t
-           :java-class "FactShallowUnderGuards"
+           :java-class "FactorialShallowUnderGuards"
            :tests *fact-tests*)

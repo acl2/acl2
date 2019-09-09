@@ -30,11 +30,11 @@
 ; Tests for the Fibonacci function.
 
 (defconst *fib-tests*
-  '(("Fib0" (fib 0))
-    ("Fib1" (fib 1))
-    ("Fib10" (fib 10))
-    ("Fib20" (fib 20))
-    ("Fib30" (fib 30))))
+  '(("Fibonacci0" (fib 0))
+    ("Fibonacci1" (fib 1))
+    ("Fibonacci10" (fib 10))
+    ("Fibonacci20" (fib 20))
+    ("Fibonacci30" (fib 30))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,23 +43,23 @@
 (java::atj fib
            :deep t
            :guards nil
-           :java-class "FibDeep"
+           :java-class "FibonacciDeep"
            :tests *fib-tests*)
 
 (java::atj fib
            :deep t
            :guards t
-           :java-class "FibDeepUnderGuards"
+           :java-class "FibonacciDeepUnderGuards"
            :tests *fib-tests*)
 
 (java::atj fib
            :deep nil
            :guards nil
-           :java-class "FibShallow"
+           :java-class "FibonacciShallow"
            :tests *fib-tests*)
 
 (java::atj fib
            :deep nil
            :guards t
-           :java-class "FibShallowUnderGuards"
+           :java-class "FibonacciShallowUnderGuards"
            :tests *fib-tests*)
