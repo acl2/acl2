@@ -157,7 +157,7 @@
 
   (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
                                            (logic? booleanp))
-    :returns (new-term "A @(tsee pseudo-termp).")
+    :returns (new-term pseudo-termp :hyp (pseudo-termp term))
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
          (fn (ffn-symb term))
@@ -179,7 +179,9 @@
 
   (define remove-mbe-logic/exec-from-terms ((terms pseudo-term-listp)
                                             (logic? booleanp))
-    :returns (new-terms "A @(tsee pseudo-term-listp).")
+    :returns (new-terms (and (pseudo-term-listp new-terms)
+                             (equal (len new-terms) (len terms)))
+                        :hyp (pseudo-term-listp terms))
     (b* (((when (endp terms)) nil)
          ((cons term terms) terms)
          (new-term (remove-mbe-logic/exec-from-term term logic?))
@@ -187,13 +189,13 @@
       (cons new-term new-terms))))
 
 (define remove-mbe-logic-from-term ((term pseudo-termp))
-  :returns (new-term "A @(tsee pseudo-termp).")
+  :returns (new-term pseudo-termp :hyp :guard)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':exec') part @('b')."
   (remove-mbe-logic/exec-from-term term t))
 
 (define remove-mbe-exec-from-term ((term pseudo-termp))
-  :returns (new-term "A @(tsee pseudo-termp).")
+  :returns (new-term pseudo-termp :hyp :guard)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a')."
   (remove-mbe-logic/exec-from-term term nil))
@@ -204,7 +206,7 @@
   :short "Unquote a term that is a quoted constant."
   :long
   (xdoc::topstring-p
-   "The result is the quoted values, which may have any type.")
+   "The result is the quoted value, which may have any type.")
   (unquote term))
 
 (define unquote-terms ((terms (and (pseudo-term-listp terms)
