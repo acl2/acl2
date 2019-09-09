@@ -43,16 +43,16 @@ Test*.java
 *.class
 
   Java class files generated when the corresponding source files are compiled
-  (e.g. by test-compile.sh, see below). These are not under version control.
+  (e.g. by compile.sh, see below). These are not under version control.
 
 
-test-compile.sh
+compile.sh
 
   Script to compile all the generated and handwritten Java files. Assumes that
   Java 12's javac is on the path.
 
 
-test-run.sh
+run.sh
 
   Script to run all the tests (with certain choices of inputs), collecting and
   printing time measurements. Assumes that Java 12's java is on the path.
