@@ -2103,7 +2103,7 @@
 
 ; Generate Java code for the parser, without tests.
 ; Currently, attempting to generate tests
-; for the grammar files under ./test-abnf-files
+; for the grammar files ./abnf-files/*.txt
 ; results in Java code whose test methods are too large to compile
 ; (they exceed the maximum size allowed by the JVM),
 ; because the contents of those files are built as lists of natural numbers.

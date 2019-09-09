@@ -225,7 +225,7 @@
     (run-abnf-tests (cdr inputs) (cdr grammars) n gcheck state)))
 
 ; The input to the ABNF grammar parser must be a true list of natural numbers,
-; read from one of the files test-abnf-files/*.txt.
+; read from one of the files ./abnf-files/*.txt.
 ; These are using the program-mode function READ-FILE-CHARACTERS,
 ; via the (necessarily program-mode) function GET-INPUT-FROM-FILE above.
 ; In order to run the ABNF grammar parser in logic mode,
@@ -235,31 +235,31 @@
 (progn
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/abnf.txt" state)
+     (get-input-from-file "abnf-files/abnf.txt" state)
      (value `(defconst *abnf* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/json.txt" state)
+     (get-input-from-file "abnf-files/json.txt" state)
      (value `(defconst *json* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/uri.txt" state)
+     (get-input-from-file "abnf-files/uri.txt" state)
      (value `(defconst *uri* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/http.txt" state)
+     (get-input-from-file "abnf-files/http.txt" state)
      (value `(defconst *http* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/imf.txt" state)
+     (get-input-from-file "abnf-files/imf.txt" state)
      (value `(defconst *imf* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/smtp.txt" state)
+     (get-input-from-file "abnf-files/smtp.txt" state)
      (value `(defconst *smtp* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "test-abnf-files/imap.txt" state)
+     (get-input-from-file "abnf-files/imap.txt" state)
      (value `(defconst *imap* ',nats)))))
 
 ; Making a call like the following in the ACL2 shell
