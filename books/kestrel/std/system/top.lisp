@@ -16,6 +16,7 @@
 (include-book "macro-required-args")
 (include-book "macro-symbolp")
 (include-book "primitivep")
+(include-book "remove-mbe")
 (include-book "theorem-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

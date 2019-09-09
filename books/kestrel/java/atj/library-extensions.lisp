@@ -143,63 +143,6 @@
 
 ; system:
 
-(defines remove-mbe-logic/exec-from-term
-  :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':logic') part @('a') or @(':exec') part @('b')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The choice is determinated by the boolean flag,
-     which is @('t') when the @(':logic') part is to be removed.")
-   (xdoc::p
-    "In translated terms,
-     @(tsee mbe)s have the form @('(return-last 'acl2::mbe1-raw b a)')."))
-
-  (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
-                                           (logic? booleanp))
-    :returns (new-term pseudo-termp :hyp (pseudo-termp term))
-    (b* (((when (variablep term)) term)
-         ((when (fquotep term)) term)
-         (fn (ffn-symb term))
-         (args (fargs term))
-         ((when (and (eq fn 'return-last)
-                     (equal (first args) '(quote acl2::mbe1-raw))))
-          (remove-mbe-logic/exec-from-term (if logic?
-                                               (second args)
-                                             (third args))
-                                           logic?))
-         (new-fn (if (symbolp fn)
-                     fn
-                   (make-lambda (lambda-formals fn)
-                                (remove-mbe-logic/exec-from-term
-                                 (lambda-body fn)
-                                 logic?))))
-         (new-args (remove-mbe-logic/exec-from-terms args logic?)))
-      (fcons-term new-fn new-args)))
-
-  (define remove-mbe-logic/exec-from-terms ((terms pseudo-term-listp)
-                                            (logic? booleanp))
-    :returns (new-terms (and (pseudo-term-listp new-terms)
-                             (equal (len new-terms) (len terms)))
-                        :hyp (pseudo-term-listp terms))
-    (b* (((when (endp terms)) nil)
-         ((cons term terms) terms)
-         (new-term (remove-mbe-logic/exec-from-term term logic?))
-         (new-terms (remove-mbe-logic/exec-from-terms terms logic?)))
-      (cons new-term new-terms))))
-
-(define remove-mbe-logic-from-term ((term pseudo-termp))
-  :returns (new-term pseudo-termp :hyp :guard)
-  :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':exec') part @('b')."
-  (remove-mbe-logic/exec-from-term term t))
-
-(define remove-mbe-exec-from-term ((term pseudo-termp))
-  :returns (new-term pseudo-termp :hyp :guard)
-  :short "Turn every call @('(mbe :logic a :exec b)') in a term
-          into just its @(':logic') part @('a')."
-  (remove-mbe-logic/exec-from-term term nil))
-
 (define unquote-term ((term (and (pseudo-termp term)
                                  (quotep term))))
   :returns value
