@@ -12,9 +12,9 @@
 
 (include-book "std/io/read-file-characters" :dir :system)
 
-(include-book "test-fact" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
-(include-book "test-fib" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
-(include-book "test-abnf" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "factorial" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "fibonacci" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "abnf" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
