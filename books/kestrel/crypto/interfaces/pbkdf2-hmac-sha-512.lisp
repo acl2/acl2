@@ -19,7 +19,7 @@
   :hmac hmac-sha-512
   :parents (interfaces)
   :short (xdoc::topstring
-          "PBKDF2 HMAC-SHA-512 " (xdoc::seeurl "interfaces" "interface") ".")
+          "PBKDF2 HMAC-SHA-512 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

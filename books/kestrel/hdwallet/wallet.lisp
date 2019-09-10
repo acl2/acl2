@@ -54,13 +54,13 @@
 
    (xdoc::p
     "The wallet is hierarchical deterministic, according to "
-    (xdoc::seeurl "bitcoin::bip32" "BIP 32")
+    (xdoc::seetopic "bitcoin::bip32" "BIP 32")
     ". It uses a mnemonic word sequence according to "
-    (xdoc::seeurl "bitcoin::bip39" "BIP 39")
+    (xdoc::seetopic "bitcoin::bip39" "BIP 39")
     ". Its internal structure is compliant with "
-    (xdoc::seeurl "bitcoin::bip43" "BIP 43")
+    (xdoc::seetopic "bitcoin::bip43" "BIP 43")
     " and "
-    (xdoc::seeurl "bitcoin::bip44" "BIP 44")
+    (xdoc::seetopic "bitcoin::bip44" "BIP 44")
     ".")
 
    (xdoc::p
@@ -1168,7 +1168,7 @@
      to sign a transaction with a key in the wallet.")
    (xdoc::p
     "In Ethereum, a transaction is a 9-tuple, as formalized "
-    (xdoc::seeurl "ethereum::transaction" "here")
+    (xdoc::seetopic "ethereum::transaction" "here")
     ". The first six components are inputs of this function:
      nonce, gas price, gas limit, recipient, value, and data.
      For now, we do not support contract creation transactions;

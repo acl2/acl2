@@ -67,7 +67,7 @@
     "The combined length of version prefix and payload
      must not exceed the (large) limit for SHA-256.
      See the guard of "
-    (xdoc::seeurl "crypto::sha-256-interface" "@('sha-256')")
+    (xdoc::seetopic "crypto::sha-256-interface" "@('sha-256')")
     ".")
    (xdoc::p
     "We require the version to be non-empty.

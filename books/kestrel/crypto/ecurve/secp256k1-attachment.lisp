@@ -19,7 +19,7 @@
   :parents (crypto::attachments elliptic-curves)
   :short (xdoc::topstring
           "Executable attachment for the "
-          (xdoc::seeurl "secp256k1-interface"
+          (xdoc::seetopic "secp256k1-interface"
                         "elliptic curve secp256k1 interface")
           ".")
   :long

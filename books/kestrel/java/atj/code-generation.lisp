@@ -1490,7 +1490,7 @@
    (xdoc::p
     "This is used when generating
      shallowly embedded ACL2 calls of named functions.
-     As explained " (xdoc::seeurl "atj-types" "here") ",
+     As explained " (xdoc::seetopic "atj-types" "here") ",
      when the type of an actual argument of a function call
      is wider than the type of the formal argument,
      a cast is inserted in the generated Java code.")
@@ -1611,7 +1611,7 @@
      types are calculated for the ACL2 terms and used to determine
      the types to use for the generated Java local variables
      and any necessary Java type cast to be generated.
-     See the discussion " (xdoc::seeurl "atj-types" "here") ".
+     See the discussion " (xdoc::seetopic "atj-types" "here") ".
      These types are returned as results by these code generation functions.
      If the @(':guards') input is @('nil'),
      all these types are always equal to the type of all ACL2 values,

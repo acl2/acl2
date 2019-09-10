@@ -774,7 +774,7 @@
     (xdoc::li
      "A string for the @('href') link with the actual notes,
       normally of the form @('res/.../<notes>.pdf'), based on the "
-     (xdoc::seeurl "xdoc::add-resource-directory" "XDOC resource directory")
+     (xdoc::seetopic "xdoc::add-resource-directory" "XDOC resource directory")
      ".")
     (xdoc::li
      "A list of additional parent topics, besides the macro itself.")
@@ -898,10 +898,10 @@
            (long (xdoc::topstring-p
                   "This involves validating the inputs.
                    When validation fails, "
-                  (xdoc::seeurl "acl2::er" "soft errors")
+                  (xdoc::seetopic "acl2::er" "soft errors")
                   " occur.
                    Thus, generally the input processing functions return "
-                  (xdoc::seeurl "acl2::error-triple" "error triples")
+                  (xdoc::seetopic "acl2::error-triple" "error triples")
                   ".")))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)

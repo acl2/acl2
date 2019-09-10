@@ -49,11 +49,11 @@
 
    (xdoc::p
     "The ACL2 functions accepted by ATJ may manipulate any ACL2 value: "
-    (xdoc::seeurl "acl2::characters" "characters") ", "
-    (xdoc::seeurl "acl2::strings" "strings") ", "
-    (xdoc::seeurl "acl2::symbols" "symbols") ", "
-    (xdoc::seeurl "acl2::numbers" "numbers") ", and "
-    (xdoc::seeurl "acl2::conses" "cons pairs") ". "
+    (xdoc::seetopic "acl2::characters" "characters") ", "
+    (xdoc::seetopic "acl2::strings" "strings") ", "
+    (xdoc::seetopic "acl2::symbols" "symbols") ", "
+    (xdoc::seetopic "acl2::numbers" "numbers") ", and "
+    (xdoc::seetopic "acl2::conses" "cons pairs") ". "
     "The Java code that corresponds to the ACL2 functions
      manipulates Java representations of the ACL2 values.")
 
@@ -83,7 +83,7 @@
 
    (xdoc::p
     "ATJ also accepts all the "
-    (xdoc::seeurl "acl2::primitive" "ACL2 primitive functions") ". "
+    (xdoc::seetopic "acl2::primitive" "ACL2 primitive functions") ". "
     "The Java code that corresponds to these ACL2 functions
      has the input/output behavior documented for these functions.")
 
@@ -104,7 +104,7 @@
 
    (xdoc::p
     "ATJ does not accept functions that access "
-    (xdoc::seeurl "acl2::stobj" "stobjs") ". "
+    (xdoc::seetopic "acl2::stobj" "stobjs") ". "
     "Support for stobjs, and destructive updates of stobjs,
      may be added in the future.")
 
@@ -135,7 +135,7 @@
      on (Java representations of) explicit ACL2 values.
      Access to global variables
      like @(tsee state) or user-defined "
-    (xdoc::seeurl "acl2::stobj" "stobjs")
+    (xdoc::seetopic "acl2::stobj" "stobjs")
     " is therefore not supported;
      in particular, the generated Java code has no access to
      the ACL2/Lisp environment.
@@ -244,9 +244,9 @@
       and no raw Lisp code (unless it is in the whitelist),
       or is natively implemented in AIJ
       (currently, this is equivalent to the function being "
-     (xdoc::seeurl "acl2::primitive" "primitive") ").
+     (xdoc::seetopic "acl2::primitive" "primitive") ").
       Each of these functions must have
-      no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") ".
+      no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
       (in the unnormalized body, if not natively implemented in AIJ)
       only functions that satisfy the same constraints.")

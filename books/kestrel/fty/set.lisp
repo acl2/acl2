@@ -20,9 +20,9 @@
   :parents (fty::fty-extensions fty::specific-types std/osets)
   :short
   (xdoc::topstring "A "
-                   (xdoc::seeurl "fty::fty" "fixtype")
+                   (xdoc::seetopic "fty::fty" "fixtype")
                    " of "
-                   (xdoc::seeurl "std/osets" "osets")
+                   (xdoc::seetopic "std/osets" "osets")
                    ".")
   :long
   (xdoc::topstring

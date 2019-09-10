@@ -23,13 +23,13 @@
     "Ethereum uses a number of cryptographic functions
      that are described in external standards.
      Our Ethereum model uses cryptographic functions from "
-    (xdoc::seeurl "crypto::cryptography" "external libraries")
+    (xdoc::seetopic "crypto::cryptography" "external libraries")
     ".")
    (xdoc::p
     "Our current Ethereum model uses the following cryptographic functions:")
    (xdoc::ul
     (xdoc::li
-     (xdoc::seeurl "crypto::keccak-256-interface" "@('keccak-256-bytes')")
+     (xdoc::seetopic "crypto::keccak-256-interface" "@('keccak-256-bytes')")
      ", which corresponds to @($\\mathtt{KEC}$) [YP:3].")
     (xdoc::li
      "@(tsee secp256k1-priv-to-pub),

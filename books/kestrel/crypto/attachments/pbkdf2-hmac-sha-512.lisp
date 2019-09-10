@@ -21,7 +21,7 @@
   :parents (attachments)
   :short (xdoc::topstring
           "Executable attachment for the "
-          (xdoc::seeurl "pbkdf2-hmac-sha-512-interface"
+          (xdoc::seetopic "pbkdf2-hmac-sha-512-interface"
                         "PBKDF2 HMAC-SHA-256 interface")
           ".")
   :long

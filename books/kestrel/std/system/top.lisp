@@ -26,7 +26,7 @@
   :short
   (xdoc::topstring
    "A library that complements the "
-   (xdoc::seeurl "system-utilities" "built-in system utilities")
+   (xdoc::seetopic "system-utilities" "built-in system utilities")
    " with theorems and non-built-in system utilities.")
   :long
   (xdoc::topstring

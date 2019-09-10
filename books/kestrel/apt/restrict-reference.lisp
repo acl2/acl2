@@ -55,8 +55,8 @@
        be in logic mode,
        be defined,
        have at least one formal argument,
-       return a non-" (xdoc::seeurl "mv" "multiple") " value, and
-       have no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
+       return a non-" (xdoc::seetopic "mv" "multiple") " value, and
+       have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
       "If @('old') is recursive, it must
        be singly (not mutually) recursive and
        not have a @(':?') measure (see @(':measure') in @(tsee xargs)).

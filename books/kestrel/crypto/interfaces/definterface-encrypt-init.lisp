@@ -21,7 +21,7 @@
 
   :short (xdoc::topstring
           "Introduce an "
-          (xdoc::seeurl "interfaces" "interface")
+          (xdoc::seetopic "interfaces" "interface")
           " for a cryptographic encryption function
            with an initialization vector.")
 

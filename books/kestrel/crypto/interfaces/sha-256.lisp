@@ -20,7 +20,7 @@
   :output-size 256
   :parents (interfaces)
   :short (xdoc::topstring
-          "SHA-256 " (xdoc::seeurl "interfaces" "interface") ".")
+          "SHA-256 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

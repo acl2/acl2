@@ -19,7 +19,7 @@
   (bitp x)
   :parents (typed-list-utilities bitp)
   :short (xdoc::topstring "Recognize true lists of "
-                          (xdoc::seeurl "bitp" "bits")
+                          (xdoc::seetopic "bitp" "bits")
                           ".")
   :true-listp t
   :elementp-of-nil nil)

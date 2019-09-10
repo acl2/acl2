@@ -24,9 +24,9 @@
   :short
   (xdoc::topstring
    "A "
-   (xdoc::seeurl "fty::fty" "fixtype")
+   (xdoc::seetopic "fty::fty" "fixtype")
    " of "
-   (xdoc::seeurl "bytep" "(unsigned 8-bit) bytes")
+   (xdoc::seetopic "bytep" "(unsigned 8-bit) bytes")
    ".")
   :long
   (xdoc::topstring-p

@@ -18,7 +18,7 @@
   :parents (crypto::interfaces elliptic-curve-digital-signature-algorithm)
   :short (xdoc::topstring
           "ECDSA "
-          (xdoc::seeurl "crypto::interfaces" "interface")
+          (xdoc::seetopic "crypto::interfaces" "interface")
           " for the elliptic curve secp256k1.")
   :long
   (xdoc::topstring

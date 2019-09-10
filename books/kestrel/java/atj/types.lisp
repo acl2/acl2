@@ -60,7 +60,7 @@
      (ii) proving that the guard implies that the output of the ACL2 function
      satisfies the ACL2 predicate corresponding to the output type.
      (Currently ATJ treats ACL2 functions that return "
-    (xdoc::seeurl "mv" "multiple values")
+    (xdoc::seetopic "mv" "multiple values")
     "as if they returned one list value;
      future versions of ATJ may treat these differently,
      in which case (ii) above should be modified to
@@ -115,7 +115,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are used for code generation, as explained "
-    (xdoc::seeurl "atj-types" "here")
+    (xdoc::seetopic "atj-types" "here")
     ".")
    (xdoc::p
     "Currently ATJ uses types corresponding to
@@ -426,7 +426,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is retrived from the "
-    (xdoc::seeurl "atj-function-type-table"
+    (xdoc::seetopic "atj-function-type-table"
                   "@(tsee def-atj-function-type) table")
     ". If the table has no entry for the function,
      a function type all consisting of @(':value') is returned."))

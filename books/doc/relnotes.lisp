@@ -127,7 +127,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "defarbrec" "Arbitrary Recursion Library"))
+   (xdoc::h4 (xdoc::seetopic "defarbrec" "Arbitrary Recursion Library"))
 
    (xdoc::p
     "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
@@ -135,9 +135,9 @@
      without having to prove termination right away.
      There exist similar macros in the community books,
      but the specifics of this new macro are motivated for use with "
-    (xdoc::seeurl "apt::apt" "APT")
+    (xdoc::seetopic "apt::apt" "APT")
     ". See the "
-    (xdoc::seeurl "defarbrec-related" "related tools section")
+    (xdoc::seetopic "defarbrec-related" "related tools section")
     " of the documentation of @(tsee defarbrec) for more information.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,16 +177,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "hdwallet::crypto-hdwallet"
+   (xdoc::h4 (xdoc::seetopic "hdwallet::crypto-hdwallet"
                            "Cryptocurrency Hierarchical Deterministic Wallet"))
 
    (xdoc::p
     "This is a simple proof of concept of
      a hierarchical deterministic wallet for cryptocurrencies,
      which makes use of the "
-    (xdoc::seeurl "crypto::cryptography" "cryptographic") ", "
-    (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin") ", and "
-    (xdoc::seeurl "ethereum::ethereum" "Ethereum") " libraries.")
+    (xdoc::seetopic "crypto::cryptography" "cryptographic") ", "
+    (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin") ", and "
+    (xdoc::seetopic "ethereum::ethereum" "Ethereum") " libraries.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +213,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std/system" "Standard System Library"))
+   (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
     "A new library for standard system utilities has been started. This is
@@ -224,7 +224,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std/typed-alists"
+   (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                            "Standards Typed Alists Library"))
 
    (xdoc::p
@@ -232,7 +232,7 @@
      to collect recognizers and theorems for typed alists,
      i.e. alists whose keys and values have specified types.
      This is analogous to "
-    (xdoc::seeurl "std/typed-lists" "the library for typed lists")
+    (xdoc::seetopic "std/typed-lists" "the library for typed lists")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,7 +241,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "apt::apt" "APT"))
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
 
    (xdoc::p
     "A new APT-specific XDOC constructor has been added.")
@@ -268,7 +268,7 @@
 
    (xdoc::p
     "@(tsee apt::parteval) has been extended to support "
-    (xdoc::seeurl "apt::untranslate-specifier" "untranslate specifiers")
+    (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -290,7 +290,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
+   (xdoc::h4 (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
     "Some theorems have been added to the BIP 32 formalization.")
@@ -301,27 +301,27 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
 
    (xdoc::p
-    "A " (xdoc::seeurl "ecurve::elliptic-curves" "sub-library for elliptic curves")
+    "A " (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
     " has been added,
      which currently contains all the secp256k1 domain parameters,
      and fixtypes for secp256k1 field elements, points, and keys.
      The parameters and the fixtypes that were previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
+    (xdoc::seetopic "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " have been removed from that interface,
      which now includes the domain parameters and the fixtypes
      from the new sub-library.")
 
    (xdoc::p
-    "A " (xdoc::seeurl "ecdsa::elliptic-curve-digital-signature-algorithm"
+    "A " (xdoc::seetopic "ecdsa::elliptic-curve-digital-signature-algorithm"
 		       "sub-library for ECDSA")
     " (Elliptic Curve Digital Signature Algorithm)
      has been added, which now contains the secp256k1 signing interface,
      which was previously part of the "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
+    (xdoc::seetopic "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface") ".")
 
    (xdoc::p
@@ -330,7 +330,7 @@
     sub-library is in @('[books]/kestrel/crypto/sha-2/').")
 
    (xdoc::p
-    "A " (xdoc::seeurl "keccak::keccak" "sub-library for KECCAK / SHA-3 hash functions")
+    "A " (xdoc::seetopic "keccak::keccak" "sub-library for KECCAK / SHA-3 hash functions")
      " has been added.")
 
    (xdoc::p
@@ -344,7 +344,7 @@
      as specified by RFC 8018, and specialized to use HMAC SHA-512,
      has been added.")
    ;; xdoc to be added later
-   ;; (xdoc::seeurl "kdf::pbkdf2-hmac-sha-512")
+   ;; (xdoc::seetopic "kdf::pbkdf2-hmac-sha-512")
 
    (xdoc::p
     "A sub-library has been added that includes formal specifications for
@@ -414,7 +414,7 @@
 
    (xdoc::p
     "The "
-    (xdoc::seeurl "ecurve::secp256k1-interface"
+    (xdoc::seetopic "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
 
@@ -429,7 +429,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
+   (xdoc::h4 (xdoc::seetopic "ethereum::ethereum" "Ethereum Library"))
 
    (xdoc::p
     "A function to construct signed transactions has been added.")
@@ -441,7 +441,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "event-macros" "Event Macros Library"))
+   (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
 
    (xdoc::p
     "XDOC constructors for documenting the implementation of event macros
@@ -453,7 +453,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
+   (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
 
    (xdoc::p
     "The @(tsee fty::defbyte) macro has been improved
@@ -469,11 +469,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "java::java" "Java Library"))
+   (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h5 (xdoc::seeurl "java::atj" "ATJ, the Java Code Generator for ACL2"))
+   (xdoc::h5 (xdoc::seetopic "java::atj" "ATJ, the Java Code Generator for ACL2"))
 
    (xdoc::p
     "ATJ has been extended with an option to generate Java code
@@ -498,7 +498,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h5 (xdoc::seeurl "java::aij"
+   (xdoc::h5 (xdoc::seetopic "java::aij"
                            "AIJ, the Deep Embedding of ACL2 into Java"))
 
    (xdoc::p
@@ -514,14 +514,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h5 (xdoc::seeurl "java::language" "Java Language Formalization"))
+   (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))
 
    (xdoc::p
     "An ABNF grammar has been added for the whole Java language,
      consisting of the lexical and syntactic sub-grammars
      from the Java language specification.
      The grammar files have been parser with "
-    (xdoc::seeurl "abnf::grammar-parser" "the verified ABNF grammar parser")
+    (xdoc::seetopic "abnf::grammar-parser" "the verified ABNF grammar parser")
     ", obtaining a formal representation of the grammar of Java,
      which can be used to formally specify. at a very high and assured level,
      the concrete syntax of Java.")
@@ -545,21 +545,21 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "list-utilities" "Kestrel List Utilities"))
+   (xdoc::h4 (xdoc::seetopic "list-utilities" "Kestrel List Utilities"))
 
    (xdoc::p
     "A theorem about @(tsee prefixp) has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "set::theorems-about-osets" "Kestrel Oset Theorems"))
+   (xdoc::h4 (xdoc::seetopic "set::theorems-about-osets" "Kestrel Oset Theorems"))
 
    (xdoc::p
     "A theorem has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
+   (xdoc::h4 (xdoc::seetopic "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
     "The functions @(tsee alist-map-keys) and @(tsee alist-map-vals)
@@ -568,7 +568,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std/basic" "Standard Basic Definitions"))
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Definitions"))
 
    (xdoc::p
     "The function @(tsee pos-fix),
@@ -583,7 +583,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "stobjs::std/stobjs" "Standard STOBJs Library"))
+   (xdoc::h4 (xdoc::seetopic "stobjs::std/stobjs" "Standard STOBJs Library"))
 
    (xdoc::p
     "The theorems about range equivalences in
@@ -600,11 +600,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std::std/util" "Standard Utilities Library"))
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
     "A new book @('std/util/defret-mutual-generate') provides a utility "
-    (xdoc::seeurl "std::defret-mutual-generate" "defret-mutual-generate")
+    (xdoc::seetopic "std::defret-mutual-generate" "defret-mutual-generate")
     " intended for generating mutually-inductive theorems over large mutual
      recursions by applying a set of rules referencing the @(see define)
      formals and returns to determine what hypotheses to assume and conclusions
@@ -616,7 +616,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "x86isa::x86isa" "X86ISA"))
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
 
    (xdoc::p
     "The following instructions have been added to the model:")
@@ -644,7 +644,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "xdoc" "XDOC"))
+   (xdoc::h4 (xdoc::seetopic "xdoc" "XDOC"))
 
    (xdoc::p
     "A new generic composite constructor has been added,
@@ -658,7 +658,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "aignet" "Aignet Library"))
+   (xdoc::h4 (xdoc::seetopic "aignet" "Aignet Library"))
 
    (xdoc::p
     "Added @('centaur/aignet/cube-sat.lisp'), containing utilities for checking
@@ -667,7 +667,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "gl::gl" "GL"))
+   (xdoc::h4 (xdoc::seetopic "gl::gl" "GL"))
 
    (xdoc::p
     "Changed accumulated-persistence-style profiling so that it doesn't count

@@ -37,14 +37,14 @@
    (xdoc::ul
     (xdoc::li
      "The needed "
-     (xdoc::seeurl "crypto::attachments" "cryptographic executable attachments")
+     (xdoc::seetopic "crypto::attachments" "cryptographic executable attachments")
      ".")
     (xdoc::li
      "The "
-     (xdoc::seeurl "bitcoin::bip32-executable-attachments"
+     (xdoc::seetopic "bitcoin::bip32-executable-attachments"
                    "BIP 32 executable attachments")
      ".")
     (xdoc::li
      "The raw Lisp code for some "
-     (xdoc::seeurl "oslib::oslib" "OSLIB")
+     (xdoc::seetopic "oslib::oslib" "OSLIB")
      " utilities. See `Loading the library' on that manual page."))))

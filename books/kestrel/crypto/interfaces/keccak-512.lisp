@@ -20,7 +20,7 @@
   :output-size 512
   :parents (interfaces)
   :short (xdoc::topstring
-          "Keccak-512 " (xdoc::seeurl "interfaces" "interface") ".")
+          "Keccak-512 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -38,7 +38,7 @@
    (xdoc::p
     "See also:"
     (xdoc::ul
-     (xdoc::li (xdoc::seeurl "keccak::keccak" "Keccak-512 executable specification"))))
+     (xdoc::li (xdoc::seetopic "keccak::keccak" "Keccak-512 executable specification"))))
    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

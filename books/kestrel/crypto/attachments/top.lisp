@@ -24,5 +24,5 @@
   (xdoc::topstring
    (xdoc::p
     "Here we provide executable attachments for "
-    (xdoc::seeurl "interfaces" "cryptographic interfaces")
+    (xdoc::seetopic "interfaces" "cryptographic interfaces")
     ".")))

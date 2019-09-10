@@ -18,7 +18,7 @@
   :parents (crypto::interfaces elliptic-curves)
   :short (xdoc::topstring
           "Elliptic curve secp256k1 "
-          (xdoc::seeurl "crypto::interfaces" "interface")
+          (xdoc::seetopic "crypto::interfaces" "interface")
           ".")
   :long
   (xdoc::topstring

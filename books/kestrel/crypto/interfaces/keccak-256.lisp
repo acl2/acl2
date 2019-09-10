@@ -20,7 +20,7 @@
   :output-size 256
   :parents (interfaces)
   :short (xdoc::topstring
-          "Keccak-256 " (xdoc::seeurl "interfaces" "interface") ".")
+          "Keccak-256 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -38,8 +38,8 @@
    (xdoc::p
     "See also:"
     (xdoc::ul
-     (xdoc::li (xdoc::seeurl "keccak::keccak" "Keccak-256 executable specification"))
-     (xdoc::li (xdoc::seeurl "keccak-256-attachment" "attaching Keccak-256 executable specification to this interface"))))
+     (xdoc::li (xdoc::seetopic "keccak::keccak" "Keccak-256 executable specification"))
+     (xdoc::li (xdoc::seetopic "keccak-256-attachment" "attaching Keccak-256 executable specification to this interface"))))
    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

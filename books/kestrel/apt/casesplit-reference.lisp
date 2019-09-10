@@ -56,8 +56,8 @@
     (xdoc::desc-apt-input-old
      (xdoc::p
       "@('old') must be in logic mode,
-       return a non-" (xdoc::seeurl "mv" "multiple") " value, and
-       have no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
+       return a non-" (xdoc::seetopic "mv" "multiple") " value, and
+       have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
       "If the @(':verify-guards') input is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
@@ -74,8 +74,8 @@
       "It must be a true non-empty list @('(cond1 ... condp)') of terms
        that include no free variables other than @('x1'), ..., @('xn'),
        that only call logic-mode functions,
-       that return a non-" (xdoc::seeurl "mv" "multiple") " value,
-       and that have no output " (xdoc::seeurl "acl2::stobj" "stobjs") "."
+       that return a non-" (xdoc::seetopic "mv" "multiple") " value,
+       and that have no output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
       "If the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
        then the terms must only call guard-verified functions,

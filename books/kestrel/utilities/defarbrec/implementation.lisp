@@ -211,9 +211,9 @@
   (xdoc::topstring-p
    "This involves validating the inputs.
     When validation fails, "
-   (xdoc::seeurl "er" "soft errors")
+   (xdoc::seetopic "er" "soft errors")
    " occur. Thus, generally the input processing functions return "
-   (xdoc::seeurl "acl2::error-triple" "error triples")
+   (xdoc::seetopic "acl2::error-triple" "error triples")
    ".")
   :order-subtopics t
   :default-parent t)

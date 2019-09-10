@@ -38,9 +38,9 @@
   :short
   (xdoc::topstring
    "Specialized versions of "
-   (xdoc::seeurl
+   (xdoc::seetopic
     "digits-any-base"
     "the operations to convert between natural numbers and digits")
    " that use "
-   (xdoc::seeurl "ubyte11" "unsigned 11-bit bytes")
+   (xdoc::seetopic "ubyte11" "unsigned 11-bit bytes")
    " as digits, in base 2048."))

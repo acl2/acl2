@@ -20,7 +20,7 @@
    (xdoc::p
     "The HMAC library includes formal specifications for HMAC-SHA-256 and
     HMAC-SHA-512, i.e., for the HMAC keyed-hash message authentication code,
-    using either " (xdoc::seeurl "sha2::sha-2" "SHA-256") " or " (xdoc::seeurl
+    using either " (xdoc::seetopic "sha2::sha-2" "SHA-256") " or " (xdoc::seetopic
     "sha2::sha-2" "SHA-512") " as the underlying hash function.  HMAC is defined
     in " (xdoc::a :href "https://tools.ietf.org/html/rfc2104" "RFC 2104") ".")
    (xdoc::p
