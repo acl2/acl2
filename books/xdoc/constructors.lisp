@@ -628,7 +628,8 @@
       In contrast, the
       <see topic='@(url composite-constructors)'>composite
       XDOC constructors</see>
-      correspond to multiple tags, directives, and concatenations.</p>
+      correspond to multiple tags, directives, and concatenations,
+      or provide a more concise notation for common attributes.</p>
    <p>Since the primitive constructors have a very uniform structure,
       we introduce them via two event-generating macros,
       one for XML tags
@@ -942,7 +943,8 @@
   (xdoc::tree-to-string
    (xdoc::p
     "These correspond to multiple
-     XML tags, preprocessor directives, and concatenations.
+     XML tags, preprocessor directives, and concatenations,
+     or provide a more concise notation for common attributes.
      In contrast,
      the <see topic='@(url primitive-constructors)'>primitive
      constructors</see> correspond to single
@@ -1112,6 +1114,24 @@
 
   (defmacro codeblock (&rest lines)
     `(codeblock-fn (list ,@lines))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ahref
+  :parents (generic-composite-constructors)
+  :short "Construct an XDOC tree for a string of the form
+          @('<a href=\"...\">...</a>')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a fairly common pattern.
+     This XDOC constructor obviates the need to type @(':href'),
+     compared to the primitive constructor @(tsee a):
+     the first argument is always the URL,
+     and the remaining arguments form the text."))
+
+  (defmacro ahref (href &rest text)
+    `(a :href ,href ,@text)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -644,6 +644,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "xdoc" "XDOC"))
+
+   (xdoc::p
+    "A new generic composite constructor has been added,
+     namely @(tsee xdoc::ahref).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "aignet" "Aignet Library"))
 
    (xdoc::p
