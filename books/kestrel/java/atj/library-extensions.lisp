@@ -57,9 +57,10 @@
           (pkg (symbol-package-name sym))
           (prev-syms-for-pkg (cdr (assoc-equal pkg acc))))
        (organize-symbols-by-pkg-aux (cdr syms)
-                                    (acons pkg
-                                           (cons sym prev-syms-for-pkg)
-                                           acc))))))
+                                    (put-assoc-equal
+                                     pkg
+                                     (add-to-set-eq sym prev-syms-for-pkg)
+                                     acc))))))
 
 (define organize-symbols-by-name ((syms symbol-listp))
   :returns (syms-by-name "A @(tsee string-symbollist-alistp).")
@@ -83,9 +84,10 @@
           (name (symbol-name sym))
           (prev-syms-for-name (cdr (assoc-equal name acc))))
        (organize-symbols-by-name-aux (cdr syms)
-                                     (acons name
-                                            (cons sym prev-syms-for-name)
-                                            acc))))))
+                                     (put-assoc-equal
+                                      name
+                                      (add-to-set-eq sym prev-syms-for-name)
+                                      acc))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
