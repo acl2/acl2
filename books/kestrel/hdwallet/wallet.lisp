@@ -1786,6 +1786,7 @@
 
   (define wallet-fn ((inputs string-listp) state)
     :returns (mv erp val state)
+    :parents nil
     (b* (((mv msg state) (process-command inputs state))
          (- (cw "~%~@0~%" msg)))
       (value '(value-triple :invisible)))
