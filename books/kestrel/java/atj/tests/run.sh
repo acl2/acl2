@@ -34,7 +34,7 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepGuar
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowUnguardedTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowGuardedTests 1
 
-# test the Fibonaccionacci function:
+# test the Fibonacci function:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepUnguardedTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepGuardedTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowUnguardedTests 1
