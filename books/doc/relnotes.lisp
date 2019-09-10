@@ -669,8 +669,8 @@
      namely @(tsee xdoc::ahref).")
 
    (xdoc::p
-    "The generic composite constructor @(tsee seeurl)
-     has been renmed to @(tsee seetopic).
+    "The generic composite constructor @(tsee xdoc::seeurl)
+     has been renmed to @(tsee xdoc::seetopic).
      The previous name is still temporarily available as a synonym,
      for compatibility with existing uses.")
 
