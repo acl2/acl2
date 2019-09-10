@@ -47,17 +47,18 @@
       and adding XML tags and preprocessor directives
       at the roots of the trees.</p>
    <p>With these XDOC constructors, one can write</p>
-   <code>(xdoc::topstring
-           (xdoc::p \"A paragraph.\")
-           (xdoc::ul
-             (xdoc::li \"One.\")
-             (xdoc::li \"Two.\")
-             (xdoc::li \"Three.\"))
-           (xdoc::p \"Another paragraph.\")
-           (xdoc::p
-             \"See \"
-             (xdoc::a :href \"https://www.wikipedia.org\" \"Wikipedia\")
-             \".\"))</code>
+   @({
+   (xdoc::topstring
+      (xdoc::p \"A paragraph.\")
+      (xdoc::ul
+        (xdoc::li \"One.\")
+        (xdoc::li \"Two.\")
+        (xdoc::li \"Three.\"))
+      (xdoc::p \"Another paragraph.\")
+      (xdoc::p \"See \"
+               (xdoc::a :href \"https://www.wikipedia.org\" \"Wikipedia\")
+               \".\"))
+   })
    <p>instead of</p>
    @({
      \"<p>A paragraph.</p>
