@@ -241,6 +241,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "aignet" "Aignet Library"))
+
+   (xdoc::p
+    "Added @('centaur/aignet/cube-sat.lisp'), containing utilities for checking
+     satisfiability using @(see satlink) of a cube of aignet literals, possibly
+     after applying combinational-equivalence-preserving transformations.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
 
    (xdoc::p
@@ -469,6 +478,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "gl::gl" "GL"))
+
+   (xdoc::p
+    "Changed accumulated-persistence-style profiling so that it doesn't count
+     the frames contained in nested applications of a rule multiple times
+     toward that rule's frame count.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -655,24 +673,6 @@
      has been renmed to @(tsee seetopic).
      The previous name is still temporarily available as a synonym,
      for compatibility with existing uses.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "aignet" "Aignet Library"))
-
-   (xdoc::p
-    "Added @('centaur/aignet/cube-sat.lisp'), containing utilities for checking
-     satisfiability using @(see satlink) of a cube of aignet literals, possibly
-     after applying combinational-equivalence-preserving transformations.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "gl::gl" "GL"))
-
-   (xdoc::p
-    "Changed accumulated-persistence-style profiling so that it doesn't count
-     the frames contained in nested applications of a rule multiple times
-     toward that rule's frame count.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
