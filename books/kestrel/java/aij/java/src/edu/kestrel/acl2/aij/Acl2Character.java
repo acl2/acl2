@@ -184,8 +184,8 @@ public final class Acl2Character extends Acl2Value {
      * Compares this ACL2 character with the argument object for equality.
      * This is consistent with the {@code equal} ACL2 function.
      *
-     * @param o The ACL2 object to compare this ACL2 character with.
-     * @return {@code true} if the ACL2 object is equal to this ACL2 character,
+     * @param o The object to compare this ACL2 character with.
+     * @return {@code true} if the object is equal to this character,
      * otherwise {@code false}.
      */
     @Override

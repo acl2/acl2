@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Representation of ACL2 function applications.
+ * Representation of ACL2 function applications, in translated form.
  * These are translated terms of the form {@code (f arg1 ... argn)},
  * where {@code f} is a named function or lambda expression and {@code n >= 0}.
  */
@@ -19,20 +19,24 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// private members:
 
     /**
-     * Function.
+     * Function of this function application.
      * This is never {@code null}.
      */
     private final Acl2Function function;
 
     /**
-     * Arguments.
+     * Arguments of this function application.
      * This is never {@code null}.
-     * But it may be empty.
+     * It may be empty.
      */
     private final Acl2Term[] arguments;
 
     /**
-     * Constructs an application from its function and arguments.
+     * Constructs an ACL2 function application
+     * with the given function and arguments.
+     *
+     * @param function  The function of the function application.
+     * @param arguments The arguments of the function application.
      */
     private Acl2FunctionApplication(Acl2Function function,
                                     Acl2Term[] arguments) {
@@ -43,15 +47,16 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Validates all the function calls in this function call.
-     * We check that the number of arguments matches the arity.
-     * This implicitly also checks that,
+     * Validates all the function calls in this function application.
+     * We check that the number of arguments matches the arity;
+     * this implicitly also checks that,
      * if the function is a defined function,
      * it has an actual definition.
-     * We also recursively check the function calls in the argument terms
+     * We check not only this function application/call,
+     * but also the function calls in the argument terms
      * and in the function itself (if the function is a lambda expression).
      *
-     * @throws IllegalStateException if validation fails
+     * @throws IllegalStateException If validation fails.
      */
     @Override
     void validateFunctionCalls() {
@@ -72,11 +77,13 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * The supplied map is used for the argument terms.
      * The function is processed separately:
      * see {@link Acl2Function#setVariableIndices()}.
+     * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException if the term or the map are malformed
+     * @param indices Map from variable symbols to indices.
+     * @throws IllegalArgumentException If the term or the map are malformed
      *                                  in a way that
-     *                                  some valid index cannot be determined
-     * @throws IllegalStateException    if some variable index is already set
+     *                                  some valid index cannot be determined.
+     * @throws IllegalStateException    If some variable index is already set.
      */
     @Override
     void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
@@ -90,11 +97,11 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * Evaluates this ACL2 function application to an ACL2 value,
      * with respect to the given binding of values to variable indices.
      * Unless the function is the ACL2 function {@code if},
-     * the argument terms are evaluated,
-     * then the function is applied to them.
+     * first the argument terms are evaluated,
+     * and then the function is applied to them.
      * If instead the function is {@code if},
-     * the first argument is evaluated first,
-     * then either the second or third one is evaluated,
+     * first the first argument is evaluated,
+     * and then either the second or third one is evaluated,
      * based on the result of evaluating the first argument;
      * {@code if} is the only non-strict function in ACL2.
      * <p>
@@ -121,8 +128,9 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * thus, the use of this {@code or} pseudo-function in AIJ
      * can never interfere with other ACL2 functions.
      *
-     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails
+     * @param binding The binding of values to variable indices.
+     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails.
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException {
@@ -151,6 +159,10 @@ public final class Acl2FunctionApplication extends Acl2Term {
 
     /**
      * Checks if this ACL2 application is equal to the argument object.
+     *
+     * @param o The object to compare this ACL2 character with.
+     * @return {@code true} if the object is equal to this character,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
@@ -162,7 +174,9 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Returns a hash code for this ACL2 application.
+     * Returns a hash code for this function application.
+     *
+     * @return The hash code for this function application.
      */
     @Override
     public int hashCode() {
@@ -172,7 +186,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Compares this ACL2 application with the argument ACL2 term for order.
+     * Compares this function application with the argument term for order.
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
@@ -180,9 +194,10 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this term is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The term to compare this function application with.
+     * @return A negative integer, zero, or a positive integer as
+     * this term is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Term o) {
@@ -213,7 +228,9 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Returns a printable representation of this ACL2 application.
+     * Returns a printable representation of this function application.
+     *
+     * @return A printable representation of this function application.
      */
     @Override
     public String toString() {
@@ -227,8 +244,11 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Returns an ACL2 application with the given function and arguments.
+     * Returns a function application with the given function and arguments.
      *
+     * @param function  The function of this function application.
+     * @param arguments The arguments of this function application.
+     * @return The function application.
      * @throws IllegalArgumentException if function or arguments is null
      */
     public static Acl2FunctionApplication make(Acl2Function function,
