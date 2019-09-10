@@ -49,8 +49,8 @@
      the data of the transaction to sign and the signed transaction
      must be passed between the air-gapped machine where this wallet runs
      and a machine on the Internet that submits the signed transactions.
-     The (private) keys never leave the air-gapped machine.
-     Currently only (transactions for) the Ethereum mainnet are supported.")
+     The private keys never leave the air-gapped machine.
+     Currently keys and transactions only for the Ethereum mainnet are supported.")
 
    (xdoc::p
     "The wallet is hierarchical deterministic, according to "
@@ -63,8 +63,14 @@
     (xdoc::seeurl "bitcoin::bip44" "BIP 44")
     ".")
 
-   (xdoc::p ; TODO: mention the scripts in this directory
-    "The wallet provides a command line interface, via an OS shell script.")
+   (xdoc::p
+    "The wallet can be run by a command line interface shell script
+     that runs a Docker image containing the wallet code.
+     For details on obtaining, installing, and running the wallet see "
+     (xdoc::a
+      :href "https://github.com/acl2/acl2/tree/master/books/kestrel/hdwallet/README.md"
+      "the README in GitHub")
+     ". The following is a technical discussion of the current wallet design.")
 
    (xdoc::h3 "State")
 
@@ -87,12 +93,12 @@
      (xdoc::a
       :href "https://github.com/satoshilabs/slips/blob/master/slip-0044.md"
        "SLIP (Satoshi Labs Improvement Proposal) 44")
-     ". This wallet currently only supports
-      transactions for the Ethereum mainnet,
+     ". This wallet currently supports
+      transactions only for the Ethereum mainnet,
       as mentioned above.")
     (xdoc::li
      "@('0\'') is the default account index, according to BIP 44.
-      The wallet currently support only this default account.")
+      The wallet currently supports only this default account.")
     (xdoc::li
      "@('0') is the external chain index, according to BIP 44.
       For Ethereum, unlike Bitcoin,
@@ -129,8 +135,8 @@
      also as described in BIP 39.")
 
    (xdoc::p
-    "It is expected that the user will initially use the first command,
-     and the second only if and when the wallet must be re-created.
+    "It is expected that the user will initially use the first initialization command,
+     and use the second initialization command only if and when the wallet must be re-created.
      The wallet currently does not provide facilities
      to generate a securely random entropy:
      the user must use external means for that,
@@ -146,13 +152,13 @@
      if a particular entropy and passphrase succeed in creating the wallet
      with the first initialization command,
      then the mnemonic corresponding to that entropy and the same passphrase
-     will also succeed in creating the wallet
-     with the second initialization command.")
+     will also succeed in creating the same wallet
+     using the second initialization command.")
 
    (xdoc::h3 "Key Generation")
 
    (xdoc::p
-    "Once the wallet is initialized as explain above,
+    "Once the wallet is initialized as explained above,
      the user must create one or more address keys
      in order to sign transactions (see below).
      The wallet provides a command to generate the next address key,
@@ -270,7 +276,7 @@
      There is just one exception to this approach to error handling:
      in order to load/save the wallet state from/to the file,
      the wallet implementation uses ACL2's
-     @(tsee serialize-read) and @(tsee serialize-write) functions,
+     @(tsee serialize-read) and @(tsee serialize-write),
      which may throw hard errors in some cases.
      Thus, it is currently possible, but hopefully rare,
      to get an ACL2 hard error from the wallet."))
@@ -1769,7 +1775,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is macro, with an associated function as customary.
+    "This is a macro, with an associated function as is customary.
      The function processes the inputs from the shell script
      and displays the resulting message.
      The macro wraps the function call in a @(tsee make-event)
