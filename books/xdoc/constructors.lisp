@@ -630,7 +630,19 @@
       XDOC constructors</see>
       correspond to multiple tags, directives, and concatenations,
       or provide a more concise notation for common attributes.</p>
-   <p>Since the primitive constructors have a very uniform structure,
+   <p>These primitive constructors are
+      macros with a variable number of arguments.
+      Each argument must be a tree or a keyword,
+      such that each keyword is immediately followed by a tree.
+      Each keyword-tree pair forms an attribute of an XML tag,
+      with the keyword naming the attribute
+      and the immediately following tree providing the value of the attribute.
+      Keyword-tree pairs can be used only in constructors for XML tags,
+      not in constructors for preprocessor directives or tree concatenation.
+      Keyword-tree pairs may occur anywhere in the argument list.
+      See the <see topic='@(url constructors)'>top-level topic</see>
+      for example calls of primitive constructors.</p>
+   <p>Since these primitive constructors have a very uniform structure,
       we introduce them via two event-generating macros,
       one for XML tags
       and one for preprocessor directives and tree concatenation.</p>")
