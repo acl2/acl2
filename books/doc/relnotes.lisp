@@ -650,6 +650,12 @@
     "A new generic composite constructor has been added,
      namely @(tsee xdoc::ahref).")
 
+   (xdoc::p
+    "The generic composite constructor @(tsee seeurl)
+     has been renmed to @(tsee seetopic).
+     The previous name is still temporarily available as a synonym,
+     for compatibility with existing uses.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "aignet" "Aignet Library"))

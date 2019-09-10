@@ -1135,7 +1135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection seeurl
+(defsection seetopic
   :parents (generic-composite-constructors)
   :short "Construct an XDOC tree for a string of the form
           @('<see topic=\"@(url ...)\">...</see>')."
@@ -1146,7 +1146,10 @@
      with several opportunities for mistyping it.
      This XDOC constructor takes two strings as arguments,
      one for the topic and one for the hyperlinked text.")
-   (xdoc::@def "seeurl"))
+   (xdoc::@def "seetopic"))
 
-  (defmacro seeurl (topic text)
+  (defmacro seetopic (topic text)
     `(see_ :topic (@url ,topic) ,text)))
+
+; temporary synonym for compatibility with existing uses:
+(defmacro seeurl (&rest args) `(seetopic ,@args))
