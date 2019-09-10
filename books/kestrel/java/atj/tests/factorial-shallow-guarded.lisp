@@ -12,7 +12,13 @@
 
 (include-book "factorial")
 
-(include-book "../types-for-natives")
+(include-book "../types-for-built-ins")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Specialize the input and output types of the factorial function.
+
+(java::def-atj-function-type fact (:integer) :integer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

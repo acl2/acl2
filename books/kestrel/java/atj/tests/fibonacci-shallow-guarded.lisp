@@ -12,7 +12,13 @@
 
 (include-book "fibonacci")
 
-(include-book "../types-for-natives")
+(include-book "../types-for-built-ins")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Specialize the input and output types of the Fibonacci function.
+
+(java::def-atj-function-type fib (:integer) :integer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
