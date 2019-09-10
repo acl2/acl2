@@ -12,8 +12,6 @@
 
 (include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
 
-(include-book "../types-for-natives")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Fibonacci function.
@@ -35,31 +33,3 @@
     ("Fibonacci10" (fib 10))
     ("Fibonacci20" (fib 20))
     ("Fibonacci30" (fib 30))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Generate Java code for the Fibonacci function, with testing code.
-
-(java::atj fib
-           :deep t
-           :guards nil
-           :java-class "FibonacciDeepUnguarded"
-           :tests *fib-tests*)
-
-(java::atj fib
-           :deep t
-           :guards t
-           :java-class "FibonacciDeepGuarded"
-           :tests *fib-tests*)
-
-(java::atj fib
-           :deep nil
-           :guards nil
-           :java-class "FibonacciShallowUnguarded"
-           :tests *fib-tests*)
-
-(java::atj fib
-           :deep nil
-           :guards t
-           :java-class "FibonacciShallowGuarded"
-           :tests *fib-tests*)

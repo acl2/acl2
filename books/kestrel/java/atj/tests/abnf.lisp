@@ -14,8 +14,6 @@
 
 (include-book "kestrel/abnf/concrete-syntax" :dir :system)
 
-(include-book "../types-for-natives")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; ABNF grammar parser.
@@ -2098,33 +2096,3 @@
        ((when rest) nil))
     tree?)
   :no-function t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Generate Java code for the parser, without tests.
-; Currently, attempting to generate tests
-; for the grammar files ./abnf-files/*.txt
-; results in Java code whose test methods are too large to compile
-; (they exceed the maximum size allowed by the JVM),
-; because the contents of those files are built as lists of natural numbers.
-; Thus, for now we have handwritten Java files to test the ABNF parser.
-
-(java::atj parse-grammar
-           :deep t
-           :guards nil
-           :java-class "ABNFDeepUnguarded")
-
-(java::atj parse-grammar
-           :deep t
-           :guards t
-           :java-class "ABNFDeepGuarded")
-
-(java::atj parse-grammar
-           :deep nil
-           :guards nil
-           :java-class "ABNFShallowUnguarded")
-
-(java::atj parse-grammar
-           :deep nil
-           :guards t
-           :java-class "ABNFShallowGuarded")

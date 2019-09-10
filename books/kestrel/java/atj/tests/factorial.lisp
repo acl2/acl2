@@ -12,8 +12,6 @@
 
 (include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
 
-(include-book "../types-for-natives")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Factorial function.
@@ -35,31 +33,3 @@
     ("Factorial100" (fact 100))
     ("Factorial1000" (fact 1000))
     ("Factorial10000" (fact 10000))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Generate Java code for the factorial function, with testing code.
-
-(java::atj fact
-           :deep t
-           :guards nil
-           :java-class "FactorialDeepUnguarded"
-           :tests *fact-tests*)
-
-(java::atj fact
-           :deep t
-           :guards t
-           :java-class "FactorialDeepGuarded"
-           :tests *fact-tests*)
-
-(java::atj fact
-           :deep nil
-           :guards nil
-           :java-class "FactorialShallowUnguarded"
-           :tests *fact-tests*)
-
-(java::atj fact
-           :deep nil
-           :guards t
-           :java-class "FactorialShallowGuarded"
-           :tests *fact-tests*)
