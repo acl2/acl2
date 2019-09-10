@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Representation of ACL2 defined functions in ACL2 terms.
- * These are functions that are defined via ACL2 terms,
+ * Representation of ACL2 defined functions in terms.
+ * These are functions that are defined via terms,
  * as opposed to the functions natively implemented in Java
  * (see {@link Acl2NativeFunction}).
  */
@@ -20,8 +20,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     //////////////////////////////////////// private members:
 
     /**
-     * Constructs an ACL2 defined function with the given name.
-     * The name is never that of an ACL2 function
+     * Constructs a defined function with the given name.
+     * The name is never that of a function
      * that is implemented natively in Java,
      * because such functions are represented as
      * instances of {@link Acl2NativeFunction}.
@@ -33,14 +33,14 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * All the ACL2 defined functions created so far.
+     * All the defined functions created so far.
      * These are stored as values of a map
      * that has the symbols that name the functions as keys:
      * each key-value pair is such that
      * the key is the {@link Acl2NamedFunction#getName()} field of the value.
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
-     * In other words, all the ACL2 defined functions are interned.
+     * In other words, all the defined functions are interned.
      * This field is never {@code null}.
      */
     private static final Map<Acl2Symbol, Acl2DefinedFunction> functions =
@@ -133,7 +133,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * Applies this ACL2 defined function to the given ACL2 values.
+     * Applies this defined function to the given values.
      * The defining lambda expression is applied to the values.
      * This is never called if the definiens is not set or validated.
      *
@@ -148,10 +148,10 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * Returns an ACL2 defined function with the given name.
+     * Returns a defined function with the given name.
      *
-     * @param name The name of the ACL2 defined function.
-     * @return The ACL2 defined function.
+     * @param name The name of the defined function.
+     * @return The defined function.
      */
     static Acl2DefinedFunction getInstance(Acl2Symbol name) {
         Acl2DefinedFunction function = functions.get(name);
@@ -166,7 +166,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     //////////////////////////////////////// public members:
 
     /**
-     * Defines this ACL2 defined function.
+     * Defines this defined function.
      * That is, actually sets the definition of the function.
      * The indices of the variables in the definiens are set
      * (see {@link Acl2Variable}).

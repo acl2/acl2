@@ -32,8 +32,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
     private final Acl2Term[] arguments;
 
     /**
-     * Constructs an ACL2 function application
-     * with the given function and arguments.
+     * Constructs a function application with the given function and arguments.
      *
      * @param function  The function of the function application.
      * @param arguments The arguments of the function application.
@@ -94,9 +93,9 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Evaluates this ACL2 function application to an ACL2 value,
+     * Evaluates this function application to a value,
      * with respect to the given binding of values to variable indices.
-     * Unless the function is the ACL2 function {@code if},
+     * Unless the function is the function {@code if},
      * first the argument terms are evaluated,
      * and then the function is applied to them.
      * If instead the function is {@code if},
@@ -126,7 +125,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * because ACL2 prohibits the definition of functions
      * with names in the {@code "COMMON-LISP"} package;
      * thus, the use of this {@code or} pseudo-function in AIJ
-     * can never interfere with other ACL2 functions.
+     * can never interfere with other functions.
      *
      * @param binding The binding of values to variable indices.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
@@ -158,10 +157,10 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 application is equal to the argument object.
+     * Checks if this function application is equal to the argument object.
      *
-     * @param o The object to compare this ACL2 character with.
-     * @return {@code true} if the object is equal to this character,
+     * @param o The object to compare this function application with.
+     * @return {@code true} if the object is equal to this function application,
      * otherwise {@code false}.
      */
     @Override

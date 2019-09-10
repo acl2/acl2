@@ -7,7 +7,7 @@
 package edu.kestrel.acl2.aij;
 
 /**
- * Representation of ACL2 functions in ACL2 terms.
+ * Representation of ACL2 functions in terms.
  * These are named functions (subclass {@link Acl2NamedFunction})
  * and lambda expressions (subclass {@link Acl2LambdaExpression}).
  */
@@ -64,7 +64,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     abstract boolean isOr();
 
     /**
-     * Applies this ACL2 function to the given ACL2 values.
+     * Applies this function to the given values.
      *
      * @param values The actual arguments to pass to the function.
      * @return The result of the function on the given arguments.
@@ -76,7 +76,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     //////////////////////////////////////// public members:
 
     /**
-     * Compares this ACL2 function with the argument ACL2 function for order.
+     * Compares this function with the argument function for order.
      * This order consists of:
      * first named functions, ordered according to their underlying symbols;
      * then lambda expressions, ordered lexicographically according to

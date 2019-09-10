@@ -15,25 +15,25 @@ public final class Acl2Character extends Acl2Value {
     //////////////////////////////////////// private members:
 
     /**
-     * Code of this ACL2 character.
+     * Code of this character.
      * This is always below 256.
      */
     private final char jchar;
 
     /**
-     * Constructs an ACL2 character with the given code.
+     * Constructs a character with the given code.
      *
-     * @param jchar The code of the ACL2 character, as a Java character.
+     * @param jchar The code of the character, as a Java character.
      */
     private Acl2Character(char jchar) {
         this.jchar = jchar;
     }
 
     /**
-     * All the ACL2 characters.
+     * All the characters.
      * These are created in advance by the static initializer,
      * and reused by the {@link #make(char)} method.
-     * In other words, all the ACL2 characters are (exhaustively) interned.
+     * In other words, all the characters are (exhaustively) interned.
      * This field is never {@code null}.
      */
     private static final Acl2Character[] characters = new Acl2Character[256];
@@ -46,10 +46,10 @@ public final class Acl2Character extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Checks if this ACL2 character is an ACL2 character.
+     * Checks if this character is a character, which is always true.
      * This is consistent with the {@code characterp} ACL2 function.
      *
-     * @return The ACL2 symbol {@code t}.
+     * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol characterp() {
@@ -57,10 +57,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Returns the ACL2 integer code of this ACL2 character.
+     * Returns the integer code of this character.
      * This is consistent with the {@code char-code} ACL2 function.
      *
-     * @return The code of this ACL2 character.
+     * @return The code of this character.
      */
     @Override
     Acl2Integer charCode() {
@@ -68,11 +68,11 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Coerces this ACL2 character to an ACL2 character.
+     * Coerces this character to a character, which is a no-op.
      * This is consistent with
      * the {@code char-fix} ACL2 (non-built-in) function.
      *
-     * @return This ACL2 character, unchanged.
+     * @return This character, unchanged.
      */
     @Override
     Acl2Character charFix() {
@@ -80,10 +80,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 character for order.
+     * Compares this character with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o ACL2 character to compare this ACL2 character with.
+     * @param o The character to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
      */
@@ -94,10 +94,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 string for order.
+     * Compares this character with the argument string for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 string to compare this ACL2 character with.
+     * @param o The string to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
      */
@@ -108,10 +108,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 symbol for order.
+     * Compares this character with the argument symbol for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 symbol to compare this ACL2 character with.
+     * @param o The symbol to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -122,10 +122,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 number for order.
+     * Compares this character with the argument number for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 number to compare this ACL2 character with.
+     * @param o The number to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -136,10 +136,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 rational for order.
+     * Compares this character with the argument rational for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 rational to compare this ACL2 character with.
+     * @param o The rational to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -150,10 +150,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 integer for order.
+     * Compares this character with the argument integer for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 integer to compare this ACL2 character with.
+     * @param o The integer to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -164,11 +164,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 character with
-     * the argument ACL2 {@code cons} pair for order.
+     * Compares this character with the argument {@code cons} pair for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 {@code cons} pair to compare this ACL2 character with.
+     * @param o The {@code cons} pair to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -181,26 +180,26 @@ public final class Acl2Character extends Acl2Value {
     //////////////////////////////////////// public members:
 
     /**
-     * Compares this ACL2 character with the argument object for equality.
+     * Compares this character with the argument object for equality.
      * This is consistent with the {@code equal} ACL2 function.
      *
-     * @param o The object to compare this ACL2 character with.
+     * @param o The object to compare this character with.
      * @return {@code true} if the object is equal to this character,
      * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
-        /* Since the ACL2 characters are interned,
-           an ACL2 character is equal to an object iff
+        /* Since characters are interned,
+           a character is equal to an object iff
            they are the same object. */
         return this == o;
     }
 
     /**
-     * Compares this ACL2 character with the argument ACL2 value for order.
+     * Compares this character with the argument value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The ACL2 value to compare this ACL2 character with.
+     * @param o The value to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
      * @throws NullPointerException If the argument is null.
@@ -213,7 +212,7 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Returns a printable representation of this ACL2 character.
+     * Returns a printable representation of this character.
      * If the character is visible
      * (i.e. its code is between 33 and 126 inclusive),
      * it is returned as is, preceded by {@code #\} as in ACL2.
@@ -222,10 +221,9 @@ public final class Acl2Character extends Acl2Value {
      * Otherwise, we return its hexadecimal code,
      * always as two digits, with lowercase letters,
      * preceded by {@code #\}.
-     * This scheme should ensure that
-     * ACL2 characters are always printed clearly.
+     * This scheme should ensure that characters are always printed clearly.
      *
-     * @return A printable representation of this ACL2 character.
+     * @return A printable representation of this character.
      */
     @Override
     public String toString() {
@@ -252,11 +250,10 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * Returns the ACL2 character with the given code.
-     * The code must be below 256.
+     * Returns the character with the given code.
      *
-     * @param jchar The code of the ACL2 character, as a Java character.
-     * @return The ACL2 character.
+     * @param jchar The code of the character, as a Java character.
+     * @return The character.
      * @throws IllegalArgumentException If {@code jchar} exceeds 255.
      */
     public static Acl2Character make(char jchar) {
@@ -268,15 +265,15 @@ public final class Acl2Character extends Acl2Value {
     }
 
     /**
-     * The ACL2 character with code 0.
+     * The character with code 0.
      */
     public static final Acl2Character CODE_0 = characters[0];
 
     /**
-     * Returns the code of this ACL2 character.
-     * This is always below 256.
+     * Returns the code of this character.
      *
-     * @return The code of this ACL2 character, as a Java character.
+     * @return The code of this character, as a Java character.
+     * This is always below 256.
      */
     public char getJavaChar() {
         return this.jchar;
