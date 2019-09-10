@@ -4571,7 +4571,7 @@
 
   (longest-common-tail-length-rec old new len-old 0))
 
-(defun extend-current-theory (old-th new-th old-aug-th wrld)
+(defun extend-current-theory (old-th len-old new-th len-new old-aug-th wrld)
 
 ; Logically this function just returns new-th.  However, the copy of new-th
 ; that is returned shares a maximal tail with old-th.  A second value similarly
@@ -4579,9 +4579,7 @@
 ; augmented-theory corresponding to old-th; except, if old-aug-th is :none then
 ; the second value is undefined.
 
-  (let* ((len-old (length old-th))
-         (len-new (length new-th))
-         (len-common
+  (let* ((len-common
           (cond ((int= len-old len-new)
                  (longest-common-tail-length old-th new-th len-old))
                 ((< len-old len-new)
@@ -4596,19 +4594,28 @@
                   len-new))))
          (take-new (- len-new len-common))
          (nthcdr-old (- len-old len-common))
+         (old-th-tail (nthcdr nthcdr-old old-th))
+         #-acl2-loop-only
+         (return-new-p (eq (nthcdr take-new new-th)
+                           old-th-tail))
          (new-part-of-new-rev
-          (first-n-ac-rev (the-unsigned-byte! 29 take-new
-                                              'extend-current-theory)
-                          new-th
-                          nil)))
-    (mv (revappend new-part-of-new-rev
-                   (nthcdr nthcdr-old old-th))
+          (cond #-acl2-loop-only
+                ((and return-new-p (eq old-aug-th :none))
+                 'irrelevant)
+                (t
+                 (first-n-ac-rev (the-unsigned-byte! 29 take-new
+                                                     'extend-current-theory)
+                                 new-th
+                                 nil)))))
+    (mv (cond #-acl2-loop-only
+              (return-new-p new-th)
+              (t (revappend new-part-of-new-rev old-th-tail)))
         (if (eq old-aug-th :none)
             :none
           (augment-runic-theory1 new-part-of-new-rev nil wrld
                                  (nthcdr nthcdr-old old-aug-th))))))
 
-(defun update-current-theory (theory0 wrld)
+(defun update-current-theory (theory0 theory0-length wrld)
   (mv-let (theory theory-augmented)
           (extend-current-theory
 
@@ -4623,14 +4630,19 @@
 ; calling extend-current-theory.
 
            (global-val 'current-theory wrld)
+           (global-val 'current-theory-length wrld)
            theory0
+           theory0-length
            (global-val 'current-theory-augmented wrld)
            wrld)
-          (global-set 'current-theory theory
-                      (global-set 'current-theory-augmented theory-augmented
-                                  (global-set 'current-theory-index
-                                              (1- (get-next-nume wrld))
-                                              wrld)))))
+          (global-set
+           'current-theory theory
+           (global-set
+            'current-theory-augmented theory-augmented
+            (global-set
+             'current-theory-index (1- (get-next-nume wrld))
+             (global-set 'current-theory-length theory0-length
+                         wrld))))))
 
 (defun put-cltl-command (cltl-cmd wrld wrld0)
 
