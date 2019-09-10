@@ -53,7 +53,11 @@
              (xdoc::li \"One.\")
              (xdoc::li \"Two.\")
              (xdoc::li \"Three.\"))
-           (xdoc::p \"Another paragraph.\"))</code>
+           (xdoc::p \"Another paragraph.\")
+           (xdoc::p
+             \"See \"
+             (xdoc::a :href \"https://www.wikipedia.org\" \"Wikipedia\")
+             \".\"))</code>
    <p>instead of</p>
    @({
      \"<p>A paragraph.</p>
@@ -62,7 +66,8 @@
         <li>Two.</li>
         <li>Three.</li>
       </ul>
-      <p>Another paragraph.</p>\"
+      <p>Another paragraph.</p>
+      <p>See <a href=\"https://www.wikipedia.org\">Wikipedia</a>.</p>\"
    })
    <p>The main advantage is that the XML tags (and preprocessor directives)
       will be always properly matched and nested by construction.
