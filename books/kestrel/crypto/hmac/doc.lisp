@@ -22,7 +22,7 @@
     HMAC-SHA-512, i.e., for the HMAC keyed-hash message authentication code,
     using either " (xdoc::seetopic "sha2::sha-2" "SHA-256") " or " (xdoc::seetopic
     "sha2::sha-2" "SHA-512") " as the underlying hash function.  HMAC is defined
-    in " (xdoc::a :href "https://tools.ietf.org/html/rfc2104" "RFC 2104") ".")
+    in " (xdoc::ahref "https://tools.ietf.org/html/rfc2104" "RFC 2104") ".")
    (xdoc::p
     "The following "
     (xdoc::tt "include-book")
@@ -38,7 +38,7 @@
    (xdoc::ul
      (xdoc::li (xdoc::tt "(hmac-sha-256 k text)") " applies HMAC-SHA-256 to key " (xdoc::tt "k") " (a list of bytes) and data " (xdoc::tt "text") " (a list of bits).  Returns a list of 32 bytes.")
      (xdoc::li (xdoc::tt "(hmac-sha-512 k text)") " applies HMAC-SHA-512 to key " (xdoc::tt "k") " (a list of bytes) and data " (xdoc::tt "text") " (a list of bits).  Returns a list of 64 bytes."))
-   (xdoc::p "See " (xdoc::a :href "https://tools.ietf.org/html/rfc2104" "RFC 2104") " for guidance on the length of the keys used.")
+   (xdoc::p "See " (xdoc::ahref "https://tools.ietf.org/html/rfc2104" "RFC 2104") " for guidance on the length of the keys used.")
    (xdoc::p
     "See the comments in the source files for more information on the HMAC library.")
    (xdoc::p
