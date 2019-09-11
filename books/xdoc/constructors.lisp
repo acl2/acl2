@@ -92,6 +92,13 @@
    <p>In other words,
       it is not necessary to use XDOC constructors for everything,
       but only where they are convenient.</p>
+   <p>The XDOC constructors provide more convenient ways
+      to write existing XML tags and preprocessor directives;
+      they do not introduce new XML tags or preprocessor directives.
+      See the documentation of the
+      <see topic='@(url markup)'>XML tags</see> and
+      <see topic='@(url preprocessor)'>preprocessor directives</see>
+      for information on their meaning and purpose.</p>
    <p>The books included by these XDOC constructor utilities
       should be minimized,
       to keep these utilities lightweight and more widely usable.</p>")
