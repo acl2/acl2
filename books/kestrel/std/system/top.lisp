@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "all-free-bound-vars")
 (include-book "conjoin")
 (include-book "function-symbolp")
 (include-book "macro-keyword-args")

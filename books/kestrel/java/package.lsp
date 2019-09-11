@@ -20,6 +20,7 @@
                          access-event-tuple-namex
                          access-event-tuple-type
                          all-ffn-symbs
+                         all-free/bound-vars
                          all-pkgs-in-world
                          alpha/digit-chars
                          alpha/digit/dash-charlist-p
