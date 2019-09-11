@@ -15,6 +15,7 @@
 
 (include-book "aij-notions")
 (include-book "types")
+(include-book "primitives")
 (include-book "test-structures")
 (include-book "pretty-printer")
 
@@ -24,6 +25,8 @@
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel natp-of-incremented-index
   (implies (natp x)
