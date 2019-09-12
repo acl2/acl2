@@ -155,7 +155,7 @@ B is the builtin combinator table."
        (kwd-alist (append kwd-alist top-kwd-alist))
 
        (pkg (get1 :current-package kwd-alist))
-       (v (intern$ "V" pkg))
+       (v (acl2s::fix-intern$ "V" pkg))
 
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (xvar (if (member-eq v avoid-lst)
@@ -197,7 +197,7 @@ B is the builtin combinator table."
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (v (intern$ "V" curr-pkg))
+       (v (acl2s::fix-intern$ "V" curr-pkg))
 
        (xvar (if (member-eq v avoid-lst)
                  v
@@ -988,21 +988,21 @@ Example use
         (str2 (symbol-name T2))
         (str11 (string-append str1 "-IS-SUBTYPE-OF-"))
         (str (string-append str11 str2)))
-    (intern$ str curr-pkg)))
+    (acl2s::fix-intern$ str curr-pkg)))
 
 (defun make-disjoint-relation-name (T1 T2 curr-pkg)
   (let* ((str1 (symbol-name T1))
          (str2 (symbol-name T2))
          (str11 (string-append str1 "-IS-DISJOINT-WITH-"))
          (str (string-append str11 str2)))
-    (intern$ str curr-pkg)))
+    (acl2s::fix-intern$ str curr-pkg)))
 
 (defun make-equal-relation-name (T1 T2 curr-pkg)
   (let* ((str1 (symbol-name T1))
          (str2 (symbol-name T2))
          (str11 (string-append str1 "-IS-EQUAL-TO-"))
          (str (string-append str11 str2)))
-    (intern$ str curr-pkg)))
+    (acl2s::fix-intern$ str curr-pkg)))
 
 ;COPIED FROM DEFDATA ----- to be deprecated and deleted
 (defun compute-defdata-relation
@@ -1017,7 +1017,7 @@ Example use
                      (assoc-eq T2 M)))
 ;if not existing typenames raise error
         (er hard ctx  "~|One of ~x0 and ~x1 is not a defined type!~%" T1 T2))
-       (x (intern$ "X" curr-pkg))
+       (x (acl2s::fix-intern$ "X" curr-pkg))
 
 ;; ((when (and rule-classes
 ;;                    (or (eq T1 'ACL2::ALL)

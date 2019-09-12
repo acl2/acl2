@@ -32,7 +32,7 @@
 
 (defun term-name (term)
   (declare (xargs :mode :program))
-  (intern-in-package-of-symbol (to-string term) 'cgen::x))
+  (acl2s::fix-intern-in-pkg-of-sym (to-string term) 'cgen::x))
 
 
 (defun flatten-output-fterm (x term output-vars)

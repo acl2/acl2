@@ -44,6 +44,7 @@ downloaded from the webpage.
 
 (in-package "CGEN")
 
+(include-book "../utilities")
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all) ;missing in the Manual
@@ -150,7 +151,7 @@ downloaded from the webpage.
 
 (program)
 (defun lit-name (lit)
-  (intern-in-package-of-symbol (to-string lit) 'acl2::x))
+  (acl2s::fix-intern-in-pkg-of-sym (to-string lit) 'acl2::x))
 
 ; [TheFixer chosen for c]
 (defun chosen-fixer-var (F lit)

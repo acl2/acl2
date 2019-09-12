@@ -1500,7 +1500,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (input-contract (get1-alias *input-contract-alias* kwd-alist ))
        (output-contract (get1-alias *output-contract-alias* kwd-alist ))
        (kword-oc? (keywordp output-contract))
-       (f-type (and kword-oc? (intern$ (symbol-name output-contract) pkg)))
+       (f-type (and kword-oc? (fix-intern$ (symbol-name output-contract) pkg)))
        (f-type-pred (and kword-oc? (pred-of-type f-type tbl atbl 'defunc)))
        (output-contract
         (if kword-oc?

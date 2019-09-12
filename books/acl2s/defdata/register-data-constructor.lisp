@@ -70,7 +70,7 @@ data last modified: [2014-08-06]
 
 (defun apply-to-x-lst (fns pkg)
 ;  (declare (xargs :guard (true-listp fns)))
-  (b* ((x (intern$ "X" pkg)))
+  (b* ((x (acl2s::fix-intern$ "X" pkg)))
     (list-up-lists fns (make-list (len fns) :initial-element x))))
 
 (defun register-data-constructor-fn
@@ -95,7 +95,7 @@ data last modified: [2014-08-06]
        (proper (if (assoc :proper kwd-alist) (get1 :proper kwd-alist) t))
        (recordp (get1 :recordp kwd-alist))
        (dest-pred-alist (pairlis$ dex-names dpreds))
-       (x (intern$ "X" pkg))
+       (x (acl2s::fix-intern$ "X" pkg))
        (kwd-alist
         (acons :arity (len dex-names)
                (acons :recog recog
