@@ -1014,7 +1014,7 @@
 ;;          (copy alist r1 r2)))
 
 (defcong list::equiv equal (copy alist r1 r2) 1
-  :hints(("Goal" :induct (list::len-len-induction alist list::alist-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction alist alist-equiv))))
 
 (defthm copy-of-s-1-non-memberp-case-helper
   (implies (and (bag::unique (keys alist)) ;drop this hyp in the non-helper lemma!
@@ -2006,7 +2006,7 @@
    :hints (("Goal"
             :in-theory (disable gp-of-list-fix)
             :use ((:instance gp-of-list-fix (p p))
-                  (:instance gp-of-list-fix (p list::p-equiv)))))))
+                  (:instance gp-of-list-fix (p p-equiv)))))))
 
 (defthmd gp-of-gp
   (equal (gp p1 (gp p2 r))
@@ -2295,7 +2295,7 @@
             :in-theory (disable sp-equal-rewrite
                                 sp-of-list-fix)
             :use ((:instance sp-of-list-fix (p p))
-                  (:instance sp-of-list-fix (p list::p-equiv))))))
+                  (:instance sp-of-list-fix (p p-equiv))))))
 )
 
 ;rename?
@@ -2350,7 +2350,7 @@
 
 ;; jcd - added this
 (defcong alist::alist-equiv equal (cons-onto-keys val alist) 2
-  :hints(("Goal" :induct (list::len-len-induction alist alist::alist-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction alist alist-equiv))))
 
 ;; jcd - added this
 (defthm alistp-of-cons-onto-keys
@@ -2384,7 +2384,7 @@
 
 ;; jcd - added this
 (defcong alist::alist-equiv equal (append-onto-keys a x) 2
-  :hints(("Goal" :induct (list::len-len-induction x alist::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 ;; jcd - added this
 (defthm alistp-of-append-onto-keys
@@ -2465,7 +2465,7 @@
    :hints(("Goal"
            :in-theory (disable mp-ignores-alistfix)
            :use ((:instance mp-ignores-alistfix (alist alist))
-                 (:instance mp-ignores-alistfix (alist alist::alist-equiv))))))
+                 (:instance mp-ignores-alistfix (alist alist-equiv))))))
 )
 
 
@@ -2656,7 +2656,7 @@
 
 ;; jcd - added this
 (defcong alist::alist-equiv equal (keep-but-chop-relevant-pairs p alist) 2
-  :hints(("Goal" :induct (list::len-len-induction alist alist::alist-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction alist alist-equiv))))
 
 (defthm keep-but-chop-relevant-pairs-when-diverges-from-all
   (implies (diverges-from-all p (keys alist))
@@ -2786,7 +2786,7 @@
 (defcong alist::alist-equiv equal (effect-on-spot p alist) 2
   :hints(("Goal"
           :in-theory (enable effect-on-spot)
-          :induct (list::len-len-induction alist alist::alist-equiv))))
+          :induct (list::len-len-induction alist alist-equiv))))
 
 (defthm effect-on-spot-of-non-consp-one
   (implies (not (consp p))
@@ -3017,7 +3017,7 @@
 
 ;; jcd - added this
 (defcong alist::alist-equiv equal (no-shadowed-pairs alist) 1
-  :hints(("Goal" :induct (list::len-len-induction alist alist::alist-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction alist alist-equiv))))
 
 (in-theory (enable gp-of-mp-better))
 
@@ -3090,7 +3090,7 @@
 
 ;; jcd - added this rule
 (defcong list::equiv equal (no-submissives paths) 1
-  :hints(("Goal" :induct (list::len-len-induction paths list::paths-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction paths paths-equiv))))
 
 (defthm no-submissives-from-all-diverge
   (implies (all-diverge paths)
@@ -4780,7 +4780,7 @@
 ;; jcd - added this congruence
 (defcong list::equiv equal (clrp-list paths r) 1
   :hints(("Goal" :in-theory (enable clrp-list)
-          :induct (list::len-len-induction paths list::paths-equiv))))
+          :induct (list::len-len-induction paths paths-equiv))))
 
 (defthmd open-clrp-list
   (implies

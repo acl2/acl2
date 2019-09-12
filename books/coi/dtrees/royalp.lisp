@@ -81,7 +81,7 @@
 
  (defcong list::equiv equal (royalp path dtree) 1
    :hints(("Goal" :in-theory (enable royalp)
-           :induct (my-induction path list::path-equiv dtree))))
+           :induct (my-induction path path-equiv dtree))))
 )
 
 

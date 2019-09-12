@@ -346,7 +346,7 @@
 (defrefinement list::equiv alist-equiv
   :hints(("Goal"
           :in-theory (enable alist-equiv)
-          :induct (list::len-len-induction ACL2::x ACL2::y))))
+          :induct (list::len-len-induction x y))))
 
 (defcong alist-equiv equal (alistfix x) 1
   :hints(("Goal" :in-theory (enable alist-equiv))))

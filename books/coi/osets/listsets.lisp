@@ -119,55 +119,55 @@
 ;; decide to integrate it with the lists library
 
 (defcong list::equiv equal (all-list<true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (exists-list<true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (find-list<true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (filter-list<true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (all-list<not-true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (exists-list<not-true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (find-list<not-true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (filter-list<not-true-listp> x) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (map-list<fix> list) 1
-  :hints(("Goal" :induct (list::len-len-induction list list::list-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction list list-equiv))))
 
 (defcong list::equiv equal (all-list<inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (exists-list<inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (find-list<inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (filter-list<inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (all-list<not-inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (exists-list<not-inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (find-list<not-inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 (defcong list::equiv equal (filter-list<not-inversep<fix>> x a) 1
-  :hints(("Goal" :induct (list::len-len-induction x list::x-equiv))))
+  :hints(("Goal" :induct (list::len-len-induction x x-equiv))))
 
 ;; List Sets
 ;;
