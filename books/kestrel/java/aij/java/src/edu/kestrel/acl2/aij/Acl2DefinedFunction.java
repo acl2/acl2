@@ -109,7 +109,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Checks if this defined function is
      * the {@code if} ACL2 primitive function.
-     * This is never the case, because that function is represented as
+     * This is never the case, because {@code if} is represented as
      * an instance of {@link Acl2NativeFunction}.
      *
      * @return {@code false}.
@@ -122,7 +122,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Checks if this defined function is
      * the {@code or} ACL2 "pseudo-function".
-     * This is never the case, because that function is represented as
+     * This is never the case, because {@code if} is represented as
      * an instance of {@link Acl2NativeFunction}.
      *
      * @return {@code false}.
