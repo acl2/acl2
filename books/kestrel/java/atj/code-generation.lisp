@@ -15,7 +15,6 @@
 
 (include-book "aij-notions")
 (include-book "types")
-(include-book "primitives")
 (include-book "test-structures")
 (include-book "pretty-printer")
 
@@ -1483,12 +1482,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-convert-jexpr-from-jint-to-value ((jexpr jexprp))
+  :returns (new-jexpr jexprp)
+  :short "Convert a Java expression from type @('int') to type @('Acl2Value')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-adapt-jexpr-to-type),
+     when the source ATJ type is @(':jint')
+     and the destination ATJ type is @(':value').
+     In ACL2, Java @('int') values are represented as
+     values satisfying @(tsee int-value-p):
+     this function converts the Java @('int') returned by the expression
+     to the Java @('Acl2Value') that represents
+     the ACL2 representation of the Java @('int') value.")
+   (xdoc::p
+    "The representation is explicated and checked "
+    (xdoc::seetopic "atj-jint-representation-check" "here")
+    ". We create an @('Acl2Integer') from the @('int'),
+     and then a list of length 2 (as two @('Acl2ConsPair')s)
+     whose first element is the @('Acl2Symbol') for the keyword @(':int')
+     and whose second element is the @('Acl2Integer')."))
+  (b* ((acl2-integer-jexpr (jexpr-smethod *atj-jtype-int*
+                                          "make"
+                                          (list jexpr)))
+       (acl2-symbol-nil-jexpr (jexpr-name "Acl2Symbol.NIL"))
+       (acl2-inner-cons-jexpr (jexpr-smethod *atj-jtype-cons*
+                                             "make"
+                                             (list acl2-integer-jexpr
+                                                   acl2-symbol-nil-jexpr)))
+       (acl2-keyword-int-jexpr (jexpr-smethod *atj-jtype-symbol*
+                                              "makeKeyword"
+                                              (list
+                                               (jexpr-literal-string "INT"))))
+       (acl2-outer-cons-jexpr (jexpr-smethod *atj-jtype-cons*
+                                             "make"
+                                             (list acl2-keyword-int-jexpr
+                                                   acl2-inner-cons-jexpr))))
+    acl2-outer-cons-jexpr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-jexpr-from-value-to-jint ((jexpr jexprp))
+  :returns (new-jexpr jexprp)
+  :short "Convert a Java expression from type @('Acl2Value') to type @('int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-adapt-jexpr-to-type),
+     when the source ATJ type is @(':value')
+     and the destination ATJ type is @(':jint').
+     In ACL2, Java @('int') values are represented as
+     values satisfying @(tsee int-value-p):
+     this function converts the Java @('Acl2Value') returned by the expression
+     to the Java @('int') that is represented by
+     the @('Acl2Value') in ACL2.")
+   (xdoc::p
+    "Assuming guard verification,
+     the argument of this function should always be
+     an expression that returns an @('Acl2Value') with the right representation,
+     i.e. the representation explicated and checked "
+    (xdoc::seetopic "atj-jint-representation-check" "here")
+    ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
+     get its @(tsee cdr),
+     cast that to @('Acl2ConsPair'),
+     get its @(tsee car),
+     cast it to @('Acl2Integer'),
+     and get its numeric value as an @('int')."))
+  (b* ((acl2-outer-cons-jexpr (jexpr-paren (jexpr-cast *atj-jtype-cons* jexpr)))
+       (acl2-cdr-jexpr (jexpr-imethod acl2-outer-cons-jexpr "getCdr" nil))
+       (acl2-inner-cons-jexpr (jexpr-paren
+                               (jexpr-cast *atj-jtype-cons* acl2-cdr-jexpr)))
+       (acl2-car-jexpr (jexpr-imethod acl2-inner-cons-jexpr "getCar" nil))
+       (acl2-integer-jexpr (jexpr-paren
+                            (jexpr-cast *atj-jtype-int* acl2-car-jexpr))))
+    (jexpr-imethod acl2-integer-jexpr "getJavaInt" nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-adapt-jexpr-to-type ((jexpr jexprp)
                                  (src-type atj-typep)
                                  (dst-type atj-typep))
   :returns (new-jexpr jexprp :hyp (jexprp jexpr))
-  :short "Adapt the source type of a Java expression
-          to a destination type."
+  :short "Adapt a Java expression from a source type to a destination type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1496,21 +1572,45 @@
      shallowly embedded ACL2 calls of named functions.
      As explained " (xdoc::seetopic "atj-types" "here") ",
      when the type of an actual argument of a function call
-     is wider than the type of the formal argument,
-     a cast is inserted in the generated Java code.")
+     is not the same as or a subtype (in Java) of
+     the type of the formal argument,
+     ATJ adds Java code to convert from the former type to the latter type.
+     Note that being a subtype in Java is not the same as
+     satisfying @(tsee atj-type-subeqp),
+     which only corresponds to subtyping (i.e. inclusion) in ACL2.")
    (xdoc::p
     "This code generation function does that.
      The input Java expression is the one generated for the actual argument,
      whose type is @('src-type') (for `source type').
      The input @('dst-type') (for `destination type')
-     is the type of the corresponding formal argument.
-     If the destination type is the same as or wider than the source type,
-     the Java expression is returned unchanged.
-     Otherwise, the expression is wrapped with
-     a cast to the narrower destination type."))
-  (if (atj-type-subeqp src-type dst-type)
-      jexpr
-    (jexpr-cast (atj-type-to-jtype dst-type) jexpr)))
+     is the type of the corresponding formal argument.")
+   (xdoc::p
+    "To convert from @(':jint') to any other type
+     we first convert to @(':value')
+     via @(tsee atj-convert-jexpr-from-jint-to-value),
+     and then we cast to the other type
+     (unless the other type is already @(':value')).
+     To convert to @(':jint') from any other type,
+     we use @(tsee atj-convert-jexpr-from-value-to-jint);
+     note that any other type is a subtype of @('Acl2Value') in Java,
+     so there is not need for casts.
+     To convert between the AIJ types,
+     if the source type is a subtype of or the same type as
+     the destination type (checked via @(tsee atj-type-subeqp)),
+     we leave the expression unchanged;
+     otherwise, we insert a cast to the destination type,
+     which is expected to always succeed
+     under the assumption of guard verification."))
+  (cond ((eq src-type dst-type) jexpr)
+        ((eq src-type :jint)
+         (b* ((acl2-value-jexpr (atj-convert-jexpr-from-jint-to-value jexpr)))
+           (if (eq dst-type :value)
+               acl2-value-jexpr
+             (jexpr-cast (atj-type-to-jtype dst-type) acl2-value-jexpr))))
+        ((eq dst-type :jint)
+         (atj-convert-jexpr-from-value-to-jint jexpr))
+        ((atj-type-subeqp src-type dst-type) jexpr)
+        (t (jexpr-cast (atj-type-to-jtype dst-type) jexpr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
