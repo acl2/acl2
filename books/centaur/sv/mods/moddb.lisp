@@ -462,7 +462,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                   (remove-later-duplicates (cdr x)))))
   ///
   (defcong list-equiv equal (remove-later-duplicates x) 1
-    :hints (("goal" :induct (acl2::fast-list-equiv x acl2::x-equiv)
+    :hints (("goal" :induct (acl2::fast-list-equiv x x-equiv)
              :in-theory (enable (:i acl2::fast-list-equiv)))))
 
   (defthm remove-of-remove
@@ -2122,7 +2122,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
   (defcong acl2::list-equiv equal (index-of k x) 2
     :hints(("Goal" :use ((:instance index-of-of-list-fix)
                          (:instance index-of-of-list-fix
-                          (x acl2::x-equiv)))
+                          (x x-equiv)))
             :in-theory (disable index-of-of-list-fix))))
 
   (local
@@ -4003,7 +4003,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                   (nrec (intersection$ keys1 keys2) x)))
 
          (defcong list-equiv equal (nrec keys r) 1
-           :hints (("goal" :induct (acl2::fast-list-equiv keys acl2::keys-equiv)
+           :hints (("goal" :induct (acl2::fast-list-equiv keys keys-equiv)
                     :in-theory (enable (:i acl2::fast-list-equiv)))))
 
          (local (defthm intersect-superset-under-list-equiv

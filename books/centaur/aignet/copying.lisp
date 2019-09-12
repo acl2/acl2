@@ -2629,7 +2629,7 @@ aignet when its initial value is the specified vector:</p>
                                   copy strash gatesimp aignet2)
              :expand ((aignet-copy-dfs-rec id aignet mark
                                            copy strash gatesimp aignet2)
-                      (aignet-copy-dfs-rec acl2::id-equiv aignet mark
+                      (aignet-copy-dfs-rec id-equiv aignet mark
                                            copy strash gatesimp aignet2)))))
 
   (defret copies-sized-of-aignet-copy-dfs-rec

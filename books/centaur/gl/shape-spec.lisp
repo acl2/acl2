@@ -349,7 +349,7 @@
          :hints(("Goal" :in-theory (e/d (acl2::list-equiv)
                                         (bfr-list->s-of-list-fix))
                  :use ((:instance bfr-list->s-of-list-fix)
-                       (:instance bfr-list->s-of-list-fix (x acl2::x-equiv)))))))
+                       (:instance bfr-list->s-of-list-fix (x x-equiv)))))))
 
 (defthm bfr-list->s-of-append
   (implies (consp b)
