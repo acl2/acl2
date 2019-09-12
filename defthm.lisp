@@ -5729,6 +5729,65 @@
           (value ttree)))))))
 
 ;---------------------------------------------------------------------------
+; Section:  Symbol generation utilities
+
+; The following functions, macros and theorems are used to generate
+; symbols. A general principle for symbol generation is that generated
+; symbols should be in the current package. Doing that in ACL2
+; requires using make-event in a top level form to determine the
+; current package from state and then passing this package to
+; functions that generate symbols. The code below was adapted from
+; similar code in ACL2s. See books/acl2s/utilities.lisp for more
+; utilities for generating symbols. See books/acl2s/defunc.lisp for an
+; example of a utility that generates symbols in the current
+; package. Other examples include defequiv, defrefinement and defcong,
+; in this file.
+
+(defun fix-pkg (pkg)
+  (declare (xargs :guard (and (or (null pkg) (stringp pkg))
+                              (not (equal pkg "")))))
+  (if (and pkg (not (equal pkg "COMMON-LISP")))
+      pkg
+    "ACL2"))
+
+(defun fix-sym (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (if (equal (symbol-package-name sym) "COMMON-LISP")
+      (pkg-witness "ACL2")
+    sym))
+
+(defmacro fix-intern$ (name pkg)
+  `(intern$ ,name (fix-pkg ,pkg)))
+
+(defmacro fix-intern-in-pkg-of-sym (string sym)
+  `(intern-in-package-of-symbol ,string (fix-sym ,sym)))
+
+(defthm character-listp-explode-nonnegative-integer
+  (implies (and (integerp x)
+                (<= 0 x)
+                (print-base-p b)
+                (character-listp ans))
+           (character-listp (explode-nonnegative-integer x b ans))))
+
+(defthm character-listp-explode-atom
+  (implies (and (acl2-numberp x)
+                (print-base-p b))
+           (character-listp (explode-atom x b))))
+
+(defun pack-to-string (l)
+  (declare (xargs :guard (good-atom-listp l)))
+  (coerce (packn1 l) 'string))
+
+(defun gen-sym-sym-fn (l sym)
+  (declare (xargs :guard (and (good-atom-listp l)
+                              (symbolp sym))))
+  (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
+
+(defmacro gen-sym-sym (l &optional sym)
+  (declare (xargs :guard t))
+  `(gen-sym-sym-fn ,l ,sym))
+
+;---------------------------------------------------------------------------
 ; Section:  :EQUIVALENCE Rules
 
 ; For a rule to acceptable as an :EQUIVALENCE rule, it must state the
@@ -5747,36 +5806,40 @@
 ; equivalences (n>2) but don't be fooled into thinking we allow it
 ; today!
 
-(defun boolean-fn (fn)
+(defun boolean-fn (fn sym)
 
 ; The name boolean is not usable for definitions in Allegro, because
 ; it's in the COMMON-LISP package.  So, we'd better not use that name
 ; here.
+  (let ((x (fix-intern-in-pkg-of-sym "X" sym))
+        (y (fix-intern-in-pkg-of-sym "Y" sym)))
+  `(booleanp (,fn ,x ,y))))
 
-  `(booleanp (,fn x y)))
-
-(defun reflexivity (fn)
+(defun reflexivity (fn sym)
 
 ; In this function we expect fn to have arity 2.
+  (let ((x (fix-intern-in-pkg-of-sym "X" sym)))
+    `(,fn ,x ,x)))
 
-  `(,fn x x))
-
-(defun symmetry (fn)
-
-; This function expects fn to have arity 2.
-
-  `(implies (,fn x y)
-            (,fn y x)))
-
-(defun transitivity (fn)
+(defun symmetry (fn sym)
 
 ; This function expects fn to have arity 2.
+  (let ((x (fix-intern-in-pkg-of-sym "X" sym))
+        (y (fix-intern-in-pkg-of-sym "Y" sym)))
+    `(implies (,fn ,x ,y)
+              (,fn ,y ,x))))
 
-  `(implies (and (,fn x y)
-                 (,fn y z))
-            (,fn x z)))
+(defun transitivity (fn sym)
 
-(defun equivalence-relation-condition (fn)
+; This function expects fn to have arity 2.
+  (let ((x (fix-intern-in-pkg-of-sym "X" sym))
+        (y (fix-intern-in-pkg-of-sym "Y" sym))
+        (z (fix-intern-in-pkg-of-sym "Z" sym)))
+    `(implies (and (,fn ,x ,y)
+                   (,fn ,y ,z))
+              (,fn ,x ,z))))
+
+(defun equivalence-relation-condition (fn sym)
 
 ; This function expects fn to have arity 2.  We generate a formula that states
 ; that fn is Boolean, reflexive, symmetric, and transitive.
@@ -5789,10 +5852,10 @@
 ; the Boolean condition we would have to be more careful about, say,
 ; commutative unification.
 
-  `(and ,(boolean-fn fn)
-        ,(reflexivity fn)
-        ,(symmetry fn)
-        ,(transitivity fn)))
+  `(and ,(boolean-fn fn sym)
+        ,(reflexivity fn sym)
+        ,(symmetry fn sym)
+        ,(transitivity fn sym)))
 
 (defun find-candidate-equivalence-relation (clauses)
 
@@ -5865,7 +5928,7 @@
            for n>2.  Sorry."
           name))
      (t (er-let*
-         ((eqv-cond (translate (equivalence-relation-condition fn)
+         ((eqv-cond (translate (equivalence-relation-condition fn name)
                                t t t ctx wrld state)))
 ; known-stobjs = t (stobjs-out = t)
 
@@ -11570,25 +11633,22 @@
          rule-classes)
         (t (cons class rule-classes))))
 
-(defun gen-new-name-in-package-of-symbol1 (char-lst cnt pkgsym wrld)
+; The next two functions do not seem to be used used anywhere in the
+; ACL2 sources or in any of the books, but I updated them so that they
+; use the new symbol generation utilities above. 
+(defun gen-new-name-in-package-of-symbol1 (sym cnt pkgsym wrld)
 
 ; This function generates a symbol in the same package as pkgsym that
 ; is guaranteed to be a new-namep in wrld.  We form a symbol by
 ; concatenating char-lst and the decimal representation of the natural
 ; number cnt (separated by a hyphen).  Clearly, for some sufficiently
 ; large cnt that symbol is a new name.
+  
+  (let ((sym (gen-sym-sym (list sym cnt) pkgsym)))
+    (if (new-namep sym wrld)
+        sym
+      (gen-new-name-in-package-of-symbol1 sym (1+ cnt) pkgsym wrld))))
 
-  (let ((sym (intern-in-package-of-symbol
-              (coerce
-               (append char-lst
-                       (cons #\- (explode-nonnegative-integer cnt 10 nil)))
-               'string)
-              pkgsym)))
-    (cond ((new-namep sym wrld)
-           sym)
-          (t
-           (gen-new-name-in-package-of-symbol1 char-lst (1+ cnt) pkgsym
-                                               wrld)))))
 
 (defun gen-new-name-in-package-of-symbol (sym pkgsym wrld)
 
@@ -11600,98 +11660,279 @@
   (let ((sym1 (if (equal (symbol-package-name sym)
                          (symbol-package-name pkgsym))
                   sym
-                  (intern-in-package-of-symbol
-                   (symbol-name sym)
-                   pkgsym))))
-    (cond ((new-namep sym1 wrld) sym1)
-          (t (gen-new-name-in-package-of-symbol1
-              (coerce (symbol-name sym) 'list)
-              0
-              pkgsym
-              wrld)))))
+                (fix-intern-in-pkg-of-sym
+                 (symbol-name sym)
+                 pkgsym))))
+    (if (new-namep sym1 wrld)
+        sym1
+      (gen-new-name-in-package-of-symbol1 sym 0 pkgsym wrld))))
 
-(defmacro defequiv (equiv
-                    &key (rule-classes '(:EQUIVALENCE))
-                    instructions
-                    hints
-                    otf-flg
-                    event-name)
-  `(defthm ,(or event-name
-                (intern-in-package-of-symbol
-                 (coerce (packn1 (list equiv "-IS-AN-EQUIVALENCE")) 'string)
-                 equiv))
-     ,(equivalence-relation-condition equiv)
-     :rule-classes
-     ,(extend-rule-classes :equivalence rule-classes)
-     ,@(if instructions (list :instructions instructions) nil)
-     ,@(if hints (list :hints hints) nil)
-     ,@(if otf-flg (list :otf-flg otf-flg) nil)))
 
-(defmacro defrefinement (equiv1 equiv2
-                                &key (rule-classes '(:REFINEMENT))
+(defconst *defequiv-package-values* '(:current :equiv :legacy))
+
+(defun defequiv-fn (equiv package current-pkg event-name 
+                             rule-classes instructions hints otf-flg)
+  (declare (xargs :guard
+                  (and (symbolp equiv)
+                       (member package *defequiv-package-values*)
+                       (or (null current-pkg) (stringp current-pkg))
+                       (symbolp event-name))))
+  (let* ((sym (case package
+                (:current (pkg-witness current-pkg))
+                (otherwise equiv)))
+         (default-name
+           (gen-sym-sym (list equiv "-IS-AN-EQUIVALENCE") sym))
+         (event-name (or event-name default-name))
+         (equivalence-condition
+          (equivalence-relation-condition equiv sym)))
+    `(defthm ,event-name
+       ,equivalence-condition
+       :rule-classes
+       ,(extend-rule-classes :equivalence rule-classes)
+       ,@(if instructions (list :instructions instructions) nil)
+       ,@(if hints (list :hints hints) nil)
+       ,@(if otf-flg (list :otf-flg otf-flg) nil))))
+
+(defmacro defequiv (&whole whole
+                           equiv
+                           &key (package ':current)
+                           event-name
+                           (rule-classes '(:EQUIVALENCE))
+                           instructions
+                           hints
+                           otf-flg)
+  (let ((defequiv-msg
+          "The form of a defequiv event is ~
+          ~%~%(defequiv equiv ...) ~
+          ~%~%where equiv is a symbol."))
+    (cond
+     ((not (symbolp equiv))
+      `(er soft 'defequiv
+           ,(string-append
+             defequiv-msg
+             "~%~%However, ~x0 does not have this form. ~
+              ~%See :DOC defequiv.")
+           ',whole))
+     ((not (member package *defequiv-package-values*))
+      `(er soft 'defequiv
+           ,(string-append
+             defequiv-msg
+             "~%~%The optional :package keyword argument determines the package  ~
+              of the symbols generated, which includes the generated rune and ~
+              variable names. The allowed values are: ~
+              ~%~%:current - this is the default value and indicates that ~
+                 the current package should be used. ~
+              ~%~%:equiv, :legacy - these values indicate that the package ~
+                 of equiv should be used. ~
+               ~%~%See :DOC defequiv.")))
+     ((not (symbolp event-name))
+      `(er soft 'defequiv
+           ,(string-append
+             defequiv-msg
+             "~%~%The optional :event-name keyword argument should be
+                           a symbol.")))
+     ((not (equal package :current))
+      (defequiv-fn equiv package nil event-name
+        rule-classes instructions hints otf-flg))
+     (t `(make-event (defequiv-fn
+                       ',equiv
+                       ',package
+                       (current-package state)
+                       ',event-name
+                       ',rule-classes
+                       ',instructions
+                       ',hints
+                       ',otf-flg))))))
+
+(defconst *defrefinement-package-values* '(:current :equiv1 :equiv2 :legacy))
+
+(defun defrefinement-fn (equiv1 equiv2 package current-pkg event-name
+                                rule-classes instructions hints otf-flg)
+  (declare (xargs :guard
+                  (and (symbolp equiv1)
+                       (symbolp equiv2)
+                       (member package *defrefinement-package-values*)
+                       (or (null current-pkg) (stringp current-pkg))
+                       (symbolp event-name))))
+  (let* ((sym (case package
+                (:current (pkg-witness current-pkg))
+                (:equiv2 equiv2)
+                (otherwise equiv1)))
+         (default-name
+           (gen-sym-sym (list equiv1 "-REFINES-" equiv2) sym))
+         (event-name (or event-name default-name))
+         (x (fix-intern-in-pkg-of-sym "X" sym))
+         (y (fix-intern-in-pkg-of-sym "Y" sym)))
+    `(defthm ,event-name
+       (implies (,equiv1 ,x ,y) (,equiv2 ,x ,y))
+       :rule-classes
+       ,(extend-rule-classes :refinement rule-classes)
+       ,@(if instructions (list :instructions instructions) nil)
+       ,@(if hints (list :hints hints) nil)
+       ,@(if otf-flg (list :otf-flg otf-flg) nil))))
+
+(defmacro defrefinement (&whole whole
+                                equiv1
+                                equiv2
+                                &key
+                                (package ':current)
+                                event-name
+                                (rule-classes '(:REFINEMENT))
                                 instructions
                                 hints
-                                otf-flg
-                                event-name
-                                doc)
-  `(defthm
-     ,(or event-name
-          (intern-in-package-of-symbol
-           (coerce (packn1 (list equiv1 "-REFINES-" equiv2)) 'string)
-           equiv1))
-     (implies (,equiv1 x y) (,equiv2 x y))
-     :rule-classes
-     ,(extend-rule-classes :REFINEMENT rule-classes)
-     ,@(if instructions (list :instructions instructions) nil)
-     ,@(if hints (list :hints hints) nil)
-     ,@(if otf-flg (list :otf-flg otf-flg) nil)
-     ,@(if doc (list :doc doc) nil)))
+                                otf-flg)
+  (let ((defrefinement-msg
+          "The form of a defrefinement event is ~
+          ~%~%(defrefinement equiv1 equiv2 ...) ~
+          ~%~%where equiv1 and equiv2 are symbols."))
+    (cond
+     ((not (and (symbolp equiv1)
+                (symbolp equiv2)))
+      `(er soft 'defrefinement
+           ,(string-append
+             defrefinement-msg
+             "~%~%However, ~x0 does not have this form. ~
+              ~%See :DOC defrefinement.")
+           ',whole))
+     ((not (member package *defrefinement-package-values*))
+      `(er soft 'defrefinement
+           ,(string-append
+             defrefinement-msg
+             "~%~%The optional :package keyword argument determines the package  ~
+              of the symbols generated, which includes the generated rune and ~
+              variable names. The allowed values are: ~
+              ~%~%:current - this is the default value and indicates that ~
+                the current package should be used. ~
+              ~%~%:equiv1, :legacy - these values indicate that the package ~
+                of equiv1 should be used. ~
+              ~%~%:equiv2 - this value indicates that the package of equiv2 ~
+                should be used. ~
+              ~%~%See :DOC defrefinement.")))
+     ((not (symbolp event-name))
+      `(er soft 'defrefinement
+           ,(string-append
+             defrefinement-msg
+             "~%~%The optional :event-name keyword argument should be
+                           a symbol.")))
+     ((not (equal package :current))
+      (defrefinement-fn equiv1 equiv2 package nil event-name
+        rule-classes instructions hints otf-flg))
+     (t `(make-event (defrefinement-fn
+                       ',equiv1
+                       ',equiv2
+                       ',package
+                       (current-package state)
+                       ',event-name
+                       ',rule-classes
+                       ',instructions
+                       ',hints
+                       ',otf-flg))))))
 
-(defmacro defcong (&whole x
-                          equiv1 equiv2 fn-args k
-                          &key (rule-classes '(:CONGRUENCE))
+(defconst *defcong-package-values* '(:current :equiv1 :legacy :equiv2 :function))
+
+(defun defcong-fn (equiv1 equiv2 fn-args k package current-pkg event-name
+                          rule-classes instructions hints otf-flg )
+  (declare (xargs :guard
+                  (and (symbolp equiv1)
+                       (symbolp equiv2)
+                       (symbol-listp fn-args)
+                       (no-duplicatesp-equal (cdr fn-args))
+                       (integerp k)
+                       (< 0 k)
+                       (< k (length fn-args))
+                       (not (eql (car fn-args) 'acl2::if))
+                       (member package *defcong-package-values*)
+                       (or (null current-pkg) (stringp current-pkg))
+                       (symbolp event-name))))
+  (let* ((fn (car fn-args))
+         (sym (case package
+                (:current (pkg-witness current-pkg))
+                (:equiv2 equiv2)
+                (:function fn)
+                (otherwise equiv1)))
+         (default-name
+           (gen-sym-sym (list equiv1 "-IMPLIES-" equiv2 "-" fn "-" k)
+                        sym))
+         (event-name (or event-name default-name))
+         (kth-arg (nth k fn-args))
+         (arg-k-equiv
+          (gen-sym-sym (list kth-arg '-equiv) sym))
+         (updated-fn-args (update-nth k arg-k-equiv fn-args)))
+    `(defthm ,event-name
+       (implies (,equiv1 ,kth-arg ,arg-k-equiv)
+                (,equiv2 ,fn-args ,updated-fn-args))
+       :rule-classes
+       ,(extend-rule-classes :CONGRUENCE rule-classes)
+       ,@(if instructions (list :instructions instructions) nil)
+       ,@(if hints (list :hints hints) nil)
+       ,@(if otf-flg (list :otf-flg otf-flg) nil))))
+
+(defmacro defcong (&whole whole
+                          equiv1
+                          equiv2
+                          fn-args
+                          k
+                          &key (package ':current)
+                          event-name
+                          (rule-classes '(:CONGRUENCE))
                           instructions
                           hints
-                          otf-flg
-                          event-name
-                          doc)
-  (cond
-   ((not (and (symbolp equiv1)
-              (symbolp equiv2)
-              (integerp k)
-              (< 0 k)
-              (symbol-listp fn-args)
-              (no-duplicatesp-equal (cdr fn-args))
-              (< k (length fn-args))))
-    `(er soft 'defcong
-         "The form of a defcong event is (defcong equiv1 equiv2 term k ...), ~
-          where equiv1 and equiv2 are symbols and k is a positive integer less ~
-          than the length of term, where term should be a call of a function ~
-          symbol on distinct variable arguments.  However, ~x0 does not have ~
-          this form.  See :DOC defcong."
-         ',x))
-   (t
-    (let ((sym (if (equal (symbol-package-name equiv1)
-                          *main-lisp-package-name*)
-                   (pkg-witness "ACL2")
-                 equiv1)))
-      `(defthm
-         ,(or event-name
-              (intern-in-package-of-symbol
-               (coerce (packn1 (list equiv1 "-IMPLIES-"
-                                     equiv2 "-" (car fn-args) "-" k)) 'string)
-               sym))
-         ,(let ((arg-k-equiv (intern-in-package-of-symbol
-                              (coerce (packn1 (list (nth k fn-args) '-equiv))
-                                      'string)
-                              sym)))
-            `(implies (,equiv1 ,(nth k fn-args)
-                               ,arg-k-equiv)
-                      (,equiv2 ,fn-args
-                               ,(update-nth k arg-k-equiv fn-args))))
-         :rule-classes
-         ,(extend-rule-classes :CONGRUENCE rule-classes)
-         ,@(if instructions (list :instructions instructions) nil)
-         ,@(if hints (list :hints hints) nil)
-         ,@(if otf-flg (list :otf-flg otf-flg) nil)
-         ,@(if doc (list :doc doc) nil))))))
+                          otf-flg)
+  (let ((defcong-msg
+          "The form of a defcong event is ~
+          ~%~%(defcong equiv1 equiv2 term k ...), ~
+          ~%~%where equiv1 and equiv2 are symbols, term is a call of a function ~
+          symbol, other than if, on distinct variable arguments and k is a ~
+          positive integer less than the length of term."))
+    (cond
+     ((not (and (symbolp equiv1)
+                (symbolp equiv2)
+                (symbol-listp fn-args)
+                (no-duplicatesp-equal (cdr fn-args))
+                (integerp k)
+                (< 0 k)
+                (< k (length fn-args))
+                (not (eql (car fn-args) 'acl2::if))))
+      `(er soft 'defcong
+           ,(string-append
+             defcong-msg
+             "~%However, ~x0 does not have this form. ~
+              ~%See :DOC defcong.")
+           ',whole))
+     ((not (member package *defcong-package-values*))
+      `(er soft 'defcong
+           ,(string-append
+             defcong-msg
+             "~%~%The optional :package keyword argument determines the package  ~
+            of the symbols generated, which includes the generated rune and ~
+            variable names. The allowed values are: ~
+            ~%~%:current - this is the default value and indicates that ~
+               the current package should be used. ~
+            ~%~%:equiv1, :legacy - these values indicate that the package ~
+              of equiv1 should be used. ~
+            ~%~%:equiv2 - this value indicates that the package of equiv2 ~
+              should be used. ~
+            ~%~%:function - this value indicates that the package of ~
+              of the function symbol of term should be used. ~
+            ~%~%See :DOC defcong.")))
+     ((not (symbolp event-name))
+      `(er soft 'defcong
+           ,(string-append
+             defcong-msg
+             "~%~%The optional :event-name keyword argument should be
+                           a symbol.")))
+     ((not (equal package :current))
+      (defcong-fn equiv1 equiv2 fn-args k package nil event-name
+        rule-classes instructions hints otf-flg ))
+     (t `(make-event (defcong-fn
+                       ',equiv1
+                       ',equiv2
+                       ',fn-args
+                       ',k
+                       ',package
+                       (current-package state)
+                       ',event-name
+                       ',rule-classes
+                       ',instructions
+                       ',hints
+                       ',otf-flg))))))
