@@ -1,0 +1,1337 @@
+
+(in-package "SVL")
+
+(include-book "centaur/sv/svex/vars" :dir :system)
+
+(include-book "centaur/sv/mods/lhs" :dir :system)
+(include-book "centaur/sv/mods/svmods" :dir :system)
+
+(include-book "std/strings/decimal" :dir :system)
+(include-book "std/strings/substrp" :dir :system)
+(include-book "tools")
+(include-book "macros")
+(include-book "centaur/fty/top" :dir :system)
+
+(include-book "sv-to-svl")
+
+(include-book "svex-simplify")
+
+(include-book "projects/rp-rewriter/top" :dir :system)
+
+(include-book "~/async/fft/svl-tests/tests")
+
+(in-theory (disable ACL2::NATP-WHEN-GTE-0
+                    ACL2::NATP-WHEN-INTEGERP))
+
+(encapsulate
+  nil
+  (local
+   (in-theory (enable rp::measure-lemmas)))
+
+  (local
+   (defthm m-lemma1
+     (implies (and (< a x)
+                   (natp z)
+                   (natp y))
+              (< a
+                 (+ x y z)))))
+
+  (local
+   (defthm m-lemma2
+     (implies (and t)
+              (equal (< a
+                        (+ x y a))
+                     (< 0 (+ x y))))))
+
+  (local
+   (defthm lemma1
+     (implies
+      (and (consp x) (consp (car x)))
+      (< (cons-countw (cdr (car x)) 2)
+         (cons-countw x 2)))
+     :hints (("goal"
+	      :in-theory (e/d (cons-countw)
+                              (ACL2::FOLD-CONSTS-IN-+))))))
+
+  (local
+   (defthm lemma2-lemma
+     (implies (and (natp a)
+                   (natp b)
+                   (natp x))
+              (< x
+                 (+ 1 a x b)))))
+
+  (local
+   (defthm lemma2-lemma2
+     (implies (and (natp a))
+              (< 2
+                 (+ 3 a)))))
+
+  (local
+   (defthm lemma2
+     (< (cons-countw (cadr x) 2)
+        (+ 1 (cons-countw x 2)))
+     :otf-flg t
+     :hints (("goal"
+              :expand ((cons-countw x 2)
+                       (cons-countw (cdr x) 2))
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm lemma3-lemma1
+     (implies (natp w)
+              (<= w (cons-countw x w)))
+     :hints (("Goal"
+              :induct (cons-countw x w)
+              :in-theory (e/d (cons-countw) ())))))
+
+  (local
+   (defthm lemma3-lemma2
+     (implies
+      (and (<= 2 a)
+           (<= 2 b))
+      (< (1+ x)
+         (+ a b x)))))
+
+  (local
+   (defthm lemma3
+     (implies (and (consp x) (consp (car x)))
+              (< (+ 1 (cons-countw (cdr (car x)) 2))
+                 (cons-countw x 2)))
+     :hints (("Goal"
+              :expand ((cons-countw x 2)
+                       (CONS-COUNTW (CAR X) 2))
+              :in-theory (e/d () ())))))
+
+  (fty::defprod
+   alias
+   ((name sv::svar-p :default "")
+    (val sv::svex-p :default 0)))
+
+  (fty::deflist
+   alias-lst
+   :elt-type alias-p)
+
+  (fty::defalist
+   alias-alist
+   :true-listp t
+   :key-type sv::svar-p
+   :val-type sv::svex-p)
+
+  (fty::deftypes
+   aliasdb
+   (fty::defprod aliasdb
+                 ((this alias-alist)
+                  (sub aliasdb-alist-p))
+                 :tag nil
+                 :count nil
+                 :measure (+ 1 (cons-countw x 2))
+                 :layout :list)
+
+   (fty::defalist aliasdb-alist
+                  :count nil
+                  :measure (cons-countw x 2)
+                  :val-type aliasdb)))
+
+;; (local
+;;  (defthm TRUE-LISTP-ALIASDB->THIS
+;;    (implies (aliasdb-p aliasdb)
+;;             (true-listp (ALIASDB->THIS aliasdb)))
+;;    :otf-flg t
+;;    :hints (("Goal"
+;;             :in-theory (e/d (ALIASDB->THIS
+;;                              ALIAS-ALIST-FIX
+;;                              aliasdb-p) ())))))
+
+(define trace-p (trace)
+  (declare (ignorable trace))
+  (true-listp trace))
+
+(define update-var-with-trace ((var1 sv::svar-p)
+                               (trace trace-p))
+  :verify-guards nil
+  :guard-hints (("Goal"
+                 :in-theory (e/d (trace-p
+                                  SV::SVAR-P
+                                  SV::SVAR->NAME) ())))
+  (b* (((sv::svar var) var1)
+       (var.name
+        (case-match var.name
+          ((':address n & depth)
+           (let ((prefix (nth depth trace)))
+             (if prefix (cons prefix n) n)))
+          (& (let ((prefix (car trace)))
+               (if prefix (cons prefix var.name) var.name))))))
+    (sv::change-svar var1 :name var.name)))
+
+#|
+(update-var-with-trace '(:VAR (:ADDRESS "padded_multiplier" NIL 3)
+                              . 0)
+                       '(("m1" "m2" . "m3")
+                         ("m1" . "m2")
+                         "m1"))
+||#
+
+(acl2::defines
+ update-svex-vars-with-trace
+ (define update-svex-vars-with-trace ((svex sv::svex-p)
+                                      (trace trace-p))
+   :verify-guards nil
+   :hints (("Goal"
+            :in-theory (e/d (svex-kind) ())))
+   (b* ((kind (sv::svex-kind svex)))
+     (case-match kind
+       (':var
+        (update-var-with-trace svex trace))
+       (':quote
+        svex)
+       (& (cons (car svex)
+                (update-svex-vars-with-trace-lst (cdr svex)
+                                                 trace))))))
+ (define update-svex-vars-with-trace-lst ((svex-lst svexlist-p)
+                                          (trace trace-p))
+   :verify-guards nil
+   (if (atom svex-lst)
+       nil
+     (cons (update-svex-vars-with-trace (car svex-lst) trace)
+           (update-svex-vars-with-trace-lst (cdr svex-lst) trace)))))
+
+;; (update-svex-vars-with-trace '(CONCAT 65
+;;                                  (RSH 1040
+;;                                       (:VAR (:ADDRESS "padded_multiplier" NIL 2)
+;;                                             . 0))
+;;                                  '(0 . -1))
+;;                         '(("m1" "m2" . "m3")
+;;                           ("m1" . "m2")
+;;                           "m1"))
+
+(defun cons-to-end (acl2::x acl2::y)
+  (declare (xargs :guard t))
+  (cond ((atom acl2::x) (cons acl2::x acl2::y))
+        (t (cons (car acl2::x)
+                 (cons-to-end (cdr acl2::x)
+                              acl2::y)))))
+
+(define aliaspair->alias ((alias-1 sv::lhs-p)
+                          (alias-2 sv::lhs-p)
+                          (trace trace-p)
+                          (aliases aliasdb-p))
+  :verify-guards nil
+  (b* (((mv alias-1 alias-2)
+        (if (and (equal (len alias-2) 1)
+                 (equal (sv::lhatom-kind (sv::lhrange->atom (car alias-2))) ':var)
+                 (equal (sv::lhatom-var->name (sv::lhrange->atom (car alias-2)))
+                        ':self))
+            (mv alias-2 alias-1)
+          (mv alias-1 alias-2)))
+       (- (if (or (> (len alias-1) 1)
+                  (equal (sv::lhatom-kind (sv::lhrange->atom (car alias-1)))
+                         :z))
+              (hard-error 'aliaspair->alias
+                          "This alias pairs (~p0) is unexpected Fix ~
+                          aliaspair->alias"
+                          (list (cons #\0 alias-1)
+                                ))
+            nil))
+       (lhrange1 (car alias-1))
+       (w1 (sv::lhrange->w lhrange1))
+       ((sv::lhatom-var atom1) (sv::lhrange->atom lhrange1))
+
+       (varname (sv::svar->name atom1.name))
+       (newname (if (consp varname)
+                    (sv::change-svar atom1.name :name (cdr varname))
+                  atom1.name))
+       (place (if (consp varname) (car varname) nil))
+       (- (if (and (consp varname)
+                   (consp (cdr varname)))
+              (hard-error 'aliaspair->alias
+                          "Unexpected varname for aliaspairs (~p0 ~p1). ~%"
+                          (list (cons #\0 alias-1)
+                                (cons #\1 alias-2)))
+            nil))
+       (svex2-old-val (if (equal place nil)
+                          aliases
+                        (cdr (hons-get place (aliasdb->sub aliases)))))
+       (svex2-old-val (if svex2-old-val
+                          (hons-get newname (aliasdb->this
+                                             svex2-old-val))
+                        nil))
+       (svex2-old-val (cond (svex2-old-val (cdr svex2-old-val))
+                            ((consp trace)
+                             (sv::change-svar
+                              atom1.name
+                              :name
+                              (if (consp varname)
+                                  (cons (cons-to-end (car trace) (car varname))
+                                        (cdr varname))
+                                (cons (car trace) varname))))
+                            (t atom1.name)))
+       (svex2 (sv::lhs->svex alias-2))
+       (svex2 (update-svex-vars-with-trace svex2 trace))
+       (svex2 `(sv::partinst ,atom1.rsh ,w1 ,svex2-old-val ,svex2)))
+    (mv place newname svex2)))
+
+#|
+
+(aliaspair->alias '((3 :VAR
+                       ("partial_product_mux" . "multiplier_bits")
+                       . 0))
+                  '((2 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
+                             . 0)
+                       . 25)
+                    ((:VAR (:ADDRESS "padded_multiplier" NIL 3)
+                             . 0)
+                       . 27))
+                  '(("m1" "m2" . "m3")
+                    ("m1" . "m2")
+                    "m1")
+                    (make-aliasdb))
+
+(aliaspair->alias '((65 :VAR 16 . 0))
+                  '((65 :SELF . 1040))
+                  '(("m1" "m2" . "m3")
+                    ("m1" . "m2")
+                    "m1")
+                  (make-aliasdb))
+||#
+
+(define insert-into-aliasdb (place key val aliasdb)
+  :verify-guards nil
+  ;; place can be nil or consed module names.
+  (cond ((not place)
+         (change-aliasdb aliasdb
+                         :this
+                         (fast-alist-clean (hons-acons key val
+                                                       (aliasdb->this aliasdb)))))
+        ((atom place)
+         (b* ((sub-aliasdb (hons-get place (aliasdb->sub aliasdb)))
+              (sub-aliasdb (if sub-aliasdb (cdr sub-aliasdb) (make-aliasdb)))
+              (sub-aliasdb
+               (change-aliasdb
+                sub-aliasdb
+                :this
+                (fast-alist-clean (hons-acons key val
+                                              (aliasdb->this sub-aliasdb))))))
+           (change-aliasdb
+            aliasdb
+            :sub
+            (fast-alist-clean (hons-acons place
+                                          sub-aliasdb
+                                          (aliasdb->sub aliasdb))))))
+        (t (b* ((curplace (car place))
+                (cur-sub (hons-get curplace (aliasdb->sub aliasdb)))
+                (cur-sub (if cur-sub (cdr cur-sub) (make-aliasdb)))
+                (cur-sub (insert-into-aliasdb (cdr place) key val cur-sub)))
+             (change-aliasdb aliasdb
+                             :sub
+                             (fast-alist-clean
+                              (hons-acons curplace
+                                          cur-sub
+                                          (aliasdb->sub aliasdb))))))))
+
+(define aliaspair-lst->aliasdb ((aliaspairs sv::lhspairs-p)
+                                (trace trace-p))
+  :verify-guards nil
+  (if (atom aliaspairs)
+      (make-aliasdb)
+    (b* ((rest (aliaspair-lst->aliasdb (cdr aliaspairs) trace))
+         ((mv cur-place cur-name cur-svex)
+          (aliaspair->alias (caar aliaspairs)
+                            (cdar aliaspairs)
+                            trace
+                            rest)))
+      (insert-into-aliasdb cur-place cur-name cur-svex rest))))
+
+#|
+(wet
+ (aliaspair-lst->aliasdb '((((65 :var 16 . 0)) (65 :self . 1040))
+                       (((65 :var 15 . 0)) (65 :self . 975))
+                       (((65 :var 14 . 0)) (65 :self . 910))
+                       (((65 :var 13 . 0)) (65 :self . 845))
+                       (((65 :var 12 . 0)) (65 :self . 780))
+                       (((65 :var 11 . 0)) (65 :self . 715))
+                       (((65 :var 10 . 0)) (65 :self . 650))
+                       (((65 :var 9 . 0)) (65 :self . 585))
+                       (((65 :var 8 . 0)) (65 :self . 520))
+                       (((65 :var 7 . 0)) (65 :self . 455))
+                       (((65 :var 6 . 0)) (65 :self . 390))
+                       (((65 :var 5 . 0)) (65 :self . 325))
+                       (((65 :var 4 . 0)) (65 :self . 260))
+                       (((65 :var 3 . 0)) (65 :self . 195))
+                       (((65 :var 2 . 0)) (65 :self . 130))
+                       (((65 :var 1 . 0)) (65 :self . 65))
+                       (((65 :var 0 . 0)) (65 . :self)))
+                     '(("m1" "m2" . "m3")
+                       ("m1" . "m2")
+                       "m1")))
+
+(aliaspair-lst->aliasdb '((((3 :VAR
+                           ("partial_product_mux" . "multiplier_bits")
+                           . 0))
+                       (3 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
+                                . 0)
+                          . 25))
+                      (((64 :VAR
+                            ("partial_product_mux" . "multiplicand")
+                            . 0))
+                       (64 :VAR (:ADDRESS "multiplicand" NIL 3)
+                           . 0))
+                      (((:VAR ("partial_product_mux" . "multiplicand_sign")
+                              . 0))
+                       (:VAR (:ADDRESS "multiplicand_sign" NIL 3)
+                             . 0))
+                      (((:VAR ("partial_product_mux" . "partial_product_sign")
+                              . 0))
+                       ((:VAR (:ADDRESS "partial_product_signs" NIL 3)
+                              . 0)
+                        . 13))
+                      (((:VAR ("partial_product_mux" . "partial_product_inverted")
+                              . 0))
+                       ((:VAR (:ADDRESS "partial_product_increments" NIL 3)
+                              . 0)
+                        . 13))
+                      (((65 :VAR
+                            ("partial_product_mux" . "partial_product")
+                            . 0))
+                       (65 (:VAR (:ADDRESS "partial_products" NIL 1)
+                                 . 0)
+                           . 845)))
+                    '(
+                      ("m1" "m2" . "m3")
+                      ("m1" . "m2")
+                      "m1"))
+
+||#
+
+(define merge-this-insts-aliasdb ((sub-aliasdb aliasdb-alist-p)
+                                  (insts-aliasdb-alist aliasdb-alist-p))
+  :verify-guards nil
+  :guard-hints (("Goal"
+                 :in-theory (e/d () (fast-alist-clean))))
+  (if (atom insts-aliasdb-alist)
+      (fast-alist-clean sub-aliasdb)
+    (b* ((cur (car insts-aliasdb-alist))
+         (name (car cur))
+         (cur-aliasdb (cdr cur))
+         (cursub (hons-get name sub-aliasdb))
+         (cursub (if cursub (cdr cursub) (make-aliasdb)))
+         (- (if (aliasdb->sub cursub)
+                (hard-error 'merge-this-insts-aliasdb
+                            "Unexpected sub entry while merge ~p0~%"
+                            (list (cons #\0 cursub)))
+              nil))
+         (- (fast-alist-free (aliasdb->this cursub)))
+         (- (fast-alist-free (aliasdb->this cur-aliasdb)))
+         (cursub-this (append (aliasdb->this cursub)
+                              (aliasdb->this cur-aliasdb)))
+         (cursub-this (fast-alist-clean (make-fast-alist cursub-this)))
+         (cursub (change-aliasdb cursub
+                                 :this cursub-this
+                                 :sub (aliasdb->sub cur-aliasdb)))
+         (sub-aliasdb (hons-acons name cursub sub-aliasdb)))
+      (merge-this-insts-aliasdb sub-aliasdb
+                                (cdr insts-aliasdb-alist)))))
+
+(define get-svex-from-aliasdb ((name)
+                               (trace-name)
+                               (delay natp)
+                               (aliasdb aliasdb-p))
+  :measure (acl2-count trace-name)
+  (cond ((not trace-name)
+         (b* ((var (sv::make-svar :name  name
+                                  :delay delay))
+              (res (hons-get var (aliasdb->this aliasdb))))
+           (cdr res)))
+        ((atom trace-name)
+         (b* ((instname trace-name)
+              (subaliases (aliasdb->sub aliasdb))
+              (subaliasdb (hons-get instname subaliases)))
+           (if subaliasdb
+               (b* ((var (sv::make-svar :name  name :delay delay))
+                    (res (hons-get var (aliasdb->this (cdr subaliasdb)))))
+                 (cdr res))
+             nil)))
+        (t (b* ((instname (car trace-name))
+                (subaliases (aliasdb->sub aliasdb))
+                (subaliasdb (hons-get instname subaliases)))
+             (if subaliasdb
+                 (get-svex-from-aliasdb name
+                                        (cdr trace-name)
+                                        delay
+                                        (cdr subaliasdb))
+               nil)))))
+
+(defun nthcdr2 (acl2::n acl2::l)
+  (declare (xargs :guard (and (integerp acl2::n)
+                              (<= 0 acl2::n))))
+  (if (zp acl2::n)
+      acl2::l
+    (if (atom acl2::l)
+        nil
+      (nthcdr2 (+ acl2::n -1) (cdr acl2::l)))))
+
+(acl2::defines
+ update-svex-with-aliasdb
+ :guard-hints (("Goal"
+                :in-theory (e/d (svex-kind
+                                 sv::svar-p
+                                 svex-p) ())))
+ :hints (("Goal"
+          :in-theory (e/d (svex-kind) ())))
+
+ (define update-svex-with-aliasdb ((svex sv::svex-p)
+                                   (aliasdb aliasdb-p)
+                                   (skip-var-name)
+                                   (trace-size natp))
+   (let ((kind (sv::svex-kind svex)))
+     (cond ((eq kind ':quote)
+            svex)
+           ((eq kind ':var)
+            (b* ((var-name (sv::svar->name svex))
+                 (var-delay (sv::svar->delay svex))
+                 (place (if (consp var-name) (car var-name) nil))
+                 (name (if (consp var-name) (cdr var-name) var-name))
+                 (place (nthcdr2 trace-size place))
+                 ((when (equal var-name skip-var-name)) svex)
+                 #|((mv var-name trace-name) (if (consp var-name)
+                 (mv (cdr var-name) (car
+                 var-name))
+                 (mv var-name nil)))||#
+                 (res (get-svex-from-aliasdb name place var-delay aliasdb)))
+              (if res
+                  res
+                svex)))
+           (t
+            (cons-with-hint (car svex)
+                            (update-svex-with-aliasdb-lst (cdr svex)
+                                                          aliasdb
+                                                          skip-var-name
+                                                          trace-size)
+                            svex)))))
+
+ (define update-svex-with-aliasdb-lst ((lst sv::svexlist-p)
+                                       (aliasdb aliasdb-p)
+                                       (skip-var-name)
+                                       (trace-size natp))
+   (if (atom lst)
+       nil
+     (cons-with-hint
+      (update-svex-with-aliasdb (car lst)
+                                aliasdb skip-var-name trace-size)
+      (update-svex-with-aliasdb-lst (cdr lst)
+                                    aliasdb skip-var-name trace-size)
+      lst))))
+
+(define fix-this-aliases ((this-aliases alias-alist-p)
+                          (trace-size natp)
+                          (aliasdb aliasdb-p))
+  (if (atom this-aliases)
+      nil
+    (b* ((cur (car this-aliases))
+         (cur-name (car cur))
+         (cur-svex (cdr cur))
+         (cur-svex (update-svex-with-aliasdb cur-svex
+                                             aliasdb
+                                             cur-name
+                                             trace-size)))
+      (hons-acons cur-name
+                  cur-svex
+                  (fix-this-aliases (cdr this-aliases)
+                                    trace-size
+                                    aliasdb)))))
+
+(acl2::defines
+ mod-aliaspairs->aliasdb-pt1
+ (define mod-aliaspairs->aliasdb-pt1 ((modname sv::modname-p)
+                                      (modalist sv::modalist-p)
+                                      ;;  (proc-history )
+                                      (trace trace-p)
+                                      (mods-to-skip sv::modnamelist-p)
+                                      (limit natp "To prove termination"))
+   :verify-guards nil
+   :measure (nfix limit)
+   (cond ((zp limit)
+          (progn$ (hard-error 'mod-aliaspairs->aliasdb-pt1
+                              "Limit Reached! ~%"
+                              nil)
+                  (make-aliasdb)))
+         ;; ((hons-get modname proc-history)
+         ;;  (cdr (hons-get modname proc-history)))
+         (t
+          (b* ((module (hons-get modname modalist))
+               (module (if module
+                           (cdr module)
+                         (progn$
+                          (hard-error 'mod-aliaspairs->aliasdb-pt1
+                                      "Module not found in modalist ~p0 ~%"
+                                      (list (cons #\0 modname)))
+                          nil)))
+               ((sv::module module) module)
+               (aliasdb (aliaspair-lst->aliasdb module.aliaspairs
+                                                trace))
+               (insts-aliasdb-alist
+                (mod-aliaspairs->aliasdb-pt1-lst module.insts
+                                                 modalist
+                                                 ;;proc-history
+                                                 trace
+                                                 mods-to-skip
+                                                 (1- limit)))
+               (merged-sub (merge-this-insts-aliasdb (aliasdb->sub aliasdb)
+                                                     insts-aliasdb-alist))
+               (aliasdb (change-aliasdb aliasdb :sub merged-sub))
+               (this-aliases (aliasdb->this aliasdb))
+               (this-aliases (fix-this-aliases this-aliases
+                                               (len (car trace))
+                                               aliasdb))
+               (- (fast-alist-free (aliasdb->this aliasdb))))
+            (change-aliasdb aliasdb :this this-aliases)))))
+
+ (define mod-aliaspairs->aliasdb-pt1-lst ((insts sv::modinstlist-p)
+                                          (modalist sv::modalist-p)
+                                          (trace trace-p)
+                                          (mods-to-skip sv::modnamelist-p)
+                                          (limit natp "To prove termination"))
+   :measure (nfix limit)
+   (cond ((zp limit)
+          (progn$ (hard-error 'mod-aliaspairs->aliasdb-pt1
+                              "Limit Reached! ~%"
+                              nil)
+                  nil))
+         ((atom insts)
+          nil)
+         (t (b* (((sv::modinst inst) (car insts))
+                 (rest (mod-aliaspairs->aliasdb-pt1-lst (cdr insts)
+                                                        modalist
+                                                        trace
+                                                        mods-to-skip
+                                                        (1- limit)))
+                 ((when (member-equal inst.modname mods-to-skip))
+                  rest)
+                 (trace- (cons (if trace
+                                   (cons-to-end (car trace) inst.instname)
+                                 inst.instname)
+                               trace)))
+              (acons inst.instname
+                     (mod-aliaspairs->aliasdb-pt1 inst.modname
+                                                  modalist
+                                                  trace-
+                                                  mods-to-skip
+                                                  (1- limit))
+                     rest))))))
+
+#|
+
+(mod-aliaspairs->aliasdb-pt1 "mul_test1"
+                             (make-fast-alist (sv::design->modalist *booth-sv-design*))
+                             nil
+                             (expt 2 30))
+
+(mod-aliaspairs->aliasdb-pt1 "booth2_multiplier_signed_64x32_97"
+                             (make-fast-alist (sv::design->modalist *big-sv-design*))
+                             nil
+                             '("booth2_reduction_dadda_17x65_97")
+                             (expt 2 30))
+||#
+
+(acl2::defines
+ update-svex-with-aliases-alist
+ :guard-hints (("Goal"
+                :in-theory (e/d (svex-kind
+                                 sv::svar-p
+                                 svex-p) ())))
+ :hints (("Goal"
+          :in-theory (e/d (svex-kind) ())))
+ :prepwork ((local
+             (in-theory (enable svex-p
+                                svex-kind
+                                sv::svexlist-p
+                                SV::SVAR-P))))
+
+ (define update-svex-with-aliases-alist ((svex sv::svex-p)
+                                         (aliases-alist alias-alist-p))
+   :returns (res svex-p :hyp (and (sv::svex-p svex)
+                                  (alias-alist-p aliases-alist)))
+   (let ((kind (sv::svex-kind svex)))
+     (cond ((eq kind ':quote)
+            svex)
+           ((eq kind ':var)
+            (b* ((res (hons-get svex aliases-alist)))
+              (if res (cdr res) svex)))
+           (t
+            (cons-with-hint (car svex)
+                            (update-svex-with-aliases-alist-lst (cdr svex)
+                                                                aliases-alist)
+                            svex)))))
+
+ (define update-svex-with-aliases-alist-lst ((lst sv::svexlist-p)
+                                             (aliases-alist alias-alist-p))
+   :returns (res-lst sv::svexlist-p
+                     :hyp (and (sv::svexlist-p lst)
+                               (alias-alist-p aliases-alist)) )
+   (if (atom lst)
+       nil
+     (cons-with-hint
+      (update-svex-with-aliases-alist (car lst) aliases-alist)
+      (update-svex-with-aliases-alist-lst (cdr lst) aliases-alist)
+      lst))))
+
+(define add-to-aliases-alist ((this-alias-alist alias-alist-p)
+                              (aliases-alist alias-alist-p)
+                              (trace trace-p))
+  :guard-hints (("Goal"
+                 :in-theory (e/d () ())))
+  (if (atom this-alias-alist)
+      (mv aliases-alist nil)
+    (b* ((cur (car this-alias-alist))
+         (cur-svar (car cur))
+         (cur-svex (cdr cur))
+         (cur-svex (update-svex-with-aliases-alist cur-svex aliases-alist))
+         (new-svar (if (consp trace)
+                       (cons (car trace) cur-svar)
+                     cur-svar))
+         (aliases-alist
+          (hons-acons (sv::change-svar cur-svar :name new-svar)
+                      cur-svex
+                      aliases-alist))
+         ((mv aliases-alist rest)
+          (add-to-aliases-alist (cdr this-alias-alist)
+                                aliases-alist
+                                trace)))
+      (mv aliases-alist
+          (hons-acons cur-svar cur-svex
+                      rest)))))
+(acl2::defines
+ mod-aliaspairs->aliasdb-pt2
+ :prepwork
+ ((local
+   (defthm lemma1
+     (O< (CONS-COUNT (ALIASDB-ALIST-FIX (CADR ALIASDB)))
+         (CONS-COUNT (ALIASDB-FIX ALIASDB)))
+     :hints (("Goal"
+              :in-theory (e/d (cons-count
+                               ALIASDB-FIX
+                               ALIASDB-ALIST-FIX) ())))))
+  (local
+   (defthm lemma2
+     (implies (consp x)
+              (o< (cons-count (cdr (car x)))
+                  (cons-count x)))
+     :hints (("Goal"
+              :in-theory (e/d (cons-count) ()))))))
+
+ (define mod-aliaspairs->aliasdb-pt2 ((aliasdb aliasdb-p)
+                                      (aliases-alist alias-alist-p)
+                                      (trace trace-p))
+   :hints (("Goal"
+            :in-theory (e/d (ALIASDB->SUB
+                             ALIASDB-ALIST-FIX
+                             rp::measure-lemmas) ())))
+   :measure (cons-count (aliasdb-fix aliasdb))
+   :verify-guards nil
+   (b* (((aliasdb aliasdb) aliasdb)
+        ((mv aliases-alist new-this)
+         (add-to-aliases-alist aliasdb.this aliases-alist trace))
+        (- (fast-alist-free aliasdb.this))
+        (- (fast-alist-free aliasdb.sub))
+        ((mv new-sub aliases-alist)
+         (mod-aliaspairs->aliasdb-pt2-lst aliasdb.sub aliases-alist trace)))
+     (mv (change-aliasdb aliasdb
+                         :this new-this
+                         :sub new-sub)
+         aliases-alist)))
+
+ (define mod-aliaspairs->aliasdb-pt2-lst ((aliasdb.sub aliasdb-alist-p)
+                                          (aliases-alist alias-alist-p)
+                                          (trace trace-p))
+   :measure (cons-count (aliasdb-alist-fix aliasdb.sub))
+   (b* ((aliasdb.sub (mbe :logic (aliasdb-alist-fix aliasdb.sub)
+                          :exec aliasdb.sub)))
+     (if (atom aliasdb.sub)
+         (mv nil aliases-alist)
+       (b* ((trace-tmp (cons (if (consp trace)
+                                 (cons-to-end (car trace) (caar aliasdb.sub))
+                               (caar aliasdb.sub))
+                             trace))
+            ((mv new-sub-entry aliases-alist)
+             (mod-aliaspairs->aliasdb-pt2 (cdar aliasdb.sub)
+                                          aliases-alist
+                                          trace-tmp))
+            ((mv rest-subs aliases-alist)
+             (mod-aliaspairs->aliasdb-pt2-lst (cdr aliasdb.sub)
+                                              aliases-alist
+                                              trace)))
+         (mv (hons-acons (caar aliasdb.sub) new-sub-entry rest-subs)
+             aliases-alist))))))
+
+(define mod-aliaspairs->aliasdb ((modname sv::modname-p)
+                                 (modalist sv::modalist-p)
+                                 (mods-to-skip sv::modnamelist-p))
+  :verify-guards nil
+  (b* ((aliasdb (mod-aliaspairs->aliasdb-pt1 modname modalist nil
+                                             mods-to-skip
+                                             (expt 2 59)))
+       ((mv aliasdb aliases-alist)
+        (mod-aliaspairs->aliasdb-pt2 aliasdb
+                                     nil
+                                     nil))
+       (- (fast-alist-free aliases-alist)))
+    aliasdb))
+
+#|
+
+(mod-aliaspairs->aliasdb "mul_test1"
+                         (make-fast-alist (sv::design->modalist *booth-sv-design*))
+                         nil)
+
+(mod-aliaspairs->aliasdb "booth2_multiplier_signed_64x32_97"
+                         (make-fast-alist (sv::design->modalist *big-sv-design*))
+                         '("booth2_reduction_dadda_17x65_97"))
+||#
+
+;; (vl-design-to-insouts *big-vl-design2* *big-sv-design*)
+
+(acl2::defines
+ update-svex-with-aliasdb-and-trace
+ :guard-hints (("Goal"
+                :in-theory (e/d (svex-kind
+                                 sv::svar-p
+                                 trace-p
+                                 svex-p) ())))
+ :hints (("Goal"
+          :in-theory (e/d (svex-kind) ())))
+
+ (define update-svex-with-aliasdb-and-trace ((svex sv::svex-p)
+                                             (aliasdb aliasdb-p)
+                                             (trace trace-p))
+   (let ((kind (sv::svex-kind svex)))
+     (cond ((eq kind ':quote)
+            svex)
+           ((eq kind ':var)
+            (b* ((var-name (sv::svar->name svex))
+                 (var-delay (sv::svar->delay svex))
+                 ((mv var-name address)
+                  (case-match var-name
+                    ((':address n & depth) (mv n depth))
+                    (& (mv var-name 0))))
+
+                 (cur-trace (nth (nfix address) trace))
+
+                 (place (if (consp var-name) (car var-name) nil))
+                 (place (if place
+                            (if cur-trace
+                                (cons-to-end cur-trace place)
+                              place)
+                          cur-trace))
+
+                 (name (if (consp var-name) (cdr var-name) var-name))
+                 (res (get-svex-from-aliasdb name place var-delay aliasdb))
+                 ((when res) res)
+
+                 (svar (sv::change-svar svex :name (if place (cons place name) name))))
+              svar))
+           (t
+            (cons-with-hint (car svex)
+                            (update-svex-with-aliasdb-and-trace-lst (cdr svex)
+                                                                    aliasdb
+                                                                    trace)
+                            svex)))))
+
+ (define update-svex-with-aliasdb-and-trace-lst ((lst sv::svexlist-p)
+                                                 (aliasdb aliasdb-p)
+                                                 (trace trace-p))
+   (if (atom lst)
+       nil
+     (cons-with-hint
+      (update-svex-with-aliasdb-and-trace (car lst)
+                                          aliasdb trace)
+      (update-svex-with-aliasdb-and-trace-lst (cdr lst)
+                                              aliasdb trace)
+      lst))))
+
+(define get-lhs-w ((lhs sv::lhs-p))
+  (if (atom lhs)
+      0
+    (+ (sv::lhrange->w (car lhs))
+       (get-lhs-w (cdr lhs)))))
+
+(define svex->lhs (svex)
+  ;; example input :
+  ;; (CONCAT
+  ;;  65
+  ;;  (PARTSEL 0 65 (:VAR ("partial_products" . 2) . 0))
+  ;;  (CONCAT
+  ;;   61
+  ;;   (PARTSEL 4 61 (:VAR ("partial_products" . 2) . 0))
+  ;;   (PARTSEL 65 5 (:VAR ("x" . "out") . 0))))
+
+  (case-match svex
+    (('sv::partsel start size var)
+     (b* (((unless (sv::svar-p var))
+           (progn$ (hard-error 'svex->lhs
+                               "something is wrong with the svex ~p0~%"
+                               (list (cons #\0 svex)))
+                   nil))
+          (start (nfix start))
+          (size (if (posp size) size 1))
+          (lhatom (sv::make-lhatom-var :name var
+                                       :rsh start))
+          (lhrange (sv::make-lhrange :w size
+                                     :atom lhatom)))
+       (list lhrange)))
+    (('sv::concat concat-size ('sv::partsel & size &) term2)
+     (b* ((concat-size (nfix concat-size))
+          (size (nfix size)))
+       (cond ((eql concat-size size)
+              (append (svex->lhs (caddr svex))
+                      (svex->lhs term2)))
+             ((< concat-size size)
+              (hard-error 'svex->lhs
+                          "Unexpected size combination ~p0 ~%."
+                          (list (cons #\0 svex))))
+             (t (append (svex->lhs (caddr svex))
+                        (list (sv::make-lhrange :w (- concat-size size)
+                                                :atom (sv::make-lhatom-z)))
+                        (svex->lhs term2))))))
+    (&
+     (hard-error 'svex->lhs
+                 "Unexpected Expression~ ~p0 ~%"
+                 (list (cons #\0 svex))))))
+
+#|
+(svex->lhs
+ '(CONCAT
+   68
+   (PARTSEL 0 65 (:VAR ("partial_products" . 2) . 0))
+   (CONCAT
+    61
+    (PARTSEL 4 61 (:VAR ("partial_products" . 2) . 0))
+    (PARTSEL 65 5 (:VAR ("x" . "out") . 0)))))
+||#
+
+(define lhs-to-svl-wirelist ((lhs sv::lhs-p))
+  :returns (wires wire-list-p :hyp (sv::lhs-p lhs))
+  (if (atom lhs)
+      nil
+    (b* (((sv::lhrange lhrange) (car lhs))
+         (wire-name (if (equal (sv::lhatom-kind lhrange.atom) :z)
+                        :z
+                      (sv::lhatom-var->name lhrange.atom)))
+         (wire-start (if (equal (sv::lhatom-kind lhrange.atom) :z)
+                         0
+                       (sv::lhatom-var->rsh lhrange.atom)))
+         (wire-size lhrange.w)
+         (wire `(,wire-name ,wire-size . ,wire-start)))
+      (cons wire
+            (lhs-to-svl-wirelist (cdr lhs))))))
+
+#|
+
+(lhs-to-svl-wirelist '((65 :VAR ("partial_products" . 2) . 0)
+                       (3 . :Z)
+                       (61 (:VAR ("partial_products" . 2) . 0)
+                           . 4)
+                       (5 (:VAR ("x" . "out") . 0) . 65)))
+||#
+
+(acl2::defines
+ assign-to-occ-get-inputs
+ :prepwork
+ ((local
+   (in-theory (enable SV::SVARLIST-P
+                      SVEX-P
+
+                      svex-kind)))
+  (local
+   (defthm wire-list-p-implies-true-listp
+     (implies (wire-list-p wires)
+              (true-listp wires))))
+  (local
+   (defthm SVarLIST-P-implies-true-listp
+     (implies (sv::SVarLIST-P wires)
+              (true-listp wires)))))
+
+ (define assign-to-occ-get-inputs ((svex sv::svex-p))
+   :verify-guards nil
+   :returns (mv (wires wire-list-p
+                       :hyp (sv::svex-p svex))
+                (delayed sv::svarlist-p
+                         :hyp (sv::svex-p svex)))
+   (b* ((kind (sv::svex-kind svex)))
+     (cond ((eq kind ':quote)
+            (mv nil nil))
+           ((eq kind ':var)
+            (progn$ (cw
+                     "Reached a var that was not in a partsel ~p0 ~%"
+                     svex)
+                    #|             (hard-error 'assign-to-occ-get-inputs
+                    "Reached a var that was not in a partsel ~p0 ~%" ;
+                    (list (cons #\0 svex)))||#
+                    (b* ((delayed (eql (sv::svar->delay svex) 1)))
+                      (mv (if delayed nil (list `(,svex)))
+                          (if delayed (list svex) nil)))))
+           ((case-match svex (('sv::partsel start size sub-svex)
+                              (and (sv::svar-p sub-svex)
+                                   (natp start)
+                                   (natp size)))
+              (& nil))
+            (b* ((start (cadr svex))
+                 (size (caddr svex))
+                 (svar (cadddr svex))
+                 (delayed (eql (sv::svar->delay svar) 1)))
+              (mv (if delayed nil (list `(,svar ,size . ,start)))
+                  (if delayed (list svar) nil))))
+           (t
+            (assign-to-occ-get-inputs-lst (cdr svex))))))
+
+ (define assign-to-occ-get-inputs-lst ((lst sv::svexlist-p))
+   :returns (mv (wires wire-list-p
+                       :hyp (sv::svexlist-p lst))
+                (delayed sv::svarlist-p
+                         :hyp (sv::svexlist-p lst)))
+   (if (atom lst)
+       (mv nil nil)
+     (b* (((mv rest rest-delayed)
+           (assign-to-occ-get-inputs (car lst)))
+          ((mv rest2 rest-delayed2)
+           (assign-to-occ-get-inputs-lst (cdr lst))))
+       (mv (append rest rest2)
+           (append rest-delayed
+                   rest-delayed2)))))
+
+ ///
+
+ (verify-guards assign-to-occ-get-inputs))
+
+(define assign-occ-merge-ins ((ins wire-list-p))
+  :verify-guards nil
+  :returns (res wire-list-p :hyp (wire-list-p ins))
+  :prepwork
+  ((local
+    (defthm wire-p-implies-fc-1
+      (implies (and (wire-p wire)
+                    (and (consp wire) (consp (cdr wire))))
+               (and (sv::svar-p (car wire))
+                          (and (natp (cadr wire))
+                               (integerp (cadr wire))
+                               (acl2-numberp (cadr wire))
+                               (rationalp (cadr wire)))
+                          (natp (cddr wire))
+                          (integerp (cddr wire))
+                          (acl2-numberp (cddr wire))
+                          (rationalp (cddr wire))))))
+
+   (local
+    (defthm wire-p-implies-fc-2
+      (implies (and (wire-p wire)
+                    (and (consp wire) (eq (cdr wire) nil)))
+   
+               (sv::svar-p (car wire)))))
+   (local
+    (defthm lemma1
+      (implies (and (natp a)
+                    (natp b)
+                    (integerp c)
+                    (or (< c a)
+                        (<= c a)))
+               (natp (+ b a (- c))))
+      :hints (("goal"
+               :in-theory (e/d (natp) ())))))
+
+   (local
+    (defthm lemma1-2
+      (implies (and (natp a)
+                    (natp b)
+                    (integerp c)
+                    (<= c a))
+               (natp (+ (- c) b a)))
+      :hints (("goal"
+               :in-theory (e/d (natp) ())))))
+   (local
+    (defthm lemma2
+      (implies (and (consp (assoc-equal name lst))
+                    (wire-list-p lst))
+               (wire-p (assoc-equal name lst)))
+      ))
+
+   (local
+    (defthm lemma3
+      (implies (and (assoc-equal name lst)
+                    (wire-list-p lst))
+               (wire-p (assoc-equal name lst)))
+      )))
+
+  (if (atom ins)
+      nil
+    (b* ((rest (assign-occ-merge-ins (cdr ins)))
+         (cur (car ins))
+         ((mv wire-name size start)
+          (case-match cur
+            ((wire-name size . start) (mv wire-name size start))
+            ((wire-name) (mv wire-name -1 -1))
+            (& (mv "" 0 0))))
+         (other (assoc-equal wire-name rest))
+         ((unless other)
+          (cons-with-hint cur rest ins))
+         ((mv o-size o-start)
+          (case-match other
+            ((& size . start) (mv size start))
+            ((&) (mv -1 -1))
+            (& (mv 0 0))))
+         ((when (or (eql start -1) (eql o-start -1)))
+          (cons `(,wire-name) rest))
+         (end (+ start size))
+         (o-end (+ o-start o-size))
+         (new-start (min o-start start))
+         (new-end (max o-end end))
+         (new-size (- new-end new-start)))
+      (cons `(,wire-name ,new-size . ,new-start)
+            rest)))
+
+  ///
+
+  (defthm alistp-assign-occ-merge-ins
+    (implies (wire-list-p ins)
+             (alistp (assign-occ-merge-ins ins))))
+
+  (verify-guards assign-occ-merge-ins
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (min max) ())))))
+
+(define assign-occ-unify-ins ((ins wire-list-p))
+  :prepwork
+  ((local
+    (defthm WIRE-LIST-P-FAST-ALIST-FORK
+      (implies (and (wire-list-p ins)
+                    (wire-list-p x))
+               (wire-list-p (FAST-ALIST-FORk ins x)))
+      :hints (("Goal"
+               :in-theory (e/d (FAST-ALIST-FORK) ())))))
+   (local
+    (defthm lemma2
+      (implies (and (wire-list-p ins))
+               (wire-list-p (cdr (last ins))))
+      :hints (("Goal"
+               :in-theory (e/d (last) ()))))))
+  
+  :returns (res wire-list-p :hyp (wire-list-p ins))
+  
+  (fast-alist-clean (assign-occ-merge-ins ins)))
+
+(define assign-to-occ ((lhs sv::lhs-p)
+                       (rhs-svex sv::svex-p))
+  (b* ((outs (lhs-to-svl-wirelist lhs))
+       ((mv ins prev-ins)
+        (assign-to-occ-get-inputs rhs-svex))
+       (ins (assign-occ-unify-ins ins)))
+    (make-occ-assign
+     :inputs ins
+     :delayed-inputs prev-ins
+     :outputs outs
+     :svex rhs-svex)))
+
+(define sv-mod->sv2-occs-assigns ((assigns sv::assigns-p)
+                                  (trace trace-p)
+                                  (aliasdb aliasdb-p)
+                                  (cnt natp)
+                                  (svex-simplify-preloaded)
+                                  &key
+                                  (rp::rp-state 'rp::rp-state)
+                                  (state 'state))
+  ;; Goal: convert all the assignsments into svl-type occs by replacing all the
+  ;; aliases and adding the trace for flattening.
+  ;; Also call svex-simplify for both lhs and rhs of assignments.
+  (declare (xargs :stobjs (state rp::rp-state)
+                  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+                  :verify-guards nil))
+  (cond
+   ((atom assigns)
+    (mv nil cnt rp::rp-state))
+   (t
+    (b* ((cur (car assigns))
+         ((sv::driver driver) (cdr cur))
+         (- (if (not (equal driver.strength 6))
+                (cw "Driver strength is not 6. For this assignment ~p0 ~%" cur)
+              nil))
+         (lhs-w (get-lhs-w (car cur)))
+
+         ;; Prepare lhs-svex
+         (lhs-svex (sv::lhs->svex (car cur)))
+
+         (lhs-svex (update-svex-with-aliasdb-and-trace lhs-svex
+                                                       aliasdb
+                                                       trace))
+         (lhs-svex `(sv::partsel 0 ,lhs-w ,lhs-svex))
+         ((mv lhs-svex rp::rp-state) (svex-simplify lhs-svex
+                                                    :svex-simplify-preloaded svex-simplify-preloaded
+                                                    :runes nil))
+         ;; prepare rhs svex
+         (rhs-svex driver.value)
+         (rhs-svex (update-svex-with-aliasdb-and-trace rhs-svex
+                                                       aliasdb
+                                                       trace))
+         (rhs-svex `(sv::partsel 0 ,lhs-w ,rhs-svex))
+         ((mv rhs-svex rp::rp-state) (svex-simplify rhs-svex
+                                                    :svex-simplify-preloaded svex-simplify-preloaded
+                                                    :runes nil))
+
+         ;; lhs svex to lhs
+         (lhs (svex->lhs lhs-svex))
+
+         ;; convert lhs and rhs-svex to svl style occ object
+         (occ (assign-to-occ lhs rhs-svex))
+         ((mv rest cnt-new rp::rp-state) (sv-mod->sv2-occs-assigns (cdr assigns)
+                                                                   trace
+                                                                   aliasdb
+                                                                   (1+ cnt)
+                                                                   svex-simplify-preloaded)))
+      ;; save and return the object.
+      (mv (acons (sa (to-symbol (car trace)) cnt) occ rest) cnt-new rp::rp-state)))))
+
+(define sv-mod->sv2-occs-module ((modname sv::modname-p)
+                                 (aliasdb aliasdb-p)
+                                 (svex-simplify-preloaded)
+                                 &key
+                                 (rp::rp-state 'rp::rp-state)
+                                 (state 'state))
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  (declare (ignorable modname aliasdb svex-simplify-preloaded state
+                      rp::rp-state))
+  (mv modname rp::rp-state))
+
+(set-state-ok t)
+
+(acl2::defines
+ sv-mod->sv2-occs
+
+ (define sv-mod->sv2-occs ((modname sv::modname-p)
+                           (modalist sv::modalist-p)
+                           (aliasdb aliasdb-p)
+                           (trace trace-p)
+                           (mods-to-skip sv::modnamelist-p)
+                      ;     (cnt natp)
+                           (svex-simplify-preloaded)
+                           (limit natp "To prove termination")
+                           &key
+                           (rp::rp-state 'rp::rp-state)
+                           (state 'state))
+   (declare (xargs :stobjs (state rp::rp-state)))
+
+   :verify-guards nil
+   :measure (nfix limit)
+   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+
+   ;; Goal: by flattening, create all the occs including assigns and modules.
+   (cond ((zp limit)
+          (progn$ (hard-error 'mod-assigns->occs
+                              "Limit Reached! ~%"
+                              nil)
+                  (mv nil rp::rp-state)))
+         (t
+          (b* ((module (hons-get modname modalist))
+               (module (if module (cdr module)
+                         (progn$
+                          (hard-error 'mod-aliaspairs->aliasdb-pt1
+                                      "Module not found in modalist ~p0 ~%"
+                                      (list (cons #\0 modname)))
+                          nil)))
+               ((sv::module module) module)
+               ((mv assign-occs ?cnt rp::rp-state)
+                (sv-mod->sv2-occs-assigns module.assigns trace aliasdb
+                                          0;cnt
+                                          svex-simplify-preloaded))
+               ((mv insts-occs  rp::rp-state)
+                (sv-mod->sv2-occs-insts module.insts
+                                        modalist
+                                        aliasdb
+                                        trace
+                                        mods-to-skip
+                                  ;      0;        cnt
+                                        svex-simplify-preloaded
+                                        (1- limit))))
+            (mv (append assign-occs insts-occs)  rp::rp-state)))))
+
+ (define sv-mod->sv2-occs-insts ((insts sv::modinstlist-p)
+                                 (modalist sv::modalist-p)
+                                 (aliasdb aliasdb-p)
+                                 (trace trace-p)
+                                 (mods-to-skip sv::modnamelist-p)
+                                ; (cnt natp)
+                                 (svex-simplify-preloaded)
+                                 (limit natp "To prove termination")
+                                 &key
+                                 (rp::rp-state 'rp::rp-state)
+                                 (state 'state))
+   (declare (xargs :stobjs (state rp::rp-state)))
+   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+   :measure (nfix limit)
+
+   (cond ((zp limit)
+          (progn$ (hard-error 'mod-assigns->occs
+                              "Limit Reached! ~%"
+                              nil)
+                  (mv nil  rp::rp-state)))
+         ((atom insts)
+          (mv nil  rp::rp-state))
+         (t
+          (b* (((sv::modinst inst) (car insts))
+               ((mv rest  rp::rp-state)
+                (sv-mod->sv2-occs-insts (cdr insts)
+                                        modalist
+                                        aliasdb
+                                        trace
+                                        mods-to-skip
+                                 ;       cnt
+                                        svex-simplify-preloaded
+                                        (1- limit)))
+               ((when (member-equal inst.modname mods-to-skip))
+                (b* (((mv this-occ rp::rp-state)
+                      (sv-mod->sv2-occs-module inst.modname aliasdb svex-simplify-preloaded)))
+                  (mv (acons inst.instname this-occ rest)  rp::rp-state)))
+               ((aliasdb aliasdb) aliasdb)
+               #|(aliasdb-tmp (hons-get inst.instname aliasdb.sub))
+               (aliasdb-tmp (if aliasdb (cdr aliasdb) (make-aliasdb)))||#
+               (trace-tmp (cons (if (consp trace)
+                                    (cons-to-end (car trace) inst.instname)
+                                  inst.instname)
+                                trace))
+               ((mv cur-inst-occs  rp::rp-state)
+                (sv-mod->sv2-occs inst.modname
+                                  modalist
+                                  aliasdb
+                                  trace-tmp
+                                  mods-to-skip
+                               ;   cnt
+                                  svex-simplify-preloaded
+                                  (1- limit))))
+            (mv (append cur-inst-occs rest)
+                rp::rp-state))))))
+
+(define sv2-flatten-mod ((modname sv::modname-p)
+                         (modalist sv::modalist-p)
+                         (mods-to-skip sv::modnamelist-p)
+                         &key
+                         (rp::rp-state 'rp::rp-state)
+                         (state 'state))
+  (declare (xargs :mode :program))
+  (b* ((aliasdb (mod-aliaspairs->aliasdb modname modalist mods-to-skip))
+       (svex-simplify-preloaded (svex-simplify-preload))
+       ((mv occs rp::rp-state) (sv-mod->sv2-occs modname
+                                                   modalist
+                                                   aliasdb
+                                                   nil
+                                                   mods-to-skip
+                ;                                   0
+                                                   svex-simplify-preloaded
+                                                   (expt 2 30)))
+       (- (svex-rw-free-preload svex-simplify-preloaded state)))
+    (mv occs rp::rp-state)))
+
+(sv2-flatten-mod "mul_test1"
+                 (make-fast-alist (sv::design->modalist *booth-sv-design*))
+                 nil)
+
+(sv2-flatten-mod "booth2_multiplier_signed_64x32_97"
+                 (make-fast-alist (sv::design->modalist *big-sv-design*))
+                 '("booth2_reduction_dadda_17x65_97"))
+||#

@@ -1,4 +1,27 @@
-
+; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2019 Centaur Technology
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Mertcan Temel <mert@utexas.edu>
 
 (in-package "SV")
 
@@ -204,6 +227,7 @@
              ((sv::modinst inst) inst)
              (is-genarray (case-match inst.modname
                             ((& :genarray . &) t)
+                            ((& :genblock . &) t)
                             (& nil)))
              ((mv other-modules
                   new-aliaspaires this-insts
@@ -330,7 +354,7 @@
   (define insert-partsel-to-svexes-and-simplify ((assigns assigns-p)
                                                  (state state-p)
                                                  (rp::rp-state rp::rp-statep)
-                                                 (created-rules))
+                                                 (svex-simplify-preloaded))
     :guard-hints (("Goal"
                    :in-theory (e/d (svex-p) ())))
     (declare (xargs :mode :program))
@@ -343,10 +367,10 @@
            ((driver d) (cdar assigns))
            ((mv svex-res rp::rp-state)
             (svl::svex-simplify `(partsel 0 ,total-lhs-w ,d.value)
-                                :created-rules created-rules))
+                                :svex-simplify-preloaded svex-simplify-preloaded))
            ((mv rest rp::rp-state)
             (insert-partsel-to-svexes-and-simplify (cdr assigns) state
-                                                   rp::rp-state created-rules)))
+                                                   rp::rp-state svex-simplify-preloaded)))
         (mv (cons (cons lhs (change-driver d :value svex-res))
                   rest)
             rp::rp-state))))
@@ -354,17 +378,17 @@
   (define sv-mods-simplify-svexes ((modalist modalist-p)
                                    (state state-p)
                                    (rp::rp-state rp::rp-statep)
-                                   (created-rules))
+                                   (svex-simplify-preloaded))
     (declare (xargs :mode :program))
     (if (atom modalist)
         (mv nil rp::rp-state)
       (b* (((mv rest rp::rp-state)
             (sv-mods-simplify-svexes (cdr modalist) state rp::rp-state
-                                     created-rules))
+                                     svex-simplify-preloaded))
            ((mv cur rp::rp-state)
             (insert-partsel-to-svexes-and-simplify
              (module->assigns (cdar modalist))
-             state rp::rp-state created-rules)))
+             state rp::rp-state svex-simplify-preloaded)))
         (mv (acons (caar modalist)
                    (change-module (cdar modalist) :assigns cur)
                    rest)
@@ -379,10 +403,10 @@
     (declare (xargs :mode :program))
     "Using the rewrite rules in the current theory, go through all the ~
 assignments and simplify them in an sv-design, using the function svl::svex-simplify."
-    (b* ((created-rules (svl::svex-rw-create-rules))
+    (b* ((svex-simplify-preloaded (svl::svex-simplify-preload))
          ((mv new-modalist rp::rp-state) (sv-mods-simplify-svexes
                                           (design->modalist design)
-                                          state rp::rp-state created-rules)))
+                                          state rp::rp-state svex-simplify-preloaded)))
       (mv (change-design design :modalist new-modalist)
           rp::rp-state))))
 
