@@ -13,6 +13,7 @@
 (include-book "aij-notions")
 (include-book "test-structures")
 
+(include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
@@ -205,7 +206,7 @@
                    t nil))
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
-          (args (unquote-terms qcs))
+          (args (unquote-term-list qcs))
           ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))

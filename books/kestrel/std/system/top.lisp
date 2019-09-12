@@ -19,6 +19,7 @@
 (include-book "primitivep")
 (include-book "remove-mbe")
 (include-book "theorem-symbolp")
+(include-book "unquote-term")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

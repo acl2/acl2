@@ -98,6 +98,7 @@
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          unnormalized-body
+                         unquote-term-list
                          upper-case-p
                          variablep
                          str::chars-in-charset-p

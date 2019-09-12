@@ -145,23 +145,6 @@
 
 ; system:
 
-(define unquote-term ((term (and (pseudo-termp term)
-                                 (quotep term))))
-  :returns value
-  :short "Unquote a term that is a quoted constant."
-  :long
-  (xdoc::topstring-p
-   "The result is the quoted value, which may have any type.")
-  (unquote term))
-
-(define unquote-terms ((terms (and (pseudo-term-listp terms)
-                                   (quote-listp terms))))
-  :returns (values true-listp)
-  :short "Lift @(tsee unquote-term) to lists."
-  (cond ((endp terms) nil)
-        (t (cons (unquote-term (car terms))
-                 (unquote-terms (cdr terms))))))
-
 (define remove-unneeded-lambda-formals ((formals symbol-listp)
                                         (actuals pseudo-term-listp))
   :guard (= (len formals) (len actuals))
