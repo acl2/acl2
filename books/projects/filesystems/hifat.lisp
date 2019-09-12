@@ -230,7 +230,7 @@
     1
     :hints
     (("goal" :in-theory (enable chars=>nats)
-      :induct (cdr-cdr-induct x str::x-equiv)))))
+      :induct (cdr-cdr-induct x x-equiv)))))
 
 (defthm
   consecutive-read-file-into-string-1

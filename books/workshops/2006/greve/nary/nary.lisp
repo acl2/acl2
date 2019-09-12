@@ -870,7 +870,7 @@
 		  (bind-keyargs (cdr args))))
     nil))
 
-(defun defequiv-fn (term lhs rhs pred context equiv chaining keywords)
+(defun defequiv-fun (term lhs rhs pred context equiv chaining keywords)
   (declare (xargs :mode :program))
   (let* ((context-macro (if keywords context (safe-symbol (list context "-macro") context)))
 	 (context-fn    (if keywords (safe-symbol (list context "-fn") context) context))
@@ -1008,7 +1008,7 @@
 	 (lhs      (or lhs     (ith 1 term)))
 	 (rhs      (or rhs     (ith 2 term)))
 	 (context  (or context (safe-symbol (list pred-fn "-CTX") pred-fn))))
-    (defequiv-fn term lhs rhs pred context equiv chaining keywords)))
+    (defequiv-fun term lhs rhs pred context equiv chaining keywords)))
 
 ;; Depricated
 (defmacro defequiv+ (&rest args)

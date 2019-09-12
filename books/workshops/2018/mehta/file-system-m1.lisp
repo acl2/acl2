@@ -218,7 +218,7 @@
     :in-theory (disable find-file-by-pathname-correctness-2)
     :use (find-file-by-pathname-correctness-2
           (:instance find-file-by-pathname-correctness-2
-                     (pathname str::pathname-equiv))))))
+                     (pathname pathname-equiv))))))
 ;; This function should continue to take pathnames which refer to top-level
 ;; fs... but what happens when "." and ".." appear in a pathname? We'll have to
 ;; modify the code to deal with that.
@@ -298,7 +298,7 @@
     :in-theory (disable place-file-by-pathname-correctness-2)
     :use (place-file-by-pathname-correctness-2
           (:instance place-file-by-pathname-correctness-2
-                     (pathname str::pathname-equiv))))))
+                     (pathname pathname-equiv))))))
 
 (defcong m1-file-equiv equal
   (place-file-by-pathname fs pathname file) 3)
