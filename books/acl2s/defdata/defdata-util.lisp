@@ -106,7 +106,7 @@
                  "DEFDATA"))
        ;; (- (cw "~| pkg to be used is : ~x0~%" pkg~))
        )
-  (intern$ (join-names ss sep) pkg~)))
+  (acl2s::fix-intern$ (join-names ss sep) pkg~)))
 
 (defun modify-symbol-lst (prefix syms postfix pkg)
   (declare (xargs :guard (and (symbol-listp syms)
@@ -160,7 +160,7 @@
 
 (defun keywordify (sym)
   (declare (xargs :guard (symbolp sym)))
-  (intern-in-package-of-symbol (symbol-name sym) :a))
+  (acl2s::fix-intern-in-pkg-of-sym (symbol-name sym) :a))
 
 ; utility fn to print if verbose flag is true
 (defmacro cw? (verbose-flag &rest rst)
@@ -355,7 +355,7 @@
          (< 1 len-predname) ;atleast have "p" and one more char
          (equal #\P (acl2::char pred-name (1- len-predname)))) ;WTF, smallcase p wouldnt work
       (let ((typename (acl2::subseq pred-name 0 (1- len-predname))));strip last char which is 'p'
-        (intern-in-package-of-symbol typename sym))
+        (acl2s::fix-intern-in-pkg-of-sym typename sym))
       NIL))) ;TODO.Beware
       ;(er hard 'get-typesymbol-from-pred "~x0 doesnt follow our convention of predicates ending with 'p'.~%" sym))))
 
@@ -668,8 +668,8 @@ see (defdata foo rational)
             (base-enum/acc (enum/acc-name type A M))
             (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
             (alias-enum-acc (acl2s::make-symbl `(,alias-enum /acc) pkg))
-            (x (intern$ "X" pkg))
-            (seed (intern$ "SEED" pkg))
+            (x (acl2s::fix-intern$ "X" pkg))
+            (seed (acl2s::fix-intern$ "SEED" pkg))
             ((unless predicate)
              (er hard 'defdata-alias
                  "~%**Unknown type**: ~x0 is not a known type name.~%" ',type)))
@@ -710,8 +710,8 @@ see (defdata foo rational)
            (base-enum/acc (enum/acc-name type A M))
            (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
            (alias-enum-acc (acl2s::make-symbl `(,alias-enum /acc) pkg))
-           (x (intern$ "X" pkg))
-           (seed (intern$ "SEED" pkg))
+           (x (acl2s::fix-intern$ "X" pkg))
+           (seed (acl2s::fix-intern$ "SEED" pkg))
            ((unless predicate)
             (er hard 'defdata-alias
                 "~%**Unknown type**: ~x0 is not a known type name.~%" ',type )))

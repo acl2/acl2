@@ -1207,7 +1207,7 @@
            (and stable-under-simplificationp
                 (let* ((term (assoc 'aignet-mark-comb-invar clause))
                        (other-var (if (eq (cadr term) 'mark)
-                                      'acl2::mark-equiv
+                                      'mark-equiv
                                     'mark)))
                   `(:expand (,term)
                     :use ((:instance aignet-mark-comb-invar-necc
@@ -2201,7 +2201,7 @@
            (and stable-under-simplificationp
                 (let* ((term (assoc 'aignet-mark-seq-invar clause))
                        (other-var (if (eq (cadr term) 'mark)
-                                      'acl2::mark-equiv
+                                      'mark-equiv
                                     'mark)))
                   `(:expand (,term)
                     :use ((:instance aignet-mark-seq-invar-necc

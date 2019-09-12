@@ -113,7 +113,7 @@
 (defcong list::equiv equal (erase path dtree) 1
   :hints(("Goal"
           :in-theory (enable erase)
-          :induct (erase-induction path LIST::path-equiv dtree))))
+          :induct (erase-induction path path-equiv dtree))))
 
 (defcong equiv equiv (erase path dtree) 2
   :hints(("Goal" :in-theory (enable erase))))
@@ -418,7 +418,7 @@
 (defcong list::equiv equal (remove path dtree) 1
   :hints(("Goal"
           :in-theory (enable remove)
-          :induct (remove-induction path LIST::path-equiv dtree))))
+          :induct (remove-induction path path-equiv dtree))))
 
 (defcong equiv equiv (remove path dtree) 2
   :hints(("Goal" :in-theory (enable remove))))

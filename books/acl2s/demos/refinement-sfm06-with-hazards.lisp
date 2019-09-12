@@ -1,5 +1,5 @@
 (in-package "ACL2")
-
+(include-book "acl2/utilities" :dir :system)
 #|
 This is the weak defun-sk macro.  I only thought about existential
 quantification.  Do a macro-expansion to see what it produces, but
@@ -24,16 +24,16 @@ witness.  Many times that is all one needs.
          (body-guts (and (true-listp body) (caddr body)))
          (skolem-name
           (or skolem-name
-              (intern-in-package-of-symbol
+              (acl2s::fix-intern-in-pkg-of-sym
                (concatenate 'string (symbol-name name) "-WITNESS")
                name)))
          (skolem-constraint-name
-          (intern-in-package-of-symbol
+          (acl2s::fix-intern-in-pkg-of-sym
            (concatenate 'string (symbol-name skolem-name) "-CONSTRAINT")
            skolem-name))
          (thm-name
           (or thm-name
-              (intern-in-package-of-symbol
+              (acl2s::fix-intern-in-pkg-of-sym
                (concatenate 'string (symbol-name name)
                             (if exists-p "-SUFF" "-NECC"))
                name)))
@@ -75,7 +75,7 @@ witness.  Many times that is all one needs.
           ,@(cond 
              ((null (cdr bound-vars)) nil)
              (t
-              `((local (defthm ,(intern-in-package-of-symbol
+              `((local (defthm ,(acl2s::fix-intern-in-pkg-of-sym
                                  (concatenate 'string (symbol-name skolem-name) "-TYPE-PRESCRIPTION")
                                  skolem-name)
                          (true-listp ,(cons skolem-name args))

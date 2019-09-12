@@ -192,7 +192,15 @@
       trans-eval
       cgen
       tests-and-calls
-      
+
+      fix-pkg
+      fix-sym
+      fix-intern$
+      fix-intern-in-pkg-of-sym
+      pack-to-string
+      gen-sym-sym-fn
+      gen-sym-sym
+      packn1
       flg
       sort
       guard-checking-on

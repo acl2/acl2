@@ -201,7 +201,7 @@ the number of descriptions in the list.</p>"
             :in-theory (e/d (list-equiv)
                             (vl-descriptionlist->names-of-list-fix))
             :use ((:instance vl-descriptionlist->names-of-list-fix (x x))
-                  (:instance vl-descriptionlist->names-of-list-fix (x acl2::x-equiv))))))
+                  (:instance vl-descriptionlist->names-of-list-fix (x x-equiv))))))
 
   (defthm vl-descriptionlist->names-of-append
     (equal (vl-descriptionlist->names (append x y))
@@ -314,7 +314,7 @@ the number of descriptions in the list.</p>"
             :in-theory (e/d (list-equiv)
                             (vl-descriptionlist->orignames-of-list-fix))
             :use ((:instance vl-descriptionlist->orignames-of-list-fix (x x))
-                  (:instance vl-descriptionlist->orignames-of-list-fix (x acl2::x-equiv))))))
+                  (:instance vl-descriptionlist->orignames-of-list-fix (x x-equiv))))))
 
   (defthm vl-descriptionlist->orignames-of-append
     (equal (vl-descriptionlist->orignames (append x y))

@@ -295,7 +295,7 @@ get as much automated polymorphic support as possible.
       ((unless (null rest)) (er hard? ctx "~| Extra args: ~x0~%" rest))
       (dep-hyp (get1 :satisfies kwd-alist))
       (suffix (get1 :suffix kwd-alist))
-      (x123vars (numbered-vars (intern$ "X" curr-pkg) (len *allowed-type-vars*)))
+      (x123vars (numbered-vars (acl2s::fix-intern$ "X" curr-pkg) (len *allowed-type-vars*)))
       (dep-vars (and dep-hyp (all-vars dep-hyp))) ;BEWARE all-vars works only for terms; it might return nil and t as variables. Use pseudo-translate here.
       ((unless (subsetp dep-vars x123vars))
        (er hard? ctx "~| Only variable arguments allowed in SATISFIES are ~x0; but given ~x1~%" x123vars dep-vars))
@@ -339,7 +339,7 @@ get as much automated polymorphic support as possible.
   (if (symbolp obj)
       obj
     (b* (((mv & str) (acl2::fmt1!-to-string "~x0" (acons #\0 obj '()) 0)))
-      (intern$ str pkg))))
+      (acl2s::fix-intern$ str pkg))))
 
 (defloop to-symbols (objs pkg)
   (declare (xargs :guard (and (stringp pkg)
@@ -428,13 +428,13 @@ get as much automated polymorphic support as possible.
        (undef-pred-bodies
         (make-pred-Is undef-n-types
                       (make-list (len undef-n-types)
-                                 :initial-element (intern$ "X" pkg))
+                                 :initial-element (acl2s::fix-intern$ "X" pkg))
                       nil A M C B wrld))
        (undef-pred-names (make-predicate-symbol-lst undef-tnames "DEFDATA")))
 ;   in 
     (append (stitch-up-defuns undef-pred-names 
                               (make-list (len undef-pred-names)
-                                         :initial-element `(,(intern$ "X" pkg)))
+                                         :initial-element `(,(acl2s::fix-intern$ "X" pkg)))
                               nil
                               undef-pred-bodies)
             (make-derived-tvar-type-defthms undef-pred-names undef-texps pkg))))
@@ -695,7 +695,7 @@ constant). In the latter return a lambda expression"
                     :atom-alist atom-alist
                     :str-alist str-alist
 ;The original function name should be used to avoid name clashes e.g between acl2s::rev and acl2::rev
-                    :pkg-sym (intern$ "a" (get1 :current-package kwd-alist))))) 
+                    :pkg-sym (acl2s::fix-intern$ "a" (get1 :current-package kwd-alist))))) 
  
 (defttag t)      
 (defattach (psig-templ-instantiation-ev psig-templ-instantiation-ev-user) :skip-checks t)
@@ -830,7 +830,7 @@ constant). In the latter return a lambda expression"
        (ret-pred (find/make-predicate-name ret-tname A M))
        (pkg (get1 :current-package kwd-alist))
 
-       (x1--xk (numbered-vars (intern$ "X" pkg) (len arg-preds)))
+       (x1--xk (numbered-vars (acl2s::fix-intern$ "X" pkg) (len arg-preds)))
        (dependent-hyps (get1 :satisfies kwd-alist)) ;they should only use x1, x2 etc
        (hyps (append (list-up-lists arg-preds x1--xk) dependent-hyps))
        (psig-defthm-body `(IMPLIES (AND . ,hyps)
@@ -899,7 +899,7 @@ constant). In the latter return a lambda expression"
        (arg-preds (find/make-predicate-names arg-tnames A M))
        (pkg (get1 :current-package kwd-alist))
        
-       (x1--xk (numbered-vars (intern$ "X" pkg) (len arg-preds)))
+       (x1--xk (numbered-vars (acl2s::fix-intern$ "X" pkg) (len arg-preds)))
        (dependent-hyps (get1 :satisfies kwd-alist)) ;they should only use x1, x2 etc
        (hyps (append (list-up-lists arg-preds x1--xk) dependent-hyps))
        (psig-hint-body
@@ -929,7 +929,7 @@ constant). In the latter return a lambda expression"
        (return-type1 (acl2::sublis-var *tvar-typename-alist* ret-type)) ;instead of *allowed-type-var->named-type-binding*
        (arity (len arg-types))
        (pkg (get1 :current-package kwd-alist))
-       (star (intern$ "*" pkg))
+       (star (acl2s::fix-intern$ "*" pkg))
        (stars (make-list arity :initial-element star))
        (n-arg-types (parse-top-texps stars arg-type-list1 ctx wrld))
        (n-ret-type (parse-top-texp star return-type1 (list star) ctx wrld))

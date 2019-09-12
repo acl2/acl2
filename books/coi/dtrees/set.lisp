@@ -119,7 +119,7 @@
 (defcong list::equiv equal (set path value dtree) 1
   :hints(("Goal"
           :in-theory (enable set)
-          :induct (two-path-induction path list::path-equiv dtree))))
+          :induct (two-path-induction path path-equiv dtree))))
 
 (defcong equivdeps equivdeps (set path value dtree) 2
   :hints(("Goal" :in-theory (enable set))))

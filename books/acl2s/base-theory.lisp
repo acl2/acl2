@@ -558,7 +558,7 @@ Useful for testing defunc/definec errors
   (if (endp l)
       l
     (b* ((mname (defdata::s+ (str::cat prefix (caar l) suffix) :pkg pkg))
-         (x (intern$ "X" pkg)))
+         (x (fix-intern$ "X" pkg)))
       (cons 
        `(defmacro ,mname (,x)
           ,(cadar l))

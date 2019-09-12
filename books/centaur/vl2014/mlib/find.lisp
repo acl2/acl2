@@ -173,7 +173,7 @@ instances.</p>"
             :use ((:instance vl-modinstlist->instnames-of-list-fix
                    (x x))
                   (:instance vl-modinstlist->instnames-of-list-fix
-                   (x acl2::x-equiv))))))
+                   (x x-equiv))))))
 
   (defthm vl-modinstlist->instnames-of-append
     (equal (vl-modinstlist->instnames (append x y))
@@ -239,7 +239,7 @@ the number of gate instances in the list.</p>"
             :in-theory (e/d (list-equiv)
                             (vl-gateinstlist->names-of-list-fix))
             :use ((:instance vl-gateinstlist->names-of-list-fix (x x))
-                  (:instance vl-gateinstlist->names-of-list-fix (x acl2::x-equiv))))))
+                  (:instance vl-gateinstlist->names-of-list-fix (x x-equiv))))))
 
   (defthm vl-gateinstlist->names-of-append
     (equal (vl-gateinstlist->names (append x y))
@@ -313,7 +313,7 @@ may be shorter than the number of elements in the list.</p>"
             :in-theory (e/d (list-equiv)
                             (vl-genelementlist->blocknames-of-list-fix))
             :use ((:instance vl-genelementlist->blocknames-of-list-fix (x x))
-                  (:instance vl-genelementlist->blocknames-of-list-fix (x acl2::x-equiv))))))
+                  (:instance vl-genelementlist->blocknames-of-list-fix (x x-equiv))))))
 
   (defthm vl-genelementlist->blocknames-of-append
     (equal (vl-genelementlist->blocknames (append x y))

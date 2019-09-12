@@ -462,6 +462,7 @@
 					    rule-classes))
 
      `(defcong MUL::equal-set iff (,for-exis l m) 1
+        :package :legacy
 	:event-name ,cong-name1
 	:hints (("Goal"
 		 :use ((:functional-instance
@@ -476,6 +477,7 @@
 		 :hands-off (,n-fn ,n-rel))))
 
      `(defcong MUL::equal-set iff (,for-exis l m) 2
+        :package :legacy
 	:event-name ,cong-name2
 	:hints (("Goal"
 		 :use ((:functional-instance
@@ -592,6 +594,7 @@
 	:rule-classes ,(extend-rule-classes :WELL-FOUNDED-RELATION
 					    rule-classes))
      `(defcong MUL::equal-set iff (,for-exis l m) 1
+        :package :legacy
 	:event-name ,cong-name1
 	:hints (("Goal"
 		 :use ((:functional-instance
@@ -606,6 +609,7 @@
 		 :hands-off (,n-mp ,n-fn ,n-rel))))
 
      `(defcong MUL::equal-set iff (,for-exis l m) 2
+        :package :legacy
 	:event-name ,cong-name2
 	:hints (("Goal"
 		 :use ((:functional-instance
@@ -709,6 +713,7 @@
 	:rule-classes ,(extend-rule-classes :WELL-FOUNDED-RELATION
 					    rule-classes))
      `(defcong MUL::equal-set iff (,for-exis l m) 1
+        :package :legacy
 	:event-name ,cong-name1
 	:hints (("Goal"
 		 :use ((:functional-instance
@@ -722,6 +727,7 @@
 			(MUL::forall-exists-rel-bigger ,for-exis))))))
 
      `(defcong MUL::equal-set iff (,for-exis l m) 2
+        :package :legacy
 	:event-name ,cong-name2
 	:hints (("Goal"
 		 :use ((:functional-instance

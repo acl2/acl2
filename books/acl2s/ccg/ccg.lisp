@@ -22,6 +22,17 @@
  (include-book "hacking/all" :dir :system :ttags :all))
 (subsume-ttags-since-defttag)
 
+; From utilities.lisp
+(defun fix-pkg (pkg)
+  (declare (xargs :guard (and (or (null pkg) (stringp pkg))
+                              (not (equal pkg "")))))
+  (if (and pkg (not (equal pkg "COMMON-LISP")))
+      pkg
+    "ACL2"))
+
+(defmacro fix-intern$ (name pkg)
+  `(intern$ ,name (fix-pkg ,pkg)))
+
 ;;; Legacy doc strings replaced Nov. 2014 by the corresponding
 ;;; auto-generated defxdoc form in the last part of this file.
 
@@ -4759,11 +4770,12 @@ e2-e1+1.
                               (stringp pkg)
                               (natp i)
                               (plist-worldp wrld))))
-  (let ((name (intern$ (coerce (append char-lst
-                                       `(#\_)
-                                       (explode-nonnegative-integer i 10 nil))
-                               'string)
-                       pkg)))
+  (let ((name (fix-intern$
+               (coerce (append char-lst
+                               `(#\_)
+                               (explode-nonnegative-integer i 10 nil))
+                       'string)
+               pkg)))
     (cond ((new-namep name wrld) (mv name i))
           (t (ccg-counter-example-fn-name1 char-lst pkg (1+ i) wrld)))))
 

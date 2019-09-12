@@ -627,9 +627,9 @@
    :hints (("Goal" :in-theory (disable APPLY$-EQUIVALENCE-NECC)
             :use APPLY$-EQUIVALENCE-NECC))))
 
-(defequiv fn-equal)
+(defequiv fn-equal :package :legacy)
 
-(defcong fn-equal equal (apply$ fn args) 1)
+(defcong fn-equal equal (apply$ fn args) 1 :package :legacy)
 
 (in-theory (disable fn-equal))
 
@@ -649,6 +649,7 @@
    ((endp c1-cn) nil)
    ((eq (car c1-cn) :FN)
     (cons `(defcong fn-equal equal ,term ,i
+             :package :legacy
              :hints
              (("Goal" :in-theory (disable (:executable-counterpart force)))))
           (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn))))

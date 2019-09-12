@@ -126,7 +126,7 @@
 (defcong list::equiv equal (remove-1 a x) 2
   :hints(("Goal"
           :in-theory (enable remove-1)
-          :induct (list::len-len-induction x list::x-equiv))))
+          :induct (list::len-len-induction x x-equiv))))
 
 ;; jcd - strenghtened this rule since it is now always true.
 ;;
@@ -376,7 +376,7 @@
  (defcong list::equiv equal (remove-bag x y) 1
    :hints(("Goal"
            :in-theory (enable remove-bag)
-           :induct (my-induction x list::x-equiv y)))))
+           :induct (my-induction x x-equiv y)))))
 
 ;; jcd - added this congruence
 (defcong list::equiv equal (remove-bag x y) 2
@@ -779,7 +779,7 @@
 
  (defcong list::equiv equal (subbagp x y) 1
    :hints(("Goal" :in-theory (enable subbagp)
-           :induct (my-induction x list::x-equiv y)))))
+           :induct (my-induction x x-equiv y)))))
 
 ;; jcd - added this congruence
 (defcong list::equiv equal (subbagp x y) 2
@@ -1311,7 +1311,7 @@
  (local (defcong list::equiv equal (perm x y) 1
           :hints(("Goal"
                   :in-theory (enable perm)
-                  :induct (my-induction x list::x-equiv y)))))
+                  :induct (my-induction x x-equiv y)))))
 
  ;; jcd - added this congruence.  keep this local because in a moment we will
  ;; show that perm is a refinement of list::equiv, and this becomes trivial.  See
@@ -1544,7 +1544,7 @@
             (if (consp y) (list (car y)) nil))))
 
  (local (defcong list::equiv equal (bad-boy x y) 1
-          :hints(("goal" :induct (my-induction x list::x-equiv y)))))
+          :hints(("goal" :induct (my-induction x x-equiv y)))))
 
  (local (defthm perm-has-no-badboy
           (equal (perm x y)
@@ -1984,7 +1984,7 @@
 (defcong list::equiv equal (disjoint x y) 1
   :hints(("Goal"
           :in-theory (enable disjoint)
-          :induct (list::len-len-induction x list::x-equiv))))
+          :induct (list::len-len-induction x x-equiv))))
 
 ;; jcd - added this rule
 (defcong list::equiv equal (disjoint x y) 2
@@ -2886,7 +2886,7 @@
  (defcong list::equiv equal (remove-all a x) 2
    :hints(("Goal"
            :in-theory (enable remove-all)
-           :induct (my-induction x list::x-equiv))))
+           :induct (my-induction x x-equiv))))
  )
 
 ;; jcd - strenghened rhs from (true-listp x) to t, now that remove-all returns
@@ -3117,7 +3117,7 @@
  (defcong list::equiv equal (bag-intersection x y) 1
    :hints(("Goal"
            :in-theory (enable bag-intersection)
-           :induct (my-induction x list::x-equiv y)))))
+           :induct (my-induction x x-equiv y)))))
 
 ;; jcd - added this congruence
 (defcong list::equiv equal (bag-intersection x y) 2

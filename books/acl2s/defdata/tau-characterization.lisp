@@ -485,8 +485,8 @@ data last modified: [2014-08-06]
        (kwd-alist (append kwd-alist top-kwd-alist))
        (pkg (get1 :current-package kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (v (intern$ "V" pkg))
-       (x (intern$ "X" pkg))
+       (v (acl2s::fix-intern$ "V" pkg))
+       (x (acl2s::fix-intern$ "X" pkg))
        (xvar (if (member-eq v avoid-lst)
                  v
                (acl2::generate-variable v avoid-lst nil nil wrld)))
