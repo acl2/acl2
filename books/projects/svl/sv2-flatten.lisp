@@ -18,7 +18,7 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
-(include-book "~/async/fft/svl-tests/tests")
+(include-book "/Users/user/async/fft/svl-tests/tests")
 
 (in-theory (disable ACL2::NATP-WHEN-GTE-0
                     ACL2::NATP-WHEN-INTEGERP))
@@ -1011,20 +1011,20 @@
       (implies (and (wire-p wire)
                     (and (consp wire) (consp (cdr wire))))
                (and (sv::svar-p (car wire))
-                          (and (natp (cadr wire))
-                               (integerp (cadr wire))
-                               (acl2-numberp (cadr wire))
-                               (rationalp (cadr wire)))
-                          (natp (cddr wire))
-                          (integerp (cddr wire))
-                          (acl2-numberp (cddr wire))
-                          (rationalp (cddr wire))))))
+                    (and (natp (cadr wire))
+                         (integerp (cadr wire))
+                         (acl2-numberp (cadr wire))
+                         (rationalp (cadr wire)))
+                    (natp (cddr wire))
+                    (integerp (cddr wire))
+                    (acl2-numberp (cddr wire))
+                    (rationalp (cddr wire))))))
 
    (local
     (defthm wire-p-implies-fc-2
       (implies (and (wire-p wire)
                     (and (consp wire) (eq (cdr wire) nil)))
-   
+
                (sv::svar-p (car wire)))))
    (local
     (defthm lemma1
@@ -1113,9 +1113,9 @@
                (wire-list-p (cdr (last ins))))
       :hints (("Goal"
                :in-theory (e/d (last) ()))))))
-  
+
   :returns (res wire-list-p :hyp (wire-list-p ins))
-  
+
   (fast-alist-clean (assign-occ-merge-ins ins)))
 
 (define assign-to-occ ((lhs sv::lhs-p)
@@ -1188,16 +1188,94 @@
       ;; save and return the object.
       (mv (acons (sa (to-symbol (car trace)) cnt) occ rest) cnt-new rp::rp-state)))))
 
+
+
+
+(define sv-mod->sv2-occs-module-aux ((sigs wire-list-p)
+                                     (aliasdb aliasdb-p)
+                                     (place)
+                                     (svex-simplify-preloaded)
+                                     &key
+                                     (rp::rp-state 'rp::rp-state)
+                                     (state 'state))
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  :verify-guards nil
+  (if (atom sigs)
+      (mv nil rp::rp-state)
+    (b* (((mv rest rp::rp-state)
+          (sv-mod->sv2-occs-module-aux (cdr sigs)
+                                       aliasdb
+                                       place
+                                       svex-simplify-preloaded))
+         (cur (car sigs))
+         (cur-name (car cur))
+         (cur-w (cadr cur))
+         
+         (alias-svex (get-svex-from-aliasdb cur-name place 0 aliasdb))
+         #|(- (cw "alias-svex ~p0 for cur-sig ~p1 in place ~p2 ~%"
+                alias-svex cur place))||#
+         ((unless alias-svex)
+          (mv (acons cur-name `(,(sv::make-svar :name (if place
+                                                      (cons place cur-name)
+                                                    cur-name)
+                                            :delay 0)
+                                ,cur-w . 0)
+                     rest)
+              rp::rp-state))
+         (alias-svex `(sv::partsel 0 ,cur-w ,alias-svex))
+         ((mv alias-svex rp::rp-state)
+          (svex-simplify alias-svex
+                         :svex-simplify-preloaded svex-simplify-preloaded
+                         :runes nil))
+         (alias-lhs (svex->lhs alias-svex))
+         ((unless (equal (len alias-lhs) 1))
+          (progn$ (hard-error 'sv-mod->sv2-occs-module-aux
+                              "This module has an input or output port that
+                                     gets more than one wire. ~p0. this is a
+                                     temporary error and will be fixed later. ~%"
+                              (list (cons #\0 alias-svex)))
+                  (mv nil rp::rp-state)))
+         (cur-wire (car alias-lhs))
+         (cur-wire `(,(sv::lhatom-var->name (sv::lhrange->atom cur-wire))
+                     ,(sv::lhrange->w cur-wire)
+                     .
+                     ,(sv::lhatom-var->rsh (sv::lhrange->atom cur-wire)))))
+      (mv (acons cur-name cur-wire rest)
+          rp::rp-state))))
+
 (define sv-mod->sv2-occs-module ((modname sv::modname-p)
                                  (aliasdb aliasdb-p)
+                                 (trace trace-p)
+                                 (vl-insouts vl-insouts-sized-p)
                                  (svex-simplify-preloaded)
                                  &key
                                  (rp::rp-state 'rp::rp-state)
                                  (state 'state))
   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
-  (declare (ignorable modname aliasdb svex-simplify-preloaded state
+  :verify-guards nil
+  (declare (ignorable modname
+                      trace
+                      aliasdb
+                      vl-insouts
+                      svex-simplify-preloaded state
                       rp::rp-state))
-  (mv modname rp::rp-state))
+  (b* ((this-vl-insouts (assoc-equal modname vl-insouts))
+       (in-names (cadr this-vl-insouts))
+       (out-names (cddr this-vl-insouts))
+       (place (car trace))
+       ((mv ins rp::rp-state) (sv-mod->sv2-occs-module-aux in-names
+                                         aliasdb
+                                         place
+                                         svex-simplify-preloaded))
+       ((mv outs rp::rp-state) (sv-mod->sv2-occs-module-aux out-names
+                                         aliasdb
+                                         place
+                                         svex-simplify-preloaded))
+       (occ (make-occ-module :inputs ins
+                             :outputs outs
+                             :name modname)))
+    
+    (mv occ rp::rp-state)))
 
 (set-state-ok t)
 
@@ -1209,7 +1287,7 @@
                            (aliasdb aliasdb-p)
                            (trace trace-p)
                            (mods-to-skip sv::modnamelist-p)
-                      ;     (cnt natp)
+                           (vl-insouts vl-insouts-sized-p)
                            (svex-simplify-preloaded)
                            (limit natp "To prove termination")
                            &key
@@ -1246,7 +1324,7 @@
                                         aliasdb
                                         trace
                                         mods-to-skip
-                                  ;      0;        cnt
+                                        vl-insouts
                                         svex-simplify-preloaded
                                         (1- limit))))
             (mv (append assign-occs insts-occs)  rp::rp-state)))))
@@ -1256,7 +1334,7 @@
                                  (aliasdb aliasdb-p)
                                  (trace trace-p)
                                  (mods-to-skip sv::modnamelist-p)
-                                ; (cnt natp)
+                                 (vl-insouts vl-insouts-sized-p)
                                  (svex-simplify-preloaded)
                                  (limit natp "To prove termination")
                                  &key
@@ -1281,27 +1359,29 @@
                                         aliasdb
                                         trace
                                         mods-to-skip
-                                 ;       cnt
+                                        vl-insouts
                                         svex-simplify-preloaded
                                         (1- limit)))
-               ((when (member-equal inst.modname mods-to-skip))
-                (b* (((mv this-occ rp::rp-state)
-                      (sv-mod->sv2-occs-module inst.modname aliasdb svex-simplify-preloaded)))
-                  (mv (acons inst.instname this-occ rest)  rp::rp-state)))
-               ((aliasdb aliasdb) aliasdb)
-               #|(aliasdb-tmp (hons-get inst.instname aliasdb.sub))
-               (aliasdb-tmp (if aliasdb (cdr aliasdb) (make-aliasdb)))||#
                (trace-tmp (cons (if (consp trace)
                                     (cons-to-end (car trace) inst.instname)
                                   inst.instname)
                                 trace))
+               ((when (member-equal inst.modname mods-to-skip))
+                (b* (((mv this-occ rp::rp-state)
+                      (sv-mod->sv2-occs-module inst.modname aliasdb trace-tmp
+                                               vl-insouts svex-simplify-preloaded)))
+                  (mv (acons inst.instname this-occ rest)  rp::rp-state)))
+               ((aliasdb aliasdb) aliasdb)
+               #|(aliasdb-tmp (hons-get inst.instname aliasdb.sub))
+               (aliasdb-tmp (if aliasdb (cdr aliasdb) (make-aliasdb)))||#
+               
                ((mv cur-inst-occs  rp::rp-state)
                 (sv-mod->sv2-occs inst.modname
                                   modalist
                                   aliasdb
                                   trace-tmp
                                   mods-to-skip
-                               ;   cnt
+                                  vl-insouts
                                   svex-simplify-preloaded
                                   (1- limit))))
             (mv (append cur-inst-occs rest)
@@ -1310,28 +1390,57 @@
 (define sv2-flatten-mod ((modname sv::modname-p)
                          (modalist sv::modalist-p)
                          (mods-to-skip sv::modnamelist-p)
+                         (vl-insouts vl-insouts-sized-p)
                          &key
                          (rp::rp-state 'rp::rp-state)
                          (state 'state))
   (declare (xargs :mode :program))
   (b* ((aliasdb (mod-aliaspairs->aliasdb modname modalist mods-to-skip))
+       ;;(- (cw "aliasdb ~p0 ~%" aliasdb))
        (svex-simplify-preloaded (svex-simplify-preload))
        ((mv occs rp::rp-state) (sv-mod->sv2-occs modname
-                                                   modalist
-                                                   aliasdb
-                                                   nil
-                                                   mods-to-skip
-                ;                                   0
-                                                   svex-simplify-preloaded
-                                                   (expt 2 30)))
+                                                 modalist
+                                                 aliasdb
+                                                 nil
+                                                 mods-to-skip
+                                                 vl-insouts
+                                                 svex-simplify-preloaded
+                                                 (expt 2 30)))
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
     (mv occs rp::rp-state)))
 
-(sv2-flatten-mod "mul_test1"
-                 (make-fast-alist (sv::design->modalist *booth-sv-design*))
-                 nil)
+#|
 
-(sv2-flatten-mod "booth2_multiplier_signed_64x32_97"
-                 (make-fast-alist (sv::design->modalist *big-sv-design*))
-                 '("booth2_reduction_dadda_17x65_97"))
+(b* ((vl-insouts (vl-design-to-insouts *booth-vl-design2* *booth-sv-design*))
+     (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *booth-sv-design*
+                                                '("fa" "mul_test1" "partial"))))
+
+  (sv2-flatten-mod "mul_test1"
+                   (make-fast-alist (sv::design->modalist *booth-sv-design*))
+                   '("fa" "partial")
+                   vl-insouts2))
+
+#|(sv2-flatten-mod "booth_encoder"
+                 (make-fast-alist (sv::design->modalist *booth-sv-design*))
+                 nil)||#
+
+
+(b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
+     (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
+                                                '("full_adder_1$WIDTH=1"
+                                                  "full_adder$WIDTH=1")
+                                                )))
+  (sv2-flatten-mod "booth2_multiplier_signed_64x32_97"
+                   (make-fast-alist (sv::design->modalist *big-sv-design*))
+                   '("full_adder_1$WIDTH=1"
+                                                  "full_adder$WIDTH=1")
+                   vl-insouts2))
 ||#
+
+
+
+;; TODO
+;; 1. prevent repitiion for delayed-inputs for assignments.
+;; 2. when inputs and/or outputs are aliases, create assignments for them.
+;; 3. test with listeners.
+;; 4. fix the program where a module has to have a single lhs input/output.

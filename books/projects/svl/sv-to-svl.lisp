@@ -26,6 +26,7 @@
 (in-package "SVL")
 
 (include-book "centaur/sv/svex/vars" :dir :system)
+(include-book "centaur/sv/mods/svmods" :dir :system)
 
 (include-book "centaur/fty/top" :dir :system)
 
@@ -258,12 +259,14 @@
                        )
                     0))))
 
-  (defun vl-insouts-getwire (name wires)
+  (define vl-insouts-assocwire (name wires)
     (if (atom wires)
         nil
-      (if (equal name (caaar wires))
-          (caar wires)
-        (vl-insouts-getwire name (cdr wires)))))
+      (if (and (consp (car wires))
+               (consp (caar wires))
+               (equal name (caaar wires)))
+          (car wires)
+        (vl-insouts-assocwire name (cdr wires)))))
 
   (defun vl-smodule-to-insouts (smodule )
     (if (atom smodule)
@@ -397,6 +400,80 @@
                                                     (cdr (assoc-equal
                                                           'SV::MODALIST sv-design)))))
            insouts))))
+
+(progn
+  (define vl-insouts-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (string-listp ins)
+                   (string-listp outs)
+                   (vl-insouts-p rest)))))))
+
+  (define vl-insouts-sized-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (wire-list-p ins)
+                   (wire-list-p outs)
+                   (vl-insouts-sized-p rest)))))))
+
+  (define vl-insouts-insert-wire-sizes-aux ((sigs string-listp)
+                                            (wires SV::WIRELIST-P))
+    :verify-guards nil
+    (if (atom sigs)
+        nil
+      (b* ((cur (car sigs))
+           (cur-wire (vl-insouts-assocwire cur wires))
+           ((Unless cur-wire)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Signal ~p0 cannot be found in wires ~p1 ~%"
+                        (list (cons #\0 cur)
+                              (cons #\1 wires))))
+           (w (sv::wire->width cur-wire)))
+        (cons `(,cur ,w . 0)
+              (vl-insouts-insert-wire-sizes-aux (cdr sigs)
+                                                wires)))))
+
+  (define vl-insouts-insert-wire-sizes ((vl-insouts vl-insouts-p)
+                                        (sv-design sv::design-p)
+                                        (module-names string-listp))
+    :verify-guards nil
+    :guard-hints (("Goal"
+                   :in-theory (e/d (VL-INSOUTS-P
+                                    SV::DESIGN->MODALIST
+                                    assoc-equal
+                                    SV::MODALIST-FIX) ())))
+    (if (atom module-names)
+        nil
+      (b* ((cur (car module-names))
+           (this-vl-insouts (assoc-equal cur vl-insouts))
+           ((unless this-vl-insouts)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Module name cannot be found in vl-insouts ~p0 ~%"
+                        (list (cons #\0 cur))))
+           (modalist (sv::design->modalist sv-design))
+           (sv-module (assoc-equal cur modalist))
+           ((unless sv-module)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Module name cannot be found in modalist ~p0 ~%"
+                        (list (cons #\0 cur))))
+           (sv-module (cdr sv-module))
+           (wires (sv::module->wires sv-module))
+           (ins (cadr this-vl-insouts))
+           (ins (vl-insouts-insert-wire-sizes-aux ins wires))
+           (outs (cddr this-vl-insouts))
+           (outs (vl-insouts-insert-wire-sizes-aux outs wires)))
+        (cons `(,cur ,ins . ,outs)
+              (vl-insouts-insert-wire-sizes vl-insouts
+                                            sv-design
+                                            (cdr module-names)))))))
+  
+  
 
 (defun svl-assoc (key alist is-fast-alist)
   (declare (xargs :guard (alistp alist)))
