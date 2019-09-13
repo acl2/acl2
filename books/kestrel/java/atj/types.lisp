@@ -578,8 +578,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection def-atj-function-type
-  :short "Macro to prove and record that an ACL2 function
-          has certain input and output types."
+  :short (xdoc::topstring
+          "Macro to prove and record that an ACL2 function
+           has certain input and output "
+          (xdoc::seetopic "atj-types" "types")
+          ".")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -587,7 +590,10 @@
      (i.e. functions for which we want to generate Java code)
      prior to calling ATJ,
      so that ATJ can take advantage of the type information
-     recorded for the functions.")
+     recorded for the functions.
+     This is only relevant
+     when @(':deep') is @('nil') and @(':guards') is @('t');
+     in all other cases, the type information is ignored.")
    (xdoc::p
     "For instance, the file @('types-for-natives.lisp') uses this macro
      on the ACL2 functions that are implemented natively in AIJ.")
