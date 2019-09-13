@@ -53,7 +53,10 @@
 (defsection xdoc::evmac-section-intro
   :short "Construct the introduction section
           of the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-section-intro")
+  :long
+  (xdoc::topstring
+   (xdoc::@def "xdoc::*evmac-section-intro-title*")
+   (xdoc::@def "xdoc::evmac-section-intro"))
 
   (defconst xdoc::*evmac-section-intro-title*
     "Introduction")
@@ -68,7 +71,10 @@
 (defsection xdoc::evmac-section-form
   :short "Construct the general form section
           of the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-section-form")
+  :long
+  (xdoc::topstring
+   (xdoc::@def "xdoc::*evmac-section-form-title*")
+   (xdoc::@def "xdoc::evmac-section-form"))
 
   (defconst xdoc::*evmac-section-form-title*
     "General Form")
@@ -237,7 +243,10 @@
 (defsection xdoc::evmac-section-inputs
   :short "Construct the inputs section
           of the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-section-inputs")
+  :long
+  (xdoc::topstring
+   (xdoc::@def "xdoc::*evmac-section-inputs-title*")
+   (xdoc::@def "xdoc::evmac-section-inputs"))
 
   (defconst xdoc::*evmac-section-inputs-title*
     "Inputs")
@@ -258,6 +267,7 @@
     "Since this documentation is part of the XDOC topic
      whose name is the name of the macro,
      the @('macro-ref') variable is not a link.")
+   (xdoc::@def "xdoc::*evmac-section-appconds-title*")
    (xdoc::@def "xdoc::evmac-section-appconds"))
 
   (defconst xdoc::*evmac-section-appconds-title*
@@ -297,7 +307,10 @@
 (defsection xdoc::evmac-section-generated
   :short "Construct the generated events section
           of the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-section-generated")
+  :long
+  (xdoc::topstring
+   (xdoc::@def "xdoc::*evmac-section-generated-title*")
+   (xdoc::@def "xdoc::evmac-section-generated"))
 
   (defconst xdoc::*evmac-section-generated-title*
     "Generated Events")
@@ -325,6 +338,7 @@
     "Since this documentation is part of the XDOC topic
      whose name is the name of the macro,
      the @('macro-ref') variable is not a link.")
+   (xdoc::@def "xdoc::*evmac-section-redundancy-title*")
    (xdoc::@def "xdoc::evmac-section-redundancy"))
 
   (defconst xdoc::*evmac-section-redundancy-title*
@@ -594,7 +608,8 @@
     "Looking at some uses of this utility should make it clearer.")
    (xdoc::p
     "This utility may need to be extended and generalized in the future,
-     in particular with more customization facilities."))
+     in particular with more customization facilities.")
+   (xdoc::@def "xdoc::evmac-desc-function/lambda/macro"))
 
   (defmacro xdoc::evmac-desc-function/lambda/macro (&key
                                                     (subject '"It")
@@ -718,7 +733,8 @@
     "Looking at some uses of this utility should make it clearer.")
    (xdoc::p
     "This utility may need to be extended and generalized in the future,
-     in particular with more customization facilities."))
+     in particular with more customization facilities.")
+   (xdoc::@def "xdoc::evmac-desc-term"))
 
   (defmacro xdoc::evmac-desc-term (&key
                                    (subject '"It")
@@ -789,7 +805,8 @@
      "Zero or more XDOC trees (often paragraphs)
       that provide some additional explanation
       about how the design notes relate to the event macro
-      (e.g. parts of the design notes that are not implemented yet.")))
+      (e.g. parts of the design notes that are not implemented yet."))
+   (xdoc::@def "xdoc::evmac-topic-design-notes"))
 
   (define xdoc::evmac-topic-design-notes-make-bullets
     ((correspondences xdoc::tree-listp))
@@ -856,6 +873,7 @@
 (defsection xdoc::evmac-topic-library-extensions
   :short "Generate an XDOC topic for the library extensions
           that are part of the implementation of an event macro."
+  :long (xdoc::topstring-@def "xdoc::evmac-topic-library-extensions")
 
   (defmacro xdoc::evmac-topic-library-extensions (macro)
     (declare (xargs :guard (symbolp macro)))
@@ -884,6 +902,7 @@
 (defsection xdoc::evmac-topic-input-processing
   :short "Generate an XDOC topic for the input processing
           that is part of the implementation of an event macro."
+  :long (xdoc::topstring-@def "xdoc::evmac-topic-input-processing")
 
   (defmacro xdoc::evmac-topic-input-processing (macro)
     (declare (xargs :guard (symbolp macro)))
