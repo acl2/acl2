@@ -2043,7 +2043,13 @@
        via @('atj-adapt-jexpr-to-type').
        Finally, we generate a Java binary expression
        whose operator corresponds to the function.
-       The type of the function application is @(':jint').")
+       The type of the function application is @(':jint').
+       We parenthesize the Java expression
+       to avoid errors due to operator precedences
+       when expressions are nested;
+       in the future we should take precedences into account
+       to avoid unnecessary parentheses and make the code more readable
+       (it may be better to handle this in the pretty-printer).")
      (xdoc::p
       "This code generation function is called
        only if @(':guards') is @('t')."))
@@ -2081,7 +2087,7 @@
                   (jint-mul (jbinop-mul))
                   (jint-div (jbinop-div))
                   (jint-rem (jbinop-rem))))
-         (jexpr (jexpr-binary binop left-jexpr right-jexpr))
+         (jexpr (jexpr-paren (jexpr-binary binop left-jexpr right-jexpr)))
          (jblock (append left-jblock right-jblock)))
       (mv jblock jexpr :jint jvar-value-index jvar-result-index))
     ;; 2nd component is non-0
