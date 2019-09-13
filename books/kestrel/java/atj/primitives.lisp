@@ -239,3 +239,46 @@
        (y (int-value->int y))
        (z (>= x y)))
     (boolean-value z)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-primitive-constructors*
+  :short "List of (the names of) the ACL2 functions that model
+          the construction of Java primitive types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now the list only consists of @(tsee int-value).
+     More will be added as ATJ support for Java primitive types is extended."))
+  '(int-value)
+  ///
+  (assert-event (symbol-listp *atj-primitive-constructors*))
+  (assert-event (no-duplicatesp-eq *atj-primitive-constructors*)))
+
+(defval *atj-primitive-binops*
+  :short "List of (the names of) the ACL2 functions that model
+          Java primitive binary operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we list only some of the available ones.
+     As more ATJ support for Java primitive types is developed,
+     the list will be extended with more of the available functions,
+     as well as with new functions."))
+  '(jint-add
+    jint-sub
+    jint-mul
+    jint-div
+    jint-rem)
+  ///
+  (assert-event (symbol-listp *atj-primitive-binops*))
+  (assert-event (no-duplicatesp-eq *atj-primitive-binops*)))
+
+(defval *atj-primitive-fns*
+  :short "List of (the names of) the ACL2 functions that model
+          Java primitive value constructions and operations."
+  (append *atj-primitive-constructors*
+          *atj-primitive-binops*)
+  ///
+  (assert-event (symbol-listp *atj-primitive-fns*))
+  (assert-event (no-duplicatesp-eq *atj-primitive-fns*)))

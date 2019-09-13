@@ -2010,11 +2010,8 @@
     :measure (two-nats-measure (acl2-count aarg)
                                1))
 
-  (define atj-gen-shallow-aintbinapp ((afn (member-eq afn '(jint-add
-                                                            jint-sub
-                                                            jint-mul
-                                                            jint-div
-                                                            jint-rem)))
+  (define atj-gen-shallow-aintbinapp ((afn
+                                       (member-eq afn *atj-primitive-binops*))
                                       (aleft pseudo-termp)
                                       (aright pseudo-termp)
                                       (jvar-types symbol-atjtype-alistp)
@@ -2198,11 +2195,7 @@
                                       curr-apkg
                                       wrld))
          ((when (and guards$
-                     (member-eq afn '(jint-add
-                                      jint-sub
-                                      jint-mul
-                                      jint-div
-                                      jint-rem))
+                     (member-eq afn *atj-primitive-binops*)
                      (= (len aargs) 2)))
           (atj-gen-shallow-aintbinapp afn
                                       (first aargs)
