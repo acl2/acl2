@@ -17,7 +17,7 @@
 (include-book "hmac/top")
 (include-book "padding/top")
 (include-book "sha-2/top")
-(include-book "kdf/pbkdf2-hmac-sha-512")
+(include-book "kdf/top")
 
 (include-book "attachments/top")
 

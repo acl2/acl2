@@ -1778,6 +1778,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "For the main documentation topic, please go "
+    (xdoc::seetopic "crypto-hdwallet" "up one level to CRYPTO-HDWALLET")
+    ".")
+   (xdoc::p
     "This is a macro, with an associated function as is customary.
      The function processes the inputs from the shell script
      and displays the resulting message.
