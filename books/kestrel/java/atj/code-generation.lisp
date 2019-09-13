@@ -1963,7 +1963,7 @@
     (xdoc::topstring
      (xdoc::p
       "If the @(':guards') input is @('t'),
-       the function @(tsee int-val) is treated specially.
+       the function @(tsee int-value) is treated specially.
        If the argument is a quoted natural number,
        the function application is translated
        to the corresponding Java integer literal;
