@@ -231,36 +231,37 @@ Now in defthm.lisp
 (defun fix-pkg (pkg)
   (declare (xargs :guard (and (or (null pkg) (stringp pkg))
                               (not (equal pkg "")))))
-  (if (and pkg (not (equal pkg "COMMON-LISP")))
+  (if (and pkg (not (equal pkg *main-lisp-package-name*)))
       pkg
     "ACL2"))
-
-(defun fix-sym (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (if (equal (symbol-package-name sym) "COMMON-LISP")
-      (pkg-witness "ACL2")
-    sym))
 
 (defmacro fix-intern$ (name pkg)
   `(intern$ ,name (fix-pkg ,pkg)))
 
 (defmacro fix-intern-in-pkg-of-sym (string sym)
+; This one is a bit different in ACL2 source file defthm.lisp.
   `(intern-in-package-of-symbol ,string (fix-sym ,sym)))
 
 (defun pack-to-string (l)
   (declare (xargs :guard (good-atom-listp l)))
   (coerce (packn1 l) 'string))
 
-(defun gen-sym-sym-fn (l sym)
+(defun gen-sym-sym (l sym)
+
+; This is a version of packn-pos that fixes the package (so that it's not
+; *main-lisp-package-name*).
+
   (declare (xargs :guard (and (good-atom-listp l)
                               (symbolp sym))))
   (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
 
-(defmacro gen-sym-sym (l &optional sym)
-  (declare (xargs :guard t))
-  `(gen-sym-sym-fn ,l ,sym))
-
 |#
+
+(defun fix-sym (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (if (equal (symbol-package-name sym) "COMMON-LISP")
+      (pkg-witness "ACL2")
+    sym))
 
 (defthm character-listp-explode-nonnegative-integer
   (implies (and (integerp x)
@@ -278,12 +279,12 @@ Now in defthm.lisp
 (verify-termination fix-pkg)
 (verify-termination fix-sym)
 (verify-termination pack-to-string)
-(verify-termination gen-sym-sym-fn)
+(verify-termination gen-sym-sym)
 
 (verify-guards fix-pkg)
 (verify-guards fix-sym)
 (verify-guards pack-to-string)
-(verify-guards gen-sym-sym-fn)
+(verify-guards gen-sym-sym)
 
 (defun gen-sym-pkg-fn (l pkg)
   (declare (xargs :guard (and (good-atom-listp l)

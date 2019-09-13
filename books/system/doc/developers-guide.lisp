@@ -2104,7 +2104,7 @@
  Kaufmann, at @('kaufmann@cs.utexas.edu').</li>
 
  <li>The last steps will be done by Matt, who will start by getting your
- changes as follows.
+ changes as follows, in a fresh directory.
 
  @({
  git clone https://github.com/acl2/acl2 .

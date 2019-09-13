@@ -2818,7 +2818,7 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION LEQUAL))
 
 Summary
-Form:  ( MAKE-EVENT (DEFEQUIV-FN ...))
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
 Rules: NIL
  LEQUAL-IS-AN-EQUIVALENCE
 ACL2 !>>(DEFCONG LEQUAL LEQUAL (INSERT E X) 2)
@@ -2888,7 +2888,7 @@ Splitter rules (see :DOC splitter):
              (:DEFINITION LEQUAL))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  LEQUAL-IMPLIES-LEQUAL-INSERT-2
 ACL2 !>>(DEFCONG PERM LEQUAL (ISORT X) 1)
@@ -3071,7 +3071,7 @@ Splitter rules (see :DOC splitter):
              (:DEFINITION RM))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-LEQUAL-ISORT-1
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT-LEQUAL

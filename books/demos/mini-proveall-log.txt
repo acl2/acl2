@@ -1251,7 +1251,7 @@ Rules: ((:EXECUTABLE-COUNTERPART TAU-SYSTEM)
 Warnings:  Equiv
 
 Summary
-Form:  ( MAKE-EVENT (DEFEQUIV-FN ...))
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
 Rules: NIL
 Warnings:  Equiv
  PERM-IS-AN-EQUIVALENCE
@@ -1277,7 +1277,7 @@ Rules: ((:DEFINITION DEL)
         (:REWRITE PERM-CONS))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-PERM-CONS-2
 ACL2 !>>>(DEFCONG PERM IFF (MEM X Y) 2)
@@ -1301,7 +1301,7 @@ Rules: ((:DEFINITION IFF)
 Warnings:  Equiv
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
 Warnings:  Equiv
  PERM-IMPLIES-IFF-MEM-2
@@ -1485,7 +1485,7 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
         (:REWRITE PERM-CONS))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-PERM-APP-2
 ACL2 !>>>(DEFTHM APP-CONS
@@ -1660,7 +1660,7 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-2)
         (:REWRITE PERM-CONS))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-PERM-APP-1
 ACL2 !>>>(DEFTHM REV-IS-ID (PERM (REV X) X))
@@ -1883,7 +1883,7 @@ Rules: ((:DEFINITION ==)
         (:TYPE-PRESCRIPTION ==))
 
 Summary
-Form:  ( MAKE-EVENT (DEFEQUIV-FN ...))
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
 Rules: NIL
  ==-IS-AN-EQUIVALENCE
 ACL2 !>>>(IN-THEORY (DISABLE ==-SYMMETRIC ==-REFLEXIVE))
@@ -1905,7 +1905,7 @@ Rules: ((:DEFINITION ==)
         (:REWRITE CDR-CONS))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  ==-IMPLIES-==-CONS-2
 ACL2 !>>>(DEFCONG == IFF (CONSP X) 1)
@@ -1927,7 +1927,7 @@ Rules: ((:DEFINITION ==) (:DEFINITION IFF))
 Warnings:  Equiv
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
 Warnings:  Equiv
  ==-IMPLIES-IFF-CONSP-1
@@ -1971,7 +1971,7 @@ Rules: ((:CONGRUENCE ==-IMPLIES-==-CONS-2)
         (:REWRITE CDR-CONS))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  ==-IMPLIES-==-APP-2
 ACL2 !>>>(DEFCONG == == (APP X Y) 1)
@@ -2018,7 +2018,7 @@ Rules: ((:CONGRUENCE ==-IMPLIES-==-CONS-2)
         (:REWRITE CDR-CONS))
 
 Summary
-Form:  ( MAKE-EVENT (DEFCONG-FN ...))
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  ==-IMPLIES-==-APP-1
 ACL2 !>>>(DEFTHM REV-REV-AGAIN (== (REV (REV X)) X))
