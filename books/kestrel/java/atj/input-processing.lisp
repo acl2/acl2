@@ -11,10 +11,12 @@
 (in-package "JAVA")
 
 (include-book "aij-notions")
+(include-book "primitives")
 (include-book "test-structures")
 
 (include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "oslib/top" :dir :system)
@@ -26,7 +28,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-process-targets ((targets true-listp) ctx state)
+(define atj-process-targets ((targets true-listp) deep guards ctx state)
   :returns (mv erp
                (result "Always @('nil').")
                state)
@@ -44,8 +46,19 @@
        ((er &) (ensure-list-no-duplicates$ targets
                                            (msg "The target functions ~&0"
                                                 targets)
-                                           t nil)))
-    (value nil)))
+                                           t nil))
+       ((unless (or (eq deep nil)
+                    (eq guards t))) (value nil))
+       (target-prims (intersection-eq targets *atj-primitive-fns*))
+       ((when (null target-prims)) (value nil)))
+    (er-soft+ t nil
+              "Since the :DEEP input is (perhaps by default) NIL ~
+               and the :GUARDS input is T, ~
+               ~@0."
+              (if (= (len target-prims) 1)
+                  (msg "the function ~x0 cannot be specified as target"
+                       (car target-prims))
+                (msg "the functions ~&0 cannot be specified as targets")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,7 +369,7 @@
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
        (tests (cdr (assoc-eq :tests options)))
        (verbose (cdr (assoc-eq :verbose options)))
-       ((er &) (atj-process-targets targets ctx state))
+       ((er &) (atj-process-targets targets deep guards ctx state))
        ((er &) (ensure-boolean$ deep "The :DEEP intput" t nil))
        ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))

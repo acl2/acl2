@@ -263,6 +263,12 @@
       only the @(':logic') parts are recursively checked
       to satisfy all the constraints stated here.")
     (xdoc::p
+     "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
+      then none of the @('fni') may be
+      one of the functions listed in @(tsee *atj-primitive-fns*).
+      These functions are treated specially
+      in the shallow embedding when guard satisfaction is assumed.")
+    (xdoc::p
      "There must be at least one function, i.e. @('p') &gt; 0.
       All the @('fni') names must be distinct."))
 
