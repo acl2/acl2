@@ -34,7 +34,12 @@
      or less than @($2^{125}$) bytes.")
    (xdoc::p
     "According to FIPS PUB 180-4,
-     the output of SHA-512 is a sequence of exactly 512 bits, or 64 bytes.")))
+     the output of SHA-512 is a sequence of exactly 512 bits, or 64 bytes.")
+   (xdoc::p
+    "See also:"
+    (xdoc::ul
+     (xdoc::li (xdoc::seetopic "sha2::sha-2" "SHA-512 executable specification"))))
+   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

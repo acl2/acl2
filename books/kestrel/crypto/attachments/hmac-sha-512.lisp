@@ -22,7 +22,7 @@
   :parents (attachments)
   :short (xdoc::topstring
           "Executable attachment for the "
-          (xdoc::seetopic "hmac-sha-512-interface" "HMAC-SHA-256 interface")
+          (xdoc::seetopic "hmac-sha-512-interface" "HMAC-SHA-512 interface")
           ".")
   :long
   (xdoc::topstring

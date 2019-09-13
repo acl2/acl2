@@ -33,6 +33,21 @@ docker pull kestrelinstitute/hdwallet-on-acl2
 
 ## Running
 
+### Preliminaries
+```
+mkdir /tmp/hdwallet
+```
+The `wallet` script shares your `/tmp/hdwallet` directory with the docker container.
+To prevent that directory from possibly being created and owned by root, you should
+create it in advance.  You can also change the `wallet` script to use a different
+host directory.
+
+To remove the file `/tmp/hdwallet/wallet-state` file, so that you can create a
+new wallet with a new entropy or mnemonic, do
+```
+rm -f /tmp/hdwallet/wallet-state
+```
+
 ### General Usage
 ```
 wallet <command> <arg1> ... <argN>
