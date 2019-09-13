@@ -15,7 +15,6 @@
 
 (include-book "aij-notions")
 (include-book "types")
-(include-book "primitives")
 (include-book "test-structures")
 (include-book "pretty-printer")
 
@@ -1483,12 +1482,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-convert-jexpr-from-jint-to-value ((jexpr jexprp))
+  :returns (new-jexpr jexprp)
+  :short "Convert a Java expression from type @('int') to type @('Acl2Value')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-adapt-jexpr-to-type),
+     when the source ATJ type is @(':jint')
+     and the destination ATJ type is @(':value').
+     In ACL2, Java @('int') values are represented as
+     values satisfying @(tsee int-value-p):
+     this function converts the Java @('int') returned by the expression
+     to the Java @('Acl2Value') that represents
+     the ACL2 representation of the Java @('int') value.")
+   (xdoc::p
+    "The representation is explicated and checked "
+    (xdoc::seetopic "atj-jint-representation-check" "here")
+    ". We create an @('Acl2Integer') from the @('int'),
+     and then a list of length 2 (as two @('Acl2ConsPair')s)
+     whose first element is the @('Acl2Symbol') for the keyword @(':int')
+     and whose second element is the @('Acl2Integer')."))
+  (b* ((acl2-integer-jexpr (jexpr-smethod *atj-jtype-int*
+                                          "make"
+                                          (list jexpr)))
+       (acl2-symbol-nil-jexpr (jexpr-name "Acl2Symbol.NIL"))
+       (acl2-inner-cons-jexpr (jexpr-smethod *atj-jtype-cons*
+                                             "make"
+                                             (list acl2-integer-jexpr
+                                                   acl2-symbol-nil-jexpr)))
+       (acl2-keyword-int-jexpr (jexpr-smethod *atj-jtype-symbol*
+                                              "makeKeyword"
+                                              (list
+                                               (jexpr-literal-string "INT"))))
+       (acl2-outer-cons-jexpr (jexpr-smethod *atj-jtype-cons*
+                                             "make"
+                                             (list acl2-keyword-int-jexpr
+                                                   acl2-inner-cons-jexpr))))
+    acl2-outer-cons-jexpr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-jexpr-from-value-to-jint ((jexpr jexprp))
+  :returns (new-jexpr jexprp)
+  :short "Convert a Java expression from type @('Acl2Value') to type @('int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-adapt-jexpr-to-type),
+     when the source ATJ type is @(':value')
+     and the destination ATJ type is @(':jint').
+     In ACL2, Java @('int') values are represented as
+     values satisfying @(tsee int-value-p):
+     this function converts the Java @('Acl2Value') returned by the expression
+     to the Java @('int') that is represented by
+     the @('Acl2Value') in ACL2.")
+   (xdoc::p
+    "Assuming guard verification,
+     the argument of this function should always be
+     an expression that returns an @('Acl2Value') with the right representation,
+     i.e. the representation explicated and checked "
+    (xdoc::seetopic "atj-jint-representation-check" "here")
+    ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
+     get its @(tsee cdr),
+     cast that to @('Acl2ConsPair'),
+     get its @(tsee car),
+     cast it to @('Acl2Integer'),
+     and get its numeric value as an @('int')."))
+  (b* ((acl2-outer-cons-jexpr (jexpr-paren (jexpr-cast *atj-jtype-cons* jexpr)))
+       (acl2-cdr-jexpr (jexpr-imethod acl2-outer-cons-jexpr "getCdr" nil))
+       (acl2-inner-cons-jexpr (jexpr-paren
+                               (jexpr-cast *atj-jtype-cons* acl2-cdr-jexpr)))
+       (acl2-car-jexpr (jexpr-imethod acl2-inner-cons-jexpr "getCar" nil))
+       (acl2-integer-jexpr (jexpr-paren
+                            (jexpr-cast *atj-jtype-int* acl2-car-jexpr))))
+    (jexpr-imethod acl2-integer-jexpr "getJavaInt" nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-adapt-jexpr-to-type ((jexpr jexprp)
                                  (src-type atj-typep)
                                  (dst-type atj-typep))
   :returns (new-jexpr jexprp :hyp (jexprp jexpr))
-  :short "Adapt the source type of a Java expression
-          to a destination type."
+  :short "Adapt a Java expression from a source type to a destination type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1496,21 +1572,45 @@
      shallowly embedded ACL2 calls of named functions.
      As explained " (xdoc::seetopic "atj-types" "here") ",
      when the type of an actual argument of a function call
-     is wider than the type of the formal argument,
-     a cast is inserted in the generated Java code.")
+     is not the same as or a subtype (in Java) of
+     the type of the formal argument,
+     ATJ adds Java code to convert from the former type to the latter type.
+     Note that being a subtype in Java is not the same as
+     satisfying @(tsee atj-type-subeqp),
+     which only corresponds to subtyping (i.e. inclusion) in ACL2.")
    (xdoc::p
     "This code generation function does that.
      The input Java expression is the one generated for the actual argument,
      whose type is @('src-type') (for `source type').
      The input @('dst-type') (for `destination type')
-     is the type of the corresponding formal argument.
-     If the destination type is the same as or wider than the source type,
-     the Java expression is returned unchanged.
-     Otherwise, the expression is wrapped with
-     a cast to the narrower destination type."))
-  (if (atj-type-subeqp src-type dst-type)
-      jexpr
-    (jexpr-cast (atj-type-to-jtype dst-type) jexpr)))
+     is the type of the corresponding formal argument.")
+   (xdoc::p
+    "To convert from @(':jint') to any other type
+     we first convert to @(':value')
+     via @(tsee atj-convert-jexpr-from-jint-to-value),
+     and then we cast to the other type
+     (unless the other type is already @(':value')).
+     To convert to @(':jint') from any other type,
+     we use @(tsee atj-convert-jexpr-from-value-to-jint);
+     note that any other type is a subtype of @('Acl2Value') in Java,
+     so there is not need for casts.
+     To convert between the AIJ types,
+     if the source type is a subtype of or the same type as
+     the destination type (checked via @(tsee atj-type-subeqp)),
+     we leave the expression unchanged;
+     otherwise, we insert a cast to the destination type,
+     which is expected to always succeed
+     under the assumption of guard verification."))
+  (cond ((eq src-type dst-type) jexpr)
+        ((eq src-type :jint)
+         (b* ((acl2-value-jexpr (atj-convert-jexpr-from-jint-to-value jexpr)))
+           (if (eq dst-type :value)
+               acl2-value-jexpr
+             (jexpr-cast (atj-type-to-jtype dst-type) acl2-value-jexpr))))
+        ((eq dst-type :jint)
+         (atj-convert-jexpr-from-value-to-jint jexpr))
+        ((atj-type-subeqp src-type dst-type) jexpr)
+        (t (jexpr-cast (atj-type-to-jtype dst-type) jexpr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1843,6 +1943,154 @@
                                   (acl2-count asecond))
                                1))
 
+  (define atj-gen-shallow-aintvalapp ((aarg pseudo-termp)
+                                      (jvar-types symbol-atjtype-alistp)
+                                      (jvar-value-base stringp)
+                                      (jvar-value-index posp)
+                                      (jvar-result-base stringp)
+                                      (jvar-result-index posp)
+                                      (curr-apkg stringp)
+                                      (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
+                 (type "An @(tsee atj-typep).")
+                 (new-jvar-value-index "A @(tsee posp).")
+                 (new-jvar-result-index "A @(tsee posp)."))
+    :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
+    :short "Generate a shallowly embedded ACL2 (@tsee int-val) application."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the function @(tsee int-value) is treated specially.
+       If the argument is a quoted natural number,
+       the function application is translated
+       to the corresponding Java integer literal;
+       the assumption of guard verification ensures that
+       the literal is not too large.
+       If the argument is a quoted negative integer,
+       the function application is translated to a Java unary minus expression
+       whose argument is the literal corresponding to the negation of @('x');
+       the assumption of guard verification ensures that
+       the literal is not too large.
+       If the argument is not a quoted integer,
+       we translate it to a Java expression,
+       and convert it to @('int') via @(tsee atj-adapt-jexpr-to-type) if needed.
+       In all cases, the type the function application is @(':jint').")
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t')."))
+    (if (and (quotep aarg)
+             (integerp (unquote aarg)))
+        (b* ((int (unquote aarg))
+             (jexpr (if (>= int 0)
+                        (jexpr-literal-integer-decimal int)
+                      (jexpr-unary (junop-uminus)
+                                   (jexpr-literal-integer-decimal
+                                    (- int))))))
+          (mv nil jexpr :jint jvar-value-index jvar-result-index))
+      (b* (((mv arg-jblock
+                arg-jexpr
+                arg-type
+                jvar-value-index
+                jvar-result-index) (atj-gen-shallow-aterm aarg
+                                                          jvar-types
+                                                          jvar-value-base
+                                                          jvar-value-index
+                                                          jvar-result-base
+                                                          jvar-result-index
+                                                          curr-apkg
+                                                          t ; GUARDS$
+                                                          wrld))
+           (jexpr (atj-adapt-jexpr-to-type arg-jexpr arg-type :jint)))
+        (mv arg-jblock jexpr :jint jvar-value-index jvar-result-index)))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-ATERM decreases:
+    :measure (two-nats-measure (acl2-count aarg)
+                               1))
+
+  (define atj-gen-shallow-aintbinapp ((afn
+                                       (member-eq afn *atj-primitive-binops*))
+                                      (aleft pseudo-termp)
+                                      (aright pseudo-termp)
+                                      (jvar-types symbol-atjtype-alistp)
+                                      (jvar-value-base stringp)
+                                      (jvar-value-index posp)
+                                      (jvar-result-base stringp)
+                                      (jvar-result-index posp)
+                                      (curr-apkg stringp)
+                                      (wrld plist-worldp))
+    :guard (not (equal curr-apkg ""))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
+                 (type "An @(tsee atj-typep).")
+                 (new-jvar-value-index "A @(tsee posp).")
+                 (new-jvar-result-index "A @(tsee posp)."))
+    :parents (atj-code-generation atj-gen-shallow-aterms+alambdas)
+    :short "Generate a shallowly embedded ACL2 application of a function
+            that models a Java @('int') binary operation."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model Java @('int') binary operations
+       (i.e. @(tsee jint-add) etc.) are treated specially.
+       (For now we only consider some of them;
+       more will be considered in the future.)
+       We generate Java code to compute the left and right operands.
+       Then convert those to @(':jint') if needed,
+       via @('atj-adapt-jexpr-to-type').
+       Finally, we generate a Java binary expression
+       whose operator corresponds to the function.
+       The type of the function application is @(':jint').")
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t')."))
+    (b* (((mv left-jblock
+              left-jexpr
+              left-type
+              jvar-value-index
+              jvar-result-index) (atj-gen-shallow-aterm aleft
+                                                        jvar-types
+                                                        jvar-value-base
+                                                        jvar-value-index
+                                                        jvar-result-base
+                                                        jvar-result-index
+                                                        curr-apkg
+                                                        t ; GUARDS$
+                                                        wrld))
+         ((mv right-jblock
+              right-jexpr
+              right-type
+              jvar-value-index
+              jvar-result-index) (atj-gen-shallow-aterm aright
+                                                        jvar-types
+                                                        jvar-value-base
+                                                        jvar-value-index
+                                                        jvar-result-base
+                                                        jvar-result-index
+                                                        curr-apkg
+                                                        t ; GUARDS$
+                                                        wrld))
+         (left-jexpr (atj-adapt-jexpr-to-type left-jexpr left-type :jint))
+         (right-jexpr (atj-adapt-jexpr-to-type right-jexpr right-type :jint))
+         (binop (case afn
+                  (jint-add (jbinop-add))
+                  (jint-sub (jbinop-sub))
+                  (jint-mul (jbinop-mul))
+                  (jint-div (jbinop-div))
+                  (jint-rem (jbinop-rem))))
+         (jexpr (jexpr-binary binop left-jexpr right-jexpr))
+         (jblock (append left-jblock right-jblock)))
+      (mv jblock jexpr :jint jvar-value-index jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that each call of ATJ-GEN-SHALLOW-ATERM decreases
+    ;; even when the ACL2-COUNT of the other addend is 0:
+    :measure (two-nats-measure (+ (acl2-count aleft)
+                                  (acl2-count aright))
+                               1))
+
   (define atj-gen-shallow-afnapp ((afn pseudo-termfnp)
                                   (aargs pseudo-term-listp)
                                   (jvar-types symbol-atjtype-alistp)
@@ -1868,22 +2116,38 @@
        via @(tsee atj-gen-shallow-aorapp), non-strictly.
        Other @(tsee if) calls are handled by @(tsee atj-gen-shallow-aifapp).")
      (xdoc::p
-      "For calls of other ACL2 named functions, which are strict,
-       we generate Java code to compute all the actual arguments,
-       and we generate a call of the method that corresponds to
-       the ACL2 function.
+      "If @(':guards') is @('t'),
+       calls of @(tsee int-value) are handled
+       via @(tsee atj-gen-shallow-aintvalapp).")
+     (xdoc::p
+      "If @(':guards') is @('t'),
+       calls of ACL2 functions that model Java @('int') binary operations
+       are handled via @(tsee atj-gen-shallow-aintbinapp).")
+     (xdoc::p
+      "For other calls of ACL2 named functions, which are strict,
+       we first generate Java code to compute all the actual arguments.
+       If needed, we convert from the types of the actual arguments
+       to the types of the formal arguments,
+       via @(tsee atj-adapt-jexpr-to-type);
+       the types of the actual arguments are recursively calculated,
+       while the types of the formal arguments are retrieved from
+       the @(tsee def-atj-function-type) table.
+       If @(':guards') is @('t')
+       and the ACL2 function is among the ones that model
+       operations on Java @('int') values (i.e. @(tsee jint-add) etc.),
+       we generate Java expressions with the corresponding operations;
+       for now we only consider some of these functions and operations,
+       more will be added in the future.
+       In all other cases
+       (including functions like @(tsee jint-add)
+       when @(':guards') is @('nil')),
+       we generate a call of the method that corresponds to the ACL2 function.
        (We treat the Java abstract syntax somewhat improperly here,
        by using a generic method call with a possibly qualified method name,
        which should be therefore a static method call;
        this still produces correct Java code,
        but it should be handled more properly
        in a future version of this implementation.)
-       If the type of an actual argument
-       is wider than the type of a formal argument,
-       we generate a cast (see @(tsee atj-adapt-jexpr-to-type));
-       the types of the actual arguments are recursively calculated,
-       while the types of the formal arguments are retrieved from
-       the @(tsee def-atj-function-type) table.
        The type of the function call is the output type of the function,
        which is retrieved from the @(tsee def-atj-function-type) table.")
      (xdoc::p
@@ -1919,6 +2183,30 @@
                                       curr-apkg
                                       guards$
                                       wrld))))
+         ((when (and guards$
+                     (eq afn 'int-value)
+                     (= (len aargs) 1)))
+          (atj-gen-shallow-aintvalapp (car aargs)
+                                      jvar-types
+                                      jvar-value-base
+                                      jvar-value-index
+                                      jvar-result-base
+                                      jvar-result-index
+                                      curr-apkg
+                                      wrld))
+         ((when (and guards$
+                     (member-eq afn *atj-primitive-binops*)
+                     (= (len aargs) 2)))
+          (atj-gen-shallow-aintbinapp afn
+                                      (first aargs)
+                                      (second aargs)
+                                      jvar-types
+                                      jvar-value-base
+                                      jvar-value-index
+                                      jvar-result-base
+                                      jvar-result-index
+                                      curr-apkg
+                                      wrld))
          ((mv args-jblock
               arg-jexprs
               arg-types
@@ -1932,40 +2220,40 @@
                                                          curr-apkg
                                                          guards$
                                                          wrld))
-         ((when (symbolp afn))
-          (b* (((mv type arg-jexprs)
-                (if guards$
-                    (b* ((afn-type (atj-get-function-type afn wrld))
-                         (arg-jexprs (atj-adapt-jexprs-to-types
-                                      arg-jexprs
-                                      arg-types
-                                      (atj-function-type->inputs afn-type)))
-                         (type (atj-function-type->output afn-type)))
-                      (mv type arg-jexprs))
-                  (mv :value arg-jexprs))))
-            (mv args-jblock
-                (jexpr-method (atj-gen-shallow-afnname afn curr-apkg)
-                              arg-jexprs)
-                type
-                jvar-value-index
-                jvar-result-index)))
-         ((mv lambda-jblock
-              lambda-jexpr
-              lambda-type
-              jvar-value-index
-              jvar-result-index) (atj-gen-shallow-alambda (lambda-formals afn)
-                                                          (lambda-body afn)
-                                                          aargs
-                                                          arg-jexprs
-                                                          arg-types
-                                                          jvar-types
-                                                          jvar-value-base
-                                                          jvar-value-index
-                                                          jvar-result-base
-                                                          jvar-result-index
-                                                          curr-apkg
-                                                          guards$
-                                                          wrld)))
+          ((when (symbolp afn))
+           (b* (((mv type arg-jexprs)
+                 (if guards$
+                     (b* ((afn-type (atj-get-function-type afn wrld))
+                          (arg-jexprs (atj-adapt-jexprs-to-types
+                                       arg-jexprs
+                                       arg-types
+                                       (atj-function-type->inputs afn-type)))
+                          (type (atj-function-type->output afn-type)))
+                       (mv type arg-jexprs))
+                   (mv :value arg-jexprs))))
+             (mv args-jblock
+                 (jexpr-method (atj-gen-shallow-afnname afn curr-apkg)
+                               arg-jexprs)
+                 type
+                 jvar-value-index
+                 jvar-result-index)))
+          ((mv lambda-jblock
+               lambda-jexpr
+               lambda-type
+               jvar-value-index
+               jvar-result-index) (atj-gen-shallow-alambda (lambda-formals afn)
+                                                           (lambda-body afn)
+                                                           aargs
+                                                           arg-jexprs
+                                                           arg-types
+                                                           jvar-types
+                                                           jvar-value-base
+                                                           jvar-value-index
+                                                           jvar-result-base
+                                                           jvar-result-index
+                                                           curr-apkg
+                                                           guards$
+                                                           wrld)))
       (mv (append args-jblock
                   lambda-jblock)
           lambda-jexpr

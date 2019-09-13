@@ -1813,12 +1813,17 @@
 
  <p>Now do a regression test.  The most complete regression is done using the
  @('regression-everything') target in the top-level ACL2 sources directory, or
- equivalently, the @('everything') target in the @('books/') directory.  But
- note that this level of testing may only work for CCL and SBCL; for other
- Lisps, or for ACL2(r), just use the @('regression') target in the top-level
- ACL2 sources directory or, equivalently, the @('all') target in the
- @('books/') directory.  This could take a few hours &mdash; perhaps more than
- 5 hours or even more than 8a hours, depending on the Lisp and the machine.</p>
+ equivalently, the @('everything') target in the @('books/') directory.  Please
+ install a SAT solver first; see @(see satlink::sat-solver-options).</p>
+
+ <p>Note that the ``@('everything')'' level of testing may only work for CCL
+ and SBCL; for other Lisps, or for ACL2(p) or ACL2(r), just use the
+ @('regression') target in the top-level ACL2 sources directory or,
+ equivalently, the @('all') target in the @('books/') directory.  This could
+ take a few hours &mdash; perhaps more than 5 hours or even more than 8 hours,
+ depending on the Lisp and the machine.  But feel free to do only an
+ @('everything') regression for ACL2 using CCL or SBCL, ignoring ACL2(p) and
+ ACL2(r).</p>
 
  @({
  make clean-books ; \\
@@ -2114,7 +2119,9 @@
  run the following two commands, where @('tmp.msg') says something about the
  changes, with credit to you.  Note that the @('commit') command will cause
  @('my-branch') to contain all changes, both under @('books/') and from the
- sources tarball, possibly after edits from Matt.
+ sources tarball, possibly after edits from Matt.  NOTE: Matt might instead
+ decide not to make any edits or run a regression before doing this, in which
+ case he will do those things after the merge below, as noted below.
 
  @({
  git commit -a -F tmp.msg
@@ -2129,7 +2136,10 @@
  # Get master up-to-date (this is just ``git pull'' with a check):
  bin/pull.sh
  git merge my-branch
- # Possibly run ``regression-everything'' before the final push just below.
+ # Possibly run ``regression-everything'' before the final push just
+ # below.  In fact this is critical if that wasn't done before.  There
+ # may be additional edits and additional commits to master before the
+ # push just below.
  git push https://github.com/acl2/acl2 master
  })</li>
  </ol>

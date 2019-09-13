@@ -494,18 +494,18 @@
    (xdoc::h5 (xdoc::seetopic "java::atj" "ATJ, the Java Code Generator for ACL2"))
 
    (xdoc::p
-    "ATJ has been extended with an option to generate Java code
-     according to a shallow embedding approach,
-     besides the previous deep embedding approach.
-     See the documentation for details.")
-
-   (xdoc::p
     "The implementation of ATJ has been improved
      to use a more general abstract syntax and pretty-printer for Java
      (which are part of the implementation of ATJ),
      instead of writing directly to the output channel piecewise.
      This provides more flexibility, and the ability to have more code
      in logic mode and guard-verified.")
+
+   (xdoc::p
+    "ATJ has been extended with an option to generate Java code
+     according to a shallow embedding approach,
+     besides the previous deep embedding approach.
+     See the documentation for details.")
 
    (xdoc::p
     "ATJ has been extended with an option to generate Java code

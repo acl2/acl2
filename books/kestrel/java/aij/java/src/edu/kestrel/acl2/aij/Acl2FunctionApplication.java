@@ -80,9 +80,8 @@ public final class Acl2FunctionApplication extends Acl2Term {
      *
      * @param indices Map from variable symbols to indices.
      * @throws IllegalArgumentException If the term or the map are malformed
-     *                                  in a way that
-     *                                  some valid index cannot be determined.
-     * @throws IllegalStateException    If some variable index is already set.
+     *                                  in a way that some index cannot be set.
+     * @throws IllegalStateException    If some index is already set.
      */
     @Override
     void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
@@ -196,7 +195,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * @param o The term to compare this function application with.
      * @return A negative integer, zero, or a positive integer as
      * this term is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is null.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Term o) {
@@ -248,7 +247,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * @param function  The function of this function application.
      * @param arguments The arguments of this function application.
      * @return The function application.
-     * @throws IllegalArgumentException if function or arguments is null
+     * @throws IllegalArgumentException If any arguments is {@code null}.
      */
     public static Acl2FunctionApplication make(Acl2Function function,
                                                Acl2Term[] arguments) {

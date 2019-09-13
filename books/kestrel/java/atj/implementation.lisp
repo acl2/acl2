@@ -145,7 +145,9 @@
                state)
   :mode :program
   :parents (atj-implementation)
-  :short "Validate the inputs, gather information, and generate the Java file."
+  :short "Validate the inputs,
+          gather information,
+          and generate the Java file(s)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -165,7 +167,8 @@
                   tests$
                   verbose$)) (atj-process-inputs args ctx state))
        ((er (list apkgs
-                  afns)) (atj-gather-info targets$ guards$ verbose$ ctx state))
+                  afns)) (atj-gather-info
+                          targets$ deep$ guards$ verbose$ ctx state))
        ((er &) (atj-gen-everything deep$
                                    guards$
                                    java-package$
