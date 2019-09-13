@@ -11,6 +11,7 @@
 (in-package "JAVA")
 
 (include-book "aij-notions")
+(include-book "primitives")
 
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -32,7 +33,6 @@
       the Java representation of the ACL2 environment.")
     (xdoc::li
      "The names of all the ACL2 functions to be translated to Java,
-      excluding the ones natively implemented in AIJ,
       as determined by @('fn1'), ..., @('fnp').")))
   :order-subtopics t
   :default-parent t)
@@ -53,7 +53,7 @@
     "@(tsee return-last) is not explicitly included in this list,
      because it is only partially whitelisted,
      as explained in the documentation.
-     Calls of @(tsee return-last) are handled specially in the code.")
+     Calls of @(tsee return-last) are handled specially by ATJ.")
    (xdoc::p
     "This whitelist will be extended as needed."))
   '(=
@@ -147,6 +147,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-fns-to-translate ((targets$ symbol-listp)
+                              (deep$ booleanp)
                               (guards$ booleanp)
                               (verbose$ booleanp)
                               ctx
@@ -171,12 +172,16 @@
      it is just removed from the worklist
      (note that currently the ACL2 functions natively implemented in AIJ
      have no input or output stobjs, because they are all primitive functions).
-     When the next function in the worklist is not natively implemented in AIJ
-     but it has an @('unnormalized-body') property and no raw Lisp code
-     (or is in the whitelist),
-     and has no input or output stobjs,
-     it is added to the accumulator (unless it is already there),
-     and all the functions it calls are added to the worklist,
+     When the @(':deep') input is @('nil'),
+     the @(':guards') input is @('t'),
+     and the next function in the worklist is in @(tsee *atj-primitive-fns*),
+     the function is just removed from the worklist
+     (note that currently these ACL2 functions have no input or output stobjs).
+     In all other cases,
+     the next function in the worklist is added to the accumulator
+     (unless it is already there),
+     and all the functions it calls (in the @('unnormalized-body'))
+     are added to the worklist,
      except for those already in the accumulator or worklist.")
    (xdoc::p
     "Before collecting the functions
@@ -195,6 +200,7 @@
         (cw "~%ACL2 functions to translate to Java:~%"))
        ((er fns) (atj-fns-to-translate-aux targets$
                                            nil
+                                           deep$
                                            guards$
                                            verbose$
                                            ctx
@@ -209,6 +215,7 @@
   :prepwork
   ((define atj-fns-to-translate-aux ((worklist symbol-listp)
                                      (acc symbol-listp)
+                                     (deep$ booleanp)
                                      (guards$ booleanp)
                                      (verbose$ booleanp)
                                      ctx
@@ -221,7 +228,13 @@
      (b* (((when (endp worklist)) (value acc))
           ((cons fn worklist) worklist)
           ((when (atj-aij-nativep fn))
-           (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state))
+           (atj-fns-to-translate-aux
+            worklist acc deep$ guards$ verbose$ ctx state))
+          ((when (and (eq deep$ nil)
+                      (eq guards$ t)
+                      (member-eq fn *atj-primitive-fns*)))
+           (atj-fns-to-translate-aux
+            worklist acc deep$ guards$ verbose$ ctx state))
           ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
                           (member-eq fn (@ logic-fns-with-raw-code)))
                       (not (member-eq fn *atj-allowed-raws*))))
@@ -247,11 +260,13 @@
           (called-fns (all-ffn-symbs body nil))
           (fns-to-add-to-worklist (set-difference-eq called-fns acc))
           (worklist (union-eq fns-to-add-to-worklist worklist)))
-       (atj-fns-to-translate-aux worklist acc guards$ verbose$ ctx state)))))
+       (atj-fns-to-translate-aux
+        worklist acc deep$ guards$ verbose$ ctx state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gather-info ((targets$ symbol-listp)
+                         (deep$ booleanp)
                          (guards$ booleanp)
                          (verbose$ booleanp)
                          ctx
@@ -276,7 +291,7 @@
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs))
        ((er fns-to-translate)
-        (atj-fns-to-translate targets$ guards$ verbose$ ctx state)))
+        (atj-fns-to-translate targets$ deep$ guards$ verbose$ ctx state)))
     (value (list pkgs fns-to-translate)))
 
   :prepwork
