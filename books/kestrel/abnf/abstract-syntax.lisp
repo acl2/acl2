@@ -48,10 +48,10 @@
    such as blank space and comments,
    as well as certain restrictions that are not needed to define the semantics.
    </p>"
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (fty::defprod rulename
-  :parents (abstract-syntax)
   :short "Rule names in the abstract syntax."
   :long
   "<p>
@@ -76,13 +76,11 @@
 
 (fty::defoption maybe-rulename
   rulename
-  :parents (abstract-syntax)
   :short "Union of rule names and @('nil')."
   :pred maybe-rulenamep)
 
 (define set-all-rulenamep ((set setp))
   :returns (yes/no booleanp)
-  :parents (abstract-syntax)
   :short "Check if all the elements of a set are rule names."
   (or (empty set)
       (and (rulenamep (head set))
@@ -123,7 +121,6 @@
 
 (define rulename-setp (x)
   :returns (yes/no booleanp)
-  :parents (abstract-syntax)
   :short "Recognize finite sets of rule names."
   (and (setp x)
        (set-all-rulenamep x))
@@ -163,7 +160,6 @@
              (rulenamep rulename))))
 
 (fty::deftagsum num-val
-  :parents (abstract-syntax)
   :short "Numeric value notations in the abstract syntax."
   :long
   "<p>
@@ -186,7 +182,6 @@
            (max nat))))
 
 (fty::deftagsum char-val
-  :parents (abstract-syntax)
   :short "Character value notations in the abstract syntax."
   :long
   "<p>
@@ -206,7 +201,6 @@
   (:insensitive ((get acl2::string))))
 
 (fty::defprod prose-val
-  :parents (abstract-syntax)
   :short "Prose value notations in the abstract syntax."
   :long
   "<p>
@@ -224,7 +218,6 @@
   :layout :list)
 
 (fty::defprod repeat-range
-  :parents (abstract-syntax)
   :short "Repetition ranges in the abstract syntax."
   :long
   "<p>
@@ -251,8 +244,7 @@
 (fty::deftypes alt/conc/rep/elem
 
   (fty::deflist alternation
-    :parents (abstract-syntax)
-    :short "Alternations in the abstract syntax."
+      :short "Alternations in the abstract syntax."
     :long
     "<p>
      In the abstract syntax,
@@ -271,8 +263,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist concatenation
-    :parents (abstract-syntax)
-    :short "Concatenations in the abstract syntax."
+      :short "Concatenations in the abstract syntax."
     :long
     "<p>
      In the abstract syntax,
@@ -292,8 +283,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::defprod repetition
-    :parents (abstract-syntax)
-    :short "Repetitions in the abstract syntax."
+      :short "Repetitions in the abstract syntax."
     :long
     "<p>
      In the abstract syntax,
@@ -311,8 +301,7 @@
     :measure (two-nats-measure (acl2-count x) 1))
 
   (fty::deftagsum element
-    :parents (abstract-syntax)
-    :short "Elements in the abstract syntax."
+      :short "Elements in the abstract syntax."
     :long
     "<p>
      In the abstract syntax,
@@ -329,7 +318,6 @@
     :measure (two-nats-measure (acl2-count x) 0)))
 
 (fty::defprod rule
-  :parents (abstract-syntax)
   :short "Rules in the abstract syntax."
   :long
   "<p>
@@ -351,12 +339,10 @@
 
 (fty::defoption maybe-rule
   rule
-  :parents (abstract-syntax)
   :short "Union of rules and @('nil')."
   :pred maybe-rulep)
 
 (fty::deflist rulelist
-  :parents (abstract-syntax)
   :short "Lists of rules in the abstract syntax."
   :long
   "<p>
@@ -371,7 +357,6 @@
   :pred rulelistp)
 
 (defxdoc grammar
-  :parents (abstract-syntax)
   :short "An ABNF grammar is
           a <see topic='@(url rulelist)'>list of rules</see>."
   :long
@@ -398,10 +383,10 @@
    Thus, these function and macros only need to handle
    the constructs used in those rules, not all possible constructs.
    </p>"
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (defsection %.
-  :parents (convenience-constructors)
   :short "Construct a direct numeric value notation element
           from a variable number of numbers."
   :long
@@ -424,7 +409,6 @@
 
 (define %- ((min natp) (max natp))
   :returns (element elementp)
-  :parents (convenience-constructors)
   :short "Construct a range numeric value notation element
           from a minimum and a maximum."
   :long
@@ -440,7 +424,6 @@
 
 (define <> ((charstring acl2::stringp))
   :returns (element elementp)
-  :parents (convenience-constructors)
   :short "Construct a prose value notation element from a character string."
   :long
   "<p>
@@ -453,7 +436,6 @@
 
 (define element/rulename-p (x)
   :returns (yes/no booleanp)
-  :parents (convenience-constructors)
   :short "Recognize elements and rule names."
   :long
   "<p>
@@ -471,7 +453,6 @@
 
 (define *_ ((x element/rulename-p))
   :returns (repetition repetitionp)
-  :parents (convenience-constructors)
   :short "Construct a repetition of zero or more instances of an element."
   :long
   "<p>
@@ -490,7 +471,6 @@
 
 (define 1*_ ((x element/rulename-p))
   :returns (repetition repetitionp)
-  :parents (convenience-constructors)
   :short "Construct a repetition of one or more instances of an element."
   :long
   "<p>
@@ -509,7 +489,6 @@
 
 (define repetition/element/rulename/charstring-p (x)
   :returns (yes/no booleanp)
-  :parents (convenience-constructors)
   :short "Recognize repetitions, elements, rule names, and character strings."
   :long
   "<p>
@@ -551,14 +530,12 @@
 
 (std::deflist repetition/element/rulename/charstring-listp (x)
   (repetition/element/rulename/charstring-p x)
-  :parents (convenience-constructors)
   :short "Recognize true lists of
           repetitions, elements, rule names, and character strings."
   :true-listp t
   :elementp-of-nil nil)
 
 (defsection /_
-  :parents (convenience-constructors)
   :short "Construct a concatenation from a variable number of repetitions."
   :long
   "<p>
@@ -610,7 +587,6 @@
     :no-function t))
 
 (defsection !_
-  :parents (convenience-constructors)
   :short "Construct a group from a variable number of concatenations."
   :long
   "<p>
@@ -628,7 +604,6 @@
     :no-function t))
 
 (defsection ?_
-  :parents (convenience-constructors)
   :short "Construct an option from a variable number of concatenations."
   :long
   "<p>
@@ -646,7 +621,6 @@
     :no-function t))
 
 (defsection =_
-  :parents (convenience-constructors)
   :short "Construct a non-incremental rule from
           a rule name and a variable number of concatenations."
   :long
@@ -667,7 +641,6 @@
     :no-function t))
 
 (defsection =/_
-  :parents (convenience-constructors)
   :short "Construct an incremental rule from
           a rule name and a variable number of concatenations."
   :long
@@ -688,7 +661,6 @@
     :no-function t))
 
 (defsection def-rule-const
-  :parents (convenience-constructors)
   :short "Introduce an ACL2 constant for a (non-incremental) rule."
   :long
   "<p>
