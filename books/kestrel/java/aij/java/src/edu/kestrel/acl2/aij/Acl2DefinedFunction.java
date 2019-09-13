@@ -99,6 +99,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * have valid definitions.
      * We call {@link #validateDefinition()}
      * on all the functions created so far.
+     *
+     * @throws IllegalStateException If validation fails.
      */
     static void validateAllDefinitions() {
         for (Acl2DefinedFunction function : functions.values())

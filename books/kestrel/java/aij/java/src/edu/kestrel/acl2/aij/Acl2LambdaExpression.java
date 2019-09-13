@@ -146,7 +146,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this lambda expression with the argument object for equality.
+     * Compares this lambda expression with the argument object for equality.
      * This is consistent with the {@code equal} ACL2 function.
      *
      * @param o The object to compare this lambda expression with.
@@ -182,8 +182,8 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * their list of formal parameters followed by their body.
      *
      * @param o The function to compare this lambda expression with.
-     * @return A negative integer, zero, or a positive integer as
-     * this function is less than, equal to, or greater than the argument.
+     * @return A negative integer, zero, or a positive integer as this
+     * lambda expression is less than, equal to, or greater than the argument.
      * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
