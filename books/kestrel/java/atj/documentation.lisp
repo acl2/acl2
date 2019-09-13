@@ -36,8 +36,9 @@
 
    (xdoc::p
     "For instance, ATJ is useful
-     to generate Java code at the end of
-     an <see topic='@(url apt::apt)'>APT</see> program synthesis derivation.")
+     to generate Java code at the end of an "
+    (xdoc::seetopic "apt::apt" "APT")
+    " program synthesis derivation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,15 +110,17 @@
      may be added in the future.")
 
    (xdoc::p
-    "ATJ does not translate
-     <see topic='@(url defmacro)'>macro definitions</see> to Java code.
+    "ATJ does not translate "
+    (xdoc::seetopic "defmacro" "macro definitions")
+    " to Java code.
      However, the use of macros in function bodies is fully supported,
      because ATJ operates on ACL2 translated terms,
      where macros are expanded.")
 
    (xdoc::p
-    "ATJ does not translate
-     <see topic='@(url defconst)'>named constant definitions</see> to Java code.
+    "ATJ does not translate "
+    (xdoc::seetopic "defconst" "named constant definitions")
+    " to Java code.
      However, the use of named constants in function bodies is fully supported,
      because ATJ operates on ACL2 translated terms,
      where constants are expanded.")
@@ -147,8 +150,9 @@
    (xdoc::h3 "Approach")
 
    (xdoc::p
-    "ATJ is supported by <see topic='@(url aij)'>AIJ</see>,
-     which is a deep embedding in Java
+    "ATJ is supported by "
+    (xdoc::seetopic "aij" "AIJ")
+    ", which is a deep embedding in Java
      of the executable subset of ACL2
      (subject to the limitations outlined above).")
 
@@ -339,7 +343,7 @@
       a valid path to a directory in the file system;
       the path may be absolute,
       or relative to
-      the <see topic='@(url cbd)'>current working directory</see>).")
+      the " (xdoc::seetopic "cbd" "current working directory") ".")
     (xdoc::p
      "The name of the generated file containing the main class
       is the name of that class followed by @('.java').
