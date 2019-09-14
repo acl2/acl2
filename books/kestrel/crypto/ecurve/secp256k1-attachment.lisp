@@ -18,7 +18,7 @@
 (defsection secp256k1-attachment
   :parents (crypto::attachments elliptic-curves)
   :short (xdoc::topstring
-          "Executable attachment for the "
+          "Executable attachments for the "
           (xdoc::seetopic "secp256k1-interface"
                         "elliptic curve secp256k1 interface")
           ".")
@@ -37,7 +37,11 @@
      as required by the guards of the defined curve group operation.")
    (xdoc::p
     "An executable attachment for curve group addition
-     may be added in the future."))
+     may be added in the future.")
+   (xdoc::p
+    "For executable formal specifications, see the "
+     (xdoc::seetopic "ecurve::secp256k1" "library for the
+     Short Weierstrass elliptic curve secp256k1") "."))
 
   (define secp256k1-priv-to-pub-exec ((priv secp256k1-priv-key-p))
     :returns (pub secp256k1-pub-key-p)

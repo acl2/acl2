@@ -51,7 +51,7 @@
       (modulo a different but isomorphic data representation,
       namely byte arrays for the former,
       and @(tsee ecurve::secp256k1-priv-key)
-      and @(tsee ecurve::secp256k1-pub-key) values for the latter.")
+      and @(tsee ecurve::secp256k1-pub-key) values for the latter).")
     (xdoc::li
      "@(tsee secp256k1-sign-det-rec),
       which corresponds to @($\\mathtt{ECDSASIGN}$) [YP:F]

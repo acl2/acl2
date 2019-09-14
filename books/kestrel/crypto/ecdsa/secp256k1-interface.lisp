@@ -144,7 +144,12 @@
    (xdoc::p
     "We constrain this function
      to return results of the types described above unconditionally.
-     We also constrain it to fix its arguments to the guard types."))
+     We also constrain it to fix its arguments to the guard types.")
+   (xdoc::p
+    "See also:"
+    (xdoc::ul
+     (xdoc::li (xdoc::seetopic "ecdsa::deterministic-ecdsa-secp256k1" "Deterministic ECDSA executable specification"))
+     (xdoc::li (xdoc::seetopic "ecdsa::secp256k1-ecdsa-attachment" "attaching Deterministic ECDSA executable specification to this interface")))))
 
   (encapsulate
 

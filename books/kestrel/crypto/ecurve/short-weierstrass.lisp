@@ -66,7 +66,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The below executable functions implement elliptic curve operations
+    "This libray contains executable formal specifications of elliptic curve operations
      on Short Weierstrass curves, which have the form")
    (xdoc::@[] "y^2=x^3+ax+b")
    (xdoc::p "where @('x') and @('y') are integers in @('\{0,..,p-1\}')

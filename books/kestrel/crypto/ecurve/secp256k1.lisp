@@ -151,7 +151,7 @@ h = 01
   :long
   (xdoc::topstring
    (xdoc::p
-    "The below executable functions implement elliptic curve operations
+    "This library contains executable formal specifications of elliptic curve operations
      on secp256k1, which is a
      <see topic=\"ECURVE____SHORT-WEIERSTRASS\">Short Weierstrass</see>
      elliptic curve with @('a=0') and @('b=7'):")
