@@ -192,6 +192,7 @@
        (pkg-witness (pkg-witness pkg))
        ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
+       (y (intern-in-package-of-symbol "Y" pkg-witness))
        (a (intern-in-package-of-symbol "A" pkg-witness))
        ;; names of the generated functions:
        (pred (or pred (acl2::add-suffix-to-fn type "-P")))
@@ -206,6 +207,7 @@
                                                 '-of-head) pkg-witness))
        (pred-of-tail (acl2::packn-pos (list pred '-of-tail) pkg-witness))
        (pred-of-insert (acl2::packn-pos (list pred '-of-insert) pkg-witness))
+       (pred-of-union (acl2::packn-pos (list pred '-of-union) pkg-witness))
        (elt-pred-when-in-pred (acl2::packn-pos (list elt-pred
                                                      '-when-in-
                                                      pred
@@ -262,7 +264,12 @@
              (implies (and (set::in ,a ,x) ; binds free X
                            (,pred ,x))
                       (,elt-pred ,a))
-             :enable (set::in set::head))))
+             :enable (set::in set::head))
+           (defrule ,pred-of-union
+             (equal (,pred (set::union ,x ,y))
+                    (and (,pred (set::sfix ,x))
+                         (,pred (set::sfix ,y))))
+             :enable (set::union set::empty set::setp set::head set::tail))))
        (fix-event
         `(define ,fix ((,x ,pred))
            :parents (,type)
