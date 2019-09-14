@@ -474,7 +474,10 @@
 
    (xdoc::p
     "The @(tsee fty::defset) macro has been improved
-     to generate additional theorems.")
+     to generate additional theorems.
+     It has also been extended with an option @(':elementp-of-nil'),
+     similar to @(tsee std::deflist),
+     which results in some better theorems when supplied.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

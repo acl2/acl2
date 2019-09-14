@@ -53,6 +53,7 @@
    (xdoc::codeblock
     "(defset type"
     "        :elt-type ..."
+    "        :elementp-of-nil ..."
     "        :pred ..."
     "        :fix ..."
     "        :equiv ..."
@@ -73,6 +74,13 @@
     "@(':elt-type')"
     (xdoc::p
      "The (existing) fixtype of the elements of the new set fixtype."))
+
+   (xdoc::desc
+    "@(':elementp-of-nil')"
+    (xdoc::p
+     "Specifies whether @('nil') is in the element fixtype @(':elt-type').
+      It must be @('t'), @('nil'), or @(':unknown') (the default).
+      When @('t') or @('nil'), slightly better theorems are generated."))
 
    (xdoc::desc
     "@(':pred')
@@ -132,7 +140,16 @@
   :parents (defset)
   :short "Implementation of @(tsee defset).")
 
-(define defset-fn (type elt-type pred fix equiv parents short long state)
+(define defset-fn (type
+                   elt-type
+                   elementp-of-nil
+                   pred
+                   fix
+                   equiv
+                   parents
+                   short
+                   long
+                   state)
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program
   :parents (defset-implementation)
@@ -152,6 +169,11 @@
         (raise "The :ELT-TYPE input ~x0 must name a fixtype, ~
                 but it does not." elt-type))
        (elt-pred (fixtype->pred elt-info))
+       ;; validate the :ELEMENTP-OF-NIL input:
+       ((unless (or (booleanp elementp-of-nil)
+                    (eq elementp-of-nil :unknown)))
+        (raise "The :ELEMENTP-OF-NIL input must be T, NIL, or :UNKNOWN, ~
+                but it is ~x0 instead." elementp-of-nil))
        ;; validate the :PRED input:
        ((unless (symbolp pred))
         (raise "The :PRED input must be a symbol, ~
@@ -218,10 +240,15 @@
                       (set::setp ,x))
              :enable set::setp)
            (defrule ,elt-pred-of-head
-             (implies (and (,pred ,x)
-                           (not (empty ,x)))
-                      (,elt-pred (head ,x)))
-             :enable set::head)
+             (implies (,pred ,x)
+                      ,(cond ((eq elementp-of-nil t)
+                              `(,elt-pred (set::head ,x)))
+                             ((eq elementp-of-nil nil)
+                              `(equal (,elt-pred (set::head ,x))
+                                      (not (set::empty ,x))))
+                             (t `(implies (not (set::empty ,x))
+                                          (,elt-pred (set::head ,x))))))
+             :enable (set::head set::empty))
            (defrule ,pred-of-tail
              (implies (,pred ,x)
                       (,pred (set::tail ,x)))
@@ -274,11 +301,17 @@
   :long (xdoc::topstring-@def "defset")
   (defmacro defset (type &key
                          elt-type
-                         pred fix equiv
-                         parents short long)
+                         (elementp-of-nil ':unknown)
+                         pred
+                         fix
+                         equiv
+                         parents
+                         short
+                         long)
     `(make-event (defset-fn
                    ',type
                    ',elt-type
+                   ',elementp-of-nil
                    ',pred
                    ',fix
                    ',equiv
