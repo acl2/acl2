@@ -688,14 +688,20 @@
                          (:see 'see_)
                          (t (intern$ (symbol-name tag) "XDOC"))))
            (fn-name (acl2::add-suffix-to-fn macro-name "-FN"))
-           (thm-name (acl2::packn (list 'stringp-of- macro-name))))
+           (thm-name (acl2::packn (list 'stringp-of- macro-name)))
+           (long (concatenate
+                  'string
+                  "<p>See the <see topic='@(url primitive-constructors)'
+                   >primitive constructors topic</see>
+                   for information about the kind of arguments
+                   that must be passed to this constructor.</p>"
+                  "@(def "
+                  (string-downcase$ (symbol-name macro-name))
+                  ").")))
       `(defsection ,macro-name
          :parents (primitive-constructors)
          :short ,doc
-         :long ,(concatenate 'string
-                             "@(def "
-                             (string-downcase$ (symbol-name macro-name))
-                             ").")
+         :long ,long
          (defund ,fn-name (attributes trees)
            (declare (xargs :guard (and (keyword-tree-alistp attributes)
                                        (tree-listp trees))))
