@@ -254,10 +254,10 @@
                       (,pred (set::tail ,x)))
              :enable set::tail)
            (defrule ,pred-of-insert
-             (implies (and (,elt-pred ,a)
-                           (,pred ,x))
-                      (,pred (set::insert ,a ,x)))
-             :enable (set::insert set::empty set::head set::tail))
+             (equal (,pred (set::insert ,a ,x))
+                    (and (,elt-pred ,a)
+                         (,pred (set::sfix ,x))))
+             :enable (set::insert set::empty set::head set::tail set::setp))
            (defrule ,elt-pred-when-in-pred
              (implies (and (set::in ,a ,x) ; binds free X
                            (,pred ,x))
