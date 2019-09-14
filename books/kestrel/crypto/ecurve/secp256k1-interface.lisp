@@ -29,7 +29,14 @@
     " and "
     (xdoc::a :href "http://www.secg.org/sec2-v2.pdf"
       "Standards for Efficient Cryptography 2 (SEC 2)")
-    "."))
+    ".")
+   (xdoc::p
+    "See also:"
+    (xdoc::ul
+     (xdoc::li (xdoc::seetopic "ecurve::secp256k1" "library for the
+     Short Weierstrass elliptic curve secp256k1"))
+     (xdoc::li (xdoc::seetopic "ecurve::secp256k1-attachment"
+     "executable attachments to this interface")))))
   :order-subtopics t
   :default-parent t)
 
