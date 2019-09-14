@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/fty/nati" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
@@ -78,85 +79,13 @@
   :short "Union of rule names and @('nil')."
   :pred maybe-rulenamep)
 
-(define set-all-rulenamep ((set setp))
-  :returns (yes/no booleanp)
-  :short "Check if all the elements of a set are rule names."
-  (or (empty set)
-      (and (rulenamep (head set))
-           (set-all-rulenamep (tail set))))
-  :no-function t
-  ///
-
-  (defrule set-all-rulenamep-of-insert
-    (equal (set-all-rulenamep (insert rulename rulenames))
-           (and (rulenamep rulename)
-                (set-all-rulenamep (sfix rulenames)))))
-
-  (defrule set-all-rulenamep-of-union
-    (equal (set-all-rulenamep (union rulenames1 rulenames2))
-           (and (set-all-rulenamep (sfix rulenames1))
-                (set-all-rulenamep (sfix rulenames2))))
-    :induct (union rulenames1 rulenames2)
-    :enable union)
-
-  (defrule set-all-rulenamep-of-difference
-    (implies (set-all-rulenamep rulenames1)
-             (set-all-rulenamep (difference rulenames1 rulenames2)))
-    :enable difference)
-
-  (defrule rulenamep-of-head-when-set-all-rulenamep
-    (implies (set-all-rulenamep rulenames)
-             (equal (rulenamep (head rulenames))
-                    (not (empty rulenames)))))
-
-  (defrule rulenamep-of-tail-when-set-all-rulenamep
-    (implies (set-all-rulenamep rulenames)
-             (set-all-rulenamep (tail rulenames))))
-
-  (defrule rulenamep-when-member-of-set-all-rulenamep
-    (implies (and (in rulename rulenames)
-                  (set-all-rulenamep rulenames))
-             (rulenamep rulename))))
-
-(define rulename-setp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize finite sets of rule names."
-  (and (setp x)
-       (set-all-rulenamep x))
-  :no-function t
-  ///
-
-  (defrule setp-when-rulename-setp
-    (implies (rulename-setp rulenames)
-             (setp rulenames)))
-
-  (defrule rulename-setp-of-insert
-    (equal (rulename-setp (insert rulename rulenames))
-           (and (rulenamep rulename)
-                (rulename-setp (sfix rulenames)))))
-
-  (defrule rulename-setp-of-union
-    (equal (rulename-setp (union rulenames1 rulenames2))
-           (and (rulename-setp (sfix rulenames1))
-                (rulename-setp (sfix rulenames2)))))
-
-  (defrule rulename-setp-of-difference
-    (implies (rulename-setp rulenames1)
-             (rulename-setp (difference rulenames1 rulenames2))))
-
-  (defrule rulenamep-of-head-when-rulename-setp
-    (implies (rulename-setp rulenames)
-             (equal (rulenamep (head rulenames))
-                    (not (empty rulenames)))))
-
-  (defrule rulenamep-of-tail-when-rulename-setp
-    (implies (rulename-setp rulenames)
-             (rulename-setp (tail rulenames))))
-
-  (defrule rulenamep-when-member-of-rulename-setp
-    (implies (and (in rulename rulenames)
-                  (rulename-setp rulenames))
-             (rulenamep rulename))))
+(fty::defset rulename-set
+  :elt-type rulename
+  :elementp-of-nil nil
+  :pred rulename-setp
+  :fix rulename-sfix
+  :equiv rulename-sequiv
+  :short "Finite sets of rule names.")
 
 (fty::deftagsum num-val
   :short "Numeric value notations in the abstract syntax."
