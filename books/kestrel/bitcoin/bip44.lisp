@@ -596,6 +596,7 @@
 
 (fty::defset bip44-coin-type-set
   :elt-type bip44-coin-type
+  :elementp-of-nil nil
   :pred bip44-coin-type-setp
   :short "Osets of coin types.")
 
