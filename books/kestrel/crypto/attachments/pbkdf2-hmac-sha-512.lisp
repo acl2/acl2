@@ -22,7 +22,7 @@
   :short (xdoc::topstring
           "Executable attachment for the "
           (xdoc::seetopic "pbkdf2-hmac-sha-512-interface"
-                        "PBKDF2 HMAC-SHA-256 interface")
+                        "PBKDF2-HMAC-SHA-512 interface")
           ".")
   :long
   (xdoc::topstring
