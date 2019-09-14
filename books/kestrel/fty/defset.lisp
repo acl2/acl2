@@ -207,13 +207,15 @@
                                                 '-of-head) pkg-witness))
        (pred-of-tail (acl2::packn-pos (list pred '-of-tail) pkg-witness))
        (pred-of-insert (acl2::packn-pos (list pred '-of-insert) pkg-witness))
-       (pred-of-union (acl2::packn-pos (list pred '-of-union) pkg-witness))
        (elt-pred-when-in-pred (acl2::packn-pos (list elt-pred
                                                      '-when-in-
                                                      pred
                                                      '-binds-free-
                                                      x)
                                                pkg-witness))
+       (pred-of-union (acl2::packn-pos (list pred '-of-union) pkg-witness))
+       (pred-of-difference (acl2::packn-pos (list pred '-of-difference)
+                                            pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -269,7 +271,11 @@
              (equal (,pred (set::union ,x ,y))
                     (and (,pred (set::sfix ,x))
                          (,pred (set::sfix ,y))))
-             :enable (set::union set::empty set::setp set::head set::tail))))
+             :enable (set::union set::empty set::setp set::head set::tail))
+           (defrule ,pred-of-difference
+             (implies (,pred ,x)
+                      (,pred (set::difference ,x ,y)))
+             :enable set::difference)))
        (fix-event
         `(define ,fix ((,x ,pred))
            :parents (,type)
