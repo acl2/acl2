@@ -202,6 +202,7 @@ A macro that uses @('with-outer-locals') to locally turn off
 (defun best-package (x y)
   (declare (xargs :guard (and (stringp x) (stringp y))))
   (let* ((p '("" "ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
+              *main-lisp-package-name*
               "COMMON-LISP" "LISP" "KEYWORD" "CGEN"
               "DEFDATA" "ACL2" "ACL2S"))
          (ly (len (member-equal y p)))
@@ -259,7 +260,7 @@ Now in defthm.lisp
 
 (defun fix-sym (sym)
   (declare (xargs :guard (symbolp sym)))
-  (if (equal (symbol-package-name sym) "COMMON-LISP")
+  (if (equal (symbol-package-name sym) *main-lisp-package-name*)
       (pkg-witness "ACL2")
     sym))
 
@@ -274,7 +275,6 @@ Now in defthm.lisp
   (implies (and (acl2-numberp x)
                 (print-base-p b))
            (character-listp (explode-atom x b))))
-
 
 (verify-termination fix-pkg)
 (verify-termination fix-sym)
@@ -296,19 +296,13 @@ Now in defthm.lisp
   (declare (xargs :guard t))
   `(gen-sym-pkg-fn ,l ,pkg))
 
-(defun make-symbl-fun (l pkg)
+(defun make-symbl (l pkg)
   (declare (xargs :guard (and (good-atom-listp l)
                               (or (null pkg) (stringp pkg))
                               (not (equal pkg "")))))
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
 
-; l is a list containing strings or symbols.
-(defmacro make-symbl (l &optional pkg)
-  (declare (xargs :guard t))
-  `(make-symbl-fun ,l ,pkg))
-
-; l is a list containing strings or symbols.
 (defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.
   (declare (xargs :guard t))
