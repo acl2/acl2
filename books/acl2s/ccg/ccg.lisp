@@ -22,7 +22,7 @@
  (include-book "hacking/all" :dir :system :ttags :all))
 (subsume-ttags-since-defttag)
 
-; From ACL2 source file defthm.lisp
+; From ACL2 source file defthm.lisp, utilities.lisp
 (defun fix-pkg (pkg)
   (declare (xargs :guard (and (or (null pkg) (stringp pkg))
                               (not (equal pkg "")))))
