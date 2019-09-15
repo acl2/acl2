@@ -72,7 +72,8 @@
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
+             "Note that @('src') is masked appropriately
+              by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
@@ -256,7 +257,8 @@ the most-significant bit of the result.</p>"
     `(define ,fn-name
        ((dst    :type (unsigned-byte ,size))
         (src    :type (unsigned-byte 6)
-                "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
+                "Note that @('src') is masked appropriately
+                 by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
@@ -438,7 +440,8 @@ most-significant bit of the result.</p>"
     `(define ,fn-name
        ((dst    :type (unsigned-byte ,size))
         (src    :type (unsigned-byte 6)
-                "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
+                "Note that @('src') is masked appropriately
+                 by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
@@ -632,7 +635,8 @@ the result.</p>"
     `(define ,fn-name
        ((dst    :type (unsigned-byte ,size))
         (src    :type (unsigned-byte 6)
-                "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
+                "Note that @('src') is masked appropriately
+                 by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)

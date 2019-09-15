@@ -102,8 +102,8 @@
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately
-              by the decoding part of the shift instructions.")
+             "Note that @('src') is masked appropriately
+              by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
@@ -381,8 +381,8 @@ otherwise, it is set to 1.</p>"
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately
-              by the decoding part of the shift instructions")
+             "Note that @('src') is masked appropriately
+              by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :parents (shr-spec)
@@ -663,8 +663,8 @@ set to the most-significant bit of the original operand.</p>"
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately
-              by the decoding part of the shift instructions")
+             "Note that @('src') is masked appropriately
+              by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
        :parents (sar-spec)
@@ -950,8 +950,8 @@ most-significant bit of the original operand.</p>"
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte ,size))
         (cnt :type (unsigned-byte 6)
-             "We assume @('cnt') has been masked appropriately
-              by the decoding part of the instruction.")
+             "Note that @('cnt') is masked appropriately
+              by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
        :returns (mv output-dst ; result (irrelevant if undefined-dst? is t)
                     undefined-dst? ; true iff result of operation is undefined
@@ -1234,8 +1234,8 @@ most-significant bit of the original operand.</p>"
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte ,size))
         (cnt :type (unsigned-byte 6)
-             "We assume @('cnt') has been masked appropriately
-              by the decoding part of the instruction.")
+             "Note that @('cnt') is masked appropriately
+              by the caller of this function..")
         (input-rflags :type (unsigned-byte 32)))
        :returns (mv output-dst ; result (irrelevant if undefined-dst? is t)
                     undefined-dst? ; true iff result of operation is undefined
