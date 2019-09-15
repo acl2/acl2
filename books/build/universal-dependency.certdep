@@ -3,7 +3,7 @@
 ; required.
 
 Recertification of many books may be required because of changes to
-defthm, defcong, and defrefinement, which now use make-event by
+defequiv, defcong, and defrefinement, which now use make-event by
 default.  For example, certification of std/strings/symbols.lisp has
 failed when attempting to include std/lists/list-defuns.lisp, which
 has a defequiv form.  It seems simplest to insist that all books
