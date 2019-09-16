@@ -223,7 +223,7 @@
      currently under the Kestrel books, but it could be moved directly under
      @('[books]/std/system') eventually. This new library is being populated
      with existing utilities factored out of some Kestrel Books with system
-     utilities.")
+     utilities, as well as with some new utilities.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
