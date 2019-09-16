@@ -168,6 +168,8 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * This also sets the indices of all the variables in the defining body;
      * see {@link Acl2Variable} for more information about variable indices.
      *
+     * @param parameters The formal parameters of the function definition.
+     * @param body       The body of the function definition.
      * @throws IllegalArgumentException If {@code parameters} or {@code body}
      *                                  is {@code null},
      *                                  or the function definition is malformed
