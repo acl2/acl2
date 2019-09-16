@@ -64,8 +64,7 @@
      (2) either do not have raw Lisp code
      or have raw Lisp code but belong to a whitelist.
      The ACL2 functions with raw Lisp code
-     are the ones listed in the global variables
-     @('program-fns-with-raw-code') and @('logic-fns-with-raw-code').
+     are the ones for which @(tsee rawp) holds.
      The aforementioned whitelist consists of functions
      whose @('unnormalized-body') property is
      functionally equivalent to the raw Lisp code.
@@ -265,8 +264,13 @@
       However, the @('fni') functions may transitively call @(tsee return-last),
       provided that the first argument of all of these calls is @('mbe-raw1'),
       i.e. that these calls result from the translation of @(tsee mbe)s.
-      No restrictions are enforced on the @(':exec') parts of thses calls;
+      If the @(':guards') input is @('nil'),
+      no restrictions are enforced on the @(':exec') parts of thses calls:
       only the @(':logic') parts are recursively checked
+      to satisfy all the constraints stated here.
+      If instead the @(':guards') input is @('t'),
+      no restrictions are enforced on the @(':logic') parts of thses calls:
+      only the @(':exec') parts are recursively checked
       to satisfy all the constraints stated here.")
     (xdoc::p
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
