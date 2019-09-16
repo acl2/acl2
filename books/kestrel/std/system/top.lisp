@@ -17,6 +17,7 @@
 (include-book "macro-required-args")
 (include-book "macro-symbolp")
 (include-book "primitivep")
+(include-book "rawp")
 (include-book "remove-mbe")
 (include-book "theorem-symbolp")
 (include-book "unquote-term")
