@@ -13,6 +13,7 @@
 (include-book "aij-notions")
 (include-book "primitives")
 
+(include-book "kestrel/std/system/rawp" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
@@ -235,8 +236,7 @@
                       (member-eq fn *atj-primitive-fns*)))
            (atj-fns-to-translate-aux
             worklist acc deep$ guards$ verbose$ ctx state))
-          ((when (and (or (member-eq fn (@ program-fns-with-raw-code))
-                          (member-eq fn (@ logic-fns-with-raw-code)))
+          ((when (and (rawp fn state)
                       (not (member-eq fn *atj-allowed-raws*))))
            (er-soft+ ctx t nil "The function ~x0 has raw Lisp code ~
                                 and is not in the whitelist; ~

@@ -75,6 +75,7 @@
                          program-fns-with-raw-code
                          pseudo-termfnp
                          quote-listp
+                         rawp
                          remove-mbe-exec-from-term
                          remove-mbe-logic-from-term
                          sbyte16
