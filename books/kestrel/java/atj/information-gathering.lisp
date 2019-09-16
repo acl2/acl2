@@ -13,6 +13,7 @@
 (include-book "aij-notions")
 (include-book "primitives")
 
+(include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -37,113 +38,6 @@
       as determined by @('fn1'), ..., @('fnp').")))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atj-allowed-raws*
-  :short "ACL2 functions with raw Lisp code that are accepted by ATJ."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the whitelist mentioned in the documentation.")
-   (xdoc::p
-    "The functions in this list have no side effects
-     and their execution is functionally equivalent to
-     their @('unnormalized-body') property.")
-   (xdoc::p
-    "@(tsee return-last) is not explicitly included in this list,
-     because it is only partially whitelisted,
-     as explained in the documentation.
-     Calls of @(tsee return-last) are handled specially by ATJ.")
-   (xdoc::p
-    "This whitelist will be extended as needed."))
-  '(=
-    /=
-    abs
-    acons
-    alpha-char-p
-    assoc-equal
-    atom
-    ash
-    butlast
-    ceiling
-    char
-    char-downcase
-    char-equal
-    char-upcase
-    char<
-    char>
-    char<=
-    char>=
-    conjugate
-    endp
-    eq
-    eql
-    evenp
-    expt
-    floor
-    identity
-    integer-length
-    hons
-    hons-equal
-    hons-get
-    keywordp
-    last
-    len
-    length
-    listp
-    logandc1
-    logandc2
-    logbitp
-    logcount
-    lognand
-    lognor
-    lognot
-    logorc1
-    logorc2
-    logtest
-    max
-    member-equal
-    min
-    minusp
-    mod
-    nonnegative-integer-quotient
-    not
-    nth
-    nthcdr
-    null
-    oddp
-    plusp
-    position-equal
-    rassoc-equal
-    rem
-    remove-equal
-    revappend
-    reverse
-    round
-    signum
-    standard-char-p
-    string
-    string-downcase
-    string-equal
-    string-upcase
-    string<
-    string>
-    string<=
-    string>=
-    sublis
-    subseq
-    subsetp-equal
-    subst
-    substitute
-    take
-    truncate
-    zerop
-    zip
-    zp)
-  ///
-  (assert-event (symbol-listp *atj-allowed-raws*))
-  (assert-event (no-duplicatesp-eq *atj-allowed-raws*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,7 +131,7 @@
            (atj-fns-to-translate-aux
             worklist acc deep$ guards$ verbose$ ctx state))
           ((when (and (rawp fn state)
-                      (not (member-eq fn *atj-allowed-raws*))))
+                      (not (pure-raw-p fn))))
            (er-soft+ ctx t nil "The function ~x0 has raw Lisp code ~
                                 and is not in the whitelist; ~
                                 therefore, code generation cannot proceed." fn))

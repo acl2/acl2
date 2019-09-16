@@ -74,6 +74,7 @@
                          printable-charlist-p
                          program-fns-with-raw-code
                          pseudo-termfnp
+                         pure-raw-p
                          quote-listp
                          rawp
                          remove-mbe-exec-from-term
