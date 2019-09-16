@@ -1186,10 +1186,11 @@
                                                                    (1+ cnt)
                                                                    svex-simplify-preloaded)))
       ;; save and return the object.
-      (mv (acons (sa (to-symbol (car trace)) cnt) occ rest) cnt-new rp::rp-state)))))
-
-
-
+      (mv (acons (if (car trace)
+                     (cons (car trace) (sa 'assign cnt))
+                   (sa 'assign cnt))
+                 occ rest)
+          cnt-new rp::rp-state)))))
 
 (define sv-mod->sv2-occs-module-aux ((sigs wire-list-p)
                                      (aliasdb aliasdb-p)
@@ -1210,16 +1211,18 @@
          (cur (car sigs))
          (cur-name (car cur))
          (cur-w (cadr cur))
-         
+
          (alias-svex (get-svex-from-aliasdb cur-name place 0 aliasdb))
          #|(- (cw "alias-svex ~p0 for cur-sig ~p1 in place ~p2 ~%"
-                alias-svex cur place))||#
+         alias-svex cur place))||#
          ((unless alias-svex)
-          (mv (acons cur-name `(,(sv::make-svar :name (if place
-                                                      (cons place cur-name)
-                                                    cur-name)
-                                            :delay 0)
-                                ,cur-w . 0)
+          (mv (acons cur-name `(,(sv::make-lhrange
+                                  :atom (sv::make-lhatom-var :name (sv::make-svar :name (if place
+                                                                                            (cons place cur-name)
+                                                                                          cur-name)
+                                                                                  :delay 0)
+                                                             :rsh 0)
+                                  :w cur-w))
                      rest)
               rp::rp-state))
          (alias-svex `(sv::partsel 0 ,cur-w ,alias-svex))
@@ -1228,19 +1231,20 @@
                          :svex-simplify-preloaded svex-simplify-preloaded
                          :runes nil))
          (alias-lhs (svex->lhs alias-svex))
-         ((unless (equal (len alias-lhs) 1))
-          (progn$ (hard-error 'sv-mod->sv2-occs-module-aux
-                              "This module has an input or output port that
-                                     gets more than one wire. ~p0. this is a
-                                     temporary error and will be fixed later. ~%"
-                              (list (cons #\0 alias-svex)))
-                  (mv nil rp::rp-state)))
-         (cur-wire (car alias-lhs))
-         (cur-wire `(,(sv::lhatom-var->name (sv::lhrange->atom cur-wire))
-                     ,(sv::lhrange->w cur-wire)
-                     .
-                     ,(sv::lhatom-var->rsh (sv::lhrange->atom cur-wire)))))
-      (mv (acons cur-name cur-wire rest)
+         ;; ((unless (equal (len alias-lhs) 1))
+         ;;  (progn$ (hard-error 'sv-mod->sv2-occs-module-aux
+         ;;                      "This module has an input or output port that
+         ;;                             gets more than one wire. ~p0. this is a
+         ;;                             temporary error and will be fixed later. ~%"
+         ;;                      (list (cons #\0 alias-svex)))
+         ;;          (mv nil rp::rp-state)))
+         ;; (cur-wire (car alias-lhs))
+         ;; (cur-wire `(,(sv::lhatom-var->name (sv::lhrange->atom cur-wire))
+         ;;             ,(sv::lhrange->w cur-wire)
+         ;;             .
+         ;;             ,(sv::lhatom-var->rsh (sv::lhrange->atom cur-wire))))
+         )
+      (mv (acons cur-name alias-lhs rest)
           rp::rp-state))))
 
 (define sv-mod->sv2-occs-module ((modname sv::modname-p)
@@ -1264,17 +1268,17 @@
        (out-names (cddr this-vl-insouts))
        (place (car trace))
        ((mv ins rp::rp-state) (sv-mod->sv2-occs-module-aux in-names
-                                         aliasdb
-                                         place
-                                         svex-simplify-preloaded))
+                                                           aliasdb
+                                                           place
+                                                           svex-simplify-preloaded))
        ((mv outs rp::rp-state) (sv-mod->sv2-occs-module-aux out-names
-                                         aliasdb
-                                         place
-                                         svex-simplify-preloaded))
+                                                            aliasdb
+                                                            place
+                                                            svex-simplify-preloaded))
        (occ (make-occ-module :inputs ins
                              :outputs outs
                              :name modname)))
-    
+
     (mv occ rp::rp-state)))
 
 (set-state-ok t)
@@ -1370,11 +1374,14 @@
                 (b* (((mv this-occ rp::rp-state)
                       (sv-mod->sv2-occs-module inst.modname aliasdb trace-tmp
                                                vl-insouts svex-simplify-preloaded)))
-                  (mv (acons inst.instname this-occ rest)  rp::rp-state)))
+                  (mv (acons (car trace-tmp)
+                             this-occ
+                             rest)
+                      rp::rp-state)))
                ((aliasdb aliasdb) aliasdb)
                #|(aliasdb-tmp (hons-get inst.instname aliasdb.sub))
                (aliasdb-tmp (if aliasdb (cdr aliasdb) (make-aliasdb)))||#
-               
+
                ((mv cur-inst-occs  rp::rp-state)
                 (sv-mod->sv2-occs inst.modname
                                   modalist
@@ -1387,6 +1394,440 @@
             (mv (append cur-inst-occs rest)
                 rp::rp-state))))))
 
+(progn
+
+  ;; Input or output signals might be aliased to some other signals.
+  ;; If it is the case, then we'd have to create assignments for input and
+  ;; output signals to assign those aliases for the main module.
+
+  (define sv2-flatten-mod-insert-assigns-for-inputs-aux ((input-wire wire-p)
+                                                         (lhs sv::lhs-p)
+                                                         (rsh natp)
+                                                         (cnt natp)
+                                                         (acc occ-alist-p))
+    :prepwork
+    ((local
+      (in-theory (enable occ-name-p
+                         sym-app-fnc
+                         intern-in-package-of-symbol
+                         svex-p
+                         sv::svar-p)))
+     (local
+      (defthm occ-alist-p-is-alistp
+        (implies (occ-alist-p alist)
+                 (alistp alist)))))
+    :returns (mv (res occ-alist-p :hyp (occ-alist-p acc))
+                 (cnt-res natp :hyp (natp cnt)))
+    :verify-guards nil
+    (if (atom lhs)
+        (mv acc cnt)
+      (b* (((sv::lhrange cur-range) (car lhs))
+           ((mv acc cnt)
+            (sv2-flatten-mod-insert-assigns-for-inputs-aux input-wire
+                                                           (cdr lhs)
+                                                           (+ rsh cur-range.w)
+                                                           cnt
+                                                           acc))
+           ((when (eq (sv::lhatom-kind cur-range.atom) ':z))
+            (mv acc cnt))
+           (assign-rsh `(sv::partsel ,rsh
+                                     ,cur-range.w
+                                     ,(wire-name input-wire)))
+           (assign-ins `((,(wire-name input-wire) ,cur-range.w . ,rsh)))
+           (assign-outs `((,(sv::lhatom-var->name cur-range.atom)
+                           ,cur-range.w
+                           .
+                           ,(sv::lhatom-var->rsh cur-range.atom))))
+           (occ (make-occ-assign :inputs assign-ins
+                                 :delayed-inputs nil
+                                 :outputs assign-outs
+                                 :svex assign-rsh)))
+        (mv (acons (sa 'init_assign cnt)
+                   occ
+                   acc)
+            (1+ cnt))))
+    ///
+    (verify-guards sv2-flatten-mod-insert-assigns-for-inputs-aux))
+
+  (define sv2-flatten-mod-insert-assigns-for-inputs ((this-aliases alias-alist-p)
+                                                     (inputs wire-list-p)
+                                                     (cnt natp)
+                                                     (svex-simplify-preloaded)
+                                                     &key
+                                                     (rp::rp-state 'rp::rp-state)
+                                                     (state 'state))
+    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+    :verify-guards nil
+    (if (atom inputs)
+        (mv nil cnt rp::rp-state)
+      (b* (((mv rest cnt rp::rp-state)
+            (sv2-flatten-mod-insert-assigns-for-inputs this-aliases
+                                                       (cdr inputs)
+                                                       cnt
+                                                       svex-simplify-preloaded))
+           (cur (car inputs))
+           (alias (hons-get (wire-name cur) this-aliases))
+           ((unless alias)
+            (mv rest cnt rp::rp-state))
+
+           (alias-svex (cdr alias))
+           (alias-svex `(sv::partsel 0 ,(wire-size cur) ,alias-svex))
+           ((mv alias-svex rp::rp-state)
+            (svex-simplify alias-svex
+                           :svex-simplify-preloaded svex-simplify-preloaded
+                           :runes nil))
+           (alias-lhs (svex->lhs alias-svex))
+           ((mv assigns cnt)
+            (sv2-flatten-mod-insert-assigns-for-inputs-aux cur
+                                                           alias-lhs
+                                                           0
+                                                           cnt
+                                                           rest)))
+        (mv assigns cnt rp::rp-state))))
+
+  (define sv2-flatten-mod-insert-assigns-for-outputs ((this-aliases alias-alist-p)
+                                                      (outputs wire-list-p)
+                                                      (cnt natp)
+                                                      (svex-simplify-preloaded)
+                                                      &key
+                                                      (rp::rp-state 'rp::rp-state)
+                                                      (state 'state))
+    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+    :verify-guards nil
+    (if (atom outputs)
+        (mv nil cnt rp::rp-state)
+      (b* (((mv rest cnt rp::rp-state)
+            (sv2-flatten-mod-insert-assigns-for-outputs this-aliases
+                                                        (cdr outputs)
+                                                        cnt
+                                                        svex-simplify-preloaded))
+           (cur (car outputs))
+
+           (alias (hons-get (wire-name cur) this-aliases))
+           ((unless alias)
+            (mv rest cnt rp::rp-state))
+
+           (alias-svex (cdr alias))
+           (alias-svex `(sv::partsel 0 ,(wire-size cur) ,alias-svex))
+           ((mv alias-svex rp::rp-state)
+            (svex-simplify alias-svex
+                           :svex-simplify-preloaded svex-simplify-preloaded
+                           :runes nil))
+           ((mv ins prev-ins)
+            (assign-to-occ-get-inputs alias-svex))
+           (occ (make-occ-assign :inputs ins
+                                 :delayed-inputs prev-ins
+                                 :outputs `(,cur)
+                                 :svex alias-svex)))
+        (mv (acons (sa 'out_assign cnt) occ rest)
+            (1+ cnt)
+            rp::rp-state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Create listeners...
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; signals to occ listeners.
+(progn
+  (define create-signals-to-occ-listeners-module-aux ((lhs sv::lhs-p)
+                                                      (occ-name occ-name-p)
+                                                      (alist alistp))
+    :returns (res alistp :hyp (alistp alist))
+    (if (atom lhs)
+        alist
+      (b* ((atom (sv::lhrange->atom (car lhs)))
+           ((when (equal (sv::lhatom-kind atom) ':z))
+            (create-signals-to-occ-listeners-module-aux (cdr lhs)
+                                                        occ-name
+                                                        alist))
+           (name (sv::lhatom-var->name atom))
+           (entry (hons-get name alist))
+           (alist (hons-acons name (cons occ-name (cdr entry)) alist)))
+        (create-signals-to-occ-listeners-module-aux (cdr lhs)
+                                                    occ-name
+                                                    alist))))
+
+  (define create-signals-to-occ-listeners-module ((module-ins
+                                                   module-occ-wire-list-p)
+                                                  (occ-name occ-name-p)
+                                                  (alist alistp))
+    :returns (res alistp :hyp (alistp alist))
+    (if (atom module-ins)
+        alist
+      (b* ((cur-lhs (if (sv::lhs-p (cdar module-ins)) (cdar module-ins) nil))
+           (alist (create-signals-to-occ-listeners-module-aux cur-lhs occ-name alist)))
+        (create-signals-to-occ-listeners-module (cdr module-ins)
+                                                occ-name
+                                                alist))))
+
+  (define create-signals-to-occ-listeners-assign ((wires wire-list-p)
+                                                  (occ-name occ-name-p)
+                                                  (alist alistp))
+    :returns (res alistp :hyp (alistp alist))
+    (if (atom wires)
+        alist
+      (b* ((wire (car wires))
+           ((when (equal (wire-name wire) ':z))
+            (create-signals-to-occ-listeners-assign (cdr wires)
+                                                    occ-name
+                                                    alist))
+           (entry (hons-get (wire-name wire) alist))
+           (alist (hons-acons (wire-name wire) (cons occ-name (cdr entry)) alist)))
+        (create-signals-to-occ-listeners-assign (cdr wires)
+                                                occ-name
+                                                alist))))
+
+  (define create-signal-to-occ-listeners ((occs occ-alist-p)
+                                          (alist alistp))
+    :returns (res alistp :hyp (alistp alist))
+    (if (atom occs)
+        alist
+      (b* ((occ-name (caar occs))
+           (occ (cdar occs))
+           (alist
+            (if (eq (occ-kind occ) ':module)
+                (create-signals-to-occ-listeners-module (occ-module->inputs occ)
+                                                        occ-name
+                                                        alist)
+              (create-signals-to-occ-listeners-assign (occ-assign->inputs occ)
+                                                      occ-name
+                                                      alist))))
+        (create-signal-to-occ-listeners (cdr occs) alist)))))
+
+;;;;
+
+(progn
+  (define check-intersection-for-lhs ((wire-name sv::svar-p)
+                                      (start natp)
+                                      (w natp)
+                                      (lhs sv::lhs-p))
+    :guard-hints (("Goal"
+                   :in-theory (e/d ()
+                                   ((:e tau-system)))))
+    (if (atom lhs)
+        nil
+      (b* (((sv::lhrange lhrange) (car lhs))
+           ((when (eq (sv::lhatom-kind lhrange.atom) :z))
+            (check-intersection-for-lhs wire-name
+                                        start
+                                        w
+                                        (cdr lhs)))
+           ((sv::lhatom-var var) lhrange.atom)
+
+           (end (+ w start))
+           (start2 var.rsh)
+           (end2 (+ start2 lhrange.w)))
+        (or (and (equal var.name wire-name)
+                 (or (and (<= end2 end)
+                          (< start end2))
+                     (and (< start2 end)
+                          (<= start start2))))
+            (check-intersection-for-lhs wire-name
+                                        start
+                                        w
+                                        (cdr lhs))))))
+
+  (define check-intersection-for-wire-list ((wire-name sv::svar-p)
+                                            (start natp)
+                                            (w natp)
+                                            (wires wire-list-p))
+    :guard-hints (("Goal"
+                   :in-theory (e/d ()
+                                   ((:e tau-system)))))
+    (if (atom wires)
+        nil
+      (b* ((end (+ w start))
+           (start2 (wire-start (car wires)))
+           ((unless start2)
+            (or (equal (wire-name (car wires)) wire-name)
+                (check-intersection-for-wire-list wire-name
+                                                  start
+                                                  w
+                                                  (cdr wires))))
+           (end2 (+ start2 (wire-size (car wires)))))
+        (or (and (equal (wire-name (car wires)) wire-name)
+                 (or (and (<= end2 end)
+                          (< start end2))
+                     (and (< start2 end)
+                          (<= start start2))))
+            (check-intersection-for-wire-list wire-name
+                                              start
+                                              w
+                                              (cdr wires))))))
+
+  (defun binary-append2 (acl2::x acl2::y)
+    (declare (xargs :guard t))
+    (cond ((atom acl2::x) acl2::y)
+          (t (cons (car acl2::x)
+                   (binary-append2 (cdr acl2::x)
+                                   acl2::y)))))
+
+  (define module-occ-wires->lhs ((inputs module-occ-wire-list-P))
+    (if (atom inputs)
+        nil
+      (binary-append2
+       (cdar inputs)
+       (module-occ-wires->lhs (cdr inputs)))))
+
+  (define does-intersect-occ-to-occ-listener ((wire-name sv::svar-p)
+                                              (start natp)
+                                              (w natp)
+                                              (occ occ-p))
+    (cond ((eq (occ-kind occ) ':module)
+           (let ((lhs (module-occ-wires->lhs (occ-module->inputs occ))))
+             (check-intersection-for-lhs wire-name
+                                         start
+                                         w
+                                         (if (sv::lhs-p lhs)
+                                             lhs
+                                           nil))))
+          (t
+           (check-intersection-for-wire-list wire-name
+                                             start
+                                             w
+                                             (occ-assign->inputs occ)))))
+
+  #| (define does-wires-intesect-with-occ ((wires wire-list-p)
+  (occ occ-p)) ; ;
+  (if (atom wires) ; ;
+  nil ; ;
+  (or (b* ((wire (car wire)) ; ;
+  ((mv name start size) ; ;
+  (mv (wire-name wire) (wire-start wire) (wire-size wire))) ; ;
+  ((unless start) ; ;
+  (hard-error 'does-wires-intesect-with-occ ; ;
+  "Unexpected wire type ~p0 ~%" ; ;
+  (list (cons #\0 wire))))) ; ;
+  (does-intersect-occ-to-occ-listener name ; ;
+  start ; ;
+  size ; ;
+  occ)) ; ;
+  (does-wires-intesect-with-occ (cdr wires) ; ;
+  occ)))) ; ;
+; ;
+  (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
+  (occ occ-p)) ; ;
+  (if (atom lhs) ; ;
+  nil ; ;
+  (or (b* (((sv::lhrange lhrange) (car lhs)) ; ;
+  ((unless (eq (sv::lhatom-kind lhrange.atom) ':z)) ; ;
+  (does-lhs-intersect-with-occ (cdr lhs) occ))) ; ;
+  (does-intersect-occ-to-occ-listener (sv::lhatom-var->name lhrange.atom) ; ;
+  (sv::lhatom-var->rsh lhrange.atom) ; ;
+  lhrange.rsh ; ;
+  occ)) ; ;
+  (does-lhs-intersect-with-occ (cdr lhs) ; ;
+  occ))))||#
+
+  (define get-intersecting-occs ((wire-name sv::svar-p)
+                                 (start natp)
+                                 (w natp)
+                                 (occ-names occ-name-list-p)
+                                 (all-occs occ-alist-p)
+                                 (acc true-listp))
+    :returns (res true-listp
+                  :hyp (true-listp acc))
+    (if (atom occ-names)
+        acc
+      (b* ((occ (hons-get (car occ-names) all-occs))
+           (acc (get-intersecting-occs wire-name
+                                       start
+                                       w
+                                       (cdr occ-names)
+                                       all-occs
+                                       acc)))
+        (if (and occ
+                 (does-intersect-occ-to-occ-listener wire-name
+                                                     start
+                                                     w
+                                                     (cdr occ))
+                 (not (member-equal (car occ-names) acc)))
+            (cons (car occ-names) acc)
+          acc))))
+
+  (define get-intersecting-occ-for-lhs ((lhs sv::lhs-p)
+                                        (sig-to-occ-listeners)
+                                        (all-occs occ-alist-p))
+    (if (atom lhs)
+        nil
+      (b* ((rest (get-intersecting-occ-for-lhs (cdr lhs)
+                                               sig-to-occ-listeners
+                                               all-occs))
+           ((sv::lhrange range) (car lhs))
+           ((when (eq (sv::lhatom-kind range.atom) ':z))
+            rest)
+           ((sv::lhatom-var atom) range.atom))
+        (get-intersecting-occs atom.name
+                               atom.rsh
+                               range.w
+                               (cdr (hons-get atom.name sig-to-occ-listeners))
+                               all-occs
+                               rest))))
+
+  (define get-intersecting-occ-for-wires ((wires wire-list-p)
+                                          (sig-to-occ-listeners)
+                                          (all-occs occ-alist-p))
+    (if (atom wires)
+        nil
+      (b* ((rest (get-intersecting-occ-for-wires (cdr wires)
+                                                 sig-to-occ-listeners
+                                                 all-occs))
+           (wire (car wires))
+           ((mv name start size)
+            (mv (wire-name wire) (wire-start wire) (wire-size wire)))
+           ((unless start)
+            (hard-error 'get-intersecting-occ-for-wires
+                        "Unexpected wire type ~p0 ~%"
+                        (list (cons #\0 wire)))))
+        (get-intersecting-occs name
+                               start
+                               size
+                               (cdr (hons-get name sig-to-occ-listeners))
+                               all-occs
+                               rest))))
+
+  (define create-occ-to-occ-listeners ((occs occ-alist-p)
+                                       (all-occs occ-alist-p)
+                                       (sig-to-occ-listeners))
+    (if (atom occs)
+        nil
+      (b* ((occ-name (caar occs))
+           (occ (cdar occs))
+           (value (if (equal (occ-kind occ) ':assign)
+                      (get-intersecting-occ-for-wires (occ-assign->outputs occ)
+                                                      sig-to-occ-listeners
+                                                      all-occs)
+                    (b* ((lhs (module-occ-wires->lhs (occ-module->outputs
+                                                      occ))))
+                      (get-intersecting-occ-for-lhs (if (sv::lhs-p lhs)
+                                                        lhs nil)
+                                                    sig-to-occ-listeners
+                                                    all-occs))))
+           (rest (create-occ-to-occ-listeners (cdr occs)
+                                              all-occs
+                                              sig-to-occ-listeners)))
+        (if value
+            (acons occ-name value rest)
+          rest)))) 
+  
+  (define add-initial-to-occ-listeners ((input-wires wire-list-p)
+                                           (all-occs occ-alist-p)
+                                           (sig-to-occ-listeners)
+                                           (occ-to-occ-listeners))
+    (declare (xargs :mode :program))
+    (b* ((val1 (get-intersecting-occ-for-wires input-wires
+                                               sig-to-occ-listeners
+                                               all-occs))
+         (occ-to-occ-listeners (hons-acons ':initial val1
+                                           occ-to-occ-listeners))
+         (val2 (sv->svl-listeners-uncovered-occs occ-to-occ-listeners
+                                                 all-occs))
+         (val (append val1 val2)))
+      (fast-alist-clean (hons-acons ':initial val
+                                    occ-to-occ-listeners)))))
+
+
+
 (define sv2-flatten-mod ((modname sv::modname-p)
                          (modalist sv::modalist-p)
                          (mods-to-skip sv::modnamelist-p)
@@ -1398,6 +1839,8 @@
   (b* ((aliasdb (mod-aliaspairs->aliasdb modname modalist mods-to-skip))
        ;;(- (cw "aliasdb ~p0 ~%" aliasdb))
        (svex-simplify-preloaded (svex-simplify-preload))
+
+       ;; Create occs
        ((mv occs rp::rp-state) (sv-mod->sv2-occs modname
                                                  modalist
                                                  aliasdb
@@ -1406,10 +1849,56 @@
                                                  vl-insouts
                                                  svex-simplify-preloaded
                                                  (expt 2 30)))
+       ;; assignments for aliased inputs
+       ((mv init-occs-for-aliased-inputs & rp::rp-state)
+        (sv2-flatten-mod-insert-assigns-for-inputs (aliasdb->this aliasdb)
+                                                   (cadr (assoc-equal
+                                                          modname vl-insouts))
+                                                   0
+                                                   svex-simplify-preloaded))
+       ;; assignments for aliased outputs
+       ((mv occs-for-outputs & rp::rp-state)
+        (sv2-flatten-mod-insert-assigns-for-outputs (aliasdb->this aliasdb)
+                                                    (cddr (assoc-equal
+                                                           modname vl-insouts))
+                                                    0
+                                                    svex-simplify-preloaded))
+       (occs (append init-occs-for-aliased-inputs occs-for-outputs occs))
+       (occs (make-fast-alist occs)) ;; necessary for occ-to-occ listeners.
+
+       ;; Create Listeners.
+       (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners occs nil)))
+       (occ-to-occ-listeners (create-occ-to-occ-listeners occs occs sig-to-occ-listeners))
+
+       (occ-to-occ-listeners (make-fast-alist occ-to-occ-listeners))
+       (occ-to-occ-listeners (add-initial-to-occ-listeners (cadr (assoc-equal
+                                                                  modname vl-insouts))
+                                                           occs
+                                                           sig-to-occ-listeners
+                                                           occ-to-occ-listeners))
+       
+       (- (fast-alist-free occs))
+       (- (fast-alist-free sig-to-occ-listeners))
+       (- (fast-alist-free occ-to-occ-listeners))
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
-    (mv occs rp::rp-state)))
+    (mv occs occ-to-occ-listeners rp::rp-state)))
+
+
+
+
+
+
+;;;
+
+
+;;
 
 #|
+
+
+;;;;
+
+
 
 (b* ((vl-insouts (vl-design-to-insouts *booth-vl-design2* *booth-sv-design*))
      (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *booth-sv-design*
@@ -1422,25 +1911,32 @@
 
 #|(sv2-flatten-mod "booth_encoder"
                  (make-fast-alist (sv::design->modalist *booth-sv-design*))
-                 nil)||#
-
+nil)||#
 
 (b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
      (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
                                                 '("full_adder_1$WIDTH=1"
-                                                  "full_adder$WIDTH=1")
+                                                  "full_adder$WIDTH=1"
+                                                  "booth2_reduction_dadda_17x65_97"
+                                                  "booth2_multiplier_signed_64x32_97")
                                                 )))
   (sv2-flatten-mod "booth2_multiplier_signed_64x32_97"
                    (make-fast-alist (sv::design->modalist *big-sv-design*))
-                   '("full_adder_1$WIDTH=1"
-                                                  "full_adder$WIDTH=1")
+                   '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1" "booth2_reduction_dadda_17x65_97")
+                   vl-insouts2))
+
+(b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
+     (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
+                                                '("full_adder_1$WIDTH=1"
+                                                  "full_adder$WIDTH=1"
+                                                  "booth2_reduction_dadda_17x65_97")
+                                                )))
+  (sv2-flatten-mod "booth2_reduction_dadda_17x65_97"
+                   (make-fast-alist (sv::design->modalist *big-sv-design*))
+                   '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
                    vl-insouts2))
 ||#
 
-
-
 ;; TODO
 ;; 1. prevent repitiion for delayed-inputs for assignments.
-;; 2. when inputs and/or outputs are aliases, create assignments for them.
-;; 3. test with listeners.
-;; 4. fix the program where a module has to have a single lhs input/output.
+;; 2. Write occ sorting functions.

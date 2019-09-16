@@ -153,15 +153,15 @@
                             queue-p)))))
 
 
-(defthm occ-name-p-means-svar-p
+#|(defthm occ-name-p-means-svar-p
   (implies (occ-name-p x)
            (sv::svar-p x))
   :hints (("Goal"
            :in-theory (e/d (occ-name-p
-                            sv::svar-p) ()))))
+                            sv::svar-p) ()))))||#
 
 (defthm SVEX-ENV-P-of-HONS-GETS-FAST-ALIST
-  (implies (and (occ-name-list-p names)
+  (implies (and (sv::svarlist-p names)
                 (sv::svex-env-p env))
            (sv::svex-env-p (hons-gets-fast-alist names env)))
   :hints (("Goal"

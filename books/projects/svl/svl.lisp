@@ -221,7 +221,7 @@
 (define svl-run-add-delayed-ins
   ((env-wires sv::svex-env-p)
    (delayed-env svl-env-p)
-   (occ-delayed-ins occ-name-list-p))
+   (occ-delayed-ins sv::svarlist-p))
   :short "For assignments that uses values from previous cycle, expand the
   environment with the delayed values"
   :parents (svl-run)
@@ -328,10 +328,9 @@
   (if (atom occ-ins)
       nil
     (b* ((cur-in (car occ-ins))
-         (wire (cdr cur-in))
-         (wire.name (wire-name wire))
-         (wire.size (wire-size wire))
-         (wire.start (wire-start wire))
+         (wire (wire-fix (cdr cur-in)))
+         ((mv wire.name wire.size wire.start)
+          (mv (wire-name wire) (wire-size wire) (wire-start wire)))   
          (val (hons-get wire.name env-wires))
          ;; TODO get rid of this if as well.
          (val (if val
@@ -361,7 +360,7 @@
                                     (module-occ-wire-list-p occ-outs)))
   (if (atom occ-outs)
       env-wires
-    (b* ((wire (cdar occ-outs))
+    (b* ((wire (wire-fix (cdar occ-outs)))
          (new-val (if (consp occ-res-vals) (car occ-res-vals) '(-1 . 0))))
       (svl-run-save-module-result
        (svl-update-wire wire new-val env-wires)

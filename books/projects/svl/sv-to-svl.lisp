@@ -96,7 +96,8 @@
     :enabled t
     (and (consp wire)
          (stringp (car wire))
-         (wire-p (cdr wire))))
+         ;(sv::lhs-p (cdr wire))
+         ))
 
   (define module-occ-wire-fix (wire)
     :enabled t
@@ -140,10 +141,20 @@
 (encapsulate
   nil
 
+
+  (define stringlist*-p (list*)
+    :enabled t
+    (if (atom list*)
+        (stringp list*)
+      (and (stringp (car list*))
+           (stringlist*-p (cdr list*)))))
+  
   (define occ-name-p (x)
-    (or (and (symbolp x)
+    (declare (ignorable x))
+    t; (not (booleanp x))
+    #|(or (and (symbolp x)
              (not (booleanp x)))
-        (stringp x))
+        (stringlist*-p x))||#
     :returns (res booleanp))
 
   (define occ-name-fix (x)
@@ -153,17 +164,17 @@
 
 ;(defprod
 
-  (defthm occ-name-p-occ-name-FIX-X
-    (occ-name-p (occ-name-fix ACL2::X))
-    :hints (("Goal"
+  (defthm occ-name-p-occ-name-fix-x
+    (occ-name-p (occ-name-fix acl2::x))
+    :hints (("goal"
              :in-theory (e/d (occ-name-p
                               occ-name-fix) ()))))
 
-  (defthm occ-name-P-occ-name-FIX-X-2
-    (IMPLIES (occ-name-p ACL2::X)
-             (EQUAL (occ-name-fix ACL2::X)
-                    ACL2::X))
-    :hints (("Goal"
+  (defthm occ-name-p-occ-name-fix-x-2
+    (implies (occ-name-p acl2::x)
+             (equal (occ-name-fix acl2::x)
+                    acl2::x))
+    :hints (("goal"
              :in-theory (e/d (occ-name-p
                               occ-name-fix) ()))))
 
@@ -196,6 +207,7 @@
 
 (fty::defalist occ-alist
                :key-type occ-name
+               :true-listp t
                :val-type occ)
 
 #|(fty::defprod
@@ -208,7 +220,7 @@
  svl-module
  ((rank natp :default '0)
   (inputs string-listp)
-  (delayed-inputs occ-name-list)
+  (delayed-inputs sv::svarlist-p)
   (outputs string-listp)
   (wires wire-list-p)
   (occs occ-alist)
