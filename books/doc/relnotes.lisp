@@ -30,7 +30,10 @@
 ; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "ACL2")
-(include-book "xdoc/constructors" :dir :system)
+
+; Matt K. mod: Moved to cert.acl2 to support running defxdoc forms below
+; without LDing this file.
+; (include-book "xdoc/constructors" :dir :system)
 
 ;; These books aren't really necessary, but are harmless enough and are useful
 ;; when debugging the release note markup.
@@ -689,6 +692,11 @@
     "The `@('basic')' target in @('GNUmakefile') now certifies
      @('projects/apply/top.lisp'), as is necessary for using @(tsee defun$) or
      @(tsee defwarrant).")
+
+   (xdoc::p
+    "Modified custom makefiles @('books/projects/apply-model/Makefile') and
+     @('books/projects/apply-model-2/Makefile') to avoid apparent mishandling of
+     dependency analysis.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
