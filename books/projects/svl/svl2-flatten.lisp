@@ -336,8 +336,11 @@
   (cond ((not place)
          (change-aliasdb aliasdb
                          :this
-                         (fast-alist-clean (hons-acons key val
-                                                       (aliasdb->this aliasdb)))))
+                        ; (fast-alist-clean
+                          (hons-acons key val
+                                      (aliasdb->this aliasdb))
+                         ; )
+                         ))
         ((atom place)
          (b* ((sub-aliasdb (hons-get place (aliasdb->sub aliasdb)))
               (sub-aliasdb (if sub-aliasdb (cdr sub-aliasdb) (make-aliasdb)))
@@ -345,24 +348,32 @@
                (change-aliasdb
                 sub-aliasdb
                 :this
-                (fast-alist-clean (hons-acons key val
-                                              (aliasdb->this sub-aliasdb))))))
+                ;(fast-alist-clean
+                 (hons-acons key val
+                             (aliasdb->this sub-aliasdb))
+                ; )
+                )))
            (change-aliasdb
             aliasdb
             :sub
-            (fast-alist-clean (hons-acons place
+            ;(fast-alist-clean
+             (hons-acons place
                                           sub-aliasdb
-                                          (aliasdb->sub aliasdb))))))
+                                          (aliasdb->sub aliasdb))
+            ; )
+            )))
         (t (b* ((curplace (car place))
                 (cur-sub (hons-get curplace (aliasdb->sub aliasdb)))
                 (cur-sub (if cur-sub (cdr cur-sub) (make-aliasdb)))
                 (cur-sub (insert-into-aliasdb (cdr place) key val cur-sub)))
              (change-aliasdb aliasdb
                              :sub
-                             (fast-alist-clean
+                            ; (fast-alist-clean
                               (hons-acons curplace
                                           cur-sub
-                                          (aliasdb->sub aliasdb))))))))
+                                          (aliasdb->sub aliasdb))
+                             ; )
+                             )))))
 
 (define aliaspair-lst->aliasdb ((aliaspairs sv::lhspairs-p)
                                 (trace trace-p))
@@ -584,6 +595,7 @@
                                       (mods-to-skip sv::modnamelist-p)
                                       (limit natp "To prove termination"))
    :verify-guards nil
+   (declare (xargs :mode :program)) ;; to profile
    :measure (nfix limit)
    (cond ((zp limit)
           (progn$ (hard-error 'mod-aliaspairs->aliasdb-pt1
@@ -763,6 +775,7 @@
                              rp::measure-lemmas) ())))
    :measure (cons-count (aliasdb-fix aliasdb))
    :verify-guards nil
+   (declare (xargs :mode :program)) ;; to profile
    (b* (((aliasdb aliasdb) aliasdb)
         ((mv aliases-alist new-this)
          (add-to-aliases-alist aliasdb.this aliases-alist trace))
@@ -802,6 +815,7 @@
                                  (modalist sv::modalist-p)
                                  (mods-to-skip sv::modnamelist-p))
   :verify-guards nil
+  (declare (xargs :mode :program)) ;; to profile
   (b* ((aliasdb (mod-aliaspairs->aliasdb-pt1 modname modalist nil
                                              mods-to-skip
                                              (expt 2 59)))
@@ -1334,6 +1348,8 @@
                             (state 'state))
    (declare (xargs :stobjs (state rp::rp-state)))
 
+   (declare (xargs :mode :program)) ;; to profile
+   
    :verify-guards nil
    :measure (nfix limit)
    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
@@ -1348,7 +1364,7 @@
           (b* ((module (hons-get modname modalist))
                (module (if module (cdr module)
                          (progn$
-                          (hard-error 'mod-aliaspairs->aliasdb-pt1
+                          (hard-error 'mod-aliaspairlis$->aliasdb-pt1
                                       "Module not found in modalist ~p0 ~%"
                                       (list (cons #\0 modname)))
                           nil)))
@@ -1789,12 +1805,20 @@
   (does-lhs-intersect-with-occ (cdr lhs) ; ;
   occ))))||#
 
+
+  (define member-equal-wrapper ((x)
+                                (lst true-listp))
+    :enabled t
+    (member-equal x lst))
+  
   (define get-intersecting-occs ((wire-name sv::svar-p)
                                  (start natp)
                                  (w natp)
                                  (occ-names occ-name-list-p)
                                  (all-occs occ-alist-p)
-                                 (acc true-listp))
+                                 (acc true-listp)
+                                 &key
+                                 (duplicate ''nil))
     :returns (res true-listp
                   :hyp (true-listp acc))
     (if (atom occ-names)
@@ -1805,13 +1829,15 @@
                                        w
                                        (cdr occ-names)
                                        all-occs
-                                       acc)))
+                                       acc
+                                       :duplicate duplicate)))
         (if (and occ
                  (does-intersect-occ-to-occ-listener wire-name
                                                      start
                                                      w
                                                      (cdr occ))
-                 (not (member-equal (car occ-names) acc)))
+                 (or duplicate
+                     (not (member-equal (car occ-names) acc))))
             (cons (car occ-names) acc)
           acc))))
 
@@ -1857,12 +1883,15 @@
   
   (define get-intersecting-occ-for-wires ((wires wire-list-p)
                                           (sig-to-occ-listeners)
-                                          (all-occs occ-alist-p))
+                                          (all-occs occ-alist-p)
+                                          &key
+                                          (duplicate ''nil))
     (if (atom wires)
         nil
       (b* ((rest (get-intersecting-occ-for-wires (cdr wires)
                                                  sig-to-occ-listeners
-                                                 all-occs))
+                                                 all-occs
+                                                 :duplicate duplicate))
            (wire (car wires))
            ((mv name start size)
             (mv (wire-name wire) (wire-start wire) (wire-size wire)))
@@ -1875,7 +1904,8 @@
                                size
                                (cdr (hons-get name sig-to-occ-listeners))
                                all-occs
-                               rest))))
+                               rest
+                               :duplicate duplicate))))
 
 
   
@@ -1924,6 +1954,16 @@
             (acons occ-name value rest)
           rest))))
 
+
+  (define fast-unify-list ((vals true-listp))
+    :verify-guards nil
+    (declare (xargs :mode :program)) ;; for guards
+    (b* ((vals (pairlis$ vals nil))
+         (vals (make-fast-alist vals))
+         (vals (fast-alist-clean vals))
+         (vals (fast-alist-free vals)))
+      (strip-cars vals)))
+  
   (define add-initial-to-occ-listeners ((input-wires wire-list-p)
                                         (all-occs occ-alist-p)
                                         (sig-to-occ-listeners)
@@ -1931,7 +1971,9 @@
     (declare (xargs :mode :program))
     (b* ((val1 (get-intersecting-occ-for-wires input-wires
                                                sig-to-occ-listeners
-                                               all-occs))
+                                               all-occs
+                                               :duplicate t))
+         (val1 (fast-unify-list val1))
          (occ-to-occ-listeners (hons-acons ':initial val1
                                            occ-to-occ-listeners))
          (val2 (sv->svl-listeners-uncovered-occs occ-to-occ-listeners
@@ -2086,7 +2128,7 @@
                   :output (wire-name cur-output)
                   :svex (if whole-wire-covered
                             svex
-                          `(partinst ,(wire-start cur-output)
+                          `(sv::partinst ,(wire-start cur-output)
                                      ,(wire-size cur-output)
                                      ,(wire-name cur-output)
                                      ,svex)))
@@ -2096,7 +2138,7 @@
                 :output (wire-name cur-output)
                 :svex (if whole-wire-covered
                           `(partsel ,rsh ,(wire-size cur-output) ,svex)
-                        `(partinst ,(wire-start cur-output)
+                        `(sv::partinst ,(wire-start cur-output)
                                    ,(wire-size cur-output)
                                    ,(wire-name cur-output)
                                    (partsel ,rsh ,(wire-size cur-output)
@@ -2292,6 +2334,7 @@
                                    (limit natp) ;; to easily prove termination
                                    )
    :verify-guards nil
+   (declare (xargs :mode :program)) ;; to profile...
    :measure (nfix limit)
    (cond
     ((zp limit)
@@ -2388,6 +2431,15 @@
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
     (mv modules rp::rp-state)))
 
+
+(define get-svl2-modules-ports ((modules svl2-module-alist-p))
+  (if (atom modules)
+      nil
+    (acons (caar modules)
+           `((:inputs . ,(svl2-module->inputs (cdar modules)))
+             (:outputs . ,(svl2-module->outputs (cdar modules))))
+           (get-svl2-modules-ports (cdr modules)))))
+
 ;;;
 
 ;;
@@ -2443,3 +2495,5 @@ nil)||#
 ;; TODO
 ;; 1. prevent repitiion for delayed-inputs for assignments.
 ;; 2. Write occ sorting functions.
+
+

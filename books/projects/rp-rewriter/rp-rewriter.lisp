@@ -1138,36 +1138,36 @@ returns (mv rule rules-rest bindings rp-context)"
           (('implies p q)
            (b* (((mv newp rp-state)
                  (progn$
-                  (time-tracker :rp-rewriter :end)
-                  (time-tracker :rp-rewriter :init
-                                :times '(1 2 3 4 5)
-                                :interval 5
-                                :msg "Elapsed runtime took ~st secs;~%")
-                  (time-tracker t)
-                  (time-tracker :rp-rewriter :start)
+                  ;; (time-tracker :rp-rewriter :end)
+                  ;; (time-tracker :rp-rewriter :init
+                  ;;               :times '(1 2 3 4 5)
+                  ;;               :interval 5
+                  ;;               :msg "Elapsed runtime took ~st secs;~%")
+                  ;; (time-tracker t)
+                  ;; (time-tracker :rp-rewriter :start)
                   (rp-rw p nil nil  step-limit rules-alist exc-rules
                          meta-rules
                          t rp-state state)))
-                (- (time-tracker :rp-rewriter :stop))
-                (- (time-tracker :rp-rewriter :print?
+                (& (time-tracker :rp-rewriter :stop))
+                (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
                                  :msg "Rewriting the hypothesis took ~st ~
 seconds~%"))
-                (- (time-tracker :rp-rewriter :end))
-                (- (time-tracker :rp-rewriter :init
+                (& (time-tracker :rp-rewriter :end))
+                (& (time-tracker :rp-rewriter :init
                                  :times '(1 2 3 4 5)
                                  :interval 5
                                  :msg "Elapsed runtime took ~st secs;~%"))
                 (context (rp-extract-context newp))
-                (- (time-tracker :rp-rewriter :start))
+                (& (time-tracker :rp-rewriter :start))
                 ((mv newq rp-state)
                  (rp-rw q nil context  step-limit rules-alist exc-rules
                         meta-rules t rp-state state))
-                (- (time-tracker :rp-rewriter :stop))
-                (- (time-tracker :rp-rewriter :print?
+                (& (time-tracker :rp-rewriter :stop))
+                (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
                                  :msg "Rewriting the term took ~st seconds~%"))
-                (- (time-tracker :rp-rewriter :end)))
+                (& (time-tracker :rp-rewriter :end)))
              (mv (if (equal newq ''t)
                      ''t
                    `(implies ,newp ,newq))
