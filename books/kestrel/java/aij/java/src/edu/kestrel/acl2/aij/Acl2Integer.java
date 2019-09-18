@@ -358,7 +358,8 @@ public final class Acl2Integer extends Acl2Rational {
      * Returns an integer with the numeric value of the given Java big integer.
      *
      * @param numericValue The numeric value of the integer.
-     * @throws IllegalArgumentException if numericValue is null
+     * @return The integer.
+     * @throws IllegalArgumentException If {@code numericValue} is {@code null}.
      */
     public static Acl2Integer make(BigInteger numericValue) {
         if (numericValue == null)

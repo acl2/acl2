@@ -37,7 +37,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * These are stored as values of a map
      * that has the symbols that name the functions as keys:
      * each key-value pair is such that
-     * the key is the {@link Acl2NamedFunction#getName()} field of the value.
+     * the key is the {@link Acl2NamedFunction#getName()} of the value.
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
      * In other words, all the defined functions are interned.
@@ -151,6 +151,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
 
     /**
      * Returns a defined function with the given name.
+     * The function is created and interned, if it does not exist.
      *
      * @param name The name of the defined function.
      * @return The defined function.
