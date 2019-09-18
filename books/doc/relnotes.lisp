@@ -253,6 +253,28 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "apply$" "Apply$") " Books")
+
+; The timings discussed below were reported as follows, before and after the
+; change, respectively, on Matt Kaufmann's Mac.
+
+; 1662.81 seconds realtime, 1660.71 seconds runtime
+; (234,962,012,832 bytes allocated).
+
+; 178.47 seconds realtime, 174.30 seconds runtime
+; (47,399,184,272 bytes allocated).
+
+   (xdoc::p
+    "The proof of lemma @('apply$-prim-meta-fn-correct') is much faster in the
+    @('\"apply-prim\"') books in directories @('\"system/apply/\"'),
+    @('\"projects/apply-model/\"'), and @('\"projects/apply-model-2/\"').  In
+    particular, the time for proving that lemma in
+    @('\"projects/apply-model-2/apply-prim.lisp\"') has been measured (on a
+    Mac) at just under 3 minutes after the change but at 27.7 minutes before
+    the change.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
 
    (xdoc::p
