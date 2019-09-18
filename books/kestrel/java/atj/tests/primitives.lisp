@@ -26,12 +26,3 @@
                               (java::int-value-p y))))
   (java::jint-add (java::jint-mul (java::int-value 2) x)
                   (java::jint-mul y y)))
-
-(java::def-atj-function-type f-int (:jint :jint) :jint)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(java::atj f-int
-           :deep nil
-           :guards t
-           :java-class "PrimitiveInt")

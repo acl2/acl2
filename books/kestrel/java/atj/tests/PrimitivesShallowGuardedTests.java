@@ -10,14 +10,18 @@
 
 import edu.kestrel.acl2.aij.*;
 
-public class PrimitiveIntTests {
+public class PrimitivesShallowGuardedTests {
+
+    private static void runTest(int x, int y) throws Acl2EvaluationException {
+        int z = PrimitivesShallowGuarded.ACL2.f_int(x, y);
+        System.out.println("f-int(" + x + "," + y + ") = " + z);
+    }
 
     public static void main(String[] args) throws Acl2EvaluationException {
-        PrimitiveInt.initialize();
-        int x = 8;
-        int y = 15;
-        int z = PrimitiveInt.ACL2.f_int(x, y);
-        System.out.println("f-int(" + x + "," + y + ") = " + z);
+        PrimitivesShallowGuarded.initialize();
+        runTest(8, 15);
+        runTest(-280, 3971);
+        runTest(1000000, 1000000);
     }
 
 }
