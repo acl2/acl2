@@ -29,8 +29,10 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Returns {@code true},
-     * consistently with the {@code acl2-numberp} ACL2 function.
+     * Checks if this number is a number, which is always true.
+     * This is consistent with the {@code acl2-numberp} ACL2 function.
+     *
+     * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol acl2Numberp() {
@@ -38,8 +40,10 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Negates (arithmetically) this ACL2 number,
+     * Negates (arithmetically) this number,
      * consistently with the {@code unary--} ACL2 function.
+     *
+     * @return The negation of this number.
      */
     @Override
     Acl2Number negate() {
@@ -50,8 +54,10 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Reciprocates (arithmetically) this ACL2 number,
+     * Reciprocates (arithmetically) this number,
      * consistently with the {@code unary-/} ACL2 function.
+     *
+     * @return The reciprocal of this number.
      */
     @Override
     Acl2Number reciprocate() {
@@ -68,8 +74,11 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Adds the argument ACL2 value to this ACL2 number,
+     * Adds the argument value to this number,
      * consistently with the {@code binary-+} ACL2 function.
+     *
+     * @param other The value to add to this number. It is never {@code null}.
+     * @return The sum of this number with the argument value.
      */
     @Override
     Acl2Number addValue(Acl2Value other) {
@@ -77,8 +86,11 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Adds the argument ACL2 number to this ACL2 number,
+     * Adds the argument number to this number,
      * consistently with the {@code binary-+} ACL2 function.
+     *
+     * @param other The number to add to this number. It is never {@code null}.
+     * @return The sum of this number with the argument number.
      */
     @Override
     Acl2Number addNumber(Acl2Number other) {
@@ -91,8 +103,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Adds the argument ACL2 rational to this ACL2 number,
+     * Adds the argument rational to this number,
      * consistently with the {@code binary-+} ACL2 function.
+     *
+     * @param other The rational to add to this number.
+     *              It is never {@code null}.
+     * @return The sum of this number with the argument rational.
      */
     @Override
     Acl2Number addRational(Acl2Rational other) {
@@ -103,8 +119,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Adds the argument ACL2 integer to this ACL2 number,
+     * Adds the argument integer to this number,
      * consistently with the {@code binary-+} ACL2 function.
+     *
+     * @param other The integer to add to this number.
+     *              It is never {@code null}.
+     * @return The sum of this number with the argument integer.
      */
     @Override
     Acl2Number addInteger(Acl2Integer other) {
@@ -115,8 +135,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Multiplies the argument ACL2 value to this ACL2 number,
+     * Multiplies the argument value to this number,
      * consistently with the {@code binary-*} ACL2 function.
+     *
+     * @param other The value by which to multiply this number.
+     *              It is never {@code null}.
+     * @return The product of this number with the argument value.
      */
     @Override
     Acl2Number multiplyValue(Acl2Value other) {
@@ -124,8 +148,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Multiplies the argument ACL2 number to this ACL2 number,
+     * Multiplies the argument number to this number,
      * consistently with the {@code binary-*} ACL2 function.
+     *
+     * @param other The number by which to multiply this number.
+     *              It is never {@code null}.
+     * @return The product of this number with the argument number.
      */
     @Override
     Acl2Number multiplyNumber(Acl2Number other) {
@@ -142,8 +170,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Multiplies the argument ACL2 rational to this ACL2 number,
+     * Multiplies the argument rational to this number,
      * consistently with the {@code binary-*} ACL2 function.
+     *
+     * @param other The rational by which to multiply this number.
+     *              It is never {@code null}.
+     * @return The product of this number with the argument rational.
      */
     @Override
     Acl2Number multiplyRational(Acl2Rational other) {
@@ -155,8 +187,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Multiplies the argument ACL2 integer to this ACL2 number,
+     * Multiplies the argument integer to this number,
      * consistently with the {@code binary-*} ACL2 function.
+     *
+     * @param other The integer by which to multiply this number.
+     *              It is never {@code null}.
+     * @return The product of this number with the argument integer.
      */
     @Override
     Acl2Number multiplyInteger(Acl2Integer other) {
@@ -168,8 +204,10 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Returns the real part of this ACL2 number,
+     * Returns the real part of this number,
      * consistently with the {@code realpart} ACL2 function.
+     *
+     * @return The real part of this number.
      */
     @Override
     Acl2Rational realpart() {
@@ -177,8 +215,10 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Returns the imaginary part of this ACL2 number,
+     * Returns the imaginary part of this number,
      * consistently with the {@code imagpart} ACL2 function.
+     *
+     * @return The imaginary part of this number.
      */
     @Override
     Acl2Rational imagpart() {
@@ -186,9 +226,10 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Coerce this ACL2 number to an ACL2 number,
-     * i.e. just return this ACL2 number.
+     * Coerce this number to a number, which is a no-op.
      * This is consistent with the {@code fix} ACL2 function.
+     *
+     * @return This number, unchanged.
      */
     @Override
     Acl2Number fix() {
@@ -196,11 +237,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with the argument ACL2 character for order.
+     * Compares this number with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The character to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToCharacter(Acl2Character o) {
@@ -209,11 +251,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with the argument ACL2 string for order.
+     * Compares this number with the argument string for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The string to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToString(Acl2String o) {
@@ -222,11 +265,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with the argument ACL2 symbol for order.
+     * Compares this number with the argument symbol for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The symbol to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToSymbol(Acl2Symbol o) {
@@ -235,11 +279,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with the argument ACL2 number for order.
+     * Compares this number with the argument number for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The number to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToNumber(Acl2Number o) {
@@ -252,11 +297,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with the argument ACL2 rational for order.
+     * Compares this number with the argument rational for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The rational to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToRational(Acl2Rational o) {
@@ -270,11 +316,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with the argument ACL2 integer for order.
+     * Compares this number with the argument integer for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The integer to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToInteger(Acl2Integer o) {
@@ -288,12 +335,12 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 number with
-     * the argument ACL2 {@code cons} pair for order.
+     * Compares this number with the argument {@code cons} pair for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this number is less than, equal to, or greater than the argument
+     * @param o The {@code cons} pair to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this number is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToConsPair(Acl2ConsPair o) {
@@ -304,12 +351,13 @@ public abstract class Acl2Number extends Acl2Value {
     //////////////////////////////////////// public members:
 
     /**
-     * Compares this ACL2 number with the argument ACL2 value for order.
+     * Compares this number with the argument value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this value is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The value to compare this number with.
+     * @return A negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -319,11 +367,15 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Returns an ACL2 number with the given real and imaginary parts.
-     * If the imaginary part is 0, the result is an ACL2 rational,
+     * Returns a number with the given real and imaginary parts.
+     * If the imaginary part is 0, the result is a rational,
      * according to the rule of complex canonicalization in Common Lisp.
      *
-     * @throws IllegalArgumentException if realpart or imaginaryPart is null
+     * @param realPart      The real part of the number.
+     * @param imaginaryPart The imaginary part of the number.
+     * @return The number.
+     * @throws IllegalArgumentException If {@code realpart} or
+     *                                  {@code imaginaryPart} is {@code null}.
      */
     public static Acl2Number make(Acl2Rational realPart,
                                   Acl2Rational imaginaryPart) {
@@ -338,12 +390,18 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Returns the real part of this ACL2 number.
+     * Returns the real part of this number.
+     * This is consistent with the {@code realpart} ACL2 function.
+     *
+     * @return The real part of this number.
      */
     public abstract Acl2Rational getRealPart();
 
     /**
-     * Returns the imaginary part of this ACL2 number.
+     * Returns the imaginary part of this number.
+     * This is consistent with the {@code imaggpart} ACL2 function.
+     *
+     * @return The imaginary part of this number.
      */
     public abstract Acl2Rational getImaginaryPart();
 
