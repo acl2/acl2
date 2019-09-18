@@ -93,53 +93,76 @@
 
 ; strings:
 
-(define decompose-at-dots ((string stringp))
-  :returns (substrings string-listp)
-  :verify-guards nil
-  :short "Decompose an ACL2 string
-          into its substrings delimited by dot characters,
-          including empty substrings."
+(define strtok! ((string stringp) (delimiters character-listp))
+  :returns (strings string-listp)
+  :short "Variant of @(tsee str::strtok)
+          that does not treat contiguous delimiters as one."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the string has no dots, a singleton list with the string is returned.
-     Otherwise, we return a list consisting of
-     the substring from the start of the string to the first dot,
-     the substrings between two consecutive dots (in order),
-     and the substring from the last dot to the end of the string.
-     The substrings include no dots, and may be empty.")
+    "The function @(tsee str::strtok) treats contiguous delimiters as one,
+     and thus it never returns empty strings, e.g.:")
+   (xdoc::codeblock
+    "(strtok \"abc.de..f\" (list #\\.)) --> (\"abc\" \"de\" \"f\")")
    (xdoc::p
-    "For example:")
-   (xdoc::ul
-    (xdoc::li
-     "@('\"ab.c.def\"') is decomposed into @('(\"ab\" \"c\" \"def\")').")
-    (xdoc::li
-     "@('\"xyz\"') is decomposed into @('(\"xyz\")').")
-    (xdoc::li
-     "@('\".abc..de.\"') is decomposed into
-      @('(\"\" \"abc\" \"\" \"de\" \"\")').")))
-  (decompose-at-dots-aux (explode string) nil)
+    "In contrast, @('strtok!') considers each delimiter separately,
+     possibly returning empty string between contiguous delimiters:")
+   (xdoc::codeblock
+    "(strtok! \"abc.de..f\" (list #\\.)) --> (\"abc\" \"de\" \"\" \"f\")")
+   (xdoc::p
+    "The implementation of @('strtok!') is very similar to @(tsee str::strtok),
+     aside from some parameter name changes.
+     The main difference is that @('strtok!') omits some tests
+     about the (reversed) current token being non-empty:
+     in this way, empty tokens are considered and returned.")
+   (xdoc::p
+    "Note that @('strtok!') returns the singleton list @('(\"\")')
+     when given the empty string @('\"\"') as argument.
+     This seems to make sense because the beginning and end of the string
+     are considered like delimiters,
+     and @('strtok!') considers and returns empty strings between delimiters.
+     However, it would be easy to change @('strtok!') to return @('nil')
+     when given the empty string as argument, if so desired and agreed upon."))
+  (b* ((rev-tokens (strtok!-aux string
+                                0
+                                (mbe :logic (len (explode string))
+                                     :exec (length string))
+                                delimiters
+                                nil
+                                nil)))
+    (mbe :logic (rev rev-tokens)
+         :exec (reverse rev-tokens)))
 
   :prepwork
-  ((define decompose-at-dots-aux ((chars character-listp)
-                                  (rev-current-substrings string-listp))
-     :returns (final-substrings string-listp
-                                :hyp (string-listp rev-current-substrings))
-     :verify-guards nil
-     :parents nil
-     (if (endp chars)
-         (rev rev-current-substrings)
-       (b* ((pos (position #\. chars)))
-         (if pos
-             (b* ((substring (implode (take pos chars)))
-                  (chars (nthcdr (1+ pos) chars))
-                  (rev-current-substrings (cons substring
-                                                rev-current-substrings)))
-               (decompose-at-dots-aux chars rev-current-substrings))
-           (b* ((substring (implode chars))
-                (rev-final-substrings (cons substring rev-current-substrings)))
-             (rev rev-final-substrings)))))
-     :measure (len chars))))
+  ((define strtok!-aux ((string stringp :type string)
+                        (pos natp :type (integer 0 *))
+                        (len natp :type (integer 0 *))
+                        (delimiters character-listp)
+                        (rev-curr-tok character-listp)
+                        (acc string-listp))
+     :guard (and (<= pos len) (<= len (length string)))
+     :returns (result string-listp :hyp (string-listp acc))
+     (if (mbe :logic (zp (- (nfix len) (nfix pos)))
+              :exec (int= pos len))
+         (cons (str::rchars-to-string rev-curr-tok) acc)
+       (b* ((char (char string pos))
+            (matchp (member char delimiters)))
+         (strtok!-aux (the string string)
+                      (the (integer 0 *) (1+ (mbe :logic (nfix pos) :exec pos)))
+                      (the (integer 0 *) len)
+                      delimiters
+                      (if matchp nil (cons char rev-curr-tok))
+                      (if matchp
+                          (cons (str::rchars-to-string rev-curr-tok) acc)
+                        acc))))
+     :measure (nfix (- (nfix len) (nfix pos)))
+     ///
+     (defcong str::streqv equal
+       (strtok!-aux string pos len delimiters rev-curr-tok acc) 1)))
+
+  ///
+
+  (defcong str::streqv equal (strtok! string delimiters) 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,6 +313,6 @@
   (xdoc::topstring-p
    "The string must consist of one or more ASCII Java identifiers
     separated by dots.")
-  (b* ((identifiers (decompose-at-dots string)))
+  (b* ((identifiers (strtok! string (list #\.))))
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
