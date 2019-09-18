@@ -60,26 +60,34 @@
 
    (xdoc::p
     "ATJ accepts all the ACL2 functions that
-     (1) have an @('unnormalized-body') property (see @(tsee body)) and
+     (1) have an unnormalized body (see @(tsee acl2::ubody)) and
      (2) either do not have raw Lisp code
      or have raw Lisp code but belong to a whitelist.
      The ACL2 functions with raw Lisp code
-     are the ones for which @(tsee rawp) holds.
-     The aforementioned whitelist consists of functions
-     whose @('unnormalized-body') property is
-     functionally equivalent to the raw Lisp code.
+     are the ones for which @(tsee rawp) holds;
+     of these, the ones in the whitelist
+     are the ones for which @(tsee pure-raw-p) holds.
+     The unnormalized body of the functions in the whitelist
+     is functionally equivalent to their raw Lisp code.
      The Java code that corresponds to the ACL2 functions
      that satisfy conditions (1) and (2) above,
-     mimics the computations described by their @('unnormalized-body').")
+     mimics the computations described by their unnormalized body.")
 
    (xdoc::p
     "ATJ also accepts the ACL2 function @(tsee return-last)
-     (which has raw Lisp code),
-     but only when it is called on @('mbe-raw1') as the first argument.
-     Calls of the form @('(return-last 'mbe1-raw ...)')
-     are translated representations of calls of @(tsee mbe).
-     Thus, in reference to the whitelist described in the previous paragraph,
-     @(tsee return-last) is ``partially'' whitelisted.")
+     (which has raw Lisp code and is not in the whitelist),
+     but only when its first argument is
+     @('acl2::mbe-raw1') or @('acl2::progn').
+     Calls of the form @('(return-last 'acl2::mbe1-raw ...)')
+     are translated representations of calls of @(tsee mbe);
+     ATJ translates to Java
+     either the @(':logic') or the @(':exec') part of these calls,
+     as detailed below.
+     Calls of the form @('(return-last 'acl2::progn ...)')
+     are translated representations
+     of calls of @(tsee prog2$) and @(tsee progn$);
+     ATJ translates to Java the last argument of these calls,
+     as detailed below.")
 
    (xdoc::p
     "ATJ also accepts all the "
@@ -98,6 +106,10 @@
      and are not in the whitelist mentioned above.
      Therefore, the generated Java code
      does not mimic any of the side effects exhibited by ACL2 functions.
+     In particular, calls of @(tsee prog2$) and @(tsee progn$) are accepted
+     (as explained above about @(tsee return-last)
+     with first argument @('acl2::progn'))
+     only if their non-last arguments are free of side effects.
      Support for translating ACL2 functions with side effects
      to Java code that mimics those side effects
      may be added in the future.")
@@ -157,18 +169,20 @@
 
    (xdoc::p
     "ATJ translates the target ACL2 functions into Java representations,
-     based on their @('unnormalized-body') properties.
+     based on their unnormalized bodies.
      It does so recursively,
      starting from the top-level functions specified by the user
-     and stopping at the ACL2 functions implemented natively in AIJ,
-     which currently are the ACL2 primitive functions
-     (which have no @('unnormalized-body') property).
+     and stopping at the ACL2 functions that
+     either are implemented natively in AIJ
+     or (under certain conditions; see below)
+     represent Java primitive literals and operations.
      If a function is encountered that
      is not natively implemented in AIJ
-     and has no @('unnormalized-body') property,
+     and has no unnormalized body,
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code
-     and is not in the whitelist,
+     and is not in the whitelist
+     (except for the treament of @(tsee return-last) explained above),
      ATJ stops with an error.")
 
    (xdoc::p
@@ -215,8 +229,8 @@
      and AIJ's native implementations of ACL2 functions.
      Under certain conditions,
      the shallowly embedded ACL2 functions use Java values
-     that are not AIJ's Java representations of ACL2 values,
-     e.g. they use Java primitive types;
+     that are not AIJ's Java representations of ACL2 values:
+     in particular, they use Java primitive types;
      see below for details.")
 
    (xdoc::p
@@ -249,7 +263,7 @@
      "Names of the target ACL2 functions to be translated to Java.")
     (xdoc::p
      "Each @('fni') must be a symbol that names a function that
-      either has an @('unnormalized-body') property
+      either has an unnormalized body
       and no raw Lisp code (unless it is in the whitelist),
       or is natively implemented in AIJ
       (currently, this is equivalent to the function being "
@@ -258,26 +272,40 @@
       no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
       (in the unnormalized body, if not natively implemented in AIJ)
-      only functions that satisfy the same constraints.")
+      only functions that satisfy the same constraints,
+      except for calls of @(tsee return-last) as described below.")
     (xdoc::p
      "None of the @('fni') functions may be @(tsee return-last).
       However, the @('fni') functions may transitively call @(tsee return-last),
-      provided that the first argument of all of these calls is @('mbe-raw1'),
-      i.e. that these calls result from the translation of @(tsee mbe)s.
-      If the @(':guards') input is @('nil'),
-      no restrictions are enforced on the @(':exec') parts of thses calls:
-      only the @(':logic') parts are recursively checked
-      to satisfy all the constraints stated here.
-      If instead the @(':guards') input is @('t'),
-      no restrictions are enforced on the @(':logic') parts of thses calls:
-      only the @(':exec') parts are recursively checked
-      to satisfy all the constraints stated here.")
+      under two possible conditions:")
+    (xdoc::ul
+     (xdoc::li
+      "The first argument of @(tsee return-last) is @('acl2::mbe-raw1'),
+       i.e. the call results from the translation of @(tsee mbe).
+       If the @(':guards') input is @('nil'),
+       no restrictions are enforced on the @(':exec') parts of the call:
+       only the @(':logic') part is recursively checked
+       to satisfy all the constraints stated here.
+       If instead the @(':guards') input is @('t'),
+       no restrictions are enforced on the @(':logic') parts of this call:
+       only the @(':exec') part is recursively checked
+       to satisfy all the constraints stated here.")
+     (xdoc::li
+      "The first argument of @(tsee return-last) is @('acl2::progn'),
+       i.e. the call results from the translation of
+       @(tsee prog2$) or @(tsee progn$).
+       Even though Java code is generated
+       for the last argument of the call
+       but not for the previous one(s),
+       the restrictions on called functions,
+       and in particular the absence of side effects,
+       are enforced on all the argument of the call."))
     (xdoc::p
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
       then none of the @('fni') may be
       one of the functions listed in @(tsee *atj-primitive-fns*).
       These functions are treated specially
-      in the shallow embedding when guard satisfaction is assumed.")
+      in the shallow embedding when guard satisfaction is assumed (see below).")
     (xdoc::p
      "There must be at least one function, i.e. @('p') &gt; 0.
       All the @('fni') names must be distinct."))
@@ -470,8 +498,11 @@
     "In the shallow embedding approach,
      the Java class contains one public static method
      for each function among @('fn1'), ..., @('fnp'),
-     the functions that they transitively call,
-     and the ACL2 functions natively implemented in AIJ.
+     the functions that they transitively call
+     (except for the functions in @(tsee *atj-primitive-fns*),
+     when @(':deep') is @('nil') and @(':guards') is @('t'))
+     and the ACL2 functions natively implemented in AIJ
+     (the latter are just wrappers of the native implementations).
      Each method has the same number of parameters as the ACL2 function.
      If @(':guards') is @('nil'),
      each method has @('Acl2Value') as argument and return types;
