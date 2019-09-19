@@ -203,30 +203,29 @@
 
   (defmacro def-rw-opener-error (name term &key
                                       vars-to-avoid
-                                      (disabled 't))
+                                      (disabled 'nil))
     (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) vars-to-avoid)))
-      `(progn
-         (table rw-opener-error-rules  ',name t)
+      `;(progn
+         ;(table rw-opener-error-rules  ',name t)
          (,(if disabled 'defthmd 'defthm)
           ,name
-          (equal
-           ,term
-           (progn$
-            (hard-error
-             ',name
-             ,(str::cat
-               "A " (symbol-name (car term))
-               " instance must have slipped through all of its rewrite rules.
+          (implies (hard-error
+                    ',name
+                    ,(str::cat
+                      "A " (symbol-name (car term))
+                      " instance must have slipped through all of its rewrite rules. 
 Try using (rp::update-rp-brr t rp::rp-state) and
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 12 nil nil)
                  :frames 50). ~%"
-               (rw-opener-error-args-string vars-to-print 0))
-             ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0)))
-            (hide ,term)))
+                      (rw-opener-error-args-string vars-to-print 0))
+                    ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0))) 
+                   (equal
+                    ,term
+                    t))
           :hints (("Goal"
                    :expand (hide ,term)
-                   :in-theory '(return-last hard-error hide)))))))
+                   :in-theory '(return-last hard-error hide))))));)
 
   (defmacro disable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name nil))
@@ -335,7 +334,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                          &key
                          extra-rules
                          (rule-classes ':rewrite)
-                         (use-opener-error-rules 't)
+                        ; (use-opener-error-rules 't)
                          (new-synps 'nil)
                          (in-theory 'nil))
   `(make-event
@@ -351,17 +350,19 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                            (rp-cl :extra-rules ,',extra-rules
                                   :cl-name-prefix ,cl-name-prefix
                                   :new-synps ,',new-synps)))))
-         (opener-error-rules-alist (table-alist 'rw-opener-error-rules  (w state)))
+         #|(opener-error-rules-alist (table-alist 'rw-opener-error-rules  (w state)))
          (?opener-error-rules
-          (loop$ for x in opener-error-rules-alist when (cdr x) collect (car x))))
-      ,(if (or use-opener-error-rules
+          (loop$ for x in opener-error-rules-alist when (cdr x) collect (car
+                                                                         x)))||#
+         )
+      ,(if (or ;use-opener-error-rules
                in-theory)
            ``(encapsulate
                nil
-               ,@(if ,use-opener-error-rules
-                     `((local
-                        (in-theory (enable . ,opener-error-rules))))
-                   'nil)
+               ;; ,@(if ,use-opener-error-rules
+               ;;       `((local
+               ;;          (in-theory (enable . ,opener-error-rules))))
+               ;;     'nil)
                ,@(if ',in-theory
                      `((local
                         (in-theory ,',in-theory)))

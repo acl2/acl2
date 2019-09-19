@@ -336,10 +336,10 @@
   (cond ((not place)
          (change-aliasdb aliasdb
                          :this
-                        ; (fast-alist-clean
-                          (hons-acons key val
-                                      (aliasdb->this aliasdb))
-                         ; )
+; (fast-alist-clean
+                         (hons-acons key val
+                                     (aliasdb->this aliasdb))
+; )
                          ))
         ((atom place)
          (b* ((sub-aliasdb (hons-get place (aliasdb->sub aliasdb)))
@@ -348,19 +348,19 @@
                (change-aliasdb
                 sub-aliasdb
                 :this
-                ;(fast-alist-clean
-                 (hons-acons key val
-                             (aliasdb->this sub-aliasdb))
-                ; )
+;(fast-alist-clean
+                (hons-acons key val
+                            (aliasdb->this sub-aliasdb))
+; )
                 )))
            (change-aliasdb
             aliasdb
             :sub
-            ;(fast-alist-clean
-             (hons-acons place
-                                          sub-aliasdb
-                                          (aliasdb->sub aliasdb))
-            ; )
+;(fast-alist-clean
+            (hons-acons place
+                        sub-aliasdb
+                        (aliasdb->sub aliasdb))
+; )
             )))
         (t (b* ((curplace (car place))
                 (cur-sub (hons-get curplace (aliasdb->sub aliasdb)))
@@ -368,11 +368,11 @@
                 (cur-sub (insert-into-aliasdb (cdr place) key val cur-sub)))
              (change-aliasdb aliasdb
                              :sub
-                            ; (fast-alist-clean
-                              (hons-acons curplace
-                                          cur-sub
-                                          (aliasdb->sub aliasdb))
-                             ; )
+; (fast-alist-clean
+                             (hons-acons curplace
+                                         cur-sub
+                                         (aliasdb->sub aliasdb))
+; )
                              )))))
 
 (define aliaspair-lst->aliasdb ((aliaspairs sv::lhspairs-p)
@@ -1349,7 +1349,7 @@
    (declare (xargs :stobjs (state rp::rp-state)))
 
    (declare (xargs :mode :program)) ;; to profile
-   
+
    :verify-guards nil
    :measure (nfix limit)
    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
@@ -1701,7 +1701,7 @@
                                                   (cdr wires))))
            (end2 (+ start2 (wire-size (car wires))))
            #|(- (cw "start ~p0, end ~p1, start2 ~p2, end2 ~p3 ~%" start end
-                                            start2 end2))||#)
+           start2 end2))||#)
         (or (and (equal (wire-name (car wires)) wire-name)
                  (or (and (<= end2 end)
                           (< start end2))
@@ -1718,11 +1718,11 @@
                                               (cdr wires))))))
 
   #|(check-intersection-for-wire-list '(:VAR ("product_terms" . 0) . 0)
-                                    91 1
-                                    '(((:VAR ("product_terms" . 0) . 0)
-                                       97 . 0)
-                                      ((:VAR ("product_terms" . 1) . 0)
-                                       97 . 0)))||#
+  91 1
+  '(((:VAR ("product_terms" . 0) . 0)
+  97 . 0)
+  ((:VAR ("product_terms" . 1) . 0)
+  97 . 0)))||#
 
   (defun binary-append2 (acl2::x acl2::y)
     (declare (xargs :guard t))
@@ -1757,21 +1757,19 @@
                                              (occ-assign->inputs occ)))))
 
 
-  
-                                    
-  
+
   #|(does-intersect-occ-to-occ-listener '(:VAR ("product_terms" . 0) . 0)
-                                      91 1
-                                      '(:ASSIGN
-                                        (((:VAR ("product_terms" . 0) . 0)
-                                          97 . 0)
-                                         ((:VAR ("product_terms" . 1) . 0)
-                                          97 . 0))
-                                        NIL (("product_terms" 194 . 0))
-                                        (CONCAT 97
-                                                (PARTSEL 0 97 (:VAR ("product_terms" . 0) . 0))
-                                                (PARTSEL 0 97 (:VAR
-                                                               ("product_terms" . 1) . 0)))))||#
+  91 1
+  '(:ASSIGN
+  (((:VAR ("product_terms" . 0) . 0)
+  97 . 0)
+  ((:VAR ("product_terms" . 1) . 0)
+  97 . 0))
+  NIL (("product_terms" 194 . 0))
+  (CONCAT 97
+  (PARTSEL 0 97 (:VAR ("product_terms" . 0) . 0))
+  (PARTSEL 0 97 (:VAR
+  ("product_terms" . 1) . 0)))))||#
 
   #| (define does-wires-intesect-with-occ ((wires wire-list-p)
   (occ occ-p)) ; ;
@@ -1790,7 +1788,7 @@
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -1805,12 +1803,11 @@
   (does-lhs-intersect-with-occ (cdr lhs) ; ;
   occ))))||#
 
-
   (define member-equal-wrapper ((x)
                                 (lst true-listp))
     :enabled t
     (member-equal x lst))
-  
+
   (define get-intersecting-occs ((wire-name sv::svar-p)
                                  (start natp)
                                  (w natp)
@@ -1818,7 +1815,7 @@
                                  (all-occs occ-alist-p)
                                  (acc true-listp)
                                  &key
-                                 (duplicate ''nil))
+                                 (duplicate 'nil))
     :returns (res true-listp
                   :hyp (true-listp acc))
     (if (atom occ-names)
@@ -1842,22 +1839,21 @@
           acc))))
 
   #|(get-intersecting-occs '(:VAR ("product_terms" . 0) . 0)
-                         91
-                         1
-                         '(OUT_ASSIGN_0)
-                         '((OUT_ASSIGN_0 :ASSIGN
-                                         (((:VAR ("product_terms" . 0) . 0)
-                                           97 . 0)
-                                          ((:VAR ("product_terms" . 1) . 0)
-                                           97 . 0))
-                                         NIL (("product_terms" 194 . 0))
-                                         (CONCAT 97
-                                                 (PARTSEL 0 97 (:VAR ("product_terms" . 0) . 0))
-                                                 (PARTSEL 0 97 (:VAR
-                                                                ("product_terms" . 1) . 0)))))
-                         nil)||#
+  91
+  1
+  '(OUT_ASSIGN_0)
+  '((OUT_ASSIGN_0 :ASSIGN
+  (((:VAR ("product_terms" . 0) . 0)
+  97 . 0)
+  ((:VAR ("product_terms" . 1) . 0)
+  97 . 0))
+  NIL (("product_terms" 194 . 0))
+  (CONCAT 97
+  (PARTSEL 0 97 (:VAR ("product_terms" . 0) . 0))
+  (PARTSEL 0 97 (:VAR
+  ("product_terms" . 1) . 0)))))
+  nil)||#
 
-  
 
   (define get-intersecting-occ-for-lhs ((lhs sv::lhs-p)
                                         (sig-to-occ-listeners)
@@ -1879,13 +1875,12 @@
                                rest))))
 
 
- 
-  
+
   (define get-intersecting-occ-for-wires ((wires wire-list-p)
                                           (sig-to-occ-listeners)
                                           (all-occs occ-alist-p)
                                           &key
-                                          (duplicate ''nil))
+                                          (duplicate 'nil))
     (if (atom wires)
         nil
       (b* ((rest (get-intersecting-occ-for-wires (cdr wires)
@@ -1908,8 +1903,7 @@
                                :duplicate duplicate))))
 
 
-  
-  
+
   (define create-occ-to-occ-listeners ((occs occ-alist-p)
                                        (all-occs occ-alist-p)
                                        (sig-to-occ-listeners))
@@ -1931,29 +1925,28 @@
                        sig-to-occ-listeners
                        all-occs))))
            #|(- (if (and (equal (occ-kind occ) ':assign)
-                       (equal occ-name 'ASSIGN_26))
-                  (cw "value ~p0, outputs ~p1, listeners ~p2, intersecting ~p3 ~%"
-                      value
-                      (occ-assign->outputs occ)
-                      (cdr (hons-get '(:VAR
-                                       ("product_terms" . 0) . 0)
-                                     sig-to-occ-listeners))
-                      (get-intersecting-occs '(:VAR ("product_terms" . 0) . 0)
-                                             91
-                                             1
-                                             (cdr (hons-get '(:VAR
-                                                              ("product_terms" . 0) . 0)
-                                                            sig-to-occ-listeners))
-                                             all-occs
-                                             nil))
-                nil))||#
+           (equal occ-name 'ASSIGN_26))
+           (cw "value ~p0, outputs ~p1, listeners ~p2, intersecting ~p3 ~%"
+           value
+           (occ-assign->outputs occ)
+           (cdr (hons-get '(:VAR
+           ("product_terms" . 0) . 0)
+           sig-to-occ-listeners))
+           (get-intersecting-occs '(:VAR ("product_terms" . 0) . 0)
+           91
+           1
+           (cdr (hons-get '(:VAR
+           ("product_terms" . 0) . 0)
+           sig-to-occ-listeners))
+           all-occs
+           nil))
+           nil))||#
            (rest (create-occ-to-occ-listeners (cdr occs)
                                               all-occs
                                               sig-to-occ-listeners)))
         (if value
             (acons occ-name value rest)
           rest))))
-
 
   (define fast-unify-list ((vals true-listp))
     :verify-guards nil
@@ -1963,7 +1956,7 @@
          (vals (fast-alist-clean vals))
          (vals (fast-alist-free vals)))
       (strip-cars vals)))
-  
+
   (define add-initial-to-occ-listeners ((input-wires wire-list-p)
                                         (all-occs occ-alist-p)
                                         (sig-to-occ-listeners)
@@ -2076,12 +2069,31 @@
 
 ;;;;;;;;;;;;;;
 
+(define wire-list-listp (list)
+  :enabled t
+  (if (atom list)
+      (equal list nil)
+    (and (wire-list-p (car list))
+         (wire-list-listp (cdr list)))))
+
+(define wire-list-list-fix (list)
+  :returns (res wire-list-listp)
+  :enabled t
+  (if (wire-list-listp list)
+      list
+    nil))
+
+(fty::deffixtype wire-list-list
+                 :pred  wire-list-listp
+                 :fix   wire-list-list-fix
+                 :equiv equal)
+
 (fty::deftagsum
  svl2-occ
  (:assign ((output sv::svar-p)
            (svex sv::svex-p)))
  (:module ((inputs sv::svexlist-p)
-           (outputs sv::lhslist-p)
+           (outputs wire-list-list)
            (name sv::modname-p))))
 
 (fty::defalist svl2-occ-alist
@@ -2109,6 +2121,7 @@
                                 (wires sv::wirelist-p)
                                 (rsh natp))
   :verify-guards nil
+  :returns (res svl2-occ-alist-p)
   :guard-hints (("Goal"
                  :in-theory (e/d (svex-p sv::svar-p) ())))
   (if (atom outputs)
@@ -2129,9 +2142,9 @@
                   :svex (if whole-wire-covered
                             svex
                           `(sv::partinst ,(wire-start cur-output)
-                                     ,(wire-size cur-output)
-                                     ,(wire-name cur-output)
-                                     ,svex)))
+                                         ,(wire-size cur-output)
+                                         ,(wire-name cur-output)
+                                         ,svex)))
                  nil)
         (acons (cons occ-name rsh)
                (make-svl2-occ-assign
@@ -2139,20 +2152,49 @@
                 :svex (if whole-wire-covered
                           `(partsel ,rsh ,(wire-size cur-output) ,svex)
                         `(sv::partinst ,(wire-start cur-output)
-                                   ,(wire-size cur-output)
-                                   ,(wire-name cur-output)
-                                   (partsel ,rsh ,(wire-size cur-output)
-                                            ,svex))))
+                                       ,(wire-size cur-output)
+                                       ,(wire-name cur-output)
+                                       (partsel ,rsh ,(wire-size cur-output)
+                                                ,svex))))
                (occs->svl2-occs-assign occ-name
                                        (cdr outputs)
                                        svex
                                        wires
                                        (+ rsh (nfix (wire-size cur-output)))))))))
 
+
+
+(progn
+  (define lhrange->wire ((range sv::lhrange-p))
+    :Returns (res wire-p)
+    (b* (((sv::lhrange range) range))
+      (if (equal (sv::lhatom-kind range.atom) :z)
+          `(:z ,range.w . 0)
+        `(,(sv::lhatom-var->name range.atom)
+          ,range.w
+          .
+          ,(sv::lhatom-var->rsh range.atom)))))
+
+  (define lhs->wire-list ((lhs sv::lhs-p))
+    :returns (res wire-list-p)
+    (if (atom lhs)
+        nil
+      (cons (lhrange->wire (car lhs))
+            (lhs->wire-list (cdr lhs)))))
+
+
+  (define lhslist->wire-list ((lhslist sv::lhslist-p))
+    :returns (res wire-list-listp)
+    (if (atom lhslist)
+        nil
+      (cons (lhs->wire-list (car lhslist))
+            (lhslist->wire-list (cdr lhslist))))))
+
 (define occs->svl2-occs ((occs occ-alist-p)
                          (wires sv::wirelist-p))
 ;:returns (res svl2-occ-alist :hyp (occ-alist-p occs))
   :verify-guards nil
+  :returns (res svl2-occ-alist-p)
   (cond
    ((atom occs) nil)
    ((equal (occ-kind (cdar occs)) ':assign)
@@ -2164,7 +2206,7 @@
         (acons (caar occs)
                (make-svl2-occ-module
                 :inputs (lhslist->svex (strip-cdrs occ.inputs))
-                :outputs (strip-cdrs occ.outputs)
+                :outputs (lhslist->wire-list (strip-cdrs occ.outputs))
                 :name occ.name)
                (occs->svl2-occs (cdr occs)
                                 wires))))))
@@ -2180,10 +2222,15 @@
 
 (fty::defalist svl2-module-alist
                :val-type svl2-module
+               :true-listp t
                :key-type sv::modname-p)
 
 (define union-equal2 ((lst1)
                       (lst2 true-listp))
+  :prepwork
+  ((local
+    (in-theory (disable (:DEFINITION ALWAYS$)))))
+
   (if (atom lst1)
       lst2
     (b* ((rest (union-equal2 (cdr lst1) lst2)))
@@ -2211,7 +2258,6 @@
                       rest))))
   ///
   (verify-guards svl2-collect-delayed-inputs))
-
 
 (define svl2-flatten-mod ((modname sv::modname-p)
                           (modalist sv::modalist-p)
@@ -2275,13 +2321,12 @@
        (- (fast-alist-free occ-to-occ-listeners))
 
        (?module (cons modname
-                     (make-svl2-module :inputs input-wires
-                                       :delayed-inputs
-                                       (svl2-collect-delayed-inputs occs)
-                                       :outputs output-wires
-                                       :occs new-svl2-occs))))
+                      (make-svl2-module :inputs input-wires
+                                        :delayed-inputs
+                                        (svl2-collect-delayed-inputs occs)
+                                        :outputs output-wires
+                                        :occs new-svl2-occs))))
     (mv module rp::rp-state)))
-
 
 #|(b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
      (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
@@ -2295,7 +2340,6 @@
                     '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
                     vl-insouts2
                     svex-simplify-preloaded))||#
-
 
 
 (define svl2-flatten-mods ((modnames sv::modnamelist-p)
@@ -2396,17 +2440,29 @@
            (update-modules-with-ranks ranks
                                       (cdr modules)))))
 
+(define get-string-modnames ((modnames sv::modnamelist-p))
+  :returns (res string-listp)
+  (if (atom modnames)
+      nil
+    (if (stringp (car modnames))
+        (cons (car modnames)
+              (get-string-modnames (cdr modnames)))
+      (get-string-modnames (cdr modnames)))))
 
 (define svl2-flatten-design ((modnames sv::modnamelist-p)
                              (sv-design sv::design-p)
                              (vl-design)
                              &key
+                             (all-mods 'nil) ;; when t, no modules with a string
+                             ;; name is flattened.
                              (rp::rp-state 'rp::rp-state)
                              (state 'state))
   (declare (xargs :mode :program))
   (b* (((sv::design sv-design) sv-design)
-       (modnames (union-equal (list sv-design.top)
-                              modnames))
+       (modnames (if all-mods
+                     (get-string-modnames (strip-cars sv-design.modalist))
+                   (union-equal (list sv-design.top)
+                                modnames)))
        (sv-design.modalist (make-fast-alist sv-design.modalist))
 
        (vl-insouts (vl-design-to-insouts vl-design sv-design))
@@ -2425,12 +2481,10 @@
                                         (expt 2 30)))
        (modules (update-modules-with-ranks ranks
                                            modules))
-       
 
        (- (fast-alist-free sv-design.modalist))
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
     (mv modules rp::rp-state)))
-
 
 (define get-svl2-modules-ports ((modules svl2-module-alist-p))
   (if (atom modules)
@@ -2445,6 +2499,9 @@
 ;;
 
 ;;;;
+
+
+
 #|
 :i-am-here
 
@@ -2452,7 +2509,6 @@
   (svl2-flatten-design modnames
                        *booth-sv-design*
                        *booth-vl-design2*))
-
 
 (b* ((modnames '("full_adder_1$WIDTH=1"
                  "full_adder$WIDTH=1"
@@ -2467,33 +2523,27 @@
 nil)||#
 
 (b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
-     (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
-                                                '("full_adder_1$WIDTH=1"
-                                                  "full_adder$WIDTH=1"
-                                                  "booth2_reduction_dadda_17x65_97"
-                                                  "booth2_multiplier_signed_64x32_97")
-                                                )))
-  (svl2-flatten-mod "booth2_multiplier_signed_64x32_97"
-                    (make-fast-alist (sv::design->modalist *big-sv-design*))
-                    '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1" "booth2_reduction_dadda_17x65_97")
-                    vl-insouts2))
+(vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
+'("full_adder_1$WIDTH=1"
+"full_adder$WIDTH=1"
+"booth2_reduction_dadda_17x65_97"
+"booth2_multiplier_signed_64x32_97")
+)))
+(svl2-flatten-mod "booth2_multiplier_signed_64x32_97"
+(make-fast-alist (sv::design->modalist *big-sv-design*))
+'("full_adder_1$WIDTH=1" "full_adder$WIDTH=1" "booth2_reduction_dadda_17x65_97")
+vl-insouts2))
 
 (b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
-     (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
-                                                '("full_adder_1$WIDTH=1"
-                                                  "full_adder$WIDTH=1"
-                                                  "booth2_reduction_dadda_17x65_97")
-                                                ))
-     (svex-simplify-preloaded (svex-simplify-preload)))
-  (svl2-flatten-mod "booth2_reduction_dadda_17x65_97"
-                    (make-fast-alist (sv::design->modalist *big-sv-design*))
-                    '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
-                    vl-insouts2
-                    svex-simplify-preloaded))
+(vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
+'("full_adder_1$WIDTH=1"
+"full_adder$WIDTH=1"
+"booth2_reduction_dadda_17x65_97")
+))
+(svex-simplify-preloaded (svex-simplify-preload)))
+(svl2-flatten-mod "booth2_reduction_dadda_17x65_97"
+(make-fast-alist (sv::design->modalist *big-sv-design*))
+'("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
+vl-insouts2
+svex-simplify-preloaded))
 ||#
-
-;; TODO
-;; 1. prevent repitiion for delayed-inputs for assignments.
-;; 2. Write occ sorting functions.
-
-

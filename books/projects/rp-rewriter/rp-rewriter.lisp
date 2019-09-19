@@ -736,6 +736,8 @@ returns (mv rule rules-rest bindings rp-context)"
       (('cons ('cons ('quote a) b) rest)
        (cons (cons a b)
              (rp-rw-fix-hard-error-alist rest)))
+      (('quote x)
+       x)
       (''nil
        nil)
       (& alist)))
@@ -764,7 +766,7 @@ returns (mv rule rules-rest bindings rp-context)"
       (('fmt-to-comment-window ('quote &) ('quote &)
                                ('quote &) ('quote &) ('quote &))
        ;; if all arguments are quoted, then executable counterpart will be
-       ;; triggered anyways.
+       ;; triggered anyways, so dont do anything.
        nil)
       (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 ''(#\0 #\1 #\2 #\3 #\4
                                                                 #\5 #\6 #\7 #\8 #\9)

@@ -335,7 +335,7 @@
          ;; TODO get rid of this if as well.
          (val (if val
                   (if  wire.start
-                      (bits wire.start wire.size (cdr val))
+                      (bits (cdr val) wire.start wire.size )
                     (cdr val))
                 '(-1 . 0))))
       (cons val
@@ -412,7 +412,7 @@
           (cons (sv::4vec-x) (svl-get-outputs (cdr sigs) wires alist)))
          (wire (assoc-equal (car sigs) wires))
          (size (cadr wire)))
-      (cons (if (and size res) (bits 0 size (cdr res)) (cdr res))
+      (cons (if (and size res) (bits (cdr res) 0 size ) (cdr res))
             (svl-get-outputs (cdr sigs) wires alist)))))
 
 (define hons-gets-fast-alist (keys fast-alist)

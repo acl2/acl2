@@ -48,7 +48,7 @@
   ;;low priority lemmas:
   (defthm bits-01-of-a-bit
     (implies (and (bitp x))
-             (and (equal (bits 0 1 x)
+             (and (equal (bits x 0 1)
                          x)))))
 
 (encapsulate
@@ -58,7 +58,7 @@
   ;; this has to have low priority
   (defthm 4vec-bitnot$-of-bits-of-same-size
     (implies (syntaxp (consp (rp::ex-from-rp term)))
-             (equal (4vec-bitnot$ size (bits 0 size term))
+             (equal (4vec-bitnot$ size (bits term 0 size))
                     (4vec-bitnot$ size term)))
     :hints (("Goal"
              :use ((:instance |(4vec-bitnot$ size (4vec-part-select 0 size term))|))
@@ -70,10 +70,10 @@
   (defthm 4vec-bitand$-of-bits-of-same-size
     (and 
      (implies (syntaxp (consp (rp::ex-from-rp val1)))
-              (equal (4vec-bitand$ size (bits 0 size val1) val2)
+              (equal (4vec-bitand$ size (bits val1 0 size) val2)
                      (4vec-bitand$ size val1 val2)))
      (implies (syntaxp (consp (rp::ex-from-rp val2)))
-              (equal (4vec-bitand$ size val1 (bits 0 size val2))
+              (equal (4vec-bitand$ size val1 (bits val2 0 size))
                      (4vec-bitand$ size val1 val2))))
     :hints (("Goal"
              :use ((:instance 4vec-bitand$-of-4vec-part-select-0-same-size))
@@ -85,10 +85,10 @@
   (defthm 4vec-bitor$-of-bits-of-same-size
     (and 
      (implies (syntaxp (consp (rp::ex-from-rp val1)))
-              (equal (4vec-bitor$ size (bits 0 size val1) val2)
+              (equal (4vec-bitor$ size (bits val1 0 size) val2)
                      (4vec-bitor$ size val1 val2)))
      (implies (syntaxp (consp (rp::ex-from-rp val2)))
-              (equal (4vec-bitor$ size val1 (bits 0 size val2))
+              (equal (4vec-bitor$ size val1 (bits val2 0 size))
                      (4vec-bitor$ size val1 val2))))
     :hints (("Goal"
              :use ((:instance 4vec-bitor$-of-4vec-part-select-0-same-size))
@@ -100,10 +100,10 @@
   (defthm 4vec-bitxor$-of-bits-of-same-size
     (and 
      (implies (syntaxp (consp (rp::ex-from-rp val1)))
-              (equal (4vec-bitxor$ size (bits 0 size val1) val2)
+              (equal (4vec-bitxor$ size (bits val1 0 size) val2)
                      (4vec-bitxor$ size val1 val2)))
      (implies (syntaxp (consp (rp::ex-from-rp val2)))
-              (equal (4vec-bitxor$ size val1 (bits 0 size val2))
+              (equal (4vec-bitxor$ size val1 (bits val2 0 size))
                      (4vec-bitxor$ size val1 val2))))
     :hints (("Goal"
              :use ((:instance 4vec-bitxor$-of-4vec-part-select-0-same-size))
@@ -116,8 +116,8 @@
   (defthm bits-of-4vec-bitnot
     (implies (and (natp size)
                   (natp start))
-             (equal (bits start size (4vec-bitnot x))
-                    (4vec-bitnot$ size (bits start size x))))
+             (equal (bits (4vec-bitnot x) start size)
+                    (4vec-bitnot$ size (bits x start size))))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-bitnot)
                    (:instance 4vec-part-select-of-4vec-bitnot
@@ -131,10 +131,10 @@
   (defthm bits-of-4vec-bitand
     (implies (and (natp size)
                   (natp start))
-             (equal (bits start size (4vec-bitand val1 val2))
+             (equal (bits (4vec-bitand val1 val2) start size)
                     (4vec-bitand$ size
-                                  (bits start size val1)
-                                  (bits start size val2))))
+                                  (bits val1 start size)
+                                  (bits val2 start size))))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-bitand))
              :do-not '(preprocess)
@@ -146,10 +146,10 @@
   (defthm bits-of-4vec-bitor
     (implies (and (natp size)
                   (natp start))
-             (equal (bits start size (4vec-bitor val1 val2))
+             (equal (bits (4vec-bitor val1 val2) start size)
                     (4vec-bitor$ size
-                                 (bits start size val1)
-                                 (bits start size val2))))
+                                 (bits val1 start size)
+                                 (bits val2 start size))))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-bitor))
              :do-not '(preprocess)
@@ -161,10 +161,10 @@
   (defthm bits-of-4vec-bitxor
     (implies (and (natp size)
                   (natp start))
-             (equal (bits start size (sv::4vec-bitxor val1 val2))
+             (equal (bits (sv::4vec-bitxor val1 val2) start size)
                     (4vec-bitxor$ size
-                                 (bits start size val1)
-                                 (bits start size val2))))
+                                 (bits val1 start size)
+                                 (bits val2 start size))))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-bitxor))
              :do-not '(preprocess)
@@ -177,13 +177,13 @@
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
-             (equal (bits start bits-size (4vec-bitnot$ size val))
+             (equal (bits (4vec-bitnot$ size val) start bits-size)
                     (if (< start size)    
                         (4vec-bitnot$ (min (- size start) bits-size)
-                                      (bits start
+                                      (bits val
+                                            start
                                             (min (- size start)
-                                                 bits-size)
-                                            val))
+                                                 bits-size)))
                       0)))
     :hints (("Goal"
              :in-theory (e/d (4VEC-PART-SELECT-of-4vec-bitnot$-2
@@ -195,11 +195,11 @@
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
-             (equal (bits start bits-size (4vec-bitand$ size val1 val2))
+             (equal (bits (4vec-bitand$ size val1 val2) start bits-size)
                     (if (< start size)    
                         (4vec-bitand$ (min (- size start) bits-size)
-                                      (bits start (min (- size start) bits-size) val1)
-                                      (bits start (min (- size start) bits-size) val2))
+                                      (bits val1 start (min (- size start) bits-size) )
+                                      (bits val2 start (min (- size start) bits-size)))
                       0)))
     :hints (("Goal"
              :in-theory (e/d (4VEC-PART-SELECT-of-4vec-bitand$-2
@@ -211,11 +211,11 @@
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
-             (equal (bits start bits-size (4vec-bitor$ size val1 val2))
+             (equal (bits (4vec-bitor$ size val1 val2) start bits-size )
                     (if (< start size)    
                         (4vec-bitor$ (min (- size start) bits-size)
-                                      (bits start (min (- size start) bits-size) val1)
-                                      (bits start (min (- size start) bits-size) val2))
+                                      (bits val1 start (min (- size start) bits-size) )
+                                      (bits val2 start (min (- size start) bits-size) ))
                       0)))
     :hints (("Goal"
              :in-theory (e/d (4vec-part-select-of-4vec-bitor$-2
@@ -227,11 +227,11 @@
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
-             (equal (bits start bits-size (4vec-bitxor$ size val1 val2))
+             (equal (bits (4vec-bitxor$ size val1 val2) start bits-size )
                     (if (< start size)    
                         (4vec-bitxor$ (min (- size start) bits-size)
-                                      (bits start (min (- size start) bits-size) val1)
-                                      (bits start (min (- size start) bits-size) val2))
+                                      (bits val1 start (min (- size start) bits-size) )
+                                      (bits val2 start (min (- size start) bits-size) ))
                       0)))
     :hints (("Goal"
              :in-theory (e/d (4vec-part-select-of-4vec-bitxor$-2
@@ -245,7 +245,7 @@
                   (integerp y))
              (equal (4vec-bitnot (4vec-concat$ size x y))
                     (4vec-concat$ size
-                                  (4vec-bitnot$ size (bits 0 size x))
+                                  (4vec-bitnot$ size (bits x 0 size))
                                   (4vec-bitnot y))))
     :hints (("Goal"
              :use ((:instance
@@ -280,11 +280,11 @@
             (natp start)
             (natp size)
             (> size (- r-size start)))
-       (equal (bits start size (4vec-lsh r-size val))
+       (equal (bits (4vec-lsh r-size val) start size )
               (4vec-concat$ (- r-size start)
                             0
-                            (bits 0
-                                  (- size (- r-size start)) val))))
+                            (bits val 0
+                                  (- size (- r-size start)) ))))
       :hints (("Goal"
                :use ((:instance 4vec-part-select-of-4vec-lsh-1))
                :in-theory (e/d (4vec-lsh
@@ -296,7 +296,7 @@
             (natp start)
             (natp size)
             (>= r-size (+ start size)))
-       (equal (bits start size (4vec-lsh r-size val))
+       (equal (bits (4vec-lsh r-size val) start size )
               0))
       :hints (("Goal"
                :use ((:instance 4vec-part-select-of-4vec-lsh-2))
@@ -308,8 +308,8 @@
             (natp r-size)
             (natp size)
             (natp start))
-       (equal (bits start size (4vec-lsh r-size val))
-              (bits (- start r-size) size val)))
+       (equal (bits (4vec-lsh r-size val) start size )
+              (bits val (- start r-size) size )))
       :hints (("Goal"
                :use ((:instance 4vec-part-select-of-4vec-lsh-3))
                :in-theory (e/d () ()))))  )
@@ -327,11 +327,12 @@
                             (integerp size))
                         (or (quotep r-size)
                             (integerp r-size)))))
-     (equal (bits start size (4vec-lsh r-size val))
+     (equal (bits (4vec-lsh r-size val) start size )
             (4vec-concat$ (- r-size start)
                           0
-                          (bits 0
-                                (- size (- r-size start)) val))))
+                          (bits val
+                                0
+                                (- size (- r-size start)) ))))
     :hints (("Goal"
              :use ((:instance bits-of-lsh-1-no-syntaxp)))))
 
@@ -347,7 +348,7 @@
                             (integerp size))
                         (or (quotep r-size)
                             (integerp r-size)))))
-     (equal (bits start size (4vec-lsh r-size val))
+     (equal (bits (4vec-lsh r-size val) start size )
             0))
     :hints (("Goal"
              :use ((:instance bits-of-lsh-2-no-syntaxp))
@@ -365,8 +366,8 @@
                             (integerp size))
                         (or (quotep r-size)
                             (integerp r-size)))))
-     (equal (bits start size (4vec-lsh r-size val))
-            (bits (- start r-size) size val)))
+     (equal (bits (4vec-lsh r-size val) start size )
+            (bits val (- start r-size) size )))
     :hints (("Goal"
              :use ((:instance bits-of-lsh-3-no-syntaxp))
              :in-theory (e/d () ())))))
@@ -382,9 +383,10 @@
      (and (natp r-size)
           (natp start)
           (natp size))
-     (equal (bits start size (4vec-rsh r-size val))
-            (bits (+ start r-size)
-                  size val)))
+     (equal (bits (4vec-rsh r-size val) start size)
+            (bits val
+                  (+ start r-size)
+                  size)))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-rsh))
              :in-theory (e/d () ()))))
@@ -402,9 +404,10 @@
                             (integerp size))
                         (or (quotep r-size)
                             (integerp r-size)))))
-     (equal (bits start size (4vec-rsh r-size val))
-            (bits (+ start r-size)
-                  size val)))
+     (equal (bits (4vec-rsh r-size val) start size)
+            (bits val
+                  (+ start r-size)
+                  size )))
     :hints (("Goal"
              :use ((:instance bits-of-rsh-no-syntaxp))
              :in-theory (e/d () ()))))
@@ -455,7 +458,7 @@
   (defthm convert-4vec-concat-to-4vec-concat$
     (implies t
              (equal (4vec-concat size term1 term2)
-                    (4vec-concat$ size (bits 0 size term1)
+                    (4vec-concat$ size (bits term1 0 size )
                                   term2)))
     :hints (("Goal"
              :in-theory (e/d (4vec-concat$
@@ -540,8 +543,8 @@
                     (natp start)
                     (natp size)
                     (natp c-size))
-               (equal (bits start size (4vec-concat$ c-size term1 term2))
-                      (bits start size term1)))
+               (equal (bits (4vec-concat$ c-size term1 term2) start size )
+                      (bits term1 start size )))
       :hints (("goal"
                :in-theory (e/d (4vec-concat$
                                 4vec-part-select-of-concat-1)
@@ -555,10 +558,10 @@
                      (natp start)
                      (natp size)
                      (natp c-size))
-                (equal (bits start size (4vec-concat$ c-size term1 term2))
+                (equal (bits (4vec-concat$ c-size term1 term2) start size )
                        (4vec-concat (- c-size start)
                                     (4vec-rsh start term1)
-                                    (bits 0 (- size (- c-size start)) term2))))
+                                    (bits term2 0 (- size (- c-size start)) ))))
        :hints (("goal"
                 :in-theory (e/d (4vec-concat$
                                  4vec-part-select-of-concat-3)
@@ -570,10 +573,10 @@
                     (natp start)
                     (natp size)
                     (natp c-size))
-               (equal (bits start size (4vec-concat$ c-size term1 term2))
+               (equal (bits (4vec-concat$ c-size term1 term2) start size )
                       (4vec-concat$ (- c-size start)
-                                    (bits start (- c-size start) term1)
-                                    (bits 0 (- size (- c-size start)) term2))))
+                                    (bits term1 start (- c-size start) )
+                                    (bits term2 0 (- size (- c-size start)) ))))
       :hints (("goal"
                :use ((:instance bits-of-concat-3-lemma))
                :in-theory (e/d (4vec-concat$
@@ -587,8 +590,8 @@
                     (natp start)
                     (natp size)
                     (natp c-size))
-               (equal (bits start size (4vec-concat$ c-size term1 term2))
-                      (bits (- start c-size) size term2)))
+               (equal (bits (4vec-concat$ c-size term1 term2) start size )
+                      (bits term2 (- start c-size) size )))
       :hints (("goal"
                :in-theory (e/d (4vec-concat$
                                 4vec-part-select-of-concat-2)
@@ -625,8 +628,8 @@
                                     (integerp size))
                                 (or (quotep c-size)
                                     (integerp c-size)))))
-             (equal (bits start size (4vec-concat$ c-size term1 term2))
-                    (bits start size term1)))
+             (equal (bits (4vec-concat$ c-size term1 term2) start size )
+                    (bits term1 start size )))
     :hints (("Goal"
              :use ((:instance bits-of-concat-1-no-syntaxp))
              :in-theory (e/d ()
@@ -645,10 +648,10 @@
                                     (integerp size))
                                 (or (quotep c-size)
                                     (integerp c-size)))))
-             (equal (bits start size (4vec-concat$ c-size term1 term2))
+             (equal (bits (4vec-concat$ c-size term1 term2) start size )
                     (4vec-concat$ (- c-size start)
-                                  (bits start (- c-size start) term1)
-                                  (bits 0 (- size (- c-size start)) term2))))
+                                  (bits term1 start (- c-size start) )
+                                  (bits term2 0 (- size (- c-size start)) ))))
     :hints (("Goal"
              :use ((:instance bits-of-concat-3-no-syntaxp))
              :in-theory (e/d ()
@@ -666,8 +669,8 @@
                                     (integerp size))
                                 (or (quotep c-size)
                                     (integerp c-size)))))
-             (equal (bits start size (4vec-concat$ c-size term1 term2))
-                    (bits (- start c-size) size term2)))
+             (equal (bits (4vec-concat$ c-size term1 term2) start size )
+                    (bits term2 (- start c-size) size )))
     :hints (("Goal"
              :use ((:instance bits-of-concat-2-no-syntaxp))
              :in-theory (e/d ()
@@ -709,9 +712,9 @@
 
   (defthm 4vec-concat$-of-size=1-term2=0
     (and (equal (4vec-concat$ 1 val1 0)
-                (bits 0 1 val1))
+                (bits val1 0 1 ))
          (equal (4vec-concat 1 val1 0)
-                (bits 0 1 val1)))
+                (bits val1 0 1 )))
     :hints (("Goal"
              :in-theory (e/d (4vec-concat-of-width=1-term2=0
                               4vec-part-select
@@ -739,7 +742,7 @@
     (implies (and (natp start)
                   (natp size)
                   (syntaxp (consp (rp::ex-from-rp new-val))))
-             (equal (sbits start size (bits 0 size new-val) old-val)
+             (equal (sbits start size (bits new-val 0 size ) old-val)
                     (sbits start size new-val old-val)))
     :hints (("Goal"
              :use ((:instance 4vec-part-install-of-4vec-part-select))
@@ -759,7 +762,7 @@
   (defthmd 4vec-part-install-is-sbits
     (implies (natp size)
              (equal (4vec-part-install start size old new)
-                    (sbits start size (bits 0 size new) old)))
+                    (sbits start size (bits new 0 size ) old)))
     :hints (("Goal"
              :in-theory (e/d (sbits
                               4vec-part-install-of-4vec-part-select) ())))))
@@ -773,9 +776,9 @@
                   (integerp y)
                   (natp size)
                   (natp start))
-             (equal (bits start size (4vec-plus x y))
-                    (4vec-rsh start (4vec-plus++ (bits 0 (+ start size) x)
-                                                 (bits 0 (+ start size) y)
+             (equal (bits (4vec-plus x y) start size )
+                    (4vec-rsh start (4vec-plus++ (bits x 0 (+ start size) )
+                                                 (bits y 0 (+ start size) )
                                                  0
                                                  (+ start size)))))
     :hints (("Goal"
@@ -787,9 +790,9 @@
     (implies (and (integerp x)
                   (integerp y)
                   (natp size))
-             (equal (bits 0 size (4vec-plus x y))
-                    (4vec-plus++ (bits 0 size x)
-                                 (bits 0 size y)
+             (equal (bits (4vec-plus x y) 0 size )
+                    (4vec-plus++ (bits x 0 size)
+                                 (bits y 0 size )
                                  0
                                  size)))
     :hints (("Goal"
@@ -821,10 +824,10 @@
                   (natp size)
                   ;(natp test)
                   )
-             (equal (bits start size (4vec-?* test x y))
+             (equal (bits (4vec-?* test x y) start size )
                     (4vec-?* test
-                             (bits start size x)
-                             (bits start size y))))
+                             (bits x start size)
+                             (bits y start size))))
     :hints (("Goal"
              :in-theory (e/d (bits
                               4vec-part-select-of-4vec-?*) ()))))
@@ -834,17 +837,17 @@
                   (natp size)
                   ;(natp test)
                   )
-             (equal (bits start size (4vec-? test x y))
+             (equal (bits (4vec-? test x y) start size )
                     (4vec-? test
-                            (bits start size x)
-                            (bits start size y))))
+                            (bits x start size)
+                            (bits y start size))))
     :hints (("Goal"
              :in-theory (e/d (bits
                               4vec-part-select-of-4vec-?) ()))))
 
   (defthm bits-of-4vec-fix
-    (equal (bits start size (4vec-fix val))
-           (bits start size val))
+    (equal (bits (4vec-fix val) start size )
+           (bits val start size ))
     :hints (("Goal"
              :in-theory (e/d (bits
                               4vec-part-select)
@@ -859,7 +862,7 @@
                   (natp size1)
                   (natp size2)
                   (<= SIZE2 START1))
-             (equal (bits start1 size1 (bits start2 size2 x))
+             (equal (bits (bits x start2 size2) start1 size1 )
                     0))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-part-select-2))
@@ -872,10 +875,10 @@
                   (natp size1)
                   (natp size2)
                   (< start1 size2))
-             (equal (bits start1 size1 (bits start2 size2 x))
-                    (bits (+ start1 start2)
-                          (min size1 (- size2 start1))
-                          x)))
+             (equal (bits (bits x start2 size2) start1 size1 )
+                    (bits x
+                          (+ start1 start2)
+                          (min size1 (- size2 start1)))))
     :hints (("Goal"
              :use ((:instance 4vec-part-select-of-4vec-part-select-1))
              :in-theory (e/d () ())))))
@@ -887,7 +890,7 @@
   ;; throw and error if we cannot catch all the bits-of-sbits terms
   (def-rw-opener-error
     bits-of-sbits_opener-error
-    (bits bits-start bits-size (sbits sbits-start sbits-size new-val old-val)))
+    (bits (sbits sbits-start sbits-size new-val old-val) bits-start bits-size))
 
   (progn
     ;; below are no syntaxp lemmas. Should be left disabled for rp-rewriter but
@@ -904,14 +907,14 @@
             (< (+ s-start s-size)
                (+ start size)))
        (equal
-        (bits start size (sbits s-start s-size val old-val))
+        (bits (sbits s-start s-size val old-val) start size)
         (4vec-concat$ (- s-start start)
-                      (bits start (- s-start start)  old-val)
+                      (bits old-val start (- s-start start)  )
                       (4vec-concat$ s-size
-                                    (bits 0 s-size val)
-                                    (bits (+ s-start s-size)
-                                          (- (+ start size) (+ s-start s-size))
-                                          old-val)))))
+                                    (bits val 0 s-size )
+                                    (bits old-val
+                                          (+ s-start s-size)
+                                          (- (+ start size) (+ s-start s-size)))))))
       :hints (("Goal"
                :use ((:instance 4vec-select-of-4vec-part-install-1))
                :in-theory (e/d (4vec-concat$)
@@ -927,14 +930,15 @@
                     (< start (+ s-start s-size))
                     (< (+ s-start s-size)
                        (+ start size)))
-               (equal (bits start size (sbits s-start s-size val old-val))
+               (equal (bits (sbits s-start s-size val old-val) start size)
                       (4vec-concat$
                        (+ s-size s-start (- start))
-                       (bits (- start s-start)
-                             (+ s-size s-start (- start)) val)
-                       (bits (+ s-start s-size)
-                             (+ size start (- (+ s-start s-size)))
-                             old-val))))
+                       (bits val
+                             (- start s-start)
+                             (+ s-size s-start (- start)) )
+                       (bits old-val
+                             (+ s-start s-size)
+                             (+ size start (- (+ s-start s-size)))))))
       :hints (("Goal"
                :use ((:instance 4vec-select-of-4vec-part-install-2))
                :in-theory (e/d (4vec-concat$)
@@ -950,11 +954,11 @@
                      (< s-start (+ start size))
                      (<= (+ start size)
                          (+ s-start s-size)))
-               (equal (bits start size (sbits s-start s-size val old-val))
+               (equal (bits (sbits s-start s-size val old-val) start size )
                       (4vec-concat$
                        (- s-start start)
-                       (bits start (- s-start start) old-val)
-                       (bits 0 (+ start size (- s-start)) val))))
+                       (bits old-val start (- s-start start) )
+                       (bits val 0 (+ start size (- s-start)) ))))
       :hints (("Goal"
                :use ((:instance 4vec-select-of-4vec-part-install-3))
                :in-theory (e/d (4vec-concat$)
@@ -969,10 +973,11 @@
                     (natp s-size)
                     (<= (+ start size)
                         (+ s-start s-size)))
-               (equal (bits start size (sbits s-start s-size val old-val))
-                      (bits (- start s-start)
+               (equal (bits (sbits s-start s-size val old-val) start size)
+                      (bits val
+                            (- start s-start)
                             size
-                            val)))
+                            )))
       :hints (("Goal"
                :use ((:instance 4vec-select-of-4vec-part-install-4))
                :in-theory (e/d ()
@@ -986,8 +991,8 @@
                     (natp s-size)
                     (or (<= (+ start size) s-start)
                         (<= (+ s-start s-size) start)))
-               (equal (bits start size (sbits s-start s-size val old-val))
-                      (bits start size old-val)))
+               (equal (bits (sbits s-start s-size val old-val) start size )
+                      (bits old-val start size )))
       :hints (("Goal"
                :use ((:instance 4vec-select-of-4vec-part-install-5))
                :in-theory (e/d () ())))))
@@ -1009,14 +1014,15 @@
                         (or (quotep s-size)
                             (integerp s-size)))))
      (equal
-      (bits start size (sbits s-start s-size val old-val))
+      (bits (sbits s-start s-size val old-val) start size )
       (4vec-concat$ (- s-start start)
-                    (bits start (- s-start start)  old-val)
+                    (bits old-val start (- s-start start)  )
                     (4vec-concat$ s-size
-                                  (bits 0 s-size val)
-                                  (bits (+ s-start s-size)
+                                  (bits val 0 s-size )
+                                  (bits old-val
+                                        (+ s-start s-size)
                                         (- (+ start size) (+ s-start s-size))
-                                        old-val)))))
+                                        )))))
     :hints (("Goal"
              :use ((:instance bits-of-sbits-1-no-syntaxp))
              :in-theory (e/d () ()))))
@@ -1037,14 +1043,16 @@
                                     (integerp size))
                                 (or (quotep s-size)
                                     (integerp s-size)))))
-             (equal (bits start size (sbits s-start s-size val old-val))
+             (equal (bits (sbits s-start s-size val old-val) start size )
                     (4vec-concat$
                      (+ s-size s-start (- start))
-                     (bits (- start s-start)
-                           (+ s-size s-start (- start)) val)
-                     (bits (+ s-start s-size)
+                     (bits val
+                           (- start s-start)
+                           (+ s-size s-start (- start)) )
+                     (bits old-val
+                           (+ s-start s-size)
                            (+ size start (- (+ s-start s-size)))
-                           old-val))))
+                           ))))
     :hints (("Goal"
              :use ((:instance bits-of-sbits-2-no-syntaxp))
              :in-theory (e/d () ()))))
@@ -1065,11 +1073,13 @@
                                      (integerp size))
                                  (or (quotep s-size)
                                      (integerp s-size)))))
-             (equal (bits start size (sbits s-start s-size val old-val))
+             (equal (bits (sbits s-start s-size val old-val)
+                          start size )
                     (4vec-concat$
                      (- s-start start)
-                     (bits start (- s-start start) old-val)
-                     (bits 0 (+ start size (- s-start)) val))))
+                     (bits old-val start (- s-start start) )
+                     (bits val
+                           0 (+ start size (- s-start)) ))))
     :hints (("Goal"
              :use ((:instance bits-of-sbits-3-no-syntaxp))
              :in-theory (e/d () ()))))
@@ -1089,10 +1099,11 @@
                                     (integerp size))
                                 (or (quotep s-size)
                                     (integerp s-size)))))
-             (equal (bits start size (sbits s-start s-size val old-val))
-                    (bits (- start s-start)
+             (equal (bits (sbits s-start s-size val old-val) start size )
+                    (bits val
+                          (- start s-start)
                           size
-                          val)))
+                          )))
     :hints (("Goal"
              :use ((:instance bits-of-sbits-4-no-syntaxp))
              :in-theory (e/d () ()))))
@@ -1111,8 +1122,8 @@
                                     (integerp size))
                                 (or (quotep s-size)
                                     (integerp s-size)))))
-             (equal (bits start size (sbits s-start s-size val old-val))
-                    (bits start size old-val)))
+             (equal (bits (sbits s-start s-size val old-val) start size )
+                    (bits old-val start size )))
     :hints (("Goal"
              :use ((:instance bits-of-sbits-5-no-syntaxp))
              :in-theory (e/d () ())))))
@@ -1120,7 +1131,7 @@
 (defthm bits-of-0
   (implies (and (natp start)
                 (natp size))
-           (equal (bits start size 0)
+           (equal (bits 0 start size)
                   0))
   :hints (("Goal"
            :in-theory (e/d (bits
@@ -1234,7 +1245,7 @@
    (use-arithmetic-5 t))
 
   (defthm 4vec-p-bits
-    (4vec-p (bits start size val))
+    (4vec-p (bits val start size ))
     :hints (("Goal"
              :in-theory (e/d (bits)
                              ()))))
@@ -1259,7 +1270,7 @@
     (implies (and (integerp x)
                   (natp size)
                   (natp start))
-             (integerp (bits start size x)))
+             (integerp (bits x start size)))
     :hints (("Goal"
              :in-theory (e/d (bits)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
@@ -1284,7 +1295,7 @@
     (implies (and (integerp x)
                   (natp size)
                   (natp start))
-             (natp (bits start size x)))
+             (natp (bits x start size)))
     :hints (("Goal"
              :in-theory (e/d (bits)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
@@ -1292,7 +1303,7 @@
   (defthm bitp-bits-size=1
     (implies (and (integerp x)
                   (natp start))
-             (bitp (bits start 1 x)))
+             (bitp (bits x start 1)))
     :hints (("Goal"
              :in-theory (e/d (bits
                               SV::4VEC->LOWER
@@ -1307,7 +1318,7 @@
   (defthm bit$-of-negated-bit
     (implies (and (bitp x)
                   (natp start))
-             (equal (bits start 1 (- x))
+             (equal (bits (- x) start 1 )
                     x))
     :hints (("Goal"
              :do-not '(preprocess)
@@ -1374,7 +1385,7 @@
     (implies (and (integerp x)
                   (natp start)
                   (natp size))
-             (bitp (bits start 1 (4vec-bitnot x))))
+             (bitp (bits (4vec-bitnot x) start 1 )))
     :hints (("Goal"
              :do-not '(preprocess)
              :in-theory (e/d (bitp
@@ -1397,7 +1408,7 @@
     (implies (and (integerp x)
                   (natp start)
                   (natp size))
-             (bitp (bits start 1 (4vec-bitnot$ size x))))
+             (bitp (bits (4vec-bitnot$ size x) start 1 )))
     :hints (("Goal"
              :do-not '(preprocess)
              :cases ((< START SIZE))
@@ -1425,11 +1436,11 @@
                   (integerp y)
                   (natp size))
              (and (integerp (4vec-concat$ size
-                                          (4vec-bitnot$ size (bits 0 size x))
+                                          (4vec-bitnot$ size (bits x 0 size))
                                           (4vec-bitnot y)))
-                  (integerp (4vec-bitnot$ size (bits 0 size x)))
+                  (integerp (4vec-bitnot$ size (bits x 0 size)))
                   (integerp (4vec-bitnot y))
-                  (integerp (bits 0 size x))))
+                  (integerp (bits x 0 size))))
     :hints (("Goal"
              :in-theory (e/d () ()))))
 
@@ -1440,8 +1451,8 @@
 (defthm 4vec-fix-of-functions
   (and (equal (4vec-fix (4vec-bitnot s))
               (4vec-bitnot s))
-       (equal (4vec-fix (bits start size val))
-              (bits start size val))
+       (equal (4vec-fix (bits val start size ))
+              (bits val start size ))
        (equal (4vec-fix (sbits start size new old))
               (sbits start size new old))
        (equal (4vec-fix (4vec-bitnot$ size val))
@@ -1452,8 +1463,8 @@
 (defthm 4vec-fix2-of-functions
   (and (equal (4vec-fix2 (4vec-bitnot s))
               (4vec-bitnot s))
-       (equal (4vec-fix2 (bits start size val))
-              (bits start size val))
+       (equal (4vec-fix2 (bits val start size ))
+              (bits val start size ))
        (equal (4vec-fix2 (sbits start size new old))
               (sbits start size new old))
        (equal (4vec-fix2 (4vec-bitnot$ size val))
@@ -1493,7 +1504,7 @@
 (defthm 4vec-part-select-is-bits
   (implies t
            (equal (4vec-part-select start size x)
-                  (bits start size x)))
+                  (bits x start size)))
   :hints (("Goal"
            :in-theory (e/d (bits) ()))))
 

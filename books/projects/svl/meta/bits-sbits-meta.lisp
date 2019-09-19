@@ -38,9 +38,9 @@
 
   (define is-bits-of-sbits (term)
     (case-match term
-      (('bits ('quote &)
+      (('bits sbits
               ('quote &)
-              sbits)
+              ('quote &))
        (b* ((sbits (rp::ex-from-rp sbits)))
          (case-match sbits
            (('sbits ('quote &) ('quote &) & &)
@@ -52,9 +52,10 @@
     (defthm is-bits-of-sbits-implies
       (implies (is-bits-of-sbits term)
                (case-match term
-                 (('bits ('quote &)
+                 (('bits sbits
                          ('quote &)
-                         sbits)
+                         ('quote &)
+                         )
                   (b* ((sbits (rp::ex-from-rp sbits)))
                     (case-match sbits
                       (('sbits ('quote &) ('quote &) & &)
@@ -66,14 +67,14 @@
 
   (define is-bits-of-sbits-loose (term)
     (case-match term
-      (('bits & & ('sbits & & & &))
+      (('bits ('sbits & & & &) & & )
        t)
       (& nil))
     ///
     (defthm is-bits-of-sbits-loose-implies
       (implies (is-bits-of-sbits-loose term)
                (case-match term
-                 (('bits & & ('sbits & & & &))
+                 (('bits ('sbits & & & &) & & )
                   t)
                  (& nil)))
       :rule-classes :forward-chaining))
@@ -81,14 +82,14 @@
   (define is-bits-of-rsh (term)
   ;;;;; change to accomodate rp terms as well!
     (case-match term
-      (('bits ('quote &) ('quote &) ('4vec-rsh ('quote &) &))
+      (('bits ('4vec-rsh ('quote &) &) ('quote &) ('quote &) )
        t)
       (& nil))
     ///
     (defthm is-bits-of-rsh-implies
       (implies (is-bits-of-rsh term)
                (case-match term
-                 (('bits ('quote &) ('quote &) ('4vec-rsh ('quote &) &))
+                 (('bits ('4vec-rsh ('quote &) &) ('quote &) ('quote &) )
                   t)
                  (& nil)))
       :rule-classes :forward-chaining))
@@ -96,42 +97,42 @@
   (define is-bits-of-concat (term)
   ;;;;; change to accomodate rp terms as well!
     (case-match term
-      (('bits ('quote &) ('quote &) ('4vec-concat$ ('quote &) & &))
+      (('bits ('4vec-concat$ ('quote &) & &) ('quote &) ('quote &) )
        t)
       (& nil))
     ///
     (defthm is-bits-of-concat-implies
       (implies (is-bits-of-concat term)
                (case-match term
-                 (('bits ('quote &) ('quote &) ('4vec-concat$ ('quote &) & &))
+                 (('bits ('4vec-concat$ ('quote &) & &) ('quote &) ('quote &) )
                   t)
                  (& nil)))
       :rule-classes :forward-chaining))
 
   (define is-bits-of-bits (term)
     (case-match term
-      (('bits ('quote &) ('quote &) ('bits ('quote &) ('quote &) &))
+      (('bits ('bits & ('quote &) ('quote &)) ('quote &) ('quote &) )
        t)
       (& nil))
     ///
     (defthm is-bits-of-bits-implies
       (implies (is-bits-of-bits term)
                (case-match term
-                 (('bits ('quote &) ('quote &) ('bits ('quote &) ('quote &) &))
+                 (('bits ('bits & ('quote &) ('quote &)) ('quote &) ('quote &) )
                   t)
                  (& nil)))
       :rule-classes :forward-chaining))
 
   (define is-bits-0-1-of-a-bitp (term)
     (case-match term
-      (('bits ''0 ''1 ('rp ''bitp &))
+      (('bits ('rp ''bitp &) ''0 ''1 )
        t)
       (& nil))
     ///
     (defthm is-bits-0-1-of-a-bitp-implies
       (implies (is-bits-0-1-of-a-bitp term)
                (case-match term
-                 (('bits ''0 ''1 ('rp ''bitp &))
+                 (('bits ('rp ''bitp &) ''0 ''1 )
                   t)
                  (& nil)) )
       :rule-classes :forward-chaining))
@@ -140,9 +141,9 @@
     (declare (xargs :mode :program))
     (cond
      ((is-bits-of-sbits term)
-      (b* ((start (car (cdr (car (cdr term)))))
-           (size (car (cdr (car (cdr (cdr term))))))
-           (sbits (car (cdr (cdr (cdr term)))))
+      (b* ((start (car (cdr (car (cddr term)))))
+           (size (car (cdr (car (cddr (cdr term))))))
+           (sbits (car (cdr term)))
            (sbits (rp::ex-from-rp sbits))
            (s-start (car (cdr (car (cdr sbits)))))
            (s-size (car (cdr (car (cdr (cdr sbits))))))
@@ -159,19 +160,19 @@
            (mv term nil)))
          ((or (<= (+ start size) s-start) ;;case5
               (<= (+ s-start s-size) start))
-          (bits-of-meta-fn `(bits ',start ',size ,old-val)))
+          (bits-of-meta-fn `(bits ,old-val ',start ',size)))
          ((and (<= (+ start size) ;;case4
                    (+ s-start s-size))
                (<= s-start start))
-          (bits-of-meta-fn `(bits ',(- start s-start) ',size ,val)))
+          (bits-of-meta-fn `(bits ,val ',(- start s-start) ',size )))
          ((and (< start s-start) ;;case 3
                (< s-start (+ start size))
                (<= (+ start size)
                    (+ s-start s-size)))
           (b* (((mv rest-term rest-dontrw)
-                (bits-of-meta-fn `(bits ',start ',(- s-start start) ,old-val)))
+                (bits-of-meta-fn `(bits ,old-val ',start ',(- s-start start) )))
                ((mv rest-term2 rest-dontrw2)
-                (bits-of-meta-fn `(bits '0 ',(+ start size (- s-start)) ,val))))
+                (bits-of-meta-fn `(bits ,val '0 ',(+ start size (- s-start)) ))))
             (mv `(4vec-concat$ ',(- s-start start)
                                ,rest-term
                                ,rest-term2)
@@ -183,13 +184,14 @@
                (< (+ s-start s-size)
                   (+ start size)))
           (b* (((mv rest-term rest-dontrw)
-                (bits-of-meta-fn `(bits ',(- start s-start)
+                (bits-of-meta-fn `(bits ,val
+                                        ',(- start s-start)
                                         ',(+ s-size s-start (- start))
-                                        ,val)))
+                                        )))
                ((mv rest-term2 rest-dontrw2)
-                (bits-of-meta-fn `(bits ',(+ s-start s-size)
-                                        ',(+ size start (- (+ s-start s-size)))
-                                        ,old-val))))
+                (bits-of-meta-fn `(bits ,old-val
+                                        ',(+ s-start s-size)
+                                        ',(+ size start (- (+ s-start s-size)))))))
             (mv `(4vec-concat$
                   ',(+ s-size s-start (- start))
                   ,rest-term
@@ -203,13 +205,14 @@
                (< (+ s-start s-size)
                   (+ start size)))
           (b* (((mv rest-term2 rest-dont-rw2)
-                (bits-of-meta-fn `(bits ',start ',(- s-start start) ,old-val)))
+                (bits-of-meta-fn `(bits ,old-val ',start ',(- s-start start) )))
                ((mv rest-term3 rest-dont-rw3)
-                (bits-of-meta-fn `(bits '0 ',s-size ,val)))
+                (bits-of-meta-fn `(bits ,val '0 ',s-size )))
                ((mv rest-term4 rest-dont-rw4)
-                (bits-of-meta-fn `(bits ',(+ s-start s-size)
+                (bits-of-meta-fn `(bits ,old-val
+                                        ',(+ s-start s-size)
                                         ',(- (+ start size) (+ s-start s-size))
-                                        ,old-val))))
+                                        ))))
             (mv `(4vec-concat$ ',(- s-start start)
                                ,rest-term2
                                (4vec-concat$ ',s-size ,rest-term3 ,rest-term4))
@@ -222,26 +225,26 @@
            (hard-error 'bits-of-meta-fn "error" nil)
            (mv term nil))))))
      ((is-bits-of-rsh term)
-      (let ((start (car (cdr (car (cdr term)))))
-            (size (car (cdr (car (cdr (cdr term))))))
-            (rsh-size (car (cdr (car (cdr (car (cdr (cdr (cdr term)))))))))
-            (val (car (cdr (cdr (car (cdr (cdr (cdr term)))))))))
+      (let ((start (car (cdr (car (cddr term)))))
+            (size (car (cdr (car (cdr (cddr term))))))
+            (rsh-size (car (cdr (car (cdr (car (cdr term)))))))
+            (val (car (cdr (cdr (car (cdr term)))))))
 
         (if (and (natp start)
                  (natp size)
                  (natp rsh-size))
-            (bits-of-meta-fn `(bits ',(+ start rsh-size) ',size ,val))
+            (bits-of-meta-fn `(bits ,val ',(+ start rsh-size) ',size ))
           (progn$
            (cw "unexpected instance of bits of rsh ~%")
            (hard-error 'bits-of-meta-fn "error" nil)
            (mv term nil)))))
 
      ((is-bits-of-concat term)
-      (let ((start (car (cdr (car (cdr term)))))
-            (size (car (cdr (car (cdr (cdr term))))))
-            (c-size (car (cdr (car (cdr (car (cdr (cdr (cdr term)))))))))
-            (term1 (car (cdr (cdr (car (cdr (cdr (cdr term))))))))
-            (term2 (car (cdr (cdr (cdr (car (cdr (cdr (cdr term))))))))))
+      (let ((start (car (cdr (car (cddr term)))))
+            (size (car (cdr (car (cddr (cdr term))))))
+            (c-size (car (cdr (car (cdr (car (cdr term)))))))
+            (term1 (car (cdr (cdr (car (cdr term))))))
+            (term2 (car (cdr (cdr (cdr (car (cdr term))))))))
         (cond ((not (and (natp start)
                          (natp size)
                          (natp c-size)))
@@ -250,15 +253,17 @@
                 (hard-error 'bits-of-meta-fn "error" nil)
                 (mv term nil)))
               ((<= c-size start) ;;case 2
-               (bits-of-meta-fn `(bits ',(- start c-size) ',size ,term2)))
+               (bits-of-meta-fn `(bits ,term2 ',(- start c-size) ',size )))
               ((and (< start c-size) ;; case 3
                     (< c-size (+ start size)))
                (b* (((mv rest-term1 rest-dontrw1)
-                     (bits-of-meta-fn `(bits ',start ',(- c-size start)
-                                             ,term1)))
+                     (bits-of-meta-fn `(bits ,term1
+                                             ',start ',(- c-size start)
+                                             )))
                     ((mv rest-term2 rest-dontrw2)
-                     (bits-of-meta-fn `(bits '0 ',(- size (- c-size start))
-                                             ,term2))))
+                     (bits-of-meta-fn `(bits ,term2
+                                             '0 ',(- size (- c-size start))
+                                             ))))
                  (mv `(4vec-concat$ ',(- c-size start)
                                     ,rest-term1
                                     ,rest-term2)
@@ -266,19 +271,17 @@
                            ,rest-dontrw1
                            ,rest-dontrw2))))
               ((<= (+ start size) c-size)
-               (bits-of-meta-fn `(bits ',start ',size ,term1)))
+               (bits-of-meta-fn `(bits ,term1 ',start ',size )))
               (t
                (progn$
                 (cw "unexpected instance of bits of concats ~%")
                 (hard-error 'bits-of-meta-fn "error" nil)
                 (mv term nil))))))
      ((is-bits-0-1-of-a-bitp term)
-      (bits-of-meta-fn (cadddr term)))
+      (bits-of-meta-fn (cadr term)))
      ((is-bits-of-bits term)
       (case-match term
-        (('bits ('quote start1) ('quote size1) ('bits ('quote start2) ('quote
-                                                                       size2)
-                                                      x))
+        (('bits ('bits x ('quote start2) ('quote size2)) ('quote start1) ('quote size1))
          (cond ((not (and (natp start1)
                           (natp start2)
                           (natp size1)
@@ -288,19 +291,34 @@
                  (hard-error 'bits-of-meta-fn "error" nil)
                  (mv term nil)))
                ((< start1 size2)
-                (bits-of-meta-fn  `(BITS ',(+ START1 START2)
-                                         ',(MIN SIZE1 (- SIZE2 START1))
-                                         ,x)))
+                (bits-of-meta-fn  `(bits ,x
+                                         ',(+ start1 start2)
+                                         ',(min size1 (- size2 start1))
+                                         )))
                (t (mv ''0 t))))
         (& (mv term nil))))
      (t
       (case-match term
-        (('bits ('quote &) ('quote &) &)
+        (('bits & ('quote &) ('quote &))
          (mv term `(nil t t t)))
         (& (mv term t)))))))
 
 (encapsulate
   nil
+
+  (local
+   (defthm m-lemma1
+     (implies (or (IS-BITS-OF-CONCAT TERM)
+                  (IS-BITS-OF-RSH term))
+               (and (O< (+ 8 (CONS-COUNT (CADDR (CADR TERM))))
+                        (CONS-COUNT TERM))
+                    (O< (+ 8 (CONS-COUNT (CADDDR (CADR TERM))))
+                        (CONS-COUNT TERM))))
+          
+     :hints (("Goal"
+              :in-theory (e/d (CONS-COUNT IS-BITS-OF-CONCAT
+                                          IS-BITS-OF-RSH) ())))))
+  
   (verify-termination
     bits-of-meta-fn
     (declare
@@ -444,12 +462,12 @@
                        (mv `(sv::4vec-fix$inline ,term2) `(nil t)))
                       ((and (equal size1 1)
                             (equal term2 ''0))
-                       (mv `(bits '0 '1 ,term1)
+                       (mv `(bits ,term1 '0 '1 )
                            `(nil t t t)))
                       (t
                        (mv
                         `(4vec-concat$ ',size1
-                                       (bits '0 ',size1 ,term1)
+                                       (bits ,term1 '0 ',size1 )
                                        ,term2)
                         `(nil t (nil t t t) t)))))
                (& (mv term t))))
@@ -725,17 +743,20 @@
 
   (local
    (defthmd rp-evl-of-ex-from-rp-reverse
-     (equal (rp::rp-evl x a)
-            (rp::rp-evl (rp::ex-from-rp x) a))
+     (implies (syntaxp (or (atom x)
+                           (not (equal (car x)
+                                       'rp::ex-from-rp))))
+              (equal (rp::rp-evl x a)
+                     (rp::rp-evl (rp::ex-from-rp x) a)))
      :hints (("goal"
               :in-theory '(rp-evl-of-ex-from-rp)))))
 
   (local
    (defthm valid-sc-bits-instance
-     (equal (rp::valid-sc (list 'bits (list 'quote x) (list 'quote y) term) a)
+     (equal (rp::valid-sc (list 'bits term (list 'quote x) (list 'quote y) ) a)
             (rp::valid-sc term a))
      :hints (("goal"
-              :expand ((rp::valid-sc (list 'bits (list 'quote x) (list 'quote y) term) a))
+              :expand ((rp::valid-sc (list 'bits term (list 'quote x) (list 'quote y)) a))
               :in-theory (e/d (rp::is-rp rp::is-if) ())))))
 
   (local
@@ -747,17 +768,28 @@
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state)
                    (rp::valid-sc term a))
-              (bitp (rp::rp-evl (caddr (cadddr term)) a)))
+              (bitp (rp::rp-evl (caddr (cadr term)) a)))
      :hints (("goal"
-              :expand      ((rp::valid-sc (cadddr term) a)
-                            (rp::valid-sc-subterms (cdddr term) a)
-                            (rp::valid-sc-subterms (cddr term) a)
-                            (rp::valid-sc-subterms (cdr term) a)
-                            (rp::valid-sc term a)
-                            (rp::context-from-rp (cadddr term) nil))
+              :do-not '(preprocess)
+              :expand ((rp::valid-sc (cadr term) a)
+                       (RP::EX-FROM-RP (CADR TERM))
+                       (RP::CONTEXT-FROM-RP (CADR TERM) NIL)
+                       (RP::VALID-SC (RP::EX-FROM-RP (CADR TERM))
+                                     A)
+                       (RP::VALID-SC (RP::EX-FROM-RP (CADDR (CADR TERM)))
+                                     A)
+                       (RP::EX-FROM-RP (LIST 'BITP
+                                   (RP::EX-FROM-RP (CADDR (CADR TERM)))))
+                       (rp::valid-sc-subterms (cdddr term) a)
+                       (rp::valid-sc-subterms (cddr term) a)
+                       (rp::valid-sc-subterms (cdr term) a)
+                       (rp::valid-sc term a)
+                       (rp::context-from-rp (cadddr term) nil))
               :in-theory (e/d (is-bits-0-1-of-a-bitp
+                               rp-evl-of-ex-from-rp
                                rp::is-if rp::is-rp)
-                              (bitp))))))
+                              (bitp
+                               ))))))
 
   (local
    (defthm valid-sc-implies-when-is-bits-of-sbits
@@ -765,16 +797,17 @@
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state)
                    (is-bits-of-sbits term))
-              (and (rp::valid-sc (cadddr (rp::ex-from-rp (cadddr term)))
+              (and (rp::valid-sc (cadddr (rp::ex-from-rp (cadr term)))
                                  a)
-                   (rp::valid-sc (car (cddddr (rp::ex-from-rp (cadddr term))))
+                   (rp::valid-sc (car (cddddr (rp::ex-from-rp (cadr term))))
                                  a)))
      :hints (("goal"
               :expand ((rp::valid-sc-subterms (cdr term) a)
                        (rp::valid-sc term a)
                        (rp::valid-sc-subterms (cdddr term) a)
                        (rp::valid-sc-subterms (cddr term) a)
-                       (rp::valid-sc (cadddr term) a))
+                       (rp::valid-sc (cadddr term) a)
+                       (RP::VALID-SC (CADR TERM) A))
               :in-theory (e/d (rp::is-rp
                                is-bits-of-sbits
                                rp::ex-from-rp
@@ -785,20 +818,20 @@
      (implies (and (syntaxp (equal term 'term))
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state))
-              (equal (rp::rp-evl (cadddr term) a)
-                     (rp::rp-evl (rp::ex-from-rp (cadddr term)) a)))))
+              (equal (rp::rp-evl (cadr term) a)
+                     (rp::rp-evl (rp::ex-from-rp (cadr term)) a)))))
 
   (local
    (defthm rp-evl-of-sbits-when-is-bits-of-sbits
      (implies (and (is-bits-of-sbits term)
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state))
-              (EQUAL (rp::rp-evl (cadddr term) a)
-                     (sbits (cadr (cadr (rp::ex-from-rp (cadddr term))))
-                            (cadr (caddr (rp::ex-from-rp (cadddr term))))
-                            (rp::rp-evl (cadddr (rp::ex-from-rp (cadddr term)))
+              (EQUAL (rp::rp-evl (cadr term) a)
+                     (sbits (cadr (cadr (rp::ex-from-rp (cadr term))))
+                            (cadr (caddr (rp::ex-from-rp (cadr term))))
+                            (rp::rp-evl (cadddr (rp::ex-from-rp (cadr term)))
                                         a)
-                            (rp::rp-evl (car (cddddr (rp::ex-from-rp (cadddr term))))
+                            (rp::rp-evl (car (cddddr (rp::ex-from-rp (cadr term))))
                                         a))))
      :hints (("goal"
               :in-theory (e/d (is-bits-of-sbits
@@ -847,12 +880,12 @@
   (local
    (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma2
      (implies (syntaxp (equal term 'term))
-              (equal (rp::rp-syntaxp (cadddr term))
-                     (rp::rp-syntaxp (rp::ex-from-rp (cadddr term)))))
+              (equal (rp::rp-syntaxp (cadr term))
+                     (rp::rp-syntaxp (rp::ex-from-rp (cadr term)))))
      :rule-classes :rewrite
      :hints (("Goal"
               :use ((:instance rp-syntaxp-when-is-bits-of-sbits-lemma1
-                               (term (cadddr term))))
+                               (term (cadr term))))
               :in-theory (e/d (rp::ex-from-rp
                                rp::is-rp) ())))))
 
@@ -860,17 +893,17 @@
    (defthm rp-syntaxp-when-is-bits-of-sbits
      (implies (and (is-bits-of-sbits term)
                    (rp::rp-syntaxp term))
-              (and (rp::rp-syntaxp (cadddr (rp::ex-from-rp (cadddr term))))
-                   (rp::rp-syntaxp (car (cddddr (rp::ex-from-rp (cadddr
+              (and (rp::rp-syntaxp (cadddr (rp::ex-from-rp (cadr term))))
+                   (rp::rp-syntaxp (car (cddddr (rp::ex-from-rp (cadr
                                                                  term)))))))
      :hints (("goal"
               :do-not '(preprocess)
-              :expand ((RP::RP-SYNTAXP-LST (CDDDR (RP::EX-FROM-RP (CADDDR
+              :expand ((RP::RP-SYNTAXP-LST (CDDDR (RP::EX-FROM-RP (CADR
                                                                    TERM))))
-                       (RP::RP-SYNTAXP-LST (CDDR (RP::EX-FROM-RP (CADDDR
+                       (RP::RP-SYNTAXP-LST (CDDR (RP::EX-FROM-RP (CADR
                                                                   TERM))))
-                       (RP::RP-SYNTAXP-LST (CDR (RP::EX-FROM-RP (CADDDR TERM))))
-                       (RP::RP-SYNTAXP (RP::EX-FROM-RP (CADDDR TERM))))
+                       (RP::RP-SYNTAXP-LST (CDR (RP::EX-FROM-RP (CADR TERM))))
+                       (RP::RP-SYNTAXP (RP::EX-FROM-RP (CADR TERM))))
               :in-theory (e/d (is-bits-of-sbits
                                rp-syntaxp-when-is-bits-of-sbits-lemma2) ())))))
 
@@ -892,7 +925,7 @@
    (defthm pseudo-termp2-bits-of-meta-fn-lemma1
      (implies (and (IS-BITS-OF-CONCAT TERM)
                    (rp::pseudo-termp2 term))
-              (RP::PSEUDO-TERMP2 (CADDDR (CADDDR TERM))))
+              (RP::PSEUDO-TERMP2 (CADDDR (CADR TERM))))
      :hints (("Goal"
               :in-theory (e/d (IS-BITS-OF-CONCAT) ())))))
 
@@ -908,13 +941,13 @@
    (defthm pseudo-termp2-bits-of-meta-fn-when-IS-BITS-OF-SBITS
      (implies (and (IS-BITS-OF-SBITS TERM)
                    (rp::pseudo-termp2 term))
-              (and (RP::PSEUDO-TERMP2 (CAR (CDDDDR (RP::EX-FROM-RP (CADDDR
+              (and (RP::PSEUDO-TERMP2 (CAR (CDDDDR (RP::EX-FROM-RP (CADR
                                                                     TERM)))))
-                   (RP::PSEUDO-TERMP2 (CADDDR (RP::EX-FROM-RP (CADDDR TERM))))))
+                   (RP::PSEUDO-TERMP2 (CADDDR (RP::EX-FROM-RP (CADR TERM))))))
      :hints (("Goal"
               :use ((:instance
                      pseudo-termp2-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma1
-                     (term (cadddr term))))
+                     (term (cadr term))))
 ; :expand ((rp::pseudo-termp2 (rp::ex-from-rp (cadddr term))))
               :in-theory (e/d (IS-BITS-OF-SBITS
                                rp::ex-from-rp) ())))))
@@ -932,7 +965,30 @@
                                (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
                                (:REWRITE COMMUTATIVITY-OF-+)
                                (:DEFINITION NATP)
-                               (:DEFINITION TRUE-LISTP)))))))
+                               (:DEFINITION MIN)
+                               (:REWRITE BITP-IMPLIES-NATP)
+                               (:DEFINITION BITP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:DEFINITION SUBSETP-EQUAL)
+                               (:DEFINITION MEMBER-EQUAL)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE
+                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                               (:REWRITE DEFAULT-CAR)
+                               (:TYPE-PRESCRIPTION MEMBER-EQUAL)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE
+                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
+                               (:REWRITE
+                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-2)
+                               (:DEFINITION ACL2::WEAK-APPLY$-BADGE-P)
+                               (:TYPE-PRESCRIPTION LEN)
+                               (:DEFINITION LEN)
+                               (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+                               (:DEFINITION TRUE-LISTP)
+                               (:REWRITE DEFAULT-+-2)
+                               (:REWRITE DEFAULT-+-1)))))))
 
   (local
    (defthmd all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
@@ -947,13 +1003,13 @@
      (implies (and (IS-BITS-OF-SBITS TERM)
                    (rp::all-falist-consistent term))
               (and (RP::ALL-FALIST-CONSISTENT (CAR (CDDDDR (RP::EX-FROM-RP
-                                                            (CADDDR TERM)))))
-                   (RP::ALL-FALIST-CONSISTENT (CADDDR (RP::EX-FROM-RP (CADDDR
+                                                            (CADR TERM)))))
+                   (RP::ALL-FALIST-CONSISTENT (CADDDR (RP::EX-FROM-RP (CADR
                                                                        TERM))))))
      :hints (("Goal"
               :use ((:instance
                      all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
-                     (term (cadddr term))))
+                     (term (cadr term))))
               :in-theory (e/d (IS-BITS-OF-SBITS) ())))))
 
   (local
@@ -993,6 +1049,20 @@
              :in-theory (e/d (rp::is-if rp::is-rp)
                              (rp::INCLUDE-FNC
                               (:DEFINITION NOT)
+                              (:REWRITE BITP-IMPLIES-NATP)
+                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                              (:DEFINITION BITP)
+                              (:DEFINITION ACL2::APPLY$-BADGEP)
+                              (:DEFINITION SUBSETP-EQUAL)
+                              (:DEFINITION MEMBER-EQUAL)
+                              (:REWRITE DEFAULT-CDR)
+                              (:REWRITE
+                               ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                              (:REWRITE DEFAULT-CAR)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:DEFINITION RP::EVAL-AND-ALL)
+                              (:REWRITE
+                                    ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
                               (:DEFINITION natp))))))
 
   (defthm valid-rp-meta-rulep-bits-of-meta-fn

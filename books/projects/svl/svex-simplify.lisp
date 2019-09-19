@@ -289,7 +289,7 @@
     (('svl::4vec-bitand$ size x y)  `(partsel 0 ,size (sv::bitand ,x ,y)))
     (('svl::4vec-bitxor$ size x y)  `(partsel 0 ,size (sv::bitxor ,x ,y)))
 
-    (('svl::bits & & &)          (cons 'sv::partsel  (cdr term)))
+    (('svl::bits val s w)        (list 'sv::partsel s w val))
     (('svl::sbits s w new old)   (list 'sv::partinst s w old new))
     (('svl::4vec-concat$ & & &)  (cons 'sv::concat   (cdr term)))
     
@@ -432,8 +432,8 @@
           (4vec-concat$ '1
                         (bits '0 '1 (rp '4vec-p x))
                         (4vec-concat$ '1
-                                      (bits '0 '1 (rp '4vec-p y))
-                                      (bits '0 '1 (rp '4vec-p z)))))
+                                      (bits (rp '4vec-p y) '0 '1)
+                                      (bits (rp '4vec-p z) '0 '1))))
  })
 
 <p> Users may also add more rewrite rules to have a different rewriting scheme than the
