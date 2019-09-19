@@ -6,6 +6,7 @@
 (in-package "CGEN")
 
 (include-book "std/util/bstar" :dir :system)
+(include-book "acl2s/utilities" :dir :system)
 
 ;;;;naming convention (only for readability):
 ;;;;  function: end with $ for each stobj updating/creating function
@@ -188,7 +189,7 @@
 (defmacro mksym (&rest args)
   "given a sequence of symbols or strings as args,
    it returns the concatenated symbol"
-  `(intern-in-package-of-symbol
+  `(acl2s::fix-intern-in-pkg-of-sym
     (concatenate-names (list ,@args))
     mksym-ps));mksym-package-symbol
 
@@ -205,8 +206,8 @@
          (name (string-append prefix name))
          (name (string-append name postfix)))
     (if (member-eq sym *common-lisp-symbols-from-main-lisp-package*)
-      (intern-in-package-of-symbol name 'acl2::acl2-pkg-witness)
-      (intern-in-package-of-symbol name sym))))
+      (acl2s::fix-intern-in-pkg-of-sym name 'acl2::acl2-pkg-witness)
+      (acl2s::fix-intern-in-pkg-of-sym name sym))))
 
 (defun modify-symbol-lst (prefix syms postfix)
   (declare (xargs :guard (and (symbol-listp syms)
@@ -323,7 +324,7 @@
    (STR/SYM-LISTP (LIST "_" NM))
    (SYMBOLP MKSYM-PS)
    (LET
-    ((PREFIX (INTERN-IN-PACKAGE-OF-SYMBOL (CONCATENATE-NAMES (LIST "_" NM))
+    ((PREFIX (ACL2S::FIX-INTERN-IN-PKG-OF-SYM (CONCATENATE-NAMES (LIST "_" NM))
                                           MKSYM-PS)))
     (AND
      (ALISTP FNS)
@@ -528,11 +529,11 @@ General form: ~
 ;;       (cons
 ;;        (if (atom (car pairs))
 ;;            (list (car pairs) `(acl2::access ,recname ,var
-;;                                             ,(intern-in-package-of-symbol
+;;                                             ,(acl2s::fix-intern-in-pkg-of-sym
 ;;                                              (symbol-name (car pairs))
 ;;                                              :keyword)))
 ;;          (list (caar pairs) `(acl2::access ,recname ,var
-;;                                            ,(intern-in-package-of-symbol
+;;                                            ,(acl2s::fix-intern-in-pkg-of-sym
 ;;                                             (symbol-name (cadar pairs))
 ;;                                             :keyword))))
 ;;        (access-b*-bindings recname var (cdr pairs)))))

@@ -227,7 +227,7 @@ cgen-state"
   "increments the number-valued fields of test-outcomes%"
   (declare (xargs :guard (member-eq fld '(cts wts vacs dups))))
   (let* ((fld-dc (string-downcase (symbol-name fld)))
-         (fld-nm (intern-in-package-of-symbol 
+         (fld-nm (acl2s::fix-intern-in-pkg-of-sym 
                   (concatenate-names (list "#" fld-dc)) 'test-outcomes%)))
     `(change test-outcomes% ,fld-nm
              (acl2::|1+F| (access test-outcomes% ,fld-nm)))))

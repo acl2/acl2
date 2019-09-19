@@ -1,0 +1,39 @@
+FROM ubuntu:latest
+
+# Dockerfile for building CCL on Linux on x86 64
+# EM: 2019-05-11
+# See
+#   http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____CCL-INSTALLATION
+#
+# To build an image with this, cd to this directory and do
+#   docker build --file ccl.df -t ccl:latest .
+
+
+# Get prerequisites
+RUN apt-get update
+RUN apt-get install -y wget
+RUN apt-get install -y git
+
+# for "make"
+# Also gets you gcc and g++ but I don't know if we need those for ACL2 on CCL.
+RUN apt-get install -y build-essential
+
+# ccl also needs "m4"
+RUN apt-get install -y m4
+
+# use /root as the user HOME dir
+WORKDIR /root
+
+# obtain a ccl distribution in a fresh directory
+RUN git clone https://github.com/Clozure/ccl
+WORKDIR ccl
+
+# retrieve a core image to start building with
+RUN wget https://github.com/Clozure/ccl/releases/download/v1.12-dev.5/linuxx86.tar.gz
+RUN tar xzf linuxx86.tar.gz
+
+# build the latest ccl on the core image
+RUN echo '(rebuild-ccl :full t)\n(quit)' | ./lx86cl64
+
+# and do it again
+RUN echo '(rebuild-ccl :full t)\n(quit)' | ./lx86cl64

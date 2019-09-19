@@ -29,7 +29,7 @@
   :short
   (xdoc::topstring
    "Specialized versions of "
-   (xdoc::seeurl
+   (xdoc::seetopic
     "digits-any-base"
     "the operations to group and ungroup digits")
    "that are bits (base 2) and bytes (base 256)."))

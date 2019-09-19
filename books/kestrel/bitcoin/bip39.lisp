@@ -331,22 +331,22 @@
      It accepts any string as mnemonic, as well as any string as passphrase.
      More precisely, there are (large) limits on the lengths of these strings,
      dictated by the limits on the password and salt inputs of "
-    (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
+    (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
     ", which we add as guards:
      the limit on the mnemonic
      (which is used as password of "
-    (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
+    (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
     ") is the same as the one on the password of "
-    (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
+    (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
     ": the limit on the passphrase
      (which is used as salt of "
-    (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
+    (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
     ") is the same as the one on the text of "
-    (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
+    (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
     " dimished by 8 to account for
      the appended string constant ``@('mnemonic')''."))

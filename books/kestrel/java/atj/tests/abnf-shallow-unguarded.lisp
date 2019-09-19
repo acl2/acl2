@@ -1,0 +1,28 @@
+; Java Library
+;
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+
+(include-book "abnf")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code for the parser, without tests.
+; Currently, attempting to generate tests
+; for the grammar files ./abnf-files/*.txt
+; results in Java code whose test methods are too large to compile
+; (they exceed the maximum size allowed by the JVM),
+; because the contents of those files are built as lists of natural numbers.
+; Thus, for now we have handwritten Java files to test the ABNF parser.
+
+(java::atj parse-grammar
+           :deep nil
+           :guards nil
+           :java-class "ABNFShallowUnguarded")

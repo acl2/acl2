@@ -1,0 +1,32 @@
+# Dockerfile for building ACL2 on CCL on x86 64
+# EM: 2019-06-21
+#
+# To build an image with this, cd to this directory and do
+#   docker build --file acl2-on-ccl.df -t acl2-on-ccl:latest .
+
+
+# --------------------------------
+# See the Dockerfile for building ccl:latest
+
+FROM ccl:latest
+
+
+# --------------------------------
+# Build ACL2
+
+# Instructions originally from
+#   http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/installation.html
+# but simplified by Kestrel.
+
+WORKDIR /root
+
+# From development sources:
+RUN git clone https://github.com/acl2/acl2
+WORKDIR acl2
+RUN make LISP=/root/ccl/lx86cl64
+
+# ----------------
+# NOTE: This build does not certify any books.
+# Certify just the ones you need at the time that
+# you build your application-specific image.
+# ----------------

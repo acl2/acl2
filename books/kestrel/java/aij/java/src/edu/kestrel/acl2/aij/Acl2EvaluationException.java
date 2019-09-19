@@ -22,6 +22,8 @@ public final class Acl2EvaluationException extends Exception {
     /**
      * Constructs an evaluation exception
      * with the given detail message.
+     *
+     * @param message The detail message for the exception.
      */
     public Acl2EvaluationException(String message) {
         super(message);
@@ -30,6 +32,9 @@ public final class Acl2EvaluationException extends Exception {
     /**
      * Constructs an evaluation exception
      * with the given detail message and cause.
+     *
+     * @param message The details message for the exception.
+     * @param cause   The cause of the exception.
      */
     public Acl2EvaluationException(String message, Throwable cause) {
         super(message, cause);

@@ -83,7 +83,7 @@ list @('x'), returning a new list that has the names of all the symbols in
     :hints(("Goal"
             :in-theory (disable l0)
             :use ((:instance l0 (x x))
-                  (:instance l0 (x acl2::x-equiv))))))
+                  (:instance l0 (x x-equiv))))))
 
   (defthm symbol-list-names-of-append
     (equal (symbol-list-names (append x y))
@@ -168,7 +168,7 @@ intern-in-package-of-symbol).</li>
     :hints(("Goal"
             :in-theory (disable l0)
             :use ((:instance l0 (x x))
-                  (:instance l0 (x acl2::x-equiv))))))
+                  (:instance l0 (x x-equiv))))))
 
   (defthm intern-list-fn-of-append
     (equal (intern-list-fn (append x y) pkg)

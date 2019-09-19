@@ -23,7 +23,7 @@
   :short
   (xdoc::topstring
    "Generate specialized versions of "
-   (xdoc::seeurl
+   (xdoc::seetopic
     "digits-any-base"
     "the operations to group and ungroup digits in arbitrary bases")
    ", based on existing instances of @(tsee defdigits).")

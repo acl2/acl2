@@ -1,0 +1,1151 @@
+; Java Library
+;
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:4.1]
+
+type = primitive-type
+     / reference-type
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:4.2]
+
+primitive-type = *annotation numeric-type
+               / *annotation %s"boolean"
+
+numeric-type = integral-type
+             / floating-point-type
+
+integral-type = %s"byte"
+              / %s"short"
+              / %s"int"
+              / %s"long"
+              / %s"char"
+
+floating-point-type = %s"float"
+                    / %s"double"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:4.3]
+
+reference-type = class-or-interface-type
+               / type-variable
+               / array-type
+
+class-or-interface-type = class-type
+                        / interface-type
+
+class-type =
+    *annotation type-identifier [type-arguments]
+  / package-name "." *annotation type-identifier [type-arguments]
+  / class-or-interface-type "." *annotation type-identifier [type-arguments]
+
+interface-type = class-type
+
+type-variable = *annotation type-identifier
+
+array-type = primitive-type dims
+           / class-or-interface-type dims
+           / type-variable dims
+
+dims = 1*(*annotation "[" "]")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:4.4]
+
+type-parameter = *type-parameter-modifier type-identifier [type-bound]
+
+type-parameter-modifier = annotation
+
+type-bound = %s"extends" type-variable
+           / %s"extends" class-or-interface-type *additional-bound
+
+additional-bound = "&" interface-type
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:4.5.1]
+
+type-arguments = "<" type-argument-list ">"
+
+type-argument-list = type-argument *("," type-argument)
+
+type-argument = reference-type
+              / wildcard
+
+wildcard = *annotation "?" [wildcard-bounds]
+
+wildcard-bounds = %s"extends" reference-type
+                / %s"super" reference-type
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:6.5]
+
+module-name = identifier
+            / module-name "." identifier
+
+package-name = identifier
+             / package-name "." identifier
+
+type-name = type-identifier
+          / package-or-type-name "." type-identifier
+
+package-or-type-name = identifier
+                     / package-or-type-name "." identifier
+
+expression-name = identifier
+                / ambiguous-name "." identifier
+
+method-name = identifier
+
+ambiguous-name = identifier
+               / ambiguous-name "." identifier
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.3]
+
+compilation-unit = ordinary-compilation-unit
+                 / modular-compilation-unit
+
+ordinary-compilation-unit =
+    [package-declaration] *import-declaration *type-declaration
+
+modular-compilation-unit = *import-declaration module-declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.4.1]
+
+package-declaration =
+    *package-modifier %s"package" identifier *("." identifier) ";"
+
+package-modifier = annotation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.5]
+
+import-declaration = single-type-import-declaration
+                   / type-import-on-demand-declaration
+                   / single-static-import-declaration
+                   / static-import-on-demand-declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.5.1]
+
+single-type-import-declaration = %s"import" type-name ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.5.2]
+
+type-import-on-demand-declaration = %s"import" package-or-type-name "." "*" ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.5.3]
+
+single-static-import-declaration =
+    %s"import" %s"static" type-name "." identifier ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.5.4]
+
+static-import-on-demand-declaration =
+    %s"import" %s"static" type-name "." "*" ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.6]
+
+type-declaration = class-declaration
+                 / interface-declaration
+                 / ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:7.7]
+
+module-declaration =
+    *annotation [%s"open"] %s"module" identifier *("." identifier)
+    "{" *module-directive "}"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+module-directive =
+    %s"requires" *requires-modifier module-name ";"
+  / %s"exports" package-name [%s"to" module-name *("," module-name)] ";"
+  / %s"opens" package-name [%s"to" module-name *("," module-name)] ";"
+  / %s"uses" type-name ";"
+  / %s"provides" type-name %s"with" type-name *("," type-name) ";"
+
+requires-modifier = %s"transitive"
+                  / %s"static"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.1]
+
+class-declaration = normal-class-declaration
+                  / enum-declaration
+
+normal-class-declaration =
+  *class-modifier %s"class" type-identifier [type-parameters]
+  [superclass] [superinterfaces] class-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.1.1]
+
+class-modifier = annotation
+               / %s"public"
+               / %s"protected"
+               / %s"private"
+               / %s"abstract"
+               / %s"static"
+               / %s"final"
+               / %s"strictfp"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.1.2]
+
+type-parameters = "<" type-parameter-list ">"
+
+type-parameter-list = type-parameter *("," type-parameter)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.1.4]
+
+superclass = %s"extends" class-type
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.1.5]
+
+superinterfaces = %s"implements" interface-type-list
+
+interface-type-list = interface-type *("," interface-type)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.1.6]
+
+class-body = "{" *class-body-declaration "}"
+
+class-body-declaration = class-member-declaration
+                       / instance-initializer
+                       / static-initializer
+                       / constructor-declaration
+
+class-member-declaration = field-declaration
+                         / method-declaration
+                         / class-declaration
+                         / interface-declaration
+                         / ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.3]
+
+field-declaration = *field-modifier unann-type variable-declarator-list ";"
+
+variable-declarator-list = variable-declarator *("," variable-declarator)
+
+variable-declarator = variable-declarator-id ["=" variable-initializer]
+
+variable-declarator-id = identifier [dims]
+
+variable-initializer = expression
+                     / array-initializer
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+unann-type = unann-primitive-type
+           / unann-reference-type
+
+unann-primitive-type = numeric-type
+                     / %s"boolean"
+
+unann-reference-type = unann-class-or-interface-type
+                     / unann-type-variable
+                     / unann-array-type
+
+Unann-Class-Or-Interface-Type = Unann-Class-Type
+                              / Unann-Interface-Type
+
+unann-class-type =
+    type-identifier [type-arguments]
+  / package-name "." *annotation type-identifier [type-arguments]
+  / unann-class-or-interface-type "." *annotation
+    type-identifier [type-arguments]
+
+unann-interface-type = unann-class-type
+
+unann-type-variable = type-identifier
+
+unann-array-type = unann-primitive-type dims
+                 / unann-class-or-interface-type dims
+                 / unann-type-variable dims
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.3.1]
+
+field-modifier = annotation
+               / %s"public"
+               / %s"protected"
+               / %s"private"
+               / %s"static"
+               / %s"final"
+               / %s"transient"
+               / %s"volatile"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.4]
+
+method-declaration = *method-modifier method-header method-body
+
+method-header = result method-declarator [throws]
+              / type-parameters *annotation result method-declarator [throws]
+
+method-declarator =
+  identifier "(" [receiver-parameter ","] [formal-parameter-list] ")" [dims]
+
+receiver-parameter = *annotation unann-type [identifier "."] %s"this"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.4.1]
+
+formal-parameter-list = formal-parameter *("," formal-parameter)
+
+formal-parameter = *variable-modifier unann-type variable-declarator-id
+                 / variable-arity-parameter
+
+variable-arity-parameter =
+  *variable-modifier unann-type *annotation "..." identifier
+
+variable-modifier = annotation
+                  / %s"final"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.4.3]
+
+method-modifier = annotation
+                / %s"public"
+                / %s"protected"
+                / %s"private"
+                / %s"abstract"
+                / %s"static"
+                / %s"final"
+                / %s"synchronized"
+                / %s"native"
+                / %s"strictfp"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.4.5]
+
+result = unann-type
+       / %s"void"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.4.6]
+
+throws = %s"throws" exception-type-list
+
+exception-type-list = exception-type *("," exception-type)
+
+exception-type = class-type
+               / type-variable
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.4.7]
+
+method-body = block
+            / ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.6]
+
+instance-initializer = block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.7]
+
+static-initializer = %s"static" block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.8]
+
+constructor-declaration =
+  *constructor-modifier constructor-declarator [throws] constructor-body
+
+constructor-declarator =
+  [type-parameters] simple-type-name
+  "(" [receiver-parameter ","] [formal-parameter-list] ")"
+
+simple-type-name = type-identifier
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.8.3]
+
+constructor-modifier = annotation
+                     / %s"public"
+                     / %s"protected"
+                     / %s"private"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.8.7]
+
+constructor-body = "{" [explicit-constructor-invocation] [block-statements] "}"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.8.7.1]
+
+explicit-constructor-invocation =
+    [type-arguments] %s"this" "(" [argument-list] ")" ";"
+  / [type-arguments] %s"super" "(" [argument-list] ")" ";"
+  / expression-name "." [type-arguments] %s"super" "(" [argument-list] ")" ";"
+  / primary "." [type-arguments] %s"super" "(" [argument-list] ")" ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.9]
+
+enum-declaration =
+  *class-modifier %s"enum" type-identifier [superinterfaces] enum-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.9.1]
+
+enum-body = "{" [enum-constant-list] [","] [enum-body-declarations] "}"
+
+enum-constant-list = enum-constant *("," enum-constant)
+
+enum-constant =
+  *enum-constant-modifier identifier ["(" [argument-list] ")"] [class-body]
+
+enum-constant-modifier = annotation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:8.9.2]
+
+enum-body-declarations = ";" *class-body-declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.1]
+
+interface-declaration = normal-interface-declaration
+                      / annotation-type-declaration
+
+normal-interface-declaration =
+  *interface-modifier %s"interface" type-identifier [type-parameters]
+  [extends-interfaces] interface-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.1.1]
+
+interface-modifier = annotation
+                   / %s"public"
+                   / %s"protected"
+                   / %s"private"
+                   / %s"abstract"
+                   / %s"static"
+                   / %s"strictfp"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.1.3]
+
+extends-interfaces = %s"extends" interface-type-list
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.1.4]
+
+interface-body = "{" *interface-member-declaration "}"
+
+interface-member-declaration = constant-declaration
+                             / interface-method-declaration
+                             / class-declaration
+                             / interface-declaration
+                             / ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.3]
+
+constant-declaration =
+  *constant-modifier unann-type variable-declarator-list ";"
+
+constant-modifier = annotation
+                  / %s"public"
+                  / %s"static"
+                  / %s"final"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.4]
+
+interface-method-declaration =
+  *interface-method-modifier method-header method-body
+
+interface-method-modifier = annotation
+                          / %s"public"
+                          / %s"private"
+                          / %s"abstract"
+                          / %s"default"
+                          / %s"static"
+                          / %s"strictfp"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.6]
+
+annotation-type-declaration =
+  *interface-modifier "@" %s"interface" type-identifier annotation-type-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.6.1]
+
+annotation-type-body = "{" *annotation-type-member-declaration "}"
+
+annotation-type-member-declaration = annotation-type-element-declaration
+                                   / constant-declaration
+                                   / class-declaration
+                                   / interface-declaration
+                                   / ";"
+
+annotation-type-element-declaration =
+  *annotation-type-element-modifier unann-type identifier "(" ")" [dims]
+  [default-value] ";"
+
+annotation-type-element-modifier = annotation
+                                 / %s"public"
+                                 / %s"abstract"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.6.2]
+
+default-value = %s"default" element-value
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.7]
+
+annotation = normal-annotation
+           / marker-annotation
+           / single-element-annotation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.7.1]
+
+normal-annotation = "@" type-name "(" [element-value-pair-list] ")"
+
+element-value-pair-list = element-value-pair *("," element-value-pair)
+
+element-value-pair = identifier "=" element-value
+
+element-value = conditional-expression
+              / element-value-array-initializer
+              / annotation
+
+element-value-array-initializer = "{" [element-value-list] [","] "}"
+
+element-value-list = element-value *("," element-value)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.7.2]
+
+marker-annotation = "@" type-name
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:9.7.3]
+
+single-element-annotation = "@" type-name "(" element-value ")"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:10.6]
+
+array-initializer = "{" [variable-initializer-list] [","] "}"
+
+variable-initializer-list = variable-initializer *("," variable-initializer)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.2]
+
+block = "{" [block-statements] "}"
+
+block-statements = 1*block-statement
+
+block-statement = local-variable-declaration-statement
+                / class-declaration
+                / statement
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.4]
+
+local-variable-declaration-statement = local-variable-declaration ";"
+
+local-variable-declaration =
+  *variable-modifier local-variable-type variable-declarator-list
+
+local-variable-type = unann-type
+                    / %s"var"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.5]
+
+statement = statement-without-trailing-substatement
+          / labeled-statement
+          / if-then-statement
+          / if-then-else-statement
+          / while-statement
+          / for-statement
+
+statement-no-short-if = statement-without-trailing-substatement
+                      / labeled-statement-no-short-if
+                      / if-then-else-statement-no-short-if
+                      / while-statement-no-short-if
+                      / for-statement-no-short-if
+
+statement-without-trailing-substatement = block
+                                        / empty-statement
+                                        / expression-statement
+                                        / assert-statement
+                                        / switch-statement
+                                        / do-statement
+                                        / break-statement
+                                        / continue-statement
+                                        / return-statement
+                                        / synchronized-statement
+                                        / throw-statement
+                                        / try-statement
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.6]
+
+empty-statement = ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.7]
+
+labeled-statement = identifier ":" statement
+
+labeled-statement-no-short-if = identifier ":" statement-no-short-if
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.8]
+
+expression-statement = statement-expression ";"
+
+statement-expression = assignment
+                     / pre-increment-expression
+                     / pre-decrement-expression
+                     / post-increment-expression
+                     / post-decrement-expression
+                     / method-invocation
+                     / class-instance-creation-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.9]
+
+if-then-statement = %s"if" "(" expression ")" statement
+
+if-then-else-statement =
+  %s"if" "(" expression ")" statement-no-short-if %s"else" statement
+
+if-then-else-statement-no-short-if =
+  %s"if" "(" expression ")" statement-no-short-if %s"else" statement-no-short-if
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.10]
+
+assert-statement = %s"assert" expression ";"
+                 / %s"assert" expression ":" expression ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.11]
+
+switch-statement = %s"switch" "(" expression ")" switch-block
+
+switch-block = "{" *switch-block-statement-group *switch-label "}"
+
+switch-block-statement-group = switch-labels block-statements
+
+switch-labels = 1*switch-label
+
+switch-label = %s"case" constant-expression ":"
+             / %s"case" enum-constant-name ":"
+             / %s"default" ":"
+
+enum-constant-name = identifier
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.12]
+
+while-statement = %s"while" "(" expression ")" statement
+
+while-statement-no-short-if = %s"while" "(" expression ")" statement-no-short-if
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.13]
+
+do-statement = %s"do" statement %s"while" "(" expression ")" ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.14]
+
+for-statement = basic-for-statement
+              / enhanced-for-statement
+
+for-statement-no-short-if = basic-for-statement-no-short-if
+                          / enhanced-for-statement-no-short-if
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.14.1]
+
+basic-for-statement =
+  %s"for" "(" [for-init] ";" [expression] ";" [for-update] ")" statement
+
+basic-for-statement-no-short-if =
+  %s"for" "(" [for-init] ";" [expression] ";" [for-update] ")"
+  statement-no-short-if
+
+for-init = statement-expression-list
+         / local-variable-declaration
+
+for-update = statement-expression-list
+
+statement-expression-list = 1*statement-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.14.2]
+
+enhanced-for-statement =
+  %s"for" "(" *variable-modifier local-variable-type variable-declarator-id ":"
+  expression ")" statement
+
+enhanced-for-statement-no-short-if =
+  %s"for" "(" *variable-modifier local-variable-type variable-declarator-id ":"
+  expression ")" statement-no-short-if
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.15]
+
+break-statement = %s"break" [identifier] ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.16]
+
+continue-statement = %s"continue" [identifier] ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.17]
+
+return-statement = %s"return" [expression] ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.18]
+
+throw-statement = %s"throw" expression ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.19]
+
+synchronized-statement = %s"synchronized" "(" expression ")" block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.20]
+
+try-statement = %s"try" block catches
+              / %s"try" block [catches] finally
+              / try-with-resources-statement
+
+catches = 1*catch-clause
+
+catch-clause = %s"catch" "(" catch-formal-parameter ")" block
+
+catch-formal-parameter = *variable-modifier catch-type variable-declarator-id
+
+catch-type = unann-class-type *("|" Class-Type)
+
+finally = %s"finally" block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.20.3]
+
+try-with-resources-statement =
+  %s"try" resource-specification block [catches] [finally]
+
+resource-specification = "(" resource-list [";"] ")"
+
+resource-list = resource *(";" resource)
+
+resource = *variable-modifier local-variable-type identifier "=" expression
+         / variable-access
+
+variable-access = expression-name
+                / field-access
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.2]
+
+expression = lambda-expression
+           / assignment-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.8]
+
+primary = primary-no-new-array
+        / array-creation-expression
+
+primary-no-new-array = literal
+                     / class-literal
+                     / %s"this"
+                     / type-name "." %s"this"
+                     / "(" expression ")"
+                     / class-instance-creation-expression
+                     / field-access
+                     / array-access
+                     / method-invocation
+                     / method-reference
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.8.2]
+
+class-literal = type-name *("[" "]") "." %s"class"
+              / numeric-type *("[" "]") "." %s"class"
+              / %s"boolean" *("[" "]") "." %s"class"
+              / %s"void" "." %s"class"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.9]
+
+class-instance-creation-expression =
+    unqualified-class-instance-creation-expression
+  / expression-name "." unqualified-class-instance-creation-expression
+  / primary "." unqualified-class-instance-creation-expression
+
+unqualified-class-instance-creation-expression =
+  %s"new" [type-arguments] class-or-interface-type-to-instantiate
+  "(" [argument-list] ")" [class-body]
+
+class-or-interface-type-to-instantiate =
+  *annotation identifier *("." *annotation identifier)
+  [type-arguments-or-diamond]
+
+type-arguments-or-diamond = type-arguments
+                          / "<>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.10.1]
+
+array-creation-expression =
+    %s"new" primitive-type dim-exprs [dims]
+  / %s"new" class-or-interface-type dim-exprs [dims]
+  / %s"new" primitive-type dims array-initializer
+  / %s"new" class-or-interface-type dims array-initializer
+
+dim-exprs = 1*dim-expr
+
+dim-expr = *annotation "[" expression "]"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.10.3]
+
+array-access = expression-name "[" expression "]"
+             / primary-no-new-array "[" expression "]"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.11]
+
+field-access = primary "." identifier
+             / %s"super" "." identifier
+             / type-name "." %s"super" "." identifier
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.12]
+
+method-invocation =
+    method-name "(" [argument-list] ")"
+  / type-name "." [type-arguments] identifier "(" [argument-list] ")"
+  / expression-name "." [type-arguments] identifier "(" [argument-list] ")"
+  / primary "." [type-arguments] identifier "(" [argument-list] ")"
+  / %s"super" "." [type-arguments] identifier "(" [argument-list] ")"
+  / type-name "." %s"super" "." [type-arguments] identifier
+    "(" [argument-list] ")"
+
+argument-list = expression *("," expression)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.13]
+
+method-reference =
+    expression-name "::" [type-arguments] identifier
+  / primary "::" [type-arguments] identifier
+  / reference-type "::" [type-arguments] identifier
+  / %s"super" "::" [type-arguments] identifier
+  / type-name "." %s"super" "::" [type-arguments] identifier
+  / class-type "::" [type-arguments] %s"new"
+  / array-type "::" %s"new"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.14]
+
+postfix-expression = primary
+                   / expression-name
+                   / post-increment-expression
+                   / post-decrement-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.14.2]
+
+post-increment-expression = postfix-expression "++"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.14.3]
+
+post-decrement-expression = postfix-expression "--"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.15]
+
+unary-expression = pre-increment-expression
+                 / pre-decrement-expression
+                 / "+" unary-expression
+                 / "-" unary-expression
+                 / unary-expression-not-plus-minus
+
+pre-increment-expression = "++" unary-expression
+
+pre-decrement-expression = "--" unary-expression
+
+unary-expression-not-plus-minus = postfix-expression
+                                / "~" unary-expression
+                                / "!" unary-expression
+                                / cast-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.16]
+
+cast-expression =
+    "(" primitive-type ")" unary-expression
+  / "(" reference-type *additional-bound ")" unary-expression-not-plus-minus
+  / "(" reference-type *additional-bound ")" lambda-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.17]
+
+multiplicative-expression = unary-expression
+                          / multiplicative-expression "*" unary-expression
+                          / multiplicative-expression "/" unary-expression
+                          / multiplicative-expression "%" unary-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.18]
+
+additive-expression = multiplicative-expression
+                    / additive-expression "+" multiplicative-expression
+                    / additive-expression "-" multiplicative-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.19]
+
+shift-expression = additive-expression
+                 / shift-expression "<<" additive-expression
+                 / shift-expression ">>" additive-expression
+                 / shift-expression ">>>" additive-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.20]
+
+relational-expression = shift-expression
+                      / relational-expression "<" shift-expression
+                      / relational-expression ">" shift-expression
+                      / relational-expression "<=" shift-expression
+                      / relational-expression ">=" shift-expression
+                      / relational-expression %s"instanceof" reference-type
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.21]
+
+equality-expression = relational-expression
+                    / equality-expression "==" relational-expression
+                    / equality-expression "!=" relational-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.22]
+
+and-expression = equality-expression
+               / and-expression "&" equality-expression
+
+exclusive-or-expression = and-expression
+                        / exclusive-or-expression "^" and-expression
+
+inclusive-or-expression = exclusive-or-expression
+                        / inclusive-or-expression "|" exclusive-or-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.23]
+
+conditional-and-expression =
+    inclusive-or-expression
+  / conditional-and-expression "&&" inclusive-or-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.24]
+
+conditional-or-expression =
+    conditional-and-expression
+  / conditional-or-expression "||" conditional-and-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.25]
+
+conditional-expression =
+    conditional-or-expression
+  / conditional-or-expression "?" expression ":" conditional-expression
+  / conditional-or-expression "?" expression ":" lambda-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.26]
+
+assignment-expression = conditional-expression
+                      / assignment
+
+assignment = left-hand-side assignment-operator expression
+
+left-hand-side = expression-name
+               / field-access
+               / array-access
+
+assignment-operator = "="
+                    / "*="
+                    / "/="
+                    / "%="
+                    / "+="
+                    / "-="
+                    / "<<="
+                    / ">>="
+                    / ">>>="
+                    / "&="
+                    / "^="
+                    / "|="
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.27]
+
+lambda-expression = lambda-parameters "->" lambda-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.27.1]
+
+lambda-parameters = "(" [lambda-parameter-list] ")"
+                  / identifier
+
+lambda-parameter-list = lambda-parameter *("," lambda-parameter)
+                      / identifier *("," identifier)
+
+lambda-parameter =
+    *variable-modifier lambda-parameter-type variable-declarator-id
+  / variable-arity-parameter
+
+lambda-parameter-type = unann-type
+                      / %s"var"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.27.2]
+
+lambda-body = expression
+            / block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.28]
+
+constant-expression = expression

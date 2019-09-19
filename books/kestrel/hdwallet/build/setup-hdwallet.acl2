@@ -1,0 +1,45 @@
+;; This file is in lisp syntax.
+;; Pipe this file into an acl2 to create the hdwallet application.
+
+(cw "~%about to include oslib/file-types~%")
+(include-book "oslib/file-types" :dir :system)
+
+(cw "~%about to include oslib/argv~%")
+(include-book "oslib/argv" :dir :system)
+(include-book "oslib/argv-logic" :dir :system)
+
+(cw "~%about to include wallet-executable~%")
+(include-book "kestrel/hdwallet/wallet-executable" :dir :system)
+
+(cw "~%done with include-book forms~%")
+
+(set-state-ok t)
+
+;; exit acl2 loop
+:q
+
+;; This turns off some of the banner, including the
+;; "Runs hdwallet" message in the save-exec below.
+(setq *print-startup-banner* nil)
+
+;; Turn off banner from entering ld.  See xdoc for "ld".
+(assign ld-verbose nil)
+;; Turn off prompt
+(assign ld-prompt nil)
+;; If an init form gets an error, exit with status 4
+(assign ld-error-action '(:exit 4))
+;; Turn off echoing the init form (that is the default,
+;;   but set it here just in case).
+(assign ld-pre-eval-print nil)
+;; Turn off printing the return value
+(assign ld-post-eval-print nil)
+
+;; saves an image and a startup script
+(save-exec "acl2_hdwallet" "Runs hdwallet"
+  :init-forms '( (mv-let (args state) (oslib::argv)
+                    (hdwallet::wallet-fn args state))
+                 (exit)
+                 ))
+
+;; Done creating image; exit lisp.
+(exit)

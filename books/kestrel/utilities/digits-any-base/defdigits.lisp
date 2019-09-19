@@ -25,7 +25,7 @@
   :short
   (xdoc::topstring
    "Generate specialized versions of "
-   (xdoc::seeurl
+   (xdoc::seetopic
     "digits-any-base"
     "the operations to convert between natural numbers and digits")
    ", using specified recognizers and fixers for the digits.")
@@ -38,7 +38,7 @@
 
    (xdoc::p
     "The operations in the "
-    (xdoc::seeurl
+    (xdoc::seetopic
      "digits-any-base"
      "library to convert between natural numbers and digits")
     " are parameterized over the base.

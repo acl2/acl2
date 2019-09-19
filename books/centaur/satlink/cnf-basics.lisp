@@ -268,7 +268,7 @@
     (nat-listp (clause-indices x)))
 
   (defcong list-equiv equal (clause-indices x) 1
-    :hints(("Goal" :induct (my-ind x acl2::x-equiv))))
+    :hints(("Goal" :induct (my-ind x x-equiv))))
 
   (defcong set-equiv set-equiv (clause-indices x) 1
     :hints(("Goal" :in-theory (enable set-equiv)))))
@@ -290,7 +290,7 @@
     (nat-listp (formula-indices x)))
 
   (defcong list-equiv equal (formula-indices x) 1
-    :hints(("Goal" :induct (my-ind x acl2::x-equiv))))
+    :hints(("Goal" :induct (my-ind x x-equiv))))
 
   (local (defthm l0
            (implies (member-equal clause formula)

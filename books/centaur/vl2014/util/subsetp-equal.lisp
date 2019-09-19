@@ -101,8 +101,8 @@
                 (:functional-instance
                  set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
-                 (acl2::duplicity-rhs (lambda () (<<-sort acl2::x-equiv)))
-                 (acl2::duplicity-lhs (lambda () acl2::x-equiv)))))))
+                 (acl2::duplicity-rhs (lambda () (<<-sort x-equiv)))
+                 (acl2::duplicity-lhs (lambda () x-equiv)))))))
 
 (defrule <<-sort-under-set-equiv
   (set-equiv (<<-sort x) x)

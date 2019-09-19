@@ -38,9 +38,9 @@
   :short
   (xdoc::topstring
    "Specialized versions of "
-   (xdoc::seeurl
+   (xdoc::seetopic
     "digits-any-base"
     "the operations to convert between natural numbers and digits")
    " that use "
-   (xdoc::seeurl "bytep" "bytes")
+   (xdoc::seetopic "bytep" "bytes")
    " as digits, in base 256."))

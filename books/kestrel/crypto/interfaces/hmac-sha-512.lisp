@@ -20,12 +20,25 @@
   :block-size 128
   :parents (interfaces)
   :short (xdoc::topstring
-          "HMAC-SHA-512 " (xdoc::seeurl "interfaces" "interface") ".")
+          "HMAC-SHA-512 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p
-    "We instantiate HMAC with the SHA-512 hash,
-     whose block size is 128 bytes according to FIPS 180-4.")))
+    "HMAC stands for keyed-hash message authentication code.
+     It is specified in "
+    (xdoc::ahref "https://tools.ietf.org/html/rfc2104" "IETF RFC 2104")
+    ".")
+   (xdoc::p
+    "We instantiate HMAC with the "
+    (xdoc::seetopic "sha2::sha-2" "SHA-512 hash function") ",
+    whose block size is 128 bytes and output size is 64 bytes according to FIPS 180-4.")
+   (xdoc::p
+    "See also:"
+    (xdoc::ul
+     (xdoc::li (xdoc::seetopic "hmac::hmac" "HMAC-SHA-512 executable specification"))
+     (xdoc::li (xdoc::seetopic "hmac-sha-512-attachment" "attaching HMAC-SHA-512 executable specification to this interface"))))
+   ))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

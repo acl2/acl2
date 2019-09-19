@@ -47,7 +47,7 @@
    (xdoc::p
     "Besides their use in fixtypes,
      the unary recognizers introduced by this macro support "
-    (xdoc::seeurl "acl2::tau-system" "tau system")
+    (xdoc::seetopic "acl2::tau-system" "tau system")
     " reasoning.")
 
    (xdoc::h3 "General Form")

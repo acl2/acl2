@@ -53,6 +53,14 @@
 (defconst *address-0*
   '(226 193 44 207 29 100 116 12 120 128 255 161 80 166 11 157 118 121 187 105))
 
+;; The wallet command "next-key" prints out the address in this convenient form.
+(defconst *address-0-bighexstring*
+  "E2C12CCF1D64740C7880FFA150A60B9D7679BB69")
+
+(assert-event
+ (equal *address-0*
+        (hexstring=>ubyte8s *address-0-bighexstring*)))
+
 (defconst *stat-0*
   '(:state
     ((:priv

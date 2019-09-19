@@ -1,4 +1,4 @@
-; Std/system - Standard System Library
+; Standard System Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,10 +10,18 @@
 
 (in-package "ACL2")
 
+(include-book "all-free-bound-vars")
 (include-book "conjoin")
 (include-book "function-symbolp")
-
-(include-book "xdoc/constructors" :dir :system)
+(include-book "macro-keyword-args")
+(include-book "macro-required-args")
+(include-book "macro-symbolp")
+(include-book "primitivep")
+(include-book "pure-raw-p")
+(include-book "rawp")
+(include-book "remove-mbe")
+(include-book "theorem-symbolp")
+(include-book "unquote-term")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,7 +30,7 @@
   :short
   (xdoc::topstring
    "A library that complements the "
-   (xdoc::seeurl "system-utilities" "built-in system utilities")
+   (xdoc::seetopic "system-utilities" "built-in system utilities")
    " with theorems and non-built-in system utilities.")
   :long
   (xdoc::topstring

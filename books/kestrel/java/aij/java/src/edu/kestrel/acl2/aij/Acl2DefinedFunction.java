@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Representation of ACL2 defined functions in ACL2 terms.
- * These are functions that are defined via ACL2 terms,
+ * Representation of ACL2 defined functions in terms.
+ * These are functions that are defined via terms,
  * as opposed to the functions natively implemented in Java
  * (see {@link Acl2NativeFunction}).
  */
@@ -20,27 +20,27 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     //////////////////////////////////////// private members:
 
     /**
-     * Constructs an ACL2 defined function from its name.
-     * The name is never the one of
-     * the {@code if} ACL2 primitive function
-     * or the {@code or} ACL2 "pseudo-function"
-     * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}),
-     * because these are represented as
+     * Constructs a defined function with the given name.
+     * The name is never that of a function
+     * that is implemented natively in Java,
+     * because such functions are represented as
      * instances of {@link Acl2NativeFunction}.
+     *
+     * @param name The name of the function.
      */
     private Acl2DefinedFunction(Acl2Symbol name) {
         super(name);
     }
 
     /**
-     * All the ACL2 defined functions created so far.
+     * All the defined functions created so far.
      * These are stored as values of a map
      * that has the symbols that name the functions as keys:
      * each key-value pair is such that
-     * the key is the {@link Acl2NamedFunction#getName()} field of the value.
+     * the key is the {@link Acl2NamedFunction#getName()} of the value.
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
-     * In other words, all the ACL2 defined functions are interned.
+     * In other words, all the defined functions are interned.
      * This field is never {@code null}.
      */
     private static final Map<Acl2Symbol, Acl2DefinedFunction> functions =
@@ -56,7 +56,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Flag saying whether this function has a validated definition.
      * This is set once by {@link #validateDefinition()},
-     * and never changes to {@code false}.
+     * and never changes back to {@code false}.
      */
     private boolean validated = false;
 
@@ -65,8 +65,9 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Returns the number of parameters of this defined function.
      *
-     * @throws IllegalStateException if this defined function
-     *                               has no actual definition yet
+     * @return The number of parameters of this defined function.
+     * @throws IllegalStateException If this defined function
+     *                               has no actual definition yet.
      */
     @Override
     int getArity() {
@@ -84,7 +85,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * (see @{@link Acl2Term#validateFunctionCalls()}).
      * Returns quickly if the function is already validated.
      *
-     * @throws IllegalStateException if the check fails
+     * @throws IllegalStateException If the check fails.
      */
     void validateDefinition() {
         if (validated)
@@ -98,6 +99,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * have valid definitions.
      * We call {@link #validateDefinition()}
      * on all the functions created so far.
+     *
+     * @throws IllegalStateException If validation fails.
      */
     static void validateAllDefinitions() {
         for (Acl2DefinedFunction function : functions.values())
@@ -108,8 +111,10 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Checks if this defined function is
      * the {@code if} ACL2 primitive function.
-     * This is never the case, because of the invariant discussed in
-     * {@link #Acl2DefinedFunction(Acl2Symbol)}.
+     * This is never the case, because {@code if} is represented as
+     * an instance of {@link Acl2NativeFunction}.
+     *
+     * @return {@code false}.
      */
     @Override
     boolean isIf() {
@@ -119,8 +124,10 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Checks if this defined function is
      * the {@code or} ACL2 "pseudo-function".
-     * This is never the case, because of the invariant discussed in
-     * {@link #Acl2DefinedFunction(Acl2Symbol)}.
+     * This is never the case, because {@code if} is represented as
+     * an instance of {@link Acl2NativeFunction}.
+     *
+     * @return {@code false}.
      */
     @Override
     boolean isOr() {
@@ -128,12 +135,14 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * Applies this ACL2 defined function to the given ACL2 values.
+     * Applies this defined function to the given values.
      * The defining lambda expression is applied to the values.
      * This is never called if the definiens is not set or validated.
      *
-     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails
+     * @param values The actual arguments to pass to the function.
+     * @return The result of the function on the given arguments.
+     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails.
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
@@ -141,7 +150,11 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * Returns an ACL2 defined function with the given name.
+     * Returns a defined function with the given name.
+     * The function is created and interned, if it does not exist.
+     *
+     * @param name The name of the defined function.
+     * @return The defined function.
      */
     static Acl2DefinedFunction getInstance(Acl2Symbol name) {
         Acl2DefinedFunction function = functions.get(name);
@@ -156,16 +169,19 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     //////////////////////////////////////// public members:
 
     /**
-     * Defines this ACL2 defined function.
+     * Defines this defined function.
      * That is, actually sets the definition of the function.
-     * The indices of the variables in the definiens are set.
+     * The indices of the variables in the definiens are set
+     * (see {@link Acl2Variable}).
      *
-     * @throws IllegalArgumentException if parameters or body is null
+     * @param parameters The formal parameters of the function definition.
+     * @param body       The body of the function definition.
+     * @throws IllegalArgumentException If parameters or body is null
      *                                  or the function definition is malformed
      *                                  in a way that
-     *                                  some valid variable index cannot be set
-     * @throws IllegalStateException    if the function is already defined,
-     *                                  or some variable index is already set
+     *                                  some valid variable index cannot be set.
+     * @throws IllegalStateException    If the function is already defined,
+     *                                  or some variable index is already set.
      */
     @Override
     public void define(Acl2Symbol[] parameters, Acl2Term body) {

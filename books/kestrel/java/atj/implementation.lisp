@@ -79,7 +79,8 @@
      "@('afns') is the list of ACL2 functions to be translated to Java.")
     (xdoc::li
      "@('afns-by-apkg') consists of @('afns'),
-      plus all the ACL2 primitive functions,
+      plus all the ACL2 functions natively implemented in AIJ
+      (which currently are the ACL2 primitive functions)
       organized as an alist from ACL2 package names to
       the non-empty lists of the functions in the respective packages.
       See @(tsee atj-code-generation).")
@@ -87,7 +88,7 @@
      "@('avars-by-name') consists of all the free and bound variables
       that appear in the ACL2 function definition
       for which code is being generated.
-      The variables are organized as an alist from symbol names
+      These variables are organized as an alist from symbol names
       to the variables with the respective names.
       See @(tsee atj-code-generation).")
     (xdoc::li
@@ -100,6 +101,9 @@
       and deeply embedded ACL2 lambda expressions.
       See @(tsee atj-code-generation).")
     (xdoc::li
+     "@('jvar-result-base') is the base name of the Java local variable to use
+      to store the results of arguments of non-strict ACL2 functions.")
+    (xdoc::li
      "@('jvar-value-index'),
       @('jvar-term-index'), and
       @('jvar-lambda-index')
@@ -109,17 +113,25 @@
       and deeply embedded ACL2 lambda expressions.
       See @(tsee atj-code-generation).")
     (xdoc::li
-     "@('jvar-indices') is an alist with the indices
-      of the next Java local variable to use, for each ACL2 variable,
-      to construct shallowly embedded ACL2 terms and lambda expressions.")
-    (xdoc::li
      "@('jvar-result-index') is the index of the next Java local variable to use
       to store the results of arguments of non-strict ACL2 functions.")
     (xdoc::li
-     "@('jvar-names') is an alist with the names
-      of the current Java local variables
-      that represent ACL2 variables
-      when constructing shallowly embedded ACL2 terms and lambda expressions."))
+     "@('indices') is an alist from symbols to natural numbers,
+      which associates to each ACL2 variable the next index to use
+      to disambiguate a new instance of that variable from previous instances.
+      This is used when renaming ACL2 variables to their Java names,
+      in the shallow embedding approach.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
+     "@('renaming') is an alist from symbols to symbols,
+      which associates to each ACL2 variable its Java name
+      (i.e. the name of the Java variable generated from this ACL2 variable).
+      This is used when renaming ACL2 variables to their Java names,
+      in the shallow embedding approach.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
+     "@('curr-apkg') is the name of the ACL2 package of the ACL2 function
+      for which Java code is being generated."))
    (xdoc::p
     "The parameters of implementation functions that are not listed above
      are described in, or clear from, those functions' documentation."))
@@ -133,7 +145,9 @@
                state)
   :mode :program
   :parents (atj-implementation)
-  :short "Validate the inputs, gather information, and generate the Java file."
+  :short "Validate the inputs,
+          gather information,
+          and generate the Java file(s)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -153,7 +167,8 @@
                   tests$
                   verbose$)) (atj-process-inputs args ctx state))
        ((er (list apkgs
-                  afns)) (atj-gather-info targets$ guards$ verbose$ ctx state))
+                  afns)) (atj-gather-info
+                          targets$ deep$ guards$ verbose$ ctx state))
        ((er &) (atj-gen-everything deep$
                                    guards$
                                    java-package$
@@ -170,6 +185,8 @@
                   output-file$ output-file-test$)
             (cw "~%Generated Java file:~%  ~x0~%" output-file$))))
     (value '(value-triple :invisible))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atj-macro-definition
   :parents (atj-implementation)

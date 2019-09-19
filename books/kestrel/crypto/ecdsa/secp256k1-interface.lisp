@@ -18,7 +18,7 @@
   :parents (crypto::interfaces elliptic-curve-digital-signature-algorithm)
   :short (xdoc::topstring
           "ECDSA "
-          (xdoc::seeurl "crypto::interfaces" "interface")
+          (xdoc::seetopic "crypto::interfaces" "interface")
           " for the elliptic curve secp256k1.")
   :long
   (xdoc::topstring
@@ -144,7 +144,12 @@
    (xdoc::p
     "We constrain this function
      to return results of the types described above unconditionally.
-     We also constrain it to fix its arguments to the guard types."))
+     We also constrain it to fix its arguments to the guard types.")
+   (xdoc::p
+    "See also:"
+    (xdoc::ul
+     (xdoc::li (xdoc::seetopic "ecdsa::deterministic-ecdsa-secp256k1" "Deterministic ECDSA executable specification"))
+     (xdoc::li (xdoc::seetopic "ecdsa::secp256k1-ecdsa-attachment" "attaching Deterministic ECDSA executable specification to this interface")))))
 
   (encapsulate
 
@@ -202,7 +207,7 @@
     :hints (("Goal"
              :use (secp256k1-sign-det-rec-fixes-input-hash
                    (:instance secp256k1-sign-det-rec-fixes-input-hash
-                    (hash acl2::hash-equiv)))
+                    (hash hash-equiv)))
              :in-theory (disable secp256k1-sign-det-rec-fixes-input-hash))))
 
   (defcong secp256k1-priv-key-equiv equal
@@ -210,20 +215,20 @@
     :hints (("Goal"
              :use (secp256k1-sign-det-rec-fixes-input-priv
                    (:instance secp256k1-sign-det-rec-fixes-input-priv
-                    (priv ecurve::priv-equiv)))
+                    (priv priv-equiv)))
              :in-theory (disable secp256k1-sign-det-rec-fixes-input-priv))))
 
   (defcong iff equal (secp256k1-sign-det-rec hash priv small-x? small-s?) 3
     :hints (("Goal"
              :use (secp256k1-sign-det-rec-fixes-input-small-x?
                    (:instance secp256k1-sign-det-rec-fixes-input-small-x?
-                    (small-x? acl2::small-x?-equiv)))
+                    (small-x? small-x?-equiv)))
              :in-theory (disable secp256k1-sign-det-rec-fixes-input-small-x?))))
 
   (defcong iff equal (secp256k1-sign-det-rec hash priv small-x? small-s?) 4
     :hints (("Goal"
              :use (secp256k1-sign-det-rec-fixes-input-small-s?
                    (:instance secp256k1-sign-det-rec-fixes-input-small-s?
-                    (small-s? acl2::small-s?-equiv)))
+                    (small-s? small-s?-equiv)))
              :in-theory (disable
                          secp256k1-sign-det-rec-fixes-input-small-s?)))))

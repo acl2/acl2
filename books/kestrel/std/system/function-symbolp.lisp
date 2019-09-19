@@ -1,4 +1,4 @@
-; Std/system - Standard System Library
+; Standard System Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

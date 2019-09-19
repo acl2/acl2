@@ -314,11 +314,7 @@
 
   :body
 
-  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       ((the (unsigned-byte 4) xmm-index)
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        ((the (unsigned-byte 128) xmm)
@@ -434,11 +430,7 @@
 
   :body
 
-  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       ((the (integer 4 8) operand-size)
+  (b* (((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
 
        ((the (unsigned-byte 4) xmm-index)
@@ -517,11 +509,7 @@
 
   :body
 
-  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       ((the (unsigned-byte 4) xmm-index)
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))
@@ -647,11 +635,7 @@
 
   :body
 
-  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
-       ((when lock)
-        (!!ms-fresh :lock-prefix prefixes))
-
-       ((the (unsigned-byte 4) xmm-index)
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))

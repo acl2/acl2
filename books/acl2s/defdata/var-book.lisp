@@ -98,9 +98,11 @@ is accepted by ACL2s, but this is not
 (encapsulate 
  nil
  (local
-  (include-book "arithmetic-5/top" :dir :system))
+  (include-book "arithmetic-5/top" :dir :system)))
 
-  (verify-termination nth-var-char-builtin))
+(set-ignore-ok t)
+(verify-termination nth-var-char-builtin)
+(set-ignore-ok nil)
 
 ; generate a char-list-aux from a list of nats
 (defun get-var-char-list-aux-from-positions (l)

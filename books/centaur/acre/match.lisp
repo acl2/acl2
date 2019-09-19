@@ -229,10 +229,9 @@
     :hints(("Goal" :in-theory (enable undup))))
 
   (defrefinement undup-equiv set-equiv
-    :hints (("goal" :use ((:instance undup-under-set-equiv
-                           (x acl2::x))
+    :hints (("goal" :use ((:instance undup-under-set-equiv)
                           (:instance undup-under-set-equiv
-                           (x acl2::y)))
+                           (x y)))
              :in-theory (disable undup-under-set-equiv))))
 
   (defcong undup-equiv undup-equiv (append a b) 1

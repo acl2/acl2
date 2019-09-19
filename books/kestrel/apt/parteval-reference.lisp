@@ -158,7 +158,7 @@
        from internal translated form to external untranslated form.")
      (xdoc::p
       "It must be an "
-      (xdoc::seeurl "untranslate-specifier" "untranslate specifier")
+      (xdoc::seetopic "untranslate-specifier" "untranslate specifier")
       "; see that documentation topic for details."))
 
     (xdoc::evmac-input-print parteval)

@@ -150,6 +150,7 @@
                            (map::key key)))))
 
  (defcong map::equiv equal (dtreemapp map) 1
+   :package :legacy
    :hints(("Goal"
            :in-theory (enable dtreemapp)
            :use (:functional-instance
@@ -302,6 +303,7 @@
 )
 
 (defcong map::equiv map::equiv (dtreemapfix map) 1
+  :package :legacy
   :hints(("Goal" :in-theory (enable map::equiv))))
 
 (defthm in-of-head-of-dtreemapfix-when-nonempty
@@ -548,7 +550,7 @@
  (defcong list::equiv equal (get path dtree) 1
    :hints(("Goal"
            :in-theory (enable get)
-           :induct (my-induct path list::path-equiv dtree))))
+           :induct (my-induct path path-equiv dtree))))
 
 )
 
@@ -646,7 +648,7 @@
  (defcong list::equiv equal (in path dtree) 1
    :hints(("Goal"
            :in-theory (enable in)
-           :induct (my-induct path list::path-equiv dtree))))
+           :induct (my-induct path path-equiv dtree))))
 
  )
 

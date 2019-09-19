@@ -17,7 +17,8 @@
 
 (must-succeed*
  (fty::defset nat-set
-              :elt-type nat)
+   :elt-type nat
+   :elementp-of-nil nil)
  (assert! (function-symbolp 'nat-set-p (w state)))
  (assert! (function-symbolp 'nat-set-fix (w state)))
  (assert! (function-symbolp 'nat-set-equiv$inline (w state))))
@@ -26,8 +27,9 @@
 
 (must-succeed*
  (fty::defset nat-set
-              :elt-type nat
-              :pred nat-setp)
+   :elt-type nat
+   :elementp-of-nil nil
+   :pred nat-setp)
  (assert! (function-symbolp 'nat-setp (w state)))
  (assert! (function-symbolp 'nat-set-fix (w state)))
  (assert! (function-symbolp 'nat-set-equiv$inline (w state))))
@@ -36,8 +38,9 @@
 
 (must-succeed*
  (fty::defset nat-set
-              :elt-type nat
-              :fix nat-sfix)
+   :elt-type nat
+   :elementp-of-nil nil
+   :fix nat-sfix)
  (assert! (function-symbolp 'nat-set-p (w state)))
  (assert! (function-symbolp 'nat-sfix (w state)))
  (assert! (function-symbolp 'nat-set-equiv$inline (w state))))
@@ -46,8 +49,9 @@
 
 (must-succeed*
  (fty::defset nat-set
-              :elt-type nat
-              :equiv nat-sequiv)
+   :elt-type nat
+   :elementp-of-nil nil
+   :equiv nat-sequiv)
  (assert! (function-symbolp 'nat-set-p (w state)))
  (assert! (function-symbolp 'nat-set-fix (w state)))
  (assert! (function-symbolp 'nat-sequiv$inline (w state))))
@@ -56,10 +60,11 @@
 
 (must-succeed*
  (fty::defset nat-set
-              :elt-type nat
-              :pred nat-setp
-              :fix nat-sfix
-              :equiv nat-sequiv)
+   :elt-type nat
+   :elementp-of-nil nil
+   :pred nat-setp
+   :fix nat-sfix
+   :equiv nat-sequiv)
  (assert! (function-symbolp 'nat-setp (w state)))
  (assert! (function-symbolp 'nat-sfix (w state)))
  (assert! (function-symbolp 'nat-sequiv$inline (w state))))
@@ -68,29 +73,41 @@
 
 (must-succeed
  (fty::defset nat-set
-              :elt-type nat
-              :parents (fty::defset set::std/osets)))
+   :elt-type nat
+   :elementp-of-nil nil
+   :parents (fty::defset set::std/osets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed
  (fty::defset nat-set
-              :elt-type nat
-              :short "short"))
+   :elt-type nat
+   :elementp-of-nil nil
+   :short "short"))
 
 (must-succeed
  (fty::defset nat-set
-              :elt-type nat
-              :short (concatenate 'string "sh" "ort")))
+   :elt-type nat
+   :elementp-of-nil nil
+   :short (concatenate 'string "sh" "ort")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed
  (fty::defset nat-set
-              :elt-type nat
-              :long "long"))
+   :elt-type nat
+   :elementp-of-nil nil
+   :long "long"))
 
 (must-succeed
  (fty::defset nat-set
-              :elt-type nat
-              :long (concatenate 'string "lo" "ng")))
+   :elt-type nat
+   :elementp-of-nil nil
+   :long (concatenate 'string "lo" "ng")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed
+ (fty::defset sym-set
+   :elt-type symbol
+   :elementp-of-nil t))

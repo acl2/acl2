@@ -10,7 +10,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,9 +251,9 @@
         (xdoc::ul
          (xdoc::li
           "@(':auto'), to use the "
-          (xdoc::seeurl "acl2::paired-names" "paired name")
+          (xdoc::seetopic "acl2::paired-names" "paired name")
           " obtained by "
-          (xdoc::seeurl "acl2::make-paired-name" "pairing")
+          (xdoc::seetopic "acl2::make-paired-name" "pairing")
           " the name of @('old') and the name of "
           ,new/wrapper-ref
           ", putting the result into the same package as "
@@ -359,7 +359,7 @@
          " "
          ,is/are
          " "
-         (xdoc::seeurl "acl2::non-executable" "non-executable")
+         (xdoc::seetopic "acl2::non-executable" "non-executable")
          ":")
         (xdoc::ul
          (xdoc::li

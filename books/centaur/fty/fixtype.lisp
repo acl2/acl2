@@ -77,8 +77,8 @@
              (,equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
                                       booleanp-compound-recognizer)))
-           (defequiv ,equiv)
-           (defcong ,equiv equal (,fix x) 1)
+           (defequiv ,equiv :package :legacy)
+           (defcong ,equiv equal (,fix x) 1 :package :legacy)
            (defthm ,(intern-in-package-of-symbol
                      (concatenate 'string
                                   (symbol-name fix) "-UNDER-" (symbol-name equiv))

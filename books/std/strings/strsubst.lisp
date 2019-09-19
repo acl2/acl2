@@ -191,7 +191,7 @@ individual characters, whereas @('strsubst') works on substrings.</p>"
     :hints(("Goal"
             :in-theory (disable l0)
             :use ((:instance l0 (x x))
-                  (:instance l0 (x acl2::x-equiv))))))
+                  (:instance l0 (x x-equiv))))))
 
   (defthm strsubst-list-of-append
     (equal (strsubst-list old new (append x y))

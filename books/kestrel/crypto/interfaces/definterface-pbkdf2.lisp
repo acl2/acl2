@@ -20,7 +20,7 @@
 
   :short (xdoc::topstring
           "Introduce an "
-          (xdoc::seeurl "interfaces" "interface")
+          (xdoc::seetopic "interfaces" "interface")
           " for a password-based key derivation function 2 (PBKDF2).")
 
   :long

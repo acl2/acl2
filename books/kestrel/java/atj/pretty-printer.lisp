@@ -95,53 +95,59 @@
                 (car parts)
                 (print-comma-sep (cdr parts))))))
 
-(define print-jstring-char ((char characterp))
+(define print-jchar ((char characterp))
   :returns (part msgp)
-  :short "Pretty-print a Java string character."
+  :short "Pretty-print a Java character."
   :long
   (xdoc::topstring
    (xdoc::p
     "This turns an ACL2 character, viewed as a Java character,
      into a form that can be correctly pretty-printed
-     when the character is part of a Java string literal.
-     This has to take into account not only Java's string literal syntax,
+     when the character is part of a Java character or string literal.
+     This takes into account
+     not only Java's character and string literal syntax [JLS:3.10],
      but also the fact that the pretty-printer uses ACL2's formatted printing,
      where the tilde has a special meaning.")
    (xdoc::p
-    "A double quote or backslash is preceded by a backslash,
-     as required for Java.")
+    "A single quote or double quote or backslash is preceded by a backslash.
+     Double quotes do not need a preceding backslash in a character literal,
+     and single quotes do not need a preceding backslash in a string literal,
+     but for now for simplicity we escape both single and double quotes
+     in both character and string literals.")
    (xdoc::p
     "The other characters with codes between 32 and 125 are left unchanged.")
    (xdoc::p
+    "For backspace, horizontal tab, line feed, form feed, and carriage return
+     we use the escape sequences
+     @('\b'), @('\t'), @('\n'), @('\f'), and @('\r').")
+   (xdoc::p
     "All the other characters, including tilde,
-     are turned into their Java Unicode escapes.
+     are turned into their octal escapes.
      This is needed for tilde,
      which otherwise would cause errors or misinterpretations
-     in ACL2's formatted printing.
-     It is also needed for certain characters, such as newline,
-     which would cause errors in Java.
-     It may not be needed for all the characters
-     that do not fall into the previous cases,
-     but we conservatively treat them in the same way
-     for simplicity and safety."))
-  (b* (((when (member char '(#\" #\\))) (implode (list #\\ char)))
+     in ACL2's formatted printing."))
+  (b* (((when (member char '(#\' #\" #\\))) (implode (list #\\ char)))
        (code (char-code char))
        ((when (and (<= 32 code)
                    (<= code 125))) (implode (list char)))
-       ((mv hi-char lo-char) (ubyte8=>hexchars code)))
-    (implode (list #\\ #\u #\0 #\0 hi-char lo-char))))
+       ((when (= code 8)) "\\b")
+       ((when (= code 9)) "\\t")
+       ((when (= code 10)) "\\n")
+       ((when (= code 12)) "\\f")
+       ((when (= code 13)) "\\r"))
+    (implode (cons #\\ (str::natchars8 code)))))
 
-(define print-jstring-chars ((chars character-listp))
+(define print-jchars ((chars character-listp))
   :returns (part msgp)
-  :short "Lift @(tsee print-jstring-char) to lists of characters."
+  :short "Lift @(tsee print-jchar) to lists."
   :long
   (xdoc::topstring-p
-   "The representations of the characters are juxtaposed one after the other,
-    as needed for Java string literals.")
+   "The representations of the characters are juxtaposed one after the other.
+    This is used only for string literals, not character literals.")
   (cond ((endp chars) "")
         (t (msg "~@0~@1"
-                (print-jstring-char (car chars))
-                (print-jstring-chars (cdr chars))))))
+                (print-jchar (car chars))
+                (print-jchars (cdr chars))))))
 
 (define print-jliteral ((lit jliteralp))
   :returns (part msgp)
@@ -166,7 +172,8 @@
    :floating (b* ((digits (str::natstr lit.value)))
                (str::cat digits ".0"))
    :boolean (if lit.value "true" "false")
-   :string (msg "\"~@0\"" (print-jstring-chars (explode lit.value)))
+   :character (msg "'~@0'" (print-jchar lit.value))
+   :string (msg "\"~@0\"" (print-jchars (explode lit.value)))
    :null "null"))
 
 (define print-jtype ((type jtypep))

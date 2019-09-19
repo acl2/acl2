@@ -497,6 +497,7 @@
 
 (fty::defset bip32-path-set
   :elt-type ubyte32-list
+  :elementp-of-nil t
   :pred bip32-path-setp
   :fix bip32-path-sfix
   :short "Osets of paths in key trees."

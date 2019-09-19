@@ -43,7 +43,7 @@ set of certified books, smaller than the "everything" suite that
 currently generates td-cands.lisp.  (Indeed, as a reviewer of my 2018
 ACL2 Workshop paper noted, it would be nice to be able to specify
 extra books that aren't necessarily community books.  Also see the
-related item below on "including more books beyond doc/top".)
+related item below on "including more books beyond doc/top-slow".)
 
 ----------
 
@@ -411,11 +411,11 @@ ACL2 !>
 
 As suggested by Eric McCarthy, try to apply defunt to functions in
 existing community books, especially books not already included in
-system book doc/top.
+system book doc/top-slow.
 
 ----------
 
-Consider including more books beyond doc/top for defunt, maybe even if
-there are conflicts.
+Consider including more books beyond doc/top-slow for defunt, maybe
+even if there are conflicts.
 
 ----------

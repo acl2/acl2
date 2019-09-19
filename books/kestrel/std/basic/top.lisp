@@ -18,9 +18,9 @@
   :parents (std-extensions std/basic)
   :short
   (xdoc::topstring "Extensions of "
-                   (xdoc::seeurl "std/basic" "Std/basic")
+                   (xdoc::seetopic "std/basic" "Std/basic")
                    " in the "
-                   (xdoc::seeurl "kestrel-books" "Kestrel Books")
+                   (xdoc::seetopic "kestrel-books" "Kestrel Books")
                    ".")
   :long
   (xdoc::topstring

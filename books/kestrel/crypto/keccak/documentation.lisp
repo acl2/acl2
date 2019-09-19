@@ -11,8 +11,6 @@
 
 (in-package "KECCAK")
 
-(include-book "keccak")
-
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 (defxdoc keccak
@@ -21,7 +19,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The following executable functions implement the Keccak SHA-3 submission,
+    "The following executable formal specifications follow the Keccak SHA-3 submission,
      Version 3, January 14, 2011, before SHA-3 was finalized.")
    (xdoc::p
     "There are two sets of functions described here: bit-oriented and byte-oriented.
@@ -50,6 +48,15 @@
 (keccak-384-bytes byte-list)
 (keccak-512-bytes byte-list)")
    (xdoc::p
-    "For more details, please refer to the source file, which is extensively
-     commented.")
+    "See the comments in the source file for more information.")
    ))
+
+(xdoc::defpointer keccak-224 keccak)
+(xdoc::defpointer keccak-256 keccak)
+(xdoc::defpointer keccak-384 keccak)
+(xdoc::defpointer keccak-512 keccak)
+
+(xdoc::defpointer keccak-224-bytes keccak)
+(xdoc::defpointer keccak-256-bytes keccak)
+(xdoc::defpointer keccak-384-bytes keccak)
+(xdoc::defpointer keccak-512-bytes keccak)

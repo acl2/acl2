@@ -7,13 +7,13 @@
 package edu.kestrel.acl2.aij;
 
 /**
- * Representation of ACL2 named functions in ACL2 terms.
+ * Representation of ACL2 named functions in terms.
  * These are native functions (subclass {@link Acl2NativeFunction})
  * and defined functions (subclass {@link Acl2DefinedFunction}).
  * This abstract superclass contains their common
  * state (i.e. the name of the function) and
  * behavior (i.e. equality, hashing, comparison, and string representation).
- * ACL2 named functions are interned:
+ * Named functions are interned:
  * there is exactly one instance for each function name;
  * see the subclasses for details.
  */
@@ -22,22 +22,26 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Name of this function.
+     * Name of this named function.
      * This is never {@code null}.
      */
     private final Acl2Symbol name;
 
     /**
-     * Constructs an ACL2 named function from its name.
-     * Accessed only by the subclasses.
+     * Constructs a named function with the given name
+     * This is accessed only by the subclasses.
+     *
+     * @param name The name of the function.
      */
     Acl2NamedFunction(Acl2Symbol name) {
         this.name = name;
     }
 
     /**
-     * Returns the name of this function.
-     * Accessed only by the subclasses.
+     * Returns the name of this named function.
+     * This is accessed only by the subclasses.
+     *
+     * @return The name of this function.
      */
     Acl2Symbol getName() {
         return this.name;
@@ -45,18 +49,20 @@ public abstract class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Flag saying whether all the defined functions created so far
-     * have valid definitions.
+     * (which are all named functions) have valid definitions.
      * This is initially true because there are no defined functions initially.
-     * This is reset to false whenever a new defined function is created,
+     * This is set to false whenever a new defined function is created,
      * because that one has not been validated yet.
      * This is set to true by {@link #validateAll()}.
      */
     private static boolean validatedAll = true;
 
     /**
-     * Sets to true the flag that says whether
+     * Sets the flag that says whether
      * all the defined functions created so far have valid definitions.
      * This is called only by the subclass {@link Acl2DefinedFunction}.
+     *
+     * @param value The value to set the @{link #validatedAll} flag to.
      */
     static void setValidatedAll(boolean value) {
         validatedAll = value;
@@ -72,7 +78,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Sets the indices of all the variables in this function.
+     * Sets the indices of all the variables in this named function.
      * Since a named function has no variables, this method does nothing.
      */
     @Override
@@ -82,12 +88,16 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 named function is equal to the argument object.
+     * Compares this named function with the argument object for equality.
      * The only way in which code external to AIJ can create named functions
      * is through the {@link #make(Acl2Symbol)} method:
      * since both defined and native functions are interned
      * (see {@link Acl2DefinedFunction} and {@link Acl2NativeFunction}),
      * two named functions are equal iff they are the same object.
+     *
+     * @param o The object to compare this named function with.
+     * @return {@code true} if the object is equal to this named function,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
@@ -95,16 +105,16 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Compares this ACL2 named function with the argument ACL2 function
-     * for order.
+     * Compares this named function with the argument function for order.
      * This order consists of:
      * first named functions, ordered according to their underlying symbols;
      * then lambda expressions, ordered lexicographically according to
      * their list of formal parameters followed by their body.).
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this function is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The function to compare this named function to.
+     * @return A negative integer, zero, or a positive integer as this
+     * named function is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Function o) {
@@ -119,7 +129,9 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Returns a printable representation of this ACL2 named function.
+     * Returns a printable representation of this named function.
+     *
+     * @return A printable representation of this named function.
      */
     @Override
     public String toString() {
@@ -127,8 +139,9 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Returns an ACL2 named function with the given name.
+     * Returns a named function with the given name.
      *
+     * @param name The name of the named function.
      * @throws IllegalArgumentException if name is null
      */
     public static Acl2NamedFunction make(Acl2Symbol name) {
@@ -141,40 +154,46 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Validate all the existing function definitions.
-     * This ensures that
+     * Ensure that all the defined functions created so far
+     * have valid definitions.
      *
-     * @throws IllegalStateException if validation fails
+     * @throws IllegalStateException If validation fails.
      */
     public static void validateAll() {
         Acl2DefinedFunction.validateAllDefinitions();
     }
 
     /**
-     * Defines this ACL2 named function.
+     * Defines this named function.
+     * This also sets the indices of all the variables in the defining body;
+     * see {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException if parameters or body is null
+     * @param parameters The formal parameters of the function definition.
+     * @param body       The body of the function definition.
+     * @throws IllegalArgumentException If {@code parameters} or {@code body}
+     *                                  is {@code null},
      *                                  or the function definition is malformed
      *                                  in a way that
-     *                                  some valid variable index cannot be set
-     * @throws IllegalStateException    if the function is
+     *                                  some variable index cannot be set.
+     * @throws IllegalStateException    If the function is
      *                                  already defined or native,
-     *                                  or some variable index is already set
+     *                                  or some variable index is already set.
      */
     public abstract void define(Acl2Symbol[] parameters, Acl2Term body);
 
     /**
-     * Call this ACL2 named function on the given values.
+     * Calls this named function on the given values.
      *
-     * @throws IllegalArgumentException if values is null,
-     *                                  or any value is null
-     * @throws IllegalStateException    if not all the defined functions
-     *                                  have been validated
-     * @throws Acl2EvaluationException  if the function is
+     * @throws IllegalArgumentException If {@code values} is {@code null},
+     *                                  or any of its elements is {@code null}.
+     * @throws IllegalStateException    If not all the defined functions
+     *                                  have been validated.
+     * @throws Acl2EvaluationException  If this named function is
      *                                  neither defined nor native,
-     *                                  or values.length differs from
+     *                                  or {@code values.length} differs from
      *                                  the function's arity,
-     *                                  or the function call fails
+     *                                  or a call of {@code pkg-imports}
+     *                                  or {@code pkg-witness} fails.
      */
     public Acl2Value call(Acl2Value[] values) throws Acl2EvaluationException {
         if (!validatedAll)

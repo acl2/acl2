@@ -10,10 +10,13 @@
 
 (in-package "JAVA")
 
-(include-book "library-extensions")
+(include-book "aij-notions")
+(include-book "primitives")
 (include-book "test-structures")
 
+(include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "oslib/top" :dir :system)
@@ -23,7 +26,9 @@
 
 (xdoc::evmac-topic-input-processing atj)
 
-(define atj-process-targets ((targets true-listp) ctx state)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-process-targets ((targets true-listp) deep guards ctx state)
   :returns (mv erp
                (result "Always @('nil').")
                state)
@@ -41,8 +46,21 @@
        ((er &) (ensure-list-no-duplicates$ targets
                                            (msg "The target functions ~&0"
                                                 targets)
-                                           t nil)))
-    (value nil)))
+                                           t nil))
+       ((unless (or (eq deep nil)
+                    (eq guards t))) (value nil))
+       (target-prims (intersection-eq targets *atj-primitive-fns*))
+       ((when (null target-prims)) (value nil)))
+    (er-soft+ t nil
+              "Since the :DEEP input is (perhaps by default) NIL ~
+               and the :GUARDS input is T, ~
+               ~@0."
+              (if (= (len target-prims) 1)
+                  (msg "the function ~x0 cannot be specified as target"
+                       (car target-prims))
+                (msg "the functions ~&0 cannot be specified as targets")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp
@@ -66,6 +84,8 @@
                    the name of the Java package of AIJ ~x1."
                   java-package *atj-aij-jpackage*)))
     (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-default-java-class*
   :short "Default Java class name to use if @(':java-class') is @('nil')."
@@ -92,6 +112,8 @@
        (name (or java-class *atj-default-java-class*)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-ensure-terms-quoted-constants
   ((qcs pseudo-term-listp "@('qc1'), @('qc2'), etc.")
    (fn symbolp "The @('fn') in @('(fn qc1 qc2 ...)'); just for error messages.")
@@ -113,6 +135,8 @@
                    must be a quoted constant."
                   qc fn term)))
     (atj-ensure-terms-quoted-constants (cdr qcs) fn term ctx state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-tests (tests (targets$ symbol-listp) ctx state)
   :returns (mv erp
@@ -195,11 +219,13 @@
                    t nil))
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
-          (args (unquote-terms qcs))
+          (args (unquote-term-list qcs))
           ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
           ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
        (value (cons agg aggs))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-output-dir (output-dir
                                 (java-class$ stringp)
@@ -269,6 +295,8 @@
                  (value :this-is-irrelevant))))
     (value (list file file-test))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-allowed-options*
   :short "Keyword options accepted by @(tsee atj)."
   (list :deep
@@ -281,6 +309,8 @@
   ///
   (assert-event (symbol-listp *atj-allowed-options*))
   (assert-event (no-duplicatesp-eq *atj-allowed-options*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
@@ -339,7 +369,7 @@
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
        (tests (cdr (assoc-eq :tests options)))
        (verbose (cdr (assoc-eq :verbose options)))
-       ((er &) (atj-process-targets targets ctx state))
+       ((er &) (atj-process-targets targets deep guards ctx state))
        ((er &) (ensure-boolean$ deep "The :DEEP intput" t nil))
        ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))
