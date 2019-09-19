@@ -430,7 +430,8 @@
          (natp s2)
          (< s1 s2)))
 
-  (defthm 4vec-rsh-of-4vec-concat$-1
+  (local
+   (defthm 4vec-rsh-of-4vec-concat$-1-lemma
     (implies (4vec-rsh-of-4vec-concat$-1-hyp s1 s2)
              (equal (4vec-rsh s1 (4vec-concat$ s2 x y))
                     (4vec-concat (- s2 s1)
@@ -438,6 +439,20 @@
                                  y)))
     :hints (("Goal"
              :use ((:instance 4vec-rsh-of-4vec-concat))
+             :in-theory (e/d (4vec-concat$) ())))))
+
+  (defthm 4vec-rsh-of-4vec-concat$-1
+    (implies (4vec-rsh-of-4vec-concat$-1-hyp s1 s2)
+             (equal (4vec-rsh s1 (4vec-concat$ s2 x y))
+                    (4vec-concat$ (- s2 s1)
+                                 (bits x s1 (- s2 s1))
+                                 y)))
+    :hints (("Goal"
+             :use ((:instance 4vec-rsh-of-4vec-concat$-1-lemma)
+                   (:instance 4VEC-CONCAT-INSERT-4VEC-PART-SELECT
+                              (size (+ (- S1) S2))
+                              (val1 (4VEC-RSH S1 X))
+                              (val2 y)))
              :in-theory (e/d (4vec-concat$) ())))))
 
 (encapsulate

@@ -1,3 +1,28 @@
+; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2019 Centaur Technology
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Mertcan Temel <mert@utexas.edu>
+
 
 (in-package "SVL")
 
@@ -18,10 +43,8 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
-(include-book "/Users/user/async/fft/svl-tests/tests")
-
-(in-theory (disable ACL2::NATP-WHEN-GTE-0
-                    ACL2::NATP-WHEN-INTEGERP))
+(in-theory (disable acl2::natp-when-gte-0
+                    acl2::natp-when-integerp))
 
 (encapsulate
   nil

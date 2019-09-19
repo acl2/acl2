@@ -37,12 +37,10 @@
 
 (include-book "svl-openers")
 
-(include-book "proofs/svl-return-vals")
+(include-book "svl-guards")
 
 (include-book "macros")
 
 (include-book "sv-update")
-
-
 
 (include-book "svl2-openers")

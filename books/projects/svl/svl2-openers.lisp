@@ -1,3 +1,28 @@
+; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2019 Centaur Technology
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Mertcan Temel <mert@utexas.edu>
+
 
 (in-package "SVL")
 
@@ -612,12 +637,13 @@
            (b* ((x (cdr (assoc-equal modname modules)))
                 (- (cw "Using svl2-run-cycle$-opener for ~p0 ~%"
                        modname))
-                ((mv env-wires next-delayed-env.modules)
-                 (svl2-run-cycle-occs$ (CDR (STD::DA-NTH 4 X))
-                                       (svl-run-add-delayed-ins
+                (env-wires (svl-run-add-delayed-ins
                                         (svl2-start-env (CDR (STD::DA-NTH 1 X)) inputs)
                                         delayed-env
-                                        (CDR (STD::DA-NTH 2 X)))
+                                        (CDR (STD::DA-NTH 2 X))))
+                ((mv env-wires next-delayed-env.modules)
+                 (svl2-run-cycle-occs$ (CDR (STD::DA-NTH 4 X))
+                                       env-wires
                                        (svl-env->modules delayed-env)
                                        modules))
                 (out-vals (svl2-retrieve-values (CDR (STD::DA-NTH 3 X))
