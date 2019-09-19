@@ -34,4 +34,6 @@
 
 (include-book "svex-eval2-meta")
 
+(include-book "4vec-rsh-meta")
+
 (rp::update-rp-clause-proc with-svl-metas)

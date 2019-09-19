@@ -25,6 +25,24 @@
 
 ;; All the books from SVL package.
 
+;; This book has two main tools: SVL and SVL2.
+
+;; SVL is a listener-based verilog simulator that maintains hierarchy. In this
+;; listener-based modal, assignments and instances of modules are listed as
+;; occurances and a listener alist structure where keys are occurance names and
+;; entries are each a list of occurance names. Whenever an occurance runs, all
+;; the entries corresponding to that occurance are pushed on the queue to be
+;; run. This model works but its code is not very stable and the simulations
+;; are slower.
+
+;; SVL2 implements a simular idea but the listener structure is used to order
+;; occurances to have the same effect. The code is much more stable and
+;; simulation is faster. Also SVL2 supports a much better flattening
+;; functionality for modules that are better off flattened out. In case of a
+;; combinational loop, the program will throw an error at the time of
+;; translation from SV design to SVL2 design.
+
+
 (in-package "SVL")
 
 (include-book "svl")
@@ -37,6 +55,10 @@
 
 (include-book "svl-openers")
 
-(include-book "proofs/svl-return-vals")
+(include-book "svl-guards")
 
 (include-book "macros")
+
+(include-book "sv-update")
+
+(include-book "svl2-openers")

@@ -1,11 +1,38 @@
-
+; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2019 Centaur Technology
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Mertcan Temel <mert@utexas.edu>
 
 (in-package "SV")
 
 (include-book "centaur/sv/mods/svmods" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
-;; Goal 1: Write a function to check equivalance of two designs,
+
+(include-book "svex-simplify")
+(include-book "xdoc/topics" :dir :system)
+
+;; Tool 1: Write a function to check equivalance of two designs,
 ;; return t even when
 ;; modules are in different order.
 (progn
@@ -40,7 +67,7 @@
                              modalist2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Goal 2: Get rid of genarray instances.
+;; Tool 2: Get rid of genarray instances.
 
 (progn
 
@@ -194,12 +221,13 @@
                                       (modinst->instname (car insts)))))))
                          (progn$
                           #|(cw "Here in=~p0, out=~p1 ~%" (car insts)
-                              res)||#
+                          res)||#
                           res))
                      (car insts)))
              ((sv::modinst inst) inst)
              (is-genarray (case-match inst.modname
                             ((& :genarray . &) t)
+                            ((& :genblock . &) t)
                             (& nil)))
              ((mv other-modules
                   new-aliaspaires this-insts
@@ -281,7 +309,7 @@
            all-other-modules)))))
 
   (define sv-design-remove-genarray ((design design-p))
-  (declare (xargs :mode :program))
+    (declare (xargs :mode :program))
     :verify-guards nil
     (change-design
      design
@@ -293,6 +321,103 @@
       (design->modalist design)
       nil
       (expt 2 50)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tool 3: Simplify svexes in assignments.
+
+(encapsulate
+  nil
+
+  (defttag t)
+  (set-register-invariant-risk nil)
+  (defttag nil)
+  
+  (define get-total-lhs-w ((lhs lhs-p))
+    (if (atom lhs)
+        0
+      (+ (lhrange->w (car lhs))
+         (get-total-lhs-w (cdr lhs)))))
+
+  (define insert-partsel-to-svexes ((assigns assigns-p))
+    :guard-hints (("Goal"
+                   :in-theory (e/d (svex-p) ())))
+    (if (atom assigns)
+        nil
+      (b* ((lhs (caar assigns))
+           (total-lhs-w (get-total-lhs-w lhs))
+           ((driver d) (cdar assigns)))
+        (cons (cons lhs (change-driver d
+                                       :value `(partsel 0 ,total-lhs-w
+                                                        ,d.value)))
+              (insert-partsel-to-svexes (cdr assigns))))))
+
+  (define insert-partsel-to-svexes-and-simplify ((assigns assigns-p)
+                                                 (state state-p)
+                                                 (rp::rp-state rp::rp-statep)
+                                                 (svex-simplify-preloaded))
+    :guard-hints (("Goal"
+                   :in-theory (e/d (svex-p) ())))
+    (declare (xargs :mode :program))
+    #|:returns (mv (res assigns-p :hyp (assigns-p assigns))
+    (rp::rp-state rp-state))||#
+    (if (atom assigns)
+        (mv nil rp::rp-state)
+      (b* ((lhs (caar assigns))
+           (total-lhs-w (get-total-lhs-w lhs))
+           ((driver d) (cdar assigns))
+           ((mv svex-res rp::rp-state)
+            (svl::svex-simplify `(partsel 0 ,total-lhs-w ,d.value)
+                                :svex-simplify-preloaded svex-simplify-preloaded))
+           ((mv rest rp::rp-state)
+            (insert-partsel-to-svexes-and-simplify (cdr assigns) state
+                                                   rp::rp-state svex-simplify-preloaded)))
+        (mv (cons (cons lhs (change-driver d :value svex-res))
+                  rest)
+            rp::rp-state))))
+
+  (define sv-mods-simplify-svexes ((modalist modalist-p)
+                                   (state state-p)
+                                   (rp::rp-state rp::rp-statep)
+                                   (svex-simplify-preloaded))
+    (declare (xargs :mode :program))
+    (if (atom modalist)
+        (mv nil rp::rp-state)
+      (b* (((mv rest rp::rp-state)
+            (sv-mods-simplify-svexes (cdr modalist) state rp::rp-state
+                                     svex-simplify-preloaded))
+           ((mv cur rp::rp-state)
+            (insert-partsel-to-svexes-and-simplify
+             (module->assigns (cdar modalist))
+             state rp::rp-state svex-simplify-preloaded)))
+        (mv (acons (caar modalist)
+                   (change-module (cdar modalist) :assigns cur)
+                   rest)
+            rp::rp-state))))
+
+
+   
+  
+  (define sv-design-simplify-svexes ((design design-p)
+                                     (state state-p)
+                                     (rp::rp-state rp::rp-statep))
+    (declare (xargs :mode :program))
+    "Using the rewrite rules in the current theory, go through all the ~
+assignments and simplify them in an sv-design, using the function svl::svex-simplify."
+    (b* ((svex-simplify-preloaded (svl::svex-simplify-preload))
+         ((mv new-modalist rp::rp-state) (sv-mods-simplify-svexes
+                                          (design->modalist design)
+                                          state rp::rp-state svex-simplify-preloaded)))
+      (mv (change-design design :modalist new-modalist)
+          rp::rp-state))))
+
+
+
+(acl2::defxdoc sv-design-simplify-svexes
+  :parents (projects/svl)
+  :short "Apply @('svl::svex-simplify') to all the assignments in a sv design.")
+
+(in-theory (disable acl2::natp-when-gte-0
+                    acl2::natp-when-integerp))
 
 #|
 

@@ -353,7 +353,11 @@
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (if err
                 (progn$
-                 (cw "Error with ex. counterpart: ~p0 for term: ~p1 ~%" val term)
+                 (fmt-to-comment-window "Error with ex. counterpart: ~p0 for term: ~p1 ~%"
+                        (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST VAL TERM))
+                        0
+                        '(nil 8 10 nil)
+                        NIL)
                  term)
               (list 'quote val))
             rp-state)))))
@@ -732,6 +736,8 @@ returns (mv rule rules-rest bindings rp-context)"
       (('cons ('cons ('quote a) b) rest)
        (cons (cons a b)
              (rp-rw-fix-hard-error-alist rest)))
+      (('quote x)
+       x)
       (''nil
        nil)
       (& alist)))
@@ -760,7 +766,7 @@ returns (mv rule rules-rest bindings rp-context)"
       (('fmt-to-comment-window ('quote &) ('quote &)
                                ('quote &) ('quote &) ('quote &))
        ;; if all arguments are quoted, then executable counterpart will be
-       ;; triggered anyways.
+       ;; triggered anyways, so dont do anything.
        nil)
       (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 ''(#\0 #\1 #\2 #\3 #\4
                                                                 #\5 #\6 #\7 #\8 #\9)
@@ -1134,36 +1140,36 @@ returns (mv rule rules-rest bindings rp-context)"
           (('implies p q)
            (b* (((mv newp rp-state)
                  (progn$
-                  (time-tracker :rp-rewriter :end)
-                  (time-tracker :rp-rewriter :init
-                                :times '(1 2 3 4 5)
-                                :interval 5
-                                :msg "Elapsed runtime took ~st secs;~%")
-                  (time-tracker t)
-                  (time-tracker :rp-rewriter :start)
+                  ;; (time-tracker :rp-rewriter :end)
+                  ;; (time-tracker :rp-rewriter :init
+                  ;;               :times '(1 2 3 4 5)
+                  ;;               :interval 5
+                  ;;               :msg "Elapsed runtime took ~st secs;~%")
+                  ;; (time-tracker t)
+                  ;; (time-tracker :rp-rewriter :start)
                   (rp-rw p nil nil  step-limit rules-alist exc-rules
                          meta-rules
                          t rp-state state)))
-                (- (time-tracker :rp-rewriter :stop))
-                (- (time-tracker :rp-rewriter :print?
+                (& (time-tracker :rp-rewriter :stop))
+                (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
                                  :msg "Rewriting the hypothesis took ~st ~
 seconds~%"))
-                (- (time-tracker :rp-rewriter :end))
-                (- (time-tracker :rp-rewriter :init
+                (& (time-tracker :rp-rewriter :end))
+                (& (time-tracker :rp-rewriter :init
                                  :times '(1 2 3 4 5)
                                  :interval 5
                                  :msg "Elapsed runtime took ~st secs;~%"))
                 (context (rp-extract-context newp))
-                (- (time-tracker :rp-rewriter :start))
+                (& (time-tracker :rp-rewriter :start))
                 ((mv newq rp-state)
                  (rp-rw q nil context  step-limit rules-alist exc-rules
                         meta-rules t rp-state state))
-                (- (time-tracker :rp-rewriter :stop))
-                (- (time-tracker :rp-rewriter :print?
+                (& (time-tracker :rp-rewriter :stop))
+                (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
                                  :msg "Rewriting the term took ~st seconds~%"))
-                (- (time-tracker :rp-rewriter :end)))
+                (& (time-tracker :rp-rewriter :end)))
              (mv (if (equal newq ''t)
                      ''t
                    `(implies ,newp ,newq))

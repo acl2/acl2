@@ -170,5 +170,21 @@
                             is-if
                             is-rp) ()))))
 
+(defthm valid-sc-cadddr
+  (IMPLIES (AND
+            (CONSP term)
+            (Not (EQUAL (CAR term) 'if))
+            (Not (EQUAL (CAR term) 'rp))
+            (Not (EQUAL (CAR term) 'quote))
+            (CONSP (CDR term))
+            (CONSP (CDdR term))
+            (CONSP (CDddR term))
+            (VALID-SC TERM A))
+           (VALID-SC (CAdDdR term) A))
+  :hints (("Goal"
+           :in-theory (e/d (ex-from-rp
+                            is-if
+                            is-rp) ()))))
+
 (defthm eval-and-all-nil
   (EVAL-AND-ALL NIL A))

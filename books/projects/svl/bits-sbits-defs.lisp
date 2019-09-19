@@ -51,9 +51,9 @@
     (sv::4vec-concat start head new-tail))||#
 
 (define bits
-  ((start natp)
-   (size natp)
-   (val sv::4vec-p))
+  ((val sv::4vec-p)
+   (start natp)
+   (size natp))
   :returns (result sv::4vec-p :hyp (and (natp start)
                                         (natp size)
                                         (sv::4vec-p val)))
@@ -93,9 +93,9 @@
 
   (add-macro-fn 4vec-list 4vec-cons t)
 
-  ;; print (bits start 1 val) as (bit$ val start)
+  ;; print (bits val start 1) as (bit$ val start)
   (defmacro bit$ (val index)
-    `(bits ,index '1 ,val))
+    `(bits ,val ,index '1))
 
-  (acl2::add-untranslate-pattern (svl::bits ?x '1 ?y)
+  (acl2::add-untranslate-pattern (svl::bits ?y ?x '1)
                                  (svl::bit$ ?y ?x)))

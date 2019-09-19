@@ -512,7 +512,7 @@
 
   (defthm svl-run-save-module-result-opener-0
     (equal (svl-run-save-module-result env-wires occ-res-vals (cons first rest))
-           (b* ((wire (cdr first))
+           (b* ((wire (wire-fix (cdr first)))
                 (new-val (if (consp occ-res-vals) (car occ-res-vals) '(-1 . 0))))
              (svl-run-save-module-result
               (svl-update-wire wire new-val env-wires)
@@ -524,7 +524,7 @@
 
   (defthm svl-run-save-module-result-opener
     (equal (svl-run-save-module-result env-wires (cons first-vals rest-vals) (cons first rest))
-           (b* ((wire (cdr first))
+           (b* ((wire (wire-fix (cdr first)))
                 (new-val first-vals))
              (svl-run-save-module-result
               (svl-update-wire wire new-val env-wires)
@@ -560,11 +560,11 @@
   (rp::defthm-lambda
    svl-run-get-module-occ-inputs-opener
    (equal (svl-run-get-module-occ-inputs env-wires (cons first rest))
-          (b* ((wire (cdr first))
+          (b* ((wire (wire-fix (cdr first)))
                (val (hons-get (wire-name wire) env-wires)))
             (cons (if val
                       (if (wire-start wire)
-                          (bits (wire-start wire) (wire-size wire) (cdr val))
+                          (bits (cdr val) (wire-start wire) (wire-size wire) )
                         (cdr val))
                     '(-1 . 0))
                   (svl-run-get-module-occ-inputs env-wires rest))))
@@ -669,7 +669,7 @@
                        (svl-get-outputs rest wires alist)))
                 (wire (assoc-equal sig wires)))
             (cons (if (and (cadr wire) res)
-                      (bits 0 (cadr wire) (cdr res))
+                      (bits (cdr res) 0 (cadr wire) )
                     (cdr res))
                   (svl-get-outputs rest wires alist))))
    :hints (("goal"

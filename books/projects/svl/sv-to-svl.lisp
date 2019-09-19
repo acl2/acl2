@@ -1,13 +1,36 @@
+; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2019 Centaur Technology
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Mertcan Temel <mert@utexas.edu>
+
 (in-package "SVL")
 
 (include-book "centaur/sv/svex/vars" :dir :system)
+(include-book "centaur/sv/mods/svmods" :dir :system)
 
 (include-book "centaur/fty/top" :dir :system)
 
 (include-book "projects/apply/top" :dir :system)
-
-(defmacro svl-name (module)
-  `(nth 0 ,module))
 
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
@@ -20,15 +43,17 @@
     (declare (xargs :guard t))
     (case-match wire
       ((wire-name size . start)
-       (and (or (stringp wire-name)
-                (symbolp wire-name))
-            (not (booleanp wire-name))
-            (natp size)
-            (natp start)))
+       (and #|(or (stringp wire-name)
+        (symbolp wire-name))||#
+        (sv::svar-p wire-name)
+;      (not (booleanp wire-name))
+        (natp size)
+        (natp start)))
       ((wire-name)
-       (and (or (stringp wire-name)
-                (symbolp wire-name))
-            (not (booleanp wire-name))))
+       (sv::svar-p wire-name)
+       #|(and (or (stringp wire-name)
+       (symbolp wire-name))
+       (not (booleanp wire-name)))||#)
       (& nil)))
 
   (defun wire-fix (wire)
@@ -71,7 +96,8 @@
     :enabled t
     (and (consp wire)
          (stringp (car wire))
-         (wire-p (cdr wire))))
+         ;(sv::lhs-p (cdr wire))
+         ))
 
   (define module-occ-wire-fix (wire)
     :enabled t
@@ -115,10 +141,20 @@
 (encapsulate
   nil
 
+
+  (define stringlist*-p (list*)
+    :enabled t
+    (if (atom list*)
+        (stringp list*)
+      (and (stringp (car list*))
+           (stringlist*-p (cdr list*)))))
+  
   (define occ-name-p (x)
-    (or (and (symbolp x)
+    (declare (ignorable x))
+    t; (not (booleanp x))
+    #|(or (and (symbolp x)
              (not (booleanp x)))
-        (stringp x))
+        (stringlist*-p x))||#
     :returns (res booleanp))
 
   (define occ-name-fix (x)
@@ -126,23 +162,22 @@
         x
       ""))
 
-  ;(defprod 
-  
-  (defthm occ-name-p-occ-name-FIX-X
-    (occ-name-p (occ-name-fix ACL2::X))
-    :hints (("Goal"
+;(defprod
+
+  (defthm occ-name-p-occ-name-fix-x
+    (occ-name-p (occ-name-fix acl2::x))
+    :hints (("goal"
              :in-theory (e/d (occ-name-p
                               occ-name-fix) ()))))
 
-  (defthm occ-name-P-occ-name-FIX-X-2
-    (IMPLIES (occ-name-p ACL2::X)
-             (EQUAL (occ-name-fix ACL2::X)
-                    ACL2::X))
-    :hints (("Goal"
+  (defthm occ-name-p-occ-name-fix-x-2
+    (implies (occ-name-p acl2::x)
+             (equal (occ-name-fix acl2::x)
+                    acl2::x))
+    :hints (("goal"
              :in-theory (e/d (occ-name-p
                               occ-name-fix) ()))))
 
-  
   (fty::deffixtype occ-name
                    :pred  occ-name-p
                    :fix   occ-name-fix
@@ -157,10 +192,13 @@
                  :val-type occ-name-list
                  :key-type occ-name))
 
+(defmacro svl-name (module)
+  `(nth 0 ,module))
+
 (fty::deftagsum
  occ
  (:assign ((inputs wire-list)
-           (delayed-inputs occ-name-list)
+           (delayed-inputs sv::svarlist-p)
            (outputs wire-list)
            (svex sv::svex-p)))
  (:module ((inputs module-occ-wire-list)
@@ -169,6 +207,7 @@
 
 (fty::defalist occ-alist
                :key-type occ-name
+               :true-listp t
                :val-type occ)
 
 #|(fty::defprod
@@ -181,7 +220,7 @@
  svl-module
  ((rank natp :default '0)
   (inputs string-listp)
-  (delayed-inputs occ-name-list)
+  (delayed-inputs sv::svarlist-p)
   (outputs string-listp)
   (wires wire-list-p)
   (occs occ-alist)
@@ -232,12 +271,14 @@
                        )
                     0))))
 
-  (defun vl-insouts-getwire (name wires)
+  (define vl-insouts-assocwire (name wires)
     (if (atom wires)
         nil
-      (if (equal name (caaar wires))
-          (caar wires)
-        (vl-insouts-getwire name (cdr wires)))))
+      (if (and (consp (car wires))
+               (consp (caar wires))
+               (equal name (caaar wires)))
+          (car wires)
+        (vl-insouts-assocwire name (cdr wires)))))
 
   (defun vl-smodule-to-insouts (smodule )
     (if (atom smodule)
@@ -371,6 +412,80 @@
                                                     (cdr (assoc-equal
                                                           'SV::MODALIST sv-design)))))
            insouts))))
+
+(progn
+  (define vl-insouts-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (string-listp ins)
+                   (string-listp outs)
+                   (vl-insouts-p rest)))))))
+
+  (define vl-insouts-sized-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (wire-list-p ins)
+                   (wire-list-p outs)
+                   (vl-insouts-sized-p rest)))))))
+
+  (define vl-insouts-insert-wire-sizes-aux ((sigs string-listp)
+                                            (wires SV::WIRELIST-P))
+    :verify-guards nil
+    (if (atom sigs)
+        nil
+      (b* ((cur (car sigs))
+           (cur-wire (vl-insouts-assocwire cur wires))
+           ((Unless cur-wire)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Signal ~p0 cannot be found in wires ~p1 ~%"
+                        (list (cons #\0 cur)
+                              (cons #\1 wires))))
+           (w (sv::wire->width cur-wire)))
+        (cons `(,cur ,w . 0)
+              (vl-insouts-insert-wire-sizes-aux (cdr sigs)
+                                                wires)))))
+
+  (define vl-insouts-insert-wire-sizes ((vl-insouts vl-insouts-p)
+                                        (sv-design sv::design-p)
+                                        (module-names string-listp))
+    :verify-guards nil
+    :guard-hints (("Goal"
+                   :in-theory (e/d (VL-INSOUTS-P
+                                    SV::DESIGN->MODALIST
+                                    assoc-equal
+                                    SV::MODALIST-FIX) ())))
+    (if (atom module-names)
+        nil
+      (b* ((cur (car module-names))
+           (this-vl-insouts (assoc-equal cur vl-insouts))
+           ((unless this-vl-insouts)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Module name cannot be found in vl-insouts ~p0 ~%"
+                        (list (cons #\0 cur))))
+           (modalist (sv::design->modalist sv-design))
+           (sv-module (assoc-equal cur modalist))
+           ((unless sv-module)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Module name cannot be found in modalist ~p0 ~%"
+                        (list (cons #\0 cur))))
+           (sv-module (cdr sv-module))
+           (wires (sv::module->wires sv-module))
+           (ins (cadr this-vl-insouts))
+           (ins (vl-insouts-insert-wire-sizes-aux ins wires))
+           (outs (cddr this-vl-insouts))
+           (outs (vl-insouts-insert-wire-sizes-aux outs wires)))
+        (cons `(,cur ,ins . ,outs)
+              (vl-insouts-insert-wire-sizes vl-insouts
+                                            sv-design
+                                            (cdr module-names)))))))
+  
+  
 
 (defun svl-assoc (key alist is-fast-alist)
   (declare (xargs :guard (alistp alist)))
@@ -989,15 +1104,15 @@
         ((endp l2) (revappend acc l1))
         ((listener-comperator (car l1) (car l2))
          (merge-listener-comperator (cdr l1)
-                           l2 (cons (car l1) acc)
-                           ))
+                                    l2 (cons (car l1) acc)
+                                    ))
         (t (merge-listener-comperator l1 (cdr l2)
-                             (cons (car l2) acc)))))
+                                      (cons (car l2) acc)))))
 
 (defun merge-listener-sort (l)
   (declare (xargs :guard (and (true-listp l))
                   :measure (len l)
-                  :mode :program 
+                  :mode :program
                   :verify-guards nil))
   (cond ((endp (cdr l)) l)
         (t (merge-listener-comperator (merge-listener-sort (evens l))
@@ -1105,6 +1220,33 @@
        (- (fast-alist-free relevant-occ-names)))
     (hons-acons ':initial entry listeners)))
 
+(progn
+  (defun get-reverse-listeners-aux (lst source-occ rest)
+    (declare (xargs :mode :program))
+    (if (atom lst)
+        rest
+      (get-reverse-listeners-aux (cdr lst)
+                                 source-occ
+                                 (hons-acons (car lst)
+                                             (cons source-occ
+                                                   (cdr (hons-get (car lst)
+                                                                  rest)))
+                                             rest))))
+
+  (defun get-reverse-listeners (listeners)
+    (declare (xargs :mode :program))
+    (if (atom listeners)
+        nil
+      (b* ((rest (get-reverse-listeners (cdr listeners))))
+        (get-reverse-listeners-aux (cdr (car listeners)) (caar listeners)
+                                   rest))))
+
+  (defun get-reverse-listeners-main (listeners)
+    (declare (xargs :mode :program))
+    (fast-alist-clean (get-reverse-listeners listeners))))
+
+;; (fast-alist-clean (get-reverse-listeners '((a b c d e) (d e f g a))))
+
 (encapsulate
   nil
 
@@ -1128,15 +1270,19 @@
                                   nil
                                   (union-entries-of-fast-alist (cdr keys) alist)))))
 
+  (defun member-wrap (x y)
+    (declare (xargs :mode :program))
+    (member-equal x y))
+
   (mutual-recursion
    (defun shrink-occ-listeners-would-calls (occ-name trace orig-listeners acc)
      (declare (xargs :mode :program)
               (ignorable trace))
-     (if (or  (hons-get occ-name acc)
-              (member-equal occ-name trace))
+     (if (or  (member-wrap occ-name trace)
+              (hons-get occ-name acc))
          acc
        (b* ((trace (cons occ-name trace))
-;(acc (hons-acons occ-name nil acc))
+            ;;(acc (hons-acons occ-name nil acc))
             (other-occs (cdr (hons-get occ-name orig-listeners)))
             (acc (shrink-occ-listeners-would-calls-lst
                   other-occs
@@ -1158,17 +1304,13 @@
         (cdr occ-lst) trace orig-listeners
         (shrink-occ-listeners-would-calls (car occ-lst) trace orig-listeners acc)))))
 
-  #|(shrink-occ-listeners-would-calls
-  ':initial nil
-  (make-fast-alist '((:initial a b d)
-  (a b c)
-  (b a c)
-  (d a)))
-  nil)||#
-
-  (defun member-wrap (x y)
+  (defun add-keys-to-fast-alist (keys alist)
     (declare (xargs :mode :program))
-    (member-equal x y))
+    (if (atom keys)
+        alist
+      (hons-acons (car keys)
+                  nil
+                  (add-keys-to-fast-alist (cdr keys) alist))))
 
   (defun sv->svl-shrink-occ-listeners-each-aux (occ-names cur-would-calls
                                                           would-call-alist
@@ -1179,7 +1321,7 @@
          (fast-alist-free visited)
          nil)
       (b* ((cur (car occ-names))
-           ((when (hons-get cur visited))
+           ((when  (hons-get cur visited))
             (sv->svl-shrink-occ-listeners-each-aux (cdr occ-names)
                                                    cur-would-calls
                                                    would-call-alist
@@ -1190,9 +1332,10 @@
                                                          cur-would-calls
                                                          would-call-alist
                                                          (hons-acons cur nil visited))))
-           (visited (add-to-fast-alist-unique (hons-get cur would-call-alist)
-                                              nil
-                                              visited)))
+           (visited
+            (add-to-fast-alist-unique (hons-get cur would-call-alist)
+                                      nil
+                                      visited)))
         (cons cur
               (sv->svl-shrink-occ-listeners-each-aux (cdr occ-names)
                                                      cur-would-calls
@@ -1207,13 +1350,13 @@
            (cur-name (car cur))
            (cur-list (cdr cur))
            (cur-would-calls (cdr (hons-get cur-name would-call-alist)))
-           (cur-would-calls (add-to-fast-alist-unique cur-would-calls nil
-                                                      (* 2 (len cur-would-calls))))
+           (cur-would-calls (make-fast-alist (pairlis$ cur-would-calls nil)))
            (new-listener-occs (sv->svl-shrink-occ-listeners-each-aux
                                cur-list
                                cur-would-calls
                                would-call-alist
-                               nil))
+                               nil;(* 2 (len would-call-alist))
+                               ))
            (- (fast-alist-free cur-would-calls)))
         (hons-acons cur-name
                     new-listener-occs
@@ -1225,7 +1368,9 @@
     (b* ((orig-listeners (make-fast-alist orig-listeners))
          (would-call-alist
           (shrink-occ-listeners-would-calls ':initial nil
-                                            orig-listeners nil))
+                                            orig-listeners
+                                            nil;(* 2 (len orig-listeners))
+                                            ))
          (- (fast-alist-free orig-listeners))
          (listeners (sv->svl-shrink-occ-listeners-each orig-listeners
                                                        would-call-alist)))
@@ -1339,7 +1484,7 @@
       nil
     (b* ((module (sv->svl-module (car sv-modules)
                                  vl-insouts))
-         (- (fast-alist-free (SVL-module->occs (cdr module)))) ;;BREAKING 
+         (- (fast-alist-free (SVL-module->occs (cdr module)))) ;;BREAKING
          (- (fast-alist-free (SVL-module->listeners (cdr module))))
          ) ;; BREAKING
       (if module
@@ -1573,8 +1718,6 @@
                (cw "Loop in module = ~p0 ~%" (caar svl-design)))
            (svl-loopfreep (cdr svl-design))))))
 
-
- 
 (defun cons-deep-copy (term)
   (declare (xargs :guard t))
   (cond ((atom term) term)

@@ -877,6 +877,19 @@
                             ex-from-rp-loose
                             is-rp-loose) ()))))
 
+(defthm all-falist-consistent-cadddr
+  (implies (and (all-falist-consistent term)
+                (consp term)
+                (not (quotep term))
+                (consp (cdr term))
+                (consp (cddr term))
+                (consp (cdddr term)))
+           (all-falist-consistent (cadddr term)))
+  :hints (("Goal"
+           :in-theory (e/d (all-falist-consistent
+                            ex-from-rp-loose
+                            is-rp-loose) ()))))
+
 
 
 (defthm pseudo-termp2-caddr
@@ -886,6 +899,19 @@
                 (consp (cdr term))
                 (consp (cddr term)))
            (pseudo-termp2 (caddr term)))
+  :hints (("Goal"
+           :in-theory (e/d (pseudo-termp2
+                            ex-from-rp-loose
+                            is-rp-loose) ()))))
+
+(defthm pseudo-termp2-cadddr
+  (implies (and (pseudo-termp2 term)
+                (consp term)
+                (not (quotep term))
+                (consp (cdr term))
+                (consp (cddr term))
+                (consp (cdddr term)))
+           (pseudo-termp2 (cadddr term)))
   :hints (("Goal"
            :in-theory (e/d (pseudo-termp2
                             ex-from-rp-loose
@@ -902,6 +928,22 @@
   :hints (("Goal"
            :in-theory (e/d (pseudo-termp2
                             ex-from-rp-loose
+                            is-rp-loose) ()))))
+
+(defthm rp-syntaxp-cadddr
+  (implies (and (rp-syntaxp term)
+                (consp term)
+                (not (quotep term))
+                (consp (cdr term))
+                (consp (cddr term))
+                (consp (cdddr term)))
+           (rp-syntaxp (cadddr term)))
+  :hints (("Goal"
+           :expand ((rp-syntaxp term))
+           :in-theory (e/d (pseudo-termp2
+                            ex-from-rp-loose
+                            rp-syntaxp
+                            is-rp
                             is-rp-loose) ()))))
 
 (defthmd ex-from-rp-loose-is-ex-from-rp
