@@ -18,19 +18,24 @@ public final class Acl2ConsPair extends Acl2Value {
     //////////////////////////////////////// private members:
 
     /**
-     * First (i.e. {@code car}) component of the ACL2 {@code cons} pair.
+     * First (i.e. {@code car}) component of this {@code cons} pair.
      * This is never {@code null}.
      */
     private final Acl2Value car;
 
     /**
-     * Second (i.e. {@code cdr}) component of the ACL2 {@code cons} pair.
+     * Second (i.e. {@code cdr}) component of this {@code cons} pair.
      * This is never {@code null}.
      */
     private final Acl2Value cdr;
 
     /**
-     * Constructs an ACL2 {@code cons} pair from its components.
+     * Constructs a {@code cons} pair with the given components.
+     *
+     * @param car The first component of the {@code cons} pair.
+     *            It is never {@code null}.
+     * @param cdr The second component of the {@code cons} pair.
+     *            It is never {@code null}.
      */
     private Acl2ConsPair(Acl2Value car, Acl2Value cdr) {
         this.car = car;
@@ -40,8 +45,10 @@ public final class Acl2ConsPair extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Returns {@code true},
-     * consistently with the {@code consp} ACL2 function.
+     * Checks if this {@code cons} pair is an {@code cons} pair.
+     * This is consistent with the {@code consp} ACL2 function.
+     *
+     * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol consp() {
@@ -49,24 +56,30 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Returns the first component of this ACL2 {@code cons} pair,
-     * consistently with the {@code car} ACL2 function.
+     * Returns the first component of this {@code cons} pair.
+     * This is consistent with the {@code car} ACL2 function.
+     *
+     * @return The first component of this {@code cons} pair.
      */
+    @Override
     Acl2Value car() {
         return this.car;
     }
 
     /**
-     * Returns the first component of this ACL2 {@code cons} pair,
-     * consistently with the {@code cdr} ACL2 function.
+     * Returns the first component of this {@code cons} pair.
+     * This is consistent with the {@code cdr} ACL2 function.
+     *
+     * @return The second component of this {@code cons} pair.
      */
+    @Override
     Acl2Value cdr() {
         return this.cdr;
     }
 
     /**
-     * Coerces this ACL2 {@code cons} pair to an ACL2 string,
-     * consistently with the {@code coerce} ACL2 function
+     * Coerces this {@code cons} pair to a string.
+     * This is consistent with the {@code coerce} ACL2 function
      * when the second argument is not {@code list}.
      */
     @Override
@@ -85,12 +98,12 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 character for order.
+     * Compares this {@code cons} pair with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The character to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToCharacter(Acl2Character o) {
@@ -99,12 +112,12 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 string for order.
+     * Compares this {@code cons} pair with the argument string for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The string to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToString(Acl2String o) {
@@ -113,12 +126,12 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 symbol for order.
+     * Compares this {@code cons} pair with the argument symbol for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The symbol to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToSymbol(Acl2Symbol o) {
@@ -127,12 +140,12 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 number for order.
+     * Compares this {@code cons} pair with the argument number for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The number to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToNumber(Acl2Number o) {
@@ -141,12 +154,12 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 rational for order.
+     * Compares this {@code cons} pair with the argument rational for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The rational to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToRational(Acl2Rational o) {
@@ -155,12 +168,12 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 integer for order.
+     * Compares this {@code cons} pair with the argument integer for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The integer to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToInteger(Acl2Integer o) {
@@ -169,12 +182,13 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 {@code cons} pair for order.
+     * Compares this {@code cons} pair
+     * with the argument {@code cons} pair for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this cons pair is less than, equal to, or greater than the argument
+     * @param o The {@code cons} pair to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToConsPair(Acl2ConsPair o) {
@@ -188,9 +202,13 @@ public final class Acl2ConsPair extends Acl2Value {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 {@code cons} pair is equal to the argument object.
-     * This is consistent with the {@code equal} ACL2 function.
+     * Checks if this {@code cons} pair is equal to the argument object.
+     * This is consistent with the {@code equal} function.
      * If the argument is not a {@link Acl2Value}, the result is {@code false}.
+     *
+     * @param o The object to compare this {@code cons} pair with.
+     * @return {@code true} if the object is equal to this {@code cons} pair,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
@@ -202,7 +220,9 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Returns a hash code for this ACL2 {@code cons} pair.
+     * Returns a hash code for this {@code cons} pair.
+     *
+     * @return The hash code for this {@code cons} pair.
      */
     @Override
     public int hashCode() {
@@ -212,30 +232,32 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 {@code cons} pair
-     * with the argument ACL2 value for order.
+     * Compares this {@code cons} pair with the argument value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer
-     * as this {@code cons} pair is
-     * less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The value to compare this {@code cons} pair with.
+     * @return A negative integer, zero, or a positive integer as this
+     * {@code cons} pair is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        return - o.compareToConsPair(this);
+        // compare the argument with this and flip the result:
+        return -o.compareToConsPair(this);
     }
 
     /**
-     * Returns a printable representation of this ACL2 {@code cons} pair.
+     * Returns a printable representation of this {@code cons} pair.
      * We use the same dotted pair notation as ACL2.
      * The {@code car} and the {@code cdr}
      * are recursively turned into string representations.
      * Overall, this method
      * and the {@code toString} methods of the other value classes
      * should ensure that {@code cons} pairs are always printed clearly.
+     *
+     * @return The printable representation of this {@code cons} pair.
      */
     @Override
     public String toString() {
@@ -243,9 +265,13 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Returns an ACL2 {@code cons} pair with the given components.
+     * Returns a {@code cons} pair with the given components.
      *
-     * @throws IllegalArgumentException if car or cdr is null
+     * @param car The first component of the {@code cons} pair.
+     * @param cdr The second component of the {@code cons} pair.
+     * @return The {@code cons} pair.
+     * @throws IllegalArgumentException If {@code car} or {@code cdr}
+     *                                  is {@code null}.
      */
     public static Acl2ConsPair make(Acl2Value car, Acl2Value cdr) {
         if (car == null)
@@ -256,14 +282,22 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
-     * Returns the first component of this ACL2 {@code cons} pair.
+     * Returns the first component of this {@code cons} pair.
+     * This is consistent with the {@code car} ACL2 function.
+     *
+     * @return The first component of this {@code cons} pair.
+     * It is never {@code null}.
      */
     public Acl2Value getCar() {
         return this.car;
     }
 
     /**
-     * Returns the second component of this ACL2 {@code cons} pair.
+     * Returns the second component of this {@code cons} pair.
+     * This is consistent with the {@code car} ACL2 function.
+     *
+     * @return The first component of this {@code cons} pair.
+     * It is never {@code null}.
      */
     public Acl2Value getCdr() {
         return this.cdr;

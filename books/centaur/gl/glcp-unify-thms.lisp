@@ -89,9 +89,9 @@
   (defcong acl2::set-equiv equal (all-keys-bound keys alist) 1
     :hints(("Goal" :in-theory (enable acl2::set-equiv)
             :use ((:instance all-keys-bound-subset
-                   (keys1 keys) (keys acl2::keys-equiv))
+                   (keys1 keys) (keys keys-equiv))
                   (:instance all-keys-bound-subset
-                   (keys1 acl2::keys-equiv) (keys keys)))
+                   (keys1 keys-equiv) (keys keys)))
             :do-not-induct t)))
 
   (defthm all-keys-bound-append

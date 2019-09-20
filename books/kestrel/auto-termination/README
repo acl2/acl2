@@ -29,7 +29,7 @@ community books, and then for a call of defunt to peruse that database
 in order to prove termination automatically.
 
 As of this writing, the database is initialized by including system
-book "doc/top" and then writing a termination database to file
+book "doc/top-slow" and then writing a termination database to file
 td-cands.lisp.  That database is what's perused by a call of defunt.
 
 There are heuristics for keeping the database from being too large.
@@ -80,6 +80,10 @@ ACL2 3 >
 
 II.  Infrastructure/flow
 
+PREREQUISITE.  Certify doc/top-slow.lisp and all books in the current
+directory (possibly excepting td-cands.lisp and the two books that
+depend on it, defunt-top.lisp and defunt-tests.lisp).
+
 The use of defunt depends on files td-cands.lisp and td-cands.acl2,
 which are generated using the steps below.  These steps are
 implemented by write-td-cands.lsp, which in turn is executed by the
@@ -95,17 +99,13 @@ force an update, execute this at the shell:
 
 ./write-td-cands.sh
 
-Here are the main steps to regenerating td-cands.lisp and
-td-cands.acl2.  The complete steps are implemented by the call of LD
-in write-td-cands.lsp that is made by the script write-td-cands.sh,
-starting with the following:
-
-PREREQUISITE.  Certify doc/top.lisp and all books in the current
-directory (possibly excepting td-cands.lisp and the two books that
-depend on it, defunt-top.lisp and defunt-tests.lisp).
+Here are the main steps implemented by this script for regenerating
+td-cands.lisp and td-cands.acl2.  The complete steps are implemented
+by the call of LD in write-td-cands.lsp that is made by the script
+write-td-cands.sh, starting with the following:
 
 (1) Include many of the community books together, as follows (this can
-take quite a few minutes): (include-book "doc/top" :dir :system).
+take quite a few minutes): (include-book "doc/top-slow" :dir :system).
 
 (2) Create a "termination database" stobj, td, from all
 singly-recursive logic-mode functions in the resulting world.
@@ -117,8 +117,10 @@ td-cands.lisp.  It has an associated file of portcullis commands,
 td-cands.acl2, which include many small books so that all packages are
 defined that are used in td-cands.lisp.
 
-(4) Certify the generated book td-cands.lisp, followed by
-defunt-top.lisp and defunt-tests.lisp.
+After completing these steps, one is ready to certify the generated
+book td-cands.lisp, followed by defunt-top.lisp and defunt-tests.lisp.
+Of course, this can be accomplished by calling cert.pl in this
+directory, or by running a regression.
 
 After these steps, one is ready to use defunt; see :doc defunt.
 

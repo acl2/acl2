@@ -13,13 +13,11 @@
 (include-book "ecurve/top")
 (include-book "ecdsa/top")
 (include-book "interfaces/top")
-
-;; Documentation for specific API functions.
-(include-book "keccak/documentation")
-
-(include-book "hmac/doc")
-(include-book "padding/doc")
-(include-book "sha-2/doc")
+(include-book "keccak/top")
+(include-book "hmac/top")
+(include-book "padding/top")
+(include-book "sha-2/top")
+(include-book "kdf/top")
 
 (include-book "attachments/top")
 

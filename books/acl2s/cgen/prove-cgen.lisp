@@ -582,7 +582,7 @@ history s-hist.")
 
 ;; (defun keywordify (sym)
 ;;   (declare (xargs :guard (symbolp sym)))
-;;   (intern-in-package-of-symbol (symbol-name sym) :key))
+;;   (acl2s::fix-intern-in-pkg-of-sym (symbol-name sym) :key))
 
 ;; (defun keywordify-lst (syms)
 ;;   (declare (xargs :guard (symbol-listp syms)))

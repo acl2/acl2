@@ -10,7 +10,6 @@ import java.util.Map;
 
 /**
  * Representation of ACL2 terms, in translated form.
- * <p>
  * They consist of
  * quoted constants (subclass {@link Acl2QuotedConstant},
  * variables (subclass {@link Acl2Variable},
@@ -32,7 +31,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
 
     /**
      * Validates all the function calls in this term.
-     * See the overriding methods for details.
+     * See the implementing methods for details.
      *
      * @throws IllegalStateException if validation fails
      */

@@ -33,6 +33,7 @@
 
 (include-book "centaur/aignet/cnf" :dir :system)
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
+(include-book "eval")
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))

@@ -12,6 +12,7 @@
 
 (set-verify-guards-eagerness 2)
 (include-book "std/util/bstar" :dir :system)
+(include-book "../utilities")
 ;(include-book "basis")
 
 ;; PETE: add the global cgen::cgen-guard-checking to control how
@@ -45,8 +46,8 @@
          (name (string-append prefix name))
          (name (string-append name postfix)))
     (if (member-eq sym *common-lisp-symbols-from-main-lisp-package*)
-      (intern-in-package-of-symbol name 'acl2::acl2-pkg-witness)
-      (intern-in-package-of-symbol name sym))))
+      (acl2s::fix-intern-in-pkg-of-sym name 'acl2::acl2-pkg-witness)
+      (acl2s::fix-intern-in-pkg-of-sym name sym))))
 
 (defun modify-symbol-lst (prefix syms postfix)
   (declare (xargs :guard (and (symbol-listp syms)
@@ -106,7 +107,7 @@
   (declare (xargs :guard (and (symbolp sym)
                               (not (equal pkg-name ""))
                               (stringp pkg-name))))
-  (intern$ (symbol-name sym) pkg-name))
+  (acl2s::fix-intern$ (symbol-name sym) pkg-name))
 
 (defun to-symbol-in-package-lst (sym-lst pkg)
   (declare (xargs :guard (and (symbol-listp sym-lst)
@@ -1085,9 +1086,9 @@ Mainly to be used for evaluating enum lists "
 ;;; always same as the name of the defrec, just like in stobjs. THis way we
 ;;; can drop in stobjs in their place!
 (defmacro access (r a)
-  `(acl2::access ,r ,r ,(intern-in-package-of-symbol (symbol-name a) :key)))
+  `(acl2::access ,r ,r ,(acl2s::fix-intern-in-pkg-of-sym (symbol-name a) :key)))
 (defmacro change (r a val )
-  `(acl2::change ,r ,r ,(intern-in-package-of-symbol (symbol-name a) :key) ,val))
+  `(acl2::change ,r ,r ,(acl2s::fix-intern-in-pkg-of-sym (symbol-name a) :key) ,val))
 
 
 

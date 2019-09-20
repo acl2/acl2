@@ -15,30 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (theorem-symbolp 'car-cdr-elim (w state)))
-
-(assert! (not (theorem-symbolp 'cons (w state))))
-
-(assert! (not (theorem-symbolp 'aaaaaaaaa (w state))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ x y)))
- (assert! (theorem-symbolp 'th (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (macro-symbolp 'append (w state)))
-
-(assert! (not (macro-symbolp 'cons (w state))))
-
-(assert! (not (macro-symbolp 'aaaaaaaaaa (w state))))
-
-(must-succeed*
- (defmacro m (x) `(list ,x))
- (assert! (macro-symbolp 'm (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (function-symbol-listp nil (w state)))
 
 (assert! (function-symbol-listp '(len cons atom) (w state)))
@@ -321,20 +297,6 @@
 (must-succeed*
  (defchoose f x (y) (equal x y))
  (assert! (not (definedp+ 'f (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (primitivep 'cons))
-
-(assert! (primitivep 'binary-+))
-
-(assert! (not (primitivep 'len)))
-
-(must-succeed*
- (defun f (x) x)
- (assert! (not (primitivep 'f))))
-
-(assert! (not (primitivep 'xxxxxxxxxxxxxxxxxxxxxx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -802,31 +764,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (macro-required-args 'tthm (w state)) '(fn))
-
-(assert-equal (macro-required-args 'list (w state)) nil)
-
-(assert-equal (macro-required-args 'defun (w state)) nil)
-
-(assert-equal (macro-required-args 'defthm (w state)) '(name term))
-
-(assert-equal (macro-required-args 'defun-sk (w state)) '(name args))
-
-(must-succeed*
- (defmacro m (a) `(list ,a))
- (assert-equal (macro-required-args 'm (w state)) '(a)))
-
-(must-succeed*
- (defmacro m (a &key b) `(list ,a ,(or b :default)))
- (assert-equal (macro-required-args 'm (w state)) '(a)))
-
-(must-succeed*
- (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
-   `(list ,a ,b ,c ,d ,e ,e-p ,form))
- (assert-equal (macro-required-args 'm (w state)) '(a)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (macro-required-args+ 'tthm (w state)) '(fn))
 
 (assert-equal (macro-required-args+ 'list (w state)) nil)
@@ -849,37 +786,6 @@
  (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
    `(list ,a ,b ,c ,d ,e ,e-p ,form))
  (assert-equal (macro-required-args+ 'm (w state)) '(a)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (macro-keyword-args 'tthm (w state)) nil)
-
-(assert-equal (macro-keyword-args 'list (w state)) nil)
-
-(assert-equal (macro-keyword-args 'defun (w state)) nil)
-
-(assert-equal
- (macro-keyword-args 'defthm (w state)) '((rule-classes . (:rewrite))
-                                          (instructions . nil)
-                                          (hints . nil)
-                                          (otf-flg . nil)))
-
-(assert-equal (macro-keyword-args 'defun-sk (w state)) nil)
-
-(must-succeed*
- (defmacro m (a) `(list ,a))
- (assert-equal (macro-keyword-args 'm (w state)) nil))
-
-(must-succeed*
- (defmacro m (a &key b) `(list ,a ,(or b :default)))
- (assert-equal (macro-keyword-args 'm (w state)) '((b . nil))))
-
-(must-succeed*
- (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
-   `(list ,a ,b ,c ,d ,e ,e-p ,form))
- (assert-equal (macro-keyword-args 'm (w state)) '((c . nil)
-                                                   (d . 3)
-                                                   (e . #\e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

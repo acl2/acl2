@@ -35,8 +35,6 @@
 #   make LISP=cl PREFIX=allegro-
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
-#   make certify-books
-#                    ; [DEPRECATED] Certify a nontrivial, useful subset of the community books.
 #   make regression
 #                    ; Certify all the community books and, if present, the
 #                    ; workshops/ books as well.
@@ -713,11 +711,6 @@ large-acl2p:
 # Success can generally be determined by checking for the absence of ** in the
 # log.
 
-# This "certify-books" target is DEPRECATED.
-.PHONY: certify-books
-certify-books: check-books
-	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
-
 # Certify books that are not up-to-date, even those less likely to be
 # included in other books.  Success can generally be determined by
 # checking for the absence of ** in the log, or by looking at the Unix
@@ -731,12 +724,6 @@ regression: check-books
 regression-everything: check-books
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
-
-# Certify main books from scratch.
-# This "certify-books-fresh" target is DEPRECATED.
-.PHONY: certify-books-fresh
-certify-books-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
 
 # Do regression tests from scratch.
 # Success can generally be determined by checking for the absence of ** in the

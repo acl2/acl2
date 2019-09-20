@@ -71,8 +71,8 @@ as follows.
   (if (endp a)
       nil
     (b* ((`((,key . &) . &) a)
-         (acc (make-symbl `(get- ,tbl - ,key)))
-         (upd (make-symbl `(set- ,tbl - ,key))))
+         (acc (make-symbl `(get- ,tbl - ,key) "ACL2S"))
+         (upd (make-symbl `(set- ,tbl - ,key) "ACL2S")))
       (list*
        `(defmacro ,acc () (tbl-get-fn ',tbl ,key))
        `(defmacro ,upd (x) (tbl-set-fn ',tbl ,key x))

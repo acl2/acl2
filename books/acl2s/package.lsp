@@ -126,7 +126,7 @@
 
 #!CGEN
 (defconst *cgen-exports*
-  '(cgen
+  '(;cgen
      ;API export
      test? prove/cgen
      stopping-condition
@@ -153,7 +153,8 @@
       legal-variablep
       legal-variable-or-constant-namep
       xdoc
-
+      get-tau-runes
+      
       => ;sig
       _  ;range
 
@@ -189,7 +190,18 @@
       
       read-run-time
       trans-eval
+      cgen
+      tests-and-calls
 
+      fix-pkg
+      fix-sym
+      fix-intern$
+      fix-intern-in-pkg-of-sym
+      pack-to-string
+      gen-sym-sym-fn
+      gen-sym-sym
+
+      packn1
       flg
       sort
       guard-checking-on
@@ -200,8 +212,9 @@
     (union-eq 
      *ccg-exports*
      ;;*ccg-valid-output-names*
-     '(query basics performance build/refine size-change counter-example
-             *ccg-valid-output-names*))
+     '(query basics performance build/refine size-change
+      counter-example ccg ccg-xargs 
+      *ccg-valid-output-names*))
     (union-eq
      defdata::*defdata-exports*
      (union-eq
@@ -217,7 +230,8 @@
     cgen::*cgen-exports*
     '(acl2s-defaults
       acl2s-defaults-table
-
+      ccg
+      cgen
       stage
       
      ;defunc defaults

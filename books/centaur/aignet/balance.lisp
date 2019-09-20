@@ -126,7 +126,7 @@
                                     (acl2::element-p (lambda (x) (aignet-litp x aignet)))
                                     (acl2::element-example (lambda () 0))
                                     (acl2::element-list-p (lambda (x) (aignet-lit-listp x aignet))))
-                         (x lits) (y acl2::lits-equiv)))
+                         (x lits) (y lits-equiv)))
            :do-not-induct t)))
                     
 
@@ -274,7 +274,7 @@
                                     (acl2::element-p (lambda (x) (litp-for-levels x levels)))
                                     (acl2::element-example (lambda () 0))
                                     (acl2::element-list-p (lambda (x) (levels-sort-list-p x levels))))
-                         (x lits) (y acl2::lits-equiv)))
+                         (x lits) (y lits-equiv)))
            :in-theory (enable levels-sort-list-p)
            :do-not-induct t)))
 

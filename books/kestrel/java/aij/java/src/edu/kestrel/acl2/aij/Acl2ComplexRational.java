@@ -20,19 +20,25 @@ final class Acl2ComplexRational extends Acl2Number {
     //////////////////////////////////////// private members:
 
     /**
-     * Real part of the ACL2 complex rational.
+     * Real part of this complex rational.
      * This is never {@code null}.
      */
     private final Acl2Rational realPart;
 
     /**
-     * Imaginary part of the ACL2 complex rational.
+     * Imaginary part of this complex rational.
      * This is never {@code null} and never 0.
      */
     private final Acl2Rational imaginaryPart;
 
     /**
-     * Constructs an ACL2 complex rational from its real and imaginary parts.
+     * Constructs a complex rational
+     * with the given real and imaginary parts.
+     *
+     * @param realPart      The real part of the complex rational.
+     *                      It is never {@code null}.
+     * @param imaginaryPart The imaginary part of the complex rational.
+     *                      It is never {@code null} and never 0.
      */
     private Acl2ComplexRational(Acl2Rational realPart,
                                 Acl2Rational imaginaryPart) {
@@ -43,8 +49,11 @@ final class Acl2ComplexRational extends Acl2Number {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Returns {@code true},
-     * consistently with the {@code complex-rationalp} ACL2 function.
+     * Checks if this complex rational is a complex rational,
+     * which is always true.
+     * This is consistent with the {@code complex-rationalp} ACL2 function.
+     *
+     * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol complexRationalp() {
@@ -54,9 +63,13 @@ final class Acl2ComplexRational extends Acl2Number {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 complex rational is equal to the argument object.
+     * Compares this complex rational with the argument object
+     * for equality.
      * This is consistent with the {@code equal} ACL2 function.
-     * If the argument is not a {@link Acl2Value}, the result is {@code false}.
+     *
+     * @param o The object to compare this complex rational with.
+     * @return {@code true} if the object is equal to this complex rational,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
@@ -70,7 +83,9 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
-     * Returns a hash code for this ACL2 complex rational.
+     * Returns a hash code for this complex rational.
+     *
+     * @return The hash code for this complex rational.
      */
     @Override
     public int hashCode() {
@@ -80,9 +95,11 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
-     * Returns a printable representation of this ACL2 complex rational.
+     * Returns a printable representation of this complex rational.
      * We return a Java string that
      * conforms to ACL2's notation for complex rationals.
+     *
+     * @return The printable representation of this complex rational.
      */
     @Override
     public String toString() {
@@ -90,11 +107,17 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
-     * Returns an ACL2 complex rational with the given real and imaginary parts.
+     * Returns a complex rational with the given real and imaginary parts.
      * This method must be public because
      * the corresponding method in {@link Acl2Number} is public.
      * However, this method cannot be called from outside this package
      * because the {@link Acl2ComplexRational} class is not public.
+     *
+     * @param realPart      The real part of the complex rational.
+     *                      It is never {@code null}.
+     * @param imaginaryPart The imaginary part of the complex rational.
+     *                      It is never {@code null} and never 0.
+     * @return The complex rational.
      */
     public static Acl2ComplexRational make(Acl2Rational realPart,
                                            Acl2Rational imaginaryPart) {
@@ -102,7 +125,11 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
-     * Returns the real part of this ACL2 complex rational.
+     * Returns the real part of this complex rational.
+     * This is consistent with the {@code realpart} ACL2 function.
+     *
+     * @return The real part of this complex rational.
+     * It is never {@code null}.
      */
     @Override
     public Acl2Rational getRealPart() {
@@ -110,7 +137,11 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
-     * Returns the imaginary part of this ACL2 complex rational.
+     * Returns the imaginary part of this complex rational.
+     * This is consistent with the {@code imagpart} ACL2 function.
+     *
+     * @return The imaginary part of this complex rational.
+     * It is never {@code null}.
      */
     @Override
     public Acl2Rational getImaginaryPart() {

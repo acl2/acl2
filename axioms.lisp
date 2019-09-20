@@ -13464,6 +13464,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     check-sum-obj
     verify-guards-fn1 ; to update *cl-cache*
     ev-fncall+-w
+    extend-current-theory
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -22530,10 +22531,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the rewrite nest, while at the same time turning off the rewrite-stack depth
 ; limit check.
 
-; When we do a make certify-books or make regression after compiling with
-; acl2-rewrite-meter in *features*, we will create a file foo.rstats for every
-; book foo being certified.  We can then collect all those stats into a single
-; file by executing the following Unix command, where DIR is the acl2-sources
+; When we do a regression after compiling with acl2-rewrite-meter in
+; *features*, we will create a file foo.rstats for every book foo being
+; certified.  We can then collect all those stats into a single file by
+; executing the following Unix command, where DIR is the acl2-sources
 ; directory:
 
 ; find DIR/books -name '*.rstats' -exec cat {} \; > rewrite-depth-stats.lisp

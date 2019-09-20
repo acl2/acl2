@@ -20,4 +20,4 @@ REBUILD_MAKEFILE_DEPS := $(shell \
    cp -pf user-defs.lisp evaluation-user-defs.lisp) && \
   $(ACL2_SYSTEM_BOOKS)/build/cert.pl --include-excludes -s Makefile-deps *.lisp)
 
--include Makefile-deps
+include Makefile-deps

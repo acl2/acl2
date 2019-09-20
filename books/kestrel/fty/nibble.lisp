@@ -24,9 +24,9 @@
   :short
   (xdoc::topstring
    "A "
-   (xdoc::seeurl "fty::fty" "fixtype")
+   (xdoc::seetopic "fty::fty" "fixtype")
    " of "
-   (xdoc::seeurl "nibblep" "(unsigned 4-bit) nibbles")
+   (xdoc::seetopic "nibblep" "(unsigned 4-bit) nibbles")
    ".")
   :long
   (xdoc::topstring-p

@@ -14,3 +14,4 @@
 (include-book "sha-256")
 (include-book "sha-384")
 (include-book "sha-512")
+(include-book "doc")

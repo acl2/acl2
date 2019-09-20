@@ -21,7 +21,7 @@
   :parents (attachments)
   :short (xdoc::topstring
           "Executable attachment for the "
-          (xdoc::seeurl "sha-256-interface" "SHA-256 interface")
+          (xdoc::seetopic "sha-256-interface" "SHA-256 interface")
           " that operates on bytes.")
   :long
   (xdoc::topstring

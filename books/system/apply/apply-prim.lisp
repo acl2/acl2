@@ -266,13 +266,41 @@
 ; If the above fix is ever made, it would be good to add a well-formedness
 ; guarantee lemma.
 
-    (with-output
-      :off (prove event)
-      (defthm apply$-prim-meta-fn-correct
-        (equal (apply$-prim-meta-fn-ev term alist)
-               (apply$-prim-meta-fn-ev (meta-apply$-prim term) alist))
-        :hints (("Goal" :in-theory (disable (:executable-counterpart break$))))
-        :rule-classes ((:meta :trigger-fns (apply$-prim)))))
+; The original proof of the next lemma didn't involve the proof-builder, but
+; has been observed to take considerably longer that way.
+
+;   (with-output
+;     :off (prove event)
+;     (defthm apply$-prim-meta-fn-correct
+;       (equal (apply$-prim-meta-fn-ev term alist)
+;              (apply$-prim-meta-fn-ev (meta-apply$-prim term) alist))
+;       :hints (("Goal" :in-theory (disable (:executable-counterpart break$))))
+;       :rule-classes ((:meta :trigger-fns (apply$-prim)))))
+
+    (defthm apply$-prim-meta-fn-correct
+      (equal (apply$-prim-meta-fn-ev term alist)
+             (apply$-prim-meta-fn-ev (meta-apply$-prim term)
+                                     alist))
+      :instructions
+      ((quiet!
+        (:bash ("Goal" :in-theory '((:definition hons-assoc-equal)
+                                    (:definition hons-equal)
+                                    (:definition hons-get)
+                                    (:definition meta-apply$-prim)
+                                    (:definition quotep)
+                                    (:executable-counterpart car)
+                                    (:executable-counterpart cdr)
+                                    (:executable-counterpart consp))))
+        (:in-theory (union-theories
+                     '((:definition apply$-prim)
+                       (:definition n-car-cadr-caddr-etc))
+                     (union-theories *expandable-boot-strap-non-rec-fns*
+                                     (set-difference-theories
+                                      (current-theory :here)
+                                      (cons '(:rewrite default-car)
+                                            (function-theory :here))))))
+        (:repeat :prove)))
+      :rule-classes ((:meta :trigger-fns (apply$-prim))))
 
     (defthm apply$-primp-implies-symbolp
       (implies (apply$-primp fn)

@@ -152,7 +152,8 @@
     (equal (calist-remassocs (calist-remassocs x seen1) seen2)
            (calist-remassocs x (append seen1 seen2))))
 
-  (defcong acl2::set-equiv equal (calist-remassocs x seen) 2))
+  (defcong acl2::set-equiv equal (calist-remassocs x seen) 2
+    :package :legacy))
 
 ;; (calist-remassoc (car x)
 ;;                      (calist-remassocs (cdr x) calist))))
@@ -561,7 +562,8 @@
       (constr-alist-depends-on v (cdr x))))
   ///
 
-  (defcong aig-var-equiv equal (constr-alist-depends-on v x) 1)
+  (defcong aig-var-equiv equal (constr-alist-depends-on v x) 1
+    :package :legacy)
 
   (local (defthm set-equiv-of-cons-redundant
            (implies (member k x)
@@ -944,6 +946,7 @@
                   :rule-classes nil))
          (local (in-theory '(calist-equiv)))
          (defcong calist-equiv ,resequiv ,call ,argnum
+           :package :legacy
            :hints (("goal" :use ((:instance calist-cong-lemma)
                                  (:instance calist-cong-lemma
                                   (x x-equiv)))))))))
@@ -1003,6 +1006,7 @@
    :aig (shrink-constraint-alist hyp))
   ///
   (defcong bfr-hyp-equiv equal (bfr-hyp-fix hyp) 1
+    :package :legacy
     :hints(("Goal" :in-theory (enable bfr-hyp-equiv))))
   (defthm bfr-hyp-equiv-of-bfr-hyp-fix
     (bfr-hyp-equiv (bfr-hyp-fix hyp) hyp)
@@ -1055,6 +1059,7 @@
          :hints ,(or hyp-fix-hints hints))
 
        (defcong bfr-hyp-equiv equal (,fn . ,formals) ,(+ 1 (acl2::index-of hyp-var formals))
+         :package :legacy
          :hints (("goal" :in-theory '(bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
                   :use ((:instance ,hyp-fix-thm)
                         (:instance ,hyp-fix-thm (,hyp-var ,hyp-var-equiv)))))))))

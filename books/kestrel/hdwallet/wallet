@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+USAGE="Usage: wallet args.."
+
+if [ $# == 0 ] ; then
+    echo $USAGE
+    exit 1;
+fi
+
+docker run --rm --network none -v /tmp/hdwallet:/root/tmp kestrelinstitute/hdwallet-on-acl2:latest "$@"

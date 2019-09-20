@@ -21,7 +21,7 @@
 (include-book "ethereum/top")
 (include-book "fty/top")
 (include-book "java/top")
-(include-book "prime-fields/doc")
+(include-book "prime-fields/top")
 (include-book "soft/top")
 (include-book "std/top")
 (include-book "utilities/top")
@@ -54,11 +54,11 @@
     "As they become more stable,
      parts of the Kestrel Books may be moved
      to other locations in the "
-    (xdoc::seeurl "community-books" "Community Books")
+    (xdoc::seetopic "community-books" "Community Books")
     ". For example, "
-    (xdoc::seeurl "std" "STD")
+    (xdoc::seetopic "std" "STD")
     " and "
-    (xdoc::seeurl "x86isa" "X86ISA")
+    (xdoc::seetopic "x86isa" "X86ISA")
     " include some Kestrel contributions.")
 
    (xdoc::p
@@ -66,9 +66,9 @@
      and are meant to extend and be compatible with,
      the ACL2 system code
      and various existing libraries such as "
-    (xdoc::seeurl "std" "STD") ", "
-    (xdoc::seeurl "fty" "FTY") ", "
-    (xdoc::seeurl "seq" "Seq") ", and others.")))
+    (xdoc::seetopic "std" "STD") ", "
+    (xdoc::seetopic "fty" "FTY") ", "
+    (xdoc::seetopic "seq" "Seq") ", and others.")))
 
 (xdoc::add-resource-directory "kestrel-images" "images")
 

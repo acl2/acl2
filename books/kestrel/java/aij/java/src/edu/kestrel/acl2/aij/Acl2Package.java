@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Representation of an ACL2 package.
+ * Representation of ACL2 packages.
  */
 public final class Acl2Package {
 
@@ -31,7 +31,10 @@ public final class Acl2Package {
     private final List<Acl2Symbol> imports;
 
     /**
-     * Constructs an ACL2 package from its name and import list.
+     * Constructs a package with the given name and import list.
+     *
+     * @param name    The name of the package.
+     * @param imports The import list of the package.
      */
     private Acl2Package(Acl2PackageName name, List<Acl2Symbol> imports) {
         this.name = name;
@@ -39,8 +42,8 @@ public final class Acl2Package {
     }
 
     /**
-     * All the ACL2 packages defined so far.
-     * These are stored as values of a map that has ACL2 package names as keys:
+     * All the packages defined so far.
+     * These are stored as values of a map that has package names as keys:
      * each key-value pair is such that
      * the key is the {@link #name} field of the value.
      * This field is never {@code null}.
@@ -52,7 +55,7 @@ public final class Acl2Package {
      * Content of the {@code *pkg-witness-name*} ACL2 constant.
      * This constant describes
      * the exact semantics of the ACL2 function {@code pkg-witness}.
-     * The value of this ACL2 constant is an ACL2 string,
+     * The value of this constant is an ACL2 string,
      * but we use the corresponding Java string here.
      */
     private static String witnessName;
@@ -62,6 +65,8 @@ public final class Acl2Package {
     /**
      * Returns a Java list of the imported symbols of this package.
      * The returned list is created anew, so it can be freely modified.
+     *
+     * @return A Java list of the imported symbols of this package.
      */
     List<Acl2Symbol> getImports() {
         List<Acl2Symbol> result = new ArrayList<>(imports.size());
@@ -70,8 +75,12 @@ public final class Acl2Package {
     }
 
     /**
-     * Returns the defined ACL2 package with the given name, if any.
+     * Returns the package with the given name, if any.
      * If no package with the given name is defined, {@code null} is returned.
+     *
+     * @param name The name of the package
+     * @return The package with the given name,
+     * or {@code null} if there is no package with the given name.
      */
     static Acl2Package getDefined(Acl2PackageName name) {
         return packages.get(name);
@@ -79,6 +88,8 @@ public final class Acl2Package {
 
     /**
      * Returns the content of the {@code *pkg-witness-name*} ACL2 constant.
+     *
+     * @return The content of {@code *pkg-witness-name*}, as a Java string.
      */
     static String getWitnessName() {
         return witnessName;
@@ -92,11 +103,15 @@ public final class Acl2Package {
      * This method makes an internal copy of the argument list,
      * which can be thus freely modified after this method returns.
      *
-     * @throws IllegalArgumentException if name or imports is null,
+     * @param name    The name of the package.
+     * @param imports The import list of the package.
+     * @return The package.
+     * @throws IllegalArgumentException If {@code name} or {@code imports}
+     *                                  is {@code null},
      *                                  or two imported symbols
-     *                                  have the same name
-     * @throws IllegalStateException    if a package with the given name
-     *                                  is already defined
+     *                                  have the same name.
+     * @throws IllegalStateException    If a package with the given name
+     *                                  is already defined.
      */
     public static Acl2Package define(Acl2PackageName name,
                                      List<Acl2Symbol> imports) {
@@ -126,8 +141,10 @@ public final class Acl2Package {
     /**
      * Sets the content of the {@code *pkg-witness-name*} ACL2 constant.
      *
-     * @throws IllegalArgumentException if content is null
-     * @throws IllegalStateException    if the content is already set
+     * @param content The content to set {@code *pkg-witness-name*},
+     *                as a Java string.
+     * @throws IllegalArgumentException If {@code content} is {@code null}.
+     * @throws IllegalStateException    If the content is already set.
      */
     public static void setWitnessName(String content) {
         if (content == null)

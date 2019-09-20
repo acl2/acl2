@@ -357,8 +357,8 @@
   :hints (("Goal" :expand ((RKEYSUB KEYS R1 R2) (LIST::MEMBERP KEY KEYS)))))
 
 (defcong list::setequiv equal (rkeysub set x y) 1
-  :hints (("Goal" :expand (LIST::SETEQUIV SET LIST::SET-EQUIV)
-           :induct (rkeysub-equiv-induction set list::set-equiv x y))))
+  :hints (("Goal" :expand (LIST::SETEQUIV SET SET-EQUIV)
+           :induct (rkeysub-equiv-induction set set-equiv x y))))
 
 (defun rkeyquiv (x y)
   (and

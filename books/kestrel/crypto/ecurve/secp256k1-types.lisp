@@ -33,7 +33,7 @@
     ".")
    (xdoc::p
     "Here we introduce "
-    (xdoc::seeurl "fty::fty" "fixtypes")
+    (xdoc::seetopic "fty::fty" "fixtypes")
     " for field elements, point, and keys,
      along with an operation to represent points as byte lists."))
   :order-subtopics t
