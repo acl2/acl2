@@ -20,6 +20,8 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
+(include-book "kestrel/std/system/remove-mbe" :dir :system)
+(include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
@@ -562,69 +564,13 @@
        see the documentation of AIJ for details.
        Thus, ATJ recognizes (translated) terms of the form @('(if a a b)'),
        which are likely derived from @('(or a b)'),
-       and represents them in AIJ via the @('or') pseudo-function.")
-     (xdoc::p
-      "Terms of the form @('(return-last \'acl2::mbe1-raw a b)')
-       are treated as just @('a') or @('b'),
-       depending on whether the @(':guards') input is @('t') or @('nil').
-       These terms are translated forms of @('(mbe :logic b :exec a)')
-       (note the swapping of the argument compared to the translated form).
-       That is, we generate code just for @('a')
-       when guards are assumed satisfied,
-       while we generate code just for @('b')
-       for execution ``in the logic''.")
-     (xdoc::p
-      "Terms of the form @('(return-last \'acl2::progn a b)')
-       are treated as just @('b').
-       These terms are translated forms of @('(prog2$ a b)'),
-       which may in turn derive from @('(progn$ ...)').
-       That is, we generate code just for the last argument;
-       recall that, prior to generating code,
-       we ensure that the non-last arguments have no side effects."))
+       and represents them in AIJ via the @('or') pseudo-function."))
     (b* (((mv afn aargs)
           (if (and (eq afn 'if)
                    (= (len aargs) 3)
                    (equal (first aargs) (second aargs)))
               (mv 'or (list (first aargs) (third aargs)))
             (mv afn aargs)))
-         ((when (and (eq afn 'return-last)
-                     (= (len aargs) 3)
-                     (quotep (first aargs))))
-          (case (unquote (first aargs))
-            ('acl2::mbe1-raw (if guards$
-                                 (atj-gen-deep-aterm (second aargs)
-                                                     jvar-value-base
-                                                     jvar-value-index
-                                                     jvar-term-base
-                                                     jvar-term-index
-                                                     jvar-lambda-base
-                                                     jvar-lambda-index
-                                                     guards$)
-                               (atj-gen-deep-aterm (third aargs)
-                                                   jvar-value-base
-                                                   jvar-value-index
-                                                   jvar-term-base
-                                                   jvar-term-index
-                                                   jvar-lambda-base
-                                                   jvar-lambda-index
-                                                   guards$)))
-            ('acl2::progn (atj-gen-deep-aterm (third aargs)
-                                              jvar-value-base
-                                              jvar-value-index
-                                              jvar-term-base
-                                              jvar-term-index
-                                              jvar-lambda-base
-                                              jvar-lambda-index
-                                              guards$))
-            (t (prog2$
-                (raise "Internal error: attempting to generate Java code ~
-                        for a RETURN-LAST whose first argument is ~x0."
-                       (first aargs))
-                (mv nil
-                    (jexpr-name "dummy")
-                    jvar-value-index
-                    jvar-term-index
-                    jvar-lambda-index)))))
          ((mv afn-jblock
               afn-jexpr
               jvar-value-index
@@ -2195,24 +2141,6 @@
        calls of ACL2 functions that model Java @('int') binary operations
        are handled via @(tsee atj-gen-shallow-aintbinapp).")
      (xdoc::p
-      "Terms of the form @('(return-last \'acl2::mbe1-raw a b)')
-       are treated as just @('a') or @('b'),
-       depending on whether the @(':guards') input is @('t') or @('nil').
-       These terms are translated forms of @('(mbe :logic b :exec a)')
-       (note the swapping of the argument compared to the translated form).
-       That is, we generate code just for @('a')
-       when guards are assumed satisfied,
-       while we generate code just for @('b')
-       for execution ``in the logic''.")
-     (xdoc::p
-      "Terms of the form @('(return-last \'acl2::progn a b)')
-       are treated as just @('b').
-       These terms are translated forms of @('(prog2$ a b)'),
-       which may in turn derive from @('(progn$ ...)').
-       That is, we generate code just for the last argument;
-       recall that, prior to generating code,
-       we ensure that the non-last arguments have no side effects.")
-     (xdoc::p
       "For other calls of ACL2 named functions, which are strict,
        we first generate Java code to compute all the actual arguments.
        If needed, we convert from the types of the actual arguments
@@ -2296,47 +2224,6 @@
                                       jvar-result-index
                                       curr-apkg
                                       wrld))
-         ((when (and (eq afn 'return-last)
-                     (= (len aargs) 3)
-                     (quotep (first aargs))))
-          (case (unquote (first aargs))
-            ('acl2::mbe1-raw (if guards$
-                                 (atj-gen-shallow-aterm (second aargs)
-                                                        jvar-types
-                                                        jvar-value-base
-                                                        jvar-value-index
-                                                        jvar-result-base
-                                                        jvar-result-index
-                                                        curr-apkg
-                                                        guards$
-                                                        wrld)
-                               (atj-gen-shallow-aterm (third aargs)
-                                                      jvar-types
-                                                      jvar-value-base
-                                                      jvar-value-index
-                                                      jvar-result-base
-                                                      jvar-result-index
-                                                      curr-apkg
-                                                      guards$
-                                                      wrld)))
-            ('acl2::progn (atj-gen-shallow-aterm (third aargs)
-                                                 jvar-types
-                                                 jvar-value-base
-                                                 jvar-value-index
-                                                 jvar-result-base
-                                                 jvar-result-index
-                                                 curr-apkg
-                                                 guards$
-                                                 wrld))
-            (t (prog2$
-                (raise "Internal error: attempting to generate Java code ~
-                        for a RETURN-LAST whose first argument is ~x0."
-                       (first aargs))
-                (mv nil
-                    (jexpr-name "dummy")
-                    :value ; dummy
-                    jvar-value-index
-                    jvar-result-index)))))
          ((mv args-jblock
               arg-jexprs
               arg-types
@@ -2769,6 +2656,16 @@
      store the function's body into a local variable,
      and use these local variables to add the function's definition.")
    (xdoc::p
+    "If the @(':guards') input is @('t'),
+     we remove all the @(':logic') parts of @(tsee mbe)s;
+     if the @(':guards') input is @('nil'),
+     we remove all the @(':exec') parts of @(tsee mbe)s.
+     We also remove all the non-last arguments
+     of @(tsee prog2$)s and @(tsee progn$)s.
+     This should remove any occurrences of @(tsee return-last).
+     See " (xdoc::seetopic "atj-information-gathering" "this discussion")
+     " for background.")
+   (xdoc::p
     "The indices of the local variables
      to build values, terms, and lambda expressions
      are all reset to 1,
@@ -2782,6 +2679,10 @@
        (jvar-body "body")
        (aformals (formals afn (w state)))
        (abody (getpropc afn 'unnormalized-body))
+       (abody (if guards$
+                  (remove-mbe-logic-from-term abody)
+                (remove-mbe-exec-from-term abody)))
+       (abody (remove-progn-from-term abody))
        (afn-jblock (jblock-locvar *atj-jtype-named-fn*
                                   jvar-function
                                   (jexpr-smethod *atj-jtype-named-fn*
@@ -3053,6 +2954,16 @@
      the output type of the function,
      a cast is inserted in the @('return') statement.")
    (xdoc::p
+    "If the @(':guards') input is @('t'),
+     we remove all the @(':logic') parts of @(tsee mbe)s;
+     if the @(':guards') input is @('nil'),
+     we remove all the @(':exec') parts of @(tsee mbe)s.
+     We also remove all the non-last arguments
+     of @(tsee prog2$)s and @(tsee progn$)s.
+     This should remove any occurrences of @(tsee return-last).
+     See " (xdoc::seetopic "atj-information-gathering" "this discussion")
+     " for background.")
+   (xdoc::p
     "After that, we rename all the ACL2 variables
      in the formal parameters and body of the ACL2 function
      so that their names are valid Java variable names.
@@ -3079,7 +2990,12 @@
        (jmethod-name (atj-gen-shallow-afnname afn curr-apkg))
        (aformals (formals afn wrld))
        (abody (getpropc afn 'unnormalized-body))
-       ((mv aformals abody) (atj-rename-aformals+abody aformals abody curr-apkg))
+       (abody (if guards$
+                  (remove-mbe-logic-from-term abody)
+                (remove-mbe-exec-from-term abody)))
+       (abody (remove-progn-from-term abody))
+       ((mv aformals abody)
+        (atj-rename-aformals+abody aformals abody curr-apkg))
        ((mv afn-in-types
             afn-out-type) (if guards$
                               (b* ((afn-type (atj-get-function-type afn wrld)))

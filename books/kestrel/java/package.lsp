@@ -79,6 +79,7 @@
                          rawp
                          remove-mbe-exec-from-term
                          remove-mbe-logic-from-term
+                         remove-progn-from-term
                          sbyte16
                          sbyte32
                          sbyte64
