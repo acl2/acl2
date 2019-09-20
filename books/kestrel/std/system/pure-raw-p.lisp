@@ -18,16 +18,14 @@
 (define pure-raw-p ((fn symbolp))
   :returns (yes/no booleanp)
   :parents (std/system)
-  :short "Check if a function with raw Lisp code is pure,
+  :short "Check if a function has raw Lisp code and is pure,
           i.e. it has no side effects."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This utility should be called
-     only on function symbols that satisfy @(tsee rawp).
-     This utility checks whether the symbol is
-     in a whitelist of function symbols
-     that are known to be free of side effects,
+    "This utility checks whether the symbol is
+     in a whitelist of function symbols that have raw Lisp code
+     and that are known to be free of side effects,
      and whose @('unnormalized-body') property
      therefore accurately describes the behavior of the function
      (despite the function being implemented natively for efficiency).")
