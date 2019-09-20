@@ -39,6 +39,7 @@
 (include-book "reconstruct")
 (include-book "centaur/misc/starlogic" :dir :system)
 (include-book "term-vars")
+(include-book "subst")
 (local (include-book "std/lists/sets" :dir :system))
 
 (defevaluator urw-ev urw-ev-list
@@ -174,36 +175,32 @@
 
 
 
-
-(fty::defmap pseudo-term-substitution :key-type pseudo-var :val-type pseudo-term :true-listp t)
-
-
 #!acl2
-(defret pseudo-term-substitution-p-of-unify-const
+(defret pseudo-term-subst-p-of-unify-const
   (implies (and (pseudo-termp pat)
-                (cmr::pseudo-term-substitution-p alist))
-           (cmr::pseudo-term-substitution-p al))
+                (cmr::pseudo-term-subst-p alist))
+           (cmr::pseudo-term-subst-p al))
   :hints (("goal" :induct <call> :expand ((:free (const) <call>)
                                           (:free (const) (acl2::unify-const nil const alist)))
            :in-theory (enable (:i acl2::unify-const))))
   :fn acl2::unify-const)
 
 #!acl2
-(std::defret-mutual pseudo-term-substitution-p-of-simple-one-way-unify
-  (defret pseudo-term-substitution-p-of-simple-one-way-unify
+(std::defret-mutual pseudo-term-subst-p-of-simple-one-way-unify
+  (defret pseudo-term-subst-p-of-simple-one-way-unify
     (implies (and (pseudo-termp pat)
                   (pseudo-termp term)
-                  (cmr::pseudo-term-substitution-p alist))
-             (cmr::pseudo-term-substitution-p a))
+                  (cmr::pseudo-term-subst-p alist))
+             (cmr::pseudo-term-subst-p a))
     :hints ('(:expand ((:free (term) <call>)
                        (:free (term alist) (simple-one-way-unify nil term alist)))) )
     :fn acl2::simple-one-way-unify)
 
-  (defret pseudo-term-substitution-p-of-simple-one-way-unify-lst
+  (defret pseudo-term-subst-p-of-simple-one-way-unify-lst
     (implies (and (pseudo-term-listp pat)
                   (pseudo-term-listp term)
-                  (cmr::pseudo-term-substitution-p alist))
-             (cmr::pseudo-term-substitution-p a))
+                  (cmr::pseudo-term-subst-p alist))
+             (cmr::pseudo-term-subst-p a))
     :hints ('(:expand (<call>)))
     :fn acl2::simple-one-way-unify-lst)
   :mutual-recursion acl2::simple-one-way-unify)
@@ -226,7 +223,7 @@
                                  (rule pseudo-rewrite-rule-p))
   :returns (mv successp
                (ans pseudo-termp)
-               (alist pseudo-term-substitution-p))
+               (alist pseudo-term-subst-p))
   (b* (((acl2::rewrite-rule rule))
        ((unless (and (mbt (pseudo-rewrite-rule-p rule))
                      (mbt (pseudo-term-listp args))
@@ -266,7 +263,7 @@
                                   (rules pseudo-rewrite-rule-listp))
   :returns (mv successp
                (ans pseudo-termp)
-               (alist pseudo-term-substitution-p))
+               (alist pseudo-term-subst-p))
   (b* (((when (atom rules)) (mv nil nil nil))
        ((mv successp rhs subst) (try-uncond-rewrite-rule fn args iff-p (car rules)))
        ((when successp) (mv successp rhs subst)))
@@ -360,14 +357,14 @@
                          (hons-assoc-equal key x)))))
 
 (local (defthm pseudo-termp-of-lookup
-         (implies (pseudo-term-substitution-p x)
+         (implies (pseudo-term-subst-p x)
                   (pseudo-termp (cdr (hons-assoc-equal k x))))
-         :hints(("Goal" :in-theory (enable pseudo-term-substitution-p)))))
+         :hints(("Goal" :in-theory (enable pseudo-term-subst-p)))))
 
 (define pair-vars-with-terms ((vars symbol-listp)
                               (vals pseudo-term-listp))
   :guard (equal (len vars) (len vals))
-  :returns (subst pseudo-term-substitution-p)
+  :returns (subst pseudo-term-subst-p)
   (if (atom vars)
       nil
     (if (car vars)
@@ -424,7 +421,7 @@
 
 (defines urewrite
   (define urewrite-term ((x pseudo-termp)
-                         (a pseudo-term-substitution-p)
+                         (a pseudo-term-subst-p)
                          (iff-p)
                          (reclimit natp)
                          state)
@@ -433,7 +430,7 @@
     :well-founded-relation acl2::nat-list-<
     :measure (list reclimit (pseudo-term-count x) 5)
     (pseudo-term-case x
-      :var (cdr (assoc-eq x.name (pseudo-term-substitution-fix a)))
+      :var (cdr (assoc-eq x.name (pseudo-term-subst-fix a)))
       :const (pseudo-term-fix x)
       :fncall (b* (((when (acl2::and* (eq x.fn 'if)
                                       (eql (len x.args) 3)))
@@ -485,7 +482,7 @@
   (define urewrite-if ((test pseudo-termp)
                        (then pseudo-termp)
                        (else pseudo-termp)
-                       (a pseudo-term-substitution-p)
+                       (a pseudo-term-subst-p)
                        (iff-p)
                        (reclimit natp)
                        state)
@@ -504,7 +501,7 @@
       (urewrite-fncall 'if (list test2 then2 else2) iff-p reclimit state)))
 
   (define urewrite-not ((x pseudo-termp)
-                        (a pseudo-term-substitution-p)
+                        (a pseudo-term-subst-p)
                         (iff-p)
                         (reclimit natp)
                         state)
@@ -515,7 +512,7 @@
 
   (define urewrite-implies ((hyp pseudo-termp)
                             (concl pseudo-termp)
-                            (a pseudo-term-substitution-p)
+                            (a pseudo-term-subst-p)
                             (iff-p)
                             (reclimit natp)
                             state)
@@ -530,7 +527,7 @@
       (urewrite-fncall 'implies (list hyp2 concl2) iff-p reclimit state)))
 
   (define urewrite-termlist ((x pseudo-term-listp)
-                             (a pseudo-term-substitution-p)
+                             (a pseudo-term-subst-p)
                              (reclimit natp)
                              state)
     :returns (ans pseudo-term-listp)
@@ -647,7 +644,7 @@
 
                        
 (define urewrite-clause ((clause pseudo-term-listp)
-                         (a pseudo-term-substitution-p)
+                         (a pseudo-term-subst-p)
                          state)
   :returns (ans pseudo-term-listp)
   (if (atom clause)
@@ -679,11 +676,11 @@
                   (pseudo-term-listp x))
          :hints(("Goal" :in-theory (enable pseudo-termp pseudo-var-list-p)))))
 
-(local (defthm pseudo-term-substitution-p-of-pairlis$
-         (implies (and (pseudo-var-list-p vars)
-                       (pseudo-term-listp vals))
-                  (pseudo-term-substitution-p (pairlis$ vars vals)))
-         :hints(("Goal" :in-theory (enable pairlis$)))))
+;; (local (defthm pseudo-term-subst-p-of-pairlis$
+;;          (implies (and (pseudo-var-list-p vars)
+;;                        (pseudo-term-listp vals))
+;;                   (pseudo-term-subst-p (pairlis$ vars vals)))
+;;          :hints(("Goal" :in-theory (enable pairlis$)))))
 
 (local (include-book "system/f-put-global" :dir :system))
 
