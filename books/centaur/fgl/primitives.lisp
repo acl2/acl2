@@ -59,14 +59,14 @@
 ;;    typespec-check implies fgl-sat-check))
 
 (def-formula-checks primitives-formula-checks
-  (if!))
+  (if! atom))
 
 (enable-split-ifs equal)
 
-(def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-integer-fix)
-(def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-integerp)
-(def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-boolean-fix)
-(def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-booleanp)
+;; (def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-integer-fix)
+;; (def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-integerp)
+;; (def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-boolean-fix)
+;; (def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-booleanp)
 
 (set-state-ok t)
 (set-ignore-ok t)
@@ -80,7 +80,9 @@
 (local (in-theory (disable member acl2::member-equal-append)))
 
 (local (in-theory (enable kwote-lst
-                          fgl-objectlist-eval)))
+                          fgl-objectlist-eval
+                          fgl-apply)))
+
 
 (enable-split-ifs int)
 (def-gl-primitive int (x)
@@ -286,6 +288,17 @@
     :g-map (mv t (consp x.alist) interp-st)
     :otherwise (mv nil nil interp-st)))
 
+(enable-split-ifs atom)
+(def-gl-primitive atom (x)
+  (gl-object-case x
+    :g-concrete (mv t (atom x.val) interp-st)
+    :g-integer (mv t t interp-st)
+    :g-boolean (mv t t interp-st)
+    :g-cons (mv t nil interp-st)
+    :g-map (mv t (atom x.alist) interp-st)
+    :otherwise (mv nil nil interp-st))
+  :formula-check primitives-formula-checks)
+
 (local (defthm consp-car-when-gl-object-alist-p
          (implies (and (gl-object-alist-p x)
                        (consp x))
@@ -476,6 +489,8 @@
 
 
 (local (install-gl-primitives baseprims))
+
+(local (install-gl-metafns baseprims))
 
 
 

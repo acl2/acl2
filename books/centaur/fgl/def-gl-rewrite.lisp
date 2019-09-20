@@ -29,9 +29,19 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FGL")
-(include-book "std/util/define" :dir :system)
-(include-book "xdoc/top" :dir :system)
+(include-book "rules")
 
+;; We want to add/remove runes from the gl-rewrite-rules and
+;; gl-branch-merge-rules tables.  To do this properly, we need to know which
+;; leading function symbols (for rewrite rules) and branch function symbols
+;; (for branch merge rules) to store/delete them under.  Since a rune can stand
+;; for more than one rule, we may need to store/delete them under multiple
+;; functions' entries, even though we're storing the FGL rune and not an
+;; fgl-rule or lemma structure.  To handle all cases as smoothly as possible,
+;; we'll start with a function that returns the set of LHSes for a rune.
+
+;; =======================================================================
+;; Find all the lemmas that have a given rune -- :rewrite or :definition.
 (defun scan-lemmas-for-nume (lemmas nume)
   (declare (xargs :mode :program))
   (b* (((when (endp lemmas)) nil)
@@ -68,97 +78,280 @@
               (collect-lemmas-for-rune (if (symbolp rune) `(:rewrite ,rune) rune) world))
             (collect-lemmas-for-runes (cdr runes) world))))
 
-(defun gl-rewrite-table-entries-for-lemmas (rune lemmas)
+;; ====================================================
+;; For collecting rules from a term we have cmr::parse-rewrites-from-term.
+;; Wrap this to get it from a name.
+(define collect-cmr-rewrites-for-formula-name ((name symbolp) (world plist-worldp))
+  :returns (rewrites cmr::rewritelist-p)
+  :verify-guards nil
+  (b* ((form (acl2::meta-extract-formula-w name world))
+       ((mv err rewrites) (cmr::parse-rewrites-from-term form world))
+       ((when (and err (not rewrites)))
+        (er hard? 'collect-cmr-rewrites-for-formula-name
+            "No rewrites parsed from ~x0: ~@1" name err)))
+    (and err
+         (cw "Warning: incomplete conversion from formula to rewrites for ~x0: ~@1~%" name err))
+    rewrites))
+
+;; ====================================================
+;; Collect the LHSes from a list of lemmas.
+
+(defun collect-lemma-lhses (lemmas)
+  (Declare (xargs :mode :program))
   (if (atom lemmas)
       nil
-    (cons (b* ((fnsym (car (acl2::access acl2::rewrite-rule (car lemmas) :lhs))))
-            `(table gl-rewrite-rules ',fnsym
-                    (b* ((rules (cdr (assoc ',fnsym
-                                            (table-alist 'gl-rewrite-rules world)))))
-                      (if (member-equal ',rune rules)
-                          rules
-                        (cons ',rune rules)))))
-          (gl-rewrite-table-entries-for-lemmas rune (cdr lemmas)))))
+    (cons (acl2::access acl2::rewrite-rule (car lemmas) :lhs)
+          (collect-lemma-lhses (cdr lemmas)))))
 
-(defun alist-add-gl-rules (rules alist)
+;; ====================================================
+;; Collect the LHSes from a list of cmr rewrites.
+#!cmr
+(define rewritelist->lhses ((x rewritelist-p))
+  :returns (lhses pseudo-term-listp)
+  (if (atom x)
+      nil
+    (cons (rewrite->lhs (car x))
+          (rewritelist->lhses (cdr x)))))
+
+;; ====================================================
+;; Find the LHSes for a name signifying a formula, a :formula FGL rune, or a :rewrite/:definition rune.
+(defun fgl-rune-lhses (rune world)
   (declare (xargs :mode :program))
-  (if (atom rules)
+  (cond ((eq (car rune) :formula)
+         (b* ((rewrites (collect-cmr-rewrites-for-formula-name (cadr rune) world)))
+           (cmr::rewritelist->lhses rewrites)))
+        (t
+         (b* ((lemmas (collect-lemmas-for-rune rune world)))
+           (collect-lemma-lhses lemmas)))))
+
+(defun fgl-name-to-rewrite-rune (name)
+  (cond ((symbolp name) `(:formula ,name))
+        ((and (consp name)
+              (member-eq (car name) '(:rewrite :definition :formula)))
+         name)
+        (t (er hard? 'fgl-name-to-rewrite-rune
+               "The name of a rewrite rule must either be a bare symbol or a ~
+                :rewrite, :definition, or :formula FGL rune -- ~x0 is not." name))))
+
+(define lhses->leading-function-syms ((lhses pseudo-term-listp))
+  (b* (((when (atom lhses)) nil)
+       (lhs (car lhses)))
+    (pseudo-term-case lhs
+      :fncall (add-to-set-eq lhs.fn (lhses->leading-function-syms (cdr lhses)))
+      :otherwise (lhses->leading-function-syms (cdr lhses)))))
+
+(define lhses->branch-function-syms ((lhses pseudo-term-listp))
+  (b* (((when (atom lhses)) nil)
+       (lhs (car lhses)))
+    (pseudo-term-case lhs
+      :fncall (if (and (eq lhs.fn 'if)
+                       (eql (len lhs.args) 3))
+                  (b* ((arg2 (second lhs.args)))
+                    (pseudo-term-case arg2
+                      :fncall (add-to-set-eq arg2.fn (lhses->branch-function-syms (cdr lhses)))
+                      :otherwise (lhses->branch-function-syms (cdr lhses))))
+                (lhses->branch-function-syms (cdr lhses)))
+      :otherwise (lhses->branch-function-syms (cdr lhses)))))
+
+
+(defun branch-merge-alist-add-rune-entries (fns rune alist)
+  (b* (((when (atom fns)) alist)
+       (alist (hons-acons (car fns)
+                          (add-to-set-equal rune (fgl-branch-merge-rules-lookup (car fns) alist))
+                          alist)))
+    (branch-merge-alist-add-rune-entries (cdr fns) rune alist)))
+
+;; Need a separate version of this because we want to use fgl-rewrite-rules-lookup.
+(defun rewrite-alist-add-rune-entries (fns rune alist world)
+  (b* (((when (atom fns)) alist)
+       (alist (hons-acons (car fns)
+                          (add-to-set-equal rune (fgl-rewrite-rules-lookup (car fns) alist world))
+                          alist)))
+    (rewrite-alist-add-rune-entries (cdr fns) rune alist world)))
+
+(defun alist-remove-rune-entries (fns rune alist)
+  (b* (((when (atom fns)) alist)
+       (alist (hons-acons (car fns)
+                          (remove-equal rune (cdr (hons-get (car fns) alist)))
+                          alist)))
+    (alist-remove-rune-entries (cdr fns) rune alist)))
+    
+
+(defun add-gl-rewrite-fn (name alist world)
+  (declare (xargs :mode :program))
+  (b* ((rune (fgl-name-to-rewrite-rune name))
+       (lhses (fgl-rune-lhses rune world))
+       (fns (lhses->leading-function-syms lhses))
+       ((when (atom fns))
+        (er hard? 'add-gl-rewrite-fn
+            "No valid rewrite rules found for ~x0" name)))
+    (rewrite-alist-add-rune-entries fns rune alist world)))
+
+(defun remove-gl-rewrite-fn (name alist world)
+  (declare (xargs :mode :program))
+  (b* ((rune (fgl-name-to-rewrite-rune name))
+       (lhses (fgl-rune-lhses rune world))
+       (fns (lhses->leading-function-syms lhses))
+       ((when (atom fns))
+        (er hard? 'remove-gl-rewrite-fn
+            "No valid rewrite rules found for ~x0" name)))
+    (alist-remove-rune-entries fns rune alist)))
+
+(defun add-gl-branch-merge-fn (name alist world)
+  (declare (xargs :mode :program))
+  (b* ((rune (fgl-name-to-rewrite-rune name))
+       (lhses (fgl-rune-lhses rune world))
+       (fns (lhses->branch-function-syms lhses))
+       ((when (atom fns))
+        (er hard? 'add-gl-branch-merge-fn
+            "No valid branch-merge rules found for ~x0" name)))
+    (branch-merge-alist-add-rune-entries fns rune alist)))
+
+(defun remove-gl-branch-merge-fn (name alist world)
+  (declare (xargs :mode :program))
+  (b* ((rune (fgl-name-to-rewrite-rune name))
+       (lhses (fgl-rune-lhses rune world))
+       (fns (lhses->branch-function-syms lhses))
+       ((when (atom fns))
+        (er hard? 'remove-gl-branch-merge-fn
+            "No valid branch-merge rules found for ~x0" name)))
+    (alist-remove-rune-entries fns rune alist)))
+
+
+(defun add-gl-rewrites-fn (names alist world)
+  (declare (xargs :mode :program))
+  (if (atom names)
       alist
-    (b* ((fnsym (car (acl2::access acl2::rewrite-rule (car rules) :lhs)))
-         (rune (acl2::access acl2::rewrite-rule (car rules) :rune))
-         (new-alist
-          (acl2::put-assoc-eq fnsym (add-to-set-equal rune (cdr (assoc-eq fnsym alist))) alist)))
-      (alist-add-gl-rules (cdr rules) new-alist))))
+    (add-gl-rewrites-fn (cdr names)
+                        (add-gl-rewrite-fn (car names) alist world)
+                        world)))
 
-(defun alist-add-gl-rewrite (rune alist world)
+(defun remove-gl-rewrites-fn (names alist world)
   (declare (xargs :mode :program))
-  (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune))
-       (rules (collect-lemmas-for-rune rune world)))
-    (alist-add-gl-rules rules alist)))
+  (if (atom names)
+      alist
+    (remove-gl-rewrites-fn (cdr names)
+                           (remove-gl-rewrite-fn (car names) alist world)
+                           world)))
 
-
-(defun alist-add-gl-rewrites (runes alist world)
+(defun add-gl-branch-merges-fn (names alist world)
   (declare (xargs :mode :program))
-  (b* ((rules (collect-lemmas-for-runes runes world)))
-    (alist-add-gl-rules rules alist)))
+  (if (atom names)
+      alist
+    (add-gl-branch-merges-fn (cdr names)
+                             (add-gl-branch-merge-fn (car names) alist world)
+                             world)))
+
+(defun remove-gl-branch-merges-fn (names alist world)
+  (declare (xargs :mode :program))
+  (if (atom names)
+      alist
+    (remove-gl-branch-merges-fn (cdr names)
+                                (remove-gl-branch-merge-fn (car names) alist world)
+                                world)))
 
 
 
-(defmacro add-gl-rewrite (rune)
+(defmacro add-gl-rewrite (name)
   `(table gl-rewrite-rules
           nil
-          (alist-add-gl-rewrite ',rune (table-alist 'gl-rewrite-rules world) world)
+          (add-gl-rewrite-fn ',name (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
           :clear))
 
-
-
-
-(defun alist-remove-gl-rules (rules alist)
-  (declare (xargs :mode :program))
-  (if (atom rules)
-      alist
-    (b* ((fnsym (car (acl2::access acl2::rewrite-rule (car rules) :lhs)))
-         (rune (acl2::access acl2::rewrite-rule (car rules) :rune))
-         (new-alist
-          (acl2::put-assoc-eq fnsym (remove-equal rune (cdr (assoc-eq fnsym alist))) alist)))
-      (alist-remove-gl-rules (cdr rules) new-alist))))
-
-(defun alist-remove-gl-rewrite (rune alist world)
-  (declare (xargs :mode :program))
-  (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune))
-       (rules (collect-lemmas-for-rune rune world)))
-    (alist-remove-gl-rules rules alist)))
-
-
-(defun alist-remove-gl-rewrites (runes alist world)
-  (declare (xargs :mode :program))
-  (b* ((rules (collect-lemmas-for-runes runes world)))
-    (alist-remove-gl-rules rules alist)))
-
-
-
-(defmacro remove-gl-rewrite (rune)
+(defmacro remove-gl-rewrite (name)
   `(table gl-rewrite-rules
           nil
-          (alist-remove-gl-rewrite ',rune (table-alist 'gl-rewrite-rules world) world)
+          (remove-gl-rewrite-fn ',name (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
           :clear))
 
-
-
-(defmacro add-gl-definition (rune)
-  `(table gl-definition-rules
+(defmacro add-gl-branch-merge (name)
+  `(table gl-branch-merge-rules
           nil
-          (alist-add-gl-rewrite ',rune (table-alist 'gl-definition-rules world) world)
+          (add-gl-branch-merge-fn ',name (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
           :clear))
 
-(defmacro remove-gl-definition (rune)
-  `(table gl-definition-rules
+(defmacro remove-gl-branch-merge (name)
+  `(table gl-branch-merge-rules
           nil
-          (alist-remove-gl-rewrite ',rune (table-alist 'gl-definition-rules world) world)
+          (remove-gl-branch-merge-fn ',name (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
           :clear))
+
+
+(defmacro add-gl-rewrites (&rest names)
+  `(table gl-rewrite-rules
+          nil
+          (add-gl-rewrites-fn ',names (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
+          :clear))
+
+(defmacro remove-gl-rewrites (&rest names)
+  `(table gl-rewrite-rules
+          nil
+          (remove-gl-rewrites-fn ',names (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
+          :clear))
+
+(defmacro add-gl-branch-merges (&rest names)
+  `(table gl-branch-merge-rules
+          nil
+          (add-gl-branch-merges-fn ',names (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
+          :clear))
+
+(defmacro remove-gl-branch-merges (&rest names)
+  `(table gl-branch-merge-rules
+          nil
+          (remove-gl-branch-merges-fn ',names (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
+          :clear))
+
+(defmacro clean-gl-rewrite-table ()
+  `(table gl-rewrite-rules
+          nil
+          (fast-alist-clean (make-fast-alist (table-alist 'gl-rewrite-rules world)))
+          :clear))
+
+(defmacro clean-gl-branch-merge-table ()
+  `(table gl-branch-merge-rules
+          nil
+          (fast-alist-clean (make-fast-alist (table-alist 'gl-branch-merge-rules world)))
+          :clear))
+
+
+(defmacro add-gl-primitive (trigger-fn primitive-fn)
+  `(table gl-rewrite-rules
+          nil
+          (rewrite-alist-add-rune-entries '(,trigger-fn)
+                                          ',(fgl-rune-primitive primitive-fn)
+                                          (make-fast-alist (table-alist 'gl-rewrite-rules world))
+                                          world)
+          :clear))
+
+(defmacro remove-gl-primitive (trigger-fn primitive-fn)
+  `(table gl-rewrite-rules
+          nil
+          (alist-remove-rune-entries '(,trigger-fn)
+                                     ',(fgl-rune-primitive primitive-fn)
+                                     (make-fast-alist (table-alist 'gl-rewrite-rules world)))
+          :clear))
+
+(defmacro add-gl-meta (trigger-fn meta-fn)
+  `(table gl-rewrite-rules
+          nil
+          (rewrite-alist-add-rune-entries '(,trigger-fn)
+                                          ',(fgl-rune-meta meta-fn)
+                                          (make-fast-alist (table-alist 'gl-rewrite-rules world))
+                                          world)
+          :clear))
+
+(defmacro remove-gl-meta (trigger-fn meta-fn)
+  `(table gl-rewrite-rules
+          nil
+          (alist-remove-rune-entries '(,trigger-fn)
+                                     ',(fgl-rune-meta meta-fn)
+                                     (make-fast-alist (table-alist 'gl-rewrite-rules world)))
+          :clear))
+
+
 
 (defmacro disable-definition (fnname)
-  `(remove-gl-definition (:definition ,fnname)))
+  `(remove-gl-rewrite ,fnname))
 
 (defmacro disable-execution (fnname)
   `(table gl-fn-modes
@@ -218,158 +411,6 @@ reference.</p>"
             (add-gl-rewrite ,name))))
 
 
-(defsection def-gl-definition
-  :parents (fgl-rewrite-rules)
-  :short "Define a rewrite rule for FGL to use on term-level objects, after applying primitives"
-  :long
-  "<p>This is similar to @(see def-gl-rewrite) but rules introduced with
-@('def-gl-definition') will be tried after rules introduced with
-@('def-gl-rewrite') and also after primitive functions (see @(see
-fgl-primitives)). </p>"
-
-  (defmacro def-gl-definition (name &rest args)
-    `(progn (defthmd ,name . ,args)
-            (add-gl-definition ,name))))
-
-
-(defun gl-rewrite-table-entries-for-lemma-removals (rune lemmas)
-  (if (atom lemmas)
-      nil
-    (cons (b* ((fnsym (car (acl2::access acl2::rewrite-rule (car lemmas) :lhs))))
-            `(table gl-rewrite-rules ',fnsym
-                    (b* ((rules (cdr (assoc ',fnsym
-                                            (table-alist 'gl-rewrite-rules world)))))
-                      (if (member-equal ',rune rules)
-                          (remove ',rune rules)
-                        rules))))
-          (gl-rewrite-table-entries-for-lemma-removals rune (cdr lemmas)))))
-
-
-
-;; (defun gl-set-uninterpreted-fn (fn val world)
-;;   (b* ((formals (getprop fn 'formals :none 'current-acl2-world world))
-;;        (fn (if (eq formals :none)
-;;                (cdr (assoc fn (table-alist 'acl2::macro-aliases-table world)))
-;;              fn))
-;;        (formals (if (eq formals :none)
-;;                     (getprop fn 'formals :none 'current-acl2-world world)
-;;                   formals))
-;;        ((when (eq formals :none))
-;;         (er hard? 'gl-set-uninterpreted-fn
-;;             "~x0 is neither a function nor a macro-alias for a function~%" fn)))
-;;     `(table gl-uninterpreted-functions ',fn ,val)))
-
-;; (defsection gl-set-uninterpreted
-;;   :parents (fgl-rewrite-rules)
-;;   :short "Prevent GL from interpreting a function's definition or concretely executing it."
-;;   :long
-;;   "<p>Usage:</p>
-;; @({
-;;   ;; disallow definition expansion and concrete execution
-;;   (gl::gl-set-uninterpreted fnname)
-;;   (gl::gl-set-uninterpreted fnname t) ;; same as above
-
-;;   ;; disallow definition expansion but allow concrete execution
-;;   (gl::gl-set-uninterpreted fnname :concrete-only)
-
-;;   ;; disallow concrete execution but allow definition expansion
-;;   (gl::gl-set-uninterpreted fnname :no-concrete)
-
-;;   ;; remove restrictions
-;;   (gl::gl-set-uninterpreted fnname nil)
-;;   (gl::gl-unset-uninterpreted fnname) ;; same
-;; })
-;; <p>prevents GL from opening the definition of fnname and/or concretely executing
-;; it.  GL will still apply rewrite rules to a call of @('fnname').  If the
-;; call is not rewritten away, symbolic execution of a @('fnname') call will
-;; simply produce an object (of the :g-apply type) representing a call of
-;; @('fnname') on the given arguments.</p>
-
-;; <p>@('gl::gl-unset-uninterpreted') undoes the effect of @('gl::gl-set-uninterpreted').</p>
-
-;; <p>Note that @('gl::gl-set-uninterpreted') has virtually no effect when
-;; applied to a GL primitive: a function that has its ``symbolic
-;; counterpart'' built into the GL clause processor you're using.  (It
-;; actually does do a little &mdash; it can prevent the function from being
-;; applied to concrete values before rewrite rules are applied.  But that
-;; could change in the future.)  But what is a GL primitive?  That
-;; depends on the current GL clause processor, and can only be determined
-;; reliably by looking at the definition of the following function
-;; symbol:</p>
-
-;; @({
-;; (cdr (assoc-eq 'gl::run-gified
-;; 	       (table-alist 'gl::latest-greatest-gl-clause-proc (w state))))
-;; })
-
-;; <p>For example, this function symbol is 'gl::glcp-run-gified immediately after
-;; including the community-book @('\"centaur/gl/gl\"').  Now use @(':')@(tsee pe)
-;; on this function symbol.  The body of that definition should be of the form
-;; @('(case fn ...)'), which matches @('fn') against all the GL primitives for the
-;; current GL clause processor.</p>
-
-;; "
-
-;;   (defmacro gl-set-uninterpreted (fn &optional (val 't))
-;;     `(make-event
-;;       (gl-set-uninterpreted-fn ',fn ,val (w state)))))
-
-;; (defmacro gl-unset-uninterpreted (fn)
-;;   `(make-event
-;;     (gl-set-uninterpreted-fn ',fn nil (w state))))
-
-(defun gl-branch-merge-rules (wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (cdr (hons-assoc-equal 'gl-branch-merge-rules (table-alist 'gl-branch-merge-rules wrld))))
-
-(defun find-gl-branch-merge-lemma (lemmas)
-  (b* (((when (atom lemmas)) nil)
-       (x (car lemmas))
-       (lhs (acl2::access acl2::rewrite-rule x :lhs))
-       ((unless (case-match lhs
-                  (('if & (fn . &) &)
-                   (and (symbolp fn)
-                        (not (eq fn 'quote))))
-                  (& nil)))
-        (find-gl-branch-merge-lemma (cdr lemmas))))
-    x))
-    
-(defun check-gl-branch-merge-rule-fn (rune wrld)
-  (Declare (Xargs :guard (plist-worldp wrld)
-                  :mode :program))
-  (b* ((lemmas (collect-lemmas-for-rune rune wrld))
-       ((unless (find-gl-branch-merge-lemma lemmas))
-        (er hard? 'check-gl-branch-merge-rule-fn
-            "Couldn't find a suitable branch merge rule named ~x0.  Such a ~
-             rule ought to have IF as the leading function symbol of the LHS." rune)))
-    '(value-triple :ok)))
-       
-
-(defmacro check-gl-branch-merge-rule (rune)
-  `(make-event (check-gl-branch-merge-rule-fn ',rune (w state))))
-
-(defun add-gl-branch-merge-fn (rune)
-  (declare (xargs :mode :program))
-  (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune)))
-    `(progn
-       (check-gl-branch-merge-rule ,rune)
-       (table gl-branch-merge-rules
-              'gl-branch-merge-rules
-              (add-to-set-equal ',rune (gl-branch-merge-rules world))))))
-
-(defmacro add-gl-branch-merge (rune)
-  (add-gl-branch-merge-fn rune))
-
-(defun remove-gl-branch-merge-fn (rune)
-  (declare (xargs :mode :program))
-  (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune)))
-    `(table gl-branch-merge-rules
-            'gl-branch-merge-rules
-            (remove-equal ',rune (gl-branch-merge-rules world)))))
-
-(defmacro remove-gl-branch-merge (rune)
-  (remove-gl-branch-merge-fn rune))
-
 
 (defsection def-gl-branch-merge
   :parents (fgl-rewrite-rules)
@@ -412,91 +453,6 @@ must be a function call.</li>
 
 
 
-
-;; recursively match patterns, e.g.:
-;; set (equal (logcar (logcdr (logcdr x))) 1) to t
-;; --> set (logcar (logcdr (logcdr x))) to 1
-;; --> set (logbitp 0 (logcdr (logcdr x))) to t
-;; --> set (logbitp 1 (logcdr x)) to t
-;; --> set (logbitp 2 x) to t
-;; --> set x to (logior (ash 1 2) x)
-
-(defun translate-pair (pair ctx state)
-  (declare (xargs :stobjs state :mode :program))
-  (b* (((list a b) pair)
-       ((er aa) (acl2::translate a t t t ctx (w state) state))
-       ((er bb) (acl2::translate b t t t ctx (w state) state)))
-    (value (list aa bb))))
-
-(defun translate-pair-list (pairs ctx state)
-  (declare (xargs :stobjs state :mode :program))
-  (b* (((when (atom pairs)) (value nil))
-       ((er first) (translate-pair (car pairs) ctx state))
-       ((er rest) (translate-pair-list (cdr pairs) ctx state)))
-    (value (cons first rest))))
-
-(defun def-glcp-ctrex-rewrite-fn (from test tos state)
-  (declare (xargs :mode :program :stobjs state))
-  (b* (((er fromtrans) (translate-pair from 'def-gplcp-ctrex-rewrite state))
-       ((er tostrans) (translate-pair-list tos 'def-gplcp-ctrex-rewrite state))
-       ((er testtrans) (acl2::translate test t t t 'def-gplcp-ctrex-rewrite (w state) state))
-       (entry (list* fromtrans testtrans tostrans))
-       (fnsym (caar fromtrans)))
-    (value `(table glcp-ctrex-rewrite
-                   ',fnsym
-                   (cons ',entry
-                         (cdr (assoc ',fnsym (table-alist
-                                              'glcp-ctrex-rewrite world))))))))
-
-;; (defsection def-glcp-ctrex-rewrite
-;;   :parents (reference term-level-reasoning)
-;;   :short "Define a heuristic for GL to use when generating counterexamples"
-;;   :long
-;;   "<p>Usage:</p>
-
-;; @({
-;;  (gl::def-glcp-ctrex-rewrite
-;;    ;; from:
-;;    (lhs-lvalue lhs-rvalue)
-;;    ;; to:
-;;    (rhs-lvalue rhs-rvalue)
-;;    :test syntaxp-term)
-;;  })
-;; <p>Example:</p>
-;; @({
-;;  (gl::def-glcp-ctrex-rewrite
-;;    ((logbitp n x) t)
-;;    (x (logior (ash 1 n) x))
-;;    :test (quotep n))
-;; })
-
-;; <p>If GL has generated Boolean variables corresponding to term-level objects,
-;; then an assignment to the Boolean variables does not directly induce an
-;; assignment of ACL2 objects to the ACL2 variables.  Instead, we have terms that
-;; are assigned true or false by the Boolean assignment, and to generate a
-;; counterexample, we must find an assignment for the variables in those terms
-;; that cause the terms to take the required truth values.  Ctrex-rewrite rules
-;; tell GL how to move from a valuation of a term to valuations of its
-;; components.</p>
-
-;; <p>The example rule above says that if we want @('(logbitp n x)') to be @('t'),
-;; and @('n') is (syntactically) a quoted constant, then assign @('x') a new value
-;; by effectively setting its @('n')th bit to T (that is, bitwise ORing X with the
-;; appropriate mask).</p>
-
-;; <p>Note that this rule does not always yield the desired result -- for example,
-;; in the case where N is a negative integer.  Because these are just heuristics
-;; for generating counterexamples, there is no correctness requirement and no
-;; checking of these rules.  Bad counterexample rules can't make anything unsound,
-;; but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
-
-;;   (defmacro def-glcp-ctrex-rewrite (from to &key (test 't))
-;;     `(make-event
-;;       (def-glcp-ctrex-rewrite-fn ',from ',test ',(list to) state))))
-
-;; (defmacro def-glcp-ctrex-split-rewrite (from tos &key (test 't))
-;;   `(make-event
-;;     (def-glcp-ctrex-rewrite-fn ',from ',test ',tos state)))
 
 (defxdoc def-fgl-program
   :parents (fgl-rewrite-rules)

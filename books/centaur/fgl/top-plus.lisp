@@ -40,6 +40,7 @@
 (local (in-theory (disable w)))
 
 (install-gl-primitives top-plus)
+(install-gl-metafns top-plus)
 
 #||
 (include-book "xdoc/save" :dir :system)

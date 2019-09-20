@@ -266,3 +266,24 @@
   (implies (not (consp x))
            (equal (fgl-objectlist-eval x env) nil))
   :hints(("Goal" :in-theory (enable fgl-objectlist-eval))))
+
+(defthm fgl-object-bindings-eval-of-cons
+  (implies (pseudo-var-p key)
+           (equal (fgl-object-bindings-eval (cons (cons key val) rest) env logicman)
+                  (cons (cons key (fgl-object-eval val env logicman))
+                        (fgl-object-bindings-eval rest env logicman))))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-eval))))
+
+(defthm sub-alistp-hons-assoc-equal2
+    (implies (and (acl2::sub-alistp a b)
+                  (hons-assoc-equal x a))
+             (equal (hons-assoc-equal x b)
+                    (hons-assoc-equal x a)))
+    :hints(("Goal" :in-theory (enable acl2::sub-alistp-hons-assoc-equal))))
+
+(defthm assoc-equal-when-key
+  (implies key
+           (equal (assoc-equal key x)
+                  (hons-assoc-equal key x))))
+
+(in-theory (enable fgl-apply))

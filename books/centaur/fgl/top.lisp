@@ -53,6 +53,7 @@
 ;; to install more primitives.
 
 (install-gl-primitives top)
+(install-gl-metafns top)
 
 
 

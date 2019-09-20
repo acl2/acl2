@@ -31,14 +31,14 @@
 (in-package "FGL")
 
 (include-book "interp-st")
-(include-book "centaur/meta/pseudo-rewrite-rule" :dir :system)
+(include-book "rules")
 
 
 
 (encapsulate
   (((gl-rewrite-try-rule-trace * * * interp-st state) => interp-st
     :formals (status rule call interp-st state)
-    :guard (and (pseudo-rewrite-rule-p rule)
+    :guard (and (fgl-rule-p rule)
                 (gl-object-p call))))
 
   (set-ignore-ok t)
@@ -56,7 +56,7 @@
 
 (define gl-rewrite-try-rule-trace-wrapper (trace
                                            status
-                                           (rule pseudo-rewrite-rule-p)
+                                           (rule fgl-rule-p)
                                            (call gl-object-p)
                                            interp-st
                                            state)
@@ -73,7 +73,7 @@
 
 
 (define gl-rewrite-rule-try-trace-default (status
-                                           (rule pseudo-rewrite-rule-p)
+                                           (rule fgl-rule-p)
                                            (call gl-object-p)
                                            interp-st state)
   :returns new-interp-st
@@ -82,7 +82,7 @@
        ((unless (alistp rule-alist))
         (er hard? 'gl-rewrite-rule-try-trace-default "Bad :fgl-trace-rule-alist -- not an alist")
         interp-st)
-       (rune (acl2::rewrite-rule->rune rule))
+       (rune (fgl-rule->rune rule))
        (look (assoc-equal rune rule-alist))
        ((unless look)
         interp-st)
@@ -114,7 +114,7 @@
               0 evisc-tuple nil)
              (update-interp-st->trace-scratch (1- depth) interp-st)))
          interp-st))
-      ((':finish . val)
+      ((':finish successp . val)
        (b* ((errmsg (interp-st->errmsg interp-st))
             ((when errmsg)
              (fmt-to-comment-window
@@ -123,6 +123,12 @@
                                                     (if (msgp errmsg)
                                                         errmsg
                                                       (msg "~x0" errmsg))))
+              0 evisc-tuple nil)
+             (update-interp-st->trace-scratch (1- depth) interp-st))
+            ((unless successp)
+             (fmt-to-comment-window
+              "~t0<~x1 ~x2 failed (aborted)~%"
+              (pairlis2 acl2::*base-10-chars* (list (1- depth) (1- depth) rune))
               0 evisc-tuple nil)
              (update-interp-st->trace-scratch (1- depth) interp-st)))
          (fmt-to-comment-window

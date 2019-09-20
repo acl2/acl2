@@ -39,6 +39,21 @@
 (local (in-theory (disable w)))
 
 ;; BOZO maybe doesn't belong here
+(defmacro eval-alist-extension-p (x y)
+    `(acl2::sub-alistp ,y ,x))
+
+(defun-sk fgl-ev-context-equiv-forall-extensions (contexts
+                                                  obj
+                                                  term
+                                                  eval-alist)
+  (forall (ext)
+          (implies (eval-alist-extension-p ext eval-alist)
+                   (equal (fgl-ev-context-fix contexts
+                                              (fgl-ev term ext))
+                          (fgl-ev-context-fix contexts obj))))
+  :rewrite :direct)
+
+
 (defsection fgl-major-stack-concretize-of-interp-st-logicman-extension
 
   (def-updater-independence-thm fgl-object-concretize-of-interp-st-logicman-extension
@@ -160,36 +175,15 @@
              (equal (interp-st-scratch-isomorphic new x)
                     (interp-st-scratch-isomorphic old x)))))
 
-(defconst *gl-primitive-thms*
+(defconst *gl-meta-and-primitive-rule-thms*
   '(
-    (defret gl-object-p-ans-of-<fn>
-      (gl-object-p ans))
     
     (defret interp-st-bfrs-ok-of-<fn>
       (implies (and (interp-st-bfrs-ok interp-st)
-                    (lbfr-listp (gl-objectlist-bfrlist args)
+                    (lbfr-listp (gl-object-bfrlist call)
                                 (interp-st->logicman interp-st)))
                (interp-st-bfrs-ok new-interp-st)))
-
-    (defret bfr-listp-of-<fn>
-      (implies (and
-                (interp-st-bfrs-ok interp-st)
-                (lbfr-listp (gl-objectlist-bfrlist args)
-                            (interp-st->logicman interp-st)))
-               (lbfr-listp (gl-object-bfrlist ans)
-                           (interp-st->logicman new-interp-st))))
-
-    ;; (defret interp-st-get-of-<fn>
-    ;;   (implies (and (not (equal (interp-st-field-fix key) :logicman))
-    ;;                 (not (equal (interp-st-field-fix key) :stack))
-    ;;                 (not (equal (interp-st-field-fix key) :pathcond))
-    ;;                 (not (equal (interp-st-field-fix key) :constraint))
-    ;;                 (not (equal (interp-st-field-fix key) :bvar-db))
-    ;;                 (not (equal (interp-st-field-fix key) :fgarrays))
-    ;;                 (not (equal (interp-st-field-fix key) :next-fgarray)))
-    ;;            (equal (interp-st-get key new-interp-st)
-    ;;                   (interp-st-get key interp-st))))
-    (defret interp-st->reclimit-of-<fn>
+        (defret interp-st->reclimit-of-<fn>
       (equal (interp-st->reclimit new-interp-st)
              (interp-st->reclimit interp-st)))
 
@@ -249,6 +243,7 @@
 
     (defret interp-st->errmsg-equal-unreachable-of-<fn>
       (implies (and (not (equal (interp-st->errmsg interp-st) :unreachable))
+                    (bind-free '((env . env)) (env))
                     (logicman-pathcond-eval env (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st))
                     (logicman-pathcond-eval env (interp-st->constraint interp-st)
@@ -277,18 +272,63 @@
              (base-bvar$a (interp-st->bvar-db interp-st))))
 
     (defret w-state-of-<fn>
-      (equal (w new-state) (w state)))))
+      (equal (w new-state) (w state)))
 
 
+    (defret get-bvar->term-eval-of-<fn>
+      (b* ((bvar-db (interp-st->bvar-db interp-st)))
+        (implies (and (interp-st-bfrs-ok interp-st)
+                      (<= (base-bvar$a bvar-db) (nfix n))
+                      (< (nfix n) (next-bvar$a bvar-db)))
+                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
+                                       env
+                                       (interp-st->logicman new-interp-st))
+                      (fgl-object-eval (get-bvar->term$a n bvar-db)
+                                       env
+                                       (interp-st->logicman interp-st))))))
+
+    (defret major-stack-concretize-of-<fn>
+      (implies (interp-st-bfrs-ok interp-st)
+               (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
+                      (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))))
+
+(defconst *gl-primitive-rule-thms*
+  (append '((defret gl-object-p-ans-of-<fn>
+              (gl-object-p ans))
+
+            (defret bfr-listp-of-<fn>
+              (implies (and
+                        (interp-st-bfrs-ok interp-st)
+                        (lbfr-listp (gl-object-bfrlist call)
+                                    (interp-st->logicman interp-st)))
+                       (lbfr-listp (gl-object-bfrlist ans)
+                                   (interp-st->logicman new-interp-st)))))
+          *gl-meta-and-primitive-rule-thms*))
+
+(defconst *gl-meta-rule-thms*
+  (append '((defret gl-object-bindings-p-bindings-of-<fn>
+              (gl-object-bindings-p bindings))
+
+            (defret pseudo-termp-rhs-of-<fn>
+              (pseudo-termp rhs))
+
+            (defret bfr-listp-of-<fn>
+              (implies (and
+                        (interp-st-bfrs-ok interp-st)
+                        (lbfr-listp (gl-object-bfrlist call)
+                                    (interp-st->logicman interp-st)))
+                       (lbfr-listp (gl-object-bindings-bfrlist bindings)
+                                   (interp-st->logicman new-interp-st)))))
+          *gl-meta-and-primitive-rule-thms*))
 
 (make-event 
  `(encapsulate
     (((gl-primitive-fncall-stub * * interp-st state) => (mv * * interp-st state)
-      :formals (fn args interp-st state)
-      :guard (and (pseudo-fnsym-p fn)
-                  (gl-objectlist-p args)
+      :formals (primfn call interp-st state)
+      :guard (and (pseudo-fnsym-p primfn)
+                  (gl-object-p call)
                   (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-listp (gl-objectlist-bfrlist args))))
+                  (interp-st-bfr-listp (gl-object-bfrlist call))))
      ((gl-primitive-formula-checks-stub state) => *
       :formals (state))
      )
@@ -301,11 +341,11 @@
              t))
 
 
-    (local (define gl-primitive-fncall-stub ((fn pseudo-fnsym-p)
-                                             (args gl-objectlist-p)
+    (local (define gl-primitive-fncall-stub ((primfn pseudo-fnsym-p)
+                                             (call gl-object-p)
                                              (interp-st interp-st-bfrs-ok)
                                              state)
-             :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
+             :guard (interp-st-bfr-listp (gl-object-bfrlist call))
              :ignore-ok t
              :irrelevant-formals-ok t
              :returns (mv successp ans new-interp-st new-state)
@@ -313,24 +353,7 @@
 
     (local (in-theory (enable gl-primitive-fncall-stub)))
 
-    ,@*gl-primitive-thms*
-
-    (defret get-bvar->term-eval-of-<fn>
-      (b* ((bvar-db (interp-st->bvar-db interp-st)))
-        (implies (and (interp-st-bfrs-ok interp-st)
-                      (<= (base-bvar$a bvar-db) (nfix n))
-                      (< (nfix n) (next-bvar$a bvar-db)))
-                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
-                                       env
-                                       (interp-st->logicman new-interp-st))
-                      (fgl-object-eval (get-bvar->term$a n bvar-db)
-                                       env
-                                       (interp-st->logicman interp-st))))))
-
-    (defret major-stack-concretize-of-<fn>
-      (implies (interp-st-bfrs-ok interp-st)
-               (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
-                      (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))
+    ,@*gl-primitive-rule-thms*
 
     (defret eval-of-<fn>
       (implies (and successp
@@ -339,7 +362,7 @@
                     (gl-primitive-formula-checks-stub st)
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st)
-                    (interp-st-bfr-listp (gl-objectlist-bfrlist args))
+                    (interp-st-bfr-listp (gl-object-bfrlist call))
                     (logicman-pathcond-eval (gl-env->bfr-vals env)
                                             (interp-st->constraint interp-st)
                                             (interp-st->logicman interp-st))
@@ -349,64 +372,69 @@
                (equal (fgl-ev-context-fix contexts
                                           (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                       (fgl-ev-context-fix contexts
-                                          (fgl-ev (cons (pseudo-fnsym-fix fn)
-                                                        (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
-                                                  nil)))))
+                                          (fgl-object-eval call env (interp-st->logicman interp-st))))))
 
     (deffixequiv gl-primitive-fncall-stub)))
 
 
 
-(make-event
- `(define gl-primitive-fncall ((fn pseudo-fnsym-p)
-                               (args gl-objectlist-p)
-                               (dont)
-                               (interp-st interp-st-bfrs-ok) 
-                               state)
-    :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
-    :returns (mv successp
-                 (ans gl-object-p)
-                 new-interp-st
-                 new-state)
-    (if dont
-        (mv nil nil interp-st state)
-      (gl-primitive-fncall-stub fn args interp-st state))
-    ///
-    ,@*gl-primitive-thms*
-    (defret get-bvar->term-eval-of-<fn>
-      (b* ((bvar-db (interp-st->bvar-db interp-st)))
-        (implies (and (interp-st-bfrs-ok interp-st)
-                      (<= (base-bvar$a bvar-db) (nfix n))
-                      (< (nfix n) (next-bvar$a bvar-db)))
-                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
-                                       env
-                                       (interp-st->logicman new-interp-st))
-                      (fgl-object-eval (get-bvar->term$a n bvar-db)
-                                       env
-                                       (interp-st->logicman interp-st))))))
 
-    (defret major-stack-concretize-of-<fn>
-      (implies (interp-st-bfrs-ok interp-st)
-               (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
-                      (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))
+
+(make-event 
+ `(encapsulate
+    (((gl-meta-fncall-stub * * interp-st state) => (mv * * * interp-st state)
+      :formals (primfn call interp-st state)
+      :guard (and (pseudo-fnsym-p primfn)
+                  (gl-object-p call)
+                  (interp-st-bfrs-ok interp-st)
+                  (interp-st-bfr-listp (gl-object-bfrlist call))))
+     ((gl-meta-formula-checks-stub state) => *
+      :formals (state))
+     )
+    
+
+    (local (define gl-meta-formula-checks-stub (state)
+             :ignore-ok t
+             :irrelevant-formals-ok t
+             :returns (okp)
+             t))
+
+
+    (local (define gl-meta-fncall-stub ((primfn pseudo-fnsym-p)
+                                        (call gl-object-p)
+                                        (interp-st interp-st-bfrs-ok)
+                                        state)
+             :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+             :ignore-ok t
+             :irrelevant-formals-ok t
+             :returns (mv successp rhs bindings new-interp-st new-state)
+             (mv nil nil nil interp-st state)))
+
+    (local (in-theory (enable gl-meta-fncall-stub)))
+
+    ,@*gl-meta-rule-thms*
 
     (defret eval-of-<fn>
       (implies (and successp
                     (equal contexts (interp-st->equiv-contexts interp-st))
                     (fgl-ev-meta-extract-global-facts :state st)
-                    (gl-primitive-formula-checks-stub st)
+                    (gl-meta-formula-checks-stub st)
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st)
-                    (interp-st-bfr-listp (gl-objectlist-bfrlist args))
+                    (interp-st-bfr-listp (gl-object-bfrlist call))
                     (logicman-pathcond-eval (gl-env->bfr-vals env)
                                             (interp-st->constraint interp-st)
                                             (interp-st->logicman interp-st))
                     (logicman-pathcond-eval (gl-env->bfr-vals env)
                                             (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st)))
-               (equal (fgl-ev-context-fix contexts
-                                          (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
-                      (fgl-ev-context-fix contexts
-                                          (fgl-ev (cons (pseudo-fnsym-fix fn)
-                                                        (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
-                                                  nil)))))))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts
+                (fgl-object-eval call env (interp-st->logicman interp-st))
+                rhs
+                (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
+
+    (deffixequiv gl-meta-fncall-stub)))
+
+
+

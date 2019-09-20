@@ -735,6 +735,7 @@
   (defret fgl-clause-proc-core-correct
     (implies (and (fgl-ev-meta-extract-global-facts)
                   (gl-primitive-formula-checks-stub state)
+                  (gl-meta-formula-checks-stub state)
                   (not err))
              (fgl-ev goal a))
     :hints ((acl2::function-termhint
@@ -794,7 +795,8 @@
   :guard-debug t
   (b* (((unless (glcp-config-p hint))
         (mv "Bad hint object -- must satisfy glcp-config-p" nil interp-st state))
-       ((unless (gl-primitive-formula-checks-stub state))
+       ((unless (and (gl-primitive-formula-checks-stub state)
+                     (gl-meta-formula-checks-stub state)))
         (mv "Failed formula checks! Some assumed definitions needed for primitives are not installed."
             nil interp-st state))
        (config hint)
