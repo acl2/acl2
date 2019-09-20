@@ -450,11 +450,11 @@
 (define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
   :returns (fn-type "An @(tsee atj-function-type-p).")
   :verify-guards nil
-  :short "Retrieve the ATJ type of the specified function."
+  :short "Retrieve the ATJ type of the specified function from the table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is retrived from the "
+    "This is retrieved from the "
     (xdoc::seetopic "atj-function-type-table"
                   "@(tsee def-atj-function-type) table")
     ". If the table has no entry for the function,
@@ -462,6 +462,28 @@
   (b* ((table (table-alist *atj-function-type-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair) (cdr pair)))
+    (make-atj-function-type :inputs (repeat (arity fn wrld) :value)
+                            :output :value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-get-function-type ((fn symbolp)
+                               (guards$ booleanp)
+                               (wrld plist-worldp))
+  :returns (fn-type "An @(tsee atj-function-type-p).")
+  :verify-guards nil
+  :short "Obtain the ATJ type of the specified function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the @(':guards') input is @('t'),
+     we retrieve the type from the table
+     via @(tsee atj-get-function-type-from-table).
+     If the @(':guards') input is @('nil'),
+     we return a function type consisting of all @(':value') types,
+     because in this case types are ignored."))
+  (if guards$
+      (atj-get-function-type-from-table fn wrld)
     (make-atj-function-type :inputs (repeat (arity fn wrld) :value)
                             :output :value)))
 

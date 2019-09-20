@@ -2238,16 +2238,12 @@
                                                          guards$
                                                          wrld))
           ((when (symbolp afn))
-           (b* (((mv type arg-jexprs)
-                 (if guards$
-                     (b* ((afn-type (atj-get-function-type-from-table afn wrld))
-                          (arg-jexprs (atj-adapt-jexprs-to-types
-                                       arg-jexprs
-                                       arg-types
-                                       (atj-function-type->inputs afn-type)))
-                          (type (atj-function-type->output afn-type)))
-                       (mv type arg-jexprs))
-                   (mv :value arg-jexprs))))
+           (b* ((afn-type (atj-get-function-type afn guards$ wrld))
+                (arg-jexprs (atj-adapt-jexprs-to-types
+                             arg-jexprs
+                             arg-types
+                             (atj-function-type->inputs afn-type)))
+                (type (atj-function-type->output afn-type)))
              (mv args-jblock
                  (jexpr-method (atj-gen-shallow-afnname afn curr-apkg)
                                arg-jexprs)
@@ -2823,14 +2819,9 @@
             equal
             bad-atom<=) (list "x" "y"))
           (t (list "x"))))
-       ((mv afn-in-types
-            afn-out-type) (if guards$
-                              (b* ((afn-type (atj-get-function-type-from-table
-                                              afn wrld)))
-                                (mv (atj-function-type->inputs afn-type)
-                                    (atj-function-type->output afn-type)))
-                            (mv (repeat (len jmethod-param-names) :value)
-                                :value)))
+       (afn-type (atj-get-function-type afn guards$ wrld))
+       (afn-in-types (atj-function-type->inputs afn-type))
+       (afn-out-type (atj-function-type->output afn-type))
        (jmethod-params (atj-gen-jparamlist jmethod-param-names
                                            (atj-types-to-jtypes afn-in-types)))
        (jcall-method-name
@@ -2997,14 +2988,9 @@
        (abody (remove-progn-from-term abody))
        ((mv aformals abody)
         (atj-rename-aformals+abody aformals abody curr-apkg))
-       ((mv afn-in-types
-            afn-out-type) (if guards$
-                              (b* ((afn-type (atj-get-function-type-from-table
-                                              afn wrld)))
-                                (mv (atj-function-type->inputs afn-type)
-                                    (atj-function-type->output afn-type)))
-                            (mv (repeat (len aformals) :value)
-                                :value)))
+       (afn-type (atj-get-function-type afn guards$ wrld))
+       (afn-in-types (atj-function-type->inputs afn-type))
+       (afn-out-type (atj-function-type->output afn-type))
        (jvar-types (pairlis$ aformals afn-in-types))
        (jmethod-params (atj-gen-jparamlist (symbol-name-lst aformals)
                                            (atj-types-to-jtypes afn-in-types)))
@@ -3409,6 +3395,7 @@
 
 (define atj-gen-test-jmethod ((test$ atj-testp)
                               (deep$ booleanp)
+                              (guards$ booleanp)
                               (java-class$ stringp)
                               (verbose$ booleanp)
                               (wrld plist-worldp))
@@ -3502,7 +3489,7 @@
        (current-time-jexpr (jexpr-smethod (jtype-class "System")
                                           "currentTimeMillis"
                                           nil))
-       (fn-type (atj-get-function-type-from-table test.function wrld))
+       (fn-type (atj-get-function-type test.function guards$ wrld))
        (in-types (atj-function-type->inputs fn-type))
        ((mv shallow-arg-jblock shallow-arg-jvars)
         (if deep$
@@ -3701,6 +3688,7 @@
 
 (define atj-gen-test-jmethods ((tests$ atj-test-listp)
                                (deep$ booleanp)
+                               (guards$ booleanp)
                                (java-class$ stringp)
                                (verbose$ booleanp)
                                (wrld plist-worldp))
@@ -3714,9 +3702,11 @@
   (if (endp tests$)
       nil
     (b* ((first-jmethod
-          (atj-gen-test-jmethod (car tests$) deep$ java-class$ verbose$ wrld))
+          (atj-gen-test-jmethod
+           (car tests$) deep$ guards$ java-class$ verbose$ wrld))
          (rest-jmethods
-          (atj-gen-test-jmethods (cdr tests$) deep$ java-class$ verbose$ wrld)))
+          (atj-gen-test-jmethods
+           (cdr tests$) deep$ guards$ java-class$ verbose$ wrld)))
       (cons first-jmethod rest-jmethods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3828,6 +3818,7 @@
 
 (define atj-gen-test-jclass ((tests$ atj-test-listp)
                              (deep$ booleanp)
+                             (guards$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp)
                              (wrld plist-worldp))
@@ -3847,7 +3838,7 @@
         (cw "~%Generating Java code for the tests:~%"))
        (failures-jfield (atj-gen-test-failures-jfield))
        (test-jmethods (atj-gen-test-jmethods
-                       tests$ deep$ java-class$ verbose$ wrld))
+                       tests$ deep$ guards$ java-class$ verbose$ wrld))
        (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
        (body-jclass (append (list (jcmember-field failures-jfield))
                             (jmethods-to-jcmembers test-jmethods)
@@ -3891,6 +3882,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-jcunit ((deep$ booleanp)
+                             (guards$ booleanp)
                              (java-package$ maybe-stringp)
                              (java-class$ stringp)
                              (tests$ atj-test-listp)
@@ -3903,7 +3895,7 @@
                :imports (list (str::cat *atj-aij-jpackage* ".*")
                               "java.math.BigInteger")
                :types (list (atj-gen-test-jclass
-                             tests$ deep$ java-class$ verbose$ wrld))))
+                             tests$ deep$ guards$ java-class$ verbose$ wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3933,6 +3925,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-jfile ((deep$ booleanp)
+                            (guards$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (output-file-test$ stringp)
@@ -3943,6 +3936,7 @@
   :mode :program
   :short "Generate the test Java file."
   (print-to-jfile (print-jcunit (atj-gen-test-jcunit deep$
+                                                     guards$
                                                      java-package$
                                                      java-class$
                                                      tests$
@@ -3990,6 +3984,7 @@
                               state))
         (state (if tests$
                    (atj-gen-test-jfile deep$
+                                       guards$
                                        java-package$
                                        java-class$
                                        output-file-test$
