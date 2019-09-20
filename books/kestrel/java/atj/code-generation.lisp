@@ -2240,7 +2240,7 @@
           ((when (symbolp afn))
            (b* (((mv type arg-jexprs)
                  (if guards$
-                     (b* ((afn-type (atj-get-function-type afn wrld))
+                     (b* ((afn-type (atj-get-function-type-from-table afn wrld))
                           (arg-jexprs (atj-adapt-jexprs-to-types
                                        arg-jexprs
                                        arg-types
@@ -2825,7 +2825,8 @@
           (t (list "x"))))
        ((mv afn-in-types
             afn-out-type) (if guards$
-                              (b* ((afn-type (atj-get-function-type afn wrld)))
+                              (b* ((afn-type (atj-get-function-type-from-table
+                                              afn wrld)))
                                 (mv (atj-function-type->inputs afn-type)
                                     (atj-function-type->output afn-type)))
                             (mv (repeat (len jmethod-param-names) :value)
@@ -2998,7 +2999,8 @@
         (atj-rename-aformals+abody aformals abody curr-apkg))
        ((mv afn-in-types
             afn-out-type) (if guards$
-                              (b* ((afn-type (atj-get-function-type afn wrld)))
+                              (b* ((afn-type (atj-get-function-type-from-table
+                                              afn wrld)))
                                 (mv (atj-function-type->inputs afn-type)
                                     (atj-function-type->output afn-type)))
                             (mv (repeat (len aformals) :value)
@@ -3500,7 +3502,7 @@
        (current-time-jexpr (jexpr-smethod (jtype-class "System")
                                           "currentTimeMillis"
                                           nil))
-       (fn-type (atj-get-function-type test.function wrld))
+       (fn-type (atj-get-function-type-from-table test.function wrld))
        (in-types (atj-function-type->inputs fn-type))
        ((mv shallow-arg-jblock shallow-arg-jvars)
         (if deep$

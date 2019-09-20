@@ -447,7 +447,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type ((fn symbolp) (wrld plist-worldp))
+(define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
   :returns (fn-type "An @(tsee atj-function-type-p).")
   :verify-guards nil
   :short "Retrieve the ATJ type of the specified function."
