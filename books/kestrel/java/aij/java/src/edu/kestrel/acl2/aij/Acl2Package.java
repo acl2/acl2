@@ -13,6 +13,7 @@ import java.util.Map;
 
 /**
  * Representation of ACL2 packages.
+ * Instances of this class are immutable.
  */
 public final class Acl2Package {
 
@@ -46,6 +47,9 @@ public final class Acl2Package {
      * These are stored as values of a map that has package names as keys:
      * each key-value pair is such that
      * the key is the {@link #name} field of the value.
+     * The values of the map are reused
+     * by the {@link #define(Acl2PackageName, List)} method.
+     * In other words, all the packages are interned.
      * This field is never {@code null}.
      */
     private static final Map<Acl2PackageName, Acl2Package> packages =
