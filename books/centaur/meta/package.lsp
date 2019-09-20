@@ -56,7 +56,8 @@
              pseudo-term-call pseudo-term-call->fn pseudo-term-call->args
              pseudo-term-const
              
-             base-ev base-ev-list
+             base-ev base-ev-list defthm-base-ev-flag
+             pair-vars
              eval-alists-agree eval-alists-agree-bad-guy eval-alists-agree-by-bad-guy
              eval-alist-equiv eval-alist-equiv-bad-guy eval-alist-equiv-by-bad-guy
 

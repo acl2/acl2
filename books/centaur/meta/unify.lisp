@@ -30,23 +30,20 @@
 
 (in-package "CMR")
 
-(include-book "clause-processors/pseudo-term-fty" :dir :system)
-(include-book "centaur/fty/deftypes" :dir :system)
-
-(fty::defmap pseudo-term-substitution :key-type pseudo-var :val-type pseudo-term :true-listp t)
+(include-book "subst")
 
 (defines pseudo-term-unify
   (define pseudo-term-unify ((pat pseudo-termp)
                              (x pseudo-termp)
-                             (alist pseudo-term-substitution-p))
+                             (alist pseudo-term-subst-p))
     :measure (pseudo-term-count pat)
     :hints ((and stable-under-simplificationp
                  '(:cases ((equal (pseudo-term-kind pat) :lambda)
                            (equal (pseudo-term-kind pat) :fncall)))))
-    :returns (mv ok (new-alist pseudo-term-substitution-p))
+    :returns (mv ok (new-alist pseudo-term-subst-p))
     :verify-guards nil
     (b* ((x (pseudo-term-fix x))
-         (alist (pseudo-term-substitution-fix alist)))
+         (alist (pseudo-term-subst-fix alist)))
       (pseudo-term-case pat
         :var (b* ((look (assoc pat.name alist)))
                (if look
@@ -68,10 +65,10 @@
                 :otherwise (mv nil alist)))))
   (define pseudo-term-list-unify ((pat pseudo-term-listp)
                                   (x pseudo-term-listp)
-                                  (alist pseudo-term-substitution-p))
+                                  (alist pseudo-term-subst-p))
     :measure (pseudo-term-list-count pat)
-    :returns (mv ok (new-alist pseudo-term-substitution-p))
-    (b* ((alist (pseudo-term-substitution-fix alist)))
+    :returns (mv ok (new-alist pseudo-term-subst-p))
+    (b* ((alist (pseudo-term-subst-fix alist)))
       (if (atom pat)
           (if (atom x)
               (mv t alist)
