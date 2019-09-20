@@ -37,9 +37,6 @@
 ; Mertcan Temel         <mert@utexas.edu>
 
 
-
-(in-package "RP")
-
 (include-book "rp-rw-lemmas")
 
 (encapsulate
@@ -112,7 +109,7 @@
 
 
   (local
-   (include-book "measure-lemmas"))
+   (in-theory (enable rp::measure-lemmas)))
 
   (defun
       flag-for-ext-side-conditions2 (flag term subterms small-context context)
