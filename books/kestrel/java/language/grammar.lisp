@@ -27,7 +27,7 @@
     "[JLS] presents the grammar of Java using the notation in [JLS:2.4],
      which is similar to EBNF (Extended Backus-Naur Form).
      But since we currently have a "
-    (xdoc::seeurl "abnf::grammar-parser" "verified ABNF grammar parser")
+    (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
     ", we use ABNF (Augmented Backus-Naur Form) to formalize the Java grammar.")
    (xdoc::p
     "The ABNF grammar of Java is in the files
@@ -37,7 +37,7 @@
      Note that these files, according to ABNF,
      must have their lines terminated by carriage-return and line-feed pairs:
      see the notes "
-    (xdoc::seeurl "abnf::parse-grammar-from-file" "here")
+    (xdoc::seetopic "abnf::parse-grammar-from-file" "here")
     " for details about this.")
    (xdoc::p
     "ABNF is a little different from EBNF.
@@ -152,9 +152,9 @@
       must be considered separately from the rest."))
    (xdoc::p
     "The Java grammar is "
-    (xdoc::seeurl "abnf::well-formedness" "well-formed")
+    (xdoc::seetopic "abnf::well-formedness" "well-formed")
     " and "
-    (xdoc::seeurl "abnf::closure" "closed")
+    (xdoc::seetopic "abnf::closure" "closed")
     "."))
   (append *lexical-grammar*
           *syntactic-grammar*)

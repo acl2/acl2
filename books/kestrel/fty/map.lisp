@@ -20,9 +20,9 @@
   :short
   (xdoc::topstring
    "A "
-   (xdoc::seeurl "fty::fty" "fixtype")
+   (xdoc::seetopic "fty::fty" "fixtype")
    " of "
-   (xdoc::seeurl "omap::omaps" "omaps")
+   (xdoc::seetopic "omap::omaps" "omaps")
    ".")
   :long
   (xdoc::topstring-p

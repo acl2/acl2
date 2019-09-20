@@ -47,13 +47,18 @@
       and adding XML tags and preprocessor directives
       at the roots of the trees.</p>
    <p>With these XDOC constructors, one can write</p>
-   <code>(xdoc::topstring
-           (xdoc::p \"A paragraph.\")
-           (xdoc::ul
-             (xdoc::li \"One.\")
-             (xdoc::li \"Two.\")
-             (xdoc::li \"Three.\"))
-           (xdoc::p \"Another paragraph.\"))</code>
+   @({
+   (xdoc::topstring
+      (xdoc::p \"A paragraph.\")
+      (xdoc::ul
+        (xdoc::li \"One.\")
+        (xdoc::li \"Two.\")
+        (xdoc::li \"Three.\"))
+      (xdoc::p \"Another paragraph.\")
+      (xdoc::p \"See \"
+               (xdoc::a :href \"https://www.wikipedia.org\" \"Wikipedia\")
+               \".\"))
+   })
    <p>instead of</p>
    @({
      \"<p>A paragraph.</p>
@@ -62,7 +67,8 @@
         <li>Two.</li>
         <li>Three.</li>
       </ul>
-      <p>Another paragraph.</p>\"
+      <p>Another paragraph.</p>
+      <p>See <a href=\"https://www.wikipedia.org\">Wikipedia</a>.</p>\"
    })
    <p>The main advantage is that the XML tags (and preprocessor directives)
       will be always properly matched and nested by construction.
@@ -623,8 +629,21 @@
       In contrast, the
       <see topic='@(url composite-constructors)'>composite
       XDOC constructors</see>
-      correspond to multiple tags, directives, and concatenations.</p>
-   <p>Since the primitive constructors have a very uniform structure,
+      correspond to multiple tags, directives, and concatenations,
+      or provide a more concise notation for common attributes.</p>
+   <p>These primitive constructors are
+      macros with a variable number of arguments.
+      Each argument must be a tree or a keyword,
+      such that each keyword is immediately followed by a tree.
+      Each keyword-tree pair forms an attribute of an XML tag,
+      with the keyword naming the attribute
+      and the immediately following tree providing the value of the attribute.
+      Keyword-tree pairs can be used only in constructors for XML tags,
+      not in constructors for preprocessor directives or tree concatenation.
+      Keyword-tree pairs may occur anywhere in the argument list.
+      See the <see topic='@(url constructors)'>top-level topic</see>
+      for example calls of primitive constructors.</p>
+   <p>Since these primitive constructors have a very uniform structure,
       we introduce them via two event-generating macros,
       one for XML tags
       and one for preprocessor directives and tree concatenation.</p>")
@@ -669,14 +688,20 @@
                          (:see 'see_)
                          (t (intern$ (symbol-name tag) "XDOC"))))
            (fn-name (acl2::add-suffix-to-fn macro-name "-FN"))
-           (thm-name (acl2::packn (list 'stringp-of- macro-name))))
+           (thm-name (acl2::packn (list 'stringp-of- macro-name)))
+           (long (concatenate
+                  'string
+                  "<p>See the <see topic='@(url primitive-constructors)'
+                   >primitive constructors topic</see>
+                   for information about the kind of arguments
+                   that must be passed to this constructor.</p>"
+                  "@(def "
+                  (string-downcase$ (symbol-name macro-name))
+                  ").")))
       `(defsection ,macro-name
          :parents (primitive-constructors)
          :short ,doc
-         :long ,(concatenate 'string
-                             "@(def "
-                             (string-downcase$ (symbol-name macro-name))
-                             ").")
+         :long ,long
          (defund ,fn-name (attributes trees)
            (declare (xargs :guard (and (keyword-tree-alistp attributes)
                                        (tree-listp trees))))
@@ -937,7 +962,8 @@
   (xdoc::tree-to-string
    (xdoc::p
     "These correspond to multiple
-     XML tags, preprocessor directives, and concatenations.
+     XML tags, preprocessor directives, and concatenations,
+     or provide a more concise notation for common attributes.
      In contrast,
      the <see topic='@(url primitive-constructors)'>primitive
      constructors</see> correspond to single
@@ -1110,7 +1136,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection seeurl
+(defsection ahref
+  :parents (generic-composite-constructors)
+  :short "Construct an XDOC tree for a string of the form
+          @('<a href=\"...\">...</a>')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a fairly common pattern.
+     This XDOC constructor obviates the need to type @(':href'),
+     compared to the primitive constructor @(tsee a):
+     the first argument is always the URL,
+     and the remaining arguments form the text."))
+
+  (defmacro ahref (href &rest text)
+    `(a :href ,href ,@text)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection seetopic
   :parents (generic-composite-constructors)
   :short "Construct an XDOC tree for a string of the form
           @('<see topic=\"@(url ...)\">...</see>')."
@@ -1121,7 +1165,10 @@
      with several opportunities for mistyping it.
      This XDOC constructor takes two strings as arguments,
      one for the topic and one for the hyperlinked text.")
-   (xdoc::@def "seeurl"))
+   (xdoc::@def "seetopic"))
 
-  (defmacro seeurl (topic text)
+  (defmacro seetopic (topic text)
     `(see_ :topic (@url ,topic) ,text)))
+
+; temporary synonym for compatibility with existing uses:
+(defmacro seeurl (&rest args) `(seetopic ,@args))

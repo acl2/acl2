@@ -507,7 +507,7 @@
 (defcong list::equiv equal (all-conses x) 1
   :hints(("Goal"
           :in-theory (enable all-conses)
-          :induct (list::len-len-induction x list::x-equiv))))
+          :induct (list::len-len-induction x x-equiv))))
 
 (defthm all-conses-type-1
   (implies (not (consp x))
@@ -612,7 +612,7 @@
 (defcong list::equiv equal (no-conses x) 1
   :hints(("Goal"
           :in-theory (enable no-conses)
-          :induct (list::len-len-induction x list::x-equiv))))
+          :induct (list::len-len-induction x x-equiv))))
 
 (defthm no-conses-type-1
   (implies (not (consp x))
@@ -1288,7 +1288,7 @@
 (defcong list::equiv equal (first-dominator a x) 2
   :hints(("Goal"
           :in-theory (enable first-dominator)
-          :induct (list::len-len-induction x list::x-equiv))))
+          :induct (list::len-len-induction x x-equiv))))
 
 (defthm first-dominator-type-1
   (implies (not (consp x))

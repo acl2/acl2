@@ -36,8 +36,9 @@
 
    (xdoc::p
     "For instance, ATJ is useful
-     to generate Java code at the end of
-     an <see topic='@(url apt::apt)'>APT</see> program synthesis derivation.")
+     to generate Java code at the end of an "
+    (xdoc::seetopic "apt::apt" "APT")
+    " program synthesis derivation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,41 +50,48 @@
 
    (xdoc::p
     "The ACL2 functions accepted by ATJ may manipulate any ACL2 value: "
-    (xdoc::seeurl "acl2::characters" "characters") ", "
-    (xdoc::seeurl "acl2::strings" "strings") ", "
-    (xdoc::seeurl "acl2::symbols" "symbols") ", "
-    (xdoc::seeurl "acl2::numbers" "numbers") ", and "
-    (xdoc::seeurl "acl2::conses" "cons pairs") ". "
+    (xdoc::seetopic "acl2::characters" "characters") ", "
+    (xdoc::seetopic "acl2::strings" "strings") ", "
+    (xdoc::seetopic "acl2::symbols" "symbols") ", "
+    (xdoc::seetopic "acl2::numbers" "numbers") ", and "
+    (xdoc::seetopic "acl2::conses" "cons pairs") ". "
     "The Java code that corresponds to the ACL2 functions
      manipulates Java representations of the ACL2 values.")
 
    (xdoc::p
     "ATJ accepts all the ACL2 functions that
-     (1) have an @('unnormalized-body') property (see @(tsee body)) and
+     (1) have an unnormalized body (see @(tsee acl2::ubody)) and
      (2) either do not have raw Lisp code
      or have raw Lisp code but belong to a whitelist.
      The ACL2 functions with raw Lisp code
-     are the ones listed in the global variables
-     @('program-fns-with-raw-code') and @('logic-fns-with-raw-code').
-     The aforementioned whitelist consists of functions
-     whose @('unnormalized-body') property is
-     functionally equivalent to the raw Lisp code.
+     are the ones for which @(tsee rawp) holds;
+     of these, the ones in the whitelist
+     are the ones for which @(tsee pure-raw-p) holds.
+     The unnormalized body of the functions in the whitelist
+     is functionally equivalent to their raw Lisp code.
      The Java code that corresponds to the ACL2 functions
      that satisfy conditions (1) and (2) above,
-     mimics the computations described by their @('unnormalized-body').")
+     mimics the computations described by their unnormalized body.")
 
    (xdoc::p
     "ATJ also accepts the ACL2 function @(tsee return-last)
-     (which has raw Lisp code),
-     but only when it is called on @('mbe-raw1') as the first argument.
-     Calls of the form @('(return-last 'mbe1-raw ...)')
-     are translated representations of calls of @(tsee mbe).
-     Thus, in reference to the whitelist described in the previous paragraph,
-     @(tsee return-last) is ``partially'' whitelisted.")
+     (which has raw Lisp code and is not in the whitelist),
+     but only when its first argument is
+     @('acl2::mbe-raw1') or @('acl2::progn').
+     Calls of the form @('(return-last 'acl2::mbe1-raw ...)')
+     are translated representations of calls of @(tsee mbe);
+     ATJ translates to Java
+     either the @(':logic') or the @(':exec') part of these calls,
+     as detailed below.
+     Calls of the form @('(return-last 'acl2::progn ...)')
+     are translated representations
+     of calls of @(tsee prog2$) and @(tsee progn$);
+     ATJ translates to Java the last argument of these calls,
+     as detailed below.")
 
    (xdoc::p
     "ATJ also accepts all the "
-    (xdoc::seeurl "acl2::primitive" "ACL2 primitive functions") ". "
+    (xdoc::seetopic "acl2::primitive" "ACL2 primitive functions") ". "
     "The Java code that corresponds to these ACL2 functions
      has the input/output behavior documented for these functions.")
 
@@ -98,26 +106,32 @@
      and are not in the whitelist mentioned above.
      Therefore, the generated Java code
      does not mimic any of the side effects exhibited by ACL2 functions.
+     In particular, calls of @(tsee prog2$) and @(tsee progn$) are accepted
+     (as explained above about @(tsee return-last)
+     with first argument @('acl2::progn'))
+     only if their non-last arguments are free of side effects.
      Support for translating ACL2 functions with side effects
      to Java code that mimics those side effects
      may be added in the future.")
 
    (xdoc::p
     "ATJ does not accept functions that access "
-    (xdoc::seeurl "acl2::stobj" "stobjs") ". "
+    (xdoc::seetopic "acl2::stobj" "stobjs") ". "
     "Support for stobjs, and destructive updates of stobjs,
      may be added in the future.")
 
    (xdoc::p
-    "ATJ does not translate
-     <see topic='@(url defmacro)'>macro definitions</see> to Java code.
+    "ATJ does not translate "
+    (xdoc::seetopic "defmacro" "macro definitions")
+    " to Java code.
      However, the use of macros in function bodies is fully supported,
      because ATJ operates on ACL2 translated terms,
      where macros are expanded.")
 
    (xdoc::p
-    "ATJ does not translate
-     <see topic='@(url defconst)'>named constant definitions</see> to Java code.
+    "ATJ does not translate "
+    (xdoc::seetopic "defconst" "named constant definitions")
+    " to Java code.
      However, the use of named constants in function bodies is fully supported,
      because ATJ operates on ACL2 translated terms,
      where constants are expanded.")
@@ -135,7 +149,7 @@
      on (Java representations of) explicit ACL2 values.
      Access to global variables
      like @(tsee state) or user-defined "
-    (xdoc::seeurl "acl2::stobj" "stobjs")
+    (xdoc::seetopic "acl2::stobj" "stobjs")
     " is therefore not supported;
      in particular, the generated Java code has no access to
      the ACL2/Lisp environment.
@@ -147,35 +161,39 @@
    (xdoc::h3 "Approach")
 
    (xdoc::p
-    "ATJ is supported by <see topic='@(url aij)'>AIJ</see>,
-     which is a deep embedding in Java
+    "ATJ is supported by "
+    (xdoc::seetopic "aij" "AIJ")
+    ", which is a deep embedding in Java
      of the executable subset of ACL2
      (subject to the limitations outlined above).")
 
    (xdoc::p
     "ATJ translates the target ACL2 functions into Java representations,
-     based on their @('unnormalized-body') properties.
+     based on their unnormalized bodies.
      It does so recursively,
      starting from the top-level functions specified by the user
-     and stopping at the ACL2 functions implemented natively in AIJ,
-     which currently are the ACL2 primitive functions
-     (which have no @('unnormalized-body') property).
+     and stopping at the ACL2 functions that
+     either are implemented natively in AIJ
+     or (under certain conditions; see below)
+     represent Java primitive literals and operations.
      If a function is encountered that
      is not natively implemented in AIJ
-     and has no @('unnormalized-body') property,
+     and has no unnormalized body,
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code
-     and is not in the whitelist,
+     and is not in the whitelist
+     (except for the treament of @(tsee return-last) explained above),
      ATJ stops with an error.")
 
    (xdoc::p
     "ATJ generates Java code with public methods to
-     (1) initialize the Java representation of the ACL2 environment and
+     (1) initialize the AIJ's Java representation of the ACL2 environment and
      (2) call the Java representations of the ACL2 functions
      on Java representations of ACL2 values
      (see the `Generated Java Code' section for details).
-     AIJ provides public classes and methods
-     to translate certain Java values to ACL2 values and vice versa.
+     AIJ provides public classes and methods to translate
+     certain Java values to AIJ's Java representations of ACL2 values
+     and vice versa.
      Thus, by loading into the Java Virtual Machine
      both AIJ and the Java code generated by ATJ,
      external Java code can ``use'' ACL2 code.")
@@ -208,7 +226,12 @@
      These methods are executed without using AIJ's interpreter.
      However, the shallowly embedded ACL2 functions still use
      AIJ's representation of the ACL2 values
-     and AIJ's native implementations of ACL2 functions.")
+     and AIJ's native implementations of ACL2 functions.
+     Under certain conditions,
+     the shallowly embedded ACL2 functions use Java values
+     that are not AIJ's Java representations of ACL2 values:
+     in particular, they use Java primitive types;
+     see below for details.")
 
    (xdoc::p
     "This shallow embedding approach
@@ -240,24 +263,49 @@
      "Names of the target ACL2 functions to be translated to Java.")
     (xdoc::p
      "Each @('fni') must be a symbol that names a function that
-      either has an @('unnormalized-body') property
+      either has an unnormalized body
       and no raw Lisp code (unless it is in the whitelist),
       or is natively implemented in AIJ
       (currently, this is equivalent to the function being "
-     (xdoc::seeurl "acl2::primitive" "primitive") ").
+     (xdoc::seetopic "acl2::primitive" "primitive") ").
       Each of these functions must have
-      no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") ".
+      no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
       (in the unnormalized body, if not natively implemented in AIJ)
-      only functions that satisfy the same constraints.")
+      only functions that satisfy the same constraints,
+      except for calls of @(tsee return-last) as described below.")
     (xdoc::p
      "None of the @('fni') functions may be @(tsee return-last).
       However, the @('fni') functions may transitively call @(tsee return-last),
-      provided that the first argument of all of these calls is @('mbe-raw1'),
-      i.e. that these calls result from the translation of @(tsee mbe)s.
-      No restrictions are enforced on the @(':exec') parts of thses calls;
-      only the @(':logic') parts are recursively checked
-      to satisfy all the constraints stated here.")
+      under two possible conditions:")
+    (xdoc::ul
+     (xdoc::li
+      "The first argument of @(tsee return-last) is @('acl2::mbe-raw1'),
+       i.e. the call results from the translation of @(tsee mbe).
+       If the @(':guards') input is @('nil'),
+       no restrictions are enforced on the @(':exec') parts of the call:
+       only the @(':logic') part is recursively checked
+       to satisfy all the constraints stated here.
+       If instead the @(':guards') input is @('t'),
+       no restrictions are enforced on the @(':logic') parts of this call:
+       only the @(':exec') part is recursively checked
+       to satisfy all the constraints stated here.")
+     (xdoc::li
+      "The first argument of @(tsee return-last) is @('acl2::progn'),
+       i.e. the call results from the translation of
+       @(tsee prog2$) or @(tsee progn$).
+       Even though Java code is generated
+       for the last argument of the call
+       but not for the previous one(s),
+       the restrictions on called functions,
+       and in particular the absence of side effects,
+       are enforced on all the argument of the call."))
+    (xdoc::p
+     "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
+      then none of the @('fni') may be
+      one of the functions listed in @(tsee *atj-primitive-fns*).
+      These functions are treated specially
+      in the shallow embedding when guard satisfaction is assumed (see below).")
     (xdoc::p
      "There must be at least one function, i.e. @('p') &gt; 0.
       All the @('fni') names must be distinct."))
@@ -281,7 +329,13 @@
      (xdoc::li
       "@('t'), to assume that they are satisfied.
        In this case, the generated code may run faster;
-       in particular, only the @(':exec') part of @(tsee mbe) is executed.")
+       in particular, only the @(':exec') part of @(tsee mbe) is executed.
+       Furthermore, if the @(':deep') input is @('nil'),
+       the Java methods in the generated code
+       have the argument and return types
+       specified via @(tsee def-atj-function-type),
+       and the generated Java code may manipulate
+       Java primitive values directly.")
      (xdoc::li
       "@('nil') (the default), to not assume that the guards are satisfied.
        In this case, the generated code runs ``in the logic'';
@@ -339,7 +393,7 @@
       a valid path to a directory in the file system;
       the path may be absolute,
       or relative to
-      the <see topic='@(url cbd)'>current working directory</see>).")
+      the " (xdoc::seetopic "cbd" "current working directory") ".")
     (xdoc::p
      "The name of the generated file containing the main class
       is the name of that class followed by @('.java').
@@ -371,7 +425,14 @@
       These tests can be run via additional generated Java code
       (see below).")
     (xdoc::p
-     "Note that the @(':tests') input is evaluated."))
+     "Note that the @(':tests') input is evaluated.")
+    (xdoc::p
+     "Currently there is no support for generating tests for
+      Java methods with Java primitive argument or return types
+      (which may be generated only if
+      @(':deep') is @('nil') and @(':guards') is @('t'));
+      attempting to generate these tests may result in a Java compilation error.
+      Support will be added soon."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
@@ -406,7 +467,7 @@
     "    // private members"
     "    public static void initialize() ..."
     "    public static class <pkg> {"
-    "        public static Acl2Value <fn>(Acl2Value ...) ..."
+    "        public static <type> <fn>(<type> ...) ..."
     "    }"
     "    // other public static classes with public static methods"
     "}")
@@ -437,10 +498,18 @@
     "In the shallow embedding approach,
      the Java class contains one public static method
      for each function among @('fn1'), ..., @('fnp'),
-     the functions that they transitively call,
-     and the ACL2 functions natively implemented in AIJ.
-     Each method has the same number of parameters as the ACL2 function,
-     all ACL2 values, and returns an ACL2 value.
+     the functions that they transitively call
+     (except for the functions in @(tsee *atj-primitive-fns*),
+     when @(':deep') is @('nil') and @(':guards') is @('t'))
+     and the ACL2 functions natively implemented in AIJ
+     (the latter are just wrappers of the native implementations).
+     Each method has the same number of parameters as the ACL2 function.
+     If @(':guards') is @('nil'),
+     each method has @('Acl2Value') as argument and return types;
+     if @(':guards') is @('t'),
+     each method has argument and return types
+     determined from the types assigned to the corresponding ACL2 function
+     via @(tsee def-atj-function-type).
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.

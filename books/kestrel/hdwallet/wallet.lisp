@@ -35,10 +35,10 @@
    (xdoc::h3 "Overview")
 
    (xdoc::p
-    "This is a simple proof of concept:
+    "This wallet is a simple proof of concept:
      it is not meant as a product
      to use with keys that control access to significant assets.
-     Nonetheless, due to its formal basis,
+     Nonetheless, due to its formal basis in the ACL2 theorem prover,
      it could serve as a starting point for
      a high-assurance wallet product.")
 
@@ -48,19 +48,22 @@
      Thus, keys can be generated and used for signing transacions:
      the data of the transaction to sign and the signed transaction
      must be passed between the air-gapped machine where this wallet runs
-     and a machine on the Internet that submits the signed transactions.
+     and an Internet-connected machine that submits the signed transactions.
      The private keys never leave the air-gapped machine.
+     Currently, the wallet does not encrypt these keys, which are stored in
+     plaintext in the file system: therefore, the air-gapped machine should
+     use disk encryption to protect the keys at rest.
      Currently keys and transactions only for the Ethereum mainnet are supported.")
 
    (xdoc::p
     "The wallet is hierarchical deterministic, according to "
-    (xdoc::seeurl "bitcoin::bip32" "BIP 32")
+    (xdoc::seetopic "bitcoin::bip32" "BIP 32")
     ". It uses a mnemonic word sequence according to "
-    (xdoc::seeurl "bitcoin::bip39" "BIP 39")
+    (xdoc::seetopic "bitcoin::bip39" "BIP 39")
     ". Its internal structure is compliant with "
-    (xdoc::seeurl "bitcoin::bip43" "BIP 43")
+    (xdoc::seetopic "bitcoin::bip43" "BIP 43")
     " and "
-    (xdoc::seeurl "bitcoin::bip44" "BIP 44")
+    (xdoc::seetopic "bitcoin::bip44" "BIP 44")
     ".")
 
    (xdoc::p
@@ -1168,7 +1171,7 @@
      to sign a transaction with a key in the wallet.")
    (xdoc::p
     "In Ethereum, a transaction is a 9-tuple, as formalized "
-    (xdoc::seeurl "ethereum::transaction" "here")
+    (xdoc::seetopic "ethereum::transaction" "here")
     ". The first six components are inputs of this function:
      nonce, gas price, gas limit, recipient, value, and data.
      For now, we do not support contract creation transactions;
@@ -1774,6 +1777,10 @@
   :short "Entry point to the ACL2 code of the wallet."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "For the main documentation topic, please go "
+    (xdoc::seetopic "crypto-hdwallet" "up one level to CRYPTO-HDWALLET")
+    ".")
    (xdoc::p
     "This is a macro, with an associated function as is customary.
      The function processes the inputs from the shell script

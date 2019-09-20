@@ -20,6 +20,7 @@
                          access-event-tuple-namex
                          access-event-tuple-type
                          all-ffn-symbs
+                         all-free/bound-vars
                          all-pkgs-in-world
                          alpha/digit-chars
                          alpha/digit/dash-charlist-p
@@ -73,7 +74,9 @@
                          printable-charlist-p
                          program-fns-with-raw-code
                          pseudo-termfnp
+                         pure-raw-p
                          quote-listp
+                         rawp
                          remove-mbe-exec-from-term
                          remove-mbe-logic-from-term
                          sbyte16
@@ -97,6 +100,7 @@
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          unnormalized-body
+                         unquote-term-list
                          upper-case-p
                          variablep
                          str::chars-in-charset-p

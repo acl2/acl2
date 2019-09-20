@@ -25,7 +25,7 @@
      >this page in the @('bitcoin/bips') repository on GitHub</a>,
      linked from
      <a href=\"https://en.bitcoin.it/wiki/BIP_0044\"
-     >Page `BIP 0043' of [Wiki]</a>.
+     >Page `BIP 0044' of [Wiki]</a>.
      We refer to the document at the first URL as `[BIP44]'
      in the documentation below."))
   :order-subtopics t
@@ -596,6 +596,7 @@
 
 (fty::defset bip44-coin-type-set
   :elt-type bip44-coin-type
+  :elementp-of-nil nil
   :pred bip44-coin-type-setp
   :short "Osets of coin types.")
 

@@ -56,7 +56,7 @@
      they can be added here.")
    (xdoc::p
     "These fixtypes are based on "
-    (xdoc::seeurl "defbyte-standard-instances"
+    (xdoc::seetopic "defbyte-standard-instances"
                   "the standard fixtypes
                    of unsigned and signed bytes of various sizes")
     " that correspond to the element types of the lists.")))

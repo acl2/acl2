@@ -14,7 +14,7 @@
 
 (defun map-intern-type (type pkg)
   (if (keywordp type)
-      (intern$ (symbol-name type) pkg)
+      (fix-intern$ (symbol-name type) pkg)
     type))
 
 (defun map-intern-types (types pkg)
@@ -45,7 +45,7 @@
     (b* ((tbl (table-alist 'type-metadata-table (w state)))
          (f-args ',(car args))
          (pkg (current-package state))
-         (f-type (intern$ ,(symbol-name (second args)) pkg))
+         (f-type (fix-intern$ ,(symbol-name (second args)) pkg))
          (d-args (evens f-args))
          (d-arg-types (odds f-args))
          (d-arg-preds (map-preds d-arg-types pkg tbl))

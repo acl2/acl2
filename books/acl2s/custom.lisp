@@ -7,6 +7,12 @@
 (in-package "ACL2S")
 (defconst *acl2s-version* "ACL2s Version 1.3.0")
 
+; Common books to all modes.
+(include-book "cgen/top" :ttags :all)
+(include-book "defunc" :ttags :all)
+(include-book "definec" :ttags :all)
+(include-book "defintrange" :ttags :all)
+
 ;; (defun allp (x)
 ;;   (declare (ignore x)
 ;;            (xargs :guard t))
@@ -20,7 +26,7 @@
 (defun defunt-make-sym (s suf)
 ; Returns the symbol s-suf.
   (declare (xargs :guard (and (symbolp s) (symbolp suf))))
-  (intern-in-package-of-symbol
+  (fix-intern-in-pkg-of-sym
    (concatenate 'string
                 (symbol-name s)
                 "-"
@@ -154,11 +160,6 @@
         (t
          nil)))
 
-; Common books to all modes.
-(include-book "cgen/top" :ttags :all)
-(include-book "defunc" :ttags :all)
-(include-book "definec" :ttags :all)
-(include-book "defintrange" :ttags :all)
 
 
 #|

@@ -43,3 +43,11 @@ NativesShallowUnguardedTests.java
 
 NativesShallowGuarded.java
 NativesShallowGuardedTests.java
+
+PrimitivesDeepUnguarded.java
+
+PrimitivesDeepGuarded.java
+
+PrimitivesShallowUnguarded.java
+
+PrimitivesShallowGuarded.java

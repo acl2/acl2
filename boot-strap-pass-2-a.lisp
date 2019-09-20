@@ -56,7 +56,7 @@
 (verify-termination-boot-strap cons-term) ; and guards
 (verify-termination-boot-strap symbol-class) ; and guards
 
-; packn1 and packn
+; packn1, packn, and pack-to-string
 
 (verify-termination-boot-strap packn1) ; and guards
 
@@ -78,6 +78,7 @@
 (verify-termination-boot-strap packn-pos) ; and guards
 (verify-termination-boot-strap find-first-non-cl-symbol) ; and guards
 (verify-termination-boot-strap packn) ; and guards
+(verify-termination-boot-strap pack-to-string) ; and guards
 )
 
 (verify-termination-boot-strap read-file-into-string1) ; and guards
@@ -1198,7 +1199,8 @@
 
 (defun fncall-term (fn arglist state)
   (declare (xargs :stobjs state
-                  :guard (true-listp arglist)))
+                  :guard (and (symbolp fn)
+                              (true-listp arglist))))
   (cond ((logicp fn (w state))
          (mv-let (erp val)
            (magic-ev-fncall fn arglist state

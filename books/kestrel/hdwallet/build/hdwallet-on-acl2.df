@@ -1,0 +1,50 @@
+# Dockerfile for building hdwallet on ACL2 on CCL on x86 64
+# updated EM: 2019-09-08
+#
+# To build an image with this, cd to this directory and do
+#   docker build -t hdwallet:<current_version> -t hdwallet:latest .
+
+
+# --------------------------------
+
+FROM acl2-on-ccl:latest
+
+# certify the needed books, as included by setup-hdwallet.acl2
+
+WORKDIR /root/acl2/books
+RUN ACL2=/root/acl2/saved_acl2 USE_QUICKLISP=1 make quicklisp
+
+WORKDIR /root/acl2/books/oslib
+RUN ACL2=/root/acl2/saved_acl2 USE_QUICKLISP=1 /root/acl2/books/build/cert.pl file-types argv argv-logic
+
+WORKDIR /root/acl2/books/kestrel/hdwallet
+RUN ACL2=/root/acl2/saved_acl2 USE_QUICKLISP=1 /root/acl2/books/build/cert.pl wallet-executable
+
+COPY setup-hdwallet.acl2 /root/setup-hdwallet.acl2
+
+# setup-hdwallet.acl2 has commands that
+# * does include-books (which you should have certified above)
+# * load the code (if not yet published to community books)
+# * exits loop, sets ld params for restarting, and does save-exec
+# * exits acl2
+WORKDIR /root/acl2
+RUN export CCL_DEFAULT_DIRECTORY="/root/ccl/" ; cat /root/setup-hdwallet.acl2 | /root/ccl/lx86cl64 -Z 64M --no-init -I /root/acl2/saved_acl2.lx86cl64 -K "ISO-8859-1" -e "(acl2::acl2-default-restart)"
+
+# When the wallet state file is saved, it goes to "wallet-state"
+# in the current directory.  Make the current directory "/root/tmp"
+# so that the state file will be in "/root/tmp/wallet-state"
+WORKDIR /root/tmp
+
+# See also the xdoc for save-exec.
+# ccl start switches are documented in
+#   https://ccl.clozure.com/manual/chapter2.5.html#Command-Line-Options
+# The final "--" is to close off the CCL options and let the remaining
+# parameters get passed into ACL2 for processing.
+# See setup-hdwallet.acl2 for that part.
+
+ENTRYPOINT ["/root/ccl/lx86cl64", "-Z", "64M", "--no-init", \
+              "--batch", "--quiet", \
+              "-I", "/root/acl2/acl2_hdwallet.lx86cl64", \
+              "-K", "ISO-8859-1", \
+              "-e", "(acl2::acl2-default-restart)", \
+              "--"]

@@ -883,7 +883,7 @@
 	  `(cons ,(car args) ,(double-rewrite-congruences (cdr args) congruences))))
     *nil*))
 
-(defun defequiv-fn (term lhs rhs pred context equiv congruences keywords chaining chaining-ctx chaining-keywords skip)
+(defun defequiv-fun (term lhs rhs pred context equiv congruences keywords chaining chaining-ctx chaining-keywords skip)
   (declare (xargs :mode :program))
   (let* ((context-macro (if keywords context (safe-symbol (list context "-macro") context)))
          (context-fn    (if keywords (safe-symbol (list context "-fn") context) context))
@@ -1044,7 +1044,7 @@
          (lhs      (or lhs     (ith 1 term)))
          (rhs      (or rhs     (ith 2 term)))
          (context  (or context (safe-symbol (list pred-fn "-CTX") pred-fn))))
-    (defequiv-fn term lhs rhs pred context equiv congruences keywords chaining chaining-ctx chaining-keywords skip)))
+    (defequiv-fun term lhs rhs pred context equiv congruences keywords chaining chaining-ctx chaining-keywords skip)))
 
 ;; Depricated
 (defmacro defequiv+ (&rest args)

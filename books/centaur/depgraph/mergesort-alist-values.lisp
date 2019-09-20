@@ -84,7 +84,7 @@
       :hints(("Goal"
               :in-theory (e/d (acl2::list-equiv) (l0))
               :use ((:instance l0 (x x))
-                    (:instance l0 (x acl2::x-equiv)))))))
+                    (:instance l0 (x x-equiv)))))))
 
   (encapsulate
     ()
@@ -153,7 +153,7 @@
       :hints(("Goal"
               :in-theory (e/d (acl2::list-equiv) (l0))
               :use ((:instance l0 (x x))
-                    (:instance l0 (x acl2::x-equiv)))))))
+                    (:instance l0 (x x-equiv)))))))
 
   ;; BOZO prove alist-equiv congruence
   )

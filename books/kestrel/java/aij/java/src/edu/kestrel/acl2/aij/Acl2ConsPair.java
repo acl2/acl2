@@ -33,7 +33,9 @@ public final class Acl2ConsPair extends Acl2Value {
      * Constructs a {@code cons} pair with the given components.
      *
      * @param car The first component of the {@code cons} pair.
+     *            It is never {@code null}.
      * @param cdr The second component of the {@code cons} pair.
+     *            It is never {@code null}.
      */
     private Acl2ConsPair(Acl2Value car, Acl2Value cdr) {
         this.car = car;
@@ -268,7 +270,8 @@ public final class Acl2ConsPair extends Acl2Value {
      * @param car The first component of the {@code cons} pair.
      * @param cdr The second component of the {@code cons} pair.
      * @return The {@code cons} pair.
-     * @throws IllegalArgumentException if car or cdr is null
+     * @throws IllegalArgumentException If {@code car} or {@code cdr}
+     *                                  is {@code null}.
      */
     public static Acl2ConsPair make(Acl2Value car, Acl2Value cdr) {
         if (car == null)
@@ -283,6 +286,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code car} ACL2 function.
      *
      * @return The first component of this {@code cons} pair.
+     * It is never {@code null}.
      */
     public Acl2Value getCar() {
         return this.car;
@@ -293,6 +297,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code car} ACL2 function.
      *
      * @return The first component of this {@code cons} pair.
+     * It is never {@code null}.
      */
     public Acl2Value getCdr() {
         return this.cdr;

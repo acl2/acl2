@@ -147,6 +147,7 @@
 
     (deffixtype fnsym :pred fnsym-p :fix fnsym-fix :equiv fnsym-equiv :define t)))
 
+
 (deftypes pterm
   :prepwork ((local (defthm len-equal-val
                       (implies (syntaxp (quotep val))

@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Representation of ACL2 lambda expressions in ACL2 terms.
+ * Representation of ACL2 lambda expressions in terms.
  * These are in translated form.
  */
 public final class Acl2LambdaExpression extends Acl2Function {
@@ -19,19 +19,22 @@ public final class Acl2LambdaExpression extends Acl2Function {
     //////////////////////////////////////// private members:
 
     /**
-     * Formal parameter of this ACL2 lambda expression.
+     * Formal parameters of this lambda expression.
      * This is never {@code null}.
      */
     private final Acl2Symbol[] parameters;
 
     /**
-     * Body of this ACL2 lambda expression.
+     * Body of this lambda expression.
      * This is never {@code null}.
      */
     private final Acl2Term body;
 
     /**
-     * Constructs an ACL2 lambda expression from its formal parameters and body.
+     * Constructs a lambda expression with the given formal parameters and body.
+     *
+     * @param parameters The formal parameters of the lambda expression.
+     * @param body       The body of the lambda expression.
      */
     private Acl2LambdaExpression(Acl2Symbol[] parameters, Acl2Term body) {
         this.parameters = parameters;
@@ -42,6 +45,8 @@ public final class Acl2LambdaExpression extends Acl2Function {
 
     /**
      * Returns the number of parameters of this lambda expression.
+     *
+     * @return The number of parameters of this lambda expression.
      */
     @Override
     int getArity() {
@@ -52,7 +57,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Validates all the function calls in this lambda expression.
      * We recursively validate the function calls in the body.
      *
-     * @throws IllegalStateException if validation fails
+     * @throws IllegalStateException If validation fails.
      */
     @Override
     void validateFunctionCalls() {
@@ -63,12 +68,12 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Sets the indices of all the variables in this lambda expression.
      * The index of each free variable in the body of this lambda expression
      * is set to the zero-based position of the variable symbol
-     * in the parameters of this lambda expression.
+     * in the formal parameters of this lambda expression.
+     * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException if this function is malformed
-     *                                  in a way that
-     *                                  some valid index cannot be set
-     * @throws IllegalStateException    if some index is already set
+     * @throws IllegalArgumentException If this function is malformed
+     *                                  in a way that some index cannot be set.
+     * @throws IllegalStateException    If some index is already set.
      */
     @Override
     void setVariableIndices() {
@@ -80,13 +85,16 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Applies this ACL2 lambda expression to the given ACL2 values.
-     * Since lambda expressions in well-formed ACL2 terms are closed,
+     * Applies this lambda expression to the given values.
+     * Since lambda expressions in well-formed terms are closed,
      * the body of the lambda expression is evaluated
      * with respect to a binding of the given values
      * to the formal parameters of the lambda expression.
      *
-     * @throws Acl2EvaluationException if the evaluation of the body fails
+     * @param values The actual arguments to pass to the function.
+     * @return The result of the lambda expression on the given arguments.
+     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails.
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
@@ -96,8 +104,10 @@ public final class Acl2LambdaExpression extends Acl2Function {
     /**
      * Checks if this lambda expression is
      * the {@code if} ACL2 primitive function.
-     * This is never the case,
-     * because {@code if} is represented as a {@link Acl2NamedFunction}.
+     * This is never the case, because {@code if} is represented as
+     * an instance of {@link Acl2NamedFunction}.
+     *
+     * @return {@code false}.
      */
     @Override
     boolean isIf() {
@@ -107,8 +117,8 @@ public final class Acl2LambdaExpression extends Acl2Function {
     /**
      * Checks if this lambda expression is
      * the {@code or} ACL2 "pseudo-function".
-     * This is never the case,
-     * because {@code or} is represented as a {@link Acl2NamedFunction}.
+     * This is never the case, because {@code or} is represented as
+     * an instance of {@link Acl2NamedFunction}.
      */
     @Override
     boolean isOr() {
@@ -116,7 +126,9 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Returns the parameters of this lambda expression.
+     * Returns the formal parameters of this lambda expression.
+     *
+     * @return The formal parameters of this lambda expression.
      */
     Acl2Symbol[] getParameters() {
         return this.parameters;
@@ -124,6 +136,8 @@ public final class Acl2LambdaExpression extends Acl2Function {
 
     /**
      * Returns the body of this lambda expression.
+     *
+     * @return The body of this lambda expression.
      */
     Acl2Term getBody() {
         return this.body;
@@ -132,7 +146,12 @@ public final class Acl2LambdaExpression extends Acl2Function {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 lambda expression is equal to the argument object.
+     * Compares this lambda expression with the argument object for equality.
+     * This is consistent with the {@code equal} ACL2 function.
+     *
+     * @param o The object to compare this lambda expression with.
+     * @return {@code true} if the object is equal to this lambda expression,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
@@ -144,7 +163,9 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Returns a hash code for this ACL2 lambda expression.
+     * Returns a hash code for this lambda expression.
+     *
+     * @retun The hash code for this lambda expression.
      */
     @Override
     public int hashCode() {
@@ -154,16 +175,16 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Compares this ACL2 lambda expression with the argument ACL2 function
-     * for order.
+     * Compares this lambda expression with the argument function for order.
      * This order consists of:
      * first named functions, ordered according to their underlying symbols;
      * then lambda expressions, ordered lexicographically according to
      * their list of formal parameters followed by their body.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this function is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The function to compare this lambda expression with.
+     * @return A negative integer, zero, or a positive integer as this
+     * lambda expression is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Function o) {
@@ -191,7 +212,9 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Returns a printable representation of this ACL2 lambda expression.
+     * Returns a printable representation of this lambda expression.
+     *
+     * @return A printable representation of this lambda expression.
      */
     @Override
     public String toString() {
@@ -206,11 +229,12 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Returns an ACL2 lambda expression
-     * with the given ACL2 symbols as formal parameters
-     * and the given ACL2 term as body.
+     * Returns a lambda expression with the given formal parameters and body.
      *
-     * @throws IllegalArgumentException if parameters or body is null
+     * @param parameters The formal parameters of the lambda expression.
+     * @param body       The body of the lambda expression.
+     * @return The lambda expression.
+     * @throws IllegalArgumentException If any arguments is {@code null}.
      */
     public static Acl2LambdaExpression make(Acl2Symbol[] parameters,
                                             Acl2Term body) {

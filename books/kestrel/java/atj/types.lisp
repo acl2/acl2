@@ -11,6 +11,7 @@
 (in-package "JAVA")
 
 (include-book "aij-notions")
+(include-book "primitives")
 
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
@@ -60,7 +61,7 @@
      (ii) proving that the guard implies that the output of the ACL2 function
      satisfies the ACL2 predicate corresponding to the output type.
      (Currently ATJ treats ACL2 functions that return "
-    (xdoc::seeurl "mv" "multiple values")
+    (xdoc::seetopic "mv" "multiple values")
     "as if they returned one list value;
      future versions of ATJ may treat these differently,
      in which case (ii) above should be modified to
@@ -83,17 +84,20 @@
      (this type is inferred by analyzing terms recursively)
      with the type of the corresponding formal argument of a function
      (this type is retrieved from the table of function types):
-     if the former is the same as or narrower than the latter,
-     the generated Java method call can just take the value as is;
-     otherwise, ATJ inserts a cast from the wider type to the narrower type.
-     We know that this type cast will always succeed
-     because of the theorems proved by the macro
-     that checks and records function types,
-     but there may be a complicated reason why that is the case,
-     and so in general we must allow for type casts.")
+     if they differ, ATJ inserts code to convert from the former to the latter,
+     unless the former is a subtype of the latter in Java.
+     The conversion may be a type cast,
+     e.g. to convert from @('Acl2Value') to @('Acl2String');
+     the cast is guaranteed to succeed,
+     assuming that the ACL2 guards are verified.
+     The conversion may be a change in representation,
+     e.g. to convert from @('int') to @('Acl2Value');
+     here the conversion is based on
+     the ACL2 representation of Java @('int') values,
+     described " (xdoc::seetopic "atj-primitives" "here") ".")
    (xdoc::p
     "The ATJ type information stored in the table
-     determines the input and output types of the Java methods
+     determines/specifies the input and output types of the Java methods
      generated for the corresponding ACL2 functions.
      In general, there may be different choices of types possible
      for certain ACL2 functions:
@@ -102,32 +106,38 @@
      that the generated Java code provides to external Java code.")
    (xdoc::p
     "The above is just an overview of the use of types by ATJ.
-     More details are in the documentation of their implementation."))
+     More details are in the documentation of their implementation,
+     and in the code generation functions that use them."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum atj-typep
-  (:integer :rational :number :character :string :symbol :cons :value)
+  (:integer
+   :rational
+   :number
+   :character
+   :string
+   :symbol
+   :cons
+   :value
+   :jint)
   :short "Recognize the ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used for code generation, as explained "
-    (xdoc::seeurl "atj-types" "here")
+    (xdoc::seetopic "atj-types" "here")
     ".")
    (xdoc::p
     "Currently ATJ uses types corresponding to
-     all the public AIJ class types for ACL2 values:
-     integers,
-     rationals,
-     numbers,
-     characters,
-     strings,
-     symbols,
-     @(tsee cons) pairs,
-     and all values.")
+     all the AIJ public class types for ACL2 values
+     (integers, rationals, numbers,
+     characters, strings, symbols,
+     @(tsee cons) pairs, and all values),
+     as well as a type corresponding to the Java primitive type @('int').
+     More types will be added in the future.")
    (xdoc::p
     "Each ATJ type corresponds to
      (i) an ACL2 predicate (see @(tsee atj-type-predicate)) and
@@ -149,9 +159,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The subtype/supertype relationship corresponds to
+    "For the ATJ types that correspond to AIJ public class types,
+     the subtype/supertype relationship corresponds to
      both the value subset/superset relationship in ACL2
-     and the subclass/superclass relationship in AIJ.")
+     and the subclass/superclass relationship in AIJ.
+     Furthermore, the ATJ type @(':jint') is a subtype of @(':value').
+     The type @(':value') is always the top of the partial order,
+     since it consists of all the ACL2 values.")
    (xdoc::p
     "To validate the definition,
      we prove that this is indeed a partial order (over the ATJ types),
@@ -164,7 +178,8 @@
     (:string (and (member-eq sup '(:string :value)) t))
     (:symbol (and (member-eq sup '(:symbol :value)) t))
     (:cons (and (member-eq sup '(:cons :value)) t))
-    (:value (eq sup :value)))
+    (:value (eq sup :value))
+    (:jint (and (member-eq sup '(:jint :value)) t)))
   ///
 
   (defrule atj-type-subeqp-reflexive
@@ -241,7 +256,10 @@
     (:cons (case type2
              (:cons :cons)
              (t :value)))
-    (:value :value))
+    (:value :value)
+    (:jint (case type2
+             (:jint :jint)
+             (t :value))))
   ///
 
   (defrule atj-type-join-upper-bound
@@ -272,6 +290,10 @@
    (xdoc::p
     "The predicate is the set of values denoted by the type.")
    (xdoc::p
+    "The predicate for the @(':jint') type is @(tsee int-value-p),
+     i.e. the model of Java @('int') values in the Java languge formalization.
+     Also see " (xdoc::seetopic "atj-primitives" "here") ".")
+   (xdoc::p
     "For validation, for each subtype/supertype pair
      we generate a theorem saying that
      each value satisfying the subtype's predicate
@@ -284,7 +306,8 @@
     (:rational 'rationalp)
     (:number 'acl2-numberp)
     (:cons 'consp)
-    (:value '(lambda (_) 't)))
+    (:value '(lambda (_) 't))
+    (:jint 'int-value-p))
   ///
 
   (define atj-type-predicate-gen-thm ((type1 atj-typep) (type2 atj-typep))
@@ -315,7 +338,8 @@
                   :string
                   :symbol
                   :cons
-                  :value)))
+                  :value
+                  :jint)))
       `(encapsulate
          ()
          (set-ignore-ok t)
@@ -348,7 +372,8 @@
     (:rational *atj-jtype-rational*)
     (:number *atj-jtype-number*)
     (:cons *atj-jtype-cons*)
-    (:value *atj-jtype-value*)))
+    (:value *atj-jtype-value*)
+    (:jint (jtype-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -367,7 +392,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is really the minimum type of an ACL2 value."))
+    "This is the type that ATJ assigns to a quoted constant
+     with the given value.
+     Note that a constant like @('2') does not get type @(':jint').
+     Instead, ATJ assigns @(':jint') to a term like @('(int-value 2)');
+     see the code generation functions."))
   (cond ((characterp value) :character)
         ((stringp value) :string)
         ((symbolp value) :symbol)
@@ -426,7 +455,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is retrived from the "
-    (xdoc::seeurl "atj-function-type-table"
+    (xdoc::seetopic "atj-function-type-table"
                   "@(tsee def-atj-function-type) table")
     ". If the table has no entry for the function,
      a function type all consisting of @(':value') is returned."))
@@ -549,8 +578,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection def-atj-function-type
-  :short "Macro to prove and record that an ACL2 function
-          has certain input and output types."
+  :short (xdoc::topstring
+          "Macro to prove and record that an ACL2 function
+           has certain input and output "
+          (xdoc::seetopic "atj-types" "types")
+          ".")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -558,7 +590,10 @@
      (i.e. functions for which we want to generate Java code)
      prior to calling ATJ,
      so that ATJ can take advantage of the type information
-     recorded for the functions.")
+     recorded for the functions.
+     This is only relevant
+     when @(':deep') is @('nil') and @(':guards') is @('t');
+     in all other cases, the type information is ignored.")
    (xdoc::p
     "For instance, the file @('types-for-natives.lisp') uses this macro
      on the ACL2 functions that are implemented natively in AIJ.")

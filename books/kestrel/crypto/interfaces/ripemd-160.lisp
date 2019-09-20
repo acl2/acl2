@@ -20,7 +20,7 @@
   :output-size 160
   :parents (interfaces)
   :short (xdoc::topstring
-          "RIPEMD-160 " (xdoc::seeurl "interfaces" "interface") ".")
+          "RIPEMD-160 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

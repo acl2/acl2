@@ -53,6 +53,9 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepGuarde
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowUnguardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowGuardedTests
 
+# test the Java code that manipulates Java primitive values:
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimitivesShallowGuardedTests
+
 # printed only if all the tests succeed:
 echo "" # blank line
 echo "All the ATJ tests have succeeded."

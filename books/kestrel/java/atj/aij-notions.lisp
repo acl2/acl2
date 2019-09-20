@@ -26,7 +26,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "ATJ is supported by " (xdoc::seeurl "aij" "AIJ") ".")
+    "ATJ is supported by " (xdoc::seetopic "aij" "AIJ") ".")
    (xdoc::p
     "Thus, ATJ uses some notions that are specific to AIJ."))
   :order-subtopics t

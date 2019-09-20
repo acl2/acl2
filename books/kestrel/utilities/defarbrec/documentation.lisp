@@ -41,7 +41,7 @@
    (xdoc::p
     "The resulting logic-mode function can be subjected to
      formal verification and "
-    (xdoc::seeurl "apt::apt" "transformation")
+    (xdoc::seetopic "apt::apt" "transformation")
     ". In particular, if it can be proved that
      the termination test holds on every argument value,
      then the termination test can be transformed away
@@ -139,7 +139,7 @@
     (xdoc::p
      "These are as in @(tsee defun),
       but in addition they must not include any"
-     (xdoc::seeurl "acl2::stobj" "stobjs")
+     (xdoc::seetopic "acl2::stobj" "stobjs")
      "."))
 
    (xdoc::desc
@@ -154,8 +154,8 @@
      "The program-mode function must
       contain a single recursive call,
       only call logic-mode functions (besides itself),
-      return a non-" (xdoc::seeurl "mv" "multiple") " value, and
-      have no input or output " (xdoc::seeurl "acl2::stobj" "stobjs") ".")
+      return a non-" (xdoc::seetopic "mv" "multiple") " value, and
+      have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".")
     (xdoc::p
      "In the rest of this documentation page, for expository convenience,
       it is assumed that the program-mode function has the following form:")
@@ -240,8 +240,8 @@
      "It must be a term
       that includes no free variables other than @('x1'), ..., @('xn'),
       that only calls logic-mode functions,
-      that returns a non-" (xdoc::seeurl "mv" "multiple") " value,
-      and that has no output " (xdoc::seeurl "acl2::stobj" "stobjs") ".")
+      that returns a non-" (xdoc::seetopic "mv" "multiple") " value,
+      and that has no output " (xdoc::seetopic "acl2::stobj" "stobjs") ".")
     (xdoc::p
      "In the rest of this documentation page,
       let @('nonterminating') be this term."))

@@ -1898,6 +1898,7 @@
    ((endp c1-cn) nil)
    ((eq (car c1-cn) :FN)
     (cons `(defcong fn-equal equal ,term ,i
+             :package :legacy
              :hints
              (("Goal" :in-theory (disable (:executable-counterpart force)))))
           (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn))))

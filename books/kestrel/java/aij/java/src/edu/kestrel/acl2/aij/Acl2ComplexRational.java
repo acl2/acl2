@@ -36,7 +36,9 @@ final class Acl2ComplexRational extends Acl2Number {
      * with the given real and imaginary parts.
      *
      * @param realPart      The real part of the complex rational.
+     *                      It is never {@code null}.
      * @param imaginaryPart The imaginary part of the complex rational.
+     *                      It is never {@code null} and never 0.
      */
     private Acl2ComplexRational(Acl2Rational realPart,
                                 Acl2Rational imaginaryPart) {
@@ -112,7 +114,9 @@ final class Acl2ComplexRational extends Acl2Number {
      * because the {@link Acl2ComplexRational} class is not public.
      *
      * @param realPart      The real part of the complex rational.
+     *                      It is never {@code null}.
      * @param imaginaryPart The imaginary part of the complex rational.
+     *                      It is never {@code null} and never 0.
      * @return The complex rational.
      */
     public static Acl2ComplexRational make(Acl2Rational realPart,
@@ -125,6 +129,7 @@ final class Acl2ComplexRational extends Acl2Number {
      * This is consistent with the {@code realpart} ACL2 function.
      *
      * @return The real part of this complex rational.
+     * It is never {@code null}.
      */
     @Override
     public Acl2Rational getRealPart() {
@@ -136,6 +141,7 @@ final class Acl2ComplexRational extends Acl2Number {
      * This is consistent with the {@code imagpart} ACL2 function.
      *
      * @return The imaginary part of this complex rational.
+     * It is never {@code null}.
      */
     @Override
     public Acl2Rational getImaginaryPart() {

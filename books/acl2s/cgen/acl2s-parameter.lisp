@@ -4,7 +4,7 @@
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
-;(include-book "utilities")
+(include-book "../utilities")
 (include-book "std/util/bstar" :dir :system)
 
 ; [2014-11-25 Tue] Make key package agnostic by always putting it into
@@ -13,7 +13,7 @@
 
 (defun keywordify (sym)
   (declare (xargs :guard (symbolp sym)))
-  (intern-in-package-of-symbol (symbol-name sym) :a))
+  (fix-intern-in-pkg-of-sym (symbol-name sym) :a))
 
 
 ;;; Keep the following defconst synced with all the acl2s parameters

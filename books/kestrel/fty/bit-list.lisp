@@ -24,7 +24,7 @@
   :short
   (xdoc::topstring
    "A "
-   (xdoc::seeurl "fty::fty" "fixtype")
+   (xdoc::seetopic "fty::fty" "fixtype")
    " of true lists of "
-   (xdoc::seeurl "bitp" "bits")
+   (xdoc::seetopic "bitp" "bits")
    "."))

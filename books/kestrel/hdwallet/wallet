@@ -7,4 +7,4 @@ if [ $# == 0 ] ; then
     exit 1;
 fi
 
-docker run --rm --network none -v /tmp/hdwallet:/root/tmp hdwallet:latest "$@"
+docker run --rm --network none -v /tmp/hdwallet:/root/tmp kestrelinstitute/hdwallet-on-acl2:latest "$@"

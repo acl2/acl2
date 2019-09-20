@@ -92,9 +92,9 @@
   (defcong acl2::nat-equiv equal (bfr-vars-bounded n x) 1
     :hints(("Goal"
             :use ((:instance bfr-vars-bounded-necc
-                   (m (bfr-vars-bounded-witness acl2::n-equiv x)))
+                   (m (bfr-vars-bounded-witness n-equiv x)))
                   (:instance bfr-vars-bounded-necc
-                   (n acl2::n-equiv)
+                   (n n-equiv)
                    (m (bfr-vars-bounded-witness n x))))
             :in-theory (e/d (bfr-vars-bounded)
                             (bfr-vars-bounded-necc)))))
@@ -199,9 +199,9 @@
   (defcong acl2::nat-equiv equal (pbfr-vars-bounded n p x) 1
     :hints(("Goal"
             :use ((:instance pbfr-vars-bounded-necc
-                   (m (pbfr-vars-bounded-witness acl2::n-equiv p x)))
+                   (m (pbfr-vars-bounded-witness n-equiv p x)))
                   (:instance pbfr-vars-bounded-necc
-                   (n acl2::n-equiv)
+                   (n n-equiv)
                    (m (pbfr-vars-bounded-witness n p x))))
             :in-theory (e/d (pbfr-vars-bounded)
                             (pbfr-vars-bounded-necc)))))

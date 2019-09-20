@@ -21,7 +21,7 @@
   :parents (attachments)
   :short (xdoc::topstring
           "Executable attachment for the "
-          (xdoc::seeurl "keccak-256-interface" "Keccak-256 interface")
+          (xdoc::seetopic "keccak-256-interface" "Keccak-256 interface")
           " that operates on bytes.")
   :long
   (xdoc::topstring

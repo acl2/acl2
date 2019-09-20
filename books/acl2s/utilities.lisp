@@ -165,6 +165,18 @@ A macro that uses @('with-outer-locals') to locally turn off
     (local (acl2s-defaults :set testing-enabled nil))
     (defthm ,name ,@args)))
 
+;---------------------------------------------------------------------------
+; Symbol generation utilities
+
+; The following functions, macros and theorems are used to generate
+; symbols. A general principle for symbol generation is that generated
+; symbols should be in the current package. Doing that in ACL2
+; requires using make-event in a top level form to determine the
+; current package from state and then passing this package to
+; functions that generate symbols. The code below is used in
+; defthm.lisp to define defequiv, defrefinement and defcong.
+
+#|
 (defun sym-string-listp (l)
   (declare (xargs :guard t))
   (if (consp l)
@@ -185,10 +197,12 @@ A macro that uses @('with-outer-locals') to locally turn off
 (defthm symbol-string-app-contract-thm
   (implies (sym-string-listp l)
            (stringp (symbol-string-app l))))
+|#
 
 (defun best-package (x y)
   (declare (xargs :guard (and (stringp x) (stringp y))))
   (let* ((p '("" "ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
+              *main-lisp-package-name*
               "COMMON-LISP" "LISP" "KEYWORD" "CGEN"
               "DEFDATA" "ACL2" "ACL2S"))
          (ly (len (member-equal y p)))
@@ -196,7 +210,7 @@ A macro that uses @('with-outer-locals') to locally turn off
     (if (< lx ly) x y)))
     
 (defun best-package-symbl-list (l s)
-  (declare (xargs :guard (and (sym-string-listp l) (stringp s))))
+  (declare (xargs :guard (and (good-atom-listp l) (stringp s))))
   (cond ((endp l) s)
         ((symbolp (car l))
          (best-package-symbl-list
@@ -205,28 +219,90 @@ A macro that uses @('with-outer-locals') to locally turn off
         (t (best-package-symbl-list (cdr l) s))))
 
 (defthm best-package-symbl-list-stringp
-  (implies (and (sym-string-listp l) (stringp s))
+  (implies (and (good-atom-listp l) (stringp s))
            (stringp (best-package-symbl-list l s))))
 
 (defthm best-package-symbl-list-not-empty
-  (implies (and (sym-string-listp l) (stringp s) (not (equal s "")))
+  (implies (and (good-atom-listp l) (stringp s) (not (equal s "")))
            (not (equal (best-package-symbl-list l s) ""))))
 
-(defun make-symbl-fun (l pkg)
-  (declare (xargs :guard (and l
-                              (sym-string-listp l)
+#|
+Now in defthm.lisp
+
+(defun fix-pkg (pkg)
+  (declare (xargs :guard (and (or (null pkg) (stringp pkg))
+                              (not (equal pkg "")))))
+  (if (and pkg (not (equal pkg *main-lisp-package-name*)))
+      pkg
+    "ACL2"))
+
+(defmacro fix-intern$ (name pkg)
+  `(intern$ ,name (fix-pkg ,pkg)))
+
+(defmacro fix-intern-in-pkg-of-sym (string sym)
+; This one is a bit different in ACL2 source file defthm.lisp.
+  `(intern-in-package-of-symbol ,string (fix-sym ,sym)))
+
+(defun pack-to-string (l)
+  (declare (xargs :guard (good-atom-listp l)))
+  (coerce (packn1 l) 'string))
+
+(defun gen-sym-sym (l sym)
+
+; This is a version of packn-pos that fixes the package (so that it's not
+; *main-lisp-package-name*).
+
+  (declare (xargs :guard (and (good-atom-listp l)
+                              (symbolp sym))))
+  (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
+
+|#
+
+(defun fix-sym (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (if (equal (symbol-package-name sym) *main-lisp-package-name*)
+      (pkg-witness "ACL2")
+    sym))
+
+(defthm character-listp-explode-nonnegative-integer
+  (implies (and (integerp x)
+                (<= 0 x)
+                (print-base-p b)
+                (character-listp ans))
+           (character-listp (explode-nonnegative-integer x b ans))))
+
+(defthm character-listp-explode-atom
+  (implies (and (acl2-numberp x)
+                (print-base-p b))
+           (character-listp (explode-atom x b))))
+
+(verify-termination fix-pkg)
+(verify-termination fix-sym)
+(verify-termination pack-to-string)
+(verify-termination gen-sym-sym)
+
+(verify-guards fix-pkg)
+(verify-guards fix-sym)
+(verify-guards pack-to-string)
+(verify-guards gen-sym-sym)
+
+(defun gen-sym-pkg-fn (l pkg)
+  (declare (xargs :guard (and (good-atom-listp l)
                               (or (null pkg) (stringp pkg))
                               (not (equal pkg "")))))
-  (intern$
-   (symbol-string-app l)
-   (if pkg pkg (best-package-symbl-list l "ACL2"))))
+  (fix-intern$ (pack-to-string l) pkg))
 
-; l is a list containing strings or symbols.
-(defmacro make-symbl (l &optional pkg)
+(defmacro gen-sym-pkg (l &optional pkg)
   (declare (xargs :guard t))
-  `(make-symbl-fun ,l ,pkg))
+  `(gen-sym-pkg-fn ,l ,pkg))
 
-; l is a list containing strings or symbols.
+(defun make-symbl (l pkg)
+  (declare (xargs :guard (and (good-atom-listp l)
+                              (or (null pkg) (stringp pkg))
+                              (not (equal pkg "")))))
+  (fix-intern$ (pack-to-string l)
+               (if pkg pkg (best-package-symbl-list l "ACL2"))))
+
 (defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.
   (declare (xargs :guard t))

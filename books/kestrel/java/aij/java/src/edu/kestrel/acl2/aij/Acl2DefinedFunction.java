@@ -37,7 +37,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * These are stored as values of a map
      * that has the symbols that name the functions as keys:
      * each key-value pair is such that
-     * the key is the {@link Acl2NamedFunction#getName()} field of the value.
+     * the key is the {@link Acl2NamedFunction#getName()} of the value.
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
      * In other words, all the defined functions are interned.
@@ -99,6 +99,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * have valid definitions.
      * We call {@link #validateDefinition()}
      * on all the functions created so far.
+     *
+     * @throws IllegalStateException If validation fails.
      */
     static void validateAllDefinitions() {
         for (Acl2DefinedFunction function : functions.values())
@@ -109,7 +111,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Checks if this defined function is
      * the {@code if} ACL2 primitive function.
-     * This is never the case, because that function is represented as
+     * This is never the case, because {@code if} is represented as
      * an instance of {@link Acl2NativeFunction}.
      *
      * @return {@code false}.
@@ -122,7 +124,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Checks if this defined function is
      * the {@code or} ACL2 "pseudo-function".
-     * This is never the case, because that function is represented as
+     * This is never the case, because {@code if} is represented as
      * an instance of {@link Acl2NativeFunction}.
      *
      * @return {@code false}.
@@ -149,6 +151,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
 
     /**
      * Returns a defined function with the given name.
+     * The function is created and interned, if it does not exist.
      *
      * @param name The name of the defined function.
      * @return The defined function.

@@ -27,18 +27,19 @@
     "Our formalization tags the Java primitive values
      with an indication of their types
      (and, for floating-point values, of their value sets),
-     making values of different types (and floating-point value sets) disjoint.
+     making values of different types (and of floating-point value sets)
+     disjoint.
      This will allow us
      to define a defensive semantics of Java
      and to prove that the static checks at compile time
      guarantee type safety at run time,
      as often done in programming language formalizations."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod boolean-value
-  :parents (primitive-values)
   :short "Java @('boolean') values [JLS:4.2.5]."
   ((bool bool))
   :tag :boolean
@@ -54,7 +55,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-value
-  :parents (primitive-values)
   :short "Java @('char') values [JLS:4.2.1]."
   ((nat ubyte16))
   :tag :char
@@ -63,7 +63,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod byte-value
-  :parents (primitive-values)
   :short "Java @('byte') values [JLS:4.2.1]."
   ((int sbyte8))
   :tag :byte
@@ -72,7 +71,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod short-value
-  :parents (primitive-values)
   :short "Java @('short') values [JLS:4.2.1]."
   ((int sbyte16))
   :tag :short
@@ -81,7 +79,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod int-value
-  :parents (primitive-values)
   :short "Java @('int') values [JLS:4.2.1]."
   ((int sbyte32))
   :tag :int
@@ -90,7 +87,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod long-value
-  :parents (primitive-values)
   :short "Java @('long') values [JLS:4.2.1]."
   ((int sbyte64))
   :tag :long
@@ -99,7 +95,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection float-value
-  :parents (primitive-values)
   :short "Java @('float') values in the float value set [JLS:4.2.3]."
   :long
   (xdoc::topstring
@@ -155,7 +150,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection double-value
-  :parents (primitive-values)
   :short "Java @('double') values in the double value set [JLS:4.2.3]."
   :long
   (xdoc::topstring
@@ -212,7 +206,6 @@
 
 (define floatx-param-p (k)
   :returns (yes/no booleanp)
-  :parents (primitive-values)
   :short "Recognize the possible parameters that describe
           a Java implementation's support of
           the float-extended-exponent value set [JLS:4.2.3]."
@@ -221,19 +214,18 @@
    (xdoc::p
     "A Java implementation
      may support a float-extended-exponent value set or not.
-     If it does, an implementation-dependent constant @($K$) in [JLS:4.2.3]
+     If it does, an implementation-dependent constant @($K$) [JLS:4.2.3]
      determines the exact values supported.")
    (xdoc::p
     "Our Java formalization is parameterized over the specifics of this support,
      via the value of the nullary function @(tsee floatx-param),
      which is constrained to be either @('nil') (indicating no support)
-     or a positive integer that is at least 11 (indicating @($K$))."))
+     or a positive integer that is at least 11 (the value of @($K$))."))
   (or (null k)
       (and (natp k)
            (>= k 11))))
 
 (defsection floatx-param
-  :parents (primitive-values)
   :short "Parameter that describes the support of
           the float-extended-exponent value set."
   :long (xdoc::topstring-@def "floatx-param")
@@ -263,7 +255,6 @@
 
 (define doublex-param-p (k)
   :returns (yes/no booleanp)
-  :parents (primitive-values)
   :short "Recognize the possible parameters that describe
           a Java implementation's support of
           the double-extended-exponent value set [JLS:4.2.3]."
@@ -272,19 +263,18 @@
    (xdoc::p
     "A Java implementation
      may support a double-extended-exponent value set or not.
-     If it does, an implementation-dependent constant @($K$) in [JLS:4.2.3]
+     If it does, an implementation-dependent constant @($K$) [JLS:4.2.3]
      determines the exact values supported.")
    (xdoc::p
     "Our Java formalization is parameterized over the specifics of this support,
      via the value of the nullary function @(tsee doublex-param),
      which is constrained to be either @('nil') (indicating no support)
-     or a positive integer that is at least 15 (indicating @($K$))."))
+     or a positive integer that is at least 15 (the value of @($K$))."))
   (or (null k)
       (and (natp k)
            (>= k 15))))
 
 (defsection doublex-param
-  :parents (primitive-values)
   :short "Parameter that describes the support of
           the double-extended-exponent value set."
   :long (xdoc::topstring-@def "doublex-param")
@@ -313,7 +303,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection floatx-value
-  :parents (primitive-values)
   :short "Java @('float') values in the float-extended-exponent value set
           [JLS.4.2.3]."
   :long
@@ -375,7 +364,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublex-value
-  :parents (primitive-values)
   :short "Java @('double') values in the double-extended-exponent value set
           [JLS.4.2.3]."
   :long
@@ -437,7 +425,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled disjoint-primitive-values
-  :parents (primitive-values)
   :short "The tagging keywords make all the primitive values disjoint."
   (and (implies (boolean-value-p x)
                 (and (not (char-value-p x))
@@ -507,7 +494,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum integral-value
-  :parents (primitive-values)
   :short "Java integral values [JLS:4.2.1]."
   (:char
    :fields ((get :type char-value :acc-body x))
@@ -556,7 +542,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum numeric-value
-  :parents (primitive-values)
   :short "Java numeric values [JLS:4.2],
           excluding extended-exponent values [JLS:4.2.3]."
   (:char
@@ -607,7 +592,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection numericx-value
-  :parents (primitive-values)
   :short "Java numeric values [JLS:4.2],
           including extended-exponent values [JLS:4.2.3]."
 
@@ -654,7 +638,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum primitive-value
-  :parents (primitive-values)
   :short "Java primitive values [JLS:4.2],
           excluding extended-exponent values [JLS:4.2.3]."
   (:boolean
@@ -705,7 +688,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection primitivex-value
-  :parents (primitive-values)
   :short "Java primitive values [JLS:4.2],
           including extended-exponent values [JLS:4.2.3]."
 

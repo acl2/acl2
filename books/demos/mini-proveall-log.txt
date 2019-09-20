@@ -1249,6 +1249,11 @@ Rules: ((:EXECUTABLE-COUNTERPART TAU-SYSTEM)
         (:REWRITE PERM-TRANSITIVE)
         (:TYPE-PRESCRIPTION PERM))
 Warnings:  Equiv
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+Warnings:  Equiv
  PERM-IS-AN-EQUIVALENCE
 ACL2 !>>>(IN-THEORY (DISABLE PERM PERM-REFLEXIVE
                              PERM-SYMMETRIC PERM-TRANSITIVE))
@@ -1270,6 +1275,10 @@ Rules: ((:DEFINITION DEL)
         (:REWRITE CAR-CONS)
         (:REWRITE CDR-CONS)
         (:REWRITE PERM-CONS))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
  PERM-IMPLIES-PERM-CONS-2
 ACL2 !>>>(DEFCONG PERM IFF (MEM X Y) 2)
 
@@ -1289,6 +1298,11 @@ Rules: ((:DEFINITION IFF)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE PERM-MEM)
         (:TYPE-PRESCRIPTION MEM))
+Warnings:  Equiv
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
 Warnings:  Equiv
  PERM-IMPLIES-IFF-MEM-2
 ACL2 !>>>(DEFTHM ATOM-PERM
@@ -1469,6 +1483,10 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
         (:REWRITE CAR-CONS)
         (:REWRITE CDR-CONS)
         (:REWRITE PERM-CONS))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
  PERM-IMPLIES-PERM-APP-2
 ACL2 !>>>(DEFTHM APP-CONS
                  (PERM (APP A (CONS B C))
@@ -1640,6 +1658,10 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-2)
         (:REWRITE CAR-CONS)
         (:REWRITE CDR-CONS)
         (:REWRITE PERM-CONS))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
  PERM-IMPLIES-PERM-APP-1
 ACL2 !>>>(DEFTHM REV-IS-ID (PERM (REV X) X))
 
@@ -1859,6 +1881,10 @@ Rules: ((:DEFINITION ==)
         (:REWRITE ==-REFLEXIVE)
         (:REWRITE ==-SYMMETRIC)
         (:TYPE-PRESCRIPTION ==))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
  ==-IS-AN-EQUIVALENCE
 ACL2 !>>>(IN-THEORY (DISABLE ==-SYMMETRIC ==-REFLEXIVE))
 
@@ -1877,6 +1903,10 @@ Rules: ((:DEFINITION ==)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE CAR-CONS)
         (:REWRITE CDR-CONS))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
  ==-IMPLIES-==-CONS-2
 ACL2 !>>>(DEFCONG == IFF (CONSP X) 1)
 
@@ -1894,6 +1924,11 @@ Q.E.D.
 Summary
 Form:  ( DEFTHM ==-IMPLIES-IFF-CONSP-1 ...)
 Rules: ((:DEFINITION ==) (:DEFINITION IFF))
+Warnings:  Equiv
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
 Warnings:  Equiv
  ==-IMPLIES-IFF-CONSP-1
 ACL2 !>>>(DEFCONG == == (APP X Y) 2)
@@ -1934,6 +1969,10 @@ Rules: ((:CONGRUENCE ==-IMPLIES-==-CONS-2)
         (:INDUCTION APP)
         (:REWRITE CAR-CONS)
         (:REWRITE CDR-CONS))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
  ==-IMPLIES-==-APP-2
 ACL2 !>>>(DEFCONG == == (APP X Y) 1)
 
@@ -1977,6 +2016,10 @@ Rules: ((:CONGRUENCE ==-IMPLIES-==-CONS-2)
         (:INDUCTION APP)
         (:REWRITE CAR-CONS)
         (:REWRITE CDR-CONS))
+
+Summary
+Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
+Rules: NIL
  ==-IMPLIES-==-APP-1
 ACL2 !>>>(DEFTHM REV-REV-AGAIN (== (REV (REV X)) X))
 

@@ -23,7 +23,7 @@ public final class Acl2Character extends Acl2Value {
     /**
      * Constructs a character with the given code.
      *
-     * @param jchar The code of the character, as a Java character.
+     * @param jchar The code of the character. It is always below 256.
      */
     private Acl2Character(char jchar) {
         this.jchar = jchar;
@@ -202,7 +202,7 @@ public final class Acl2Character extends Acl2Value {
      * @param o The value to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is null.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -273,7 +273,7 @@ public final class Acl2Character extends Acl2Value {
      * Returns the code of this character.
      *
      * @return The code of this character, as a Java character.
-     * This is always below 256.
+     * It is always below 256.
      */
     public char getJavaChar() {
         return this.jchar;

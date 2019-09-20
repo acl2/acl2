@@ -19,7 +19,7 @@
   :block-size 128
   :parents (interfaces)
   :short (xdoc::topstring
-          "AES-192 " (xdoc::seeurl "interfaces" "interface") ".")
+          "AES-192 " (xdoc::seetopic "interfaces" "interface") ".")
   :long
   (xdoc::topstring
    (xdoc::p

@@ -36,9 +36,9 @@
   :parents (acl2::kestrel-books fty)
   :short
   (xdoc::topstring "Extensions of "
-                   (xdoc::seeurl "fty" "FTY")
+                   (xdoc::seetopic "fty" "FTY")
                    " in the "
-                   (xdoc::seeurl "acl2::kestrel-books" "Kestrel Books")
+                   (xdoc::seetopic "acl2::kestrel-books" "Kestrel Books")
                    ".")
   :long
   (xdoc::topstring-p
@@ -50,12 +50,12 @@
   :parents (fty-extensions fty)
   :short
   (xdoc::topstring "Various specific "
-                   (xdoc::seeurl "fty" "fixtypes")
+                   (xdoc::seetopic "fty" "fixtypes")
                    ".")
   :long
   (xdoc::topstring-p
    "These complement the "
-   (xdoc::seeurl "basetypes" "base types")
+   (xdoc::seetopic "basetypes" "base types")
    " and the "
-   (xdoc::seeurl "baselists" "base list types")
+   (xdoc::seetopic "baselists" "base list types")
    "."))

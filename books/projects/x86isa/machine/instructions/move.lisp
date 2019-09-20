@@ -470,7 +470,7 @@
        ((when flg0)
 	(!!ms-fresh :x86-effective-addr-error flg0))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 sib x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
 	(add-to-*ip proc-mode temp-rip increment-RIP-by x86))

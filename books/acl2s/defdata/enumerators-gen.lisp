@@ -89,7 +89,7 @@ data last modified: [2017-06-25 Sun]
         ((assoc-eq (car s) C) ;constructor
          (b* ((k (len (cdr s)))
               (pkg (get1 :current-package kwd-alist))
-              (vari (intern$ "I" pkg))
+              (vari (acl2s::fix-intern$ "I" pkg))
               (i1--ik (numbered-vars vari k))
               (enum-arg-exprs (make-enum-Is... (remove-names-lst (cdr s)) i1--ik))
               (binding (bind-names-vals (cdr s) enum-arg-exprs))
@@ -138,7 +138,7 @@ data last modified: [2017-06-25 Sun]
        (pkg (get1 :current-package kwd-alist))
 
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (i (intern$ "I" pkg))
+       (i (acl2s::fix-intern$ "I" pkg))
        (ivar (if (member-eq i avoid-lst)
                  i
                (acl2::generate-variable i avoid-lst nil nil wrld)))
@@ -315,7 +315,7 @@ B is the builtin combinator table."
                (enum/acc-exprs
                 (make-enum/acc-Is... (remove-names-lst (cdr s)) i1--ik))
                (pkg (get1 :current-package kwd-alist))
-               (_V (intern$ "_V" pkg))
+               (_V (acl2s::fix-intern$ "_V" pkg))
                (_v1--_vk (numbered-vars _V k))
                (binding (bind-mv2-names-enum/acc-calls (cdr s) enum/acc-exprs _v1--_vk '_SEED))
                (names (replace-calls-with-names _v1--_vk (cdr s))))
@@ -392,7 +392,7 @@ B is the builtin combinator table."
        (kwd-alist (append kwd-alist top-kwd-alist))
        (pkg (get1 :current-package kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars Ndecl)))
-       (size (intern$ "SIZE" pkg))
+       (size (acl2s::fix-intern$ "SIZE" pkg))
        (sizevar (if (member-eq size avoid-lst)
                     size
                   (acl2::generate-variable size avoid-lst nil nil wrld)))

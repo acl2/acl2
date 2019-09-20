@@ -676,7 +676,7 @@
            (apply$-equivalence fn1 fn2))))
 
 (system-events "system/apply/apply"
-(defequiv fn-equal)
+(defequiv fn-equal :package :legacy)
 )
 
 (system-events "system/apply/loop-scions"

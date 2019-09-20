@@ -15,30 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (theorem-symbolp 'car-cdr-elim (w state)))
-
-(assert! (not (theorem-symbolp 'cons (w state))))
-
-(assert! (not (theorem-symbolp 'aaaaaaaaa (w state))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ x y)))
- (assert! (theorem-symbolp 'th (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (macro-symbolp 'append (w state)))
-
-(assert! (not (macro-symbolp 'cons (w state))))
-
-(assert! (not (macro-symbolp 'aaaaaaaaaa (w state))))
-
-(must-succeed*
- (defmacro m (x) `(list ,x))
- (assert! (macro-symbolp 'm (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (function-symbol-listp nil (w state)))
 
 (assert! (function-symbol-listp '(len cons atom) (w state)))
@@ -321,20 +297,6 @@
 (must-succeed*
  (defchoose f x (y) (equal x y))
  (assert! (not (definedp+ 'f (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (primitivep 'cons))
-
-(assert! (primitivep 'binary-+))
-
-(assert! (not (primitivep 'len)))
-
-(must-succeed*
- (defun f (x) x)
- (assert! (not (primitivep 'f))))
-
-(assert! (not (primitivep 'xxxxxxxxxxxxxxxxxxxxxx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

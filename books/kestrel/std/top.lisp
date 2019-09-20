@@ -20,9 +20,9 @@
   :parents (kestrel-books std)
   :short
   (xdoc::topstring "Extensions of "
-                   (xdoc::seeurl "std" "Std")
+                   (xdoc::seetopic "std" "Std")
                    " library in the "
-                   (xdoc::seeurl "kestrel-books" "Kestrel Books")
+                   (xdoc::seetopic "kestrel-books" "Kestrel Books")
                    ".")
   :long
   (xdoc::topstring

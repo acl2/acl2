@@ -399,7 +399,8 @@
       (list x y)
     (double-cdr-induct (cdr x) (cdr y)))))
 
-(defcong list::equiv equal (loghead-list size vals) 2 :hints (("Goal" :induct (double-cdr-induct vals list::vals-equiv))))
+(defcong list::equiv equal (loghead-list size vals) 2
+  :hints (("Goal" :induct (double-cdr-induct vals vals-equiv))))
 
 
 (defthm loghead-list-of-remove-1
