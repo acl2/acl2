@@ -20,6 +20,7 @@
 (include-book "pure-raw-p")
 (include-book "rawp")
 (include-book "remove-mbe")
+(include-book "remove-progn")
 (include-book "theorem-symbolp")
 (include-book "unquote-term")
 
