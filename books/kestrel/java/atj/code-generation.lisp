@@ -1664,7 +1664,7 @@
      which means that often they include formal parameters
      that are replaced by themselves (i.e. by the same symbols)
      when the lambda expression is applied.
-     For instance, the untranslated term @('(let ((x 0)) (+ x y))')
+     For instance, the untranslated term @('(let ((x 3)) (+ x y))')
      is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
      the lambda expression includes the extra formal parameter @('y')
      which is not bound by the @(tsee let),
