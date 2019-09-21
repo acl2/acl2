@@ -172,7 +172,7 @@
    (and
     (useful-dir-ent-list-p dir-ent-list)
     (equal (mv-nth 3
-                   (lofat-to-hifat-helper-exec fat32-in-memory
+                   (lofat-to-hifat-helper fat32-in-memory
                                                dir-ent-list entry-limit))
            0)
     (<=
@@ -184,8 +184,8 @@
   :hints
   (("goal"
     :in-theory
-    (e/d (lofat-to-hifat-helper-exec find-dir-ent useful-dir-ent-list-p)
-         ((:rewrite lofat-to-hifat-helper-exec-correctness-3-lemma-1)
+    (e/d (lofat-to-hifat-helper find-dir-ent useful-dir-ent-list-p)
+         ((:rewrite lofat-to-hifat-helper-correctness-3-lemma-1)
           (:definition no-duplicatesp-equal)
           (:rewrite useful-dir-ent-list-p-of-cdr)
           (:definition member-equal)
@@ -201,7 +201,7 @@
         (hifat-find-file-by-pathname
          (mv-nth
           0
-          (lofat-to-hifat-helper-exec fat32-in-memory
+          (lofat-to-hifat-helper fat32-in-memory
                                       dir-ent-list entry-limit))
          pathname)))
     (implies
@@ -211,7 +211,7 @@
       (equal
        (mv-nth
         3
-        (lofat-to-hifat-helper-exec fat32-in-memory
+        (lofat-to-hifat-helper fat32-in-memory
                                     dir-ent-list entry-limit))
        0))
      (equal
@@ -276,7 +276,7 @@
         (hifat-find-file-by-pathname
          (mv-nth
           0
-          (lofat-to-hifat-helper-exec
+          (lofat-to-hifat-helper
            fat32-in-memory
            (mv-nth 0 (root-dir-ent-list fat32-in-memory))
            (max-entry-count fat32-in-memory)))
@@ -365,7 +365,7 @@
         (hifat-find-file-by-pathname
          (mv-nth
           0
-          (lofat-to-hifat-helper-exec
+          (lofat-to-hifat-helper
            fat32-in-memory
            (mv-nth 0 (root-dir-ent-list fat32-in-memory))
            (max-entry-count fat32-in-memory)))
