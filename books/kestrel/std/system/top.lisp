@@ -21,6 +21,7 @@
 (include-book "rawp")
 (include-book "remove-mbe")
 (include-book "remove-progn")
+(include-book "term-function-recognizers")
 (include-book "theorem-symbolp")
 (include-book "unquote-term")
 
