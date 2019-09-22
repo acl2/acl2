@@ -127,6 +127,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * can never interfere with other functions.
      *
      * @param binding The binding of values to variable indices.
+     * @return The value that results from the evaluation.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.
      */
@@ -156,7 +157,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this function application is equal to the argument object.
+     * Compares this function application with the argument object for equality.
      *
      * @param o The object to compare this function application with.
      * @return {@code true} if the object is equal to this function application,

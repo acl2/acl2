@@ -286,7 +286,7 @@ public final class Acl2Integer extends Acl2Rational {
      * This is consistent with the {@code equal} ACL2 function.
      *
      * @param o The object to compare this integer with.
-     * @return {@code true} if the object is equal to this character,
+     * @return {@code true} if the object is equal to this integer,
      * otherwise {@code false}.
      */
     @Override
