@@ -614,7 +614,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Definitions"))
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
 
    (xdoc::p
     "The function @(tsee pos-fix),
@@ -643,6 +643,15 @@
      accessors and updaters in the style discussed in @(see
      stobjs::stobj-updater-independence), with accessors that apply fixing
      functions to provide unconditionally well-typed results.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "A variant @(tsee str::strtok!) of @(tsee str::strtok) has been added,
+     which does not treat contiguous delimiters as one.
+     This is under the Std extensions in the Kestrel Books.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
