@@ -20,7 +20,7 @@
   (xdoc::topstring "Extensions of "
                    (xdoc::seetopic "std/strings" "Std/strings")
                    " in the "
-                   (xdoc::seetopic "kestrel-books" "Kestrel Books")
+                   (xdoc::seetopic "acl2::kestrel-books" "Kestrel Books")
                    ".")
   :long
   (xdoc::topstring
