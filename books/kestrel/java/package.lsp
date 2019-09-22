@@ -19,6 +19,7 @@
                          *primitive-formals-and-guards*
                          access-event-tuple-namex
                          access-event-tuple-type
+                         add-suffix-to-fn
                          all-ffn-symbs
                          all-free/bound-vars
                          all-pkgs-in-world
@@ -50,6 +51,7 @@
                          fargn
                          fargs
                          fcons-term
+                         fcons-term*
                          ffn-symb
                          flambda-applicationp
                          flambdap
@@ -79,6 +81,7 @@
                          rawp
                          remove-mbe-exec-from-term
                          remove-mbe-logic-from-term
+                         remove-progn-from-term
                          sbyte16
                          sbyte32
                          sbyte64
@@ -100,6 +103,7 @@
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          unnormalized-body
+                         unquote-term
                          unquote-term-list
                          upper-case-p
                          variablep

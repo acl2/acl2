@@ -26,7 +26,8 @@
      which is @('t') when the @(':logic') part is to be removed.")
    (xdoc::p
     "In translated terms,
-     @(tsee mbe)s have the form @('(return-last 'mbe1-raw b a)')."))
+     @(tsee mbe)s have the form @('(return-last 'mbe1-raw b a)').
+     We turn that form into @('a') or @('b'), based on the flag."))
 
   (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
                                            (logic? booleanp))
