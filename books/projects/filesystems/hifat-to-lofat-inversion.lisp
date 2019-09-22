@@ -20,29 +20,6 @@
 (local
  (in-theory (disable nth update-nth floor mod true-listp)))
 
-(encapsulate
-  ()
-
-  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
-
-  (defthmd
-    painful-debugging-lemma-14
-    (implies (not (zp cluster-size))
-             (equal (floor (- cluster-size 1) cluster-size) 0)))
-
-  (defthm painful-debugging-lemma-15
-    (implies (and (not (zp j)) (integerp i) (> i j))
-             (> (floor i j) 0))
-    :rule-classes :linear)
-
-  (defthmd painful-debugging-lemma-16
-    (implies (and (<= i1 i2)
-                  (integerp i1)
-                  (integerp i2)
-                  (not (zp j)))
-             (<= (floor i1 j) (floor i2 j)))
-    :rule-classes :linear))
-
 (defthm
   bounded-nat-listp-of-generate-index-list
   (implies (natp start)
