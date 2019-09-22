@@ -154,7 +154,7 @@ to give more specific messages for each recommended book.
     (make-event
      (er-progn
       (state-global-let*
-       ((inhibit-output-lst (car (@ inhibit-output-lst-stack))))
+       ((inhibit-output-lst (caar (@ inhibit-output-lst-stack))))
        (maybe-chk-for-included-book-fn
         ',user-book-name
         ',dir
@@ -190,7 +190,7 @@ to give more specific messages for each recommended book.
     (make-event
      (er-progn
       (state-global-let*
-       ((inhibit-output-lst (car (@ inhibit-output-lst-stack))))
+       ((inhibit-output-lst (caar (@ inhibit-output-lst-stack))))
        (maybe-chk-for-included-book-fn
         ',user-book-name
         ',dir

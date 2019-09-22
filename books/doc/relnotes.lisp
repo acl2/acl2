@@ -662,6 +662,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Tools")
+
+   (xdoc::p
+    "The tool @(tsee remove-hyps) no longer causes an error when the number of
+     prover steps exceeds the value of @('*default-step-limit*') (which is
+     @(`*default-step-limit*`)).  Thanks to Mihir Mehta for reporting this
+     bug.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
 
    (xdoc::p

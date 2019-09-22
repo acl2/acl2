@@ -135,7 +135,8 @@
 ;; remove-hyps tool will use.  The limit is rather arbitrary and there might
 ;; well be better limits to use.
 (defun remove-hyps-formula-steps (steps)
-  (+ 1000 (* 3 steps)))
+  (min *default-step-limit* ; else with-prover-step-limit causes error
+       (+ 1000 (* 3 steps))))
 
 
 ;; ======================= DEFTHM CONSTRUCTION =======================
