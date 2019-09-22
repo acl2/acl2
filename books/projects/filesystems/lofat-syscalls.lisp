@@ -20,7 +20,7 @@
        ((mv root-dir-ent-list &)
         (root-dir-ent-list fat32-in-memory))
        ((mv & errno)
-        (lofat-find-file-by-pathname
+        (lofat-find-file
          fat32-in-memory
          root-dir-ent-list
          pathname))
@@ -40,8 +40,8 @@
      fd-table-index 0)))
 
 ;; This proof makes me wonder whether I should restructure
-;; lofat-find-file-by-pathname-correctness-1 and
-;; lofat-find-file-by-pathname-correctness-2 to avoid free variables... it's
+;; lofat-find-file-correctness-1 and
+;; lofat-find-file-correctness-2 to avoid free variables... it's
 ;; not ideal to have to instantiate them here.
 (defthm
   lofat-open-refinement
@@ -59,18 +59,18 @@
   (("goal"
     :in-theory
     (e/d (lofat-to-hifat lofat-open)
-         ((:rewrite lofat-find-file-by-pathname-correctness-1)
-          (:rewrite lofat-find-file-by-pathname-correctness-2)))
+         ((:rewrite lofat-find-file-correctness-1)
+          (:rewrite lofat-find-file-correctness-2)))
     :use
     ((:instance
-      (:rewrite lofat-find-file-by-pathname-correctness-1)
+      (:rewrite lofat-find-file-correctness-1)
       (pathname pathname)
       (dir-ent-list
        (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
       (fat32-in-memory fat32-in-memory)
       (entry-limit (max-entry-count fat32-in-memory)))
      (:instance
-      (:rewrite lofat-find-file-by-pathname-correctness-2)
+      (:rewrite lofat-find-file-correctness-2)
       (pathname pathname)
       (dir-ent-list
        (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
@@ -98,7 +98,7 @@
        (pathname (file-table-element->fid (cdr file-table-entry)))
        ((mv root-dir-ent-list &) (root-dir-ent-list fat32-in-memory))
        ((mv file error-code)
-        (lofat-find-file-by-pathname
+        (lofat-find-file
          fat32-in-memory
          root-dir-ent-list
          pathname))
@@ -198,7 +198,7 @@
   lofat-pread-refinement-lemma-2
   (b*
       (((mv file &)
-        (hifat-find-file-by-pathname
+        (hifat-find-file
          (mv-nth
           0
           (lofat-to-hifat-helper fat32-in-memory
@@ -219,10 +219,10 @@
       (lofat-directory-file-p
        (mv-nth
         0
-        (lofat-find-file-by-pathname fat32-in-memory
+        (lofat-find-file fat32-in-memory
                                      dir-ent-list pathname))))))
   :hints
-  (("Goal" :in-theory (enable hifat-find-file-by-pathname))))
+  (("Goal" :in-theory (enable hifat-find-file))))
 
 (defthm
   lofat-pread-refinement
@@ -240,16 +240,16 @@
   (("goal"
     :in-theory
     (e/d (lofat-to-hifat lofat-pread)
-         ((:rewrite lofat-find-file-by-pathname-correctness-1)
+         ((:rewrite lofat-find-file-correctness-1)
           (:rewrite lofat-directory-file-p-when-lofat-file-p)
           (:rewrite m1-directory-file-p-when-m1-file-p)
           (:rewrite lofat-pread-refinement-lemma-2)
           ;; from accumulated-persistence
           (:definition find-dir-ent)
-          (:definition lofat-find-file-by-pathname)))
+          (:definition lofat-find-file)))
     :use
     ((:instance
-      (:rewrite lofat-find-file-by-pathname-correctness-1)
+      (:rewrite lofat-find-file-correctness-1)
       (pathname
        (file-table-element->fid
         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
@@ -262,7 +262,7 @@
       (file
        (mv-nth
         0
-        (lofat-find-file-by-pathname
+        (lofat-find-file
          fat32-in-memory
          (mv-nth 0 (root-dir-ent-list fat32-in-memory))
          (file-table-element->fid
@@ -273,7 +273,7 @@
       (x
        (mv-nth
         0
-        (hifat-find-file-by-pathname
+        (hifat-find-file
          (mv-nth
           0
           (lofat-to-hifat-helper
@@ -303,7 +303,7 @@
         (root-dir-ent-list
          fat32-in-memory))
        ((mv file errno)
-        (lofat-find-file-by-pathname
+        (lofat-find-file
          fat32-in-memory
          root-dir-ent-list
          pathname))
@@ -340,13 +340,13 @@
     :in-theory
     (e/d (lofat-to-hifat lofat-lstat
                          lofat-lstat-refinement-lemma-1)
-         ((:rewrite lofat-find-file-by-pathname-correctness-1)
+         ((:rewrite lofat-find-file-correctness-1)
           (:rewrite lofat-pread-refinement-lemma-2)
           unsigned-byte-p
           (:rewrite m1-directory-file-p-when-m1-file-p)))
     :use
     ((:instance
-      (:rewrite lofat-find-file-by-pathname-correctness-1)
+      (:rewrite lofat-find-file-correctness-1)
       (dir-ent-list
        (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
       (entry-limit (max-entry-count fat32-in-memory)))
@@ -362,7 +362,7 @@
       (x
        (mv-nth
         0
-        (hifat-find-file-by-pathname
+        (hifat-find-file
          (mv-nth
           0
           (lofat-to-hifat-helper
@@ -372,7 +372,7 @@
          pathname))))))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-3-lemma-1
+  hifat-find-file-correctness-3-lemma-1
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-subsetp m1-file-alist1 m1-file-alist2)
@@ -382,7 +382,7 @@
   :hints (("goal" :in-theory (enable m1-file-alist-p hifat-no-dups-p))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-3-lemma-2
+  hifat-find-file-correctness-3-lemma-2
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -391,25 +391,25 @@
         (hifat-subsetp m1-file-alist1 m1-file-alist2))
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (implies
       (and (equal error-code 0)
            (m1-directory-file-p file))
       (m1-directory-file-p
        (mv-nth
         0
-        (hifat-find-file-by-pathname m1-file-alist2 pathname))))))
+        (hifat-find-file m1-file-alist2 pathname))))))
   :hints
   (("goal"
     :induct
     (mv
      (mv-nth 1
-             (hifat-find-file-by-pathname m1-file-alist1 pathname))
+             (hifat-find-file m1-file-alist1 pathname))
      (mv-nth 1
-             (hifat-find-file-by-pathname m1-file-alist2 pathname)))
-    :in-theory (enable m1-file-alist-p hifat-find-file-by-pathname))))
+             (hifat-find-file m1-file-alist2 pathname)))
+    :in-theory (enable m1-file-alist-p hifat-find-file))))
 
-(defthm hifat-find-file-by-pathname-correctness-3-lemma-8
+(defthm hifat-find-file-correctness-3-lemma-8
   (implies (and (not (consp (assoc-equal name m1-file-alist2)))
                 (m1-file-alist-p m1-file-alist1)
                 (hifat-subsetp m1-file-alist1 m1-file-alist2))
@@ -417,7 +417,7 @@
   :hints (("goal" :in-theory (enable hifat-subsetp m1-file-alist-p))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-3-lemma-3
+  hifat-find-file-correctness-3-lemma-3
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -426,7 +426,7 @@
         (hifat-subsetp m1-file-alist1 m1-file-alist2))
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (declare (ignore error-code))
      (implies
       (m1-directory-file-p file)
@@ -435,19 +435,19 @@
        (m1-file->contents
         (mv-nth
          0
-         (hifat-find-file-by-pathname m1-file-alist2 pathname)))))))
+         (hifat-find-file m1-file-alist2 pathname)))))))
   :hints
   (("goal"
     :induct
     (mv
      (mv-nth 1
-             (hifat-find-file-by-pathname m1-file-alist1 pathname))
+             (hifat-find-file m1-file-alist1 pathname))
      (mv-nth 1
-             (hifat-find-file-by-pathname m1-file-alist2 pathname)))
-    :in-theory (enable m1-file-alist-p hifat-find-file-by-pathname))))
+             (hifat-find-file m1-file-alist2 pathname)))
+    :in-theory (enable m1-file-alist-p hifat-find-file))))
 
 (defthmd
-  hifat-find-file-by-pathname-correctness-3-lemma-4
+  hifat-find-file-correctness-3-lemma-4
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -457,37 +457,37 @@
    (and
     (implies
      (equal (mv-nth 1
-                    (hifat-find-file-by-pathname m1-file-alist1 pathname))
+                    (hifat-find-file m1-file-alist1 pathname))
             0)
      (equal (mv-nth 1
-                    (hifat-find-file-by-pathname m1-file-alist2 pathname))
+                    (hifat-find-file m1-file-alist2 pathname))
             0))
     (implies
      (equal (mv-nth 1
-                    (hifat-find-file-by-pathname m1-file-alist2 pathname))
+                    (hifat-find-file m1-file-alist2 pathname))
             *enoent*)
      (equal (mv-nth 1
-                    (hifat-find-file-by-pathname m1-file-alist1 pathname))
+                    (hifat-find-file m1-file-alist1 pathname))
             *enoent*))
     (implies
      (equal (mv-nth 1
-                    (hifat-find-file-by-pathname m1-file-alist1 pathname))
+                    (hifat-find-file m1-file-alist1 pathname))
             *enotdir*)
      (equal (mv-nth 1
-                    (hifat-find-file-by-pathname m1-file-alist2 pathname))
+                    (hifat-find-file m1-file-alist2 pathname))
             *enotdir*))))
   :hints
   (("goal"
     :induct
     (mv (mv-nth 1
-                (hifat-find-file-by-pathname m1-file-alist1 pathname))
+                (hifat-find-file m1-file-alist1 pathname))
         (mv-nth 1
-                (hifat-find-file-by-pathname m1-file-alist2 pathname)))
+                (hifat-find-file m1-file-alist2 pathname)))
     :in-theory (enable m1-file-alist-p
-                       hifat-find-file-by-pathname))
+                       hifat-find-file))
    ("subgoal *1/2"
     :in-theory
-    (e/d (m1-file-alist-p hifat-find-file-by-pathname)
+    (e/d (m1-file-alist-p hifat-find-file)
          (hifat-subsetp-transitive-lemma-1))
     :use (:instance hifat-subsetp-transitive-lemma-1
                     (y m1-file-alist1)
@@ -495,7 +495,7 @@
                     (key (fat32-filename-fix (car pathname)))))))
 
 (defthmd
-  hifat-find-file-by-pathname-correctness-3-lemma-5
+  hifat-find-file-correctness-3-lemma-5
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -504,7 +504,7 @@
         (hifat-subsetp m1-file-alist1 m1-file-alist2))
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (declare (ignore error-code))
      (implies
       (m1-regular-file-p file)
@@ -512,60 +512,60 @@
        (m1-file->contents
         (mv-nth
          0
-         (hifat-find-file-by-pathname m1-file-alist2 pathname)))
+         (hifat-find-file m1-file-alist2 pathname)))
        (m1-file->contents file)))))
   :hints
   (("goal"
     :induct
     (mv
      (mv-nth 1
-             (hifat-find-file-by-pathname m1-file-alist1 pathname))
+             (hifat-find-file m1-file-alist1 pathname))
      (mv-nth 1
-             (hifat-find-file-by-pathname m1-file-alist2 pathname)))
+             (hifat-find-file m1-file-alist2 pathname)))
     :in-theory
     (e/d
-     (m1-file-alist-p hifat-find-file-by-pathname)
-     ((:rewrite hifat-find-file-by-pathname-correctness-3-lemma-1))))
+     (m1-file-alist-p hifat-find-file)
+     ((:rewrite hifat-find-file-correctness-3-lemma-1))))
    ("subgoal *1/3"
     :use
-    (:instance hifat-find-file-by-pathname-correctness-3-lemma-1
+    (:instance hifat-find-file-correctness-3-lemma-1
                (name (fat32-filename-fix (car pathname)))))
    ("subgoal *1/1"
     :use
-    (:instance hifat-find-file-by-pathname-correctness-3-lemma-1
+    (:instance hifat-find-file-correctness-3-lemma-1
                (name (fat32-filename-fix (car pathname)))))))
 
 (defthmd
-  hifat-find-file-by-pathname-correctness-3-lemma-6
+  hifat-find-file-correctness-3-lemma-6
   (or
    (equal
     (mv-nth 1
-            (hifat-find-file-by-pathname m1-file-alist pathname))
+            (hifat-find-file m1-file-alist pathname))
     0)
    (equal
     (mv-nth 1
-            (hifat-find-file-by-pathname m1-file-alist pathname))
+            (hifat-find-file m1-file-alist pathname))
     *enotdir*)
    (equal
     (mv-nth 1
-            (hifat-find-file-by-pathname m1-file-alist pathname))
+            (hifat-find-file m1-file-alist pathname))
     *enoent*))
   :hints
   (("goal"
-    :in-theory (enable hifat-find-file-by-pathname)
-    :induct (hifat-find-file-by-pathname m1-file-alist pathname))))
+    :in-theory (enable hifat-find-file)
+    :induct (hifat-find-file m1-file-alist pathname))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-3-lemma-7
+  hifat-find-file-correctness-3-lemma-7
   (implies
    (hifat-equiv m1-file-alist2 m1-file-alist1)
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (declare (ignore file))
      (equal
       (mv-nth 1
-              (hifat-find-file-by-pathname m1-file-alist2 pathname))
+              (hifat-find-file m1-file-alist2 pathname))
       error-code)))
   :rule-classes :congruence
   :hints
@@ -573,19 +573,19 @@
     :in-theory (enable hifat-equiv)
     :use
     ((:instance
-      hifat-find-file-by-pathname-correctness-3-lemma-4
+      hifat-find-file-correctness-3-lemma-4
       (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
       (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
      (:instance
-      hifat-find-file-by-pathname-correctness-3-lemma-4
+      hifat-find-file-correctness-3-lemma-4
       (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
       (m1-file-alist2 (hifat-file-alist-fix m1-file-alist1)))
      (:instance
-      hifat-find-file-by-pathname-correctness-3-lemma-6
+      hifat-find-file-correctness-3-lemma-6
       (m1-file-alist (hifat-file-alist-fix m1-file-alist1)))))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-3
+  hifat-find-file-correctness-3
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (m1-file-alist-p m1-file-alist2)
@@ -594,14 +594,14 @@
         (hifat-equiv m1-file-alist2 m1-file-alist1))
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (declare (ignore error-code))
      (implies
       (m1-regular-file-p file)
       (equal
        (m1-file->contents
         (mv-nth 0
-                (hifat-find-file-by-pathname m1-file-alist2 pathname)))
+                (hifat-find-file m1-file-alist2 pathname)))
        (m1-file->contents file)))))
   :hints
   (("goal"
@@ -610,30 +610,30 @@
     (e/d (m1-file-alist-p hifat-equiv))
     :use
     ((:instance
-      hifat-find-file-by-pathname-correctness-3-lemma-5
+      hifat-find-file-correctness-3-lemma-5
       (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
       (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
      (:instance
-      hifat-find-file-by-pathname-correctness-3-lemma-5
+      hifat-find-file-correctness-3-lemma-5
       (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
       (m1-file-alist2
        (hifat-file-alist-fix m1-file-alist1)))))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-4-lemma-1
+  hifat-find-file-correctness-4-lemma-1
   (implies
    (and
     (m1-file-alist-p fs)
     (m1-directory-file-p (mv-nth 0
-                                 (hifat-find-file-by-pathname fs pathname))))
+                                 (hifat-find-file fs pathname))))
    (hifat-no-dups-p
     (m1-file->contents (mv-nth 0
-                               (hifat-find-file-by-pathname fs pathname)))))
+                               (hifat-find-file fs pathname)))))
   :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file-alist-p
-                                     hifat-find-file-by-pathname))))
+                                     hifat-find-file))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-4
+  hifat-find-file-correctness-4
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -642,7 +642,7 @@
         (hifat-equiv m1-file-alist2 m1-file-alist1))
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (implies
       (and (equal error-code 0)
            (m1-directory-file-p file))
@@ -651,25 +651,25 @@
         (m1-file->contents file)
         (m1-file->contents
          (mv-nth 0
-                 (hifat-find-file-by-pathname m1-file-alist2 pathname))))
+                 (hifat-find-file m1-file-alist2 pathname))))
        (m1-directory-file-p
         (mv-nth 0
-                (hifat-find-file-by-pathname m1-file-alist2 pathname)))))))
+                (hifat-find-file m1-file-alist2 pathname)))))))
   :hints (("goal" :do-not-induct t
            :in-theory (enable m1-file-alist-p hifat-equiv))))
 
 (defthm
-  hifat-find-file-by-pathname-correctness-5
+  hifat-find-file-correctness-5
   (implies
    (hifat-equiv m1-file-alist2 m1-file-alist1)
    (mv-let
      (file error-code)
-     (hifat-find-file-by-pathname m1-file-alist1 pathname)
+     (hifat-find-file m1-file-alist1 pathname)
      (declare (ignore error-code))
      (equal
       (m1-regular-file-p
        (mv-nth 0
-               (hifat-find-file-by-pathname m1-file-alist2 pathname)))
+               (hifat-find-file m1-file-alist2 pathname)))
       (m1-regular-file-p file))))
   :rule-classes :congruence
   :hints (("goal" :do-not-induct t
@@ -679,20 +679,20 @@
             ())
            :use
            ((:instance
-             hifat-find-file-by-pathname-correctness-3-lemma-5
+             hifat-find-file-correctness-3-lemma-5
              (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
              (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
             (:instance
-             hifat-find-file-by-pathname-correctness-3-lemma-5
+             hifat-find-file-correctness-3-lemma-5
              (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
              (m1-file-alist2 (hifat-file-alist-fix m1-file-alist1))))
            :expand
            ((m1-regular-file-p
              (mv-nth 0
-                     (hifat-find-file-by-pathname m1-file-alist1 pathname)))
+                     (hifat-find-file m1-file-alist1 pathname)))
             (m1-regular-file-p
              (mv-nth 0
-                     (hifat-find-file-by-pathname m1-file-alist2 pathname)))))))
+                     (hifat-find-file m1-file-alist2 pathname)))))))
 
 (defund lofat-unlink (fat32-in-memory pathname)
   (declare (xargs :stobjs fat32-in-memory
