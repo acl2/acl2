@@ -1535,10 +1535,13 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program))
   (b* ((xargs{} (xargs-kwd-alist decls 'program-mode-p))
        (pm? (eq (get1 :mode xargs{}) :program))
-       ((mv ?erp tbody) (acl2::pseudo-translate body (list (cons name formals)) wrld))
-       (sub-fns (set-difference-eq (cgen::all-functions tbody) (list name))))
+       ((mv ?erp tbody)
+        (acl2::pseudo-translate body (list (cons name formals)) wrld))
+       (sub-fns
+        (set-difference-eq (cgen::all-functions tbody) (list name))))
     (or pm?
-        (eq (cdr (assoc-eq :defun-mode (table-alist 'acl2::acl2-defaults-table wrld)))
+        (eq (cdr (assoc-eq :defun-mode
+                           (table-alist 'acl2::acl2-defaults-table wrld)))
             :program)
         (thereis-programp sub-fns wrld))))
 

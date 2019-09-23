@@ -101,7 +101,7 @@
                               (stringp sep))))
   (b* (((unless (consp ss)) (er hard? 's+ "~| Expect at least one string/symbol arg, but given ~x0 ~%" ss))
        (s1 (car ss))
-       (pkg~ (or (and (stringp pkg) (not (equal pkg "")) pkg)
+       (pkg~ (or (and (pkgp pkg) pkg)
                  (and (symbolp s1) (symbol-package-name s1))
                  "DEFDATA"))
        ;; (- (cw "~| pkg to be used is : ~x0~%" pkg~))
@@ -112,8 +112,7 @@
   (declare (xargs :guard (and (symbol-listp syms)
                               (stringp prefix)
                               (stringp postfix)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (if (endp syms)
     nil
     (cons (s+ prefix (car syms) postfix :pkg pkg)
@@ -395,14 +394,12 @@
 ;;-- (make-predicate-symbol 'integer "ACL2S B") ==> ACL2S B::INTEGERP
 (defun make-predicate-symbol (sym pkg)
   (declare (xargs :guard (and (symbolp sym)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (s+ sym "P" :pkg pkg))
 
 (defun make-predicate-symbol-lst (syms pkg)
   (declare (xargs :guard (and (symbol-listp syms)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (if (endp syms)
     nil
     (cons (make-predicate-symbol (car syms) pkg)
@@ -411,14 +408,12 @@
 
 (defun make-enumerator-symbol (sym pkg)
   (declare (xargs :guard (and (symbolp sym)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (s+ "NTH-" sym :pkg pkg))
 
 (defun make-uniform-enumerator-symbol (sym pkg)
-    (declare (xargs :guard (and (symbolp sym)
-                                (not (equal pkg ""))
-                                (stringp pkg))))
+  (declare (xargs :guard (and (symbolp sym)
+                              (pkgp pkg))))
   (s+ "NTH-" sym "/ACC" :pkg pkg))
 
 ;;--check arity of macro optional arguments

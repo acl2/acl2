@@ -335,16 +335,14 @@ get as much automated polymorphic support as possible.
 
 
 (defun to-symbol (obj pkg)
-  (declare (xargs :guard (and (stringp pkg)
-                              (not (equal pkg "")))))
+  (declare (xargs :guard (pkgp pkg)))
   (if (symbolp obj)
       obj
     (b* (((mv & str) (acl2::fmt1!-to-string "~x0" (acons #\0 obj '()) 0)))
       (acl2s::fix-intern$ str pkg))))
 
 (defloop to-symbols (objs pkg)
-  (declare (xargs :guard (and (stringp pkg)
-                              (not (equal pkg "")))))
+  (declare (xargs :guard (pkgp pkg)))
   (for ((o in objs)) (collect (to-symbol o pkg))))
 
 ;; (defun map-fn (lst f rest-args ctx w)
