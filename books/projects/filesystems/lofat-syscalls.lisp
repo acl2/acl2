@@ -173,7 +173,7 @@
     (useful-dir-ent-list-p dir-ent-list)
     (equal (mv-nth 3
                    (lofat-to-hifat-helper fat32-in-memory
-                                               dir-ent-list entry-limit))
+                                          dir-ent-list entry-limit))
            0)
     (<=
      (+ 2 (count-of-clusters fat32-in-memory))
@@ -185,8 +185,7 @@
   (("goal"
     :in-theory
     (e/d (lofat-to-hifat-helper find-dir-ent useful-dir-ent-list-p)
-         ((:rewrite lofat-to-hifat-helper-correctness-3-lemma-1)
-          (:definition no-duplicatesp-equal)
+         ((:definition no-duplicatesp-equal)
           (:rewrite useful-dir-ent-list-p-of-cdr)
           (:definition member-equal)
           (:rewrite take-of-len-free)
@@ -202,7 +201,7 @@
          (mv-nth
           0
           (lofat-to-hifat-helper fat32-in-memory
-                                      dir-ent-list entry-limit))
+                                 dir-ent-list entry-limit))
          pathname)))
     (implies
      (and
@@ -212,7 +211,7 @@
        (mv-nth
         3
         (lofat-to-hifat-helper fat32-in-memory
-                                    dir-ent-list entry-limit))
+                               dir-ent-list entry-limit))
        0))
      (equal
       (m1-directory-file-p file)
@@ -220,7 +219,7 @@
        (mv-nth
         0
         (lofat-find-file fat32-in-memory
-                                     dir-ent-list pathname))))))
+                         dir-ent-list pathname))))))
   :hints
   (("Goal" :in-theory (enable hifat-find-file))))
 
@@ -313,9 +312,9 @@
                     *ms-max-dir-size*
                   (length (lofat-file->contents file)))))
     (mv
-       (make-struct-stat
-        :st_size st_size)
-       0 0)))
+     (make-struct-stat
+      :st_size st_size)
+     0 0)))
 
 (defthmd
   lofat-lstat-refinement-lemma-1
@@ -739,3 +738,23 @@
    (lofat-fs-p fat32-in-memory)
    (lofat-fs-p (mv-nth 0 (lofat-truncate fat32-in-memory pathname size))))
   :hints (("Goal" :in-theory (enable lofat-truncate)) ))
+
+(defun lofat-statfs (fat32-in-memory)
+  (declare (xargs :stobjs (fat32-in-memory)
+                  :guard (lofat-fs-p fat32-in-memory)))
+  (b*
+      ((total_blocks (count-of-clusters fat32-in-memory))
+       (available_blocks
+        (len (stobj-find-n-free-clusters
+              fat32-in-memory
+              (count-of-clusters fat32-in-memory)))))
+    (make-struct-statfs
+     :f_type *S_MAGIC_FUSEBLK*
+     :f_bsize (cluster-size fat32-in-memory)
+     :f_blocks total_blocks
+     :f_bfree available_blocks
+     :f_bavail available_blocks
+     :f_files 0
+     :f_ffree 0
+     :f_fsid 0
+     :f_namelen 72)))

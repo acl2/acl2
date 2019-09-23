@@ -4,8 +4,8 @@
 
 
 (defun
-  truncate-list-extra-hypothesis
-  (fat32-in-memory name-list size)
+    truncate-list-extra-hypothesis
+    (fat32-in-memory name-list size)
   (declare (xargs :stobjs fat32-in-memory
                   :guard (and (lofat-fs-p fat32-in-memory)
                               (string-listp name-list)
@@ -94,7 +94,7 @@
     (equal
      (mv-nth
       1
-      (hifat-place-file-by-pathname
+      (hifat-place-file
        (mv-nth 0 (lofat-to-hifat fat32-in-memory))
        (pathname-to-fat32-pathname (explode (car pathname-list)))
        (m1-file
@@ -116,7 +116,7 @@
      (mv-nth
       1
       (hifat-find-file (mv-nth 0 (lofat-to-hifat fat32-in-memory))
-                             (pathname-to-fat32-pathname (explode pathname))))
+                       (pathname-to-fat32-pathname (explode pathname))))
      0)
     (m1-regular-file-p
      (mv-nth 0
@@ -150,7 +150,7 @@
              fat32-in-memory
              (mv-nth
               0
-              (hifat-place-file-by-pathname
+              (hifat-place-file
                (mv-nth 0 (lofat-to-hifat fat32-in-memory))
                (pathname-to-fat32-pathname (explode (car pathname-list)))
                (m1-file
@@ -186,7 +186,7 @@
      (fs
       (mv-nth
        0
-       (hifat-place-file-by-pathname
+       (hifat-place-file
         (mv-nth 0 (lofat-to-hifat fat32-in-memory))
         (pathname-to-fat32-pathname (explode (car pathname-list)))
         (m1-file
@@ -225,7 +225,7 @@
     (equal
      (mv-nth
       1
-      (hifat-place-file-by-pathname
+      (hifat-place-file
        (mv-nth 0 (lofat-to-hifat fat32-in-memory))
        (pathname-to-fat32-pathname (explode (car pathname-list)))
        (m1-file
@@ -257,7 +257,7 @@
      (mv-nth
       1
       (hifat-find-file (mv-nth 0 (lofat-to-hifat fat32-in-memory))
-                             (pathname-to-fat32-pathname (explode pathname))))
+                       (pathname-to-fat32-pathname (explode pathname))))
      0)
     (m1-regular-file-p
      (mv-nth 0
@@ -291,7 +291,7 @@
              fat32-in-memory
              (mv-nth
               0
-              (hifat-place-file-by-pathname
+              (hifat-place-file
                (mv-nth 0 (lofat-to-hifat fat32-in-memory))
                (pathname-to-fat32-pathname (explode (car pathname-list)))
                (m1-file
@@ -338,7 +338,7 @@
      (fs
       (mv-nth
        0
-       (hifat-place-file-by-pathname
+       (hifat-place-file
         (mv-nth 0 (lofat-to-hifat fat32-in-memory))
         (pathname-to-fat32-pathname (explode (car pathname-list)))
         (m1-file
@@ -479,7 +479,7 @@
     (equal
      (mv-nth
       1
-      (hifat-place-file-by-pathname
+      (hifat-place-file
        (mv-nth 0 (lofat-to-hifat fat32-in-memory))
        (pathname-to-fat32-pathname (explode (car pathname-list)))
        (m1-file
@@ -503,7 +503,7 @@
     (hifat-bounded-file-alist-p
      (mv-nth
       0
-      (hifat-place-file-by-pathname
+      (hifat-place-file
        (mv-nth 0 (lofat-to-hifat fat32-in-memory))
        (pathname-to-fat32-pathname (explode (car pathname-list)))
        (m1-file
@@ -527,7 +527,7 @@
      (hifat-entry-count
       (mv-nth
        0
-       (hifat-place-file-by-pathname
+       (hifat-place-file
         (mv-nth 0 (lofat-to-hifat fat32-in-memory))
         (pathname-to-fat32-pathname (explode (car pathname-list)))
         (m1-file
@@ -555,7 +555,7 @@
        fat32-in-memory
        (mv-nth
         0
-        (hifat-place-file-by-pathname
+        (hifat-place-file
          (mv-nth 0 (lofat-to-hifat fat32-in-memory))
          (pathname-to-fat32-pathname (explode (car pathname-list)))
          (m1-file
@@ -585,7 +585,7 @@
         fat32-in-memory
         (mv-nth
          0
-         (hifat-place-file-by-pathname
+         (hifat-place-file
           (mv-nth 0 (lofat-to-hifat fat32-in-memory))
           (pathname-to-fat32-pathname (explode (car pathname-list)))
           (m1-file
@@ -624,7 +624,7 @@
              fat32-in-memory
              (mv-nth
               0
-              (hifat-place-file-by-pathname
+              (hifat-place-file
                (mv-nth 0 (lofat-to-hifat fat32-in-memory))
                (pathname-to-fat32-pathname (explode (car pathname-list)))
                (m1-file
@@ -664,7 +664,7 @@
              fat32-in-memory
              (mv-nth
               0
-              (hifat-place-file-by-pathname
+              (hifat-place-file
                (mv-nth 0 (lofat-to-hifat fat32-in-memory))
                (pathname-to-fat32-pathname (explode (car pathname-list)))
                (m1-file
@@ -706,7 +706,7 @@
                 fat32-in-memory
                 (mv-nth
                  0
-                 (hifat-place-file-by-pathname
+                 (hifat-place-file
                   (mv-nth 0 (lofat-to-hifat fat32-in-memory))
                   (pathname-to-fat32-pathname (explode (car pathname-list)))
                   (m1-file

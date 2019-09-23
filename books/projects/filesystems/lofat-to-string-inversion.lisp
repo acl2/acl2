@@ -151,7 +151,7 @@
      :hints (("Goal" :in-theory (enable nth)) )))
 
   (defund
-      read-reserved-area (fat32-in-memory str)
+    read-reserved-area (fat32-in-memory str)
     (declare
      (xargs
       :guard (and (stringp str)
@@ -447,7 +447,7 @@
           read-reserved-area-correctness-1-lemma-2))))
 
 (defun
-  update-fat (fat32-in-memory str pos)
+    update-fat (fat32-in-memory str pos)
   (declare
    (xargs :guard (and (stringp str)
                       (unsigned-byte-p 48 pos)
@@ -461,28 +461,28 @@
   (b*
       ((pos (the (unsigned-byte 48) pos)))
     (if
-     (zp pos)
-     fat32-in-memory
-     (b*
-         ((ch-word
-           (the
-            (unsigned-byte 32)
-            (combine32u (char-code (char str
-                                         (the (unsigned-byte 50)
-                                              (- (* pos 4) 1))))
-                        (char-code (char str
-                                         (the (unsigned-byte 50)
-                                              (- (* pos 4) 2))))
-                        (char-code (char str
-                                         (the (unsigned-byte 50)
-                                              (- (* pos 4) 3))))
-                        (char-code (char str
-                                         (the (unsigned-byte 50)
-                                              (- (* pos 4) 4)))))))
-          (fat32-in-memory (update-fati (- pos 1)
-                                        ch-word fat32-in-memory)))
-       (update-fat fat32-in-memory str
-                   (the (unsigned-byte 48) (- pos 1)))))))
+        (zp pos)
+        fat32-in-memory
+      (b*
+          ((ch-word
+            (the
+                (unsigned-byte 32)
+              (combine32u (char-code (char str
+                                           (the (unsigned-byte 50)
+                                             (- (* pos 4) 1))))
+                          (char-code (char str
+                                           (the (unsigned-byte 50)
+                                             (- (* pos 4) 2))))
+                          (char-code (char str
+                                           (the (unsigned-byte 50)
+                                             (- (* pos 4) 3))))
+                          (char-code (char str
+                                           (the (unsigned-byte 50)
+                                             (- (* pos 4) 4)))))))
+           (fat32-in-memory (update-fati (- pos 1)
+                                         ch-word fat32-in-memory)))
+        (update-fat fat32-in-memory str
+                    (the (unsigned-byte 48) (- pos 1)))))))
 
 (defthm
   nth-of-update-fat
@@ -589,9 +589,9 @@
      (mv-nth 0
              (read-reserved-area fat32-in-memory str)))))
   :hints
-    (("goal"
-      :do-not-induct t
-      :in-theory (e/d (read-reserved-area) (subseq))))
+  (("goal"
+    :do-not-induct t
+    :in-theory (e/d (read-reserved-area) (subseq))))
   :rule-classes
   ((:linear
     :corollary
@@ -797,10 +797,10 @@
   (defthm
     cluster-size-of-read-reserved-area
     (natp
-    (- (cluster-size
+     (- (cluster-size
          (mv-nth 0
                  (read-reserved-area fat32-in-memory str)))
-       *ms-min-bytes-per-sector*))
+        *ms-min-bytes-per-sector*))
     :rule-classes
     ((:linear
       :corollary
@@ -2257,8 +2257,8 @@
   :hints (("goal" :in-theory (enable read-reserved-area))))
 
 (defun
-  disk-image-to-lofat
-  (fat32-in-memory image-path state)
+    disk-image-to-lofat
+    (fat32-in-memory image-path state)
   (declare
    (xargs
     :guard (and (stringp image-path)
@@ -2429,16 +2429,16 @@
    (+ (len ac) (* 4 (nfix length)))))
 
 (defund
-    stobj-fa-table-to-string
-    (fat32-in-memory)
-    (declare
-     (xargs
-      :stobjs fat32-in-memory
-      :guard (lofat-fs-p fat32-in-memory)))
-    (coerce
-     (stobj-fa-table-to-string-helper
-      fat32-in-memory (fat-length fat32-in-memory) nil)
-     'string))
+  stobj-fa-table-to-string
+  (fat32-in-memory)
+  (declare
+   (xargs
+    :stobjs fat32-in-memory
+    :guard (lofat-fs-p fat32-in-memory)))
+  (coerce
+   (stobj-fa-table-to-string-helper
+    fat32-in-memory (fat-length fat32-in-memory) nil)
+   'string))
 
 (encapsulate
   ()
@@ -3021,10 +3021,10 @@
   length-of-lofat-to-string-lemma-1
   (implies (lofat-fs-p fat32-in-memory)
            (and
-           (equal (nfix (bpb_numfats fat32-in-memory))
-                  (bpb_numfats fat32-in-memory))
-           (equal (nfix (count-of-clusters fat32-in-memory))
-                  (count-of-clusters fat32-in-memory))))
+            (equal (nfix (bpb_numfats fat32-in-memory))
+                   (bpb_numfats fat32-in-memory))
+            (equal (nfix (count-of-clusters fat32-in-memory))
+                   (count-of-clusters fat32-in-memory))))
   :hints (("goal" :in-theory (enable lofat-fs-p
                                      fat32-in-memoryp
                                      bpb_numfats))))
@@ -3047,8 +3047,8 @@
   (("goal" :in-theory (e/d (lofat-to-string) (nfix)))))
 
 (defun
-  lofat-to-disk-image
-  (fat32-in-memory image-path state)
+    lofat-to-disk-image
+    (fat32-in-memory image-path state)
   (declare
    (xargs
     :stobjs (fat32-in-memory state)
@@ -3807,7 +3807,7 @@
              (stobj-fa-table-to-string-helper fat32-in-memory
                                               length
                                               ac)
-              :expand (:free (n x y) (nth n (cons x y)))))))
+             :expand (:free (n x y) (nth n (cons x y)))))))
 
 (defthm
   lofat-to-string-inversion-lemma-39
@@ -4116,27 +4116,27 @@
     n
     (explode (lofat-to-string fat32-in-memory)))
    (if
-    (<= (nfix n)
-        (len (explode (reserved-area-string fat32-in-memory))))
-    (append
-     (nthcdr n
-             (explode (reserved-area-string fat32-in-memory)))
-     (explode (make-fat-string-ac (bpb_numfats fat32-in-memory)
-                                  fat32-in-memory ""))
-     (data-region-string-helper
-      fat32-in-memory
-      (data-region-length fat32-in-memory)
-      nil))
-    (nthcdr
-     (- n
-        (len (explode (reserved-area-string fat32-in-memory))))
-     (append
-      (explode (make-fat-string-ac (bpb_numfats fat32-in-memory)
-                                   fat32-in-memory ""))
-      (data-region-string-helper
-       fat32-in-memory
-       (data-region-length fat32-in-memory)
-       nil)))))
+       (<= (nfix n)
+           (len (explode (reserved-area-string fat32-in-memory))))
+       (append
+        (nthcdr n
+                (explode (reserved-area-string fat32-in-memory)))
+        (explode (make-fat-string-ac (bpb_numfats fat32-in-memory)
+                                     fat32-in-memory ""))
+        (data-region-string-helper
+         fat32-in-memory
+         (data-region-length fat32-in-memory)
+         nil))
+     (nthcdr
+      (- n
+         (len (explode (reserved-area-string fat32-in-memory))))
+      (append
+       (explode (make-fat-string-ac (bpb_numfats fat32-in-memory)
+                                    fat32-in-memory ""))
+       (data-region-string-helper
+        fat32-in-memory
+        (data-region-length fat32-in-memory)
+        nil)))))
   :hints
   (("goal" :in-theory
     (e/d (lofat-to-string)
@@ -4418,17 +4418,17 @@
 (defund
   update-fat-aux (fa-table str pos)
   (if
-   (zp pos)
-   fa-table
-   (let*
-    ((ch-word
-      (combine32u (char-code (char str (+ -1 (* pos 4))))
-                  (char-code (char str (+ -2 (* pos 4))))
-                  (char-code (char str (+ -3 (* pos 4))))
-                  (char-code (char str (+ -4 (* pos 4))))))
-     (fa-table (update-nth (+ -1 pos)
-                           ch-word fa-table)))
-    (update-fat-aux fa-table str (+ -1 pos)))))
+      (zp pos)
+      fa-table
+    (let*
+        ((ch-word
+          (combine32u (char-code (char str (+ -1 (* pos 4))))
+                      (char-code (char str (+ -2 (* pos 4))))
+                      (char-code (char str (+ -3 (* pos 4))))
+                      (char-code (char str (+ -4 (* pos 4))))))
+         (fa-table (update-nth (+ -1 pos)
+                               ch-word fa-table)))
+      (update-fat-aux fa-table str (+ -1 pos)))))
 
 (defthm
   nth-of-update-fat-aux
@@ -4441,7 +4441,7 @@
                     (char-code (char str (+ 2 (* (nfix n) 4))))
                     (char-code (char str (+ 1 (* (nfix n) 4))))
                     (char-code (char str (+ 0 (* (nfix n) 4)))))
-        (nth n fa-table))))
+      (nth n fa-table))))
   :hints (("goal" :in-theory (enable update-fat-aux)
            :induct (update-fat-aux fa-table str pos))
           ("subgoal *1/2.6'"
@@ -4554,10 +4554,10 @@
    (update-fat fat32-in-memory str pos)
    (if (zp pos)
        fat32-in-memory
-       (update-nth *fati*
-                   (update-fat-aux (nth *fati* fat32-in-memory)
-                                   str pos)
-                   fat32-in-memory)))
+     (update-nth *fati*
+                 (update-fat-aux (nth *fati* fat32-in-memory)
+                                 str pos)
+                 fat32-in-memory)))
   :hints
   (("goal" :in-theory (enable update-fat-aux update-fati)
     :induct (update-fat fat32-in-memory str pos))))
@@ -4821,10 +4821,10 @@
 
   (defthmd
     string-to-lofat-ignore-lemma-14
-     (equal (mv-nth 1
-                    (string-to-lofat fat32-in-memory str))
-            (mv-nth 1
-                    (string-to-lofat-nx str)))
+    (equal (mv-nth 1
+                   (string-to-lofat fat32-in-memory str))
+           (mv-nth 1
+                   (string-to-lofat-nx str)))
     :hints
     (("goal"
       :in-theory
