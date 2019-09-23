@@ -10,7 +10,7 @@ import java.math.BigInteger;
 
 /**
  * Representation of ACL2 integers.
- * These are the ACL2 values that satisfy {@code integerp}.
+ * These are the values that satisfy {@code integerp}.
  */
 public final class Acl2Integer extends Acl2Rational {
 

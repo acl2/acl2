@@ -169,7 +169,7 @@ with the same hints and directives that defthm accepts.
        (PT (acl2s-property-table wrld))
        (PT (defdata::remove1-assoc-eq-lst (filter-keywords args) PT))
        ((mv kwd-alist prop-rest)
-        (defdata::extract-keywords ctx *property-keywords* args PT))
+        (defdata::extract-keywords ctx *property-keywords* args PT nil))
        (prop (car prop-rest)))
     (list name? name prop kwd-alist)))
 

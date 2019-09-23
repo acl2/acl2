@@ -11,7 +11,6 @@
 (in-package "JAVA")
 
 (include-book "input-processing")
-(include-book "information-gathering")
 (include-book "code-generation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,9 +144,7 @@
                state)
   :mode :program
   :parents (atj-implementation)
-  :short "Validate the inputs,
-          gather information,
-          and generate the Java file(s)."
+  :short "Process the inputs and generate the Java file(s)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -157,7 +154,8 @@
      no return value is printed on the screen.
      A message of successful completion is printed,
      regardless of @(':verbose')."))
-  (b* (((er (list targets$
+  (b* (((er (list fns
+                  pkgs
                   deep$
                   guards$
                   java-package$
@@ -166,9 +164,6 @@
                   output-file-test$
                   tests$
                   verbose$)) (atj-process-inputs args ctx state))
-       ((er (list apkgs
-                  afns)) (atj-gather-info
-                          targets$ deep$ guards$ verbose$ ctx state))
        ((er &) (atj-gen-everything deep$
                                    guards$
                                    java-package$
@@ -176,8 +171,8 @@
                                    output-file$
                                    output-file-test$
                                    tests$
-                                   apkgs
-                                   afns
+                                   pkgs
+                                   fns
                                    verbose$
                                    state))
        (- (if output-file-test$

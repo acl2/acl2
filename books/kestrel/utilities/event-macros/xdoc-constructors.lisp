@@ -902,9 +902,14 @@
 (defsection xdoc::evmac-topic-input-processing
   :short "Generate an XDOC topic for the input processing
           that is part of the implementation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-topic-input-processing")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This macro accepts additional pieces of XDOC text,
+     which are added at the end of the generated @(':long').")
+   (xdoc::@def "xdoc::evmac-topic-input-processing"))
 
-  (defmacro xdoc::evmac-topic-input-processing (macro)
+  (defmacro xdoc::evmac-topic-input-processing (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
            (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
@@ -914,14 +919,16 @@
                                "Input processing performed by "
                                macro-ref
                                "."))
-           (long (xdoc::topstring-p
-                  "This involves validating the inputs.
-                   When validation fails, "
-                  (xdoc::seetopic "acl2::er" "soft errors")
-                  " occur.
-                   Thus, generally the input processing functions return "
-                  (xdoc::seetopic "acl2::error-triple" "error triples")
-                  ".")))
+           (long `(xdoc::topstring
+                   (xdoc::p
+                    "This involves validating the inputs.
+                     When validation fails, "
+                    (xdoc::seetopic "acl2::er" "soft errors")
+                    " occur.
+                     Thus, generally the input processing functions return "
+                    (xdoc::seetopic "acl2::error-triple" "error triples")
+                    ".")
+                   ,@additional)))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)
          :short ,short

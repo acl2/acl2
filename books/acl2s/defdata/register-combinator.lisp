@@ -31,7 +31,8 @@ data last modified: [2014-08-06]
 
 (defun register-user-combinator-fn (name args ctx wrld)
   (declare (ignorable wrld))
-  (b* (((mv kwd-alist rest) (extract-keywords ctx *register-user-combinator-keywords* args nil))
+  (b* (((mv kwd-alist rest)
+        (extract-keywords ctx *register-user-combinator-keywords* args nil nil))
        ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
        ((unless (proper-symbolp name)) (er hard? ctx "~| ~x0 should be a proper symbol.~%" name))
        ;; ((unless (well-formed-type-metadata-p kwd-alist wrld))

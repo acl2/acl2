@@ -795,7 +795,7 @@ Example use
 
        ;; (kwd-val-list (append kwd-val-list args))
        ((mv kwd-alist ?rest)
-        (extract-keywords ctx *per-def-keywords* kwd-val-list '()))
+        (extract-keywords ctx *per-def-keywords* kwd-val-list '() nil))
 
        ;; check if names are not nested and are unique
        (N (collect-names-texp
@@ -847,7 +847,7 @@ Example use
 ; specially handle allp aliases
        (allp-alias-events
         (and (proper-symbolp nbody) (is-allp-alias nbody wrld)
-             `((table allp-aliases ',(predicate-name tname A new-types) ',tname :put))))
+             `((table allp-aliases-table ',(predicate-name tname A new-types) ',tname :put))))
        (kwd-alist (put-assoc-eq
                    :post-pred-events
                    (append (get1 :post-pred-events kwd-alist) allp-alias-events)
@@ -914,7 +914,8 @@ Example use
       (defaults-alst (table-alist 'defdata-defaults-table wrld)) ;TODO chek
       (defaults-alst (remove1-assoc-eq-lst (evens kwd-val-list) defaults-alst))
       ((mv kwd-alist rest-args)
-       (extract-keywords ctx *defdata-keywords* kwd-val-list defaults-alst))
+       (extract-keywords
+        ctx *defdata-keywords* kwd-val-list defaults-alst nil))
       (acl2-defaults-tbl (table-alist 'acl2::acl2-defaults-table wrld))
       (current-termination-method-entry
        (assoc :termination-method acl2-defaults-tbl))

@@ -77,7 +77,7 @@ data last modified: [2014-08-06]
     (recog-constr-pair pred-dex-lst keys ctx pkg wrld)
   (declare (ignorable wrld))
   (b* (((mv kwd-alist rest)
-        (extract-keywords ctx *register-data-constructor-keywords* keys nil))
+        (extract-keywords ctx *register-data-constructor-keywords* keys nil nil))
        ((when rest) (er hard? ctx "~| Error: Extra args: ~x0~%" rest))
        ((list recog conx-name) recog-constr-pair)
        (dex-names (strip-cadrs pred-dex-lst))

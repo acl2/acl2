@@ -105,14 +105,12 @@
 
 (defun to-symbol-in-package (sym pkg-name)
   (declare (xargs :guard (and (symbolp sym)
-                              (not (equal pkg-name ""))
-                              (stringp pkg-name))))
+                              (pkgp pkg-name))))
   (acl2s::fix-intern$ (symbol-name sym) pkg-name))
 
 (defun to-symbol-in-package-lst (sym-lst pkg)
   (declare (xargs :guard (and (symbol-listp sym-lst)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (if (endp sym-lst)
       nil
     (cons (to-symbol-in-package (car sym-lst) pkg)

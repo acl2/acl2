@@ -99,7 +99,7 @@ final class Acl2ComplexRational extends Acl2Number {
      * We return a Java string that
      * conforms to ACL2's notation for complex rationals.
      *
-     * @return The printable representation of this complex rational.
+     * @return A printable representation of this complex rational.
      */
     @Override
     public String toString() {
@@ -129,7 +129,6 @@ final class Acl2ComplexRational extends Acl2Number {
      * This is consistent with the {@code realpart} ACL2 function.
      *
      * @return The real part of this complex rational.
-     * It is never {@code null}.
      */
     @Override
     public Acl2Rational getRealPart() {
@@ -141,7 +140,6 @@ final class Acl2ComplexRational extends Acl2Number {
      * This is consistent with the {@code imagpart} ACL2 function.
      *
      * @return The imaginary part of this complex rational.
-     * It is never {@code null}.
      */
     @Override
     public Acl2Rational getImaginaryPart() {
