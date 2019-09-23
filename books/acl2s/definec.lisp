@@ -97,9 +97,9 @@ both expand into
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
           (d-arg-preds (map-preds d-arg-types tbl atbl 'definec))
-          (f-type-pred (pred-of-type f-type tbl atbl 'definec))
+          (pred (pred-of-type f-type tbl atbl 'definec))
           (ic (make-input-contract d-args d-arg-preds))
-          (oc (make-output-contract ',name d-args f-type-pred))
+          (oc (make-contract ',name d-args pred))
           (defunc `(defunc ,',name ,d-args
                      :input-contract ,ic
                      :output-contract ,oc
@@ -113,8 +113,8 @@ but ~x0 has an odd number of arguments: ~x1"
            (find-bad-d-arg-types d-arg-types d-arg-preds))
           ((when bad-type)
            (er hard 'definec "~%One of the argument types, ~x0, is not a type." bad-type))
-          ((unless f-type-pred)
-           (er hard 'definec "~%The given return type, ~x0, is not a type." f-type)))
+          ((unless pred)
+           (er hard 'definec "~%The given return type, ~x0, is not a known type." f-type)))
        `(with-output :stack :pop ,defunc)))))
 
 (defmacro definedc (name &rest args)
@@ -130,9 +130,9 @@ but ~x0 has an odd number of arguments: ~x1"
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
           (d-arg-preds (map-preds d-arg-types tbl atbl 'definedc))
-          (f-type-pred (pred-of-type f-type tbl atbl 'definedc))
+          (pred (pred-of-type f-type tbl atbl 'definedc))
           (ic (make-input-contract d-args d-arg-preds))
-          (oc (make-output-contract ',name d-args f-type-pred))
+          (oc (make-contract ',name d-args pred))
           (defundc `(defundc ,',name ,d-args
                       :input-contract ,ic
                       :output-contract ,oc
@@ -146,8 +146,8 @@ but ~x0 has an odd number of arguments: ~x1"
            (find-bad-d-arg-types d-arg-types d-arg-preds))
           ((when bad-type)
            (er hard 'definedc "~%One of the argument types, ~x0, is not a type." bad-type))
-          ((unless f-type-pred)
-           (er hard 'definedc "~%The given return type, ~x0, is not a type." f-type)))
+          ((unless pred)
+           (er hard 'definedc "~%The given return type, ~x0, is not a known type." f-type)))
        `(with-output :stack :pop ,defundc)))))
 
 #|

@@ -10,6 +10,7 @@
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "centaur/misc/outer-local" :dir :system)
+(include-book "std/lists/top" :dir :system)
 
 #|
 Here is the top-level defunc control flow:
@@ -123,7 +124,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
              (consp (cadr (car decls)))
              (eq 'acl2::xargs (first (cadr (car decls)))))
         (b* ((kwd-val-list (cdr (cadr (car decls))))
-             ((mv al ?rest-args) (extract-keywords ctx keywords kwd-val-list al)))
+             ((mv al ?rest-args)
+              (extract-keywords ctx keywords kwd-val-list al nil)))
           (xargs-kwd-alist1 (cdr decls) keywords ctx al))
       (xargs-kwd-alist1 (cdr decls) keywords ctx al))))
 
@@ -637,11 +639,129 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defconst *output-contract-alias*
   '(:output-contract :ensure :guarantee :post :post-condition))
 
-(defun assoc-equal-alias (alias alist)
-  (if (endp alias)
-      nil
-    (or (assoc-equal (car alias) alist)
-        (assoc-equal-alias (cdr alias) alist))))
+(defun gather-alias1 (alias alist)
+  (declare (xargs :guard (and (symbol-listp alias) (alistp alist))))
+  (cond ((endp alist) nil)
+        ((member-equal (caar alist) alias)
+         (cons (cdar alist) (gather-alias1 alias (cdr alist))))
+        (t (gather-alias1 alias (cdr alist)))))
+
+(defun gather-alias (alias alist)
+  (remove-duplicates-equal (gather-alias1 alias alist)))
+
+
+#|
+
+(defun type-of-type (type tbl atbl ctx)
+  (let ((atype (assoc-equal :type (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist type tbl)))
+        (if res
+            type
+          (er soft ctx
+ "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
+
+(defun pred-of-type (type tbl atbl ctx)
+  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist :predicate (get-alist type tbl))))
+        (or res
+            (er hard ctx
+ "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
+
+|#
+
+; Decided to take care of error printing on my own, but kept previous
+; versions above.
+
+(defun type-of-type (type tbl atbl ctx)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
+                              (sym-aalistp atbl))))
+  (declare (ignore ctx))
+  (let ((atype (assoc-equal :type (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist type tbl)))
+        (if res
+            type
+          nil)))))
+
+(defun pred-of-type (type tbl atbl ctx)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
+                              (sym-aalistp atbl))))
+  (declare (ignore ctx))
+  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist :predicate (get-alist type tbl))))
+        res))))
+
+(defun make-contract (name args pred)
+  (declare (xargs :guard (and (symbolp name)
+                              (true-listp args)
+                              (symbolp pred))))
+  (cond ((equal pred 'acl2s::allp) t)
+        (t `(,pred ,(cons name args)))))
+
+(defthm acl2-count-append
+  (<= (acl2-count (append x y))
+      (+ (acl2-count x)
+         (acl2-count y)
+         1))
+  :rule-classes :linear)
+
+; to verify this guard, I need to know more about the shape of tbl,
+; atbl, etc. one idea here is to use defdata to speficy types for tbl,
+; atbl. 
+(defun simplify-constant-types (l acc name formals tbl atbl pkg)
+  (declare (xargs :guard (and (true-listp l)
+                              (true-listp acc)
+                              (symbolp name)
+                              (symbol-listp formals)
+                              (sym-aalistp tbl)
+                              (sym-aalistp atbl)
+                              (pkgp pkg))
+                  :verify-guards nil
+                  :measure (acl2-count l)))
+  (cond
+   ((endp l) (rev acc))
+   ((member-equal (car l) '(t :all))
+    (simplify-constant-types
+     (cdr l) acc name formals tbl atbl pkg))
+   ((keywordp (car l))
+    (b* ((type (fix-intern$ (symbol-name (car l)) pkg))
+         (pred (pred-of-type type tbl atbl 'defunc))
+         ((unless pred)
+          (er hard 'defunc
+              "~%The given type, ~x0, is not a known type." type))
+         (res (make-contract name formals pred)))
+      (simplify-constant-types
+       (cdr l) (cons res acc) name formals tbl atbl pkg)))
+   ((null (car l)) (list nil))
+   ((and (consp (car l)) (eql (caar l) 'allp))
+    (simplify-constant-types
+     (cdr l) acc name formals tbl atbl pkg))
+   ((and (consp (car l)) (eql (caar l) 'acl2::and))
+    (simplify-constant-types
+     (append (cdar l) (cdr l)) acc name formals tbl atbl pkg))
+   (t (simplify-constant-types
+       (cdr l) (cons (car l) acc) name formals tbl atbl pkg))))
+
+(defun merge-simplify-types (l name formals tbl atbl pkg)
+  (declare (xargs :guard (and (true-listp l)
+                              (symbolp name)
+                              (symbol-listp formals)
+                              (sym-aalistp tbl)
+                              (sym-aalistp atbl)
+                              (pkgp pkg))
+                  :verify-guards nil))
+  (b* ((sct (simplify-constant-types l nil name formals tbl atbl pkg))
+       (sct (remove-duplicates-equal sct)))
+    (cond ((null sct) t)
+          ((null (cdr sct)) (car sct))
+          (t `(and ,@sct)))))
 
 (defun get1-alias (alias alist)
   (if (endp alias)
@@ -1422,52 +1542,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             :program)
         (thereis-programp sub-fns wrld))))
 
-#|
-
-(defun type-of-type (type tbl atbl ctx)
-  (let ((atype (assoc-equal :type (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist type tbl)))
-        (if res
-            type
-          (er soft ctx
- "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
-
-(defun pred-of-type (type tbl atbl ctx)
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        (or res
-            (er hard ctx
- "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
-
-|#
-
-; Decided to take care of error printing on my own, but kept previous
-; versions above.
-(defun type-of-type (type tbl atbl ctx)
-  (declare (ignore ctx))
-  (let ((atype (assoc-equal :type (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist type tbl)))
-        (if res
-            type
-          nil)))))
-
-(defun pred-of-type (type tbl atbl ctx)
-  (declare (ignore ctx))
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        res))))
-
-(defun make-output-contract (name args type)
-  (cond ((equal type 'acl2s::allp) t)
-        (t `(,type ,(cons name args)))))
+(defun replace-assoc-equal (name alias val alist)
+  (declare (xargs :guard (and (alistp alist) (true-listp alias))))
+  (cond ((endp alist)
+         (list (cons name val)))
+        ((or (equal name (caar alist))
+             (member-equal (caar alist) alias))
+         (replace-assoc-equal name alias val (cdr alist)))
+        (t (cons (car alist)
+                 (replace-assoc-equal name alias val (cdr alist))))))
 
 (defun parse-defunc (name args pkg wrld)
   ;; Returns (list nm formals ic oc doc decls body kwd-alist)
@@ -1475,43 +1558,60 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (ignorable wrld))
   (b* ((ctx 'defunc)
        ((unless (or (legal-variablep name)
-                    (and (symbolp name) (equal "*" (symbol-name name))))) ;exception
-        (er hard? ctx "~| Function name ~x0 expected to be a legal variable.~%" name))
+                    (and (symbolp name)
+                         (equal "*" (symbol-name name))))) ;exception
+        (er hard? ctx
+            "~| Function name ~x0 expected to be a legal variable.~%"
+            name))
 
        (defaults-alst (table-alist 'defunc-defaults-table wrld))
        (defaults-alst (remove1-assoc-eq-lst (filter-keywords args) defaults-alst))
-       (defaults-alst (put-assoc :testing-enabled (get-acl2s-defaults 'testing-enabled wrld) defaults-alst))
-       (defaults-alst (put-assoc :cgen-timeout (get-acl2s-defaults 'cgen-timeout wrld) defaults-alst))
-       ((mv kwd-alist defun-rest) (extract-keywords ctx *defunc-keywords* args defaults-alst))
+       (defaults-alst
+         (put-assoc :testing-enabled
+                    (get-acl2s-defaults 'testing-enabled wrld) defaults-alst))
+       (defaults-alst
+         (put-assoc :cgen-timeout
+                    (get-acl2s-defaults 'cgen-timeout wrld) defaults-alst))
+       ((mv kwd-alist defun-rest)
+        (extract-keywords
+         ctx *defunc-keywords* args defaults-alst
+         (append *input-contract-alias* *output-contract-alias*)))
        (tbl (table-alist 'type-metadata-table wrld))
        (atbl (table-alist 'type-alias-table wrld))
           
        (formals (car defun-rest))
        (decls/docs (butlast (cdr defun-rest) 1))
        (body  (car (last defun-rest)))
-       (full-input-contract (assoc-equal-alias *input-contract-alias* kwd-alist))
-       (full-output-contract (assoc-equal-alias *output-contract-alias* kwd-alist))
+       (full-input-contract (gather-alias *input-contract-alias* kwd-alist))
+       (full-output-contract (gather-alias *output-contract-alias* kwd-alist))
 
        ((unless full-input-contract)
         (er hard ctx "~|Defunc is missing an input contract. ~%" ))
        ((unless full-output-contract)
         (er hard ctx "~|Defunc is missing an output contract. ~%" ))
 
-       (input-contract (get1-alias *input-contract-alias* kwd-alist ))
-       (output-contract (get1-alias *output-contract-alias* kwd-alist ))
-       (kword-oc? (keywordp output-contract))
-       (f-type (and kword-oc? (fix-intern$ (symbol-name output-contract) pkg)))
-       (f-type-pred (and kword-oc? (pred-of-type f-type tbl atbl 'defunc)))
+       (input-contract
+        (merge-simplify-types full-input-contract name formals tbl atbl pkg))
        (output-contract
-        (if kword-oc?
-            (make-output-contract name formals f-type-pred)
-          output-contract))
+        (merge-simplify-types full-output-contract name formals tbl atbl pkg))
 
        ((unless (simple-termp input-contract))
-        (er hard ctx "~|The input contract has to be a term. ~x0 is not.~%" input-contract))
+        (er hard ctx
+            "~|The input contract has to be a term. ~x0 is not.~%"
+            input-contract))
        ((unless (simple-termp output-contract))
-        (er hard ctx "~|The output contract has to be a term. ~x0 is not.~%" output-contract))
+        (er hard ctx
+            "~|The output contract has to be a term. ~x0 is not.~%"
+            output-contract))
 ;       (signature (get1 :sig kwd-alist))
+       
+       (kwd-alist 
+        (replace-assoc-equal :input-contract *input-contract-alias*
+                             input-contract kwd-alist))
+
+       (kwd-alist 
+        (replace-assoc-equal :output-contract *output-contract-alias*
+                             output-contract kwd-alist))
 
        ((mv ?erp p-body)
         (acl2::pseudo-translate body (list (cons name formals)) wrld))
