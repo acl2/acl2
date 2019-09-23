@@ -995,7 +995,7 @@ returns (mv rule rules-rest bindings rp-context)"
      (progn$
       (rp-state-print-rules-used rp-state)
       (hard-error 'rp-rewriter "Step limit of ~x0 exhausted! Either run
-(rp::update-rw-step-limit new-limit rp::rp-state) or
+(rp::set-rw-step-limit new-limit) or
 (rp::update-rp-brr t rp::rp-state) to save the rewrite stack and see it with
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 10 nil nil)
