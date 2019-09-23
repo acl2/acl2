@@ -190,3 +190,55 @@
      (:instance hifat-entry-count-when-hifat-subsetp
                 (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
                 (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))))))
+
+(defthm hifat-entry-count-of-remove-assoc-equal
+  (implies (and (m1-file-alist-p fs)
+                (hifat-no-dups-p fs)
+                (consp (assoc-equal x fs)))
+           (< (hifat-entry-count (remove-assoc-equal x fs))
+              (hifat-entry-count fs)))
+  :hints (("goal" :in-theory (e/d (hifat-entry-count hifat-no-dups-p))
+           :induct (assoc-equal x fs)))
+  :rule-classes :linear)
+
+(local
+ (defthm hifat-entry-count-of-put-assoc-equal-lemma-1
+   (implies (and (m1-file-alist-p fs)
+                 (not (fat32-filename-p x)))
+            (not (consp (assoc-equal x fs))))
+   :hints (("goal" :in-theory (enable m1-file-alist-p)))))
+
+(defthm
+  hifat-entry-count-of-put-assoc-equal
+  (implies
+   (and (m1-file-alist-p fs)
+        (hifat-no-dups-p fs)
+        (m1-directory-file-p (cdr (assoc-equal name fs)))
+        (m1-directory-file-p val)
+        (hifat-no-dups-p (m1-file->contents val)))
+   (equal
+    (hifat-entry-count (put-assoc-equal name val fs))
+    (+ (hifat-entry-count fs)
+       (- (hifat-entry-count (m1-file->contents (cdr (assoc-equal name fs)))))
+       (hifat-entry-count (m1-file->contents val)))))
+  :hints
+  (("goal" :in-theory (e/d (hifat-entry-count hifat-no-dups-p)
+                           (hifat-file-alist-fix-when-hifat-no-dups-p))
+    :induct (assoc-equal name fs))
+   ("subgoal *1/3"
+    :use ((:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
+                     (hifat-file-alist (put-assoc-equal name val (cdr fs))))
+          (:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
+                     (hifat-file-alist (cdr fs)))))
+   ("subgoal *1/2"
+    :use ((:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
+                     (hifat-file-alist (cdr fs)))))))
+
+(defthm
+  hifat-entry-count-of-hifat-remove-file
+  (implies (equal (mv-nth 1 (hifat-remove-file fs pathname))
+                  0)
+           (< (hifat-entry-count (mv-nth 0 (hifat-remove-file fs pathname)))
+              (hifat-entry-count fs)))
+  :hints (("goal" :in-theory (enable hifat-remove-file)))
+  :rule-classes :linear)

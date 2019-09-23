@@ -30,11 +30,8 @@
 
 (in-package "CMR")
 
-(include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "subst")
 (include-book "clause-processors/eval-alist-equiv" :dir :system)
-(include-book "centaur/fty/deftypes" :dir :system)
-
-(deflist pseudo-var-list :elt-type pseudo-var :true-listp t)
 
 ;; must be below the definition of pseudo-var-list if it's to be local
 (local (include-book "std/lists/sets" :dir :system))
@@ -338,6 +335,3 @@
 
   (deffixequiv-mutual term-free-vars :omit (bound-vars)))
 
-
-
-(fty::defmap pseudo-term-subst :key-type pseudo-var :val-type pseudo-term :true-listp t)

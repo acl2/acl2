@@ -3,8 +3,8 @@
 (include-book "test-stuff")
 
 (defun
-  rm-list-extra-hypothesis
-  (fat32-in-memory name-list)
+    rm-list-extra-hypothesis
+    (fat32-in-memory name-list)
   (declare (xargs :stobjs fat32-in-memory
                   :guard (and (lofat-fs-p fat32-in-memory)
                               (string-listp name-list))
@@ -43,7 +43,7 @@
    (and
     (lofat-fs-p fat32-in-memory)
     (equal (mv-nth 1
-                   (hifat-find-file-by-pathname
+                   (hifat-find-file
                     (mv-nth 0
                             (lofat-to-hifat fat32-in-memory))
                     fat32-pathname))
@@ -54,7 +54,7 @@
                         fat32-in-memory pathname-list)))))
    (equal
     (mv-nth 1
-            (hifat-find-file-by-pathname
+            (hifat-find-file
              (mv-nth 0
                      (lofat-to-hifat
                       (mv-nth 0
@@ -65,7 +65,7 @@
              fat32-pathname))
     *enoent*))
   :hints (("goal" :in-theory (e/d (lofat-unlink)
-                                  (hifat-find-file-by-pathname))
+                                  (hifat-find-file))
            :induct
            (rm-list
             fat32-in-memory
@@ -162,18 +162,18 @@
     (hifat-bounded-file-alist-p
      (mv-nth
       '0
-      (hifat-remove-file-by-pathname (mv-nth '0
-                                       (lofat-to-hifat fat32-in-memory))
-                               pathname)))
+      (hifat-remove-file (mv-nth '0
+                                 (lofat-to-hifat fat32-in-memory))
+                         pathname)))
     (not
      (<
       (max-entry-count fat32-in-memory)
       (hifat-entry-count
        (mv-nth
         '0
-        (hifat-remove-file-by-pathname (mv-nth '0
-                                         (lofat-to-hifat fat32-in-memory))
-                                 pathname)))))
+        (hifat-remove-file (mv-nth '0
+                                   (lofat-to-hifat fat32-in-memory))
+                           pathname)))))
     (equal
      (mv-nth
       '1
@@ -181,9 +181,9 @@
        fat32-in-memory
        (mv-nth
         '0
-        (hifat-remove-file-by-pathname (mv-nth '0
-                                         (lofat-to-hifat fat32-in-memory))
-                                 pathname))))
+        (hifat-remove-file (mv-nth '0
+                                   (lofat-to-hifat fat32-in-memory))
+                           pathname))))
      0))
    (b* (((mv fat32-in-memory unlink-errno)
          (lofat-unlink fat32-in-memory pathname))

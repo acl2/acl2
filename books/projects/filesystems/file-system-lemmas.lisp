@@ -798,12 +798,12 @@
 
 (defthm
   member-of-strip-cars-of-remove-assoc
-  (implies
-   (not (member-equal x1 (strip-cars alist)))
-   (not
-    (member-equal x1
-                  (strip-cars (remove-assoc-equal x2 alist)))))
-  :rule-classes (:rewrite :type-prescription))
+  (iff
+   (member-equal x1
+                 (strip-cars (remove-assoc-equal x2 alist)))
+   (and
+    (member-equal x1 (strip-cars alist))
+    (not (equal x1 x2)))))
 
 (defthm
   no-duplicatesp-of-strip-cars-of-remove-assoc
@@ -822,15 +822,15 @@
            (equal (len (remove-equal x l))
                   (if (member-equal x l)
                       (- (len l) 1)
-                      (len l)))))
+                    (len l)))))
 
 (defthm no-duplicatesp-of-remove
   (implies (no-duplicatesp-equal l)
            (no-duplicatesp-equal (remove-equal x l))))
 
-(defthmd assoc-of-car-when-member
-     (implies (and (member-equal x lst) (alistp lst))
-              (consp (assoc-equal (car x) lst))))
+(defthm assoc-of-car-when-member
+  (implies (and (member-equal x lst) (alistp lst))
+           (consp (assoc-equal (car x) lst))))
 
 (encapsulate
   ()
@@ -846,9 +846,7 @@
 
   (local
    (defthm take-of-make-list-ac-lemma-1
-     (implies (and (not (zp n1))
-                   (not (zp n2))
-                   (<= n1 n2))
+     (implies (not (zp n1))
               (equal (cons val (make-list-ac (+ -1 n1) val nil))
                      (make-list-ac n1 val nil)))
      :hints (("Goal" :in-theory (disable cons-car-cdr make-list-ac)
@@ -860,3 +858,20 @@
              (equal (take n1 (make-list-ac n2 val ac))
                     (make-list-ac n1 val nil)))
     :hints (("goal" :induct (dec-dec-induct n1 n2)))))
+
+(defthm
+  remove-assoc-when-absent
+  (implies (and (alistp alist)
+                (atom (assoc-equal x alist)))
+           (equal (remove-assoc-equal x alist)
+                  alist)))
+
+(defthm stringp-of-append
+  (equal (stringp (append x y)) (and (atom x) (stringp y))))
+
+(defthm remove-assoc-equal-of-put-assoc-equal
+  (equal (remove-assoc key (put-assoc name val alist))
+         (if
+             (equal key name)
+             (remove-assoc key alist)
+           (put-assoc name val (remove-assoc key alist)))))
