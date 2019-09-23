@@ -21,8 +21,6 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
-(include-book "kestrel/std/system/remove-mbe" :dir :system)
-(include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2166,10 +2164,7 @@
        (jvar-body "body")
        (aformals (formals afn (w state)))
        (abody (ubody afn (w state)))
-       (abody (if guards$
-                  (remove-mbe-logic-from-term abody)
-                (remove-mbe-exec-from-term abody)))
-       (abody (remove-progn-from-term abody))
+       ((mv aformals abody) (atj-pre-translate afn aformals abody t guards$))
        (afn-jblock (jblock-locvar *atj-jtype-named-fn*
                                   jvar-function
                                   (jexpr-smethod *atj-jtype-named-fn*
@@ -2473,12 +2468,7 @@
        (jmethod-name (atj-gen-shallow-afnname afn curr-apkg))
        (aformals (formals afn wrld))
        (abody (ubody afn (w state)))
-       (abody (if guards$
-                  (remove-mbe-logic-from-term abody)
-                (remove-mbe-exec-from-term abody)))
-       (abody (remove-progn-from-term abody))
-       ((mv aformals abody)
-        (atj-rename-aformals+abody aformals abody curr-apkg))
+       ((mv aformals abody) (atj-pre-translate afn aformals abody nil guards$))
        (afn-type (atj-get-function-type afn guards$ wrld))
        (afn-in-types (atj-function-type->inputs afn-type))
        (afn-out-type (atj-function-type->output afn-type))

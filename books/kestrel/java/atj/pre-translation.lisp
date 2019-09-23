@@ -13,6 +13,8 @@
 (include-book "library-extensions")
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
+(include-book "kestrel/std/system/remove-mbe" :dir :system)
+(include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
@@ -565,3 +567,42 @@
        ((mv new-abody &) (atj-rename-aterm
                           abody renaming indices curr-apkg avars-by-name)))
     (mv new-aformals new-abody)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-pre-translate ((fn symbolp)
+                           (formals symbol-listp)
+                           (body pseudo-termp)
+                           (deep$ booleanp)
+                           (guards$ booleanp))
+  :returns (mv (new-formals symbol-listp :hyp :guard)
+               (new-body pseudo-termp :hyp :guard))
+  :verify-guards nil
+  :short "Pre-translate the formal parameters and body
+          of an ACL2 function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done before the translation from ACL2 to Java proper.")
+   (xdoc::p
+    "In both the deep and the shallow embedding approach,
+     we remove all the occurrences of @(tsee return-last),
+     by selectively removing the @(':logic') or @(':exec') parts of @(tsee mbe)s
+     (i.e. @('(return-last 'mbe1-raw <exec> <logic>)'))
+     based on the @(':guards') input,
+     and by removing all the non-last arguments
+     of @(tsee prog2$)s and @(tsee progn$)s
+     (i.e @('(return-last 'progn <non-last> <last>)')).
+     These are the only @(tsee return-last) forms
+     that make it through input validation.")
+   (xdoc::p
+    "In the shallow embedding approach, we also rename all the ACL2 variables
+     so that their names are valid names of Java variables
+     and so that different ACL2 variables with the same name
+     are renamed apart."))
+  (b* ((body (if guards$
+                 (remove-mbe-logic-from-term body)
+               (remove-mbe-exec-from-term body)))
+       (body (remove-progn-from-term body))
+       ((when deep$) (mv formals body)))
+    (atj-rename-aformals+abody formals body (symbol-package-name fn))))
