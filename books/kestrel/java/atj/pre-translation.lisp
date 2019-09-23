@@ -54,10 +54,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-achar-to-jchars-id ((achar characterp)
-                                (startp booleanp)
-                                (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (characterp achar))
+(define atj-char-to-jchars-id ((char characterp)
+                               (startp booleanp)
+                               (flip-case-p booleanp))
+  :returns (jchars character-listp :hyp (characterp char))
   :short "Turn an ACL2 character into one or more Java characters
           of an ASCII Java identifier."
   :long
@@ -95,26 +95,26 @@
      Note that @('$') itself, which is valid in Java identifiers,
      is mapped to itself followed by its hex code (not just to itself)
      when it appears in the ACL2 symbol or package name."))
-  (cond ((str::up-alpha-p achar) (if flip-case-p
-                                     (list (str::downcase-char achar))
-                                   (list achar)))
-        ((str::down-alpha-p achar) (if flip-case-p
-                                       (list (str::upcase-char achar))
-                                     (list achar)))
-        ((and (digit-char-p achar)
-              (not startp)) (list achar))
-        ((eql achar #\-) (list #\_))
-        (t (b* ((acode (char-code achar))
+  (cond ((str::up-alpha-p char) (if flip-case-p
+                                    (list (str::downcase-char char))
+                                  (list char)))
+        ((str::down-alpha-p char) (if flip-case-p
+                                      (list (str::upcase-char char))
+                                    (list char)))
+        ((and (digit-char-p char)
+              (not startp)) (list char))
+        ((eql char #\-) (list #\_))
+        (t (b* ((acode (char-code char))
                 ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-achars-to-jchars-id ((achars character-listp)
-                                 (startp booleanp)
-                                 (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (character-listp achars))
-  :short "Lift @(tsee atj-achar-to-jchars-id) to lists."
+(define atj-chars-to-jchars-id ((chars character-listp)
+                                (startp booleanp)
+                                (flip-case-p booleanp))
+  :returns (jchars character-listp :hyp (character-listp chars))
+  :short "Lift @(tsee atj-char-to-jchars-id) to lists."
   :long
   (xdoc::topstring-p
    "This is used on the sequence of characters
@@ -123,9 +123,9 @@
     The @('startp') flag becomes @('nil') at the first recursive call,
     because after the first character
     we are no longer at the start of the Java identifier.")
-  (cond ((endp achars) nil)
-        (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
-                   (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
+  (cond ((endp chars) nil)
+        (t (append (atj-char-to-jchars-id (car chars) startp flip-case-p)
+                   (atj-chars-to-jchars-id (cdr chars) nil flip-case-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +137,7 @@
    (xdoc::p
     "In the shallow embedding approach,
      each ACL2 variable is turned into a Java variable.
-     The function @(tsee atj-achars-to-jchars-id) takes care of
+     The function @(tsee atj-chars-to-jchars-id) takes care of
      ensuring that only characters valid for Java identifiers are used,
      but this is not sufficient:
      a Java variable name cannot be a keyword,
@@ -158,12 +158,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-avar ((avar symbolp)
-                         (index natp)
-                         (curr-apkg stringp)
-                         (avars-by-name string-symbollist-alistp))
-  :guard (not (equal curr-apkg ""))
-  :returns (new-avar symbolp)
+(define atj-rename-var ((var symbolp)
+                        (index natp)
+                        (curr-pkg stringp)
+                        (vars-by-name string-symbollist-alistp))
+  :guard (not (equal curr-pkg ""))
+  :returns (new-var symbolp)
   :short "Rename an ACL2 variable to its Java name."
   :long
   (xdoc::topstring
@@ -211,7 +211,7 @@
      the ACL2 package name of the function name:
      thus, the ``current package'' in this context is
      the one of the function name.
-     This is the @('curr-apkg') parameter of this code generation function.")
+     This is the @('curr-pkg') parameter of this code generation function.")
    (xdoc::p
     "Given an ACL2 variable (i.e. symbol)
      with name @('name') and package name @('pname'),
@@ -229,7 +229,7 @@
      since the scope of Java method parameters and local variables
      is limited to the method where they occur,
      no naming conflict may arise in this case.
-     The parameter @('avars-by-name') consists of
+     The parameter @('vars-by-name') consists of
      all the variables in the current ACL2 function,
      organized by symbol name for easy lookup.
      We retrieve the variables with the same name of the variable,
@@ -254,7 +254,7 @@
     "This is a relatively simple and uniform scheme to keep names unique,
      but we may improve it to generate more readable names.")
    (xdoc::p
-    "We call @(tsee atj-achars-to-jchars-id) to create
+    "We call @(tsee atj-chars-to-jchars-id) to create
      @('<pname') and @('<name>') from @('pname') and @('name').
      If there is a package prefix, the @('startp') flag is @('t')
      only for @('pname'), but not for @('name'),
@@ -262,24 +262,24 @@
      Otherwise, @('startp') is @('t') for @('name')
      if there is no package prefix.")
    (xdoc::p
-    "We put the renamed variable in the current package (i.e. @('curr-apkg')).
+    "We put the renamed variable in the current package (i.e. @('curr-pkg')).
      The choice of package is irrelevant, because the variables in a function
      are renamed in a way that their names are all distinct
      regardless of package prefixes.
      However, using the current package makes things uniform."))
-  (b* ((apkg (symbol-package-name avar))
-       (name (symbol-name avar))
-       (omit-pname? (or (equal apkg curr-apkg)
+  (b* ((pkg (symbol-package-name var))
+       (name (symbol-name var))
+       (omit-pname? (or (equal pkg curr-pkg)
                         (null (remove-eq
-                               avar
-                               (cdr (assoc-equal name avars-by-name))))))
+                               var
+                               (cdr (assoc-equal name vars-by-name))))))
        (pname$$$-jchars (if omit-pname?
                             nil
-                          (append (atj-achars-to-jchars-id (explode apkg) t t)
+                          (append (atj-chars-to-jchars-id (explode pkg) t t)
                                   (list #\$ #\$ #\$))))
-       (name-jchars (atj-achars-to-jchars-id (explode name)
-                                             (endp pname$$$-jchars)
-                                             t))
+       (name-jchars (atj-chars-to-jchars-id (explode name)
+                                            (endp pname$$$-jchars)
+                                            t))
        ($$index-jchars (if (= index 0)
                            nil
                          (append (list #\$ #\$)
@@ -289,25 +289,25 @@
        (new-name (if (member-equal new-name *atj-disallowed-jvar-names*)
                      (str::cat new-name "$")
                    new-name)))
-    (intern$ new-name curr-apkg)))
+    (intern$ new-name curr-pkg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-avars ((avars symbol-listp)
-                          (indices symbol-nat-alistp)
-                          (curr-apkg stringp)
-                          (avars-by-name string-symbollist-alistp))
-  :guard (not (equal curr-apkg ""))
-  :returns (mv (renaming symbol-symbol-alistp :hyp (symbol-listp avars))
+(define atj-rename-vars ((vars symbol-listp)
+                         (indices symbol-nat-alistp)
+                         (curr-pkg stringp)
+                         (vars-by-name string-symbollist-alistp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (renaming symbol-symbol-alistp :hyp (symbol-listp vars))
                (new-indices
                 symbol-nat-alistp
-                :hyp (and (symbol-listp avars)
+                :hyp (and (symbol-listp vars)
                           (symbol-nat-alistp indices))))
   :short "Rename a sequence of ACL2 variables to their Java names."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(tsee atj-rename-avar),
+    "As explained in @(tsee atj-rename-var),
      the shallowly embedded ACL2 variables are made unique via indices.
      There is an independent index for each ACL2 variable,
      so we use an alist from symbols to natural numbers
@@ -335,17 +335,17 @@
      and the alist is extended to associate 1 (the next index) to the symbol.
      Otherwise, the index in the alist is used,
      and the alist is updated with the next index."))
-  (b* (((when (endp avars)) (mv nil indices))
-       (avar (car avars))
-       (avar+index (assoc-eq avar indices))
-       (index (if (consp avar+index) (cdr avar+index) 0))
-       (indices (acons avar (1+ index) indices))
-       ((mv renaming indices) (atj-rename-avars (cdr avars)
-                                                indices
-                                                curr-apkg
-                                                avars-by-name)))
-    (mv (acons avar
-               (atj-rename-avar avar index curr-apkg avars-by-name)
+  (b* (((when (endp vars)) (mv nil indices))
+       (var (car vars))
+       (var+index (assoc-eq var indices))
+       (index (if (consp var+index) (cdr var+index) 0))
+       (indices (acons var (1+ index) indices))
+       ((mv renaming indices) (atj-rename-vars (cdr vars)
+                                               indices
+                                               curr-pkg
+                                               vars-by-name)))
+    (mv (acons var
+               (atj-rename-var var index curr-pkg vars-by-name)
                renaming)
         indices))
   :verify-guards :after-returns
@@ -356,28 +356,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-aformals ((aformals symbol-listp)
-                             (renaming symbol-symbol-alistp))
-  :returns (new-aformals symbol-listp :hyp :guard)
+(define atj-rename-formals ((formals symbol-listp)
+                            (renaming symbol-symbol-alistp))
+  :returns (new-formals symbol-listp :hyp :guard)
   :short "Rename the formal parameters of
           a defined function or lambda expression
           according to a supplied renaming."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used after calling @(tsee atj-rename-avars),
+    "This is used after calling @(tsee atj-rename-vars),
      which introduces the new names for the formal parameters.
      This function just looks up the names in the renaming alist
      and replaces them, returning a list of renamed parameters.")
    (xdoc::p
     "The reason for having this separate function,
-     instead of having @(tsee atj-rename-avar)
+     instead of having @(tsee atj-rename-var)
      also return the new list of variables,
      is motivated by the way lambda expression are treated:
-     see @(tsee atj-rename-aterm).
+     see @(tsee atj-rename-term).
      As explained there, the formal parameters of a lambda expression
      that are the same as the correspoding actual parameters
-     are excluded from the call of @(tsee atj-rename-avars),
+     are excluded from the call of @(tsee atj-rename-vars),
      so that the old variable names can be re-used.
      Thus, we must use the combined renaming
      not only on the body of the lambda expression,
@@ -386,18 +386,18 @@
      For uniformity, this function is also used when processing
      a function definition, in order to rename the formal parameters
      in a way that is consistent with the renamings in the body."))
-  (cond ((endp aformals) nil)
-        (t (cons (cdr (assoc-eq (car aformals) renaming))
-                 (atj-rename-aformals (cdr aformals) renaming))))
+  (cond ((endp formals) nil)
+        (t (cons (cdr (assoc-eq (car formals) renaming))
+                 (atj-rename-formals (cdr formals) renaming))))
   ///
 
-  (defrule len-of-atj-rename-aformals
-    (equal (len (atj-rename-aformals aformals renaming))
-           (len aformals))))
+  (defrule len-of-atj-rename-formals
+    (equal (len (atj-rename-formals formals renaming))
+           (len formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-rename-aterm
+(defines atj-rename-term
   :short "Rename all the ACL2 variables in an ACL2 term to their Java names."
   :long
   (xdoc::topstring
@@ -419,7 +419,7 @@
     "If the term is a variable, it is looked up in the renaming alist,
      and replaced with the renamed variable.
      Recall that new variable names are generated
-     via @(tsee atj-rename-avar) and @(tsee atj-rename-avars),
+     via @(tsee atj-rename-var) and @(tsee atj-rename-vars),
      when variables are introduced,
      i.e. from formal parameters of defined functions and lambda expressions.
      When instead a variable occurrence is encountered in a term,
@@ -444,78 +444,78 @@
      We append the newly generated renaming to the existing one,
      achieving the desired ``shadowing'' of the old mappings."))
 
-  (define atj-rename-aterm ((aterm pseudo-termp)
-                            (renaming symbol-symbol-alistp)
-                            (indices symbol-nat-alistp)
-                            (curr-apkg stringp)
-                            (avars-by-name string-symbollist-alistp))
-    :guard (not (equal curr-apkg ""))
-    :returns (mv (new-aterm pseudo-termp
-                            :hyp (and (pseudo-termp aterm)
-                                      (symbol-symbol-alistp renaming)))
+  (define atj-rename-term ((term pseudo-termp)
+                           (renaming symbol-symbol-alistp)
+                           (indices symbol-nat-alistp)
+                           (curr-pkg stringp)
+                           (vars-by-name string-symbollist-alistp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (new-term pseudo-termp
+                           :hyp (and (pseudo-termp term)
+                                     (symbol-symbol-alistp renaming)))
                  (new-indices symbol-nat-alistp
-                              :hyp (and (pseudo-termp aterm)
+                              :hyp (and (pseudo-termp term)
                                         (symbol-nat-alistp indices))))
-    (cond ((variablep aterm) (mv (cdr (assoc-eq aterm renaming)) indices))
-          ((fquotep aterm) (mv aterm indices))
-          (t (b* ((afn (ffn-symb aterm))
-                  (aargs (fargs aterm))
-                  ((mv new-aargs
-                       indices) (atj-rename-aterms aargs
-                                                   renaming
-                                                   indices
-                                                   curr-apkg
-                                                   avars-by-name))
-                  ((when (symbolp afn)) (mv (fcons-term afn new-aargs)
-                                            indices))
-                  (aformals (lambda-formals afn))
-                  (abody (lambda-body afn))
-                  (trimmed-aformals (remove-unneeded-lambda-formals
-                                     aformals aargs))
-                  ((mv new-renaming
-                       indices) (atj-rename-avars trimmed-aformals
-                                                  indices
-                                                  curr-apkg
-                                                  avars-by-name))
-                  (renaming (append new-renaming renaming))
-                  (new-aformals (atj-rename-aformals aformals renaming))
-                  ((mv new-abody
-                       indices) (atj-rename-aterm abody
+    (cond ((variablep term) (mv (cdr (assoc-eq term renaming)) indices))
+          ((fquotep term) (mv term indices))
+          (t (b* ((fn (ffn-symb term))
+                  (args (fargs term))
+                  ((mv new-args
+                       indices) (atj-rename-terms args
                                                   renaming
                                                   indices
-                                                  curr-apkg
-                                                  avars-by-name)))
-               (mv (fcons-term (make-lambda new-aformals new-abody)
-                               new-aargs)
+                                                  curr-pkg
+                                                  vars-by-name))
+                  ((when (symbolp fn)) (mv (fcons-term fn new-args)
+                                           indices))
+                  (formals (lambda-formals fn))
+                  (body (lambda-body fn))
+                  (trimmed-formals (remove-unneeded-lambda-formals
+                                    formals args))
+                  ((mv new-renaming
+                       indices) (atj-rename-vars trimmed-formals
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name))
+                  (renaming (append new-renaming renaming))
+                  (new-formals (atj-rename-formals formals renaming))
+                  ((mv new-body
+                       indices) (atj-rename-term body
+                                                 renaming
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name)))
+               (mv (fcons-term (make-lambda new-formals new-body)
+                               new-args)
                    indices)))))
 
-  (define atj-rename-aterms ((aterms pseudo-term-listp)
-                             (renaming symbol-symbol-alistp)
-                             (indices symbol-nat-alistp)
-                             (curr-apkg stringp)
-                             (avars-by-name string-symbollist-alistp))
-    :guard (not (equal curr-apkg ""))
-    :returns (mv (new-aterms (and (pseudo-term-listp new-aterms)
-                                  (equal (len new-aterms) (len aterms)))
-                             :hyp (and (pseudo-term-listp aterms)
-                                       (symbol-symbol-alistp renaming)))
+  (define atj-rename-terms ((terms pseudo-term-listp)
+                            (renaming symbol-symbol-alistp)
+                            (indices symbol-nat-alistp)
+                            (curr-pkg stringp)
+                            (vars-by-name string-symbollist-alistp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (new-terms (and (pseudo-term-listp new-terms)
+                                 (equal (len new-terms) (len terms)))
+                            :hyp (and (pseudo-term-listp terms)
+                                      (symbol-symbol-alistp renaming)))
                  (new-indices symbol-nat-alistp
-                              :hyp (and (pseudo-term-listp aterms)
+                              :hyp (and (pseudo-term-listp terms)
                                         (symbol-nat-alistp indices))))
-    (cond ((endp aterms) (mv nil indices))
-          (t (b* (((mv new-aterm
-                       indices) (atj-rename-aterm (car aterms)
+    (cond ((endp terms) (mv nil indices))
+          (t (b* (((mv new-term
+                       indices) (atj-rename-term (car terms)
+                                                 renaming
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name))
+                  ((mv new-terms
+                       indices) (atj-rename-terms (cdr terms)
                                                   renaming
                                                   indices
-                                                  curr-apkg
-                                                  avars-by-name))
-                  ((mv new-aterms
-                       indices) (atj-rename-aterms (cdr aterms)
-                                                   renaming
-                                                   indices
-                                                   curr-apkg
-                                                   avars-by-name)))
-               (mv (cons new-aterm new-aterms)
+                                                  curr-pkg
+                                                  vars-by-name)))
+               (mv (cons new-term new-terms)
                    indices)))))
 
   :prepwork
@@ -539,17 +539,17 @@
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atj-rename-aterm))
+  (verify-guards atj-rename-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-aformals+abody ((aformals symbol-listp)
-                                   (abody pseudo-termp)
-                                   (curr-apkg stringp))
-  :guard (not (equal curr-apkg ""))
-  :returns (mv (new-aformals symbol-listp :hyp (symbol-listp aformals))
-               (new-abody pseudo-termp :hyp (and (pseudo-termp abody)
-                                                 (symbol-listp aformals))))
+(define atj-rename-formals+body ((formals symbol-listp)
+                                 (body pseudo-termp)
+                                 (curr-pkg stringp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (new-formals symbol-listp :hyp (symbol-listp formals))
+               (new-body pseudo-termp :hyp (and (pseudo-termp body)
+                                                (symbol-listp formals))))
   :verify-guards nil
   :short "Rename all the ACL2 variables to their Java names,
           in the formal parameters and body of an ACL2 function."
@@ -559,14 +559,14 @@
     "Starting with the empty alist of indices,
      we introduce renamed variables for the formal parameters.
      We use the renaming as the starting one to process the body."))
-  (b* ((avars (union-eq aformals (all-free/bound-vars abody)))
-       (avars-by-name (organize-symbols-by-name avars))
-       ((mv renaming
-            indices) (atj-rename-avars aformals nil curr-apkg avars-by-name))
-       (new-aformals (atj-rename-aformals aformals renaming))
-       ((mv new-abody &) (atj-rename-aterm
-                          abody renaming indices curr-apkg avars-by-name)))
-    (mv new-aformals new-abody)))
+  (b* ((vars (union-eq formals (all-free/bound-vars body)))
+       (vars-by-name (organize-symbols-by-name vars))
+       ((mv renaming indices)
+        (atj-rename-vars formals nil curr-pkg vars-by-name))
+       (new-formals (atj-rename-formals formals renaming))
+       ((mv new-body &)
+        (atj-rename-term body renaming indices curr-pkg vars-by-name)))
+    (mv new-formals new-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -605,4 +605,4 @@
                (remove-mbe-exec-from-term body)))
        (body (remove-progn-from-term body))
        ((when deep$) (mv formals body)))
-    (atj-rename-aformals+abody formals body (symbol-package-name fn))))
+    (atj-rename-formals+body formals body (symbol-package-name fn))))
