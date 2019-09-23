@@ -94,8 +94,8 @@
   (add-macro-fn 4vec-list 4vec-cons t)
 
   ;; print (bits val start 1) as (bit$ val start)
-  (defmacro bit$ (val index)
+  #|(defmacro bit$ (val index)
     `(bits ,val ,index '1))
 
   (acl2::add-untranslate-pattern (svl::bits ?y ?x '1)
-                                 (svl::bit$ ?y ?x)))
+                                 (svl::bit$ ?y ?x))||#)

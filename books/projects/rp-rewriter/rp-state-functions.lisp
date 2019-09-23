@@ -75,6 +75,11 @@
   (defwarrant rule-result-comperator))
 
 
+(defmacro set-rw-step-limit (new-rw-limit)
+  `(make-event
+    (b* ((rp-state (rp::update-rw-step-limit ,new-rw-limit rp-state)))
+      (mv nil `(value-triple `(rw-step-limit ,',,new-rw-limit)) state rp-state))))
+
 (encapsulate
   nil
 
