@@ -2659,7 +2659,7 @@
      We also remove all the non-last arguments
      of @(tsee prog2$)s and @(tsee progn$)s.
      This should remove any occurrences of @(tsee return-last).
-     See " (xdoc::seetopic "atj-information-gathering" "this discussion")
+     See " (xdoc::seetopic "atj-input-processing" "this discussion")
      " for background.")
    (xdoc::p
     "The indices of the local variables
@@ -2953,7 +2953,7 @@
      We also remove all the non-last arguments
      of @(tsee prog2$)s and @(tsee progn$)s.
      This should remove any occurrences of @(tsee return-last).
-     See " (xdoc::seetopic "atj-information-gathering" "this discussion")
+     See " (xdoc::seetopic "atj-input-processing" "this discussion")
      " for background.")
    (xdoc::p
     "After that, we rename all the ACL2 variables
