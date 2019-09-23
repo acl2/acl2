@@ -71,8 +71,8 @@
 ; store all aliases of allp in a table. This will be used by subtype-p and
 ; disjoint-p functions. Recall that we have given up homebrew datatype
 ; relationship graphs in favor of its implicit coding in TAU-DATABASE.
-(table allp-aliases nil)
-(table allp-aliases 'allp 'all :put) ;all will be registered as a defdata type below.
+(table defdata::allp-aliases-table nil)
+(table defdata::allp-aliases-table 'allp 'all :put) ;all will be registered as a defdata type below.
 
 (defun allp-aliases-table (wrld)
   "api to get the alist representing alias table allp-aliases"
