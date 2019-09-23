@@ -7,6 +7,26 @@
 (include-book "data-structures/portcullis" :dir :system)
 (include-book "coi/symbol-fns/portcullis" :dir :system)
 
+; Put any symbols we want exported to other packages here. This allows
+; us to export symbols in the ACL2S package, such as functions defined
+; in utilities.lisp to DEFDATA, CGEN, etc.
+(defpkg "ACL2S-SHARED"
+  (append
+   '(pkgp
+     fix-sym
+     gen-sym-pkg
+     )
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)))
+
+#!ACL2S-SHARED
+(defconst *acl2s-shared-exports* 
+  (append
+   '(pkgp
+     )
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)))
+
 (defpkg "DEFDATA"
   (append 
    '(value legal-constantp er-let* b* legal-variablep
@@ -44,8 +64,7 @@
      u::defloop def-ruleset
      )
    
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*)))
+   acl2s-shared::*acl2s-shared-exports*))
 
 #!DEFDATA
 (defconst *defdata-exports* 
@@ -116,13 +135,11 @@
      )
    (union-eq
     defdata::*defdata-exports*
-    (union-eq (set-difference-eq
-               *acl2-exports*
+    (set-difference-eq
+     acl2s-shared::*acl2s-shared-exports*
 ; Matt K. mod 12/20/2015: Avoid name conflict with macros defined in
 ; cgen/utilities.lisp.
-               '(acl2::access acl2::change))
-              *common-lisp-symbols-from-main-lisp-package*))))
-
+     '(acl2::access acl2::change)))))
 
 #!CGEN
 (defconst *cgen-exports*
@@ -187,6 +204,7 @@
       defdata::pred-alias-table 
       defdata::deffilter
       defdata::remove1-assoc-eq-lst
+      defdata::sym-aalistp
       
       read-run-time
       trans-eval
@@ -219,8 +237,7 @@
      defdata::*defdata-exports*
      (union-eq
       cgen::*cgen-exports*
-      (union-eq *acl2-exports*
-                *common-lisp-symbols-from-main-lisp-package*))))))
+      acl2s-shared::*acl2s-shared-exports*)))))
 
 #!ACL2S
 (defconst *acl2s-exports*
@@ -228,20 +245,22 @@
    defdata::*defdata-exports*
    (union-eq
     cgen::*cgen-exports*
-    '(acl2s-defaults
-      acl2s-defaults-table
-      ccg
-      cgen
-      stage
+    (union-eq
+     acl2s-shared::*acl2s-shared-exports*
+     '(acl2s-defaults
+       acl2s-defaults-table
+       ccg
+       cgen
+       stage
       
-     ;defunc defaults
-      defunc
-      definec
-      defintrange
-      defnatrange
-      set-defunc-termination-strictp set-defunc-function-contract-strictp set-defunc-body-contracts-strictp set-defunc-timeout
-      get-defunc-timeout get-defunc-termination-strictp get-defunc-function-contract-strictp get-defunc-body-contracts-strictp
-       ))))
+;defunc defaults
+       defunc
+       definec
+       defintrange
+       defnatrange
+       set-defunc-termination-strictp set-defunc-function-contract-strictp set-defunc-body-contracts-strictp set-defunc-timeout
+       get-defunc-timeout get-defunc-termination-strictp get-defunc-function-contract-strictp get-defunc-body-contracts-strictp
+       )))))
 
 
 (defpkg "ACL2S B" ; beginner
