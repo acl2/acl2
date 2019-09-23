@@ -154,7 +154,7 @@
            (member-intersectp-equal y x))
   :hints (("Goal" :in-theory (enable not-intersectp-list))))
 
-(defthm member-intersectp-is-commutative-lemma-3
+(defthmd member-intersectp-is-commutative-lemma-3
   (implies (and (consp x)
                 (not-intersectp-list (car x) y))
            (equal (member-intersectp-equal y (cdr x))
@@ -163,7 +163,8 @@
 
 (defthm member-intersectp-is-commutative
   (equal (member-intersectp-equal x y)
-         (member-intersectp-equal y x)))
+         (member-intersectp-equal y x))
+  :hints (("Goal" :in-theory (enable member-intersectp-is-commutative-lemma-3)) ))
 
 (defthm
   another-lemma-about-member-intersectp

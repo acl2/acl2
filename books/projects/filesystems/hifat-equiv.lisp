@@ -297,11 +297,12 @@
                      (contents contents)
                      (dir-ent dir-ent))))))
 
-(defthm hifat-equiv-of-cons-lemma-4
-  (implies (and (not (assoc-equal (car head) tail1))
-                (hifat-subsetp tail2 tail1)
-                (fat32-filename-p (car head)))
-           (not (assoc-equal (car head) tail2))))
+(local
+ (defthm hifat-equiv-of-cons-lemma-4
+   (implies (and (not (assoc-equal (car head) tail1))
+                 (hifat-subsetp tail2 tail1)
+                 (fat32-filename-p (car head)))
+            (not (assoc-equal (car head) tail2)))))
 
 (defthm hifat-equiv-of-cons-lemma-5
   (implies (and (hifat-no-dups-p (cons head tail1))

@@ -323,7 +323,8 @@
 (defthm l4-wrchs-returns-stricter-fs-lemma-4
   (implies (member-intersectp-equal l b)
            (member-intersectp-equal l (cons a b)))
-  :hints (("Goal" :in-theory (enable not-intersectp-list))))
+  :hints (("Goal" :in-theory (enable not-intersectp-list
+                                     member-intersectp-is-commutative-lemma-3))))
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-5

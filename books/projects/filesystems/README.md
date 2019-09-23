@@ -28,8 +28,8 @@ Alternatively, the filesystem models can be certified through the
 normal process of building the ACL2 books, explained on the ACL2
 [installation
 page](http://www.cs.utexas.edu/users/moore/acl2/v8-2/HTML/installation/installation.html). Replacing
-the "make basic" command in step 4 with "make regression" will
-build the filesystem books; this is simpler than using cert.pl
+the "make basic" command in step 4 with "make regression-everything"
+will build the filesystem books; this is simpler than using cert.pl
 although it takes longer.
 
 Either way, the certification must be completed before attempting the

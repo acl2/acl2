@@ -201,11 +201,12 @@
            :induct (assoc-equal x fs)))
   :rule-classes :linear)
 
-(defthm hifat-entry-count-of-put-assoc-equal-lemma-1
-  (implies (and (m1-file-alist-p fs)
-                (not (fat32-filename-p x)))
-           (not (consp (assoc-equal x fs))))
-  :hints (("goal" :in-theory (enable m1-file-alist-p))))
+(local
+ (defthm hifat-entry-count-of-put-assoc-equal-lemma-1
+   (implies (and (m1-file-alist-p fs)
+                 (not (fat32-filename-p x)))
+            (not (consp (assoc-equal x fs))))
+   :hints (("goal" :in-theory (enable m1-file-alist-p)))))
 
 (defthm
   hifat-entry-count-of-put-assoc-equal
