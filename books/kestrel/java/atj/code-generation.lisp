@@ -20,9 +20,10 @@
 (include-book "pre-translation")
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
-(include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
+(include-book "kestrel/std/system/ubody" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2164,7 +2165,7 @@
        (jvar-formals "formals")
        (jvar-body "body")
        (aformals (formals afn (w state)))
-       (abody (getpropc afn 'unnormalized-body))
+       (abody (ubody afn (w state)))
        (abody (if guards$
                   (remove-mbe-logic-from-term abody)
                 (remove-mbe-exec-from-term abody)))
@@ -2471,7 +2472,7 @@
         (cw "  ~s0~%" afn))
        (jmethod-name (atj-gen-shallow-afnname afn curr-apkg))
        (aformals (formals afn wrld))
-       (abody (getpropc afn 'unnormalized-body))
+       (abody (ubody afn (w state)))
        (abody (if guards$
                   (remove-mbe-logic-from-term abody)
                 (remove-mbe-exec-from-term abody)))

@@ -99,6 +99,7 @@
                          trans-eval
                          tuplep
                          typed-tuplep
+                         ubody
                          ubyte16
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
