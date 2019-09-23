@@ -36,6 +36,7 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
+(in-package "RP")
 
 (include-book "rp-rw-lemmas")
 
