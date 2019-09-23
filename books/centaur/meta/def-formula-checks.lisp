@@ -26,7 +26,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
-; Updated by:      Mertcan Temel (7/23/2019)
+; Updated by:      Mertcan Temel (8/29/2019)
 
 (in-package "CMR")
 
@@ -117,34 +117,17 @@
 (defun def-formula-check-definition-thm-fn (name evl formula-check wrld)
   (declare (xargs :mode :program))
   (b* ((recursivep (fgetprop name 'acl2::recursivep nil wrld))
-       (formals (acl2::formals name wrld)))
+       (formals (acl2::formals name wrld))
+       ((mv name formals name2 formals2) ;; for 2 mutually recursive functions
+        (if (>= (len recursivep) 2)
+            (mv (car recursivep)
+                (acl2::formals (car recursivep) wrld)
+                (cadr recursivep)
+                (acl2::formals (cadr recursivep) wrld))
+          (mv name formals nil nil))))
     (acl2::template-subst
-     (if recursivep
-         '(encapsulate nil
-            (local (defthmd <evl>-of-<name>-lemma
-                     (implies (and (<formula-check> state)
-                                   (<evl>-meta-extract-global-facts))
-                              (equal (<evl> '(<name> . <formals>)
-                                            (list (:@proj <formals> (cons '<formal> <formal>))))
-                                     (<name> . <formals>)))
-                     :hints(("Goal" :in-theory (enable <name>)
-                             :induct (<name> . <formals>))
-                            '(:use ((:instance <evl>-meta-extract-formula
-                                               (acl2::name '<name>)
-                                               (acl2::a
-                                                (list (:@proj <formals> (cons '<formal> <formal>))))
-                                               (acl2::st state)))
-                                   :in-theory (enable <evl>-of-fncall-args <name>)))))
-
-            (defthm <evl>-of-<name>-when-<formula-check>
-              (implies (and (<formula-check> state)
-                            (<evl>-meta-extract-global-facts))
-                       (equal (<evl> (list '<name> . <formals>) env)
-                              (<name> (:@proj <formals>
-                                              (<evl> <formal> env)))))
-              :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
-                                              (:@proj <formals> (<formal> (<evl> <formal> env)))))
-                      :in-theory (enable <evl>-of-fncall-args)))))
+     (cond
+      ((equal recursivep nil)
        '(defthm <evl>-of-<name>-when-<formula-check>
           (implies (and (<formula-check> state)
                         (<evl>-meta-extract-global-facts))
@@ -157,14 +140,109 @@
                                    (acl2::a (list (:@proj <formals>
                                                           (CONS '<formal> (<evl> <formal> env)))))
                                    (acl2::st state)))))))
+      ((equal (len recursivep) 1)
+       '(encapsulate nil
+          (local (defthmd <evl>-of-<name>-lemma
+                   (implies (and (<formula-check> state)
+                                 (<evl>-meta-extract-global-facts))
+                            (equal (<evl> '(<name> . <formals>)
+                                          (list (:@proj <formals> (cons '<formal> <formal>))))
+                                   (<name> . <formals>)))
+                   :hints(("Goal" :in-theory (enable <name>)
+                           :induct (<name> . <formals>))
+                          '(:use ((:instance <evl>-meta-extract-formula
+                                             (acl2::name '<name>)
+                                             (acl2::a
+                                              (list (:@proj <formals> (cons '<formal> <formal>))))
+                                             (acl2::st state)))
+                                 :in-theory (enable <evl>-of-fncall-args <name>)))))
+
+          (defthm <evl>-of-<name>-when-<formula-check>
+            (implies (and (<formula-check> state)
+                          (<evl>-meta-extract-global-facts))
+                     (equal (<evl> (list '<name> . <formals>) env)
+                            (<name> (:@proj <formals>
+                                            (<evl> <formal> env)))))
+            :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
+                                            (:@proj <formals> (<formal> (<evl> <formal> env)))))
+                    :in-theory (enable <evl>-of-fncall-args))))))
+      ((equal (len recursivep) 2)
+       (b* ((flag-fns (table-alist 'flag::flag-fns wrld))
+            (entry (assoc-equal (car recursivep) flag-fns))
+            (- (if entry nil
+                 (hard-error 'def-formula-checks
+                             "You need to have make-flag for ~p0 ~%"
+                             (list (cons #\0 recursivep)))))
+            (flags (nth 2 entry))
+            (macro-name (nth 3 entry)))
+         `(encapsulate
+            nil
+            (local
+             (,macro-name
+              (defthmd <evl>-of-<name>-lemma
+                (implies (and (<formula-check> state)
+                              (<evl>-meta-extract-global-facts))
+                         (equal (<evl> '(<name> . <formals>)
+                                       (list (:@proj <formals> (cons '<formal> <formal>))))
+                                (<name> . <formals>)))
+                :flag ,(cdr (assoc-equal name flags)))
+              (defthmd <evl>-of-<name2>-lemma
+                (implies (and (<formula-check> state)
+                              (<evl>-meta-extract-global-facts))
+                         (equal (<evl> '(<name2> . <formals2>)
+                                       (list (:@proj <formals2> (cons '<formal> <formal>))))
+                                (<name2> . <formals2>)))
+                :flag ,(cdr (assoc-equal name2 flags)))
+              :hints (("Goal"
+                       :in-theory (e/d (<name> <name2>)
+                                       ()))
+                      '(:use ((:instance <evl>-meta-extract-formula
+                                         (acl2::name '<name>)
+                                         (acl2::a
+                                          (list (:@proj <formals> (cons '<formal> <formal>))))
+                                         (acl2::st state))
+                              (:instance <evl>-meta-extract-formula
+                                         (acl2::name '<name2>)
+                                         (acl2::a
+                                          (list (:@proj <formals2> (cons '<formal> <formal>))))
+                                         (acl2::st state)))
+                             :in-theory (enable <evl>-of-fncall-args <name>
+                                                <name2>)))))
+
+            (defthm <evl>-of-<name>-when-<formula-check>
+              (implies (and (<formula-check> state)
+                            (<evl>-meta-extract-global-facts))
+                       (equal (<evl> (list '<name> . <formals>) env)
+                              (<name> (:@proj <formals>
+                                              (<evl> <formal> env)))))
+              :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
+                                              (:@proj <formals> (<formal> (<evl> <formal> env)))))
+                      :in-theory (enable <evl>-of-fncall-args))))
+
+            (defthm <evl>-of-<name2>-when-<formula-check>
+              (implies (and (<formula-check> state)
+                            (<evl>-meta-extract-global-facts))
+                       (equal (<evl> (list '<name2> . <formals2>) env)
+                              (<name2> (:@proj <formals2>
+                                               (<evl> <formal> env)))))
+              :hints(("Goal" :use ((:instance <evl>-of-<name2>-lemma
+                                              (:@proj <formals2> (<formal> (<evl> <formal> env)))))
+                      :in-theory (enable <evl>-of-fncall-args)))))))
+      (t `(value-triple (cw  "~%~%WARNING! DEF-FORMULA-CHECKS DOES NOT ~
+              SUPPORT MUTUALLY RECURSIVE DEFINITIONS WITH MORE THAN 2 FUNCTIONS ~
+              IN A CLIQUE YET. PROCEED WITH CAUTION. THIS HAPPENED WITH ~p0 ~% ~%" ',recursivep))))
      :str-alist `(("<NAME>" . ,(symbol-name name))
+                  ("<NAME2>" . ,(symbol-name name2))
                   ("<EVL>" . ,(symbol-name evl))
                   ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
      :atom-alist `((<name> . ,name)
+                   (<name2> . ,name2)
                    (<evl> . ,evl)
                    (<formula-check> . ,formula-check)
-                   (<formals> . ,formals))
-     :subsubsts `((<formals> . ,(formals-subsubsts formals)))
+                   (<formals> . ,formals)
+                   (<formals2> . ,formals2))
+     :subsubsts `((<formals> . ,(formals-subsubsts formals))
+                  (<formals2> . ,(formals-subsubsts formals2)))
      :pkg-sym formula-check)))
 
 (defmacro def-formula-check-definition-thm (name evl formula-check)
@@ -227,10 +305,9 @@
 
 ;; EXAMPLE USE
 
-
-;; Let's define the base function that the evaluator will have
+;; Let's define the base function set to create the evaluator.
 (defconst
-  *ex-evl-base-fnc*
+  *ex-evl-base-fns*
   '(acl2-numberp binary-* binary-+
                  unary-- unary-/ < char-code characterp
                  code-char complex complex-rationalp
@@ -246,31 +323,31 @@
 ;; Create the evaluator. It has to be created with :namedp t.
 (make-event
  `(defevaluator ex-evl ex-evl-list
-    ,(b* ((w (w state))) (loop$ for x in *ex-evl-base-fnc*
+    ,(b* ((w (w state))) (loop$ for x in *ex-evl-base-fns*
                                 collect (cons x (acl2::formals x w))))
     :namedp t))
 
 ;; Create meta-extract
 (acl2::def-meta-extract ex-evl ex-evl-list)
 
-;; First way to call def-formula-checks
+;; Option 1 to create def-formula-checks
 (def-formula-checks
   example-formula-checks-1
   (subsetp-equal
    assoc-equal)
   :evl ex-evl
-  :evl-base-fns *ex-evl-base-fnc*)
+  :evl-base-fns *ex-evl-base-fns*)
 
-;; Another way is: You can set the evaluator to be the default to be used by def-formula-checks
+;; Option 2: You can set the evaluator to be the default to be used by def-formula-checks
 (def-formula-checks-default-evl
   ex-evl ;;evaluator name
-  *ex-evl-base-fnc*) ;;base functions of the evaluator.
+  *ex-evl-base-fns*) ;;base functions of the evaluator.
 
-(include-book
- "std/lists/rev" :dir :system)
-;; Sometimes some rewrite rules may cause def-formula-checks to fail. So we disable them.
+(include-book "std/lists/rev" :dir :system)
+
 (encapsulate
   nil
+  ;; Sometimes some rewrite rules may cause def-formula-checks to fail. So we disable them.
   (local
    (in-theory (disable
                acl2::revappend-removal
@@ -290,7 +367,7 @@
                 (example-formula-checks-2 state))
            (equal (ex-evl `(revappend ,x ,y) a)
                   (revappend (ex-evl x a)
-                              (ex-evl y a)))))
+                             (ex-evl y a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
