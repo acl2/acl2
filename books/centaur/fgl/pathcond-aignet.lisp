@@ -290,7 +290,7 @@
                  (b* ((lit (assoc 'aignet-pathcond-eval clause))
                       (lit-invals (fourth lit))
                       (other-invals (if (eq lit-invals 'invals)
-                                        'acl2::invals-equiv
+                                        'invals-equiv
                                       'invals)))
                    `(:expand (,lit)
                      :use ((:instance aignet-pathcond-eval-necc

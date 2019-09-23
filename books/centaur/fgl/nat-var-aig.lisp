@@ -118,9 +118,9 @@
      :hints(("Goal" :in-theory (enable bounded-nat-listp-when-nat-listp-badguy-not-member)
              :cases ((bounded-nat-listp x bound))
              :use ((:instance not-bounded-nat-listp-by-member
-                    (x acl2::x-equiv) (k (bounded-nat-listp-badguy x bound)))
+                    (x x-equiv) (k (bounded-nat-listp-badguy x bound)))
                    (:instance not-bounded-nat-listp-by-member
-                    (x x) (k (bounded-nat-listp-badguy acl2::x-equiv bound)))))))))
+                    (x x) (k (bounded-nat-listp-badguy x-equiv bound)))))))))
 
 (define aig-p (x (var-bound natp))
   (cond ((atom x) (or (booleanp x) ;; const
