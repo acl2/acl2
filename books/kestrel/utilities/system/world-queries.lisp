@@ -26,6 +26,7 @@
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
+(include-book "kestrel/std/system/ubody" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -385,35 +386,6 @@
   (guard-verified-p fn/thm wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ubody ((fn pseudo-termfnp) (wrld plist-worldp))
-  :returns (body "A @(tsee pseudo-termp).")
-  :parents (world-queries)
-  :short "Unnormalized body of a named logic-mode function,
-          or body of a lambda expression."
-  :long
-  "<p>
-   This is a specialization of @(tsee body)
-   with @('nil') as the second argument.
-   Since @(tsee body) is not guard-verified only because of
-   the code that handles the case in which the second argument is non-@('nil'),
-   we avoid calling @(tsee body) and instead replicate
-   the code that handles the case in which the second argument is @('nil');
-   thus, this utility is guard-verified.
-   </p>
-   <p>
-   If the argument named function is not defined, this utility returns @('nil').
-   </p>
-   <p>
-   Not that some program-mode functions may be defined
-   but not have an @('unnormalized-body') property.
-   </p>
-   <p>
-   See @(tsee ubody+) for a logic-friendly variant of this utility.
-   </p>"
-  (cond ((symbolp fn) (getpropc fn 'unnormalized-body nil wrld))
-        (t (lambda-body fn)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
 
 (define ubody+ ((fn (or (and (logic-function-namep fn wrld)
                              (definedp fn wrld))
