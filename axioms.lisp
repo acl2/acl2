@@ -6200,7 +6200,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                              (cons #\1 :gag-mode))))))
          ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
           (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                            stack summary summary-p (cadr args) t))
+                          stack summary summary-p (cadr args) t))
          ((eq (car args) :stack)
           (cond
            (stack
@@ -6298,13 +6298,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let ((form
            `(state-global-let*
              (,@
-              (and gag-p
+              (and (or gag-p
+                       (eq stack :pop))
                    `((gag-mode (f-get-global 'gag-mode state)
                                set-gag-mode-fn)))
               ,@
               (and (or off-on-p
                        (eq stack :pop))
-                   '((inhibit-output-lst (f-get-global 'inhibit-output-lst state))))
+                   '((inhibit-output-lst (f-get-global 'inhibit-output-lst
+                                                       state))))
               ,@
               (and stack
                    '((inhibit-output-lst-stack
@@ -6317,13 +6319,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (list 'quote
                                (set-difference-eq *summary-types* summary)))))))
              (er-progn
-              ,@(and gag-p
-                     `((pprogn (set-gag-mode ,gag-mode)
-                               (value nil))))
               ,@(and stack
                      `((pprogn ,(if (eq stack :pop)
                                     '(pop-inhibit-output-lst-stack state)
                                   '(push-inhibit-output-lst-stack state))
+                               (value nil))))
+              ,@(and gag-p
+                     `((pprogn (set-gag-mode ,gag-mode)
                                (value nil))))
               ,@(and off-on-p
                      `((set-inhibit-output-lst

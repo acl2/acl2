@@ -614,7 +614,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Definitions"))
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
 
    (xdoc::p
     "The function @(tsee pos-fix),
@@ -646,6 +646,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "A variant @(tsee str::strtok!) of @(tsee str::strtok) has been added,
+     which does not treat contiguous delimiters as one.
+     This is under the Std extensions in the Kestrel Books.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
@@ -659,6 +668,16 @@
    (xdoc::p
     "@(csee std::defret) now substitutes the list of return value names for
      symbols named @('<VALUES>') in the body and hints.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Tools")
+
+   (xdoc::p
+    "The tool @(tsee remove-hyps) no longer causes an error when the number of
+     prover steps exceeds the value of @('*default-step-limit*') (which is
+     @(`*default-step-limit*`)).  Thanks to Mihir Mehta for reporting this
+     bug.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

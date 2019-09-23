@@ -1400,6 +1400,41 @@ all the cases and all the accessors that can be used in each case.</p>
     :hints (("goal" :expand ((pseudo-term-list-count (cons x y)))))
     :rule-classes :linear))
 
+(define pair-vars ((vars symbol-listp) vals)
+  :guard (equal (len vars) (len vals))
+  :returns (subst alistp)
+  (if (atom vars)
+      nil
+    (if (and (mbt (symbolp (car vars))) (car vars))
+        (cons (cons (car vars) (car vals))
+              (pair-vars (cdr vars) (cdr vals)))
+      (pair-vars (cdr vars) (cdr vals))))
+  ///
+  (defthm lookup-in-pair-vars
+    (implies (pseudo-var-p v)
+             (equal (cdr (hons-assoc-equal v (pair-vars vars vals)))
+                    (cdr (hons-assoc-equal v (pairlis$ vars vals)))))
+    :hints(("Goal" :in-theory (enable pairlis$))))
+
+  (defthm assoc-in-pair-vars
+    (implies (pseudo-var-p v)
+             (equal (cdr (assoc v (pair-vars vars vals)))
+                    (cdr (assoc v (pairlis$ vars vals)))))
+    :hints(("Goal" :in-theory (enable pairlis$))))
+
+  (defthm-base-ev-flag
+    (defthm base-ev-of-pair-vars
+      (equal (base-ev x (pair-vars vars vals))
+             (base-ev x (pairlis$ vars vals)))
+      :hints('(:in-theory (enable base-ev-of-nonsymbol-atom
+                                  base-ev-of-bad-fncall
+                                  base-ev-of-fncall-args)))
+      :flag base-ev)
+    (defthm base-ev-list-of-pair-vars
+      (equal (base-ev-list x (pair-vars vars vals))
+             (base-ev-list x (pairlis$ vars vals)))
+      :flag base-ev-list)))
+
 
 (defxdoc def-ev-pseudo-term-fty-support
   :parents (pseudo-term-fty)
@@ -1513,10 +1548,24 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
                      (syntaxp (not (and (consp x) (eq (car x) 'pseudo-term-call)))))
                 (equal (<ev> x a)
                        (<ev> (pseudo-term-call (pseudo-term-call->fn x)
-                                                  (kwote-lst
-                                                   (<ev-list> (pseudo-term-call->args x) a)))
-                                nil)))
+                                               (kwote-lst
+                                                (<ev-list> (pseudo-term-call->args x) a)))
+                             nil)))
        :hints (("goal" :use ((:functional-instance base-ev-when-pseudo-term-call
+                              (base-ev <ev>)
+                              (base-ev-list <ev-list>))))))
+
+     (defthm <ev>-of-pair-vars
+       (equal (<ev> x (pair-vars vars vals))
+              (<ev> x (pairlis$ vars vals)))
+       :hints (("goal" :use ((:functional-instance base-ev-of-pair-vars
+                              (base-ev <ev>)
+                              (base-ev-list <ev-list>))))))
+
+     (defthm <ev-list>-of-pair-vars
+       (equal (<ev-list> x (pair-vars vars vals))
+              (<ev-list> x (pairlis$ vars vals)))
+       :hints (("goal" :use ((:functional-instance base-ev-list-of-pair-vars
                               (base-ev <ev>)
                               (base-ev-list <ev-list>))))))))
 

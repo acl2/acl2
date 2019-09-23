@@ -1960,19 +1960,13 @@
 (defthm
   l6-wrchs-correctness-1-lemma-36
   (implies
-   (and
-    (l6-regular-file-entry-p file)
-    (fat32-entry-list-p fa-table)
-    (equal (mv-nth 1 (l6-file-index-list file fa-table))
-           0)
-    (not (member-equal
-          key
-          (mv-nth 0 (l6-file-index-list file fa-table))))
-    (fat32-masked-entry-p key)
-    (< key (len fa-table)))
-   (equal
-    (l6-file-index-list file (update-nth key val fa-table))
-    (l6-file-index-list file fa-table)))
+   (and (l6-regular-file-entry-p file)
+        (not (member-equal key
+                           (mv-nth 0 (l6-file-index-list file fa-table))))
+        (fat32-masked-entry-p key)
+        (< key (len fa-table)))
+   (equal (l6-file-index-list file (update-nth key val fa-table))
+          (l6-file-index-list file fa-table)))
   :hints (("goal" :in-theory (enable l6-file-index-list))))
 
 (defthm

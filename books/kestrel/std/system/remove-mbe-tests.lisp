@@ -33,6 +33,15 @@
 (assert-equal (remove-mbe-logic-from-term '(g x (return-last 'mbe1-raw a b)))
               '(g x a))
 
+(assert-equal (remove-mbe-logic-from-term
+               '(return-last 'mbe1-raw
+                             (return-last 'mbe1-raw a b)
+                             (return-last 'mbe1-raw c d)))
+              'a)
+
+(assert-equal (remove-mbe-logic-from-term '(f (return-last 'progn a b)))
+              '(f (return-last 'progn a b)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal (remove-mbe-exec-from-term 'x) 'x)
@@ -51,3 +60,12 @@
 
 (assert-equal (remove-mbe-exec-from-term '(g x (return-last 'mbe1-raw a b)))
               '(g x b))
+
+(assert-equal (remove-mbe-exec-from-term
+               '(return-last 'mbe1-raw
+                             (return-last 'mbe1-raw a b)
+                             (return-last 'mbe1-raw c d)))
+              'd)
+
+(assert-equal (remove-mbe-exec-from-term '(f (return-last 'progn a b)))
+              '(f (return-last 'progn a b)))
