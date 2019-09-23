@@ -61,7 +61,7 @@
    "This definition mirrors
     the relevant portion of the definition of @(tsee pseudo-termp).")
   (and (true-listp x)
-       (int= (len x) 3)
+       (= (len x) 3)
        (eq (first x) 'lambda)
        (symbol-listp (second x))
        (pseudo-termp (third x)))
@@ -125,7 +125,7 @@
    "This definition mirrors
     the relevant portion of the definition of @(tsee termp).")
   (and (true-listp x)
-       (int= (len x) 3)
+       (= (len x) 3)
        (eq (first x) 'lambda)
        (arglistp (second x))
        (termp (third x) wrld)
