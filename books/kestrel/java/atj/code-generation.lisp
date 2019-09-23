@@ -526,9 +526,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-gen-deep-terms+lambdas
-  :short "Generate Java code to build
-          deeply embedded ACL2 terms and lambda expressions."
+(defines atj-gen-deep-term-fns
+  :short "Functions to generate Java code to build deeply embedded ACL2 terms."
 
   (define atj-gen-deep-fnapp ((fn pseudo-termfnp)
                               (args pseudo-term-listp)
@@ -544,7 +543,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-terms+lambdas)
+    :parents (atj-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build
             a deeply embedded ACL2 function application."
     :long
@@ -647,7 +646,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-terms+lambdas)
+    :parents (atj-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build
             a deeply embedded ACL2 lambda expression."
     :long
@@ -705,7 +704,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-terms+lambdas)
+    :parents (atj-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build a deeply embedded ACL2 term."
     (cond ((variablep term) (mv nil
                                 (atj-gen-deep-var term)
@@ -747,7 +746,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-terms+lambdas)
+    :parents (atj-code-generation atj-gen-deep-term-fns)
     :short "Lift @(tsee atj-gen-deep-term) to lists."
     (if (endp terms)
         (mv nil
@@ -1191,8 +1190,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-gen-shallow-terms+lambdas
-  :short "Generate shallowly embedded ACL2 terms and lambda expressions."
+(defines atj-gen-shallow-term-fns
+  :short "Functions to generate shallowly embedded ACL2 terms."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1239,7 +1238,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) application."
     :long
     (xdoc::topstring
@@ -1361,7 +1360,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @('or') application."
     :long
     (xdoc::topstring
@@ -1457,7 +1456,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 (@tsee int-val) application."
     :long
     (xdoc::topstring
@@ -1527,7 +1526,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 application of a function
             that models a Java @('int') binary operation."
     :long
@@ -1613,7 +1612,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 function application."
     :long
     (xdoc::topstring
@@ -1791,7 +1790,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
     :long
@@ -1852,7 +1851,7 @@
                  (type "An @(tsee atj-typep).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 term."
     :long
     (xdoc::topstring
@@ -1907,7 +1906,7 @@
                  (types "An @(tsee atj-type-listp).")
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
-    :parents (atj-code-generation atj-gen-shallow-terms+lambdas)
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
     (if (endp terms)
         (mv nil nil nil jvar-value-index jvar-result-index)
