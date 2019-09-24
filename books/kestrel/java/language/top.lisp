@@ -16,6 +16,7 @@
 (include-book "unicode")
 (include-book "null-literal")
 (include-book "boolean-literals")
+(include-book "keywords")
 (include-book "primitive-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

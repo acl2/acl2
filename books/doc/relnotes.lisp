@@ -577,7 +577,9 @@
      along with a model of their ASCII subset.")
 
    (xdoc::p
-    "Models have been added of the null and boolean literals.")
+    "Models have been added
+     of the null and boolean literals,
+     and of (non-restricted and restricted) keywords.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
