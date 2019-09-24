@@ -228,7 +228,7 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
-                           "Standards Typed Alists Library"))
+                             "Standards Typed Alists Library"))
 
    (xdoc::p
     "A new library has been added,
