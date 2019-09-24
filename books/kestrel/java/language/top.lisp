@@ -14,6 +14,8 @@
 ; the order of the subtopics of the LANGUAGE topic below:
 (include-book "grammar")
 (include-book "unicode")
+(include-book "null-literal")
+(include-book "boolean-literals")
 (include-book "primitive-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
