@@ -84,6 +84,10 @@ TODO: verify guards in base.lisp
 
 (must-succeed
  (thm (implies (natp n)
+               (non-0-integerp (nth-non-0-integer-builtin n)))))
+
+(must-succeed
+ (thm (implies (natp n)
                (integerp (nth-integer-builtin n)))))
 
 (must-succeed
@@ -118,6 +122,10 @@ TODO: verify guards in base.lisp
 (must-succeed
  (thm (implies (natp n)
                (non-pos-rationalp (nth-non-pos-rational-builtin n)))))
+
+(must-succeed
+ (thm (implies (natp n)
+               (non-0-rationalp (nth-non-0-rational-builtin n)))))
 
 (must-succeed
  (thm (implies (natp n)
