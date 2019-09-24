@@ -34,7 +34,7 @@
   (xdoc::topstring
    "A library that complements the "
    (xdoc::seetopic "system-utilities" "built-in system utilities")
-   " with theorems and non-built-in system utilities.")
+   " with theorems and with non-built-in system utilities.")
   :long
   (xdoc::topstring
    (xdoc::p
