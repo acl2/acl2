@@ -69,6 +69,7 @@
                          make-lambda
                          maybe-stringp
                          msg-listp
+                         nats=>string
                          no-stobjs-p
                          partition-rest-and-keyword-args
                          patbind-run-when
@@ -88,6 +89,7 @@
                          sbyte64
                          sbyte8
                          sort-symbol-listp
+                         str-fix
                          string-downcase
                          string-symbollist-alistp
                          string-upcase
@@ -107,6 +109,7 @@
                          unnormalized-body
                          unquote-term
                          unquote-term-list
+                         unsigned-byte-listp
                          upper-case-p
                          variablep
                          str::chars-in-charset-p
