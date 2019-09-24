@@ -8,7 +8,7 @@ package edu.kestrel.acl2.aij;
 
 /**
  * Representation of ACL2 numbers.
- * These are the ACL2 values that satisfy {@code acl2-numberp}.
+ * These are the values that satisfy {@code acl2-numberp}.
  * <p>
  * They consist of
  * rationals (subclass {@link Acl2Rational}) and
