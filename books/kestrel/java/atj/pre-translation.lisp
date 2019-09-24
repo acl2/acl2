@@ -45,12 +45,42 @@
     (xdoc::seetopic "atj-code-generation" "here")
     ", prior to generating Java code,
      ATJ performs an ACL2-to-ACL2 pre-translation.
-     Currently, this pre-translation consists of
-     systematically renaming all the ACL2 variables
-     so that their names are valid Java variable names.
-     More pre-translation transformations may be done in the future."))
+     Currently, this pre-translation consists of the following steps:")
+   (xdoc::ol
+    (xdoc::li
+     "In both the deep and shallow embedding,
+      we remove all occurrences of @(tsee return-last).
+      See @(tsee atj-remove-return-last).")
+    (xdoc::li
+     "In the shallow embedding, we rename all the ACL2 variables
+      so that their names are valid Java variable names
+      and so that different ACL2 variables with the same name are renamed apart.
+      See @(tsee atj-rename-formals+body).")))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-remove-return-last ((term pseudo-termp) (guards$ booleanp))
+  :returns (new-term pseudo-termp :hyp (pseudo-termp term))
+  :short "Remove all the @(tsee return-last)s from a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in both the deep and shallow embedding approach.")
+   (xdoc::p
+    "We selectively remove the @(':logic') or @(':exec') parts of @(tsee mbe)s
+     (which are translated to @('(return-last 'mbe1-raw <exec> <logic>)'))
+     based on the @(':guards') input.
+     We remove all the non-last arguments of @(tsee prog2$)s and @(tsee progn$)s
+     (which are translated to @('(return-last 'progn <non-last> <last>)')).
+     These are the only @(tsee return-last) forms
+     that make it through input validation."))
+  (b* ((term (if guards$
+                 (remove-mbe-logic-from-term term)
+               (remove-mbe-exec-from-term term)))
+       (term (remove-progn-from-term term)))
+    term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,24 +615,9 @@
    (xdoc::p
     "This is done before the translation from ACL2 to Java proper.")
    (xdoc::p
-    "In both the deep and the shallow embedding approach,
-     we remove all the occurrences of @(tsee return-last),
-     by selectively removing the @(':logic') or @(':exec') parts of @(tsee mbe)s
-     (i.e. @('(return-last 'mbe1-raw <exec> <logic>)'))
-     based on the @(':guards') input,
-     and by removing all the non-last arguments
-     of @(tsee prog2$)s and @(tsee progn$)s
-     (i.e @('(return-last 'progn <non-last> <last>)')).
-     These are the only @(tsee return-last) forms
-     that make it through input validation.")
-   (xdoc::p
-    "In the shallow embedding approach, we also rename all the ACL2 variables
-     so that their names are valid names of Java variables
-     and so that different ACL2 variables with the same name
-     are renamed apart."))
-  (b* ((body (if guards$
-                 (remove-mbe-logic-from-term body)
-               (remove-mbe-exec-from-term body)))
-       (body (remove-progn-from-term body))
+    "The pre-translation steps are described "
+    (xdoc::seetopic "atj-pre-translation" "here")
+    "."))
+  (b* ((body (atj-remove-return-last body guards$))
        ((when deep$) (mv formals body)))
     (atj-rename-formals+body formals body (symbol-package-name fn))))
