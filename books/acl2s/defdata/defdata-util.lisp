@@ -101,7 +101,7 @@
                               (stringp sep))))
   (b* (((unless (consp ss)) (er hard? 's+ "~| Expect at least one string/symbol arg, but given ~x0 ~%" ss))
        (s1 (car ss))
-       (pkg~ (or (and (stringp pkg) (not (equal pkg "")) pkg)
+       (pkg~ (or (and (pkgp pkg) pkg)
                  (and (symbolp s1) (symbol-package-name s1))
                  "DEFDATA"))
        ;; (- (cw "~| pkg to be used is : ~x0~%" pkg~))
@@ -112,8 +112,7 @@
   (declare (xargs :guard (and (symbol-listp syms)
                               (stringp prefix)
                               (stringp postfix)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (if (endp syms)
     nil
     (cons (s+ prefix (car syms) postfix :pkg pkg)
@@ -151,12 +150,16 @@
                  (strip-cadrs (cdr x))))))
 
 (defconst *defthm-aliases*
-  '(acl2::defthm acl2::defthmd acl2::defthm+ acl2::defrule acl2::defaxiom))
+  '(acl2::defthm acl2::defthmd acl2::defthm+ acl2::defrule
+                 acl2::defaxiom acl2s::test-then-skip-proofs acl2::defcong
+                 acl2::defrefinement acl2::defequiv acl2::skip-proofs
+                 acl2s::defthm-no-test acl2s::defthm-test-no-proof))
 
 (defloop get-event-names (xs)
   "get names from defthm events"
   (declare (xargs :guard (acl2::all->=-len xs 2)))
-  (for ((x in xs)) (append (and (member-eq (car x) *defthm-aliases*) (list (cadr x))))))
+  (for ((x in xs)) (append (and (member-eq (car x) *defthm-aliases*)
+                                (list (cadr x))))))
 
 (defun keywordify (sym)
   (declare (xargs :guard (symbolp sym)))
@@ -271,13 +274,40 @@
 ;;                 (symbolp x))
 ;;            (alistp (table-alist x w))))
 
+(defun sym-aalistp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (consp (car x))
+           (symbolp (caar x))
+           (symbol-alistp (cdar x))
+           (sym-aalistp (cdr x)))
+    (null x)))
+
+(defun base-alias-type (type A)
+  (declare (xargs :guard (sym-aalistp A)))
+  (b* (((unless (symbolp type)) type)
+       (atype (assoc-equal :type (acl2s::get-alist type A))))
+    (if (consp atype)
+        (cdr atype)
+      type)))
+
+(defun base-alias-pred (pred ptbl)
+  (declare (xargs :guard (sym-aalistp ptbl)))
+  (b* (((unless (symbolp pred)) pred)
+       (ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
+    (if (consp ppred)
+        (cdr ppred)
+      pred)))
+
 (defun is-allp-alias (P wrld)
   "is predicate P an alias of allp?"
   ;; (declare (xargs :guard (and (proper-symbolp P)
   ;;                             (plist-worldp wrld))))
   (declare (xargs :verify-guards nil))
-  (or (eq P 'ACL2S::ALLP)
-      (assoc P (table-alist 'ACL2S::ALLP-ALIASES wrld))))
+  (b* ((ptbl (table-alist 'pred-alias-table wrld))
+       (P (base-alias-pred P ptbl)))
+    (or (eq P 'acl2s::allp)
+        (assoc P (table-alist 'defdata::allp-aliases-table wrld)))))
 
 ; TODO -- use this in places where we check for Top type.
 (defun is-top (typename wrld)
@@ -285,8 +315,10 @@
   ;; (declare (xargs :guard (and (proper-symbolp P)
   ;;                             (plist-worldp wrld))))
   (declare (xargs :verify-guards nil))
-  (or (eq typename 'ACL2S::ALL)
-      (rassoc typename (table-alist 'ACL2S::ALLP-ALIASES wrld))))
+  (b* ((atbl (table-alist 'type-alias-table wrld))
+       (typename (base-alias-type typename atbl)))
+    (or (eq typename 'acl2s::all)
+        (rassoc typename (table-alist 'defdata::allp-aliases-table wrld)))))
 
 ; CHECK with J. TODO What if there is some information in pos-implicants of P1,
 ; that is missed below!?
@@ -362,14 +394,12 @@
 ;;-- (make-predicate-symbol 'integer "ACL2S B") ==> ACL2S B::INTEGERP
 (defun make-predicate-symbol (sym pkg)
   (declare (xargs :guard (and (symbolp sym)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (s+ sym "P" :pkg pkg))
 
 (defun make-predicate-symbol-lst (syms pkg)
   (declare (xargs :guard (and (symbol-listp syms)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (if (endp syms)
     nil
     (cons (make-predicate-symbol (car syms) pkg)
@@ -378,14 +408,12 @@
 
 (defun make-enumerator-symbol (sym pkg)
   (declare (xargs :guard (and (symbolp sym)
-                              (not (equal pkg ""))
-                              (stringp pkg))))
+                              (pkgp pkg))))
   (s+ "NTH-" sym :pkg pkg))
 
 (defun make-uniform-enumerator-symbol (sym pkg)
-    (declare (xargs :guard (and (symbolp sym)
-                                (not (equal pkg ""))
-                                (stringp pkg))))
+  (declare (xargs :guard (and (symbolp sym)
+                              (pkgp pkg))))
   (s+ "NTH-" sym "/ACC" :pkg pkg))
 
 ;;--check arity of macro optional arguments
@@ -608,37 +636,12 @@
                               (natp k))))
   (reverse (symbol-fns::item-to-numbered-symbol-list-rec x k)))
 
-(defun sym-aalistp (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp (car x))
-           (symbolp (caar x))
-           (symbol-alistp (cdar x))
-           (sym-aalistp (cdr x)))
-    (null x)))
-
 #|
 This is true when we have defdata available.
 
 (defdata symbol-aalist (alistof symbol symbol-alist))
 (thm (equal (sym-aalistp x) (symbol-aalistp x)))
 |#
-
-(defun base-alias-type (type A)
-  (declare (xargs :guard (sym-aalistp A)))
-  (b* (((unless (symbolp type)) type)
-       (atype (assoc-equal :type (acl2s::get-alist type A))))
-    (if (consp atype)
-        (cdr atype)
-      type)))
-
-(defun base-alias-pred (pred ptbl)
-  (declare (xargs :guard (sym-aalistp ptbl)))
-  (b* (((unless (symbolp pred)) pred)
-       (ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
-    (if (consp ppred)
-        (cdr ppred)
-      pred)))
 
 #|
 (i-am-here) :add enumerator macros for the alias, eg, nth-nn-rat/acc
@@ -957,21 +960,24 @@ see (defdata foo rational)
 
 ;copied from std/util/support
 (defun extract-keywords
-    (ctx        ; context for error messages
-     legal-kwds ; what keywords the args are allowed to contain
-     args       ; args that the user supplied
-     kwd-alist  ; accumulator alist of extracted keywords to values
+    (ctx         ; context for error messages
+     legal-kwds  ; what keywords the args are allowed to contain
+     args        ; args that the user supplied
+     kwd-alist   ; accumulator alist of extracted keywords to values
+     ok-dup-kwds ; keywords that can have duplicates
      )
   "Returns (mv kwd-alist other-args)"
   (declare (xargs :guard (and (symbol-listp legal-kwds)
                               (no-duplicatesp legal-kwds)
-                              (alistp kwd-alist))))
+                              (alistp kwd-alist)
+                              (symbol-listp ok-dup-kwds))))
   (b* (((when (atom args))
         (mv kwd-alist args))
        (arg1 (first args))
        ((unless (keywordp arg1))
         (b* (((mv kwd-alist other-args)
-              (extract-keywords ctx legal-kwds (cdr args) kwd-alist)))
+              (extract-keywords
+               ctx legal-kwds (cdr args) kwd-alist ok-dup-kwds)))
           (mv kwd-alist (cons arg1 other-args))))
        ((unless (member arg1 legal-kwds))
         (er hard? ctx (concatenate 'string
@@ -984,12 +990,13 @@ see (defdata foo rational)
        ((when (atom (rest args)))
         (er hard? ctx "~x0: keyword ~x1 has no argument." ctx arg1)
         (mv nil nil))
-       ((when (assoc arg1 kwd-alist))
+       ((when (and (not (member-equal arg1 ok-dup-kwds))
+                   (assoc arg1 kwd-alist)))
         (er hard? ctx "~x0: multiple occurrences of keyword ~x1." ctx arg1)
         (mv nil nil))
        (value (second args))
        (kwd-alist (acons arg1 value kwd-alist)))
-    (extract-keywords ctx legal-kwds (cddr args) kwd-alist)))
+    (extract-keywords ctx legal-kwds (cddr args) kwd-alist ok-dup-kwds)))
 
 ;; (defstub is-disjoint (* * *) => *)
 ;; (defstub is-subtype (* * *) => *)

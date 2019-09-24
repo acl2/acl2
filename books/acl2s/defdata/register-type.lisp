@@ -57,7 +57,8 @@ data last modified: [2014-08-06]
 
 (defun register-type-fn (name args ctx pkg wrld)
   (declare (xargs :mode :program))
-  (b* (((mv kwd-alist rest) (extract-keywords ctx *register-type-keywords* args nil))
+  (b* (((mv kwd-alist rest)
+        (extract-keywords ctx *register-type-keywords* args nil nil))
        ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
        ((unless (proper-symbolp name))
         (er hard? ctx "~| ~x0 should be a proper symbol.~%" name))

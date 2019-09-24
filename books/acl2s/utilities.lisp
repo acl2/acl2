@@ -87,6 +87,11 @@ and so on.
 </p>
 ")
 
+(defun pkgp (pkg)
+  (declare (xargs :guard t))
+  (and (stringp pkg)
+       (not (equal pkg ""))))
+
 (defmacro make-n-ary-macro (macro bin-fun id &optional
                                   right-associate-p)
   (declare (xargs :guard (and (symbolp macro) (symbolp bin-fun)
@@ -223,7 +228,7 @@ A macro that uses @('with-outer-locals') to locally turn off
            (stringp (best-package-symbl-list l s))))
 
 (defthm best-package-symbl-list-not-empty
-  (implies (and (good-atom-listp l) (stringp s) (not (equal s "")))
+  (implies (and (good-atom-listp l) (pkgp s))
            (not (equal (best-package-symbl-list l s) ""))))
 
 #|
@@ -286,20 +291,20 @@ Now in defthm.lisp
 (verify-guards pack-to-string)
 (verify-guards gen-sym-sym)
 
-(defun gen-sym-pkg-fn (l pkg)
+(defun gen-sym-pkg (l pkg)
   (declare (xargs :guard (and (good-atom-listp l)
-                              (or (null pkg) (stringp pkg))
-                              (not (equal pkg "")))))
+                              (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l) pkg))
 
+#|
 (defmacro gen-sym-pkg (l &optional pkg)
   (declare (xargs :guard t))
   `(gen-sym-pkg-fn ,l ,pkg))
+|#
 
 (defun make-symbl (l pkg)
   (declare (xargs :guard (and (good-atom-listp l)
-                              (or (null pkg) (stringp pkg))
-                              (not (equal pkg "")))))
+                              (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
 

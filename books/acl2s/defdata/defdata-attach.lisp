@@ -214,7 +214,8 @@ data last modified: [2015-06-09 Tue]
        ((unless (assoc-eq name (type-metadata-table wrld)))
         (er hard? ctx "~x0 is not a recognized type. Use register-type to register it.~%" name))
 
-       ((mv kwd-alist rest) (extract-keywords ctx *defdata-attach-keywords* keys nil))
+       ((mv kwd-alist rest)
+        (extract-keywords ctx *defdata-attach-keywords* keys nil nil))
        ((when rest) (er hard? ctx "~| Unsupported/Extra args: ~x0~%" rest))
 
 
