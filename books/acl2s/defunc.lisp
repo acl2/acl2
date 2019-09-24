@@ -1576,7 +1576,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (put-assoc :cgen-timeout
                     (get-acl2s-defaults 'cgen-timeout wrld) defaults-alst))
        ((mv kwd-alist defun-rest)
-        (extract-keywords
+        (extract-keywords 
          ctx *defunc-keywords* args defaults-alst
          (append *input-contract-alias* *output-contract-alias*)))
        (tbl (table-alist 'type-metadata-table wrld))
