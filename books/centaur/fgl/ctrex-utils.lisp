@@ -1502,6 +1502,7 @@
     (mv t formals body)))
 
 
+
 (defines magitastic-ev
   (define magitastic-ev ((x pseudo-termp)
                          (alist symbol-alistp)
@@ -2040,6 +2041,26 @@
                   (bfr-varname-p (get-term->bvar$a x bvar-db)))
          :hints(("Goal" :in-theory (enable bfr-varname-p)))))
 
+
+;; If there is a property rule application among cands, add a binding of that
+;; candidate's value to rule's assigned-var and remove that candidate.  Theory
+;; being that all applicable property rules should work together to make one
+;; value.
+(define candidate-assigns-complete-match-subst ((rule ctrex-rule-p)
+                                                (cands candidate-assigns-p))
+  :returns (mv (new-match-subst symbol-alistp)
+               (rest-cands candidate-assigns-p))
+  (b* (((when (atom cands)) (mv (list (cons (ctrex-rule->assigned-var rule) nil)) nil))
+       ((candidate-assign cand) (candidate-assign-fix (car cands)))
+       ((cgraph-edge cand.edge))
+       ((ctrex-rule cand.edge.rule))
+       ((when (eq cand.edge.rule.ruletype :property))
+        (mv (list (cons (ctrex-rule->assigned-var rule) cand.val))
+            (candidate-assigns-fix (cdr cands))))
+       ((mv subst rest-cands)
+        (candidate-assigns-complete-match-subst rule (cdr cands))))
+    (mv subst (cons-with-hint cand rest-cands cands))))
+
 (defines cgraph-derive-assignments
   (define cgraph-derive-assignments-obj ((x gl-object-p)
                                          (assigns cgraph-alist-p)
@@ -2098,11 +2119,12 @@
          (sts (cgraph-incr-seen x sts))
 
          ((mv errors candidate-assigns assigns sts)
-          (cgraph-derive-assignments-edges edges assigns sts env$ cgraph replimit)))
+          (cgraph-derive-assignments-edges edges nil assigns sts env$ cgraph replimit)))
 
       (cgraph-summarize-errors-and-assign x errors candidate-assigns assigns sts)))
 
   (define cgraph-derive-assignments-edges ((x cgraph-edgelist-p)
+                                           (cands candidate-assigns-p)
                                            (assigns cgraph-alist-p)
                                            (sts cgraph-derivstates-p)
                                            (env$)
@@ -2118,30 +2140,30 @@
                 (lbfr-listp (cgraph-bfrlist cgraph)))
 
     :returns (mv errors
-                 (cands candidate-assigns-p)
+                 (new-cands candidate-assigns-p)
                  (new-assigns cgraph-alist-p)
                  (new-sts cgraph-derivstates-p))
     :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
                    9
                    (len x))
-    (b* (((when (atom x)) (mv nil nil
+    (b* (((when (atom x)) (mv nil (candidate-assigns-fix cands)
                               (cgraph-alist-fix assigns)
                               (cgraph-derivstates-fix sts)))
-         ((mv err cand1 new-assigns new-sts)
-          (cgraph-derive-assignments-edge (car x) assigns sts env$ cgraph replimit))
+         ((mv err cands new-assigns new-sts)
+          (cgraph-derive-assignments-edge (car x) cands assigns sts env$ cgraph replimit))
          ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
                            (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
-          (mv nil nil
+          (mv nil (candidate-assigns-fix cands)
               (cgraph-alist-fix assigns)
               (cgraph-derivstates-fix sts)))
-         ((mv rest-errs rest-cands assigns sts)
-          (cgraph-derive-assignments-edges (cdr x) new-assigns new-sts env$ cgraph replimit)))
+         ((mv rest-errs cands assigns sts)
+          (cgraph-derive-assignments-edges (cdr x) cands new-assigns new-sts env$ cgraph replimit)))
       (if err
-          (mv (cons err rest-errs) rest-cands assigns sts)
-        (mv rest-errs
-            (cons cand1 rest-cands) assigns sts))))
+          (mv (cons err rest-errs) cands assigns sts)
+        (mv rest-errs cands assigns sts))))
 
   (define cgraph-derive-assignments-edge ((x cgraph-edge-p)
+                                          (cands candidate-assigns-p)
                                           (assigns cgraph-alist-p)
                                           (sts cgraph-derivstates-p)
                                           (env$)
@@ -2152,8 +2174,7 @@
                                           (bvar-db 'bvar-db)
                                           (state 'state))
     :returns (mv errmsg
-                 (cand (implies (not errmsg)
-                                (candidate-assign-p cand)))
+                 (new-cands candidate-assigns-p)
                  (new-assigns cgraph-alist-p)
                  (new-sts cgraph-derivstates-p))
     :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
@@ -2171,15 +2192,24 @@
           ;; BOZO It would kind of make sense to produce a real error message
           ;; here, but then we'd get not just the root cause of a given error,
           ;; but tons of messages about its various consequences.
-          (mv t nil assigns sts))
+          (mv t (candidate-assigns-fix cands) assigns sts))
          ((ctrex-rule x.rule))
+         ((mv new-subst cands)
+          (if (eq x.rule.ruletype :property)
+              (candidate-assigns-complete-match-subst x.rule cands)
+            (mv nil (candidate-assigns-fix cands))))
+         (match-subst (append new-subst match-subst x.subst))
          ((mv err val)
           (magitastic-ev x.rule.assign match-subst 1000 state t t))
+         ;; (- (cw "magitastic-ev ~x0: ~x2 ~x3~%" x.rule.assign nil err val))
          ((when err)
-          (mv (msg "Failed to evaluate assignment ~x0 from rule ~x1"
-                   x.rule.assign x.rule.name)
-              nil assigns sts)))
-      (mv nil (make-candidate-assign :edge x :val val) assigns sts)))
+          (b* ((msg (msg "Failed to evaluate assignment ~x0 from rule ~x1"
+                   x.rule.assign x.rule.name)))
+            ;; (cw "~@0~%" msg)
+            (mv msg cands assigns sts))))
+      (mv nil 
+          (cons (make-candidate-assign :edge x :val val) cands)
+          assigns sts)))
                
   (define cgraph-derive-assignments-matches ((x pseudo-var-list-p)
                                              (rule ctrex-rule-p)
