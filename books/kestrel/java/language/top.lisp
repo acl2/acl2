@@ -17,6 +17,7 @@
 (include-book "null-literal")
 (include-book "boolean-literals")
 (include-book "keywords")
+(include-book "identifiers")
 (include-book "primitive-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -579,7 +579,8 @@
    (xdoc::p
     "Models have been added
      of the null and boolean literals,
-     and of (non-restricted and restricted) keywords.")
+     of (non-restricted and restricted) keywords,
+     and of identifiers.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

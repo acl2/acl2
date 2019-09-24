@@ -16,7 +16,7 @@
 
 (defxdoc+ boolean-literals
   :parents (language)
-  :short "The Java boolean literals [JLS:3.10.3]."
+  :short "Java boolean literals [JLS:3.10.3]."
   :order-subtopics t
   :default-parent t)
 
