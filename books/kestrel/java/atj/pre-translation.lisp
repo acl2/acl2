@@ -15,6 +15,7 @@
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
+(include-book "kestrel/std/system/remove-unused-vars" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
@@ -52,10 +53,23 @@
       we remove all occurrences of @(tsee return-last).
       See @(tsee atj-remove-return-last).")
     (xdoc::li
-     "In the shallow embedding, we rename all the ACL2 variables
+     "In both the deep and shallow embedding,
+      we remove all the lambda-bound variables
+      (and corresponding actual arguments)
+      that are not actually used in the body of the lambda expression.
+      This way, we avoid calculating and assigning actual parameters
+      that are not needed.
+      Recall that  checks that the ACL2 code to be translated to Java
+      is free of side effects:
+      thus, this removal is safe and semantics-preserving.")
+    (xdoc::li
+     "In the shallow embedding,
+      we rename all the ACL2 variables
       so that their names are valid Java variable names
       and so that different ACL2 variables with the same name are renamed apart.
-      See @(tsee atj-rename-formals+body).")))
+      See @(tsee atj-rename-formals+body).
+      The deep embedding does not represent ACL2 variables as Java variables,
+      and thus it does not need this pre-translation step.")))
   :order-subtopics t
   :default-parent t)
 
@@ -605,19 +619,19 @@
                            (body pseudo-termp)
                            (deep$ booleanp)
                            (guards$ booleanp))
-  :returns (mv (new-formals symbol-listp :hyp :guard)
-               (new-body pseudo-termp :hyp :guard))
+  :returns (mv (new-formals "A @(tsee symbol-listp).")
+               (new-body "A @(tsee pseudo-termp)."))
   :verify-guards nil
   :short "Pre-translate the formal parameters and body
           of an ACL2 function definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is done before the translation from ACL2 to Java proper.")
-   (xdoc::p
-    "The pre-translation steps are described "
+    "This is done before the translation from ACL2 to Java proper.
+     The pre-translation steps are described "
     (xdoc::seetopic "atj-pre-translation" "here")
     "."))
   (b* ((body (atj-remove-return-last body guards$))
+       (body (remove-unused-vars-from-term body))
        ((when deep$) (mv formals body)))
     (atj-rename-formals+body formals body (symbol-package-name fn))))
