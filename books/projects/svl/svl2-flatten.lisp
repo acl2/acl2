@@ -23,7 +23,6 @@
 ;
 ; Original author: Mertcan Temel <mert@utexas.edu>
 
-
 (in-package "SVL")
 
 (include-book "centaur/sv/svex/vars" :dir :system)
@@ -41,10 +40,19 @@
 
 (include-book "svex-simplify")
 
+(include-book "svl2-flatten-simplify-lemmas")
+
 (include-book "projects/rp-rewriter/top" :dir :system)
 
 (in-theory (disable acl2::natp-when-gte-0
                     acl2::natp-when-integerp))
+
+(define alistp$ (x)
+  :enabled t
+  (if (atom x)
+      t
+    (and (consp (car x))
+         (alistp$ (cdr x)))))
 
 (encapsulate
   nil
@@ -855,6 +863,14 @@
                          (make-fast-alist (sv::design->modalist *booth-sv-design*))
                          nil)
 
+;; not unfree fast-alist
+(b* ((modalist (make-fast-alist (sv::design->modalist *signed64-sv-design*))))
+  (progn$ (free-aliasdb (mod-aliaspairs->aliasdb "S_SP_64_64"
+                                                modalist
+                                                nil))
+         (fast-alist-free modalist)
+          nil))
+
 (mod-aliaspairs->aliasdb "booth2_multiplier_signed_64x32_97"
                          (make-fast-alist (sv::design->modalist *big-sv-design*))
                          '("booth2_reduction_dadda_17x65_97"))
@@ -1195,7 +1211,8 @@
   (b* ((outs (lhs-to-svl-wirelist lhs))
        ((mv ins prev-ins)
         (assign-to-occ-get-inputs rhs-svex))
-       (ins (assign-occ-unify-ins ins)))
+       (ins (assign-occ-unify-ins ins))
+       (- (fast-alist-free ins)))
     (make-occ-assign
      :inputs ins
      :delayed-inputs prev-ins
@@ -1489,7 +1506,7 @@
      (local
       (defthm occ-alist-p-is-alistp
         (implies (occ-alist-p alist)
-                 (alistp alist)))))
+                 (alistp$ alist)))))
     :returns (mv (res occ-alist-p :hyp (occ-alist-p acc))
                  (cnt-res natp :hyp (natp cnt)))
     :verify-guards nil
@@ -1601,12 +1618,14 @@
 ;; Create listeners...
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
 ;; signals to occ listeners.
 (progn
   (define create-signals-to-occ-listeners-module-aux ((lhs sv::lhs-p)
                                                       (occ-name occ-name-p)
-                                                      (alist alistp))
-    :returns (res alistp :hyp (alistp alist))
+                                                      (alist alistp$))
+    :returns (res alistp$ :hyp (alistp$ alist))
     (if (atom lhs)
         alist
       (b* ((atom (sv::lhrange->atom (car lhs)))
@@ -1624,8 +1643,8 @@
   (define create-signals-to-occ-listeners-module ((module-ins
                                                    module-occ-wire-list-p)
                                                   (occ-name occ-name-p)
-                                                  (alist alistp))
-    :returns (res alistp :hyp (alistp alist))
+                                                  (alist alistp$))
+    :returns (res alistp$ :hyp (alistp$ alist))
     (if (atom module-ins)
         alist
       (b* ((cur-lhs (if (sv::lhs-p (cdar module-ins)) (cdar module-ins) nil))
@@ -1636,8 +1655,8 @@
 
   (define create-signals-to-occ-listeners-assign ((wires wire-list-p)
                                                   (occ-name occ-name-p)
-                                                  (alist alistp))
-    :returns (res alistp :hyp (alistp alist))
+                                                  (alist alistp$))
+    :returns (res alistp$ :hyp (alistp$ alist))
     (if (atom wires)
         alist
       (b* ((wire (car wires))
@@ -1652,8 +1671,8 @@
                                                 alist))))
 
   (define create-signal-to-occ-listeners ((occs occ-alist-p)
-                                          (alist alistp))
-    :returns (res alistp :hyp (alistp alist))
+                                          (alist alistp$))
+    :returns (res alistp$ :hyp (alistp$ alist))
     (if (atom occs)
         alist
       (b* ((occ-name (caar occs))
@@ -1779,8 +1798,6 @@
                                              w
                                              (occ-assign->inputs occ)))))
 
-
-
   #|(does-intersect-occ-to-occ-listener '(:VAR ("product_terms" . 0) . 0)
   91 1
   '(:ASSIGN
@@ -1811,7 +1828,7 @@
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -1877,7 +1894,6 @@
   ("product_terms" . 1) . 0)))))
   nil)||#
 
-
   (define get-intersecting-occ-for-lhs ((lhs sv::lhs-p)
                                         (sig-to-occ-listeners)
                                         (all-occs occ-alist-p))
@@ -1896,8 +1912,6 @@
                                (cdr (hons-get atom.name sig-to-occ-listeners))
                                all-occs
                                rest))))
-
-
 
   (define get-intersecting-occ-for-wires ((wires wire-list-p)
                                           (sig-to-occ-listeners)
@@ -1924,8 +1938,6 @@
                                all-occs
                                rest
                                :duplicate duplicate))))
-
-
 
   (define create-occ-to-occ-listeners ((occs occ-alist-p)
                                        (all-occs occ-alist-p)
@@ -2074,7 +2086,7 @@
                                (occ-to-occ-listeners))
     (declare (xargs :mode :program))
     (b* ((occ-in-nodes-count (create-occ-in-nodes-count occ-to-occ-listeners
-                                                        nil))
+                                                        'occ-in-nodes-count))
          ((mv sorted-occs occ-in-nodes-count)
           (svl2-sort-occs-lst (cdr (hons-get ':initial occ-to-occ-listeners))
                               all-occs
@@ -2185,8 +2197,6 @@
                                        wires
                                        (+ rsh (nfix (wire-size cur-output)))))))))
 
-
-
 (progn
   (define lhrange->wire ((range sv::lhrange-p))
     :Returns (res wire-p)
@@ -2204,7 +2214,6 @@
         nil
       (cons (lhrange->wire (car lhs))
             (lhs->wire-list (cdr lhs)))))
-
 
   (define lhslist->wire-list ((lhslist sv::lhslist-p))
     :returns (res wire-list-listp)
@@ -2325,7 +2334,7 @@
 
        ;; Create Listeners.
        (occs (make-fast-alist occs)) ;; necessary for occ-to-occ listeners.
-       (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners occs nil)))
+       (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners occs 'sig-to-occ-listeners)))
        (occ-to-occ-listeners (create-occ-to-occ-listeners occs occs sig-to-occ-listeners))
        (occ-to-occ-listeners (make-fast-alist occ-to-occ-listeners))
        (occ-to-occ-listeners (add-initial-to-occ-listeners input-wires occs
@@ -2364,7 +2373,6 @@
                     vl-insouts2
                     svex-simplify-preloaded))||#
 
-
 (define svl2-flatten-mods ((modnames sv::modnamelist-p)
                            (modalist sv::modalist-p)
                            (mods-to-skip sv::modnamelist-p)
@@ -2396,7 +2404,7 @@
  svl2-mod-calculate-ranks
  (define svl2-mod-calculate-ranks ((modname sv::modname-p)
                                    (modules svl2-module-alist-p)
-                                   (ranks alistp)
+                                   (ranks alistp$)
                                    (trace) ;; to check for module instantiation loops
                                    (limit natp) ;; to easily prove termination
                                    )
@@ -2425,7 +2433,7 @@
           (acons modname (1+ max-occ-rank) ranks)))))
  (define svl2-mod-calculate-ranks-occs ((occs svl2-occ-alist-p)
                                         (modules svl2-module-alist-p)
-                                        (ranks alistp)
+                                        (ranks alistp$)
                                         (trace)
                                         (limit natp))
    :measure (nfix limit)
@@ -2491,7 +2499,9 @@
        (vl-insouts (vl-design-to-insouts vl-design sv-design))
        (vl-insouts (vl-insouts-insert-wire-sizes vl-insouts sv-design
                                                  modnames))
-       (svex-simplify-preloaded (svex-simplify-preload))
+       (svex-simplify-preloaded (svex-simplify-preload
+                                 :runes *svl2-flatten-simplify-lemmas*
+                                 ))
 
        ((mv modules rp::rp-state)
         (svl2-flatten-mods modnames sv-design.modalist
@@ -2522,8 +2532,6 @@
 ;;
 
 ;;;;
-
-
 
 #|
 :i-am-here

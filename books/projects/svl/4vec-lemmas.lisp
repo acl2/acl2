@@ -1773,25 +1773,24 @@
                                acl2::floor-nonpositive . 2)
                               (:rewrite acl2::floor-zero . 1)))))))
 
-
 (defthm 4vec-part-install-of-4vec-part-select
   (implies  ;;(and (natp start)
-                (natp size)
-           (equal (4vec-part-install start size old-val (4vec-part-select 0 size
-                                                                          new-val))
-                  (4vec-part-install start size old-val new-val)))
+   (natp size)
+   (equal (4vec-part-install start size old-val (4vec-part-select 0 size
+                                                                  new-val))
+          (4vec-part-install start size old-val new-val)))
   :hints (("Goal"
            :cases ((4vec-p size))
            :in-theory (e/d (4vec-part-install
                             4vec-part-select
                             sv::2VEC
 
-                         ;   4VEC-CONCAT
-                          ;  4VEC-RSH
-                ;            4VEC-SHIFT-CORE
-                 ;           SV::4VEC->UPPER
-                  ;          ACL2::NEGP
-                   ;         sv::4vec->lower
+;   4VEC-CONCAT
+;  4VEC-RSH
+;            4VEC-SHIFT-CORE
+;           SV::4VEC->UPPER
+;          ACL2::NEGP
+;         sv::4vec->lower
                             )
                            (4VEC-CONCAT-INSERT-4VEC-PART-SELECT)))))
 
@@ -2119,8 +2118,6 @@
                              sv::4vec-bitxor
                              sv::3vec-?*)
                             ()))))
-
-
 
 (defthm 4vec-part-select-of-4vec-?
   (implies (and (natp start)
@@ -2956,6 +2953,25 @@
                             SV::3VEC-FIX)
                            (4vec)))))
 
+(defthmd 4vec-part-select-of-4vec-bitand-better
+  (implies (and (natp size)
+                (natp start))
+           (equal (4vec-part-select start size (4vec-bitand val1 val2))
+                  (4vec-bitand (4vec-part-select start size val1)
+                               (4vec-part-select start size val2))))
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-4vec-bitand))
+           :in-theory (e/d (4vec-part-select
+                            4VEC-CONCAT
+                            SV::4VEC->LOWER
+                            4VEC-RSH
+                            SV::4VEC->UPPER
+                            4VEC-BITAND
+                            4VEC-SHIFT-CORE
+                            3VEC-BITAND
+                            SV::3VEC-FIX)
+                           (4vec)))))
+
 (defthmd 4vec-part-select-of-4vec-bitor
   (implies (and (natp size)
                 (natp start))
@@ -2975,12 +2991,27 @@
                             SV::3VEC-FIX)
                            (4vec)))))
 
-
-
+(defthmd 4vec-part-select-of-4vec-bitor-better
+  (implies (and (natp size)
+                (natp start))
+           (equal (4vec-part-select start size (4vec-bitor val1 val2))
+                  (4vec-bitor (4vec-part-select start size val1)
+                              (4vec-part-select start size val2))))
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-4vec-bitor))
+           :in-theory (e/d (4vec-part-select
+                            4VEC-CONCAT
+                            SV::4VEC->LOWER
+                            4VEC-RSH
+                            SV::4VEC->UPPER
+                            4VEC-BITor
+                            4VEC-SHIFT-CORE
+                            sv::3VEC-BITor
+                            SV::3VEC-FIX)
+                           (4vec)))))
 
 (encapsulate
   nil
-
 
   (defthm ash-of-logior
     (equal (ash (logior x y) size)
@@ -3055,11 +3086,70 @@
                               logand
                               ash
                               loghead
+                              )))))
+
+  (local
+   (use-ihs-extensions t))
+
+  (defthmd logand-loghead-and-lognot
+    (implies (and (integerp val1)
+                  (integerp val2))
+             (equal (LOGAND (LOGHEAD SIZE val1)
+                            (LOGNOT (LOGHEAD SIZE val2)))
+                    (LOGAND (LOGHEAD SIZE val1)
+                            (LOGHEAD SIZE (LOGNOT val2)))))
+    :hints (("Goal"
+             :in-theory (e/d* (bitops::ihsext-inductions
+                               bitops::ihsext-recursive-redefs) ()))))
+
+  (local
+   (use-ihs-extensions nil))
+
+  (defthmd 4vec-part-select-of-4vec-bitxor-better
+    (implies (and (natp size)
+                  (natp start))
+             (equal (4vec-part-select start size (sv::4vec-bitxor val1 val2))
+                    (sv::4vec-bitxor (4vec-part-select start size val1)
+                                     (4vec-part-select start size val2))))
+    :hints (("Goal"
+             :use ((:instance 4vec-part-select-of-4vec-bitxor))
+             :in-theory (e/d (4vec-part-select
+                              4VEC-CONCAT
+                              4VEC-RSH
+                              sv::4VEC-BITxor
+                              logxor-redef
+                              lognot-of-logior
+                              lognot-of-logand
+                              4VEC-SHIFT-CORE
+                              sv::3VEC-BITxor
+                              SV::3VEC-FIX
+                              logand-loghead-and-lognot
+                              ACL2::|(logior (logior x y) z)|
+                              ACL2::|(logand (logand x y) z)|
+                              ACL2::|(logand y x)|
+                              ACL2::COMMUTATIVITY-OF-LOGIOR
+                              ACL2::COMMUTATIVITY-OF-LOGand
+                              BITOPS::COMMUTATIVITY-2-OF-LOGIOR
+                              BITOPS::COMMUTATIVITY-2-OF-LOGand
+                              BITOPS::LOGAND-OF-LOGAND-SELF-1
+                              BITOPS::LOGAND-OF-LOGAND-SELF-2
+                              BITOPS::LOGAND-OF-LOGior-SELF
+                              BITOPS::LOGior-OF-LOGior-SELF-2
+                              BITOPS::LOGior-OF-LOGior-SELF
+                              BITOPS::LOGAND-OF-SELF
+                              BITOPS::LOGior-OF-SELF
+
+                              BITOPS::LOGHEAD-CANCEL-IN-LOGNOT
+                              BITOPS::LOGHEAD-OF-LOGIOR
+                              BITOPS::LOGHEAD-OF-LOGand)
+                             (4vec
+                              lognot
+                              logior
+                              logapp
+                              logand
+                              ash
+                              loghead
                               ))))))
-
-
-
-
 
 (defthmd logand-of-single-loghead
   (implies (syntaxp (or (atom y)
@@ -3068,7 +3158,7 @@
                           y)
                   (logand (loghead size x)
                           (loghead size y))))
-   :hints (("Goal"
+  :hints (("Goal"
            :in-theory (e/d* (bitops::ihsext-recursive-redefs
                              bitops::ihsext-inductions)
                             ()))))
@@ -3105,7 +3195,6 @@
                              sv::3vec-?*)
                             ((:rewrite acl2::zip-open)
                              sv::4vec)))))
-
 
 (defthm bitp-4vec-part-select-size=1
   (implies (and (natp val)

@@ -127,22 +127,30 @@
   ;; a unique symbol.
   (define create-dummy-svex-env-aux (vars)
     (if (atom vars)
-        (mv ''nil nil nil)
-      (b* (((mv rest-term rest-falist rest-reverselist)
+        (mv ''nil nil nil 0)
+      (b* (((mv rest-term rest-falist rest-reverselist cnt)
             (create-dummy-svex-env-aux (cdr vars)))
            (cur-symbol (to-symbol (car vars))))
         (mv `(cons (cons ',(car vars) (rp '4vec-p ,cur-symbol))
                    ,rest-term)
             (acons (car vars) `(rp '4vec-p ,cur-symbol)
-                        rest-falist)
+                   rest-falist)
             (acons cur-symbol (car vars)
-                        rest-reverselist)))))
+                   rest-reverselist)
+            (1+ cnt)))))
 
   (define create-dummy-svex-env (vars)
-    (b* (((mv term falist reverse-env)
+    (b* (((mv term falist reverse-env ?cnt)
           (create-dummy-svex-env-aux vars)))
-      (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term))
-          (make-fast-alist reverse-env)))))
+      (if t;(> cnt 0)
+          (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term))
+              (make-fast-alist reverse-env)
+              t)
+        (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term));`(rp 'svex-env-p ,term)
+            reverse-env
+            nil)))))
+
+;(memoize 'create-dummy-svex-env-aux)
 
 (define svex-simplify-preload (&key (runes '(let ((world (w state))) (current-theory :here)))
                                     (state 'state))
@@ -194,6 +202,9 @@
        (fast-alist-free (access svex-simplify-preloaded
                                 svex-simplify-preloaded
                                 :rules))
+       (fast-alist-free (access svex-simplify-preloaded
+                                svex-simplify-preloaded
+                                :enabled-exec-rules))
        nil)
     nil))
 
@@ -235,7 +246,7 @@
        ;; find the variables in the svex
        (vars (get-svex-vars svex))
        ;; create the env and reverse-env (same as env but keys and vals swapped)
-       ((mv env-term reverse-env) (create-dummy-svex-env vars))
+       ((mv env-term reverse-env is-fast) (create-dummy-svex-env vars))
        ;; get the list of runes/rule names
 
        ((mv enabled-exec-rules
@@ -264,7 +275,10 @@
        (old-not-simplified-action (rp::not-simplified-action rp::rp-state))
        (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
        ;; CREATE THE TERM TO BE REWRITTEN
-       (term `(implies ,hyp (svex-eval ',svex ,env-term)))
+       (term (if (or (equal hyp ''t)
+                     (equal hyp 't))
+                 `(svex-eval2 ',svex ,env-term)
+               `(implies ,hyp (svex-eval2 ',svex ,env-term))))
        ((mv rw rp::rp-state)
         (rp::rp-rw-aux term
                        rules-alist
@@ -275,10 +289,11 @@
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
                       old-not-simplified-action rp::rp-state))
+       (- (if svex-simplify-preloaded nil (fast-alist-free enabled-exec-rules)))
        (- (if svex-simplify-preloaded nil (fast-alist-free rules-alist)))
        (- (if svex-simplify-preloaded nil (fast-alist-free meta-rules)))
        (- (fast-alist-free (cadr (cadr (caddr env-term))))))
-    (mv rw reverse-env rp::rp-state)))
+    (mv rw reverse-env is-fast rp::rp-state)))
 
 (define to-svex-fnc (term)
 ;(declare (xargs :mode :program))
@@ -292,7 +307,7 @@
     (('svl::bits val s w)        (list 'sv::partsel s w val))
     (('svl::sbits s w new old)   (list 'sv::partinst s w old new))
     (('svl::4vec-concat$ & & &)  (cons 'sv::concat   (cdr term)))
-    
+
     (('sv::4vec-fix &) (cons 'id (cdr term)))
     (('sv::4vec-bit-extract & &) (cons 'sv::bitsel (cdr term)))
     (('sv::3vec-fix &)           (cons 'sv::unfloat  (cdr term)))
@@ -345,26 +360,32 @@
                          (cons #\1 (1- (len term))))))))
 
 (mutual-recursion
- (defun 4vec-to-svex (term reverse-env)
+ (defun 4vec-to-svex (term reverse-env is-fast)
 ;(declare (xargs :mode :program))
-   (declare (xargs :guard t))
+   (declare (xargs :guard t
+                   :guard-hints (("Goal"
+                            :in-theory (e/d (assoc-equal) ())))))
    (b* ((term (rp::ex-from-rp term)))
      (cond ((atom term)
-            (let ((entry (hons-get term reverse-env)))
+            (let ((entry (if is-fast
+                             (hons-get term reverse-env)
+                           (hons-get term reverse-env);(assoc-equal term reverse-env)
+                           )))
               (cdr entry)))
            ((and (quotep term)
                  (consp (cdr term)))
             (unquote term))
            (t (b* ((fnc (car term))
                    (args (4vec-to-svex-lst (cdr term)
-                                           reverse-env)))
+                                           reverse-env
+                                           is-fast)))
                 (to-svex-fnc (cons fnc args)))))))
- (defun 4vec-to-svex-lst (lst reverse-env)
+ (defun 4vec-to-svex-lst (lst reverse-env is-fast)
 ;(declare (xargs :mode :program))
    (if (atom lst)
        nil
-     (cons (4vec-to-svex (car lst) reverse-env)
-           (4vec-to-svex-lst (cdr lst) reverse-env)))))
+     (cons (4vec-to-svex (car lst) reverse-env is-fast)
+           (4vec-to-svex-lst (cdr lst) reverse-env is-fast)))))
 
 (define svex-simplify (svex
                        &KEY
@@ -382,7 +403,7 @@
             :verify-guards nil
             :stobjs (state
                      rp::rp-state)))
-  (b* (((mv rw reverse-env rp::rp-state)
+  (b* (((mv rw reverse-env is-fast rp::rp-state)
         (rw-svex-to-4vec svex
                          :state state
                          :hyp hyp
@@ -390,8 +411,10 @@
                          :svex-simplify-preloaded svex-simplify-preloaded))
        (svex-res (case-match rw
                    (('implies & term) (4vec-to-svex term
-                                                    reverse-env))
-                   (& (4vec-to-svex rw reverse-env)))))
+                                                    reverse-env
+                                                    is-fast))
+                   (& (4vec-to-svex rw reverse-env is-fast))))
+       (- (if is-fast (fast-alist-free reverse-env) nil)))
     (mv svex-res rp::rp-state)))
 
 ;:i-am-here

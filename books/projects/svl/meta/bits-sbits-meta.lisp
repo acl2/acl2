@@ -31,6 +31,9 @@
 (local
  (in-theory (enable bits-sbits-no-syntaxp)))
 
+(local
+ (in-theory (disable 4vec-zero-ext-is-bits)))
+
 (encapsulate
   nil
 
