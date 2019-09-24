@@ -21,10 +21,13 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "term-function-recognizers")
 
+(include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
+(include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 
@@ -75,32 +78,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist function-symbol-listp (x wrld)
-  (function-symbolp x wrld)
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  :parents (world-queries)
-  :short "Check if all the symbols in a list name functions."
-  :true-listp t)
-
-(std::deflist theorem-symbol-listp (x wrld)
-  (theorem-symbolp x wrld)
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  :parents (world-queries)
-  :short "Check if all the symbols in a list name theorems."
-  :true-listp t)
-
-(std::deflist macro-symbol-listp (x wrld)
-  (macro-symbolp x wrld)
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  :parents (world-queries)
-  :short "Check if all the symbols in a list name macros."
-  :true-listp t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

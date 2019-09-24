@@ -15,45 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (function-symbol-listp nil (w state)))
-
-(assert! (function-symbol-listp '(len cons atom) (w state)))
-
-(assert! (not (function-symbol-listp '(len cons aaaaatom) (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (defun g (x) x)
- (assert! (function-symbol-listp '(f g g) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (theorem-symbol-listp nil (w state)))
-
-(assert! (theorem-symbol-listp '(car-cdr-elim cons-car-cdr) (w state)))
-
-(assert! (not (theorem-symbol-listp '(car-cdr-elim len) (w state))))
-
-(must-succeed*
- (defthm th1 (acl2-numberp (+ x y)))
- (defthm th2 (acl2-numberp (- x)))
- (assert! (theorem-symbol-listp '(th2 th1) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (macro-symbol-listp nil (w state)))
-
-(assert! (macro-symbol-listp '(append + * *) (w state)))
-
-(assert! (not (macro-symbol-listp '(append binary-+) (w state))))
-
-(must-succeed*
- (defmacro m (x) `(list ,x))
- (defmacro n (x) `(cons ,x ,x))
- (assert! (macro-symbol-listp '(m n append) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (function-namep 'len (w state)))
 
 (assert! (not (function-namep 'cons-car-cdr (w state))))

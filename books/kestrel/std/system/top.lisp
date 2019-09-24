@@ -12,9 +12,11 @@
 
 (include-book "all-free-bound-vars")
 (include-book "conjoin")
+(include-book "function-symbol-listp")
 (include-book "function-symbolp")
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
+(include-book "macro-symbol-listp")
 (include-book "macro-symbolp")
 (include-book "primitivep")
 (include-book "pure-raw-p")
@@ -23,6 +25,7 @@
 (include-book "remove-progn")
 (include-book "remove-unused-vars")
 (include-book "term-function-recognizers")
+(include-book "theorem-symbol-listp")
 (include-book "theorem-symbolp")
 (include-book "unquote-term")
 
