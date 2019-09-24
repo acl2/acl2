@@ -1,0 +1,71 @@
+(include-book "std/strings/istrprefixp" :dir :system)
+
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
+
+(defpkg "RP"
+  (union$ *acl2-exports*
+          '(
+            b*
+            define
+            repeat
+            bash
+            bash-fn
+            bool-fix
+            repeat
+            rev
+
+            take-of-len-free
+            list-fix
+            suffixp
+            explode
+            enable*
+            e/d*
+            take-of-len-free
+            take-of-take-split
+            take-of-too-many
+            take-redefinition
+            tshell-start
+            true-listp-append
+            pos-listp
+            prefixp
+            prefixp-of-cons-left
+            prefixp-when-equal-lengths
+            proof-by-arith
+            append-of-cons
+
+	    acl2::beta-reduce-lambda-expr
+
+
+            make-flag
+            str::natstr
+            str::iprefixp
+            str::ISTRPREFIXP
+            str::NATCHARS
+            str::BASIC-NATCHARS
+            acl2::SYMBOL-LIST-LISTP
+            acl2::unprettify
+
+
+	    acl2::logapp
+	    acl2::loghead
+	    acl2::logbit
+	    acl2::logtail
+	    
+	    
+            
+            acl2::in
+            acl2::for
+            acl2::collect
+            acl2::sum
+            acl2::when
+            acl2::until
+            acl2::by
+            acl2::to
+            acl2::as
+            acl2::from
+
+	    cmr::def-formula-checks
+	    cmr::def-formula-checks-default-evl)
+          *common-lisp-symbols-from-main-lisp-package*
+          :test 'eq))

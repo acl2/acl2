@@ -11,6 +11,7 @@
 (in-package "JAVA")
 
 (include-book "kestrel/fty/defbytelist" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,3 +103,78 @@
     (implies (ascii-listp x)
              (unicode-listp x))
     :enable (ascii-listp unicode-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define string=>unicode ((string stringp))
+  :returns (unicode unicode-listp
+                    :hints (("Goal"
+                             :in-theory
+                             (enable
+                              unsigned-byte-listp-16-when-8
+                              unicode-listp-rewrite-unsigned-byte-listp))))
+  :short "Convert an ACL2 string to a Java Unicode character list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 characters are ISO-8859-1: "
+    (xdoc::seetopic "acl2::characters" "this topic")
+    " mentions ISO-8859,
+     and the @('acl2.lisp') system souce file mentions ISO-8859-1.")
+   (xdoc::p
+    "Since the ISO-8859-1 characters are the first 256 Unicode characters,
+     and since we model Java Unicode characters as unsigned 16-bit integers,
+     the library function @(tsee string=>nats) can be used
+     to convert ACL2 strings to Java Unicode character lists.
+     Here we define a wrapper of this function
+     with an appropriate return type theorem.")
+   (xdoc::p
+    "See also @(tsee ascii=>string)."))
+  (b* ((string (mbe :logic (str-fix string) :exec string)))
+    (string=>nats string))
+  :prepwork ((defruledl unsigned-byte-listp-16-when-8
+               (implies (unsigned-byte-listp 8 x)
+                        (unsigned-byte-listp 16 x))
+               :enable unsigned-byte-listp))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ascii=>string ((ascii ascii-listp))
+  :returns (string stringp)
+  :short "Convert a Java ASCII character list to an ACL2 string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee string=>unicode)
+     for the ASCII subset of Unicode.
+     It converts lists of ASCII codes to Java strings,
+     using the library function @(tsee nats=>string).")
+   (xdoc::p
+    "This function could be extended to the ISO-8859-1 subset of Unicode,
+     but for now this is not needed in our Java formalization."))
+  (b* ((ascii (mbe :logic (ascii-list-fix ascii) :exec ascii)))
+    (nats=>string ascii))
+  :guard-hints (("Goal" :in-theory (enable unsigned-byte-listp-8-when-7)))
+  :prepwork ((defruledl unsigned-byte-listp-8-when-7
+               (implies (unsigned-byte-listp 7 x)
+                        (unsigned-byte-listp 8 x))
+               :enable unsigned-byte-listp))
+  :hooks (:fix)
+  ///
+
+  (defrule ascii=>string-of-string=>unicode
+    (implies (ascii-listp (string=>unicode string))
+             (equal (ascii=>string (string=>unicode string))
+                    (str-fix string)))
+    :enable string=>unicode)
+
+  (defrule string=>unicode-of-ascii=>string
+    (equal (string=>unicode (ascii=>string ascii))
+           (ascii-list-fix ascii))
+    :enable string=>unicode
+    :prep-lemmas
+    ((defrule lemma
+       (implies (ascii-listp x)
+                (unsigned-byte-listp 8 x))
+       :enable unsigned-byte-listp-8-when-7))))

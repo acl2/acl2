@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
+(include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -725,7 +726,7 @@
         (er-soft+ ctx t nil
                   "The function ~x0 has input or output stobjs; ~
                    therefore, code generation cannot proceed." fn))
-       (body (getpropc fn 'unnormalized-body))
+       (body (ubody fn (w state)))
        ((unless body)
         (er-soft+ ctx t nil
                   "The function ~x0 has no unnormalized body; ~

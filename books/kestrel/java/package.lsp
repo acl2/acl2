@@ -69,6 +69,7 @@
                          make-lambda
                          maybe-stringp
                          msg-listp
+                         nats=>string
                          no-stobjs-p
                          partition-rest-and-keyword-args
                          patbind-run-when
@@ -82,11 +83,13 @@
                          remove-mbe-exec-from-term
                          remove-mbe-logic-from-term
                          remove-progn-from-term
+                         remove-unused-vars-from-term
                          sbyte16
                          sbyte32
                          sbyte64
                          sbyte8
                          sort-symbol-listp
+                         str-fix
                          string-downcase
                          string-symbollist-alistp
                          string-upcase
@@ -99,12 +102,14 @@
                          trans-eval
                          tuplep
                          typed-tuplep
+                         ubody
                          ubyte16
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          unnormalized-body
                          unquote-term
                          unquote-term-list
+                         unsigned-byte-listp
                          upper-case-p
                          variablep
                          str::chars-in-charset-p

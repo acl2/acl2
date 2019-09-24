@@ -576,6 +576,12 @@
     "A model of Java Unicode characters has been added,
      along with a model of their ASCII subset.")
 
+   (xdoc::p
+    "Models have been added
+     of the null and boolean literals,
+     of (non-restricted and restricted) keywords,
+     and of identifiers.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Kestrel Utilities")
