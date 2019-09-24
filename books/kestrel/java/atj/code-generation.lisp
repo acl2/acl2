@@ -819,9 +819,9 @@
      There is no need to exclude the empty string explicitly,
      because ACL2 package names are never empty
      and thus they never result in the empty string."))
-  (append *atj-java-keywords*
-          *atj-java-boolean-literals*
-          (list *atj-java-null-literal*)
+  (append *keywords*
+          *boolean-literals*
+          (list *null-literal*)
           *atj-aij-class-names*
           (list "BigInteger"
                 "ArrayList"
@@ -880,9 +880,9 @@
      a Java keyword, boolean or null literal, or empty.")
    (xdoc::p
     "This constant collects these disallowed names."))
-  (append *atj-java-keywords*
-          *atj-java-boolean-literals*
-          (list *atj-java-null-literal*)
+  (append *keywords*
+          *boolean-literals*
+          (list *null-literal*)
           (list ""))
   ///
   (assert-event (string-listp *atj-disallowed-jmethod-names*))

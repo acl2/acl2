@@ -192,9 +192,9 @@
      It also includes the empty sequence,
      because an ACL2 symbol may consist of no characters,
      but a Java identifier cannot be empty."))
-  (append *atj-java-keywords*
-          *atj-java-boolean-literals*
-          (list *atj-java-null-literal*)
+  (append *keywords*
+          *boolean-literals*
+          (list *null-literal*)
           (list ""))
   ///
   (assert-event (string-listp *atj-disallowed-jvar-names*))

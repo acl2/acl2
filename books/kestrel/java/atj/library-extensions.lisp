@@ -10,6 +10,10 @@
 
 (in-package "JAVA")
 
+(include-book "../language/null-literal")
+(include-book "../language/boolean-literals")
+(include-book "../language/keywords")
+
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/typed-alists/string-symbollist-alistp" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-nat-alistp" :dir :system)
@@ -140,71 +144,6 @@
 
 ; Java:
 
-(defval *atj-java-keywords*
-  :short "The keywords of the Java language, as ACL2 strings."
-  (list "abstract"
-        "assert"
-        "boolean"
-        "break"
-        "byte"
-        "case"
-        "catch"
-        "char"
-        "class"
-        "const"
-        "continue"
-        "default"
-        "do"
-        "double"
-        "else"
-        "enum"
-        "extends"
-        "final"
-        "finally"
-        "float"
-        "for"
-        "if"
-        "goto"
-        "implements"
-        "import"
-        "instanceof"
-        "int"
-        "interface"
-        "long"
-        "native"
-        "new"
-        "package"
-        "private"
-        "protected"
-        "public"
-        "return"
-        "short"
-        "static"
-        "strictfp"
-        "super"
-        "switch"
-        "synchronized"
-        "this"
-        "throw"
-        "throws"
-        "transient"
-        "try"
-        "void"
-        "volatile"
-        "while"
-        "_")
-  ///
-  (assert-event (string-listp *atj-java-keywords*))
-  (assert-event (no-duplicatesp-equal *atj-java-keywords*)))
-
-(defval *atj-java-boolean-literals*
-  :short "The boolean literals of the Java language, as ACL2 strings."
-  (list "true" "false"))
-
-(defval *atj-java-null-literal*
-  :short "The null literal of the Java language, as an ACL2 string."
-  "null")
-
 (define atj-string-ascii-java-identifier-p ((string stringp))
   :returns (yes/no booleanp)
   :short "Check if an ACL2 string is a valid ASCII Java identifier."
@@ -216,9 +155,9 @@
     letters, digits, underscores, and dollar signs.
     It must also be different
     from Java keywords and from the boolean and null literals.")
-  (and (not (member-equal string *atj-java-keywords*))
-       (not (member-equal string *atj-java-boolean-literals*))
-       (not (equal string *atj-java-null-literal*))
+  (and (not (member-equal string *keywords*))
+       (not (member-equal string *boolean-literals*))
+       (not (equal string *null-literal*))
        (b* ((chars (explode string)))
          (and (consp chars)
               (alpha/uscore/dollar-char-p (car chars))
