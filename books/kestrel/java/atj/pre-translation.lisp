@@ -10,12 +10,13 @@
 
 (in-package "JAVA")
 
-(include-book "library-extensions")
+(include-book "types")
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
+(include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
@@ -55,7 +56,11 @@
       and so that different ACL2 variables with the same name are renamed apart.
       See "
      (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
-     ".")))
+     ".")
+    (xdoc::li
+     "In the shallow embedding,
+      we annotate terms with ATJ type information.
+      See @(tsee atj-pre-translation-type-annotation).")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -663,11 +668,540 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ atj-pre-translation-type-annotation
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          addition of type annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "This step annotates ACL2 terms with ATJ types:
+     (i) each ACL2 term is wrapped with a function named @('<src>to<dst>'),
+     where @('src') is the ATJ type of the term
+     and @('dst') is an ATJ type to which the term must be converted to;
+     (ii) each ACL2 variable @('var') in a term is renamed to @('var<type>'),
+     where @('type') is the ATJ type of the variable.")
+   (xdoc::p
+    "These annotations facilitate the ACL2-to-Java translation,
+     which uses the type annotations as ``instructions'' for
+     (i) which types to declare Java local variables with, and
+     (ii) which Java conversion code to insert around expressions.")
+   (xdoc::p
+    "The annotated terms are still ACL2 terms (with a specific structure).
+     This should let us prove, in ACL2,
+     the equality of the annotated terms with the original terms,
+     under suitable variable rebinding,
+     and by introducing the @('<src>to<dst>') functions as identities.
+     (This has not been done yet.)"))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-conversion-name ((src-type atj-typep)
+                                  (dst-type atj-typep))
+  :returns (name symbolp)
+  :short "ATJ type conversion function names used to annotate ACL2 terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned "
+    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+    ", each ACL2 term is wrapped with a function named @('<src>to<dst>'),
+     where @('src') is the ATJ type of the term
+     and @('dst') is an ATJ type to which the term must be converted to.")
+   (xdoc::p
+    "These function names are all in the @('\"JAVA\"') package.
+     For now we do not need these functions to actually exist in the ACL2 world,
+     because annotated terms are only created ephemerally as data
+     manipulated by the ATJ code generation functions.
+     However, in order to prove that the type annotation process
+     preserves the ACL2 meaning of terms,
+     these functions will need to exist and be defined as identify functions,
+     which can be easily done with a macro."))
+  (intern$ (str::cat "<" (symbol-name src-type) ">"
+                     "TO"
+                     "<" (symbol-name dst-type) ">")
+           "JAVA"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-conversion-name-inv ((conv symbolp))
+  :returns (mv (src-type atj-typep)
+               (dst-type atj-typep))
+  :verify-guards nil
+  :short "Inverse of @(tsee atj-type-conversion-name)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given a symbol @('java::<src>to<dst>'),
+     where @('src') and @('dst') are ATJ types,
+     this function returns these two ATJ types."))
+  (b* ((pkg (symbol-package-name conv))
+       ((unless (equal pkg "JAVA"))
+        (raise "Internal error: ~x0 is not in the \"JAVA\" package, ~
+                                but in the ~x1 package instead."
+               conv pkg)
+        (mv :value :value)) ; irrelevant
+       (chars (explode (symbol-name conv)))
+       ((unless (and (consp chars)
+                     (eql (car chars) #\<)))
+        (raise "Internal error: ~x0 does not start with <." conv)
+        (mv :value :value)) ; irrelevant
+       (chars (cdr chars))
+       (pos (position #\> chars))
+       ((unless pos)
+        (raise "Internal error: ~x0 does not contain >." conv)
+        (mv :value :value)) ; irrelevant
+       (src-type-chars (take pos chars))
+       (chars (nthcdr pos chars))
+       ((unless (and (>= (len chars) 4)
+                     (equal (take 4 chars)
+                            (list #\> #\T #\O #\<))))
+        (raise "Internal error: ~x0 does not contain >TO<." conv)
+        (mv :value :value)) ; irrelevant
+       (chars (nthcdr 4 chars))
+       ((unless (and (consp chars)
+                     (eql (car (last chars)) #\>)))
+        (raise "Internal error: ~x0 does not end with >." conv)
+        (mv :value :value)) ; irrelevant
+       (dst-type-chars (butlast chars 1))
+       (src-type (intern (implode src-type-chars) "KEYWORD"))
+       (dst-type (intern (implode dst-type-chars) "KEYWORD"))
+       ((unless (atj-typep src-type))
+        (raise "Internal error: ~x0 is not an ATJ type." src-type)
+        (mv :value :value)) ; irrelevant
+       ((unless (atj-typep dst-type))
+        (raise "Internal error: ~x0 is not an ATJ type." dst-type)
+        (mv :value :value))) ; irrelevant
+    (mv src-type dst-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-wrap-term ((term pseudo-termp)
+                            (src-type atj-typep)
+                            (dst-type? maybe-atj-typep))
+  :returns (wrapped-term pseudo-termp :hyp (pseudo-termp term))
+  :short "Wrap an ACL2 term with a type conversion function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The conversion is from the source to the destination type.
+     If the destination type is absent,
+     it is treated as if it were equal to the source type,
+     i.e. the conversion is a no-op."))
+  (b* ((conv (if dst-type?
+                 (atj-type-conversion-name src-type dst-type?)
+               (atj-type-conversion-name src-type src-type))))
+    (fcons-term* conv term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-unwrap-term ((term pseudo-termp))
+  :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
+               (src-type atj-typep)
+               (dst-type atj-typep))
+  :verify-guards nil
+  :short "Unwrap an ACL2 term wrapped by @(tsee atj-type-wrap-term)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially the inverse function,
+     except that it always returns a destination type, never @('nil')."))
+  (b* (((when (or (variablep term)
+                  (fquotep term)
+                  (flambda-applicationp term)))
+        (raise "Internal error: the term ~x0 has the wrong format." term)
+        (mv nil :value :value)) ; irrelevant
+       (fn (ffn-symb term))
+       ((when (flambdap fn))
+        (raise "Internal error: the term ~x0 has the wrong format." term)
+        (mv nil :value :value)) ; irrelevant
+       ((mv src-type dst-type) (atj-type-conversion-name-inv fn)))
+    (mv (fargn term 1) src-type dst-type))
+  ///
+
+  (defrule acl2-count-of-atj-type-unwrap-term-linear
+    (implies (mv-nth 0 (atj-type-unwrap-term term))
+             (< (acl2-count (mv-nth 0 (atj-type-unwrap-term term)))
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-rewrap-term ((term pseudo-termp)
+                              (src-type atj-typep)
+                              (dst-type? maybe-atj-typep))
+  :returns (rewrapped-term pseudo-termp :hyp (pseudo-termp term)
+                           :hints (("Goal" :expand ((pseudo-termp term)))))
+  :short "Re-wrap an ACL2 term with a type conversion function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when annotating @(tsee if) terms,
+     in the shallow embedding approach.
+     These terms are initially wrapped with a type conversion function,
+     but in general may need to be wrapped with a different one.
+     So here we replace the wrapper.
+     See @(tsee atj-type-annotate-term) for details."))
+  (b* (((when (or (variablep term)
+                  (fquotep term)
+                  (not (consp (fargs term)))))
+        (raise "Internal error: the term ~x0 has the wrong format." term)))
+    (atj-type-wrap-term (fargn term 1) src-type dst-type?))
+  :guard-hints (("Goal" :expand ((pseudo-termp term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-annotate-var ((var symbolp) (type atj-typep))
+  :returns (annotated-var symbolp)
+  :short "Annotate an ACL2 variable with a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned "
+    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+    ", we systematically add type information to each ACL2 variable.
+     We do so by adding @('<type>') at the end of the variable name."))
+  (acl2::add-suffix-to-fn var (str::cat "<" (symbol-name type) ">")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-unannotate-var ((var symbolp))
+  :returns (mv (unannotated-var symbolp)
+               (type atj-typep))
+  :verify-guards nil
+  :short "Decompose an annotated ACL2 variable into
+          its unannotated counterpart and its type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee atj-type-annotate-var).")
+   (xdoc::p
+    "It is used when translating from ACL2 to Java,
+     because the name of the Java variable is the one of the ACL2 variable
+     without the type annotation."))
+  (b* ((chars (explode (symbol-name var)))
+       (rev-chars (reverse chars))
+       ((unless (eql (car rev-chars) #\>))
+        (raise "Internal error: ~x0 does not end with >." var)
+        (mv nil :value)) ; irrelevant
+       (rev-chars (cdr rev-chars))
+       (pos (position #\< rev-chars))
+       ((unless pos)
+        (raise "Internal error: ~x0 does not contain <." var)
+        (mv nil :value)) ; irrelevant
+       (rev-type-chars (take pos rev-chars))
+       (type-chars (reverse rev-type-chars))
+       (type (intern (implode type-chars) "KEYWORD"))
+       ((unless (atj-typep type))
+        (raise "Internal error: ~x0 is not an ATJ type." type)
+        (mv nil :value)) ; irrelevant
+       (unannotated-chars (take (- (len chars) (+ pos 2)) chars))
+       (unannotated-var (intern-in-package-of-symbol
+                         (implode unannotated-chars) var)))
+    (mv unannotated-var type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-annotate-vars ((vars symbol-listp)
+                                (types atj-type-listp))
+  :guard (int= (len vars) (len types))
+  :returns (new-vars symbol-listp)
+  :short "Lift @(tsee atj-type-annotate-var) to lists."
+  (cond ((endp vars) nil)
+        (t (cons (atj-type-annotate-var (car vars) (car types))
+                 (atj-type-annotate-vars (cdr vars) (cdr types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-unannotate-vars ((vars symbol-listp))
+  :returns (mv (unannotated-vars symbol-listp)
+               (types atj-type-listp))
+  :verify-guards nil
+  :short "Lift @(tsee atj-type-unannotate-var) to lists."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv var type) (atj-type-unannotate-var (car vars)))
+       ((mv vars types) (atj-type-unannotate-vars (cdr vars))))
+    (mv (cons var vars) (cons type types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-type-annotate-term
+  :short "Add ATJ type annotations to ACL2 terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type annotation procedure involves inferring the types of terms,
+     and wrapping terms with type conversion functions
+     to match certain type requirements.")
+   (xdoc::p
+    "The @('var-types') input assigns types to (at least)
+     all the free variables in the term that is being annotated.
+     At the top level (see @(tsee atj-type-annotate-formals+body)),
+     @('var-types') is initialized with the formal parameters of a function
+     and with its corresponding input types.
+     When we encounter a lambda expression in a term,
+     @('var-types') is replaced with an alist that assigns
+     to the formal parameter of the lambda expression
+     the types inferred for the actual arguments of the lambda expression;
+     that is, unlike at the top level, at intermediate levels
+     variables receive the types inferred for their binding terms.")
+   (xdoc::p
+    "The @('required-type?') input specifies
+     the type required for the term, if any.
+     At the top level (see @(tsee atj-type-annotate-formals+body)),
+     this is the output type of the function:
+     the body of the function must have the output type of the function.
+     When annotating an actual argument of a named function call in a term,
+     the required type is the input type of the called function
+     for the corresponding argument.
+     When annotating an actual argument of a lambda expression in a term,
+     there is no required type (i.e. @('required-type?') is @('nil'));
+     as mentioned above, the resulting type
+     is then assigned to the corresponding formal parameter.
+     The required type is used to determine the type conversion function
+     to wrap the term with:
+     the conversion is from the type inferred for the term
+     to the required type;
+     if there is no required type, the conversion is
+     from the inferred type to the same type.")
+   (xdoc::p
+    "The result of annotating a term is not only the annotated term,
+     but also the type of the wrapped term.
+     This is always the same as the required type when there is a required type;
+     when there is no required type,
+     the resulting type is the one inferred for the term.")
+   (xdoc::p
+    "The type inferred for a variable is the one assigned by @('var-types').
+     We annotate the variable with its type;
+     note that the variable names in @('var-types')
+     do not have type annotations.
+     We wrap the variable with a type conversion function
+     from the inferred type to the required type if supplied,
+     or to the inferred type (i.e. no-op conversion) if not supplied.")
+   (xdoc::p
+    "The type inferred for a quoted constant
+     is determined by the value of the quoted constant.
+     We wrap the quoted constant with a type conversion function
+     as discussed above.")
+   (xdoc::p
+    "The non-strict function @(tsee if) is treated specially,
+     because eventually it is translated to a Java @('if'),
+     which assigns either the `then' part or the `else' part
+     to a Java local variable.
+     The type of the Java local variable is @('required-type?') if supplied:
+     in this case, when @('required-type?') is recursively passed
+     to the second and third argument of the @(tsee if),
+     both terms will be wrapped so that they have the required type.
+     However, if @('required-type?') is @('nil'),
+     the recursive annotation of the `then' and `else' subterms
+     may produce different types,
+     and so in this case we re-wrap those terms
+     with the least upper bound of the two types.
+     The case of a term of the form @('(if a a b)')
+     is treated a little differently,
+     but there is no substantial difference.
+     In the general case @('(if a b c)') with @('a') different from @('b'),
+     there is never any required type for the test @('a'),
+     because in the Java code it is just used
+     to generate the test of the @('if').
+     In all cases, the @(tsee if) is wrapped with
+     the identify conversion function for the overall type,
+     for uniformity and to immediately indicate the type
+     of the Java local variable to generate.")
+   (xdoc::p
+    "For a named function call, the function's types are obtained:
+     the input types become the required ones for the argument terms,
+     while the output type is the one inferred for the call,
+     which is then wrapped as needed.")
+   (xdoc::p
+    "For a lambda expression,
+     the argument terms are annotated without required types.
+     The inferred types are then assigned to the formal parameters
+     when the body of the lambda expression is annotated.
+     We annotate all the formal parameters of the lambda expression;
+     but note that the new @('var-types') has non-annotated variable names.")
+   (xdoc::p
+    "An annotated term is still a regular term,
+     but it has a certain structure."))
+  :verify-guards nil
+
+  (define atj-type-annotate-term ((term pseudo-termp)
+                                  (required-type? maybe-atj-typep)
+                                  (var-types symbol-atjtype-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
+    :returns (mv (annotated-term "A @(tsee pseudo-termp).")
+                 (resulting-type "A @(tsee atj-typep)."))
+    (b* (((when (variablep term))
+          (b* ((var term)
+               (var+type (assoc-eq var var-types))
+               ((unless (consp var+type))
+                (prog2$
+                 (raise "Internal error: the variable ~x0 has no type." term)
+                 (mv nil :value))) ; irrelevant
+               (type (cdr var+type))
+               (var (atj-type-annotate-var var type)))
+            (mv (atj-type-wrap-term var type required-type?)
+                (or required-type? type))))
+         ((when (fquotep term))
+          (b* ((value (acl2::unquote-term term))
+               (type (atj-type-of-value value)))
+            (mv (atj-type-wrap-term term type required-type?)
+                (or required-type? type))))
+         (fn (ffn-symb term))
+         ((when (and (eq fn 'if)
+                     (int= (len (fargs term)) 3))) ; should be always true
+          (b* ((test (fargn term 1))
+               (then (fargn term 2))
+               (else (fargn term 3)))
+            (if (equal test then) ; it's an OR
+                (b* ((first test)
+                     (second else)
+                     ((mv first
+                          first-type) (atj-type-annotate-term first
+                                                              required-type?
+                                                              var-types
+                                                              guards$
+                                                              wrld))
+                     ((mv second
+                          second-type) (atj-type-annotate-term second
+                                                               required-type?
+                                                               var-types
+                                                               guards$
+                                                               wrld))
+                     (type (or required-type?
+                               (atj-type-join first-type second-type)))
+                     (first (if required-type?
+                                first
+                              (atj-type-rewrap-term first first-type type)))
+                     (second (if required-type?
+                                 second
+                               (atj-type-rewrap-term second second-type type)))
+                     (term (acl2::fcons-term* 'if first first second)))
+                  (mv (atj-type-wrap-term term type type)
+                      type))
+              (b* (((mv test &) (atj-type-annotate-term test
+                                                        nil
+                                                        var-types
+                                                        guards$
+                                                        wrld))
+                   ((mv then
+                        then-type) (atj-type-annotate-term then
+                                                           required-type?
+                                                           var-types
+                                                           guards$
+                                                           wrld))
+                   ((mv else
+                        else-type) (atj-type-annotate-term else
+                                                           required-type?
+                                                           var-types
+                                                           guards$
+                                                           wrld))
+                   (type (or required-type?
+                             (atj-type-join then-type else-type)))
+                   (then (if required-type?
+                             then
+                           (atj-type-rewrap-term then then-type type)))
+                   (else (if required-type?
+                             else
+                           (atj-type-rewrap-term else else-type type)))
+                   (term (acl2::fcons-term* 'if test then else)))
+                (mv (atj-type-wrap-term term type type)
+                    type)))))
+         ((when (symbolp fn))
+          (b* ((fn-type (atj-get-function-type fn guards$ wrld))
+               (in-types (atj-function-type->inputs fn-type))
+               (out-type (atj-function-type->output fn-type))
+               ((mv args &) (atj-type-annotate-terms (fargs term)
+                                                     in-types
+                                                     var-types
+                                                     guards$
+                                                     wrld))
+               (term (fcons-term fn args)))
+            (mv (atj-type-wrap-term term out-type required-type?)
+                (or required-type? out-type))))
+         ((mv args types) (atj-type-annotate-terms (fargs term)
+                                                   (repeat (len (fargs term))
+                                                           nil)
+                                                   var-types
+                                                   guards$
+                                                   wrld))
+         (formals (lambda-formals fn))
+         (var-types (pairlis$ formals types))
+         (formals (atj-type-annotate-vars formals types))
+         ((mv body type) (atj-type-annotate-term (lambda-body fn)
+                                                 required-type?
+                                                 var-types
+                                                 guards$
+                                                 wrld))
+         (term (fcons-term (make-lambda formals body) args)))
+      (mv (atj-type-wrap-term term type required-type?)
+          (or required-type? type))))
+
+  (define atj-type-annotate-terms ((terms pseudo-term-listp)
+                                   (required-types? maybe-atj-type-listp)
+                                   (var-types symbol-atjtype-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
+    :guard (int= (len terms) (len required-types?))
+    :returns (mv (annotated-terms "A @(tsee pseudo-term-listp).")
+                 (resulting-types "A @(tsee atj-type-listp)."))
+    (b* (((when (endp terms)) (mv nil nil))
+         ((mv term type) (atj-type-annotate-term (car terms)
+                                                 (car required-types?)
+                                                 var-types
+                                                 guards$
+                                                 wrld))
+         ((mv terms types) (atj-type-annotate-terms (cdr terms)
+                                                    (cdr required-types?)
+                                                    var-types
+                                                    guards$
+                                                    wrld)))
+      (mv (cons term terms) (cons type types)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-annotate-formals+body ((formals symbol-listp)
+                                        (body pseudo-termp)
+                                        (in-types atj-type-listp)
+                                        (out-type atj-typep)
+                                        (guards$ booleanp)
+                                        (wrld plist-worldp))
+  :guard (int= (len formals) (len in-types))
+  :returns (mv (annotated-formals "A @(tsee symbol-listp).")
+               (annotated-body "A @(tsee pseudo-termp)."))
+  :verify-guards nil
+  :short "Add ATJ type annotations to the formal parameters and body
+          of an ACL2 function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input and output types of the function are supplied as arguments.
+     We annotate the body, using the output type as the required type.
+     We initialize the variable-type alist
+     to assign the input types to the formal parameters.
+     We also annotate the formal parameters,
+     but note that @('var-types') has non-annotated variable names."))
+  (b* ((var-types (pairlis$ formals in-types))
+       (formals (atj-type-annotate-vars formals in-types))
+       ((mv body &)
+        (atj-type-annotate-term body out-type var-types guards$ wrld)))
+    (mv formals body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-pre-translate ((fn symbolp)
                            (formals symbol-listp)
                            (body pseudo-termp)
+                           (in-types atj-type-listp)
+                           (out-type atj-typep)
                            (deep$ booleanp)
-                           (guards$ booleanp))
+                           (guards$ booleanp)
+                           (wrld plist-worldp))
   :returns (mv (new-formals "A @(tsee symbol-listp).")
                (new-body "A @(tsee pseudo-termp)."))
   :verify-guards nil
@@ -683,5 +1217,9 @@
     "."))
   (b* ((body (atj-remove-return-last body guards$))
        (body (remove-unused-vars-from-term body))
-       ((when deep$) (mv formals body)))
-    (atj-rename-formals+body formals body (symbol-package-name fn))))
+       ((when deep$) (mv formals body))
+       ((mv formals body) (atj-rename-formals+body
+                           formals body (symbol-package-name fn)))
+       ((mv formals body) (atj-type-annotate-formals+body
+                           formals body in-types out-type guards$ wrld)))
+    (mv formals body)))
