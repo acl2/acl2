@@ -538,6 +538,7 @@ ADDED_BOOKS := \
 # could be added as x86isa is below.
 
 ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
+ADDED_BOOKS += $(filter projects/filesystems/%, $(OK_CERTS))
 
 ADDED_BOOK_TARGETS :=
 
