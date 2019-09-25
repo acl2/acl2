@@ -1241,7 +1241,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (testing-timeout (get1 :cgen-timeout kwd-alist))
        ((when skip-tests-p) (value nil))
        (mode (if (get1 :program-mode-p kwd-alist) :program :logic))
-       (defun (list* 'ACL2::DEFUN name formals
+       (defun (list* 'acl2::defun name formals
                      (append (update-xargs-decls decls :guard ic :mode mode)
                              (list body))))
        (redef? (and (getpropc name 'formals) t))

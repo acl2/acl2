@@ -143,37 +143,50 @@ immediately above it.
 
 The types are:
 
-neg: non-pos-integer, neg-rational
-pos: nat, pos-rational
-non-neg-integer (rewrites to nat)
-nat: integer
+neg: non-pos-integer, non-0-integer, neg-rational
+pos: nat, non-0-integer, pos-rational
+
 non-pos-integer: integer
+non-0-integer: integer
+nat: integer
+
 odd:     (not recognizer)
 even:    (not recognizer)
 z:       (not recognizer)
+
 integer: rational
+
 neg-ratio: non-pos-rational
 pos-ratio: non-neg-rational
+
 ratio: rational
-neg-rational: non-pos-rational
-pos-rational: non-neg-rational
+
+neg-rational: non-pos-rational, non-0-rational
+pos-rational: non-neg-rational, non-0-rational
+
 non-neg-rational: rational
 non-pos-rational: rational
+non-0-rational: rational
+
 rational: acl2-number
 complex-rational: acl2-number
-acl2-number
+acl2-number: atom
 
 We also want disjoint theorems
 
-neg: nat,
+neg: nat
 pos: non-pos-integer
-odd: even (don't need as it follows from definition of odd)
+
 integer: ratio
+
 neg-ratio: non-neg-rational (probably don't need)
 pos-ratio: non-pos-rational (probably don't need)
+
 neg-rational: non-neg-rational
 pos-rational: non-pos-rational
 rational: complex-rational
+
+odd: even (don't need as it follows from definition of odd)
 
 I updated defdata so that it generates forward-chaining rules with
 subtype and disjoint forms, so see base.lisp in defdata.

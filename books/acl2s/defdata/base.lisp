@@ -1265,23 +1265,14 @@ No longer needed.
 (defdata-subtype-strict pos non-0-integer)
 (defdata-subtype-strict pos pos-rational)
 
-(defdata-subtype-strict nat integer)
 (defdata-subtype-strict non-pos-integer integer)
 (defdata-subtype-strict non-0-integer integer)
+(defdata-subtype-strict nat integer)
 
 (defdata-subtype-strict integer rational)
 
-#|
-No longer defined
-(defdata-subtype-strict neg-ratio non-pos-ratio)
 (defdata-subtype-strict neg-ratio non-pos-rational)
-
-(defdata-subtype-strict pos-ratio non-neg-ratio)
 (defdata-subtype-strict pos-ratio non-neg-rational)
-
-(defdata-subtype-strict non-neg-ratio ratio)
-(defdata-subtype-strict non-pos-ratio ratio)
-|#
 
 (defdata-subtype-strict ratio rational)
   
@@ -1290,7 +1281,6 @@ No longer defined
 
 (defdata-subtype-strict pos-rational non-neg-rational) 
 (defdata-subtype-strict pos-rational non-0-rational) 
-(defdata-subtype-strict pos-rational rational) 
 
 (defdata-subtype-strict non-neg-rational rational)
 (defdata-subtype-strict non-pos-rational rational)
