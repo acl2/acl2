@@ -172,59 +172,6 @@
          (and (unsigned-byte-listp n1 ac)
               (or (zp n2) (unsigned-byte-p n1 val)))))
 
-(defthm consp-of-chars=>nats
-  (iff (consp (chars=>nats chars))
-       (consp chars))
-  :hints (("goal" :in-theory (enable chars=>nats))))
-
-(defthmd consp-of-string=>nats
-  (iff (consp (string=>nats string))
-       (consp (explode string)))
-  :hints (("goal" :in-theory (enable string=>nats))))
-
-(defthm chars=>nats-of-make-list-ac
-  (equal (chars=>nats (make-list-ac n val ac))
-         (make-list-ac n (char-code val)
-                       (chars=>nats ac)))
-  :hints (("goal" :in-theory (enable chars=>nats))))
-
-(defthm string=>nats-of-implode
-  (implies (character-listp chars)
-           (equal (string=>nats (implode chars))
-                  (chars=>nats chars)))
-  :hints (("goal" :in-theory (enable string=>nats))))
-
-(defthmd chars=>nats-of-take
-  (implies (<= (nfix n) (len chars))
-           (equal (chars=>nats (take n chars))
-                  (take n (chars=>nats chars))))
-  :hints (("goal" :in-theory (enable chars=>nats))))
-
-(defthmd chars=>nats-of-nthcdr
-  (equal (chars=>nats (nthcdr n chars))
-         (nthcdr n (chars=>nats chars)))
-  :hints (("goal" :in-theory (enable chars=>nats nthcdr-of-nil))))
-
-(defthmd chars=>nats-of-revappend
-  (equal (chars=>nats (revappend x y))
-         (revappend (chars=>nats x) (chars=>nats y)))
-  :hints (("goal" :in-theory (enable chars=>nats))))
-
-(defthm explode-of-nats=>string
-  (equal (explode (nats=>string nats))
-         (nats=>chars nats))
-  :hints (("goal" :in-theory (enable nats=>string))))
-
-(defthmd nats=>chars-of-revappend
-  (equal (nats=>chars (revappend x y))
-         (revappend (nats=>chars x) (nats=>chars y)))
-  :hints (("goal" :in-theory (enable nats=>chars))))
-
-(defthmd nats=>chars-of-nthcdr
-  (equal (nats=>chars (nthcdr n nats))
-         (nthcdr n (nats=>chars nats)))
-  :hints (("goal" :in-theory (enable nats=>chars))))
-
 (encapsulate
   ()
 
