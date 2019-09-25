@@ -2061,6 +2061,15 @@
         (candidate-assigns-complete-match-subst rule (cdr cands))))
     (mv subst (cons-with-hint cand rest-cands cands))))
 
+(local (defthm symbol-alistp-of-append
+         (implies (and (symbol-alistp x)
+                       (symbol-alistp y))
+                  (symbol-alistp (append x y)))))
+
+(local (defthm symbol-alistp-when-gl-object-bindings-p
+         (implies (gl-object-bindings-p x)
+                  (symbol-alistp x))))
+
 (defines cgraph-derive-assignments
   (define cgraph-derive-assignments-obj ((x gl-object-p)
                                          (assigns cgraph-alist-p)
