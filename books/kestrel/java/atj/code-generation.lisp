@@ -963,13 +963,13 @@
    (xdoc::p
     "Prior to calling this function,
      the variables of all the lambda expressions have been annotated
-     via @(tsee atj-type-annotate-aterm).
+     via @(tsee atj-type-annotate-term).
      Thus, each ACL2 variable name carried its own type,
      which we use to determine the Java type of the Java variable.")
    (xdoc::p
     "Prior to calling this function,
      the variables of all the lambda expressions have been renamed
-     via @(tsee atj-rename-aterm).
+     via @(tsee atj-rename-term).
      Thus, we directly turn each ACL2 variable into a Java variable name
      (after removing the type annotations)."))
   (b* (((when (endp vars)) nil)
