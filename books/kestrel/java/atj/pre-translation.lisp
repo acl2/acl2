@@ -50,34 +50,32 @@
    (xdoc::ol
     (xdoc::li
      "In both the deep and shallow embedding,
-      we remove all occurrences of @(tsee return-last).
-      See @(tsee atj-remove-return-last).")
+      we remove @(tsee return-last).
+      See "
+     (xdoc::seetopic "atj-pre-translation-remove-last" "here")
+     ".")
     (xdoc::li
      "In both the deep and shallow embedding,
-      we remove all the lambda-bound variables
-      (and corresponding actual arguments)
-      that are not actually used in the body of the lambda expression.
-      This way, we avoid calculating and assigning actual parameters
-      that are not needed.
-      Recall that  checks that the ACL2 code to be translated to Java
-      is free of side effects:
-      thus, this removal is safe and semantics-preserving.")
+      we remove the unused lambda-bound variables.
+      See "
+     (xdoc::seetopic "atj-pre-translation-unused-vars" "here")
+     ".")
     (xdoc::li
      "In the shallow embedding,
-      we rename all the ACL2 variables
+      we rename the ACL2 variables
       so that their names are valid Java variable names
       and so that different ACL2 variables with the same name are renamed apart.
-      See @(tsee atj-rename-formals+body).
-      The deep embedding does not represent ACL2 variables as Java variables,
-      and thus it does not need this pre-translation step.")))
-  :order-subtopics t
-  :default-parent t)
+      See "
+     (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
+     ".")))
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-remove-return-last ((term pseudo-termp) (guards$ booleanp))
-  :returns (new-term pseudo-termp :hyp (pseudo-termp term))
-  :short "Remove all the @(tsee return-last)s from a term."
+(defxdoc+ atj-pre-translation-remove-last
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of @(tsee return-last)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -87,14 +85,70 @@
      (which are translated to @('(return-last 'mbe1-raw <exec> <logic>)'))
      based on the @(':guards') input.
      We remove all the non-last arguments of @(tsee prog2$)s and @(tsee progn$)s
-     (which are translated to @('(return-last 'progn <non-last> <last>)')).
-     These are the only @(tsee return-last) forms
-     that make it through input validation."))
+     (which are translated to @('(return-last 'progn <non-last> <last>)')).")
+   (xdoc::p
+    "These are the only @(tsee return-last) forms
+     that make it through input validation.
+     Note that the non-last arguments of @(tsee prog2$) and @(tsee progn$)
+     are checked to be free of side effects by ATJ,
+     and thus their removal is safe and semantics-preserving."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-remove-return-last ((term pseudo-termp) (guards$ booleanp))
+  :returns (new-term pseudo-termp :hyp (pseudo-termp term))
+  :short "Remove all the @(tsee return-last)s from a term."
   (b* ((term (if guards$
                  (remove-mbe-logic-from-term term)
                (remove-mbe-exec-from-term term)))
        (term (remove-progn-from-term term)))
     term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-unused-vars
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of all the unused lambda-bound variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in both the deep and shallow embedding approach.")
+   (xdoc::p
+    "We remove all the lambda-bound variables,
+     and corresponding actual arguments,
+     that are not actually used in the body of the lambda expression.
+     This way, we avoid calculating and assigning actual arguments
+     that are then discarded.
+     Recall that ATJ checks that the ACL2 code to be translated to Java
+     is free of side effects:
+     thus, this removal is safe and semantics-preserving.")
+   (xdoc::p
+    "This is accomplished
+     via the @(tsee remove-unused-vars-from-term) system utility.
+     No other code is needed to do this in ATJ.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-var-renaming
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          renaming of all the ACL2 variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "We systematically rename all the ACL2 variables
+     so that their new names are valid Java variable names
+     and so that different ACL2 variables with the same name are renamed apart.
+     This simplifies the subsequent ACL2-to-Java translation,
+     which can just turn each ACL2 variable
+     into a Java variable with the same name."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,9 +161,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For various purposes,
-     we want to turn ACL2 symbols and package names into Java identifiers.
-     ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
+    "This is used in the variable renaming step of the ATJ pre-translation,
+     but also to turn ACL2 function and pacakge names into Java identifiers.")
+   (xdoc::p
+    "ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
      while Java identifiers may only contain certain Unicode characters;
      when Unicode is restricted to ASCII,
      Java identifiers are much more restricted than ACL2 symbols.
@@ -622,6 +677,7 @@
   :returns (mv (new-formals "A @(tsee symbol-listp).")
                (new-body "A @(tsee pseudo-termp)."))
   :verify-guards nil
+  :parents (atj-pre-translation)
   :short "Pre-translate the formal parameters and body
           of an ACL2 function definition."
   :long
