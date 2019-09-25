@@ -39,7 +39,11 @@
 
   (defrule len-of-explode-of-nats=>string
     (equal (len (explode (nats=>string nats)))
-           (len nats))))
+           (len nats)))
+
+  (defrule explode-of-nats=>string
+    (equal (explode (nats=>string nats))
+           (nats=>chars nats))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,7 +68,16 @@
     (equal (nth n (string=>nats string))
            (if (< (nfix n) (len (explode string)))
                (char-code (char string n))
-             nil))))
+             nil)))
+
+  (defrule consp-of-string=>nats
+    (iff (consp (string=>nats string))
+         (consp (explode string))))
+
+  (defrule string=>nats-of-implode
+    (implies (character-listp chars)
+             (equal (string=>nats (implode chars))
+                    (chars=>nats chars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
