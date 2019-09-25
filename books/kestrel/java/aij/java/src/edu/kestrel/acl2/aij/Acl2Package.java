@@ -50,7 +50,9 @@ public final class Acl2Package {
      * The values of the map are reused
      * by the {@link #define(Acl2PackageName, List)} method.
      * In other words, all the packages are interned.
-     * This field is never {@code null}.
+     * This field is never {@code null},
+     * its keys are never {@code null},
+     * and its values are never {@code null}.
      */
     private static final Map<Acl2PackageName, Acl2Package> packages =
             new HashMap<>();
@@ -102,7 +104,7 @@ public final class Acl2Package {
     //////////////////////////////////////// public members:
 
     /**
-     * Defines an ACL2 package with the given name and import list.
+     * Defines a package with the given name and import list.
      * The imported symbols must have all different names.
      * This method makes an internal copy of the argument list,
      * which can be thus freely modified after this method returns.

@@ -77,7 +77,9 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * the key is the {@link #name} field of the value.
      * The values of the map are reused  by the {@link #make(String)} method.
      * In other words, all the package names are interned.
-     * This field is never {@code null}.
+     * This field is never {@code null},
+     * its keys are never {@code null},
+     * and its values are never {@code null}.
      */
     private static final Map<String, Acl2PackageName> packageNames =
             new HashMap<>();

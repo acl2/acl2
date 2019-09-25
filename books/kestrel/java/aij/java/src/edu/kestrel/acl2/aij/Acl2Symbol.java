@@ -12,26 +12,29 @@ import java.util.Map;
 
 /**
  * Representation of ACL2 symbols.
- * These are the ACL2 values that satisfy {@code symbolp}.
+ * These are the values that satisfy {@code symbolp}.
  */
 public final class Acl2Symbol extends Acl2Value {
 
     //////////////////////////////////////// private members:
 
     /**
-     * Package name of the ACL2 symbol.
+     * Package name of the symbol.
      * This is never {@code null}.
      */
     private final Acl2PackageName packageName;
 
     /**
-     * Name of the ACL2 symbol.
+     * Name of the symbol.
      * This is never {@code null}.
      */
     private final Acl2String name;
 
     /**
-     * Constructs an ACL2 symbol from its package name and name.
+     * Constructs a symbol with the given package name and name.
+     *
+     * @param packageName The pacakge name of the symbol.
+     * @param name        The name of the symbol.
      */
     private Acl2Symbol(Acl2PackageName packageName, Acl2String name) {
         this.packageName = packageName;
@@ -39,11 +42,11 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * All the ACL2 symbols created so far.
-     * These are stored as a map from ACL2 package names
-     * to maps from ACL2 strings to ACL2 symbols:
+     * All the symbols created so far.
+     * These are stored as a map from package names
+     * to maps from strings to symbols:
      * this structure is isomorphic to a map
-     * from package names paired with string to symbols.
+     * from (i) package names paired with string to (ii) symbols.
      * <p>
      * For all of these associations,
      * the string is the {@link #name} field of the symbol.
@@ -56,12 +59,17 @@ public final class Acl2Symbol extends Acl2Value {
      * not {@link Acl2PackageName#ACL2},
      * because the {@code "ACL2"} package
      * imports the symbol {@code cons} from the {@code "COMMON-LISP"} package.
+     * Some inner maps share values,
+     * e.g. the inner map associated with {@code "ACL2"} in the outer map
+     * maps {@code "CONS"} to the same {@link Acl2Symbol} object
+     * that the inner map assocaited with {@code "COMMON-LISP"} in the outer map
+     * maps {@code "CONS"}.
      * <p>
      * This nested map structure is extended in three circumstances:
      * <ol>
      * <li>
      * When {@link Acl2Package#define(Acl2PackageName, List)} is called,
-     * i.e. when a package definition is added to the ACL2 environment.
+     * i.e. when a new package is defined.
      * In this case, the nested map structure is extended
      * according to the package's import list
      * (see {@link #addPackageImports(Acl2PackageName, List)}).
@@ -83,7 +91,7 @@ public final class Acl2Symbol extends Acl2Value {
      * Having constants for these ACL2 symbols maximizes their access speed.
      * </ol>
      * <p>
-     * Thus, all the ACL2 symbols are interned.
+     * All the symbols are thus interned.
      * <p>
      * This field is never {@code null},
      * its keys are never {@code null},
@@ -96,9 +104,12 @@ public final class Acl2Symbol extends Acl2Value {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Adds information about all the ACL2 symbols imported by an ACL2 package.
+     * Adds information about all the symbols imported by a package.
      * This is called by {@link Acl2Package#define(Acl2PackageName, List)}
-     * when a new package definition is added to the environment.
+     * when a new package is defined.
+     *
+     * @param packageName The name of the package being defined.
+     * @param imported    The import list of the package.
      */
     static void addPackageImports(Acl2PackageName packageName,
                                   List<Acl2Symbol> imported) {
@@ -111,8 +122,10 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns {@code true},
-     * consistently with the {@code symbolp} ACL2 function.
+     * Checks if this symbol is a symbol, which is always true.
+     * This is consistent with the {@code symbolp} ACL2 function.
+     *
+     * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol symbolp() {
@@ -120,8 +133,10 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns the symbol package name of this ACL2 symbol,
+     * Returns the package name of this symbol,
      * consistently with the {@code symbol-package-name} ACL2 function.
+     *
+     * @return The package name of this symbol.
      */
     @Override
     Acl2String symbolPackageName() {
@@ -129,8 +144,10 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns the symbol name of this ACL2 symbol,
+     * Returns the name of this symbol,
      * consistently with the {@code symbol-name} ACL2 function.
+     *
+     * @return The name of this symbol.
      */
     @Override
     Acl2String symbolName() {
@@ -138,10 +155,13 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Interns the argument ACL2 string in the package of this ACL2 value,
+     * Interns the argument string in the package of this symbol,
      * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
-     * where this ACL2 value is the second argument of that function
-     * and the argument ACL2 value is the first argument of that function.
+     * where this symbol is the second argument of that function
+     * and the argument string is the first argument of that function.
+     *
+     * @param str The string to intern in the package.
+     * @return The interned symbol.
      */
     @Override
     Acl2Symbol internInPackageOfThis(Acl2String str) {
@@ -150,11 +170,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 character for order.
+     * Compares this symbol with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this symbol is less than, equal to, or greater than the argument
+     * @param o The character to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToCharacter(Acl2Character o) {
@@ -163,11 +184,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 string for order.
+     * Compares this symbol with the argument string for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this value is less than, equal to, or greater than the argument
+     * @param o The string to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToString(Acl2String o) {
@@ -176,11 +198,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 symbol for order.
+     * Compares this symbol with the argument symbol for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this symbol is less than, equal to, or greater than the argument
+     * @param o The symbol to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToSymbol(Acl2Symbol o) {
@@ -193,11 +216,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 number for order.
+     * Compares this symbol with the argument number for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this symbol is less than, equal to, or greater than the argument
+     * @param o The number to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToNumber(Acl2Number o) {
@@ -206,11 +230,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 rational for order.
+     * Compares this symbol with the argument rational for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this symbol is less than, equal to, or greater than the argument
+     * @param o The rational to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToRational(Acl2Rational o) {
@@ -219,11 +244,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 integer for order.
+     * Compares this symbol with the argument integer for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this symbol is less than, equal to, or greater than the argument
+     * @param o The integer to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToInteger(Acl2Integer o) {
@@ -232,12 +258,12 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 symbol with
-     * the argument ACL2 {@code cons} pair for order.
+     * Compares this symbol with the argument {@code cons} pair for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this symbol is less than, equal to, or greater than the argument
+     * @param o The {@code cons} pair to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this symbol is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToConsPair(Acl2ConsPair o) {
@@ -248,32 +274,39 @@ public final class Acl2Symbol extends Acl2Value {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 symbol is equal to the argument object.
+     * Compares this symbol with the argument object for equality.
      * This is consistent with the {@code equal} ACL2 function.
-     * If the argument is not a {@link Acl2Value}, the result is {@code false}.
+     *
+     * @param o The object to compare this string with.
+     * @return {@code true} if the object is equal to this symbol,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
+        /* Since symbols are interned,
+           a symbol is equal to an object if
+           they are the same object. */
         return this == o;
     }
 
     /**
-     * Compares this ACL2 symbol with the argument ACL2 value for order.
+     * Compares this symbol with the argument value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this value is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The avlue to compare this symbol with.
+     * @return A negative integer, zero, or a positive integer as
+     * this value is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        return - o.compareToSymbol(this);
+        return -o.compareToSymbol(this);
     }
 
     /**
-     * Returns a printable representation of this ACL2 symbol.
+     * Returns a printable representation of this symbol.
      * We always include the package prefix,
      * since there is no notion of "current package" here;
      * the package name is represented
@@ -291,7 +324,9 @@ public final class Acl2Symbol extends Acl2Value {
      * are more stringent than in ACL2;
      * future versions of this method may relax those conditions
      * and match ACL2's conditions more closely.
-     * This scheme should ensure that ACL2 symbols are always printed clearly.
+     * This scheme should ensure that symbols are always printed clearly.
+     *
+     * @return A printable representation of this symbol.
      */
     @Override
     public String toString() {
@@ -319,12 +354,16 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns an ACL2 symbol denoted by the given package name and given name.
+     * Returns a symbol denoted by the given package name and name.
      * The resulting symbol's package may differ from the given package,
      * if the given package imports a symbol with that name.
      *
-     * @throws IllegalArgumentException if packageName or name is null,
-     *                                  or the package is not defined
+     * @param packageName The package name denoting the symbol.
+     * @param name        The name denoting the symbol.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code packageName} or {@code name}
+     *                                  is {@code null},
+     *                                  or the package is not defined.
      */
     public static Acl2Symbol make(Acl2PackageName packageName,
                                   Acl2String name) {
@@ -345,260 +384,286 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns an ACL2 symbol denoted by the given package name and given name.
+     * Returns a symbol denoted by the given package name and name.
      * The resulting symbol's package may differ from the given package,
      * if the given package imports a symbol with that name.
      *
-     * @throws IllegalArgumentException if packageName or name is null,
-     *                                  or the package is not defined
-     *                                  or name contains characters above 255
+     * @param packageName The package name denoting the symbol.
+     * @param name        The name denoting the symbol, as a Java string.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code packageName} or {@code name}
+     *                                  is {@code null},
+     *                                  or the package is not defined,
+     *                                  or {@code name} contains
+     *                                  characters above 255.
      */
     public static Acl2Symbol make(Acl2PackageName packageName, String name) {
         return make(packageName, Acl2String.make(name));
     }
 
     /**
-     * Returns an ACL2 symbol denoted by the given package name and given name.
+     * Returns a symbol denoted by the given package name and name.
      * The resulting symbol's package may differ from the given package,
      * if the given package imports a symbol with that name.
      *
-     * @throws IllegalArgumentException if packageName or name is null,
-     *                                  or the package is not defined
-     *                                  or name contains characters above 255
+     * @param packageName The package name denoting the symbol,
+     *                    as a Java string.
+     * @param name        The name denoting the symbol.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code packageName} or {@code name}
+     *                                  is {@code null},
+     *                                  or the package is not defined,
+     *                                  or {@code packageName} contains
+     *                                  characters above 255.
      */
     public static Acl2Symbol make(String packageName, Acl2String name) {
         return make(Acl2PackageName.make(packageName), name);
     }
 
     /**
-     * Returns an ACL2 symbol with the given package name and given name.
+     * Returns an symbol with the given package name and name.
      * The resulting symbol's package may differ from the given package,
      * if the given package imports a symbol with that name.
      *
-     * @throws IllegalArgumentException if packageName or name is null,
-     *                                  or packageName is not valid,
-     *                                  or the package is not defined
-     *                                  or name contains characters above 255
+     * @param packageName The package name denoting the symbol,
+     *                    as a Java string.
+     * @param name        The name denoting the symbol,
+     *                    as a Java string.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code packageName} or {@code name}
+     *                                  is {@code null},
+     *                                  or the package is not defined,
+     *                                  or {@code packageName} contains
+     *                                  characters above 255,
+     *                                  or {@code name} contains
+     *                                  characters above 255.
      */
     public static Acl2Symbol make(String packageName, String name) {
         return Acl2Symbol.make(Acl2PackageName.make(packageName), name);
     }
 
     /**
-     * Returns an ACL2 symbol denoted by
+     * Returns a symbol denoted by
      * the {@code "KEYWORD"} package name and the given name.
      *
-     * @throws IllegalArgumentException if name is null
-     *                                  or contains characters above 255
-     * @throws IllegalStateException    if the "KEYWORD" package
-     *                                  is not defined yet
+     * @param name The name denoting the symbol, as a Java string.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code name} is {@code null}
+     *                                  or contains characters above 255.
+     * @throws IllegalStateException    If the {@code "KEYWORD"} package
+     *                                  is not defined yet.
      */
     public static Acl2Symbol makeKeyword(String name) {
         return Acl2Symbol.make(Acl2PackageName.KEYWORD, name);
     }
 
     /**
-     * Returns an ACL2 symbol denoted by
+     * Returns an symbol denoted by
      * the {@code "COMMON-LISP"} package name and the given name.
      *
-     * @throws IllegalArgumentException if name is null
-     *                                  or contains characters above 255
-     * @throws IllegalStateException    if the "COMMON-LISP" package
-     *                                  is not defined yet
+     * @param name The name denoting the symbol, as a Java string.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code name} is {@code null}
+     *                                  or contains characters above 255.
+     * @throws IllegalStateException    If the {@code "COMMON-LISP"} package
+     *                                  is not defined yet.
      */
     public static Acl2Symbol makeLisp(String name) {
         return Acl2Symbol.make(Acl2PackageName.LISP, name);
     }
 
     /**
-     * Returns an ACL2 symbol denoted by
+     * Returns a symbol denoted by
      * the {@code "ACL2"} package name and the given name.
      *
-     * @throws IllegalArgumentException if name is null
-     *                                  or contains characters above 255
-     * @throws IllegalStateException    if the "ACL2" package is not defined yet
+     * @param name The name denoting the symbol, as a Java string.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If {@code name} is {@code null}
+     *                                  or contains characters above 255.
+     * @throws IllegalStateException    If the {@code "ACL2"} package
+     *                                  is not defined yet.
      */
     public static Acl2Symbol makeAcl2(String name) {
         return Acl2Symbol.make(Acl2PackageName.ACL2, name);
     }
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::t}.
+     * The symbol denoted by {@code acl2::t}.
      */
     public static final Acl2Symbol T;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::nil}.
+     * The symbol denoted by {@code acl2::nil}.
      */
     public static final Acl2Symbol NIL;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::list}.
+     * The symbol denoted by {@code acl2::list}.
      */
     public static final Acl2Symbol LIST;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::if}.
+     * The symbol denoted by {@code acl2::if}.
      */
     public static final Acl2Symbol IF;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::characterp}.
+     * The symbol denoted by {@code acl2::characterp}.
      */
     public static final Acl2Symbol CHARACTERP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::stringp}.
+     * The symbol denoted by {@code acl2::stringp}.
      */
     public static final Acl2Symbol STRINGP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::symbolp}.
+     * The symbol denoted by {@code acl2::symbolp}.
      */
     public static final Acl2Symbol SYMBOLP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::integerp}.
+     * The symbol denoted by {@code acl2::integerp}.
      */
     public static final Acl2Symbol INTEGERP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::rationalp}.
+     * The symbol denoted by {@code acl2::rationalp}.
      */
     public static final Acl2Symbol RATIONALP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::complex-rationalp}.
+     * The symbol denoted by {@code acl2::complex-rationalp}.
      */
     public static final Acl2Symbol COMPLEX_RATIONALP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::acl2-numberp}.
+     * The symbol denoted by {@code acl2::acl2-numberp}.
      */
     public static final Acl2Symbol ACL2_NUMBERP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::consp}.
+     * The symbol denoted by {@code acl2::consp}.
      */
     public static final Acl2Symbol CONSP;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::char-code}.
+     * The symbol denoted by {@code acl2::char-code}.
      */
     public static final Acl2Symbol CHAR_CODE;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::code-char}.
+     * The symbol denoted by {@code acl2::code-char}.
      */
     public static final Acl2Symbol CODE_CHAR;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::coerce}.
+     * The symbol denoted by {@code acl2::coerce}.
      */
     public static final Acl2Symbol COERCE;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::intern-in-package-of-symbol}.
+     * The symbol denoted by {@code acl2::intern-in-package-of-symbol}.
      */
     public static final Acl2Symbol INTERN_IN_PACKAGE_OF_SYMBOL;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::symbol-package-name}.
+     * The symbol denoted by {@code acl2::symbol-package-name}.
      */
     public static final Acl2Symbol SYMBOL_PACKAGE_NAME;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::symbol-name}.
+     * The symbol denoted by {@code acl2::symbol-name}.
      */
     public static final Acl2Symbol SYMBOL_NAME;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::pkg-imports}.
+     * The symbol denoted by {@code acl2::pkg-imports}.
      */
     public static final Acl2Symbol PKG_IMPORTS;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::pkg-witness}.
+     * The symbol denoted by {@code acl2::pkg-witness}.
      */
     public static final Acl2Symbol PKG_WITNESS;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::unary--}.
+     * The symbol denoted by {@code acl2::unary--}.
      */
     public static final Acl2Symbol UNARY_MINUS;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::unary-/}.
+     * The symbol denoted by {@code acl2::unary-/}.
      */
     public static final Acl2Symbol UNARY_SLASH;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::binary-+}.
+     * The symbol denoted by {@code acl2::binary-+}.
      */
     public static final Acl2Symbol BINARY_PLUS;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::binary-*}.
+     * The symbol denoted by {@code acl2::binary-*}.
      */
     public static final Acl2Symbol BINARY_STAR;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::<}.
+     * The symbol denoted by {@code acl2::<}.
      */
     public static final Acl2Symbol LESS_THAN;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::complex}.
+     * The symbol denoted by {@code acl2::complex}.
      */
     public static final Acl2Symbol COMPLEX;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::realpart}.
+     * The symbol denoted by {@code acl2::realpart}.
      */
     public static final Acl2Symbol REALPART;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::imagpart}.
+     * The symbol denoted by {@code acl2::imagpart}.
      */
     public static final Acl2Symbol IMAGPART;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::numerator}.
+     * The symbol denoted by {@code acl2::numerator}.
      */
     public static final Acl2Symbol NUMERATOR;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::denominator}.
+     * The symbol denoted by {@code acl2::denominator}.
      */
     public static final Acl2Symbol DENOMINATOR;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::cons}.
+     * The symbol denoted by {@code acl2::cons}.
      */
     public static final Acl2Symbol CONS;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::car}.
+     * The symbol denoted by {@code acl2::car}.
      */
     public static final Acl2Symbol CAR;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::cdr}.
+     * The symbol denoted by {@code acl2::cdr}.
      */
     public static final Acl2Symbol CDR;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::equal}.
+     * The symbol denoted by {@code acl2::equal}.
      */
     public static final Acl2Symbol EQUAL;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::bad-atom<=}.
+     * The symbol denoted by {@code acl2::bad-atom<=}.
      */
     public static final Acl2Symbol BAD_ATOM_LESS_THAN_OR_EQUAL_TO;
 
     /**
-     * The ACL2 symbol denoted by {@code acl2::or}.
+     * The symbol denoted by {@code acl2::or}.
      */
     public static final Acl2Symbol OR;
 
@@ -735,14 +800,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
-     * Returns the package name of this ACL2 symbol.
+     * Returns the package name of this symbol.
+     *
+     * @return The package name of this symbol.
      */
     public Acl2PackageName getPackageName() {
         return this.packageName;
     }
 
     /**
-     * Returns the name of this ACL2 symbol.
+     * Returns the name of this symbol.
+     *
+     * @return The name of this symbol.
      */
     public Acl2String getName() {
         return this.name;

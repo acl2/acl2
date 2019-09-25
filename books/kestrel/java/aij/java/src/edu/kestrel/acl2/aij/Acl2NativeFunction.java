@@ -73,6 +73,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * and the native functions are reused
      * by the {@link #getInstance(Acl2Symbol)} method;
      * In other words, the native functions are interned.
+     * This field is never {@code null},
+     * its keys are never {@code null},
+     * and its values are never {@code null}.
      */
     private static final Map<Acl2Symbol, Acl2NativeFunction> functions =
             new HashMap<>();

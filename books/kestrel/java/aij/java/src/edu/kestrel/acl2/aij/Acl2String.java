@@ -54,8 +54,10 @@ public final class Acl2String extends Acl2Value {
      * each key-value pair is such that
      * the key is the {@link #jstring} field of the value.
      * The values of the map are reused by the {@link #make(String)} method.
-     * In other words, all the ACL2 strings are interned.
-     * This field is never {@code null}.
+     * In other words, all the strings are interned.
+     * This field is never {@code null},
+     * its keys are never {@code null},
+     * and its valules are never {@code null}.
      */
     private static final Map<String, Acl2String> strings = new HashMap<>();
 
