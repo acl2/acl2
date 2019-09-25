@@ -24,18 +24,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel natp-of-incremented-index
-  (implies (natp x)
-           (natp (1+ x))))
-
-(defrulel posp-of-incremented-index
-  (implies (posp x)
-           (posp (1+ x))))
-
-(local (in-theory (disable natp posp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ atj-pre-translation
   :parents (atj-code-generation)
   :short "Pre-translation performed by ATJ, as part of code generation."
@@ -448,10 +436,16 @@
                renaming)
         indices))
   :verify-guards :after-returns
+
   :prepwork
+
   ((defrulel verify-guards-lemma
      (implies (natp x)
-              (acl2-numberp x)))))
+              (acl2-numberp x)))
+
+   (defrulel returns-lemma
+     (implies (natp x)
+              (natp (1+ x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
