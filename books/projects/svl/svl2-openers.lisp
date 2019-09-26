@@ -180,6 +180,16 @@
                                      env-wires)))
     :hints (("Goal"
              :Expand (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) rest) env-wires)
+             :in-theory (e/d () ()))))
+
+  (defthm save-wires-to-env-wires-cons-3
+    (equal (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) nil) env-wires)
+           (hons-acons
+            wire-name
+            (sbits s w val (entry-4vec-fix (hons-get wire-name env-wires)))
+            env-wires))
+    :hints (("Goal"
+             :Expand (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) rest) env-wires)
              :in-theory (e/d () ())))))
 
 (progn
