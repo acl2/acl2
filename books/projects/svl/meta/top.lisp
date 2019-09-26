@@ -36,4 +36,6 @@
 
 (include-book "4vec-rsh-meta")
 
+(include-book "svl2-opener-meta")
+
 (rp::update-rp-clause-proc with-svl-metas)

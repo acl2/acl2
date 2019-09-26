@@ -1522,6 +1522,8 @@
 (defthm 4vec-fix-of-functions
   (and (equal (4vec-fix (4vec-bitnot s))
               (4vec-bitnot s))
+       (equal (4vec-fix (sv::4vec-symwildeq s s2))
+              (sv::4vec-symwildeq s s2))
        (equal (4vec-fix (bits val start size ))
               (bits val start size ))
        (equal (4vec-fix (sbits start size new old))

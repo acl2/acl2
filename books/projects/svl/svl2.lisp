@@ -137,31 +137,7 @@
 
 
 
-(define save-wires-to-env-wires ((val sv::4vec-p)
-                                 (wires wire-list-p)
-                                 (env-wires sv::svex-env-p))
-  :returns (res sv::svex-env-p
-                :hyp (and (sv::4vec-p val)
-                          (wire-list-p wires)
-                          (sv::svex-env-p env-wires)))
-  :verify-guards nil
-  (if (atom wires)
-      env-wires
-    (b* ((wire (car wires))
-         (old-val-entry (hons-get (wire-name wire) env-wires)))
-      (case-match wire
-        ((& w . s) (hons-acons
-                    (wire-name wire)
-                    (sbits s w val (entry-4vec-fix old-val-entry))
-                    (save-wires-to-env-wires (4vec-rsh w val)
-                                             (cdr wires)
-                                             env-wires)))
-        (& (hons-acons
-            (wire-name wire)
-            val
-            env-wires)))))
-  ///
-  (verify-guards save-wires-to-env-wires))
+
 
 (define svl2-save-mod-outputs ((vals sv::4veclist-p)
                                (wire-list-list wire-list-listp)

@@ -23,7 +23,6 @@
 ;
 ; Original author: Mertcan Temel <mert@utexas.edu>
 
-
 (in-package "SVL")
 
 (include-book "../bits-sbits")
@@ -128,7 +127,7 @@
 
   (define is-bits-0-1-of-a-bitp (term)
     (case-match term
-      (('bits ('rp ''bitp &) ''0 ''1 )
+      (('bits ('rp ''bitp &) ''0 ''1)
        t)
       (& nil))
     ///
@@ -137,6 +136,34 @@
                (case-match term
                  (('bits ('rp ''bitp &) ''0 ''1 )
                   t)
+                 (& nil)) )
+      :rule-classes :forward-chaining))
+
+  (define is-bits-of-bitand/or/xor (term)
+    (case-match term
+                 (('bits ('4vec-bitand & &) ('quote s) ('quote w))
+                  (and (natp s)
+                       (natp w)))
+                 (('bits ('4vec-bitor & &) ('quote s) ('quote w))
+                  (and (natp s)
+                       (natp w)))
+                 (('bits ('sv::4vec-bitxor & &) ('quote s) ('quote w))
+                  (and (natp s)
+                       (natp w)))
+                 (& nil))
+    ///
+    (defthm is-bits-of-bitand/or/xor-implies
+      (implies (is-bits-of-bitand/or/xor term)
+               (case-match term
+                 (('bits ('4vec-bitand & &) ('quote s) ('quote w))
+                  (and (natp s)
+                       (natp w)))
+                 (('bits ('4vec-bitor & &) ('quote s) ('quote w))
+                  (and (natp s)
+                       (natp w)))
+                 (('bits ('sv::4vec-bitxor & &) ('quote s) ('quote w))
+                  (and (natp s)
+                       (natp w)))
                  (& nil)) )
       :rule-classes :forward-chaining))
 
@@ -300,6 +327,16 @@
                                          )))
                (t (mv ''0 t))))
         (& (mv term nil))))
+     ((is-bits-of-bitand/or/xor term)
+      (case-match term
+        (('bits (fnc term1 term2) start size)
+         (b* (((mv rest1 dont-rw1)
+               (bits-of-meta-fn `(bits ,term1 ,start ,size)))
+              ((mv rest2 dont-rw2)
+               (bits-of-meta-fn `(bits ,term2 ,start ,size))))
+           (mv `(,fnc ,rest1 ,rest2)
+               `(nil ,dont-rw1 ,dont-rw2))))
+        (& (mv term nil))))
      (t
       (case-match term
         (('bits & ('quote &) ('quote &))
@@ -313,15 +350,15 @@
    (defthm m-lemma1
      (implies (or (IS-BITS-OF-CONCAT TERM)
                   (IS-BITS-OF-RSH term))
-               (and (O< (+ 8 (CONS-COUNT (CADDR (CADR TERM))))
-                        (CONS-COUNT TERM))
-                    (O< (+ 8 (CONS-COUNT (CADDDR (CADR TERM))))
-                        (CONS-COUNT TERM))))
-          
+              (and (O< (+ 8 (CONS-COUNT (CADDR (CADR TERM))))
+                       (CONS-COUNT TERM))
+                   (O< (+ 8 (CONS-COUNT (CADDDR (CADR TERM))))
+                       (CONS-COUNT TERM))))
+
      :hints (("Goal"
               :in-theory (e/d (CONS-COUNT IS-BITS-OF-CONCAT
                                           IS-BITS-OF-RSH) ())))))
-  
+
   (verify-termination
     bits-of-meta-fn
     (declare
@@ -525,6 +562,9 @@
   (rp::def-formula-checks bits-of-formula-checks
                           (bits sbits 4vec-concat
                                 4vec-rsh
+                                sv::4vec-bitxor
+                                sv::4vec-bitand
+                                sv::4vec-bitor
                                 4vec-concat$
                                 sv::4vec-fix$inline
                                 bitp bits-of-meta-fn)))
@@ -782,7 +822,7 @@
                        (RP::VALID-SC (RP::EX-FROM-RP (CADDR (CADR TERM)))
                                      A)
                        (RP::EX-FROM-RP (LIST 'BITP
-                                   (RP::EX-FROM-RP (CADDR (CADR TERM)))))
+                                             (RP::EX-FROM-RP (CADDR (CADR TERM)))))
                        (rp::valid-sc-subterms (cdddr term) a)
                        (rp::valid-sc-subterms (cddr term) a)
                        (rp::valid-sc-subterms (cdr term) a)
@@ -844,6 +884,46 @@
                                rp::is-rp)
                               (rp-evl-of-ex-from-rp))))))
 
+
+  (local
+   (defthm valid-sc-implies-when-is-IS-BITS-OF-BITAND/OR/XOR
+     (implies (and (rp::valid-sc term a)
+                   (rp-evl-meta-extract-global-facts)
+                   (bits-of-formula-checks state)
+                   (IS-BITS-OF-BITAND/OR/XOR term))
+              (and (RP::VALID-SC (CADR (CADR TERM)) A)
+                   (RP::VALID-SC (CADDR (CADR TERM)) A)))
+     :hints (("goal"
+              :expand ((rp::valid-sc-subterms (cdr term) a)
+                       (rp::valid-sc term a)
+                       (rp::valid-sc-subterms (cdddr term) a)
+                       (rp::valid-sc-subterms (cddr term) a)
+                       (rp::valid-sc (cadddr term) a)
+                       (RP::VALID-SC (CADR TERM) A))
+              :in-theory (e/d (rp::is-rp
+                               IS-BITS-OF-BITAND/OR/XOR
+                               rp::ex-from-rp
+                               rp::is-if) ())))))
+
+  (local
+   (defthm rp-evl-of-when-IS-BITS-OF-BITAND/OR/XOR
+     (implies (and (rp-evl-meta-extract-global-facts)
+                   (IS-BITS-OF-BITAND/OR/XOR term)
+                   (bits-of-formula-checks state)
+                   (equal (rp-evl x a) (BITS (RP-EVL (CADR (CADR TERM)) A)
+                                             (RP-EVL (CADDR TERM) A)
+                                             (RP-EVL (CADDDR TERM) A)))
+                   (equal (rp-evl y a) (BITS (RP-EVL (CADDR (CADR TERM)) A)
+                                             (RP-EVL (CADDR TERM) A)
+                                             (RP-EVL (CADDDR TERM) A))))
+              (EQUAL (RP-EVL (LIST (CAR (CADR TERM)) x y) A)
+                     (BITS (RP-EVL (CADR TERM) A)
+                           (RP-EVL (CADDR TERM) A)
+                           (RP-EVL (CADDDR TERM) A))))
+     :hints (("Goal"
+              :in-theory (e/d (IS-BITS-OF-BITAND/OR/XOR) ())))))
+
+  
   (defthm eval-of-bits-of-meta-fn
     (implies (and (rp::valid-sc term a)
                   (rp-evl-meta-extract-global-facts)
@@ -1040,6 +1120,7 @@
                               bits-of-meta-fn
                               rp::pseudo-termp2
                               rp::rp-syntaxp)))))
+     
 
   (defthm valid-sc-resolve-bits-of-meta-fn
     (implies (and (rp::valid-sc term a)
@@ -1049,7 +1130,8 @@
     :hints (("Goal"
              :do-not-induct t
              :induct (bits-of-meta-fn term)
-             :in-theory (e/d (rp::is-if rp::is-rp)
+             :in-theory (e/d (rp::is-if rp::is-rp
+                                        IS-BITS-OF-BITAND/OR/XOR)
                              (rp::INCLUDE-FNC
                               (:DEFINITION NOT)
                               (:REWRITE BITP-IMPLIES-NATP)
@@ -1065,7 +1147,7 @@
                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION RP::EVAL-AND-ALL)
                               (:REWRITE
-                                    ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
+                               ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
                               (:DEFINITION natp))))))
 
   (defthm valid-rp-meta-rulep-bits-of-meta-fn

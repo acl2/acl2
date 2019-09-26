@@ -308,7 +308,7 @@
     (('svl::sbits s w new old)   (list 'sv::partinst s w old new))
     (('svl::4vec-concat$ & & &)  (cons 'sv::concat   (cdr term)))
 
-    (('sv::4vec-fix &) (cons 'id (cdr term)))
+    (('sv::4vec-fix$inline &) (cons 'id (cdr term)))
     (('sv::4vec-bit-extract & &) (cons 'sv::bitsel (cdr term)))
     (('sv::3vec-fix &)           (cons 'sv::unfloat  (cdr term)))
     (('4vec-bitnot &)            (cons 'sv::bitnot   (cdr term)))
