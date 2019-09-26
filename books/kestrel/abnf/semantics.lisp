@@ -935,7 +935,14 @@
 
   (defrule not-parse-treep-when-not-string-parsablep
     (implies (not (string-parsablep string rulename rules))
-             (not (parse-treep tree string rulename rules)))))
+             (not (parse-treep tree string rulename rules))))
+
+  (defrule parse-treep-of-string-parsablep-witness-when-string-parsablep
+    (implies (string-parsablep string rulename rules)
+             (parse-treep (string-parsablep-witness string rulename rules)
+                          string
+                          rulename
+                          rules))))
 
 (define-sk string-ambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
