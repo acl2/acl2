@@ -35,7 +35,7 @@
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
-(local (in-theory (disable w)))
+(local (in-theory (disable w (tau-system))))
 
 (def-formula-checks bitops-formula-checks
   (logapp
@@ -165,6 +165,74 @@
 
 (set-ignore-ok t)
 
+(define nest-logconses-for-logapp ((n posp))
+  :returns (term pseudo-termp
+                 :hints(("Goal" :in-theory (enable length))))
+  :measure (pos-fix n)
+  :hints(("Goal" :in-theory (enable pos-fix)))
+  :ruler-extenders (cons)
+  :hooks ((:fix :hints(("Goal" :in-theory (enable pos-fix)))))
+  `(intcons (if (intcar x) 't 'nil)
+            ,(if (eql (lposfix n) 1)
+                 'y
+               `((lambda (x y)
+                   ,(nest-logconses-for-logapp (1- n)))
+                 (intcdr x) y)))
+  ///
+  (local (defun ind (n a)
+           (declare (xargs :measure (pos-fix n)
+                           :hints(("Goal" :in-theory (enable pos-fix)))))
+           (if (equal (pos-fix n) 1)
+               a
+             (ind (1- n) `((x . ,(intcdr (cdr (hons-assoc-equal 'x a))))
+                           (y . ,(cdr (hons-assoc-equal 'y a))))))))
+  (defret fgl-ev-of-nest-logconses-for-logapp
+    (equal (fgl-ev term a)
+           (logapp (pos-fix n)
+                   (fgl-ev 'x a)
+                   (fgl-ev 'y a)))
+    :hints(("Goal" :in-theory (enable bitops::logapp** pos-fix)
+            :induct (ind n a)))))
+
+(local (defthm logapp-when-zp
+         (implies (zp n)
+                  (equal (logapp n x y)
+                         (ifix y)))
+         :hints(("Goal" :in-theory (enable bitops::logapp**)))))
+    
+
+(def-gl-meta logapp-expand
+  (gl-object-case call
+    :g-apply (b* (((unless (and (eq call.fn 'logapp)
+                                (eql (len call.args) 3)))
+                   (mv nil nil nil interp-st state))
+                  ((list n x y) call.args)
+                  ((unless (gl-object-case n :g-concrete))
+                   (mv nil nil nil interp-st state))
+                  (n (g-concrete->val n))
+                  ((unless (posp n))
+                   (mv t '(ifix y) `((y . ,y)) interp-st state)))
+               (mv t (nest-logconses-for-logapp n)
+                   `((x . ,x) (y . ,y))
+                   interp-st state))
+    :otherwise (mv nil nil nil interp-st state))
+  :formula-check bitops-formula-checks)
+
+(add-gl-meta logapp logapp-expand)
+
+;; (LOCAL (FGL::INSTALL-GL-PRIMITIVES FGL::BITOPS-PRIMITIVES))
+;; (LOCAL (FGL::INSTALL-GL-METAFNS FGL::BITOPS-METAFNS))
+;; (FGL::ADD-GL-META LOGAPP FGL::LOGAPP-expand)
+;; (FGL::ADD-GL-META ACL2::LOGTAIL$INLINE
+;;                   FGL::LOGTAIL-EXPAND)
+;; (FGL::REMOVE-GL-PRIMITIVE ACL2::LOGTAIL$INLINE
+;;                           FGL::GL-LOGTAIL$INLINE-PRIMITIVE)
+;; (FGL::REMOVE-GL-PRIMITIVE LOGAPP FGL::GL-LOGAPP-PRIMITIVE)
+;; (FGL::ADD-GL-PRIMITIVE ACL2::LOGTAIL$INLINE
+;;                        FGL::GL-LOGTAIL$INLINE-PRIMITIVE)
+;; (FGL::ADD-GL-PRIMITIVE LOGAPP FGL::GL-LOGAPP-PRIMITIVE)
+
+
 (def-gl-primitive logapp (width lsbs msbs)
   (b* (((unless (gl-object-case width :g-concrete))
         (mv nil nil interp-st))
@@ -179,6 +247,55 @@
                                 (if (atom msb-bits) '(nil) msb-bits)))
         interp-st))
   :formula-check bitops-formula-checks)
+
+
+;; NOTE: It's helpful to have a meta rule that changes (logtail N x) to (intcdr
+;; (intcdr ... (n times) (intcdr x))) when x is not a g-integer. For the case
+;; when x is a g-integer, the primitive below is better; therefore, we'll add
+;; the meta rule first and then the primitive so the primitive will be tried
+;; first.
+(define nest-intcdrs ((n natp) (x pseudo-termp))
+  :returns (new-x pseudo-termp)
+  (if (zp n)
+      (pseudo-term-fix x)
+    (nest-intcdrs (1- n) `(intcdr ,(pseudo-term-fix x))))
+  ///
+  (defret fgl-ev-of-nest-intcdrs-int-equiv
+    (acl2::int-equiv (fgl-ev new-x a)
+                     (logtail n (fgl-ev x a)))
+    :hints(("Goal" :in-theory (enable bitops::logtail**))))
+
+  (defret fgl-ev-of-nest-intcdrs-posp
+    (implies (posp n)
+             (equal (fgl-ev new-x a)
+                    (logtail n (fgl-ev x a))))
+    :hints(("Goal" :in-theory (enable bitops::logtail**)
+            :induct <call>
+            :expand ((nest-intcdrs 1 x))))))
+
+(local (defthm logtail-when-zp
+         (implies (zp n)
+                  (equal (logtail n x) (ifix x)))))
+
+(def-gl-meta logtail-expand
+  (gl-object-case call
+    :g-apply (b* (((unless (and (eq call.fn 'acl2::logtail$inline)
+                                (eql (len call.args) 2)))
+                   (mv nil nil nil interp-st state))
+                  ((list n x) call.args)
+                  ((unless (gl-object-case n :g-concrete))
+                   (mv nil nil nil interp-st state))
+                  (n (g-concrete->val n))
+                  ((unless (posp n))
+                   (mv t '(ifix x) `((x . ,x)) interp-st state)))
+               (mv t (nest-intcdrs n 'x)
+                   `((x . ,x))
+                   interp-st state))
+    :otherwise (mv nil nil nil interp-st state))
+  :formula-check bitops-formula-checks)
+                
+(add-gl-meta acl2::logtail$inline logtail-expand)
+
 
 (define tail-bits ((n natp) x)
   (b* (((when (zp n)) x)
@@ -468,7 +585,8 @@
   :formula-check bitops-formula-checks)
 
 
-(local (install-gl-primitives bitops-prim))
+(local (install-gl-primitives bitops-primitives))
+(local (install-gl-metafns bitops-metafns))
 
 
 ;; ;; Downgrade the rewrite rules concerning these to definitions so they'll be tried after the primitives.

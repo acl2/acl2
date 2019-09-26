@@ -681,7 +681,7 @@
               (<= (lits-max-id-val lits) (fanin-count aignet)))
      :hints(("Goal" :in-theory (enable lits-max-id-val-when-aignet-lit-listp)))))
 
-  (local (in-theory (disable OPEN-LEN-IS equal-len-hyp len-equal-0)))
+  (local (in-theory (disable equal-of-len len-equal-0)))
   
   (local
    #!aignet

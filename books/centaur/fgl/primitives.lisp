@@ -59,7 +59,7 @@
 ;;    typespec-check implies fgl-sat-check))
 
 (def-formula-checks primitives-formula-checks
-  (if! atom))
+  (if! atom ifix bool-fix$inline))
 
 (enable-split-ifs equal)
 
@@ -84,11 +84,19 @@
                           fgl-apply)))
 
 
-(enable-split-ifs int)
-(def-gl-primitive int (x)
+(def-gl-rewrite int-to-ifix
+  (equal (int x) (ifix x)))
+
+(enable-split-ifs ifix)
+(def-gl-primitive ifix (x)
   (b* (((mv ok fix) (gobj-syntactic-integer-fix x))
        ((unless ok) (mv nil nil interp-st)))
-    (mv t fix interp-st)))
+    (mv t fix interp-st))
+  :formula-check primitives-formula-checks)
+
+(def-gl-rewrite ifix-when-integerp
+  (implies (integerp x)
+           (equal (ifix x) x)))
 
 (local (defthm integerp-of-fgl-object-alist-eval
          (iff (integerp (fgl-object-alist-eval x env))
@@ -118,7 +126,14 @@
     :g-boolean (mv t nil interp-st)
     :g-cons (mv t nil interp-st)
     :g-map (mv t (integerp x.alist) interp-st)
-    :otherwise (mv nil nil interp-st)))
+    :g-apply (if (or (and** (eq x.fn 'ifix) (eql (len x.args) 1))
+                     (and** (eq x.fn 'intcons) (eql (len x.args) 2))
+                     (and** (eq x.fn 'intcdr) (eql (len x.args) 1))
+                     (and** (eq x.fn 'endint) (eql (len x.args) 1)))
+                 (mv t t interp-st)
+               (mv nil nil interp-st))
+    :otherwise (mv nil nil interp-st))
+  :formula-check primitives-formula-checks)
 
 
 (local (defthm fgl-object-alist-eval-under-iff
@@ -154,6 +169,10 @@
     (mv t (mk-g-integer (scons (gobj-syntactic-boolean->bool car-fix)
                                (gobj-syntactic-integer->bits cdr-fix)))
         interp-st)))
+
+(def-gl-rewrite intcons-of-ifix
+  (equal (intcons car (ifix cdr))
+         (intcons car cdr)))
 
 (local (defthm logcar-when-not-integerp
          (implies (not (integerp x))
@@ -203,6 +222,9 @@
                interp-st)
     :otherwise (mv nil nil interp-st)))
 
+(def-gl-rewrite intcar-of-ifix
+  (equal (intcar (ifix x)) (intcar x)))
+
 (local (in-theory (enable int-endp
                           gl-object-bfrlist-when-g-concrete)))
 
@@ -228,6 +250,9 @@
                      (int-endp x.alist))
                interp-st)
     :otherwise (mv nil nil interp-st)))
+
+(def-gl-rewrite int-endp-of-ifix
+  (equal (int-endp (ifix x)) (int-endp x)))
 
 (local (defthm logcdr-when-not-integerp
          (implies (not (integerp x))
@@ -255,17 +280,25 @@
                interp-st)
     :otherwise (mv nil nil interp-st)))
 
+(def-gl-rewrite intcdr-of-ifix
+  (equal (intcdr (ifix x)) (intcdr x)))
+
 (local (in-theory (enable bool-fix)))
 
-(enable-split-ifs bool)
-(def-gl-primitive bool (x)
+(def-gl-rewrite bool-is-bool-fix
+  (equal (bool x)
+         (bool-fix x)))
+
+(enable-split-ifs bool-fix$inline)
+(def-gl-primitive bool-fix$inline (x)
   (gl-object-case x
     :g-concrete (mv t (bool-fix x.val) interp-st)
     :g-boolean (mv t (gl-object-fix x) interp-st)
     :g-integer (mv t t interp-st)
     :g-cons (mv t t interp-st)
     :g-map (mv t (bool-fix x.alist) interp-st)
-    :otherwise (mv nil nil interp-st)))
+    :otherwise (mv nil nil interp-st))
+  :formula-check primitives-formula-checks)
 
 (def-gl-primitive cons (car cdr)
   (mv t

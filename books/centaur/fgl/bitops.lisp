@@ -46,6 +46,7 @@
 (disable-definition intcdr)
 (disable-definition int-endp)
 (disable-definition int)
+(disable-definition ifix)
 
 (disable-definition acl2::logcons$inline)
 (def-gl-rewrite logcons-is-intcons
@@ -58,9 +59,6 @@
 (disable-definition acl2::logcdr$inline)
 (def-gl-rewrite logcdr-is-intcdr
   (equal (logcdr x) (intcdr x)))
-
-(def-gl-rewrite ifix-is-int
-  (equal (ifix x) (int x)))
 
 (def-gl-rewrite bitp-fgl
   (equal (bitp x)

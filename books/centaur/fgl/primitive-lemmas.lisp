@@ -56,27 +56,35 @@
   (equal (len (cons a b))
          (+ 1 (len b))))
 
-(defun len-is (x n)
-  (if (zp n)
-      (and (eql n 0) (atom x))
-    (and (consp x)
-         (len-is (cdr x) (1- n)))))
+;; (defun len-is (x n)
+;;   (if (zp n)
+;;       (and (eql n 0) (atom x))
+;;     (and (consp x)
+;;          (len-is (cdr x) (1- n)))))
 
-(defthm open-len-is
-  (implies (syntaxp (quotep n))
-           (equal (len-is x n)
-                  (if (zp n)
-                      (and (eql n 0) (atom x))
-                    (and (consp x)
-                         (len-is (cdr x) (1- n)))))))
+;; (defthm open-len-is
+;;   (implies (syntaxp (quotep n))
+;;            (equal (len-is x n)
+;;                   (if (zp n)
+;;                       (and (eql n 0) (atom x))
+;;                     (and (consp x)
+;;                          (len-is (cdr x) (1- n)))))))
                          
 
-(defthm equal-len-hyp
-  (implies (syntaxp (and (or (acl2::rewriting-negative-literal-fn `(equal (len ,x) ,n) mfc state)
-                             (acl2::rewriting-negative-literal-fn `(equal ,n (len ,x)) mfc state))
-                         (quotep n)))
+;; (defthm equal-len-hyp
+;;   (implies (syntaxp (and (or (acl2::rewriting-negative-literal-fn `(equal (len ,x) ,n) mfc state)
+;;                              (acl2::rewriting-negative-literal-fn `(equal ,n (len ,x)) mfc state))
+;;                          (quotep n)))
+;;            (equal (equal (len x) n)
+;;                   (len-is x n))))
+
+(defthm equal-of-len
+  (implies (syntaxp (quotep n))
            (equal (equal (len x) n)
-                  (len-is x n))))
+                  (if (zp n)
+                      (and (equal n 0) (atom x))
+                    (and (consp x)
+                         (equal (len (cdr x)) (1- n)))))))
 
 (in-theory (enable* gl-object-bfrlist-when-thms))
 
