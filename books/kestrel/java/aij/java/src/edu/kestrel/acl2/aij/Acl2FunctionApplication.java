@@ -126,7 +126,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * thus, the use of this {@code or} pseudo-function in AIJ
      * can never interfere with other functions.
      *
-     * @param binding The binding of values to variable indices.
+     * @param binding The binding of variable indices to values.
      * @return The value that results from the evaluation.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.

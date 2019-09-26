@@ -33,7 +33,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * Validates all the function calls in this term.
      * See the implementing methods for details.
      *
-     * @throws IllegalStateException if validation fails
+     * @throws IllegalStateException If validation fails.
      */
     abstract void validateFunctionCalls();
 
@@ -42,30 +42,32 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * starting with the supplied map from variable symbols to indices.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException if the term or the map are malformed
-     *                                  in a way that
-     *                                  some valid index cannot be determined
-     * @throws IllegalStateException    if some variable index is already set
+     * @param indices Map from variable symbols to indices.
+     * @throws IllegalArgumentException If the term or the map are malformed
+     *                                  in a way that some index cannot be set.
+     * @throws IllegalStateException    If some index is already set.
      */
     abstract void setVariableIndices(Map<Acl2Symbol, Integer> indices);
 
     /**
-     * Evaluates this ACL2 term to an ACL2 value,
+     * Evaluates this term to a value,
      * with respect to the given binding of values to variable indices.
      * The binding is specified as an array of values:
-     * the value {@code bindings[i]} is bound to
-     * the variable with index {@code i}.
+     * the variable with index {@code i}
+     * is bound to the value {@code bindings[i]}.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails
+     * @param binding The binding of variable indices to values.
+     * @return The value that results from the evaluation.
+     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails.
      */
     abstract Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException;
 
     //////////////////////////////////////// public members:
 
     /**
-     * Compares this ACL2 term with the argument ACL2 term for order.
+     * Compares this term with the argument term for order.
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
@@ -73,9 +75,10 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this term is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The term to compare this term with.
+     * @return Aa negative integer, zero, or a positive integer as
+     * this term is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public abstract int compareTo(Acl2Term o);
