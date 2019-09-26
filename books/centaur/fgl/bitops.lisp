@@ -1227,3 +1227,8 @@
          (and (equal x (if x t nil)) t)))
 
 
+(def-gl-rewrite pos-fix-fgl
+  (equal (pos-fix x)
+         (let ((x (int x)))
+           (if (< 0 x) x 1)))
+  :hints(("Goal" :in-theory (enable pos-fix))))
