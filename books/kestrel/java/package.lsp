@@ -71,6 +71,7 @@
                          msg-listp
                          nats=>string
                          no-stobjs-p
+                         packn-pos
                          partition-rest-and-keyword-args
                          patbind-run-when
                          primitivep

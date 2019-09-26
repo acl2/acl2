@@ -678,11 +678,11 @@
     "This is done only in the shallow embedding.")
    (xdoc::p
     "This step annotates ACL2 terms with ATJ types:
-     (i) each ACL2 term is wrapped with a function named @('<src>to<dst>'),
-     where @('src') is the ATJ type of the term
-     and @('dst') is an ATJ type to which the term must be converted to;
-     (ii) each ACL2 variable @('var') in a term is renamed to @('var<type>'),
-     where @('type') is the ATJ type of the variable.")
+     (i) each ACL2 term is wrapped with a function named @('[src>dst]'),
+     where @('src') identifies the ATJ type of the term
+     and @('dst') identifies an ATJ type to which the term must be converted to;
+     (ii) each ACL2 variable @('var') in a term is renamed to @('[type]var'),
+     where @('type') identifies the ATJ type of the variable.")
    (xdoc::p
     "These annotations facilitate the ACL2-to-Java translation,
      which uses the type annotations as ``instructions'' for
@@ -693,15 +693,74 @@
      This should let us prove, in ACL2,
      the equality of the annotated terms with the original terms,
      under suitable variable rebinding,
-     and by introducing the @('<src>to<dst>') functions as identities.
+     and by introducing the @('[src>dst]') functions as identities.
      (This has not been done yet.)"))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-conversion-name ((src-type atj-typep)
-                                  (dst-type atj-typep))
+(define atj-type-id ((type atj-typep))
+  :returns (id stringp :hyp :guard)
+  :short "Short string identifying an ATJ type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use a short two-letter string to identify each ATJ type.
+     For the ATJ types that correspond to AIJ's public classes,
+     the first letter is @('A') and the second letter is from the class name.
+     For the Java primitive types,
+     the first letter is @('J') and the second letter is from the Java type."))
+  (case type
+    (:integer "AI")
+    (:rational "AR")
+    (:number "AN")
+    (:character "AC")
+    (:string "AS")
+    (:symbol "AY")
+    (:cons "AP")
+    (:value "AV")
+    (:jint "JI"))
+  ///
+
+  (defrule atj-type-id-injective
+    (implies (and (atj-typep x)
+                  (atj-typep y))
+             (equal (equal (atj-type-id x)
+                           (atj-type-id y))
+                    (equal x y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-of-id ((id stringp))
+  :returns (type atj-typep)
+  :short "ATJ type identified by a short string."
+  :long
+  (xdoc::topstring-p
+   "This is the inverse of @(tsee atj-type-id).")
+  (cond ((equal id "AI") :integer)
+        ((equal id "AR") :rational)
+        ((equal id "AN") :number)
+        ((equal id "AC") :character)
+        ((equal id "AS") :string)
+        ((equal id "AY") :symbol)
+        ((equal id "AP") :cons)
+        ((equal id "AV") :value)
+        ((equal id "JI") :jint)
+        (t (prog2$
+            (raise "Internal error: ~x0 does not identify a type." id)
+            :value))) ; irrelevant
+  ///
+
+  (defrule atj-type-of-id-of-atj-type-id
+    (implies (atj-typep x)
+             (equal (atj-type-of-id (atj-type-id x))
+                    x))
+    :enable atj-type-id))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-conv ((src-type atj-typep) (dst-type atj-typep))
   :returns (name symbolp)
   :short "ATJ type conversion function names used to annotate ACL2 terms."
   :long
@@ -709,9 +768,9 @@
    (xdoc::p
     "As mentioned "
     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-    ", each ACL2 term is wrapped with a function named @('<src>to<dst>'),
-     where @('src') is the ATJ type of the term
-     and @('dst') is an ATJ type to which the term must be converted to.")
+    ", each ACL2 term is wrapped with a function named @('[src>dst]'),
+     where @('src') identifies the ATJ type of the term
+     and @('dst') identifies an ATJ type to which the term must be converted to.")
    (xdoc::p
     "These function names are all in the @('\"JAVA\"') package.
      For now we do not need these functions to actually exist in the ACL2 world,
@@ -721,62 +780,39 @@
      preserves the ACL2 meaning of terms,
      these functions will need to exist and be defined as identify functions,
      which can be easily done with a macro."))
-  (intern$ (str::cat "<" (symbol-name src-type) ">"
-                     "TO"
-                     "<" (symbol-name dst-type) ">")
+  (intern$ (str::cat "[" (atj-type-id src-type) ">" (atj-type-id dst-type) "]")
            "JAVA"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-conversion-name-inv ((conv symbolp))
+(define atj-types-of-conv ((conv symbolp))
   :returns (mv (src-type atj-typep)
                (dst-type atj-typep))
   :verify-guards nil
-  :short "Inverse of @(tsee atj-type-conversion-name)."
+  :short "Source and destination ATJ types of a conversion function."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "Given a symbol @('java::<src>to<dst>'),
-     where @('src') and @('dst') are ATJ types,
-     this function returns these two ATJ types."))
-  (b* ((pkg (symbol-package-name conv))
-       ((unless (equal pkg "JAVA"))
-        (raise "Internal error: ~x0 is not in the \"JAVA\" package, ~
-                                but in the ~x1 package instead."
-               conv pkg)
+  (xdoc::topstring-p
+   "This is the inverse of @(tsee atj-type-conv).")
+  (b* ((string (symbol-name conv))
+       ((unless (and (int= (length string) 7)
+                     (eql (char string 0) #\[)
+                     (eql (char string 3) #\>)
+                     (eql (char string 6) #\])))
+        (raise "Internal error: ~x0 is not a conversion function." conv)
         (mv :value :value)) ; irrelevant
-       (chars (explode (symbol-name conv)))
-       ((unless (and (consp chars)
-                     (eql (car chars) #\<)))
-        (raise "Internal error: ~x0 does not start with <." conv)
-        (mv :value :value)) ; irrelevant
-       (chars (cdr chars))
-       (pos (position #\> chars))
-       ((unless pos)
-        (raise "Internal error: ~x0 does not contain >." conv)
-        (mv :value :value)) ; irrelevant
-       (src-type-chars (take pos chars))
-       (chars (nthcdr pos chars))
-       ((unless (and (>= (len chars) 4)
-                     (equal (take 4 chars)
-                            (list #\> #\T #\O #\<))))
-        (raise "Internal error: ~x0 does not contain >TO<." conv)
-        (mv :value :value)) ; irrelevant
-       (chars (nthcdr 4 chars))
-       ((unless (and (consp chars)
-                     (eql (car (last chars)) #\>)))
-        (raise "Internal error: ~x0 does not end with >." conv)
-        (mv :value :value)) ; irrelevant
-       (dst-type-chars (butlast chars 1))
-       (src-type (intern (implode src-type-chars) "KEYWORD"))
-       (dst-type (intern (implode dst-type-chars) "KEYWORD"))
-       ((unless (atj-typep src-type))
-        (raise "Internal error: ~x0 is not an ATJ type." src-type)
-        (mv :value :value)) ; irrelevant
-       ((unless (atj-typep dst-type))
-        (raise "Internal error: ~x0 is not an ATJ type." dst-type)
-        (mv :value :value))) ; irrelevant
-    (mv src-type dst-type)))
+       (src-id (subseq string 1 3))
+       (dst-id (subseq string 4 6))
+       (src-type (atj-type-of-id src-id))
+       (dst-type (atj-type-of-id dst-id)))
+    (mv src-type dst-type))
+  ///
+
+  (defrule atj-types-of-conv-of-atj-type-conv
+    (implies (and (atj-typep x)
+                  (atj-typep y))
+             (equal (atj-types-of-conv (atj-type-conv x y))
+                    (list x y)))
+    :enable (atj-type-conv atj-type-id)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -793,8 +829,8 @@
      it is treated as if it were equal to the source type,
      i.e. the conversion is a no-op."))
   (b* ((conv (if dst-type?
-                 (atj-type-conversion-name src-type dst-type?)
-               (atj-type-conversion-name src-type src-type))))
+                 (atj-type-conv src-type dst-type?)
+               (atj-type-conv src-type src-type))))
     (fcons-term* conv term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -819,7 +855,7 @@
        ((when (flambdap fn))
         (raise "Internal error: the term ~x0 has the wrong format." term)
         (mv nil :value :value)) ; irrelevant
-       ((mv src-type dst-type) (atj-type-conversion-name-inv fn)))
+       ((mv src-type dst-type) (atj-types-of-conv fn)))
     (mv (fargn term 1) src-type dst-type))
   ///
 
@@ -864,8 +900,9 @@
     "As mentioned "
     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
     ", we systematically add type information to each ACL2 variable.
-     We do so by adding @('<type>') at the end of the variable name."))
-  (acl2::add-suffix-to-fn var (str::cat "<" (symbol-name type) ">")))
+     We do so by adding @('[type]') before the variable name,
+     where @('type') identifies an ATJ type."))
+  (packn-pos (list "[" (atj-type-id type) "]" var) var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -883,25 +920,16 @@
     "It is used when translating from ACL2 to Java,
      because the name of the Java variable is the one of the ACL2 variable
      without the type annotation."))
-  (b* ((chars (explode (symbol-name var)))
-       (rev-chars (reverse chars))
-       ((unless (eql (car rev-chars) #\>))
-        (raise "Internal error: ~x0 does not end with >." var)
+  (b* ((string (symbol-name var))
+       ((unless (and (>= (length string) 4)
+                     (eql (char string 0) #\[)
+                     (eql (char string 3) #\])))
+        (raise "Internal error: ~x0 has the wrong format." var)
         (mv nil :value)) ; irrelevant
-       (rev-chars (cdr rev-chars))
-       (pos (position #\< rev-chars))
-       ((unless pos)
-        (raise "Internal error: ~x0 does not contain <." var)
-        (mv nil :value)) ; irrelevant
-       (rev-type-chars (take pos rev-chars))
-       (type-chars (reverse rev-type-chars))
-       (type (intern (implode type-chars) "KEYWORD"))
-       ((unless (atj-typep type))
-        (raise "Internal error: ~x0 is not an ATJ type." type)
-        (mv nil :value)) ; irrelevant
-       (unannotated-chars (take (- (len chars) (+ pos 2)) chars))
-       (unannotated-var (intern-in-package-of-symbol
-                         (implode unannotated-chars) var)))
+       (unannotated-string (subseq string 4 (length string)))
+       (unannotated-var (intern-in-package-of-symbol unannotated-string var))
+       (type-id (subseq string 1 3))
+       (type (atj-type-of-id type-id)))
     (mv unannotated-var type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1194,7 +1194,7 @@
        (arg (car args))
        (jarg (car jargs))
        ((mv & type) (atj-type-unannotate-var formal))
-       (conv (atj-type-conversion-name type type))
+       (conv (atj-type-conv type type))
        ((when (equal arg (fcons-term* conv formal)))
         (atj-trim-lambda (cdr formals) (cdr args) (cdr jargs)))
        ((mv formals jargs)
