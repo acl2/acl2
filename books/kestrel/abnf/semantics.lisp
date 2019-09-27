@@ -36,10 +36,10 @@
     "These concepts are analogous to the ones
      for the typical notion of formal grammar in textbooks,
      but because ABNF is more complex, its semantics are more complex."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 (fty::defflexsum symbol
-  :parents (semantics)
   :short "Symbols."
   :long
   (xdoc::topstring
@@ -89,7 +89,6 @@
     :enable symbolp))
 
 (fty::deflist string
-  :parents (semantics)
   :short "Strings."
   :long
   (xdoc::topstring-p
@@ -109,7 +108,6 @@
 (fty::deftypes trees
 
   (fty::deftagsum tree
-    :parents (semantics)
     :short "Trees of rule names and terminal values."
     :long
     (xdoc::topstring
@@ -169,7 +167,6 @@
       :enable (tree-fix tree-nonleaf->rulename? tree-nonleaf->branches)))
 
   (fty::deflist tree-list
-    :parents (semantics)
     :short "True lists of trees of rule names and terminal values."
     :long
     (xdoc::topstring
@@ -182,7 +179,6 @@
     :pred tree-listp)
 
   (fty::deflist tree-list-list
-    :parents (semantics)
     :short "True lists of true lists
             of trees of rule names and terminal values."
     :long
@@ -207,13 +203,11 @@
 
 (fty::defoption maybe-tree
   tree
-  :parents (semantics)
   :short "Union of trees and @('nil')."
   :pred maybe-treep)
 
 (define set-all-treep ((set setp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Check if all the elements of a set are trees."
   (or (empty set)
       (and (treep (head set))
@@ -228,7 +222,6 @@
 
 (define tree-setp (x)
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Recognize finite sets of trees."
   (and (setp x)
        (set-all-treep x))
@@ -245,7 +238,6 @@
                 (tree-setp (sfix trees))))))
 
 (defines tree->string
-  :parents (semantics)
   :short "String at the leaves of trees."
   :long
   (xdoc::topstring
@@ -302,7 +294,6 @@
                    (tree-list-list->string treess)))))
 
 (defines tree-terminatedp
-  :parents (semantics)
   :short "Notion of terminated tree."
   :long
   (xdoc::topstring
@@ -381,7 +372,6 @@
 
 (define tree-match-num-val-p ((tree treep) (num-val num-val-p))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of numeric value notations."
   :long
   (xdoc::topstring
@@ -413,7 +403,6 @@
 
 (define nat-match-sensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of characters in case-sensitive character value notations."
   :long
   (xdoc::topstring-p
@@ -430,7 +419,6 @@
 
 (define nat-match-insensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of characters
           in case-insensitive character value notations."
   :long
@@ -453,7 +441,6 @@
 (define nats-match-sensitive-chars-p ((nats nat-listp)
                                       (chars character-listp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Lifting of @(tsee nat-match-sensitive-char-p) to lists."
   (cond ((endp nats) (endp chars))
         (t (and (consp chars)
@@ -476,7 +463,6 @@
 (define nats-match-insensitive-chars-p ((nats nat-listp)
                                         (chars character-listp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Lifting of @(tsee nat-match-insensitive-char-p) to lists."
   (cond ((endp nats) (endp chars))
         (t (and (consp chars)
@@ -498,7 +484,6 @@
 
 (define tree-match-char-val-p ((tree treep) (char-val char-val-p))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of character value notations."
   :long
   (xdoc::topstring-p
@@ -519,7 +504,6 @@
 
 (define tree-match-prose-val-p ((tree treep) (prose-val prose-val-p))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of prose value notations."
   :long
   (xdoc::topstring-p
@@ -533,7 +517,6 @@
 
 (define numrep-match-repeat-range-p ((numrep natp) (range repeat-rangep))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of repetition ranges."
   :long
   (xdoc::topstring-p
@@ -556,7 +539,6 @@
 
 (define lookup-rulename ((rulename rulenamep) (rules rulelistp))
   :returns (alternation alternationp)
-  :parents (semantics)
   :short "Collect all the alternatives associated to a rule name
           from some rules."
   :long
@@ -581,7 +563,6 @@
                                               (alternation alternationp)
                                               (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of alternations."
     :long
     (xdoc::topstring
@@ -604,7 +585,6 @@
                                                 (concatenation concatenationp)
                                                 (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of concatenations."
     :long
     (xdoc::topstring
@@ -628,7 +608,6 @@
                                         (repetition repetitionp)
                                         (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of repetitions."
     :long
     (xdoc::topstring
@@ -650,7 +629,6 @@
                                      (element elementp)
                                      (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Auxiliary function to define @(tsee tree-list-match-repetition-p)."
     :long
     (xdoc::topstring
@@ -672,7 +650,6 @@
                                 (element elementp)
                                 (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of elements."
     :long
     (xdoc::topstring
@@ -871,7 +848,6 @@
 (define parse-treep
   (tree (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Recognize the parse trees of a string,
           with respect to a rule name and a list of rules."
   :long
@@ -897,7 +873,6 @@
 (define-sk string-parsablep
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of parsable string."
   :long
   (xdoc::topstring-p
@@ -924,7 +899,6 @@
 (define-sk string-ambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of ambiguous string."
   :long
   (xdoc::topstring-p
@@ -950,7 +924,6 @@
 (define string-unambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of unambiguous string."
   :long
   (xdoc::topstring-p
@@ -977,7 +950,6 @@
 (define-sk parse-trees-of-string-p
   ((trees tree-setp) (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Check if a finite set of trees is
           the set of all and only the parse trees of a string."
   :long
@@ -1058,7 +1030,6 @@
 (define-sk string-has-finite-parse-trees-p
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Check if a string has a finite number of parse trees."
   :long
   (xdoc::topstring-p
@@ -1136,7 +1107,6 @@
                    :hints (("Goal"
                             :in-theory
                             (enable string-has-finite-parse-trees-p))))
-  :parents (semantics)
   :short "Parse a string."
   :long
   (xdoc::topstring-p
@@ -1178,7 +1148,6 @@
 (define parse! ((string stringp) (rulename rulenamep) (rules rulelistp))
   :guard (string-unambiguousp string rulename rules)
   :returns (tree treep)
-  :parents (semantics)
   :short "Parse an unambiguous string."
   :long
   (xdoc::topstring-p
@@ -1197,7 +1166,6 @@
 
 (define-sk languagep (nats (rulenames rulename-setp) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of language."
   :long
   (xdoc::topstring
@@ -1222,7 +1190,6 @@
 
 (define-sk terminal-string-for-rules-p (nats (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Recognize terminal strings generated by a grammar."
   :long
   (xdoc::topstring
