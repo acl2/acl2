@@ -84,7 +84,8 @@
                                  (bfr-to-param-space
                                   bfr-param-env))
           :induct (bfr-list-to-param-space p x)
-          :expand ((bfr-list->s x env)))))
+          :expand ((bfr-list->s x env)
+                   (:free (x y env) (bfr-list->s (cons x y) env))))))
 
 (defthm bfr-list->s-to-param-space-list-with-unparam-env
   (implies (and (syntaxp (not (and (consp env)
@@ -100,7 +101,8 @@
                                  (bfr-to-param-space
                                   bfr-param-env))
           :induct (bfr-list-to-param-space p x)
-          :expand ((:free (env) (bfr-list->s x env))))))
+          :expand ((:free (env) (bfr-list->s x env))
+                   (:free (x y env) (bfr-list->s (cons x y) env))))))
 
 (defthm bfr-list->u-to-param-space-list
   (implies (bfr-eval p env)

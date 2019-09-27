@@ -842,13 +842,13 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
                (equal (len (lhs-pairs-set-aliases x y aliases))
                       (len aliases)))
       :hints (("goal" :induct (lhs-pairs-set-aliases x y aliases)
-               :in-theory (e/d (lhatom-vars)
+               :in-theory (e/d (lhatom-vars acl2::mv-nth-cons-meta)
                                ((:d lhs-pairs-set-aliases)
                                 lhatom-normorderedp-implies-index
                                 lhs-norm-when-lhs-normp
                                 member default-car subsetp
                                 svarlist-boundedp-when-subsetp-equal
-                                not)))
+                                not acl2::mv-nth-of-cons)))
               '(:expand ((lhs-pairs-set-aliases x y aliases)))))
 
     (deffixequiv lhs-pairs-set-aliases

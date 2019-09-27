@@ -2422,8 +2422,10 @@
                                 rb-1-opener-theorem)
                                (unsigned-byte-p)))
              (if (equal (car id) '(0 1))
-                 '(:expand
-                   ((las-to-pas i addr-i r-w-x x86))
+                 '(:computed-hint-replacement
+                   ((and stable-under-simplificationp
+                         '(:expand
+                           ((las-to-pas i addr-i r-w-x x86)))))
                    :use ((:instance rb-rb-same-start-address-different-op-sizes
                                     (addr addr-i))
                          (:instance mv-nth-0-las-to-pas-subset-p

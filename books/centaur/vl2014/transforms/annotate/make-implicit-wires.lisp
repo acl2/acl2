@@ -437,7 +437,8 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
       (set-equiv (append (mv-nth 0 ret)
                          (mv-nth 1 ret))
                  (vl-modinst-allexprs x)))
-    :hints(("Goal" :in-theory (enable set-equiv vl-modinst-allexprs)))))
+    :hints(("Goal" :in-theory (e/d (set-equiv vl-modinst-allexprs)
+                                   (acl2::subsetp-append1))))))
 
 (define vl-gateinst-exprs-for-implicit-wires
   :short "Gets the expressions from a gate instance, for making implicit wires."

@@ -5044,8 +5044,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                  (moddb-add-modinst-to-last
                                   instname modidx
                                   (mv-nth 1 (moddb-add-module1 elab-mod moddb)))))
-      :hints(("Goal" :in-theory (enable moddb-add-modinst-to-last
-                                        moddb-add-module1))))))
+      :hints(("Goal" :in-theory (enable* moddb-add-modinst-to-last
+                                         moddb-add-module1
+                                         acl2::arith-equiv-forwarding))))))
 
 (define elab-mod-add-wires ((wires wirelist-p) elab-mod)
   :verbosep t
@@ -5847,6 +5848,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                         acl2::nfix-when-not-natp
                                         acl2::nth-when-atom
                                         acl2::natp-rw))))
+  :hooks ((:fix :hints (("goal" :induct (moddb-wireidx->path wireidx modidx moddb)
+             :expand ((:free (moddb) (moddb-wireidx->path wireidx modidx moddb)))))))
   (b* ((wireidx (lnfix wireidx))
        (modidx (lnfix modidx))
        ((unless (mbt (< modidx (moddb->nmods moddb))))
@@ -7540,7 +7543,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
     :hints ((and stable-under-simplificationp
                  '(:expand
                    ((:free (modidx) (svex-modinsts->initial-aliases n ninsts modidx offset moddb lhsarr))
-                    (:free (moddb) (svex-modinsts->initial-aliases n ninsts modidx offset moddb lhsarr)))))))
+                    (:free (moddb) (svex-modinsts->initial-aliases n ninsts modidx offset moddb lhsarr))
+                    (:free (moddb) (svex-mod->initial-aliases modidx offset moddb lhsarr))
+                    (:free (moddb) (svex-modinst->initial-aliases n modidx offset moddb lhsarr)))))))
 
   (defthm svex-modinsts->initial-aliases-norm
     (implies (syntaxp (not (equal ninsts ''nil)))
