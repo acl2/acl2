@@ -15,6 +15,7 @@
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
+(include-book "kestrel/std/system/remove-trivial-lambda-vars" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
@@ -35,32 +36,37 @@
     (xdoc::seetopic "atj-code-generation" "here")
     ", prior to generating Java code,
      ATJ performs an ACL2-to-ACL2 pre-translation.
-     Currently, this pre-translation consists of the following steps:")
+     Currently, this pre-translation consists of the following steps.
+     The first two steps apply to both the deep and the shallow embedding;
+     the others apply only to the shallow embedding.")
    (xdoc::ol
     (xdoc::li
-     "In both the deep and shallow embedding,
-      we remove @(tsee return-last).
+     "We remove @(tsee return-last).
       See "
      (xdoc::seetopic "atj-pre-translation-remove-last" "here")
      ".")
     (xdoc::li
-     "In both the deep and shallow embedding,
-      we remove the unused lambda-bound variables.
+     "We remove the unused lambda-bound variables.
       See "
      (xdoc::seetopic "atj-pre-translation-unused-vars" "here")
      ".")
     (xdoc::li
-     "In the shallow embedding,
-      we rename the ACL2 variables
+     "We remove the trivial lambda-bound variables.
+      See "
+     (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
+     ".")
+    (xdoc::li
+     "We rename all the variables
       so that their names are valid Java variable names
-      and so that different ACL2 variables with the same name are renamed apart.
+      and so that different variables with the same name are renamed apart.
       See "
      (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
      ".")
     (xdoc::li
-     "In the shallow embedding,
-      we annotate terms with ATJ type information.
-      See @(tsee atj-pre-translation-type-annotation).")))
+     "We annotate terms with ATJ type information.
+      See "
+     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+     ".")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,6 +128,32 @@
     "This is accomplished
      via the @(tsee remove-unused-vars-from-term) system utility.
      No other code is needed to do this in ATJ.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-trivial-vars
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of all the trivial lambda-bound variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "We remove all the lambda-bound variables,
+     and corresponding actual arguments,
+     that are identical to the corresponding actual arguments.
+     See the discussion in @(tsee remove-trivial-lambda-vars),
+     which is the utility that we use
+     to accomplish this pre-translation step.")
+   (xdoc::p
+    "This pre-translation step makes terms simpler to work with
+     (for the purpose of ATJ)
+     by only keeping the ``true'' @(tsee let)s in a term
+     (which are lambda expressions in translated terms),
+     avoiding the ``artificial'' ones to close the lambda expressions.
+     Indeed, @(tsee let) terms are generally not closed in other languages,
+     or even in ACL2's untranslated terms.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -500,16 +532,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "At the top level,
-     this function is called on the body of a defined ACL2 function
-     prior to translating its body into Java.
-     This makes the translation to Java,
-     because each ACL2 variable can be turned
-     into a Java variable with same name.
-     In other words, we factor the overall translation from ACL2 to Java
-     by performing the renaming of variables from ACL2 to ACL2 first,
-     and then turning the resulting ACL2 into Java.")
-   (xdoc::p
     "The alist from variables to indices
      is threaded through this function and its mutually recursive companion.
      On the other hand, the renaming alist is just passed down.")
@@ -533,14 +555,12 @@
      If instead it is a lambda expression,
      we introduce new variables renamings from its formal parameters,
      and then recursively process the body of the lambda expression.
-     As an optimization,
-     we exclude the formal parameters
-     that are the same as their corresponding actual parameters
-     (which happens often in ACL2: see @(tsee remove-unneeded-lambda-formals)),
-     because for those we do not need to generate new Java variables,
-     but can instead reference the existing variables.
-     We append the newly generated renaming to the existing one,
-     achieving the desired ``shadowing'' of the old mappings."))
+     Lambda expressions may not be closed here,
+     due to the pre-translation step
+     that removes the trivial lambda-bound variables:
+     we append the newly generated renaming to the existing one,
+     achieving the desired ``shadowing'' of some of the old mappings
+     but maintaining access to the rest of the old mappings."))
 
   (define atj-rename-term ((term pseudo-termp)
                            (renaming symbol-symbol-alistp)
@@ -568,10 +588,8 @@
                                            indices))
                   (formals (lambda-formals fn))
                   (body (lambda-body fn))
-                  (trimmed-formals (remove-unneeded-lambda-formals
-                                    formals args))
                   ((mv new-renaming
-                       indices) (atj-rename-vars trimmed-formals
+                       indices) (atj-rename-vars formals
                                                  indices
                                                  curr-pkg
                                                  vars-by-name))
@@ -972,11 +990,17 @@
      @('var-types') is initialized with the formal parameters of a function
      and with its corresponding input types.
      When we encounter a lambda expression in a term,
-     @('var-types') is replaced with an alist that assigns
+     @('var-types') is updated with an alist that assigns
      to the formal parameter of the lambda expression
      the types inferred for the actual arguments of the lambda expression;
      that is, unlike at the top level, at intermediate levels
-     variables receive the types inferred for their binding terms.")
+     variables receive the types inferred for their binding terms.
+     Here `updated' means that
+     the new alist is appended before the existing one:
+     recall that, due to the pre-translation step
+     that removes trivial lambda-bound variables,
+     lambda expressions may not be closed at this point;
+     thus, the appending achieves the desired ``overwriting''.")
    (xdoc::p
     "The @('required-type?') input specifies
      the type required for the term, if any.
@@ -1159,7 +1183,7 @@
                                                    guards$
                                                    wrld))
          (formals (lambda-formals fn))
-         (var-types (pairlis$ formals types))
+         (var-types (append (pairlis$ formals types) var-types))
          (formals (atj-type-annotate-vars formals types))
          ((mv body type) (atj-type-annotate-term (lambda-body fn)
                                                  required-type?
@@ -1246,6 +1270,7 @@
   (b* ((body (atj-remove-return-last body guards$))
        (body (remove-unused-vars-from-term body))
        ((when deep$) (mv formals body))
+       (body (remove-trivial-lambda-vars body))
        ((mv formals body) (atj-rename-formals+body
                            formals body (symbol-package-name fn)))
        ((mv formals body) (atj-type-annotate-formals+body
