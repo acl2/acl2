@@ -1499,8 +1499,8 @@
  with functions to collect the names of all the known packages in the ACL2
  @(see world) and to check if a function is primitive.</p>
 
- <p>Extended the <see topic='@(url term-function-recognizers)'>term function
- recognizers</see> with recognizers for true lists of
+ <p>Extended the <see topic='@(url std/systems/term-function-recognizers)'>term
+ function recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
  <p>Extended the <see topic='@(url term-utilities)'>term utilities</see> with

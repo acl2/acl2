@@ -16,7 +16,7 @@
 
 (define pseudo-termfnp (x)
   :returns (yes/no booleanp)
-  :parents (term-function-recognizers)
+  :parents (std/system/term-function-recognizers)
   :short
   (xdoc::topstring
    "Recognize pseudo-term-functions,

@@ -16,7 +16,7 @@
 
 (define termfnp (x (wrld plist-worldp-with-formals))
   :returns (yes/no booleanp)
-  :parents (term-function-recognizers)
+  :parents (std/system/term-function-recognizers)
   :short
   (xdoc::topstring
    "Recognize valid "

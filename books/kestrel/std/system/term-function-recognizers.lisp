@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc term-function-recognizers
+(defxdoc std/system/term-function-recognizers
   :parents (std/system)
   :short "Recognizers of functions in terms."
   :long
