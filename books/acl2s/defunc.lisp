@@ -637,6 +637,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (get1 :skip-function-contractp kwd-alist))
        (gen? (get1 :generalize-contract-thm kwd-alist))
        (typed-undef (get1 :typed-undef kwd-alist))
+       (generalize-rules?
+        (get1 :generate-generalize-rules kwd-alist))
        ((mv body-rm-hyps no-hyps?-rm-hyps)
         (make-contract-body name ic oc formals d? t f-c-thm? typed-undef pkg w))
        ((mv no-force-body-hyps &)
@@ -650,16 +652,18 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (gen-hint-body
         (make-gen-hint-body name formals ic contract-gen-name w))
        (gen-hints-defun-h
-        `(defun ,contract-gen-hint
-             (clause stable-under-simplificationp id hist pspv ctx)
-           (declare (ignorable id pspv ctx)) ; may need later
-           (declare (xargs :mode :program))
-           ,gen-hint-body))
+        (and generalize-rules?
+             `((defun ,contract-gen-hint
+                   (clause stable-under-simplificationp id hist pspv ctx)
+                 (declare (ignorable id pspv ctx)) ; may need later
+                 (declare (xargs :mode :program))
+                 ,gen-hint-body))))
        (gen-computed-hints
-        `((add-default-hints!
-           '((,contract-gen-hint clause stable-under-simplificationp id hist pspv ctx))
-           ;:at-end t
-           )))
+        (and generalize-rules?
+             `((add-default-hints!
+                '((,contract-gen-hint clause stable-under-simplificationp id hist pspv ctx))
+                ;:at-end t
+                ))))
        (recursivep (get1 :recursivep kwd-alist))
        (ihints `(:hints ;; add induction hint, so user-provided
                  ;; hints are treated as extra
@@ -740,7 +744,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         `(DEFTHMD ,contract-gen-name ,no-force-body-hyps
            :rule-classes :generalize
            :hints (("goal" :use ,contract-name :in-theory nil))))
-       (gen-rule-h (list (wrap-skip-fun gen-rule-h)))
+       (gen-rule-h
+        (if generalize-rules?
+            (list (wrap-skip-fun gen-rule-h))
+          '((value-triple :no-generalize-rules))))
        (non-strict-escape
         (and (or (not function-contract-strictp)
                  (not make-staticp))
@@ -758,9 +765,13 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (make-event
           '(:or ,@tp-rule-h
                 (value-triple :type-prescription-rule-failed))))
-        (with-output :off :all ,@gen-rule-h)
-        (with-output :off :all ,gen-hints-defun-h)
-        (with-output :off :all ,@gen-computed-hints)))
+        (with-output
+         :off :all
+         (encapsulate
+          ()
+          ,@gen-rule-h
+          ,@gen-hints-defun-h
+          ,@gen-computed-hints))))
      ((and gen? no-hyps?-rm-hyps)
       `(encapsulate
         ()
@@ -786,7 +797,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           '(:or (encapsulate
                  ()
                  ,@gen-rule-h
-                 ,gen-hints-defun-h
+                 ,@gen-hints-defun-h
                  ,@gen-computed-hints)
                 ,@non-strict-escape)))))
      (t 
@@ -805,7 +816,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           '(:or (encapsulate
                  ()
                  ,@gen-rule-h
-                 ,gen-hints-defun-h
+                 ,@gen-hints-defun-h
                  ,@gen-computed-hints)
                 ,@non-strict-escape))))))))
 
@@ -1024,7 +1035,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      :verbose :debug :print-summary
      :skip-tests
      :typed-undef
-     :generalize-contract-thm 
+     :generalize-contract-thm
+     :generate-generalize-rules
      :timeout
      :termination-strictp :function-contract-strictp :body-contracts-strictp
      :force-ic-hyps-in-definitionp :force-ic-hyps-in-contract-thmp
@@ -1751,20 +1763,27 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (table defunc-defaults-table nil
        '((:verbose     . nil)
-         (:debug       .  nil)
+         (:debug       . nil)
          (:print-summary  . t)
          (:skip-tests . nil)
          (:typed-undef . t)
          (:generalize-contract-thm . t)
+         (:generate-generalize-rules . t)
          (:timeout . 50)
          (:termination-strictp . t)
          (:function-contract-strictp . t)
          (:body-contracts-strictp . t)
-         (:force-ic-hyps-in-contract-thmp . t)
          (:force-ic-hyps-in-definitionp . t)
+         (:force-ic-hyps-in-contract-thmp . t)
          (:skip-admissibilityp . nil)
          (:skip-function-contractp . nil)
-         (:skip-body-contractsp . nil))
+         (:skip-body-contractsp . nil)
+         (:rule-classes . nil)
+         (:instructions . nil)
+         (:function-contract-hints . nil)
+         (:otf-flg . nil) ;for contract defthm
+         (:body-contracts-hints . nil) ;for verify-guards event
+         )
        :clear)
 
 (verify-termination remove1-assoc-eq-lst)
@@ -2443,19 +2462,39 @@ To debug a failed defunc form, you can proceed in multiple ways:
 "
   )
 
+(defmacro set-defunc-verbose (b)
+  (tbl-set-fn 'defunc-defaults-table :verbose b))
+(defmacro set-defunc-debug (b)
+  (tbl-set-fn 'defunc-defaults-table :debug b))
+(defmacro set-defunc-print-summary (b)
+  (tbl-set-fn 'defunc-defaults-table :print-summary b))
+
+(defmacro set-defunc-skip-tests (b)
+  (tbl-set-fn 'defunc-defaults-table :skip-tests b))
+
+(defmacro set-defunc-typed-undef (b)
+  (tbl-set-fn 'defunc-defaults-table :typed-undef b))
+
+(defmacro set-defunc-generalize-contract-thm (b)
+  (tbl-set-fn 'defunc-defaults-table :generalize-contract-thm b))
+
+(defmacro set-defunc-generate-generalize-rules (b)
+  (tbl-set-fn 'defunc-defaults-table :generate-generalize-rules b))
+
+(defmacro set-defunc-timeout (r)
+  (tbl-set-fn 'defunc-defaults-table :timeout r))
+
 (defmacro set-defunc-termination-strictp (b)
   (tbl-set-fn 'defunc-defaults-table :termination-strictp b))
 (defmacro set-defunc-function-contract-strictp (b)
   (tbl-set-fn 'defunc-defaults-table :function-contract-strictp b))
+(defmacro set-defunc-body-contracts-strictp (b)
+  (tbl-set-fn 'defunc-defaults-table :body-contracts-strictp b))
+
 (defmacro set-defunc-force-ic-hyps-in-definitionp (b)
   (tbl-set-fn 'defunc-defaults-table :force-ic-hyps-in-definitionp b))
 (defmacro set-defunc-force-ic-hyps-in-contract-thmp (b)
   (tbl-set-fn 'defunc-defaults-table :force-ic-hyps-in-contract-thmp b))
-(defmacro set-defunc-body-contracts-strictp (b)
-  (tbl-set-fn 'defunc-defaults-table :body-contracts-strictp b))
-(defmacro set-defunc-timeout (r)
-  (tbl-set-fn 'defunc-defaults-table :timeout r))
-
 
 (defmacro set-defunc-skip-admissibilityp (b)
   (tbl-set-fn 'defunc-defaults-table :skip-admissibilityp b))
@@ -2464,18 +2503,39 @@ To debug a failed defunc form, you can proceed in multiple ways:
 (defmacro set-defunc-skip-body-contractsp (b)
   (tbl-set-fn 'defunc-defaults-table :skip-body-contractsp b))
 
+(defmacro get-defunc-verbose ()
+  (tbl-get-fn 'defunc-defaults-table :verbose))
+(defmacro get-defunc-debug ()
+  (tbl-get-fn 'defunc-defaults-table :debug))
+(defmacro get-defunc-print-summary ()
+  (tbl-get-fn 'defunc-defaults-table :print-summary))
+
+(defmacro get-defunc-skip-tests ()
+  (tbl-get-fn 'defunc-defaults-table :skip-tests))
+
+(defmacro get-defunc-typed-undef ()
+  (tbl-get-fn 'defunc-defaults-table :typed-undef))
+
+(defmacro get-defunc-generalize-contract-thm ()
+  (tbl-get-fn 'defunc-defaults-table :generalize-contract-thm))
+
+(defmacro get-defunc-generate-generalize-rules ()
+  (tbl-get-fn 'defunc-defaults-table :generate-generalize-rules))
+
+(defmacro get-defunc-timeout ()
+  (tbl-get-fn 'defunc-defaults-table :timeout))
+
 (defmacro get-defunc-termination-strictp ()
   (tbl-get-fn 'defunc-defaults-table :termination-strictp))
 (defmacro get-defunc-function-contract-strictp ()
   (tbl-get-fn 'defunc-defaults-table :function-contract-strictp))
+(defmacro get-defunc-body-contracts-strictp ()
+  (tbl-get-fn 'defunc-defaults-table :body-contracts-strictp))
+
 (defmacro get-defunc-force-ic-hyps-in-definitionp ()
   (tbl-get-fn 'defunc-defaults-table :force-ic-hyps-in-definitionp))
 (defmacro get-defunc-force-ic-hyps-in-contract-thmp ()
   (tbl-get-fn 'defunc-defaults-table :force-ic-hyps-in-contract-thmp))
-(defmacro get-defunc-body-contracts-strictp ()
-  (tbl-get-fn 'defunc-defaults-table :body-contracts-strictp))
-(defmacro get-defunc-timeout ()
-  (tbl-get-fn 'defunc-defaults-table :timeout))
 
 (defmacro get-defunc-skip-admissibilityp ()
   (tbl-get-fn 'defunc-defaults-table :skip-admissibilityp))
@@ -2568,9 +2628,6 @@ To debug a failed defunc form, you can proceed in multiple ways:
      `(in-theory
        (disable
         ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
-
-(defmacro set-defunc-skip-tests (r)
-  (tbl-set-fn 'defunc-defaults-table :skip-tests r))
 
 (defmacro defunc-no-test (name &rest args)
   `(acl2::with-outer-locals
