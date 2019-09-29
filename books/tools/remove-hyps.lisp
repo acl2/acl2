@@ -108,6 +108,16 @@
  non-nil optional argument.  For example, for event @('E'), use @('(remove-hyps
  E t)').</p>
 
+ <p>Consider the case that a call of @('remove-hyps') is made in a context
+ where proofs are normally skipped (see @(see ld-skip-proofsp)).  If this
+ happens while including a certified book with @(tsee include-book), then
+ proofs will indeed be skipped, because the earlier result of this
+ @('remove-hyps') call was saved in the book's @(see certificate).  But
+ otherwise, the tool temporarily turns off the skipping of proofs (that is,
+ restores the act of doing proofs) while it tries to remove hypotheses, to
+ avoid the undesirable situation that all hypotheses are removed merely because
+ all proofs succeed when skipping proofs.</p>
+
  <p>Finally, note that when @('remove-hyps') is applied to a call of
  @('defthm') or @('defthmd'), then @('remove-hyps') will conclude by submitting
  the generated event to ACL2.  But since @('thm') does not modify the logical
@@ -269,32 +279,34 @@
 ;; may be removed from hyps to provide a form whose proof nevertheless succeeds.
 (defun remove-hyps-formula (form name hyps concl kwd-alist let/let* bindings
                                  verbose-p ctx state)
-  (let ((name2 (or name (gen-new-name 'remove-hyps-name (w state)))))
-    ;; Try the original event and obtain the number of steps.
-    (er-let* ((steps (event-steps (if name
-                                      form
-                                    (assert$ (eq (car form) 'thm)
-                                             `(defthm ,name2 ,@(cdr form))))
-                                  verbose-p nil state)))
-      (cond
-       ((null steps) ; The original event failed; so we simply fail.
-        (er soft ctx
-            "Original theorem failed!"))
-       (t ; Else, call a recursive procedure to remove hypotheses.
-        (er-let*
-            ((final-hyps
-              ;; Note that the second and third argument represent necessary and
-              ;; additional hypotheses.  We start with an empty list of necessary
-              ;; hypotheses and a full list of additional hypotheses.
-              (remove-hyps-formula-1 name2
-                                     nil hyps concl kwd-alist let/let*
-                                     bindings
-                                     (remove-hyps-formula-steps steps)
-                                     verbose-p state)))
-          (value (if (equal (length hyps) (length final-hyps))
-                     nil ; no change
-                   (make-defthm (car form) name final-hyps concl kwd-alist
-                                let/let* bindings)))))))))
+  (do-proofs?
+   t
+   (let ((name2 (or name (gen-new-name 'remove-hyps-name (w state)))))
+     ;; Try the original event and obtain the number of steps.
+     (er-let* ((steps (event-steps (if name
+                                       form
+                                     (assert$ (eq (car form) 'thm)
+                                              `(defthm ,name2 ,@(cdr form))))
+                                   verbose-p nil state)))
+       (cond
+        ((null steps) ; The original event failed; so we simply fail.
+         (er soft ctx
+             "Original theorem failed!"))
+        (t ; Else, call a recursive procedure to remove hypotheses.
+         (er-let*
+             ((final-hyps
+               ;; Note that the second and third argument represent necessary and
+               ;; additional hypotheses.  We start with an empty list of necessary
+               ;; hypotheses and a full list of additional hypotheses.
+               (remove-hyps-formula-1 name2
+                                      nil hyps concl kwd-alist let/let*
+                                      bindings
+                                      (remove-hyps-formula-steps steps)
+                                      verbose-p state)))
+           (value (if (equal (length hyps) (length final-hyps))
+                      nil ; no change
+                    (make-defthm (car form) name final-hyps concl kwd-alist
+                                 let/let* bindings))))))))))
 
 ;; This function takes the original form and then calls remove-hyps-function to
 ;; create a new form with, potentially, fewer hypotheses.  A test is then
