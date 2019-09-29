@@ -15,22 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (theorem-namep 'car-cdr-elim (w state)))
-
-(assert! (not (theorem-namep 'cons (w state))))
-
-(assert! (not (theorem-namep 'aaaaaaaaa (w state))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ x y)))
- (assert! (theorem-namep 'th (w state))))
-
-(assert! (not (theorem-namep 8 (w state))))
-
-(assert! (not (theorem-namep "car-cdr-elim" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (macro-namep 'append (w state)))
 
 (assert! (not (macro-namep 'cons (w state))))
