@@ -15,22 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (macro-namep 'append (w state)))
-
-(assert! (not (macro-namep 'cons (w state))))
-
-(assert! (not (macro-namep 'aaaaaaaaaa (w state))))
-
-(must-succeed*
- (defmacro m (x) `(list ,x))
- (assert! (macro-namep 'm (w state))))
-
-(assert! (not (macro-namep 5/3 (w state))))
-
-(assert! (not (macro-namep "append" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (function-name-listp nil (w state)))
 
 (assert! (function-name-listp '(len cons atom) (w state)))

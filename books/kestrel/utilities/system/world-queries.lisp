@@ -25,6 +25,7 @@
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
@@ -80,21 +81,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-namep (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize symbols that name macros."
-  :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
-  (and (symbolp x)
-       (macro-symbolp x wrld))
-  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
