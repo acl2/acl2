@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist function-symbol-listp (x wrld)
-  :parents (std/system)
+  :parents (std/system/event-name-queries)
   :short "Lift @(tsee function-symbolp) to lists."
   :guard (and (symbol-listp x)
               (plist-worldp wrld))

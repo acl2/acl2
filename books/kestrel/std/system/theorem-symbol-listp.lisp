@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist theorem-symbol-listp (x wrld)
-  :parents (std/system)
+  :parents (std/system/event-name-queries)
   :short "Lift @(tsee theorem-symbolp) to lists."
   :guard (and (symbol-listp x)
               (plist-worldp wrld))

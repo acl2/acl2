@@ -10,16 +10,15 @@
 
 (in-package "ACL2")
 
+(include-book "function-symbol-listp")
+(include-book "function-symbolp")
+(include-book "macro-symbol-listp")
 (include-book "macro-symbolp")
-
-(include-book "std/util/deflist" :dir :system)
+(include-book "theorem-symbol-listp")
+(include-book "theorem-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist macro-symbol-listp (x wrld)
-  :parents (std/system/event-name-queries)
-  :short "Lift @(tsee macro-symbolp) to lists."
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  (macro-symbolp x wrld)
-  :true-listp t)
+(defxdoc std/system/event-name-queries
+  :parents (std/system)
+  :short "Utilities to query names of events in the @(see world).")
