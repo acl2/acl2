@@ -21,6 +21,7 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "term-function-recognizers")
 
+(include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
@@ -80,19 +81,6 @@
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define function-namep (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize symbols that name functions."
-  :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
-  (and (symbolp x)
-       (function-symbolp x wrld))
-  :enabled t)
 
 (define theorem-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)

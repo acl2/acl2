@@ -15,22 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (function-namep 'len (w state)))
-
-(assert! (not (function-namep 'cons-car-cdr (w state))))
-
-(assert! (not (function-namep 'bbbbbbbbbbb (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (assert! (function-namep 'f (w state))))
-
-(assert! (not (function-namep 33 (w state))))
-
-(assert! (not (function-namep "len" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (theorem-namep 'car-cdr-elim (w state)))
 
 (assert! (not (theorem-namep 'cons (w state))))
