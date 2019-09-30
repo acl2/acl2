@@ -317,7 +317,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :guard (natp value))
 
 (add-acl2s-parameter 
- cgen-timeout 3600 ;bad name -- TODO: change it in a latter version.
+ cgen-timeout 60 ;bad name -- TODO: change it in a latter version.
  :short "test?/prover timeout (in seconds)"
  :long
   "Maximum allowed time (in seconds) to be spent
@@ -326,11 +326,11 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   with-timeout macro around the call to 
   prove/cgen.
 
-  The default timeout limit is set to 3600 sec.
+  The default timeout limit is set to 60 sec.
   Guard : Timeout should be a non-negative rational.
    <code>
     Usage:
-    (acl2s-defaults :set cgen-timeout 3600)
+    (acl2s-defaults :set cgen-timeout 60)
     (acl2s-defaults :get cgen-timeout)
     :doc cgen-timeout
    </code>

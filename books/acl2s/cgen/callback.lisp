@@ -227,8 +227,8 @@
 ;   in 
     cgen-state))
 
-(defconst *check-bad-generalizations-and-backtrack* nil)
-;(defconst *check-bad-generalizations-and-backtrack* t)
+;(defconst *check-bad-generalizations-and-backtrack* nil)
+(defconst *check-bad-generalizations-and-backtrack* t)
         
 ;; The following function implements a callback function (computed hint)
 ;; which calls the counterexample generation testing code. Thus the
