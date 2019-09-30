@@ -167,7 +167,8 @@
     "This is done only in the shallow embedding.")
    (xdoc::p
     "We systematically rename all the ACL2 variables
-     so that their new names are valid Java variable names
+     so that their new names (without package prefixes)
+     are valid Java variable names,
      and so that different ACL2 variables with the same name are renamed apart.
      This simplifies the subsequent ACL2-to-Java translation,
      which can just turn each ACL2 variable
@@ -210,7 +211,7 @@
      this is indicated by the @('startp') flag.
      Otherwise, we turn it into an ``escape'' consisting of
      @('$') followed by two hexadecimal digits for the ASCII code of the digit.
-     We use this same mapping for all the ACL2 characters
+     We use the same mapping for all the ACL2 characters
      that are neither letters nor digits,
      except for dash, which is very common in ACL2 symbols and package names,
      and which we map into an underscore in Java,
@@ -259,10 +260,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In the shallow embedding approach,
-     each ACL2 variable is turned into a Java variable.
-     The function @(tsee atj-chars-to-jchars-id) takes care of
-     ensuring that only characters valid for Java identifiers are used,
+    "The function @(tsee atj-chars-to-jchars-id) turns
+     an ACL2 symbol into one whose name is a valid Java variable name,
      but this is not sufficient:
      a Java variable name cannot be a keyword,
      a boolean literal, or the null literal.")
