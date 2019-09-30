@@ -72,6 +72,14 @@
     :g-concrete (or (zip x.val) (eql x.val -1))
     :otherwise nil))
 
+(def-gl-rewrite intcar-of-intcons
+  (equal (intcar (intcons x y))
+         (bool-fix x)))
+
+(def-gl-rewrite intcdr-of-intcons
+  (equal (intcdr (intcons x y))
+         (ifix y)))
+
 (define check-int-endp (x xsyn)
   :verify-guards nil
   (and (gl-int-endp xsyn)
@@ -105,7 +113,8 @@
               ((when (check-int-endp x xsyn)) (if (intcar x) y 0))
               ((when (check-int-endp y ysyn)) (if (intcar y) x 0)))
            (intcons (and (intcar x)
-                         (intcar y))
+                         (intcar y)
+                         t)
                     (logand (intcdr x) (intcdr y)))))
   :hints(("Goal" :in-theory (enable bitops::logand** int-endp))))
 
@@ -120,7 +129,8 @@
               ((when (check-int-endp x xsyn)) (if (intcar x) -1 y))
               ((when (check-int-endp y ysyn)) (if (intcar y) -1 x)))
            (intcons (or (intcar x)
-                        (intcar y))
+                        (intcar y)
+                        nil)
                     (logior (intcdr x) (intcdr y)))))
   :hints(("Goal" :in-theory (enable bitops::logior** int-endp))))
 

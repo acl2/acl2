@@ -59,7 +59,7 @@
 ;;    typespec-check implies fgl-sat-check))
 
 (def-formula-checks primitives-formula-checks
-  (if! atom ifix bool-fix$inline))
+  (if! atom ifix bool-fix$inline mv-nth))
 
 (enable-split-ifs equal)
 
@@ -518,7 +518,46 @@
 ;;   :formula-check int+-formula-checks
 ;;   :prepwork ((local (in-theory (enable int+)))))
 
+(define gl-object-mv-nth ((n natp) (x gl-object-p))
+  :returns (mv ok (nth gl-object-p))
+  (gl-object-case x
+    :g-concrete (mv t (g-concrete (ec-call (nth n x.val))))
+    :g-cons (b* (((when (zp n)) (mv t x.car)))
+              (gl-object-mv-nth (1- n) x.cdr))
+    :g-boolean (mv t nil)
+    :g-integer (mv t nil)
+    :otherwise (mv nil nil))
+  ///
+  (local (defthm mv-nth-is-nth
+           (equal (mv-nth n x) (nth n x))
+           :hints(("Goal" :in-theory (enable mv-nth nth)))))
+  (defret gl-object-mv-nth-correct
+    (implies ok
+             (equal (fgl-object-eval nth env)
+                    (mv-nth n (fgl-object-eval x env))))
+    :hints(("Goal" :in-theory (enable mv-nth))))
 
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (gl-object-bfrlist x))
+             (bfr-listp (gl-object-bfrlist nth)))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+    
+(local (in-theory (enable bfr-listp-when-not-member-witness)))
+
+(local (defthm mv-nth-of-nfix
+         (equal (mv-nth (nfix n) x)
+                (mv-nth n x))
+         :hints(("Goal" :in-theory (enable mv-nth)))))
+
+(def-gl-primitive mv-nth (n x)
+  (b* (((unless (gl-object-case n :g-concrete))
+        (mv nil nil interp-st))
+       (n (nfix (g-concrete->val n)))
+       ((mv ok ans) (gl-object-mv-nth n x)))
+    (mv ok ans interp-st))
+  :formula-check primitives-formula-checks)
+    
+       
 
 
 (local (install-gl-primitives baseprims))
