@@ -889,6 +889,40 @@ constant). In the latter return a lambda expression"
         ((atom (cdr L)) (consp (car L)))
         (t (or (in-all (caar L) (cdr L))
                (common-instances-listp (cons (cdar L) (cdr L)))))))
+#|
+(defun make-sig-hint-body (name arg-types poly-gen-name kwd-alist wrld)
+  (b* ((M (append (table-alist 'tvar-metadata-table wrld) 
+                  (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
+       (arg-tnames (find/make-type-names (remove-names-lst arg-types) M))
+       (arg-preds (find/make-predicate-names arg-tnames A M))
+       (pkg (get1 :current-package kwd-alist))
+       
+       (x1--xk (numbered-vars (acl2s::fix-intern$ "X" pkg) (len arg-preds)))
+       (dependent-hyps (get1 :satisfies kwd-alist)) ;they should only use x1, x2 etc
+       (hyps (append (list-up-lists arg-preds x1--xk) dependent-hyps))
+       (psig-hint-body
+        `(if (and stable-under-simplificationp
+                  (b* ((instances-name
+                        (find-all-instances-list
+                         '(,name ,@x1--xk) clause nil))
+                       ((unless instances-name) nil)
+                       (map-instances
+                        (map-find-all-instances-list ',hyps clause nil))
+                       ((unless map-instances) nil)
+                       (common-insts (common-instances-listp
+                                      (cons instances-name map-instances))))
+                    common-insts))
+             ;; Left this here in case I come back and want to trace the code
+             ;;(prog2$ (cw "~%*****Chint ~x0, Clause: ~x1~%" ',poly-gen-name clause)
+             '(:in-theory (enable ,poly-gen-name))
+           ;;)
+          ;; (prog2$ (cw "~%XXXXXChint ~x0, Clause: ~x1, ~x2~%" 
+          ;;             ',poly-gen-name clause stable-under-simplificationp)
+           nil)))
+    ;;)
+    psig-hint-body))
+|#
 
 (defun make-sig-hint-body (name arg-types poly-gen-name kwd-alist wrld)
   (b* ((M (append (table-alist 'tvar-metadata-table wrld) 
@@ -903,6 +937,9 @@ constant). In the latter return a lambda expression"
        (hyps (append (list-up-lists arg-preds x1--xk) dependent-hyps))
        (psig-hint-body
         `(if (and stable-under-simplificationp
+                  (member-eq
+                   (acl2::access acl2::history-entry (car hist) :processor)
+                   '(acl2::fertilize-clause acl2::simplify-clause))
                   (b* ((instances-name
                         (find-all-instances-list
                          '(,name ,@x1--xk) clause nil))
@@ -969,7 +1006,8 @@ constant). In the latter return a lambda expression"
        (poly-computed-hints
         `((add-default-hints!
            '((,poly-hint-name clause stable-under-simplificationp id hist pspv ctx))
-           :at-end t)))
+           ;:at-end t
+           )))
        )
        
     `(,@(make-sig-tvar-support-events (cons p-ret-type p-arg-types) ctx pkg wrld) 

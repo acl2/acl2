@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Representation of ACL2 {@code cons} pairs.
- * These are the ACL2 values that satisfy {@code consp}.
+ * These are the values that satisfy {@code consp}.
  */
 public final class Acl2ConsPair extends Acl2Value {
 

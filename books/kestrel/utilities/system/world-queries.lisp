@@ -21,11 +21,18 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "term-function-recognizers")
 
+(include-book "kestrel/std/system/function-namep" :dir :system)
+(include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/macro-namep" :dir :system)
+(include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
+(include-book "kestrel/std/system/theorem-namep" :dir :system)
+(include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
+(include-book "kestrel/std/system/ubody" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -74,73 +81,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist function-symbol-listp (x wrld)
-  (function-symbolp x wrld)
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  :parents (world-queries)
-  :short "Check if all the symbols in a list name functions."
-  :true-listp t)
-
-(std::deflist theorem-symbol-listp (x wrld)
-  (theorem-symbolp x wrld)
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  :parents (world-queries)
-  :short "Check if all the symbols in a list name theorems."
-  :true-listp t)
-
-(std::deflist macro-symbol-listp (x wrld)
-  (macro-symbolp x wrld)
-  :guard (and (symbol-listp x)
-              (plist-worldp wrld))
-  :parents (world-queries)
-  :short "Check if all the symbols in a list name macros."
-  :true-listp t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define function-namep (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize symbols that name functions."
-  :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
-  (and (symbolp x)
-       (function-symbolp x wrld))
-  :enabled t)
-
-(define theorem-namep (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize symbols that name theorems."
-  :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
-  (and (symbolp x)
-       (theorem-symbolp x wrld))
-  :enabled t)
-
-(define macro-namep (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize symbols that name macros."
-  :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
-  (and (symbolp x)
-       (macro-symbolp x wrld))
-  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,35 +325,6 @@
   (guard-verified-p fn/thm wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ubody ((fn pseudo-termfnp) (wrld plist-worldp))
-  :returns (body "A @(tsee pseudo-termp).")
-  :parents (world-queries)
-  :short "Unnormalized body of a named logic-mode function,
-          or body of a lambda expression."
-  :long
-  "<p>
-   This is a specialization of @(tsee body)
-   with @('nil') as the second argument.
-   Since @(tsee body) is not guard-verified only because of
-   the code that handles the case in which the second argument is non-@('nil'),
-   we avoid calling @(tsee body) and instead replicate
-   the code that handles the case in which the second argument is @('nil');
-   thus, this utility is guard-verified.
-   </p>
-   <p>
-   If the argument named function is not defined, this utility returns @('nil').
-   </p>
-   <p>
-   Not that some program-mode functions may be defined
-   but not have an @('unnormalized-body') property.
-   </p>
-   <p>
-   See @(tsee ubody+) for a logic-friendly variant of this utility.
-   </p>"
-  (cond ((symbolp fn) (getpropc fn 'unnormalized-body nil wrld))
-        (t (lambda-body fn)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
 
 (define ubody+ ((fn (or (and (logic-function-namep fn wrld)
                              (definedp fn wrld))

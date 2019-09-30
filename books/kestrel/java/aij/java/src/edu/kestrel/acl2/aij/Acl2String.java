@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * Representation of ACL2 strings.
- * These are the ACL2 values that satisfy {@code stringp}.
+ * These are the values that satisfy {@code stringp}.
  */
 public final class Acl2String extends Acl2Value {
 
@@ -33,35 +33,41 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Java string that represents the ACL2 string.
+     * Representation of this string as a Java string.
      * This is never {@code null} and
      * it always satisfies {@link #isValidString(String)}.
      */
     private final String jstring;
 
     /**
-     * Constructs an ACL2 string from its Java string representation.
+     * Constructs a string with the given representation as a Java string.
+     *
+     * @param jstring The representation as a Java string.
      */
     private Acl2String(String jstring) {
         this.jstring = jstring;
     }
 
     /**
-     * All the ACL2 strings created so far.
+     * All the strings created so far.
      * These are stored as values of a map that has Java strings as keys:
      * each key-value pair is such that
      * the key is the {@link #jstring} field of the value.
      * The values of the map are reused by the {@link #make(String)} method.
-     * In other words, all the ACL2 strings are interned.
-     * This field is never {@code null}.
+     * In other words, all the strings are interned.
+     * This field is never {@code null},
+     * its keys are never {@code null},
+     * and its valules are never {@code null}.
      */
     private static final Map<String, Acl2String> strings = new HashMap<>();
 
     //////////////////////////////////////// package-private members:
 
     /**
-     * Returns {@code true},
-     * consistently with the {@code stringp} ACL2 function.
+     * Checks if this string is a string, which is always true.
+     * This is consistent with the {@code stringp} ACL2 function.
+     *
+     * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol stringp() {
@@ -69,9 +75,11 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Coerces this ACL2 string to a list,
+     * Coerces this string to a list,
      * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.
+     *
+     * @return The list of characters corresponding to this string.
      */
     @Override
     Acl2Value coerceToList() {
@@ -85,10 +93,14 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Interns this ACL2 value in the package of the argument ACL2 value,
+     * Interns this string into the package of the argument value,
      * consistently with the {@code intern-in-package-of-symbol} ACL2 function,
-     * where this ACL2 value is the first argument of that function
-     * and the argument ACL2 value is the second argument of that function.
+     * where this string is the first argument of that function
+     * and the argument value is the second argument of that function.
+     *
+     * @param sym The value whose package this string is interned into.
+     * @return The symbol obtained by interning this string
+     * into the package of the argument value.
      */
     @Override
     Acl2Symbol internThisInPackageOf(Acl2Value sym) {
@@ -96,16 +108,17 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Returns the ACL2 list of symbols imported by
-     * the package named by this ACL2 string,
+     * Returns the list of symbols imported by
+     * the package named by this string,
      * consistently with the {@code pkg-imports} ACL2 function.
      * An exception is thrown if this string does not name a known package
      * (this includes the case in which the string is not a valid package name).
      * This is in accordance with the ACL2 manual page for {@code pkg-imports},
      * which says that evaluation fails in this case.
      *
-     * @throws Acl2EvaluationException if the package name is invalid
-     *                                 or the package is not defined
+     * @return The list of imported symbols.
+     * @throws Acl2EvaluationException If the package name is invalid
+     *                                 or the package is not defined.
      */
     @Override
     Acl2Value pkgImports() throws Acl2EvaluationException {
@@ -129,13 +142,13 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Returns the ACL2 string that is the name of
-     * the witness of the package named by this ACL2 string,
+     * Returns the witness of the package named by this string,
      * consistently with the {@code pkg-witness} ACL2 function.
      *
-     * @throws Acl2EvaluationException if the package name is invalid
-     *                                 or the package is not defined
-     * @throws IllegalStateException   if the package witness is not set yet
+     * @return The witness.
+     * @throws Acl2EvaluationException If the package name is invalid
+     *                                 or the package is not defined.
+     * @throws IllegalStateException   If the package witness is not set yet.
      */
     @Override
     Acl2Symbol pkgWitness() throws Acl2EvaluationException {
@@ -159,11 +172,12 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 character for order.
+     * Compares this string with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
+     * @param o The character to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToCharacter(Acl2Character o) {
@@ -172,11 +186,12 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 string for order.
+     * Compares this string with the argument string for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
+     * @param o The string to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToString(Acl2String o) {
@@ -185,11 +200,12 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 symbol for order.
+     * Compares this string with the argument symbol for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
+     * @param o The symbol to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToSymbol(Acl2Symbol o) {
@@ -198,11 +214,12 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 number for order.
+     * Compares this string with the argument number for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
+     * @param o The number to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToNumber(Acl2Number o) {
@@ -211,11 +228,12 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 rational for order.
+     * Compares this string with the argument rational for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
+     * @param o The rational to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToRational(Acl2Rational o) {
@@ -224,10 +242,11 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 integer for order.
+     * Compares this string with the argument integer for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
+     * @param o The integer to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument
      */
     @Override
@@ -237,12 +256,12 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Compares this ACL2 string with
-     * the argument ACL2 {@code cons} pair for order.
+     * Compares this string with the argument {@code cons} pair for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
+     * @param o The {@code cons} pair to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
      */
     @Override
     int compareToConsPair(Acl2ConsPair o) {
@@ -253,33 +272,39 @@ public final class Acl2String extends Acl2Value {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 string is equal to the argument object.
+     * Compares this string with the argument object for equality.
      * This is consistent with the {@code equal} ACL2 function.
-     * Since the ACL2 strings are interned,
-     * they are equal iff they are the same object.
+     *
+     * @param o The object to compare this string with.
+     * @return {@code true} if the object is equal to this string,
+     * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
+        /* Since strings are interned,
+           a string is equal to an object iff
+           they are the same object. */
         return this == o;
     }
 
     /**
-     * Compares this ACL2 string with the argument ACL2 value for order.
+     * Compares this string with the argument value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this string is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The value to compare this string with.
+     * @return A negative integer, zero, or a positive integer as
+     * this string is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Value o) {
         if (o == null)
             throw new NullPointerException();
-        return - o.compareToString(this);
+        return -o.compareToString(this);
     }
 
     /**
-     * Returns a printable representation of this ACL2 string.
+     * Returns a printable representation of this string.
      * The returned Java string is preceded and followed by double quotes.
      * Each character is kept as is if it is visible
      * (i.e. its code is between 33 and 126 inclusive)
@@ -288,7 +313,9 @@ public final class Acl2String extends Acl2Value {
      * otherwise, it is turned into its hexadecimal code,
      * always as two digits, with lowercase letters,
      * preceded by backslash.
-     * This scheme should ensure that ACL2 strings are always printed clearly.
+     * This scheme should ensure that strings are always printed clearly.
+     *
+     * @return A printable representation of this string.
      */
     @Override
     public String toString() {
@@ -311,10 +338,13 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * Returns an ACL2 string represented by the given Java string.
+     * Returns a string consisting
+     * with the given representation as a Java string.
      *
-     * @throws IllegalArgumentException if jstring is null or
-     *                                  any of its characters exceeds 255
+     * @param jstring The representation as a Java string.
+     * @return The string.
+     * @throws IllegalArgumentException If {@code jstring} is {@code null} or
+     *                                  any of its characters exceeds 255.
      */
     public static Acl2String make(String jstring) {
         Acl2String string = strings.get(jstring);
@@ -331,17 +361,19 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
-     * The empty ACL2 string.
+     * The empty string.
      */
     public static final Acl2String EMPTY = make("");
 
     /**
-     * The ACL2 string "ACL2".
+     * The string "ACL2".
      */
     public static final Acl2String ACL2 = make("ACL2");
 
     /**
-     * Returns the Java string representation of this ACL2 string.
+     * Returns the representation of this string as a Java string.
+     *
+     * @return The representation of this string.
      */
     public String getJavaString() {
         return this.jstring;

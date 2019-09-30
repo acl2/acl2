@@ -11,18 +11,19 @@
 (in-package "ACL2")
 
 (include-book "all-free-bound-vars")
+(include-book "close-lambdas")
 (include-book "conjoin")
-(include-book "function-symbolp")
+(include-book "event-name-queries")
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
-(include-book "macro-symbolp")
 (include-book "primitivep")
 (include-book "pure-raw-p")
 (include-book "rawp")
 (include-book "remove-mbe")
 (include-book "remove-progn")
+(include-book "remove-trivial-lambda-vars")
+(include-book "remove-unused-vars")
 (include-book "term-function-recognizers")
-(include-book "theorem-symbolp")
 (include-book "unquote-term")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,7 +34,7 @@
   (xdoc::topstring
    "A library that complements the "
    (xdoc::seetopic "system-utilities" "built-in system utilities")
-   " with theorems and non-built-in system utilities.")
+   " with theorems and with non-built-in system utilities.")
   :long
   (xdoc::topstring
    (xdoc::p

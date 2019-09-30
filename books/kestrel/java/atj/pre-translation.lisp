@@ -10,26 +10,19 @@
 
 (in-package "JAVA")
 
-(include-book "library-extensions")
+(include-book "types")
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
+(include-book "kestrel/std/system/remove-mbe" :dir :system)
+(include-book "kestrel/std/system/remove-progn" :dir :system)
+(include-book "kestrel/std/system/remove-trivial-lambda-vars" :dir :system)
+(include-book "kestrel/std/system/remove-unused-vars" :dir :system)
+(include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel natp-of-incremented-index
-  (implies (natp x)
-           (natp (1+ x))))
-
-(defrulel posp-of-incremented-index
-  (implies (posp x)
-           (posp (1+ x))))
-
-(local (in-theory (disable natp posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,27 +36,161 @@
     (xdoc::seetopic "atj-code-generation" "here")
     ", prior to generating Java code,
      ATJ performs an ACL2-to-ACL2 pre-translation.
-     Currently, this pre-translation consists of
-     systematically renaming all the ACL2 variables
-     so that their names are valid Java variable names.
-     More pre-translation transformations may be done in the future."))
+     Currently, this pre-translation consists of the following steps.
+     The first two steps apply to both the deep and the shallow embedding;
+     the others apply only to the shallow embedding.")
+   (xdoc::ol
+    (xdoc::li
+     "We remove @(tsee return-last).
+      See "
+     (xdoc::seetopic "atj-pre-translation-remove-last" "here")
+     ".")
+    (xdoc::li
+     "We remove the unused lambda-bound variables.
+      See "
+     (xdoc::seetopic "atj-pre-translation-unused-vars" "here")
+     ".")
+    (xdoc::li
+     "We remove the trivial lambda-bound variables.
+      See "
+     (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
+     ".")
+    (xdoc::li
+     "We rename all the variables
+      so that their names are valid Java variable names
+      and so that different variables with the same name are renamed apart.
+      See "
+     (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
+     ".")
+    (xdoc::li
+     "We annotate terms with ATJ type information.
+      See "
+     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+     ".")))
+  :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-remove-last
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of @(tsee return-last)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in both the deep and shallow embedding approach.")
+   (xdoc::p
+    "We selectively remove the @(':logic') or @(':exec') parts of @(tsee mbe)s
+     (which are translated to @('(return-last 'mbe1-raw <exec> <logic>)'))
+     based on the @(':guards') input.
+     We remove all the non-last arguments of @(tsee prog2$)s and @(tsee progn$)s
+     (which are translated to @('(return-last 'progn <non-last> <last>)')).")
+   (xdoc::p
+    "These are the only @(tsee return-last) forms
+     that make it through input validation.
+     Note that the non-last arguments of @(tsee prog2$) and @(tsee progn$)
+     are checked to be free of side effects by ATJ,
+     and thus their removal is safe and semantics-preserving."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-achar-to-jchars-id ((achar characterp)
-                                (startp booleanp)
-                                (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (characterp achar))
+(define atj-remove-return-last ((term pseudo-termp) (guards$ booleanp))
+  :returns (new-term pseudo-termp :hyp (pseudo-termp term))
+  :short "Remove all the @(tsee return-last)s from a term."
+  (b* ((term (if guards$
+                 (remove-mbe-logic-from-term term)
+               (remove-mbe-exec-from-term term)))
+       (term (remove-progn-from-term term)))
+    term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-unused-vars
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of all the unused lambda-bound variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in both the deep and shallow embedding approach.")
+   (xdoc::p
+    "We remove all the lambda-bound variables,
+     and corresponding actual arguments,
+     that are not actually used in the body of the lambda expression.
+     This way, we avoid calculating and assigning actual arguments
+     that are then discarded.
+     Recall that ATJ checks that the ACL2 code to be translated to Java
+     is free of side effects:
+     thus, this removal is safe and semantics-preserving.")
+   (xdoc::p
+    "This is accomplished
+     via the @(tsee remove-unused-vars-from-term) system utility.
+     No other code is needed to do this in ATJ.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-trivial-vars
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of all the trivial lambda-bound variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "We remove all the lambda-bound variables,
+     and corresponding actual arguments,
+     that are identical to the corresponding actual arguments.
+     See the discussion in @(tsee remove-trivial-lambda-vars),
+     which is the utility that we use
+     to accomplish this pre-translation step.")
+   (xdoc::p
+    "This pre-translation step makes terms simpler to work with
+     (for the purpose of ATJ)
+     by only keeping the ``true'' @(tsee let)s in a term
+     (which are lambda expressions in translated terms),
+     avoiding the ``artificial'' ones to close the lambda expressions.
+     Indeed, @(tsee let) terms are generally not closed in other languages,
+     or even in ACL2's untranslated terms.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-var-renaming
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          renaming of all the ACL2 variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "We systematically rename all the ACL2 variables
+     so that their new names (without package prefixes)
+     are valid Java variable names,
+     and so that different ACL2 variables with the same name are renamed apart.
+     This simplifies the subsequent ACL2-to-Java translation,
+     which can just turn each ACL2 variable
+     into a Java variable with the same name."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-char-to-jchars-id ((char characterp)
+                               (startp booleanp)
+                               (flip-case-p booleanp))
+  :returns (jchars character-listp :hyp (characterp char))
   :short "Turn an ACL2 character into one or more Java characters
           of an ASCII Java identifier."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For various purposes,
-     we want to turn ACL2 symbols and package names into Java identifiers.
-     ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
+    "This is used in the variable renaming step of the ATJ pre-translation,
+     but also to turn ACL2 function and pacakge names into Java identifiers.")
+   (xdoc::p
+    "ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
      while Java identifiers may only contain certain Unicode characters;
      when Unicode is restricted to ASCII,
      Java identifiers are much more restricted than ACL2 symbols.
@@ -84,7 +211,7 @@
      this is indicated by the @('startp') flag.
      Otherwise, we turn it into an ``escape'' consisting of
      @('$') followed by two hexadecimal digits for the ASCII code of the digit.
-     We use this same mapping for all the ACL2 characters
+     We use the same mapping for all the ACL2 characters
      that are neither letters nor digits,
      except for dash, which is very common in ACL2 symbols and package names,
      and which we map into an underscore in Java,
@@ -93,26 +220,26 @@
      Note that @('$') itself, which is valid in Java identifiers,
      is mapped to itself followed by its hex code (not just to itself)
      when it appears in the ACL2 symbol or package name."))
-  (cond ((str::up-alpha-p achar) (if flip-case-p
-                                     (list (str::downcase-char achar))
-                                   (list achar)))
-        ((str::down-alpha-p achar) (if flip-case-p
-                                       (list (str::upcase-char achar))
-                                     (list achar)))
-        ((and (digit-char-p achar)
-              (not startp)) (list achar))
-        ((eql achar #\-) (list #\_))
-        (t (b* ((acode (char-code achar))
+  (cond ((str::up-alpha-p char) (if flip-case-p
+                                    (list (str::downcase-char char))
+                                  (list char)))
+        ((str::down-alpha-p char) (if flip-case-p
+                                      (list (str::upcase-char char))
+                                    (list char)))
+        ((and (digit-char-p char)
+              (not startp)) (list char))
+        ((eql char #\-) (list #\_))
+        (t (b* ((acode (char-code char))
                 ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
              (list #\$ hi-char lo-char)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-achars-to-jchars-id ((achars character-listp)
-                                 (startp booleanp)
-                                 (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (character-listp achars))
-  :short "Lift @(tsee atj-achar-to-jchars-id) to lists."
+(define atj-chars-to-jchars-id ((chars character-listp)
+                                (startp booleanp)
+                                (flip-case-p booleanp))
+  :returns (jchars character-listp :hyp (character-listp chars))
+  :short "Lift @(tsee atj-char-to-jchars-id) to lists."
   :long
   (xdoc::topstring-p
    "This is used on the sequence of characters
@@ -121,9 +248,9 @@
     The @('startp') flag becomes @('nil') at the first recursive call,
     because after the first character
     we are no longer at the start of the Java identifier.")
-  (cond ((endp achars) nil)
-        (t (append (atj-achar-to-jchars-id (car achars) startp flip-case-p)
-                   (atj-achars-to-jchars-id (cdr achars) nil flip-case-p)))))
+  (cond ((endp chars) nil)
+        (t (append (atj-char-to-jchars-id (car chars) startp flip-case-p)
+                   (atj-chars-to-jchars-id (cdr chars) nil flip-case-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,10 +260,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In the shallow embedding approach,
-     each ACL2 variable is turned into a Java variable.
-     The function @(tsee atj-achars-to-jchars-id) takes care of
-     ensuring that only characters valid for Java identifiers are used,
+    "The function @(tsee atj-chars-to-jchars-id) turns
+     an ACL2 symbol into one whose name is a valid Java variable name,
      but this is not sufficient:
      a Java variable name cannot be a keyword,
      a boolean literal, or the null literal.")
@@ -146,9 +271,9 @@
      It also includes the empty sequence,
      because an ACL2 symbol may consist of no characters,
      but a Java identifier cannot be empty."))
-  (append *atj-java-keywords*
-          *atj-java-boolean-literals*
-          (list *atj-java-null-literal*)
+  (append *keywords*
+          *boolean-literals*
+          (list *null-literal*)
           (list ""))
   ///
   (assert-event (string-listp *atj-disallowed-jvar-names*))
@@ -156,12 +281,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-avar ((avar symbolp)
-                         (index natp)
-                         (curr-apkg stringp)
-                         (avars-by-name string-symbollist-alistp))
-  :guard (not (equal curr-apkg ""))
-  :returns (new-avar symbolp)
+(define atj-rename-var ((var symbolp)
+                        (index natp)
+                        (curr-pkg stringp)
+                        (vars-by-name string-symbollist-alistp))
+  :guard (not (equal curr-pkg ""))
+  :returns (new-var symbolp)
   :short "Rename an ACL2 variable to its Java name."
   :long
   (xdoc::topstring
@@ -209,7 +334,7 @@
      the ACL2 package name of the function name:
      thus, the ``current package'' in this context is
      the one of the function name.
-     This is the @('curr-apkg') parameter of this code generation function.")
+     This is the @('curr-pkg') parameter of this code generation function.")
    (xdoc::p
     "Given an ACL2 variable (i.e. symbol)
      with name @('name') and package name @('pname'),
@@ -227,7 +352,7 @@
      since the scope of Java method parameters and local variables
      is limited to the method where they occur,
      no naming conflict may arise in this case.
-     The parameter @('avars-by-name') consists of
+     The parameter @('vars-by-name') consists of
      all the variables in the current ACL2 function,
      organized by symbol name for easy lookup.
      We retrieve the variables with the same name of the variable,
@@ -252,7 +377,7 @@
     "This is a relatively simple and uniform scheme to keep names unique,
      but we may improve it to generate more readable names.")
    (xdoc::p
-    "We call @(tsee atj-achars-to-jchars-id) to create
+    "We call @(tsee atj-chars-to-jchars-id) to create
      @('<pname') and @('<name>') from @('pname') and @('name').
      If there is a package prefix, the @('startp') flag is @('t')
      only for @('pname'), but not for @('name'),
@@ -260,24 +385,24 @@
      Otherwise, @('startp') is @('t') for @('name')
      if there is no package prefix.")
    (xdoc::p
-    "We put the renamed variable in the current package (i.e. @('curr-apkg')).
+    "We put the renamed variable in the current package (i.e. @('curr-pkg')).
      The choice of package is irrelevant, because the variables in a function
      are renamed in a way that their names are all distinct
      regardless of package prefixes.
      However, using the current package makes things uniform."))
-  (b* ((apkg (symbol-package-name avar))
-       (name (symbol-name avar))
-       (omit-pname? (or (equal apkg curr-apkg)
+  (b* ((pkg (symbol-package-name var))
+       (name (symbol-name var))
+       (omit-pname? (or (equal pkg curr-pkg)
                         (null (remove-eq
-                               avar
-                               (cdr (assoc-equal name avars-by-name))))))
+                               var
+                               (cdr (assoc-equal name vars-by-name))))))
        (pname$$$-jchars (if omit-pname?
                             nil
-                          (append (atj-achars-to-jchars-id (explode apkg) t t)
+                          (append (atj-chars-to-jchars-id (explode pkg) t t)
                                   (list #\$ #\$ #\$))))
-       (name-jchars (atj-achars-to-jchars-id (explode name)
-                                             (endp pname$$$-jchars)
-                                             t))
+       (name-jchars (atj-chars-to-jchars-id (explode name)
+                                            (endp pname$$$-jchars)
+                                            t))
        ($$index-jchars (if (= index 0)
                            nil
                          (append (list #\$ #\$)
@@ -287,25 +412,25 @@
        (new-name (if (member-equal new-name *atj-disallowed-jvar-names*)
                      (str::cat new-name "$")
                    new-name)))
-    (intern$ new-name curr-apkg)))
+    (intern$ new-name curr-pkg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-avars ((avars symbol-listp)
-                          (indices symbol-nat-alistp)
-                          (curr-apkg stringp)
-                          (avars-by-name string-symbollist-alistp))
-  :guard (not (equal curr-apkg ""))
-  :returns (mv (renaming symbol-symbol-alistp :hyp (symbol-listp avars))
+(define atj-rename-vars ((vars symbol-listp)
+                         (indices symbol-nat-alistp)
+                         (curr-pkg stringp)
+                         (vars-by-name string-symbollist-alistp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (renaming symbol-symbol-alistp :hyp (symbol-listp vars))
                (new-indices
                 symbol-nat-alistp
-                :hyp (and (symbol-listp avars)
+                :hyp (and (symbol-listp vars)
                           (symbol-nat-alistp indices))))
   :short "Rename a sequence of ACL2 variables to their Java names."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(tsee atj-rename-avar),
+    "As explained in @(tsee atj-rename-var),
      the shallowly embedded ACL2 variables are made unique via indices.
      There is an independent index for each ACL2 variable,
      so we use an alist from symbols to natural numbers
@@ -333,49 +458,55 @@
      and the alist is extended to associate 1 (the next index) to the symbol.
      Otherwise, the index in the alist is used,
      and the alist is updated with the next index."))
-  (b* (((when (endp avars)) (mv nil indices))
-       (avar (car avars))
-       (avar+index (assoc-eq avar indices))
-       (index (if (consp avar+index) (cdr avar+index) 0))
-       (indices (acons avar (1+ index) indices))
-       ((mv renaming indices) (atj-rename-avars (cdr avars)
-                                                indices
-                                                curr-apkg
-                                                avars-by-name)))
-    (mv (acons avar
-               (atj-rename-avar avar index curr-apkg avars-by-name)
+  (b* (((when (endp vars)) (mv nil indices))
+       (var (car vars))
+       (var+index (assoc-eq var indices))
+       (index (if (consp var+index) (cdr var+index) 0))
+       (indices (acons var (1+ index) indices))
+       ((mv renaming indices) (atj-rename-vars (cdr vars)
+                                               indices
+                                               curr-pkg
+                                               vars-by-name)))
+    (mv (acons var
+               (atj-rename-var var index curr-pkg vars-by-name)
                renaming)
         indices))
   :verify-guards :after-returns
+
   :prepwork
+
   ((defrulel verify-guards-lemma
      (implies (natp x)
-              (acl2-numberp x)))))
+              (acl2-numberp x)))
+
+   (defrulel returns-lemma
+     (implies (natp x)
+              (natp (1+ x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-aformals ((aformals symbol-listp)
-                             (renaming symbol-symbol-alistp))
-  :returns (new-aformals symbol-listp :hyp :guard)
+(define atj-rename-formals ((formals symbol-listp)
+                            (renaming symbol-symbol-alistp))
+  :returns (new-formals symbol-listp :hyp :guard)
   :short "Rename the formal parameters of
           a defined function or lambda expression
           according to a supplied renaming."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used after calling @(tsee atj-rename-avars),
+    "This is used after calling @(tsee atj-rename-vars),
      which introduces the new names for the formal parameters.
      This function just looks up the names in the renaming alist
      and replaces them, returning a list of renamed parameters.")
    (xdoc::p
     "The reason for having this separate function,
-     instead of having @(tsee atj-rename-avar)
+     instead of having @(tsee atj-rename-var)
      also return the new list of variables,
      is motivated by the way lambda expression are treated:
-     see @(tsee atj-rename-aterm).
+     see @(tsee atj-rename-term).
      As explained there, the formal parameters of a lambda expression
      that are the same as the correspoding actual parameters
-     are excluded from the call of @(tsee atj-rename-avars),
+     are excluded from the call of @(tsee atj-rename-vars),
      so that the old variable names can be re-used.
      Thus, we must use the combined renaming
      not only on the body of the lambda expression,
@@ -384,31 +515,21 @@
      For uniformity, this function is also used when processing
      a function definition, in order to rename the formal parameters
      in a way that is consistent with the renamings in the body."))
-  (cond ((endp aformals) nil)
-        (t (cons (cdr (assoc-eq (car aformals) renaming))
-                 (atj-rename-aformals (cdr aformals) renaming))))
+  (cond ((endp formals) nil)
+        (t (cons (cdr (assoc-eq (car formals) renaming))
+                 (atj-rename-formals (cdr formals) renaming))))
   ///
 
-  (defrule len-of-atj-rename-aformals
-    (equal (len (atj-rename-aformals aformals renaming))
-           (len aformals))))
+  (defrule len-of-atj-rename-formals
+    (equal (len (atj-rename-formals formals renaming))
+           (len formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-rename-aterm
+(defines atj-rename-term
   :short "Rename all the ACL2 variables in an ACL2 term to their Java names."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "At the top level,
-     this function is called on the body of a defined ACL2 function
-     prior to translating its body into Java.
-     This makes the translation to Java,
-     because each ACL2 variable can be turned
-     into a Java variable with same name.
-     In other words, we factor the overall translation from ACL2 to Java
-     by performing the renaming of variables from ACL2 to ACL2 first,
-     and then turning the resulting ACL2 into Java.")
    (xdoc::p
     "The alist from variables to indices
      is threaded through this function and its mutually recursive companion.
@@ -417,7 +538,7 @@
     "If the term is a variable, it is looked up in the renaming alist,
      and replaced with the renamed variable.
      Recall that new variable names are generated
-     via @(tsee atj-rename-avar) and @(tsee atj-rename-avars),
+     via @(tsee atj-rename-var) and @(tsee atj-rename-vars),
      when variables are introduced,
      i.e. from formal parameters of defined functions and lambda expressions.
      When instead a variable occurrence is encountered in a term,
@@ -433,87 +554,83 @@
      If instead it is a lambda expression,
      we introduce new variables renamings from its formal parameters,
      and then recursively process the body of the lambda expression.
-     As an optimization,
-     we exclude the formal parameters
-     that are the same as their corresponding actual parameters
-     (which happens often in ACL2: see @(tsee remove-unneeded-lambda-formals)),
-     because for those we do not need to generate new Java variables,
-     but can instead reference the existing variables.
-     We append the newly generated renaming to the existing one,
-     achieving the desired ``shadowing'' of the old mappings."))
+     Lambda expressions may not be closed here,
+     due to the pre-translation step
+     that removes the trivial lambda-bound variables:
+     we append the newly generated renaming to the existing one,
+     achieving the desired ``shadowing'' of some of the old mappings
+     but maintaining access to the rest of the old mappings."))
 
-  (define atj-rename-aterm ((aterm pseudo-termp)
-                            (renaming symbol-symbol-alistp)
-                            (indices symbol-nat-alistp)
-                            (curr-apkg stringp)
-                            (avars-by-name string-symbollist-alistp))
-    :guard (not (equal curr-apkg ""))
-    :returns (mv (new-aterm pseudo-termp
-                            :hyp (and (pseudo-termp aterm)
-                                      (symbol-symbol-alistp renaming)))
+  (define atj-rename-term ((term pseudo-termp)
+                           (renaming symbol-symbol-alistp)
+                           (indices symbol-nat-alistp)
+                           (curr-pkg stringp)
+                           (vars-by-name string-symbollist-alistp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (new-term pseudo-termp
+                           :hyp (and (pseudo-termp term)
+                                     (symbol-symbol-alistp renaming)))
                  (new-indices symbol-nat-alistp
-                              :hyp (and (pseudo-termp aterm)
+                              :hyp (and (pseudo-termp term)
                                         (symbol-nat-alistp indices))))
-    (cond ((variablep aterm) (mv (cdr (assoc-eq aterm renaming)) indices))
-          ((fquotep aterm) (mv aterm indices))
-          (t (b* ((afn (ffn-symb aterm))
-                  (aargs (fargs aterm))
-                  ((mv new-aargs
-                       indices) (atj-rename-aterms aargs
-                                                   renaming
-                                                   indices
-                                                   curr-apkg
-                                                   avars-by-name))
-                  ((when (symbolp afn)) (mv (fcons-term afn new-aargs)
-                                            indices))
-                  (aformals (lambda-formals afn))
-                  (abody (lambda-body afn))
-                  (trimmed-aformals (remove-unneeded-lambda-formals
-                                     aformals aargs))
-                  ((mv new-renaming
-                       indices) (atj-rename-avars trimmed-aformals
-                                                  indices
-                                                  curr-apkg
-                                                  avars-by-name))
-                  (renaming (append new-renaming renaming))
-                  (new-aformals (atj-rename-aformals aformals renaming))
-                  ((mv new-abody
-                       indices) (atj-rename-aterm abody
+    (cond ((variablep term) (mv (cdr (assoc-eq term renaming)) indices))
+          ((fquotep term) (mv term indices))
+          (t (b* ((fn (ffn-symb term))
+                  (args (fargs term))
+                  ((mv new-args
+                       indices) (atj-rename-terms args
                                                   renaming
                                                   indices
-                                                  curr-apkg
-                                                  avars-by-name)))
-               (mv (fcons-term (make-lambda new-aformals new-abody)
-                               new-aargs)
+                                                  curr-pkg
+                                                  vars-by-name))
+                  ((when (symbolp fn)) (mv (fcons-term fn new-args)
+                                           indices))
+                  (formals (lambda-formals fn))
+                  (body (lambda-body fn))
+                  ((mv new-renaming
+                       indices) (atj-rename-vars formals
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name))
+                  (renaming (append new-renaming renaming))
+                  (new-formals (atj-rename-formals formals renaming))
+                  ((mv new-body
+                       indices) (atj-rename-term body
+                                                 renaming
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name)))
+               (mv (fcons-term (make-lambda new-formals new-body)
+                               new-args)
                    indices)))))
 
-  (define atj-rename-aterms ((aterms pseudo-term-listp)
-                             (renaming symbol-symbol-alistp)
-                             (indices symbol-nat-alistp)
-                             (curr-apkg stringp)
-                             (avars-by-name string-symbollist-alistp))
-    :guard (not (equal curr-apkg ""))
-    :returns (mv (new-aterms (and (pseudo-term-listp new-aterms)
-                                  (equal (len new-aterms) (len aterms)))
-                             :hyp (and (pseudo-term-listp aterms)
-                                       (symbol-symbol-alistp renaming)))
+  (define atj-rename-terms ((terms pseudo-term-listp)
+                            (renaming symbol-symbol-alistp)
+                            (indices symbol-nat-alistp)
+                            (curr-pkg stringp)
+                            (vars-by-name string-symbollist-alistp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (new-terms (and (pseudo-term-listp new-terms)
+                                 (equal (len new-terms) (len terms)))
+                            :hyp (and (pseudo-term-listp terms)
+                                      (symbol-symbol-alistp renaming)))
                  (new-indices symbol-nat-alistp
-                              :hyp (and (pseudo-term-listp aterms)
+                              :hyp (and (pseudo-term-listp terms)
                                         (symbol-nat-alistp indices))))
-    (cond ((endp aterms) (mv nil indices))
-          (t (b* (((mv new-aterm
-                       indices) (atj-rename-aterm (car aterms)
+    (cond ((endp terms) (mv nil indices))
+          (t (b* (((mv new-term
+                       indices) (atj-rename-term (car terms)
+                                                 renaming
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name))
+                  ((mv new-terms
+                       indices) (atj-rename-terms (cdr terms)
                                                   renaming
                                                   indices
-                                                  curr-apkg
-                                                  avars-by-name))
-                  ((mv new-aterms
-                       indices) (atj-rename-aterms (cdr aterms)
-                                                   renaming
-                                                   indices
-                                                   curr-apkg
-                                                   avars-by-name)))
-               (mv (cons new-aterm new-aterms)
+                                                  curr-pkg
+                                                  vars-by-name)))
+               (mv (cons new-term new-terms)
                    indices)))))
 
   :prepwork
@@ -537,17 +654,17 @@
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atj-rename-aterm))
+  (verify-guards atj-rename-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-aformals+abody ((aformals symbol-listp)
-                                   (abody pseudo-termp)
-                                   (curr-apkg stringp))
-  :guard (not (equal curr-apkg ""))
-  :returns (mv (new-aformals symbol-listp :hyp (symbol-listp aformals))
-               (new-abody pseudo-termp :hyp (and (pseudo-termp abody)
-                                                 (symbol-listp aformals))))
+(define atj-rename-formals+body ((formals symbol-listp)
+                                 (body pseudo-termp)
+                                 (curr-pkg stringp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (new-formals symbol-listp :hyp (symbol-listp formals))
+               (new-body pseudo-termp :hyp (and (pseudo-termp body)
+                                                (symbol-listp formals))))
   :verify-guards nil
   :short "Rename all the ACL2 variables to their Java names,
           in the formal parameters and body of an ACL2 function."
@@ -557,11 +674,604 @@
     "Starting with the empty alist of indices,
      we introduce renamed variables for the formal parameters.
      We use the renaming as the starting one to process the body."))
-  (b* ((avars (union-eq aformals (all-free/bound-vars abody)))
-       (avars-by-name (organize-symbols-by-name avars))
-       ((mv renaming
-            indices) (atj-rename-avars aformals nil curr-apkg avars-by-name))
-       (new-aformals (atj-rename-aformals aformals renaming))
-       ((mv new-abody &) (atj-rename-aterm
-                          abody renaming indices curr-apkg avars-by-name)))
-    (mv new-aformals new-abody)))
+  (b* ((vars (union-eq formals (all-free/bound-vars body)))
+       (vars-by-name (organize-symbols-by-name vars))
+       ((mv renaming indices)
+        (atj-rename-vars formals nil curr-pkg vars-by-name))
+       (new-formals (atj-rename-formals formals renaming))
+       ((mv new-body &)
+        (atj-rename-term body renaming indices curr-pkg vars-by-name)))
+    (mv new-formals new-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-type-annotation
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          addition of type annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "This step annotates ACL2 terms with ATJ types:
+     (i) each ACL2 term is wrapped with a function named @('[src>dst]'),
+     where @('src') identifies the ATJ type of the term
+     and @('dst') identifies an ATJ type to which the term must be converted to;
+     (ii) each ACL2 variable @('var') in a term is renamed to @('[type]var'),
+     where @('type') identifies the ATJ type of the variable.")
+   (xdoc::p
+    "These annotations facilitate the ACL2-to-Java translation,
+     which uses the type annotations as ``instructions'' for
+     (i) which types to declare Java local variables with, and
+     (ii) which Java conversion code to insert around expressions.")
+   (xdoc::p
+    "The annotated terms are still ACL2 terms (with a specific structure).
+     This should let us prove, in ACL2,
+     the equality of the annotated terms with the original terms,
+     under suitable variable rebinding,
+     and by introducing the @('[src>dst]') functions as identities.
+     (This has not been done yet.)"))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-id ((type atj-typep))
+  :returns (id stringp :hyp :guard)
+  :short "Short string identifying an ATJ type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use a short two-letter string to identify each ATJ type.
+     For the ATJ types that correspond to AIJ's public classes,
+     the first letter is @('A') and the second letter is from the class name.
+     For the Java primitive types,
+     the first letter is @('J') and the second letter is from the Java type."))
+  (case type
+    (:integer "AI")
+    (:rational "AR")
+    (:number "AN")
+    (:character "AC")
+    (:string "AS")
+    (:symbol "AY")
+    (:cons "AP")
+    (:value "AV")
+    (:jint "JI"))
+  ///
+
+  (defrule atj-type-id-injective
+    (implies (and (atj-typep x)
+                  (atj-typep y))
+             (equal (equal (atj-type-id x)
+                           (atj-type-id y))
+                    (equal x y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-of-id ((id stringp))
+  :returns (type atj-typep)
+  :short "ATJ type identified by a short string."
+  :long
+  (xdoc::topstring-p
+   "This is the inverse of @(tsee atj-type-id).")
+  (cond ((equal id "AI") :integer)
+        ((equal id "AR") :rational)
+        ((equal id "AN") :number)
+        ((equal id "AC") :character)
+        ((equal id "AS") :string)
+        ((equal id "AY") :symbol)
+        ((equal id "AP") :cons)
+        ((equal id "AV") :value)
+        ((equal id "JI") :jint)
+        (t (prog2$
+            (raise "Internal error: ~x0 does not identify a type." id)
+            :value))) ; irrelevant
+  ///
+
+  (defrule atj-type-of-id-of-atj-type-id
+    (implies (atj-typep x)
+             (equal (atj-type-of-id (atj-type-id x))
+                    x))
+    :enable atj-type-id))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-conv ((src-type atj-typep) (dst-type atj-typep))
+  :returns (name symbolp)
+  :short "ATJ type conversion function names used to annotate ACL2 terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned "
+    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+    ", each ACL2 term is wrapped with a function named @('[src>dst]'),
+     where @('src') identifies the ATJ type of the term
+     and @('dst') identifies an ATJ type to which the term must be converted to.")
+   (xdoc::p
+    "These function names are all in the @('\"JAVA\"') package.
+     For now we do not need these functions to actually exist in the ACL2 world,
+     because annotated terms are only created ephemerally as data
+     manipulated by the ATJ code generation functions.
+     However, in order to prove that the type annotation process
+     preserves the ACL2 meaning of terms,
+     these functions will need to exist and be defined as identify functions,
+     which can be easily done with a macro."))
+  (intern$ (str::cat "[" (atj-type-id src-type) ">" (atj-type-id dst-type) "]")
+           "JAVA"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-types-of-conv ((conv symbolp))
+  :returns (mv (src-type atj-typep)
+               (dst-type atj-typep))
+  :verify-guards nil
+  :short "Source and destination ATJ types of a conversion function."
+  :long
+  (xdoc::topstring-p
+   "This is the inverse of @(tsee atj-type-conv).")
+  (b* ((string (symbol-name conv))
+       ((unless (and (int= (length string) 7)
+                     (eql (char string 0) #\[)
+                     (eql (char string 3) #\>)
+                     (eql (char string 6) #\])))
+        (raise "Internal error: ~x0 is not a conversion function." conv)
+        (mv :value :value)) ; irrelevant
+       (src-id (subseq string 1 3))
+       (dst-id (subseq string 4 6))
+       (src-type (atj-type-of-id src-id))
+       (dst-type (atj-type-of-id dst-id)))
+    (mv src-type dst-type))
+  ///
+
+  (defrule atj-types-of-conv-of-atj-type-conv
+    (implies (and (atj-typep x)
+                  (atj-typep y))
+             (equal (atj-types-of-conv (atj-type-conv x y))
+                    (list x y)))
+    :enable (atj-type-conv atj-type-id)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-wrap-term ((term pseudo-termp)
+                            (src-type atj-typep)
+                            (dst-type? maybe-atj-typep))
+  :returns (wrapped-term pseudo-termp :hyp (pseudo-termp term))
+  :short "Wrap an ACL2 term with a type conversion function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The conversion is from the source to the destination type.
+     If the destination type is absent,
+     it is treated as if it were equal to the source type,
+     i.e. the conversion is a no-op."))
+  (b* ((conv (if dst-type?
+                 (atj-type-conv src-type dst-type?)
+               (atj-type-conv src-type src-type))))
+    (fcons-term* conv term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-unwrap-term ((term pseudo-termp))
+  :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
+               (src-type atj-typep)
+               (dst-type atj-typep))
+  :verify-guards nil
+  :short "Unwrap an ACL2 term wrapped by @(tsee atj-type-wrap-term)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially the inverse function,
+     except that it always returns a destination type, never @('nil')."))
+  (b* (((when (or (variablep term)
+                  (fquotep term)
+                  (flambda-applicationp term)))
+        (raise "Internal error: the term ~x0 has the wrong format." term)
+        (mv nil :value :value)) ; irrelevant
+       (fn (ffn-symb term))
+       ((when (flambdap fn))
+        (raise "Internal error: the term ~x0 has the wrong format." term)
+        (mv nil :value :value)) ; irrelevant
+       ((mv src-type dst-type) (atj-types-of-conv fn)))
+    (mv (fargn term 1) src-type dst-type))
+  ///
+
+  (defrule acl2-count-of-atj-type-unwrap-term-linear
+    (implies (mv-nth 0 (atj-type-unwrap-term term))
+             (< (acl2-count (mv-nth 0 (atj-type-unwrap-term term)))
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-rewrap-term ((term pseudo-termp)
+                              (src-type atj-typep)
+                              (dst-type? maybe-atj-typep))
+  :returns (rewrapped-term pseudo-termp :hyp (pseudo-termp term)
+                           :hints (("Goal" :expand ((pseudo-termp term)))))
+  :short "Re-wrap an ACL2 term with a type conversion function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when annotating @(tsee if) terms,
+     in the shallow embedding approach.
+     These terms are initially wrapped with a type conversion function,
+     but in general may need to be wrapped with a different one.
+     So here we replace the wrapper.
+     See @(tsee atj-type-annotate-term) for details."))
+  (b* (((when (or (variablep term)
+                  (fquotep term)
+                  (not (consp (fargs term)))))
+        (raise "Internal error: the term ~x0 has the wrong format." term)))
+    (atj-type-wrap-term (fargn term 1) src-type dst-type?))
+  :guard-hints (("Goal" :expand ((pseudo-termp term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-annotate-var ((var symbolp) (type atj-typep))
+  :returns (annotated-var symbolp)
+  :short "Annotate an ACL2 variable with a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned "
+    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+    ", we systematically add type information to each ACL2 variable.
+     We do so by adding @('[type]') before the variable name,
+     where @('type') identifies an ATJ type."))
+  (packn-pos (list "[" (atj-type-id type) "]" var) var))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-unannotate-var ((var symbolp))
+  :returns (mv (unannotated-var symbolp)
+               (type atj-typep))
+  :verify-guards nil
+  :short "Decompose an annotated ACL2 variable into
+          its unannotated counterpart and its type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee atj-type-annotate-var).")
+   (xdoc::p
+    "It is used when translating from ACL2 to Java,
+     because the name of the Java variable is the one of the ACL2 variable
+     without the type annotation."))
+  (b* ((string (symbol-name var))
+       ((unless (and (>= (length string) 4)
+                     (eql (char string 0) #\[)
+                     (eql (char string 3) #\])))
+        (raise "Internal error: ~x0 has the wrong format." var)
+        (mv nil :value)) ; irrelevant
+       (unannotated-string (subseq string 4 (length string)))
+       (unannotated-var (intern-in-package-of-symbol unannotated-string var))
+       (type-id (subseq string 1 3))
+       (type (atj-type-of-id type-id)))
+    (mv unannotated-var type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-annotate-vars ((vars symbol-listp)
+                                (types atj-type-listp))
+  :guard (int= (len vars) (len types))
+  :returns (new-vars symbol-listp)
+  :short "Lift @(tsee atj-type-annotate-var) to lists."
+  (cond ((endp vars) nil)
+        (t (cons (atj-type-annotate-var (car vars) (car types))
+                 (atj-type-annotate-vars (cdr vars) (cdr types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-unannotate-vars ((vars symbol-listp))
+  :returns (mv (unannotated-vars symbol-listp)
+               (types atj-type-listp))
+  :verify-guards nil
+  :short "Lift @(tsee atj-type-unannotate-var) to lists."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv var type) (atj-type-unannotate-var (car vars)))
+       ((mv vars types) (atj-type-unannotate-vars (cdr vars))))
+    (mv (cons var vars) (cons type types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-type-annotate-term
+  :short "Add ATJ type annotations to ACL2 terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type annotation procedure involves inferring the types of terms,
+     and wrapping terms with type conversion functions
+     to match certain type requirements.")
+   (xdoc::p
+    "The @('var-types') input assigns types to (at least)
+     all the free variables in the term that is being annotated.
+     At the top level (see @(tsee atj-type-annotate-formals+body)),
+     @('var-types') is initialized with the formal parameters of a function
+     and with its corresponding input types.
+     When we encounter a lambda expression in a term,
+     @('var-types') is updated with an alist that assigns
+     to the formal parameter of the lambda expression
+     the types inferred for the actual arguments of the lambda expression;
+     that is, unlike at the top level, at intermediate levels
+     variables receive the types inferred for their binding terms.
+     Here `updated' means that
+     the new alist is appended before the existing one:
+     recall that, due to the pre-translation step
+     that removes trivial lambda-bound variables,
+     lambda expressions may not be closed at this point;
+     thus, the appending achieves the desired ``overwriting''.")
+   (xdoc::p
+    "The @('required-type?') input specifies
+     the type required for the term, if any.
+     At the top level (see @(tsee atj-type-annotate-formals+body)),
+     this is the output type of the function:
+     the body of the function must have the output type of the function.
+     When annotating an actual argument of a named function call in a term,
+     the required type is the input type of the called function
+     for the corresponding argument.
+     When annotating an actual argument of a lambda expression in a term,
+     there is no required type (i.e. @('required-type?') is @('nil'));
+     as mentioned above, the resulting type
+     is then assigned to the corresponding formal parameter.
+     The required type is used to determine the type conversion function
+     to wrap the term with:
+     the conversion is from the type inferred for the term
+     to the required type;
+     if there is no required type, the conversion is
+     from the inferred type to the same type.")
+   (xdoc::p
+    "The result of annotating a term is not only the annotated term,
+     but also the type of the wrapped term.
+     This is always the same as the required type when there is a required type;
+     when there is no required type,
+     the resulting type is the one inferred for the term.")
+   (xdoc::p
+    "The type inferred for a variable is the one assigned by @('var-types').
+     We annotate the variable with its type;
+     note that the variable names in @('var-types')
+     do not have type annotations.
+     We wrap the variable with a type conversion function
+     from the inferred type to the required type if supplied,
+     or to the inferred type (i.e. no-op conversion) if not supplied.")
+   (xdoc::p
+    "The type inferred for a quoted constant
+     is determined by the value of the quoted constant.
+     We wrap the quoted constant with a type conversion function
+     as discussed above.")
+   (xdoc::p
+    "The non-strict function @(tsee if) is treated specially,
+     because eventually it is translated to a Java @('if'),
+     which assigns either the `then' part or the `else' part
+     to a Java local variable.
+     The type of the Java local variable is @('required-type?') if supplied:
+     in this case, when @('required-type?') is recursively passed
+     to the second and third argument of the @(tsee if),
+     both terms will be wrapped so that they have the required type.
+     However, if @('required-type?') is @('nil'),
+     the recursive annotation of the `then' and `else' subterms
+     may produce different types,
+     and so in this case we re-wrap those terms
+     with the least upper bound of the two types.
+     The case of a term of the form @('(if a a b)')
+     is treated a little differently,
+     but there is no substantial difference.
+     In the general case @('(if a b c)') with @('a') different from @('b'),
+     there is never any required type for the test @('a'),
+     because in the Java code it is just used
+     to generate the test of the @('if').
+     In all cases, the @(tsee if) is wrapped with
+     the identify conversion function for the overall type,
+     for uniformity and to immediately indicate the type
+     of the Java local variable to generate.")
+   (xdoc::p
+    "For a named function call, the function's types are obtained:
+     the input types become the required ones for the argument terms,
+     while the output type is the one inferred for the call,
+     which is then wrapped as needed.")
+   (xdoc::p
+    "For a lambda expression,
+     the argument terms are annotated without required types.
+     The inferred types are then assigned to the formal parameters
+     when the body of the lambda expression is annotated.
+     We annotate all the formal parameters of the lambda expression;
+     but note that the new @('var-types') has non-annotated variable names.")
+   (xdoc::p
+    "An annotated term is still a regular term,
+     but it has a certain structure."))
+  :verify-guards nil
+
+  (define atj-type-annotate-term ((term pseudo-termp)
+                                  (required-type? maybe-atj-typep)
+                                  (var-types symbol-atjtype-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
+    :returns (mv (annotated-term "A @(tsee pseudo-termp).")
+                 (resulting-type "A @(tsee atj-typep)."))
+    (b* (((when (variablep term))
+          (b* ((var term)
+               (var+type (assoc-eq var var-types))
+               ((unless (consp var+type))
+                (prog2$
+                 (raise "Internal error: the variable ~x0 has no type." term)
+                 (mv nil :value))) ; irrelevant
+               (type (cdr var+type))
+               (var (atj-type-annotate-var var type)))
+            (mv (atj-type-wrap-term var type required-type?)
+                (or required-type? type))))
+         ((when (fquotep term))
+          (b* ((value (acl2::unquote-term term))
+               (type (atj-type-of-value value)))
+            (mv (atj-type-wrap-term term type required-type?)
+                (or required-type? type))))
+         (fn (ffn-symb term))
+         ((when (and (eq fn 'if)
+                     (int= (len (fargs term)) 3))) ; should be always true
+          (b* ((test (fargn term 1))
+               (then (fargn term 2))
+               (else (fargn term 3)))
+            (if (equal test then) ; it's an OR
+                (b* ((first test)
+                     (second else)
+                     ((mv first
+                          first-type) (atj-type-annotate-term first
+                                                              required-type?
+                                                              var-types
+                                                              guards$
+                                                              wrld))
+                     ((mv second
+                          second-type) (atj-type-annotate-term second
+                                                               required-type?
+                                                               var-types
+                                                               guards$
+                                                               wrld))
+                     (type (or required-type?
+                               (atj-type-join first-type second-type)))
+                     (first (if required-type?
+                                first
+                              (atj-type-rewrap-term first first-type type)))
+                     (second (if required-type?
+                                 second
+                               (atj-type-rewrap-term second second-type type)))
+                     (term (acl2::fcons-term* 'if first first second)))
+                  (mv (atj-type-wrap-term term type type)
+                      type))
+              (b* (((mv test &) (atj-type-annotate-term test
+                                                        nil
+                                                        var-types
+                                                        guards$
+                                                        wrld))
+                   ((mv then
+                        then-type) (atj-type-annotate-term then
+                                                           required-type?
+                                                           var-types
+                                                           guards$
+                                                           wrld))
+                   ((mv else
+                        else-type) (atj-type-annotate-term else
+                                                           required-type?
+                                                           var-types
+                                                           guards$
+                                                           wrld))
+                   (type (or required-type?
+                             (atj-type-join then-type else-type)))
+                   (then (if required-type?
+                             then
+                           (atj-type-rewrap-term then then-type type)))
+                   (else (if required-type?
+                             else
+                           (atj-type-rewrap-term else else-type type)))
+                   (term (acl2::fcons-term* 'if test then else)))
+                (mv (atj-type-wrap-term term type type)
+                    type)))))
+         ((when (symbolp fn))
+          (b* ((fn-type (atj-get-function-type fn guards$ wrld))
+               (in-types (atj-function-type->inputs fn-type))
+               (out-type (atj-function-type->output fn-type))
+               ((mv args &) (atj-type-annotate-terms (fargs term)
+                                                     in-types
+                                                     var-types
+                                                     guards$
+                                                     wrld))
+               (term (fcons-term fn args)))
+            (mv (atj-type-wrap-term term out-type required-type?)
+                (or required-type? out-type))))
+         ((mv args types) (atj-type-annotate-terms (fargs term)
+                                                   (repeat (len (fargs term))
+                                                           nil)
+                                                   var-types
+                                                   guards$
+                                                   wrld))
+         (formals (lambda-formals fn))
+         (var-types (append (pairlis$ formals types) var-types))
+         (formals (atj-type-annotate-vars formals types))
+         ((mv body type) (atj-type-annotate-term (lambda-body fn)
+                                                 required-type?
+                                                 var-types
+                                                 guards$
+                                                 wrld))
+         (term (fcons-term (make-lambda formals body) args)))
+      (mv (atj-type-wrap-term term type required-type?)
+          (or required-type? type))))
+
+  (define atj-type-annotate-terms ((terms pseudo-term-listp)
+                                   (required-types? maybe-atj-type-listp)
+                                   (var-types symbol-atjtype-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
+    :guard (int= (len terms) (len required-types?))
+    :returns (mv (annotated-terms "A @(tsee pseudo-term-listp).")
+                 (resulting-types "A @(tsee atj-type-listp)."))
+    (b* (((when (endp terms)) (mv nil nil))
+         ((mv term type) (atj-type-annotate-term (car terms)
+                                                 (car required-types?)
+                                                 var-types
+                                                 guards$
+                                                 wrld))
+         ((mv terms types) (atj-type-annotate-terms (cdr terms)
+                                                    (cdr required-types?)
+                                                    var-types
+                                                    guards$
+                                                    wrld)))
+      (mv (cons term terms) (cons type types)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-annotate-formals+body ((formals symbol-listp)
+                                        (body pseudo-termp)
+                                        (in-types atj-type-listp)
+                                        (out-type atj-typep)
+                                        (guards$ booleanp)
+                                        (wrld plist-worldp))
+  :guard (int= (len formals) (len in-types))
+  :returns (mv (annotated-formals "A @(tsee symbol-listp).")
+               (annotated-body "A @(tsee pseudo-termp)."))
+  :verify-guards nil
+  :short "Add ATJ type annotations to the formal parameters and body
+          of an ACL2 function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input and output types of the function are supplied as arguments.
+     We annotate the body, using the output type as the required type.
+     We initialize the variable-type alist
+     to assign the input types to the formal parameters.
+     We also annotate the formal parameters,
+     but note that @('var-types') has non-annotated variable names."))
+  (b* ((var-types (pairlis$ formals in-types))
+       (formals (atj-type-annotate-vars formals in-types))
+       ((mv body &)
+        (atj-type-annotate-term body out-type var-types guards$ wrld)))
+    (mv formals body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-pre-translate ((fn symbolp)
+                           (formals symbol-listp)
+                           (body pseudo-termp)
+                           (in-types atj-type-listp)
+                           (out-type atj-typep)
+                           (deep$ booleanp)
+                           (guards$ booleanp)
+                           (wrld plist-worldp))
+  :returns (mv (new-formals "A @(tsee symbol-listp).")
+               (new-body "A @(tsee pseudo-termp)."))
+  :verify-guards nil
+  :parents (atj-pre-translation)
+  :short "Pre-translate the formal parameters and body
+          of an ACL2 function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done before the translation from ACL2 to Java proper.
+     The pre-translation steps are described "
+    (xdoc::seetopic "atj-pre-translation" "here")
+    "."))
+  (b* ((body (atj-remove-return-last body guards$))
+       (body (remove-unused-vars-from-term body))
+       ((when deep$) (mv formals body))
+       (body (remove-trivial-lambda-vars body))
+       ((mv formals body) (atj-rename-formals+body
+                           formals body (symbol-package-name fn)))
+       ((mv formals body) (atj-type-annotate-formals+body
+                           formals body in-types out-type guards$ wrld)))
+    (mv formals body)))

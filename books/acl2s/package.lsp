@@ -171,6 +171,7 @@
       legal-variable-or-constant-namep
       xdoc
       get-tau-runes
+      arglist
       
       => ;sig
       _  ;range

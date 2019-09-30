@@ -369,6 +369,17 @@ on a per data definition basis or
   (declare (xargs :guard (natp n)))
   (- n))
 
+(defun non-0-integerp (x)
+  (declare (xargs :guard t))
+  (and (integerp x) 
+       (/= x 0)))
+
+(defun nth-non-0-integer-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (if (evenp n)
+      (1+ (/ n 2))
+    (- (/ (1+ n) 2))))
+
 ;;integers
 (defun nth-integer-builtin (n)
   (declare (xargs :guard (natp n)))
@@ -723,6 +734,18 @@ as a type.
          (den (nth-pos-builtin (cadr two-n-list))))
     (/ num den)))
 
+(defun non-0-rationalp (x)
+  (declare (xargs :guard t))
+  (and (rationalp x) 
+       (/= x 0)))
+
+(defun nth-non-0-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (num (nth-non-0-integer-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
+    (/ num den)))
+
 ;(defdata rational (oneof 0 pos-rational neg-rational))
 (defun nth-rational-builtin (n)
   (declare (xargs :guard (natp n)))
@@ -924,16 +947,23 @@ as a type.
 (register-custom-type pos t nth-pos-builtin posp)
 (register-custom-type nat t nth-nat-builtin natp)
 
+#|
 (defdata non-neg-integer nat)
 
 (defthm non-neg-integer-is-nat
   (equal (non-neg-integerp x)
          (natp x)))
+|#
 
 (register-custom-type non-pos-integer
                       t
                       nth-non-pos-integer-builtin
                       non-pos-integerp)
+
+(register-custom-type non-0-integer
+                      t
+                      nth-non-0-integer-builtin
+                      non-0-integerp)
 
 (register-custom-type integer t nth-integer-builtin integerp)
 
@@ -989,6 +1019,11 @@ Same as neg-ratio
                       nth-non-pos-rational-builtin
                       non-pos-rationalp)
 
+(register-custom-type non-0-rational
+                      t
+                      nth-non-0-rational-builtin
+                      non-0-rationalp)
+
 (register-custom-type rational
                       t
                       nth-rational-builtin
@@ -1026,6 +1061,11 @@ Same as neg-ratio
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-non-pos-integer-builtin n-small)))
+
+(defun nth-non-0-integer-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-0-integer-builtin n-small)))
 
 (defun nth-integer-testing (n)
   (declare (xargs :guard (natp n)))
@@ -1080,6 +1120,11 @@ No longer needed.
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
     (nth-non-pos-rational-builtin n-small)))
+
+(defun nth-non-0-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-0-rational-builtin n-small)))
 
 (defun nth-rational-testing (n)
   (declare (xargs :guard (natp n)))
@@ -1207,38 +1252,39 @@ No longer needed.
 (defdata::register-type z :domain-size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
 
 ;Subtype relations betweem the above
-
+; neg <= non-pos-integer <= integer
+; neg <= non-0-integer <= integer
+; neg <= neg-rational <= non-pos-rational <= rational
+;
+ 
 (defdata-subtype-strict neg non-pos-integer)
+(defdata-subtype-strict neg non-0-integer)
 (defdata-subtype-strict neg neg-rational)
 
 (defdata-subtype-strict pos nat)
+(defdata-subtype-strict pos non-0-integer)
 (defdata-subtype-strict pos pos-rational)
 
-(defdata-subtype-strict nat integer)
-
 (defdata-subtype-strict non-pos-integer integer)
+(defdata-subtype-strict non-0-integer integer)
+(defdata-subtype-strict nat integer)
 
 (defdata-subtype-strict integer rational)
 
-#|
-No longer defined
-(defdata-subtype-strict neg-ratio non-pos-ratio)
 (defdata-subtype-strict neg-ratio non-pos-rational)
-
-(defdata-subtype-strict pos-ratio non-neg-ratio)
 (defdata-subtype-strict pos-ratio non-neg-rational)
-
-(defdata-subtype-strict non-neg-ratio ratio)
-(defdata-subtype-strict non-pos-ratio ratio)
-|#
 
 (defdata-subtype-strict ratio rational)
   
 (defdata-subtype-strict neg-rational non-pos-rational) 
+(defdata-subtype-strict neg-rational non-0-rational) 
+
 (defdata-subtype-strict pos-rational non-neg-rational) 
+(defdata-subtype-strict pos-rational non-0-rational) 
 
 (defdata-subtype-strict non-neg-rational rational)
 (defdata-subtype-strict non-pos-rational rational)
+(defdata-subtype-strict non-0-rational rational)
 
 (defdata-subtype-strict rational acl2-number)
 

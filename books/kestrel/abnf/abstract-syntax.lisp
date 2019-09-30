@@ -278,12 +278,14 @@
   :pred rulelistp)
 
 (defxdoc grammar
-  :short "An ABNF grammar is
-          a <see topic='@(url rulelist)'>list of rules</see>."
+  :short
+  (xdoc::topstring
+   "An ABNF grammar is a " (xdoc::seetopic "rulelist" "list of rules") ".")
   :long
   (xdoc::topstring-p
    "Unlike the typical notion of formal grammar in textbooks,
-    ABNF does not include an explicit notion of axiom (or start symbol).
+    ABNF does not include an explicit notion of axiom
+    (or goal, or start symbol).
     An ABNF grammar is just a list of rules."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -324,6 +326,7 @@
   (define %.-fn ((nats nat-listp))
     :returns (element elementp)
     (element-num-val (num-val-direct nats))
+    :hooks (:fix)
     :no-function t))
 
 (define %- ((min natp) (max natp))
@@ -338,6 +341,7 @@
     and @('min') and @('max') are numbers in base @('R'):
     the name of this function has the @('%') and the @('-') of that notation.")
   (element-num-val (num-val-range min max))
+  :hooks (:fix)
   :no-function t)
 
 (define <> ((charstring acl2::stringp))
@@ -349,6 +353,7 @@
     the ABNF notation @('<...>'),
     where the brackets form the name of this function.")
   (element-prose-val (prose-val charstring))
+  :hooks (:fix)
   :no-function t)
 
 (define element/rulename-p (x)
@@ -381,8 +386,9 @@
                   (element-rulename x)))
        (range (make-repeat-range :min 0 :max (nati-infinity))))
     (make-repetition :range range :element element))
-  :guard-hints (("Goal" :in-theory (enable element/rulename-p)))
-  :no-function t)
+  :hooks (:fix)
+  :no-function t
+  :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
 
 (define 1*_ ((x element/rulename-p))
   :returns (repetition repetitionp)
@@ -398,8 +404,9 @@
                   (element-rulename x)))
        (range (make-repeat-range :min 1 :max (nati-infinity))))
     (make-repetition :range range :element element))
-  :guard-hints (("Goal" :in-theory (enable element/rulename-p)))
-  :no-function t)
+  :hooks (:fix)
+  :no-function t
+  :guard-hints (("Goal" :in-theory (enable element/rulename-p))))
 
 (define repetition/element/rulename/charstring-p (x)
   :returns (yes/no booleanp)
@@ -495,10 +502,11 @@
                                                      (char-val-insensitive x))))
                          (t (repetition-fix x)))))
                (cons repetition (/_-fn (cdr xs))))))
+    :hooks (:fix)
+    :no-function t
     :guard-hints (("Goal"
                    :in-theory
-                   (enable repetition/element/rulename/charstring-p)))
-    :no-function t))
+                   (enable repetition/element/rulename/charstring-p)))))
 
 (defsection !_
   :short "Construct a group from a variable number of concatenations."
@@ -515,6 +523,7 @@
   (define !_-fn ((alternation alternationp))
     :returns (element elementp)
     (element-group alternation)
+    :hooks (:fix)
     :no-function t))
 
 (defsection ?_
@@ -532,6 +541,7 @@
   (define ?_-fn ((alternation alternationp))
     :returns (element elementp)
     (element-option alternation)
+    :hooks (:fix)
     :no-function t))
 
 (defsection =_
@@ -552,6 +562,7 @@
     (make-rule :name (rulename-fix rulename)
                :incremental nil
                :definiens (alternation-fix alternation))
+    :hooks (:fix)
     :no-function t))
 
 (defsection =/_
@@ -572,6 +583,7 @@
     (make-rule :name (rulename-fix rulename)
                :incremental t
                :definiens (alternation-fix alternation))
+    :hooks (:fix)
     :no-function t))
 
 (defsection def-rule-const

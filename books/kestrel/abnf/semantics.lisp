@@ -25,39 +25,36 @@
   :parents (abnf)
   :short "Semantics of ABNF."
   :long
-  "<p>
-   The abstract syntactic entities of ABNF
-   denote tree structures built by expanding the rules.
-   When all the rule names are expanded,
-   the leaves of the tree form a sequence of terminal values,
-   for which the tree is a parse tree.
-   </p>
-   <p>
-   These concepts are analogous to the ones
-   for the typical notion of formal grammar in textbooks,
-   but because ABNF is more complex, its semantics are more complex.
-   </p>"
-  :order-subtopics t)
+  (xdoc::topstring
+   (xdoc::p
+    "The abstract syntactic entities of ABNF
+     denote tree structures built by expanding the rules.
+     When all the rule names are expanded,
+     the leaves of the tree form a sequence of terminal values,
+     for which the tree is a parse tree.")
+   (xdoc::p
+    "These concepts are analogous to the ones
+     for the typical notion of formal grammar in textbooks,
+     but because ABNF is more complex, its semantics are more complex."))
+  :order-subtopics t
+  :default-parent t)
 
 (fty::defflexsum symbol
-  :parents (semantics)
   :short "Symbols."
   :long
-  "<p>
-   As explained in [RFC:2.3], the terminal values of ABNF are natural numbers.
-   </p>
-   <p>
-   Rule names are the nonterminal symbols of ABNF.
-   </p>
-   <p>
-   In analogy with the typical notion of formal grammar in textbooks,
-   an ABNF symbol is a terminal or a nonterminal,
-   i.e. a natural number or a rule name.
-   </p>
-   <p>
-   Since natural numbers and rule names are disjoint,
-   we put them together without tags.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [RFC:2.3],
+     the terminal values of ABNF are natural numbers.")
+   (xdoc::p
+    "Rule names are the nonterminal symbols of ABNF.")
+   (xdoc::p
+    "In analogy with the typical notion of formal grammar in textbooks,
+     an ABNF symbol is a terminal or a nonterminal,
+     i.e. a natural number or a rule name.")
+   (xdoc::p
+    "Since natural numbers and rule names are disjoint,
+     we put them together without tags."))
   (:terminal :fields ((get :type nat :acc-body x))
    :ctor-body get
    :cond (natp x))
@@ -92,12 +89,10 @@
     :enable symbolp))
 
 (fty::deflist string
-  :parents (semantics)
   :short "Strings."
   :long
-  "<p>
-   A string is a true list of symbols.
-   </p>"
+  (xdoc::topstring-p
+   "A string is a true list of symbols.")
   :elt-type symbol
   :true-listp t
   :elementp-of-nil nil
@@ -113,51 +108,48 @@
 (fty::deftypes trees
 
   (fty::deftagsum tree
-    :parents (semantics)
     :short "Trees of rule names and terminal values."
     :long
-    "<p>
-     This type captures the basic structure of ABNF trees,
-     without reference to specific rules.
-     </p>
-     <p>
-     Since a single @('num-val') or @('char-val')
-     may expand into a sequence of terminal values (i.e. natural numbers),
-     we use lists of natural numbers as leaves of the trees.
-     </p>
-     <p>
-     To represent trees whose rule names are not all expanded,
-     rule names may appear as leaves too.
-     </p>
-     <p>
-     A non-leaf node of a tree is optionally labeled by a rule name.
-     When it is labeled by a rule name,
-     the branches correspond to
-     a @(see concatenation) chosen from
-     the @(see alternation) associated to the rule name.
-     But since a concatenation is a sequence of @(see repetition)s,
-     and a repetition may expand to multiple instances
-     of the @(see element) of the repetition,
-     the branches are organized as a list of lists:
-     the outer list corresponds to
-     the list of repetitions that form the chosen concatenation,
-     while each inner list corresponds to
-     the element instances of the corresponding repetition.
-     An empty inner list is used for a repetition of no elements.
-     An empty outer list is used for an empty concatenation,
-     which is disallowed by [RFC:4] but allowed by our abstract syntax;
-     an empty outer list is also used for an option [RFC:3.8] that is absent.
-     </p>
-     <p>
-     Since, via groups [RFC:3.5] and options [RFC:3.8],
-     an element may recursively be an alternation,
-     if a branch in an inner list under a rule name is an alternation,
-     that branch recursively has a list of lists of branches.
-     In this case, there is no rule name labeling the root of this branch.
-     A rule name provides a name for an alternation;
-     the presence of a rule name in a non-leaf node of a tree
-     indicates that a named alternation is expanded at that place in the tree.
-     </p>"
+    (xdoc::topstring
+     (xdoc::p
+      "This type captures the basic structure of ABNF trees,
+       without reference to specific rules.")
+     (xdoc::p
+      "Since a single @('num-val') or @('char-val')
+       may expand into a sequence of terminal values (i.e. natural numbers),
+       we use lists of natural numbers as leaves of the trees.")
+     (xdoc::p
+      "To represent trees whose rule names are not all expanded,
+       rule names may appear as leaves too.")
+     (xdoc::p
+      "A non-leaf node of a tree is optionally labeled by a rule name.
+       When it is labeled by a rule name,
+       the branches correspond to
+       a @(see concatenation) chosen from
+       the @(see alternation) associated to the rule name.
+       But since a concatenation is a sequence of @(see repetition)s,
+       and a repetition may expand to multiple instances
+       of the @(see element) of the repetition,
+       the branches are organized as a list of lists:
+       the outer list corresponds to
+       the list of repetitions that form the chosen concatenation,
+       while each inner list corresponds to
+       the element instances of the corresponding repetition.
+       An empty inner list is used for a repetition of no elements.
+       An empty outer list is used for an empty concatenation,
+       which is disallowed by [RFC:4] but allowed by our abstract syntax;
+       an empty outer list is also used
+       for an option [RFC:3.8] that is absent.")
+     (xdoc::p
+      "Since, via groups [RFC:3.5] and options [RFC:3.8],
+       an element may recursively be an alternation,
+       if a branch in an inner list under a rule name is an alternation,
+       that branch recursively has a list of lists of branches.
+       In this case, there is no rule name labeling the root of this branch.
+       A rule name provides a name for an alternation;
+       the presence of a rule name in a non-leaf node of a tree
+       indicates that a named alternation is expanded
+       at that place in the tree."))
     (:leafterm ((get nat-list)))
     (:leafrule ((get rulename)))
     (:nonleaf ((rulename? maybe-rulename)
@@ -175,27 +167,25 @@
       :enable (tree-fix tree-nonleaf->rulename? tree-nonleaf->branches)))
 
   (fty::deflist tree-list
-    :parents (semantics)
     :short "True lists of trees of rule names and terminal values."
     :long
-    "<p>
-     As explained <see topic='@(url tree)'>here</see>,
-     these are the inner lists that correspond to repetitions.
-     </p>"
+    (xdoc::topstring
+     (xdoc::p
+      "As explained <see topic='@(url tree)'>here</see>,
+       these are the inner lists that correspond to repetitions."))
     :elt-type tree
     :true-listp t
     :elementp-of-nil nil
     :pred tree-listp)
 
   (fty::deflist tree-list-list
-    :parents (semantics)
     :short "True lists of true lists
             of trees of rule names and terminal values."
     :long
-    "<p>
-     As explained <see topic='@(url tree)'>here</see>,
-     these are the outer lists that correspond to concatenations.
-     </p>"
+    (xdoc::topstring
+     (xdoc::p
+      "As explained <see topic='@(url tree)'>here</see>,
+       these are the outer lists that correspond to concatenations."))
     :elt-type tree-list
     :true-listp t
     :pred tree-list-listp
@@ -213,13 +203,11 @@
 
 (fty::defoption maybe-tree
   tree
-  :parents (semantics)
   :short "Union of trees and @('nil')."
   :pred maybe-treep)
 
 (define set-all-treep ((set setp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Check if all the elements of a set are trees."
   (or (empty set)
       (and (treep (head set))
@@ -234,7 +222,6 @@
 
 (define tree-setp (x)
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Recognize finite sets of trees."
   (and (setp x)
        (set-all-treep x))
@@ -251,16 +238,15 @@
                 (tree-setp (sfix trees))))))
 
 (defines tree->string
-  :parents (semantics)
   :short "String at the leaves of trees."
   :long
-  "<p>
-   This collects all the leaves of a tree, left to right,
-   and assembles them into a string.
-   </p>
-   @(def tree->string)
-   @(def tree-list->string)
-   @(def tree-list-list->string)"
+  (xdoc::topstring
+   (xdoc::p
+    "This collects all the leaves of a tree, left to right,
+     and assembles them into a string.")
+   (xdoc::@def "tree->string")
+   (xdoc::@def "tree-list->string")
+   (xdoc::@def "tree-list-list->string"))
 
   (define tree->string ((tree treep))
     :returns (string stringp)
@@ -308,15 +294,15 @@
                    (tree-list-list->string treess)))))
 
 (defines tree-terminatedp
-  :parents (semantics)
   :short "Notion of terminated tree."
   :long
-  "<p>
-   A tree is terminated iff all its leaves are natural numbers (not rule names).
-   </p>
-   @(def tree-terminatedp)
-   @(def tree-list-terminatedp)
-   @(def tree-list-list-terminatedp)"
+  (xdoc::topstring
+   (xdoc::p
+    "A tree is terminated iff
+     all its leaves are natural numbers (not rule names).")
+   (xdoc::@def "tree-terminatedp")
+   (xdoc::@def "tree-list-terminatedp")
+   (xdoc::@def "tree-list-list-terminatedp"))
 
   (define tree-terminatedp ((tree treep))
     :returns (yes/no booleanp)
@@ -386,24 +372,21 @@
 
 (define tree-match-num-val-p ((tree treep) (num-val num-val-p))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of numeric value notations."
   :long
-  "<p>
-   A tree matches a numeric value notation iff
-   one of the following conditions holds:
-   </p>
-   <ul>
-     <li>
-     The numeric value notation is a list of natural numbers,
-     and the tree is a leaf consisting of exactly that list of natural numbers.
-     </li>
-     <li>
-     The numeric value notation is a range of natural numbers,
-     and the tree is a leaf consisting of one natural number in that range.
-     (Note that no tree matches a range whose minimum exceeds the maximum.)
-     </li>
-   </ul>"
+  (xdoc::topstring
+   (xdoc::p
+    "A tree matches a numeric value notation iff
+     one of the following conditions holds:")
+   (xdoc::ul
+    (xdoc::li
+     "The numeric value notation is a list of natural numbers,
+      and the tree is a leaf consisting of
+      exactly that list of natural numbers.")
+    (xdoc::li
+     "The numeric value notation is a range of natural numbers,
+      and the tree is a leaf consisting of one natural number in that range.
+      (Note that no tree matches a range whose minimum exceeds the maximum.)")))
   (and (tree-case tree :leafterm)
        (let ((nats (tree-leafterm->get tree)))
          (num-val-case num-val
@@ -420,14 +403,12 @@
 
 (define nat-match-sensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of characters in case-sensitive character value notations."
   :long
-  "<p>
-   A natural number matches
-   a character in a case-sensitive character value notation iff
-   the natural number is the character's code.
-   </p>"
+  (xdoc::topstring-p
+   "A natural number matches
+    a character in a case-sensitive character value notation iff
+    the natural number is the character's code.")
   (equal nat (char-code char))
   :no-function t
   ///
@@ -438,17 +419,15 @@
 
 (define nat-match-insensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of characters
           in case-insensitive character value notations."
   :long
-  "<p>
-   A natural number matches
-   a character in a case-insensitive character value notation iff
-   the natural number is the code
-   of the character or
-   of the uppercase or lowercase counterpart of the character.
-   </p>"
+  (xdoc::topstring-p
+   "A natural number matches
+    a character in a case-insensitive character value notation iff
+    the natural number is the code
+    of the character or
+    of the uppercase or lowercase counterpart of the character.")
   (or (equal nat (char-code char))
       (equal nat (char-code (upcase-char char)))
       (equal nat (char-code (downcase-char char))))
@@ -462,7 +441,6 @@
 (define nats-match-sensitive-chars-p ((nats nat-listp)
                                       (chars character-listp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Lifting of @(tsee nat-match-sensitive-char-p) to lists."
   (cond ((endp nats) (endp chars))
         (t (and (consp chars)
@@ -485,7 +463,6 @@
 (define nats-match-insensitive-chars-p ((nats nat-listp)
                                         (chars character-listp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Lifting of @(tsee nat-match-insensitive-char-p) to lists."
   (cond ((endp nats) (endp chars))
         (t (and (consp chars)
@@ -507,16 +484,14 @@
 
 (define tree-match-char-val-p ((tree treep) (char-val char-val-p))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of character value notations."
   :long
-  "<p>
-   A tree matches a character value notation iff
-   the tree is a leaf consisting of a list of natural numbers
-   that match the corresponding characters,
-   case-sensitively or case-insensitively
-   (depending on the kind of character value notation).
-   </p>"
+  (xdoc::topstring-p
+   "A tree matches a character value notation iff
+    the tree is a leaf consisting of a list of natural numbers
+    that match the corresponding characters,
+    case-sensitively or case-insensitively
+    (depending on the kind of character value notation).")
   (and
    (tree-case tree :leafterm)
    (let ((nats (tree-leafterm->get tree)))
@@ -529,28 +504,24 @@
 
 (define tree-match-prose-val-p ((tree treep) (prose-val prose-val-p))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of prose value notations."
   :long
-  "<p>
-   Formally speaking, any tree matches prose,
-   because prose has no formal semantics.
-   When a rule includes prose,
-   its meaning can be formalized via external predicates on trees.
-   </p>"
+  (xdoc::topstring-p
+   "Formally speaking, any tree matches prose,
+    because prose has no formal semantics.
+    When a rule includes prose,
+    its meaning can be formalized via external predicates on trees.=")
   t
   :ignore-ok t
   :no-function t)
 
 (define numrep-match-repeat-range-p ((numrep natp) (range repeat-rangep))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Semantics of repetition ranges."
   :long
-  "<p>
-   A number of repetitions (a natural number) matches a repetition range iff
-   it is between the range's minimum and the range's maximum.
-   </p>"
+  (xdoc::topstring-p
+   "A number of repetitions (a natural number) matches a repetition range iff
+    it is between the range's minimum and the range's maximum.")
   (let ((min (repeat-range->min range))
         (max (repeat-range->max range)))
     (and (<= min numrep)
@@ -568,17 +539,15 @@
 
 (define lookup-rulename ((rulename rulenamep) (rules rulelistp))
   :returns (alternation alternationp)
-  :parents (semantics)
   :short "Collect all the alternatives associated to a rule name
           from some rules."
   :long
-  "<p>
-   For <see topic='@(url rule-wfp)'>well-formed rules</see>,
-   this function is an appropriate way to test whether @('rulename')
-   appears (on the left side of) some rule in @('rules').
-   The reason is that well-formed rules
-   must have non-empty alternations as definientia.
-   </p>"
+  (xdoc::topstring-p
+   "For <see topic='@(url rule-wfp)'>well-formed rules</see>,
+    this function is an appropriate way to test whether @('rulename')
+    appears (on the left side of) some rule in @('rules').
+    The reason is that well-formed rules
+    must have non-empty alternations as definientia.")
   (cond ((endp rules) nil)
         (t (let ((rule (car rules)))
              (if (equal (rule->name rule) rulename)
@@ -594,14 +563,13 @@
                                               (alternation alternationp)
                                               (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of alternations."
     :long
-    "<p>
-     A list of lists of trees matches an alternation iff
-     it matches one of its concatenations.
-     </p>
-     @(def tree-list-list-match-alternation-p)"
+    (xdoc::topstring
+     (xdoc::p
+      "A list of lists of trees matches an alternation iff
+       it matches one of its concatenations.")
+     (xdoc::@def "tree-list-list-match-alternation-p"))
     (and (consp alternation)
          (or (tree-list-list-match-concatenation-p treess
                                                    (car alternation)
@@ -617,14 +585,13 @@
                                                 (concatenation concatenationp)
                                                 (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of concatenations."
     :long
-    "<p>
-     A list of lists of trees matches a concatenation iff
-     each list of trees matches the corresponding repetition.
-     </p>
-     @(def tree-list-list-match-concatenation-p)"
+    (xdoc::topstring
+     (xdoc::p
+      "A list of lists of trees matches a concatenation iff
+       each list of trees matches the corresponding repetition.")
+     (xdoc::@def "tree-list-list-match-concatenation-p"))
     (cond ((endp treess) (endp concatenation))
           (t (and (consp concatenation)
                   (tree-list-match-repetition-p (car treess)
@@ -641,15 +608,14 @@
                                         (repetition repetitionp)
                                         (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of repetitions."
     :long
-    "<p>
-     A list of trees matches a repetition iff
-     the length of the list matches the range of the repetition
-     and each tree in the list matches the element of the repetition.
-     </p>
-     @(def tree-list-match-repetition-p)"
+    (xdoc::topstring
+     (xdoc::p
+      "A list of trees matches a repetition iff
+       the length of the list matches the range of the repetition
+       and each tree in the list matches the element of the repetition.")
+     (xdoc::@def "tree-list-match-repetition-p"))
     (and (numrep-match-repeat-range-p (len trees)
                                       (repetition->range repetition))
          (tree-list-match-element-p trees
@@ -663,13 +629,12 @@
                                      (element elementp)
                                      (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Auxiliary function to define @(tsee tree-list-match-repetition-p)."
     :long
-    "<p>
-     A list of trees matches an element iff each tree matches the element.
-     </p>
-     @(def tree-list-match-element-p)"
+    (xdoc::topstring
+     (xdoc::p
+      "A list of trees matches an element iff each tree matches the element.")
+     (xdoc::@def "tree-list-match-element-p"))
     (or (atom trees)
         (and (tree-match-element-p (car trees)
                                    element
@@ -685,50 +650,41 @@
                                 (element elementp)
                                 (rules rulelistp))
     :returns (yes/no booleanp)
-    :parents (semantics)
     :short "Semantics of elements."
     :long
-    "<p>
-     A tree matches an element iff one of the following conditions holds:
-     </p>
-     <ul>
-       <li>
-       The element is a rule name,
-       and the tree is a leaf consisting of the rule name.
-       In this situation, the rule name is not expanded.
-       </li>
-       <li>
-       The element is a rule name,
-       the tree is a non-leaf with that rule name,
-       the rules associate an alternation to the rule name,
-       and the branches of the tree match that alternation.
-       In this situation, the rule name is expanded.
-       </li>
-       <li>
-       The element is a grouped alternation,
-       the tree is a non-leaf without rule name,
-       and the branches of the tree match the alternation.
-       </li>
-       <li>
-       The element is an optional alternation,
-       the tree is a non-leaf without rule name,
-       and either the branches of the tree match the alternation
-       or the tree has no branches.
-       </li>
-       <li>
-       The element is a numeric value notation
-       and the tree matches it.
-       </li>
-       <li>
-       The element is a character value notation
-       and the tree matches it.
-       </li>
-       <li>
-       The element is a prose value notation
-       and the tree matches it.
-       </li>
-     </ul>
-     @(def tree-match-element-p)"
+    (xdoc::topstring
+     (xdoc::p
+      "A tree matches an element iff one of the following conditions holds:")
+     (xdoc::ul
+      (xdoc::li
+       "The element is a rule name,
+        and the tree is a leaf consisting of the rule name.
+        In this situation, the rule name is not expanded.")
+      (xdoc::li
+       "The element is a rule name,
+        the tree is a non-leaf with that rule name,
+        the rules associate an alternation to the rule name,
+        and the branches of the tree match that alternation.
+        In this situation, the rule name is expanded.")
+      (xdoc::li
+       "The element is a grouped alternation,
+        the tree is a non-leaf without rule name,
+        and the branches of the tree match the alternation.")
+      (xdoc::li
+       "The element is an optional alternation,
+        the tree is a non-leaf without rule name,
+        and either the branches of the tree match the alternation
+        or the tree has no branches.")
+      (xdoc::li
+       "The element is a numeric value notation
+        and the tree matches it.")
+      (xdoc::li
+       "The element is a character value notation
+        and the tree matches it.")
+      (xdoc::li
+       "The element is a prose value notation
+        and the tree matches it."))
+     (xdoc::@def "tree-match-element-p"))
     (element-case
      element
      :rulename (tree-case
@@ -892,19 +848,17 @@
 (define parse-treep
   (tree (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Recognize the parse trees of a string,
           with respect to a rule name and a list of rules."
   :long
-  "<p>
-   Given a list of rules, a rule name, and a string,
-   a parse tree for the string is a tree
-   that matches the rule name (viewed as an element)
-   and such that the string is the one at the leaves of the tree.
-   A parse tree describes
-   how a string is an ``instance'' of the rule name,
-   given the rules.
-   </p>"
+  (xdoc::topstring-p
+   "Given a list of rules, a rule name, and a string,
+    a parse tree for the string is a tree
+    that matches the rule name (viewed as an element)
+    and such that the string is the one at the leaves of the tree.
+    A parse tree describes
+    how a string is an ``instance'' of the rule name,
+    given the rules.")
   (and (treep tree)
        (tree-match-element-p tree (element-rulename rulename) rules)
        (equal (tree->string tree)
@@ -919,12 +873,10 @@
 (define-sk string-parsablep
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of parsable string."
   :long
-  "<p>
-   A string is parsable iff it has at least one parse tree.
-   </p>"
+  (xdoc::topstring-p
+   "A string is parsable iff it has at least one parse tree.")
   (exists (tree)
           (parse-treep tree string rulename rules))
   ///
@@ -935,17 +887,22 @@
 
   (defrule not-parse-treep-when-not-string-parsablep
     (implies (not (string-parsablep string rulename rules))
-             (not (parse-treep tree string rulename rules)))))
+             (not (parse-treep tree string rulename rules))))
+
+  (defrule parse-treep-of-string-parsablep-witness-when-string-parsablep
+    (implies (string-parsablep string rulename rules)
+             (parse-treep (string-parsablep-witness string rulename rules)
+                          string
+                          rulename
+                          rules))))
 
 (define-sk string-ambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of ambiguous string."
   :long
-  "<p>
-   A string is ambiguous iff it has at least two distinct parse trees.
-   </p>"
+  (xdoc::topstring-p
+   "A string is ambiguous iff it has at least two distinct parse trees.")
   (exists (tree1 tree2)
           (and (not (equal tree1 tree2))
                (parse-treep tree1 string rulename rules)
@@ -967,12 +924,10 @@
 (define string-unambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of unambiguous string."
   :long
-  "<p>
-   A string is unambiguous iff it has exactly one parse tree.
-   </p>"
+  (xdoc::topstring-p
+   "A string is unambiguous iff it has exactly one parse tree.")
   (and (string-parsablep string rulename rules)
        (not (string-ambiguousp string rulename rules)))
   :no-function t
@@ -995,13 +950,11 @@
 (define-sk parse-trees-of-string-p
   ((trees tree-setp) (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Check if a finite set of trees is
           the set of all and only the parse trees of a string."
   :long
-  "<p>
-   If this is true, then the string has a finite number of parse trees.
-   </p>"
+  (xdoc::topstring-p
+   "If this is true, then the string has a finite number of parse trees.")
   (forall (tree)
           (iff (in tree trees)
                (parse-treep tree string rulename rules)))
@@ -1077,13 +1030,11 @@
 (define-sk string-has-finite-parse-trees-p
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Check if a string has a finite number of parse trees."
   :long
-  "<p>
-   If this is not true, the string is ambiguous,
-   because it has an infinite number of parse trees.
-   </p>"
+  (xdoc::topstring-p
+   "If this is not true, the string is ambiguous,
+    because it has an infinite number of parse trees.")
   (exists (trees)
           (and (tree-setp trees)
                (parse-trees-of-string-p trees string rulename rules)))
@@ -1156,15 +1107,13 @@
                    :hints (("Goal"
                             :in-theory
                             (enable string-has-finite-parse-trees-p))))
-  :parents (semantics)
   :short "Parse a string."
   :long
-  "<p>
-   If the string has a finite number of parse trees,
-   return the finite set of its parse trees.
-   Otherwise, return @(':infinite') to indicate that
-   the string has an infinite number of parse trees.
-   </p>"
+  (xdoc::topstring-p
+   "If the string has a finite number of parse trees,
+    return the finite set of its parse trees.
+    Otherwise, return @(':infinite') to indicate that
+    the string has an infinite number of parse trees.")
   (if (string-has-finite-parse-trees-p string rulename rules)
       (string-has-finite-parse-trees-p-witness string rulename rules)
     :infinite)
@@ -1199,12 +1148,10 @@
 (define parse! ((string stringp) (rulename rulenamep) (rules rulelistp))
   :guard (string-unambiguousp string rulename rules)
   :returns (tree treep)
-  :parents (semantics)
   :short "Parse an unambiguous string."
   :long
-  "<p>
-   The result is the unique parse tree.
-   </p>"
+  (xdoc::topstring-p
+   "The result is the unique parse tree.")
   (mbe :logic (tree-fix (string-parsablep-witness string rulename rules))
        :exec (string-parsablep-witness string rulename rules))
   :guard-hints (("Goal" :in-theory (enable string-unambiguousp)))
@@ -1219,24 +1166,23 @@
 
 (define-sk languagep (nats (rulenames rulename-setp) (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Notion of language."
   :long
-  "<p>
-   The language defined by a list of rules consists of
-   the sequences of natural numbers that form parsable strings
-   for given rule names.
-   An ABNF @(see grammar) does not include any explicit axiom (or start symbol);
-   thus, the top-level symbols of interest (one or more) are specified
-   as an additional parameter of this predicate.
-   </p>
-   <p>
-   Note that the condition that
-   the existentially quantified @('rulename') be defined by @('rules')
-   would be superfluous,
-   because if @('rulename') is not defined then no parse trees
-   with only terminal leaves can originate from it.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The language defined by a list of rules consists of
+     the sequences of natural numbers that form parsable strings
+     for given rule names.
+     An ABNF @(see grammar) does not include
+     any explicit axiom (or start symbol);
+     thus, the top-level symbols of interest (one or more) are specified
+     as an additional parameter of this predicate.")
+   (xdoc::p
+    "Note that the condition that
+     the existentially quantified @('rulename') be defined by @('rules')
+     would be superfluous,
+     because if @('rulename') is not defined then no parse trees
+     with only terminal leaves can originate from it."))
   (exists (rulename)
           (and (nat-listp nats)
                (in rulename rulenames)
@@ -1244,22 +1190,20 @@
 
 (define-sk terminal-string-for-rules-p (nats (rules rulelistp))
   :returns (yes/no booleanp)
-  :parents (semantics)
   :short "Recognize terminal strings generated by a grammar."
   :long
-  "<p>
-   This predicate recognizes all the sequences of natural numbers
-   that form parsable strings, for any rule names.
-   This is equivalent to @(tsee languagep)
-   when all the rule names are passed as second argument of that predicates.
-   </p>
-   <p>
-   Note that the condition that
-   the existentially quantified @('rulename') be defined by @('rules')
-   would be superfluous,
-   because if @('rulename') is not defined then no parse trees
-   with only terminal leaves can originate from it.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This predicate recognizes all the sequences of natural numbers
+     that form parsable strings, for any rule names.
+     This is equivalent to @(tsee languagep)
+     when all the rule names are passed as second argument of that predicates.")
+   (xdoc::p
+    "Note that the condition that
+     the existentially quantified @('rulename') be defined by @('rules')
+     would be superfluous,
+     because if @('rulename') is not defined then no parse trees
+     with only terminal leaves can originate from it."))
   (exists (rulename)
           (and (nat-listp nats)
                (rulenamep rulename)

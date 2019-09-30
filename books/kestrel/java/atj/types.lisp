@@ -11,7 +11,8 @@
 (in-package "JAVA")
 
 (include-book "aij-notions")
-(include-book "primitives")
+
+(include-book "../language/primitive-values")
 
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
@@ -145,11 +146,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define maybe-atj-typep (x)
+  :returns (yes/no booleanp)
+  :short "Recognize the ATJ types and @('nil')."
+  (or (atj-typep x)
+      (null x))
+  ///
+
+  (defrule maybe-atj-typep-when-atj-typep
+    (implies (atj-typep x)
+             (maybe-atj-typep x)))
+
+  (defrule atj-type-iff-when-maybe-atj-typep
+    (implies (maybe-atj-typep x)
+             (iff (atj-typep x) x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist atj-type-listp (x)
   :short "Recognize true lists of ATJ types."
   (atj-typep x)
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist maybe-atj-type-listp (x)
+  :short "Recognize true lists of ATJ types and @('nil')s."
+  (maybe-atj-typep x)
+  :true-listp t
+  :elementp-of-nil t
+  ///
+  (defrule maybe-atj-type-listp-when-atj-type-listp
+    (implies (atj-type-listp x)
+             (maybe-atj-type-listp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -636,4 +666,10 @@
   :val (atj-typep x)
   :true-listp t
   :keyp-of-nil t
-  :valp-of-nil nil)
+  :valp-of-nil nil
+  ///
+
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
+    (implies (symbol-atjtype-alistp alist)
+             (iff (atj-typep (cdr (assoc-equal key alist)))
+                  (assoc-equal key alist)))))

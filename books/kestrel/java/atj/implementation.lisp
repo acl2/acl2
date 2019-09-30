@@ -72,12 +72,12 @@
     (xdoc::li
      "@('test$') is an element of @('tests$').")
     (xdoc::li
-     "@('apkgs') is the list of names of all the currently known ACL2 packages,
+     "@('pkgs') is the list of names of all the currently known ACL2 packages,
       in chronological order.")
     (xdoc::li
-     "@('afns') is the list of ACL2 functions to be translated to Java.")
+     "@('fns') is the list of ACL2 functions to be translated to Java.")
     (xdoc::li
-     "@('afns-by-apkg') consists of @('afns'),
+     "@('fns-by-pkg') consists of @('fns'),
       plus all the ACL2 functions natively implemented in AIJ
       (which currently are the ACL2 primitive functions)
       organized as an alist from ACL2 package names to
@@ -129,7 +129,7 @@
       in the shallow embedding approach.
       See @(tsee atj-code-generation).")
     (xdoc::li
-     "@('curr-apkg') is the name of the ACL2 package of the ACL2 function
+     "@('curr-pkg') is the name of the ACL2 package of the ACL2 function
       for which Java code is being generated."))
    (xdoc::p
     "The parameters of implementation functions that are not listed above

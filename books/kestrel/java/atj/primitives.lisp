@@ -10,6 +10,8 @@
 
 (in-package "JAVA")
 
+(include-book "types")
+
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "kestrel/java/language/primitive-values" :dir :system)
 
@@ -282,3 +284,32 @@
   ///
   (assert-event (symbol-listp *atj-primitive-fns*))
   (assert-event (no-duplicatesp-eq *atj-primitive-fns*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atj-types-for-primitivess
+  :short "ATJ types for the Java primitive constructors and operations."
+
+  (def-atj-function-type int-value (:integer) :jint)
+
+  (def-atj-function-type jint-plus (:jint) :jint)
+
+  (def-atj-function-type jint-minus (:jint) :jint)
+
+  (def-atj-function-type jint-not (:jint) :jint)
+
+  (def-atj-function-type jint-add (:jint :jint) :jint)
+
+  (def-atj-function-type jint-sub (:jint :jint) :jint)
+
+  (def-atj-function-type jint-mul (:jint :jint) :jint)
+
+  (def-atj-function-type jint-div (:jint :jint) :jint)
+
+  (def-atj-function-type jint-rem (:jint :jint) :jint)
+
+  (def-atj-function-type jint-and (:jint :jint) :jint)
+
+  (def-atj-function-type jint-ior (:jint :jint) :jint)
+
+  (def-atj-function-type jint-xor (:jint :jint) :jint))

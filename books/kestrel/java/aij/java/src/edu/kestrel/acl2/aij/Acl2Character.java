@@ -8,7 +8,7 @@ package edu.kestrel.acl2.aij;
 
 /**
  * Representation of ACL2 characters.
- * These are the ACL2 values that satisfy {@code characterp}.
+ * These are the values that satisfy {@code characterp}.
  */
 public final class Acl2Character extends Acl2Value {
 

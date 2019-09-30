@@ -61,7 +61,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * which is actually independent from the bindings.
      * This evaluation never fails.
      *
-     * @param binding The binding of values to variable indices.
+     * @param binding The binding of variable indices to values.
      * @return The value that results from evaluation.
      */
     @Override

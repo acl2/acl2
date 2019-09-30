@@ -228,7 +228,7 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
-                           "Standards Typed Alists Library"))
+                             "Standards Typed Alists Library"))
 
    (xdoc::p
     "A new library has been added,
@@ -576,6 +576,12 @@
     "A model of Java Unicode characters has been added,
      along with a model of their ASCII subset.")
 
+   (xdoc::p
+    "Models have been added
+     of the null and boolean literals,
+     of (non-restricted and restricted) keywords,
+     and of identifiers.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Kestrel Utilities")
@@ -676,8 +682,9 @@
    (xdoc::p
     "The tool @(tsee remove-hyps) no longer causes an error when the number of
      prover steps exceeds the value of @('*default-step-limit*') (which is
-     @(`*default-step-limit*`)).  Thanks to Mihir Mehta for reporting this
-     bug.")
+     @(`*default-step-limit*`)).  Thanks to Mihir Mehta for reporting this bug.
+     @(tsee Remove-hyps) also avoids skipping proofs, which can lead to false
+     ``theorems''.  Thanks to Stephen Westfold for reporting this issue.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1492,8 +1499,8 @@
  with functions to collect the names of all the known packages in the ACL2
  @(see world) and to check if a function is primitive.</p>
 
- <p>Extended the <see topic='@(url term-function-recognizers)'>term function
- recognizers</see> with recognizers for true lists of
+ <p>Extended the <see topic='@(url std/system/term-function-recognizers)'>term
+ function recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
  <p>Extended the <see topic='@(url term-utilities)'>term utilities</see> with

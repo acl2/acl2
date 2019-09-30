@@ -228,6 +228,7 @@
     cgen-state))
 
 (defconst *check-bad-generalizations-and-backtrack* nil)
+;(defconst *check-bad-generalizations-and-backtrack* t)
         
 ;; The following function implements a callback function (computed hint)
 ;; which calls the counterexample generation testing code. Thus the
@@ -416,12 +417,14 @@ Nested testing not allowed! Skipping testing of new goal...~%"
               (num-cts-found (access test-outcomes% |#cts|)))
           (value (if (> num-cts-found 0)
                      (progn$ 
-                      (cw? (verbose-stats-flag vl) "~| Generalized subgoal: ~x0~|" 
+                      (cw? (not (f-get-global 'acl2::gag-mode state))
+                           "~| Generalized subgoal: ~x0~|" 
                            (acl2::prettyify-clause gen-cl nil (w state)))
-                      (cw? (verbose-stats-flag vl)
+                      (cw? (not (f-get-global 'acl2::gag-mode state))
                            "~| Counterexample found: ~x0 ~|"
                            (car (access test-outcomes% cts)))
-                      (cw? (verbose-flag vl) "~| Bad generalization! Backtracking...~|")
+                      (cw? (not (f-get-global 'acl2::gag-mode state))
+                           "~| Bad generalization! Backtracking...~|")
                       '(:do-not '(acl2::generalize)
                                 :no-thanks t))
                    nil)))

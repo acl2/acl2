@@ -26,6 +26,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This rule, taken from the filesystem books, is needed in two different
+;; sections below.
+(defrulel nthcdr-of-nil (equal (nthcdr n nil) nil))
+
 (define nats=>chars ((nats (unsigned-byte-listp 8 nats)))
   :returns (chars character-listp)
   :parents (charlist-codelist-conversions)
@@ -86,7 +90,16 @@
     (equal (nth i (nats=>chars nats))
            (if (< (nfix i) (len nats))
                (code-char (nth i nats))
-             nil))))
+             nil)))
+
+  (defruled nats=>chars-of-revappend
+    (equal (nats=>chars (revappend x y))
+           (revappend (nats=>chars x) (nats=>chars y)))
+    :disable revappend-removal)
+
+  (defrule nats=>chars-of-nthcdr
+    (equal (nats=>chars (nthcdr n nats))
+           (nthcdr n (nats=>chars nats)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,7 +172,30 @@
 
   (defrule chars=>nats-of-make-character-list
     (equal (chars=>nats (make-character-list x))
-           (chars=>nats x))))
+           (chars=>nats x)))
+
+  (defrule consp-of-chars=>nats
+    (iff (consp (chars=>nats chars))
+         (consp chars)))
+
+  (defrule chars=>nats-of-make-list-ac
+    (equal (chars=>nats (make-list-ac n val ac))
+           (make-list-ac n (char-code val)
+                         (chars=>nats ac))))
+
+  (defrule chars=>nats-of-take
+    (implies (<= (nfix n) (len chars))
+             (equal (chars=>nats (take n chars))
+                    (take n (chars=>nats chars)))))
+
+  (defrule chars=>nats-of-nthcdr
+    (equal (chars=>nats (nthcdr n chars))
+           (nthcdr n (chars=>nats chars))))
+
+  (defruled chars=>nats-of-revappend
+    (equal (chars=>nats (revappend x y))
+           (revappend (chars=>nats x) (chars=>nats y)))
+    :disable revappend-removal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

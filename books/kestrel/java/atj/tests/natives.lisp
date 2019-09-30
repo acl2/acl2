@@ -572,7 +572,7 @@
   '(("PkgImports0" (pkg-imports "COMMON-LISP"))
     ("PkgImports1" (pkg-imports "ACL2"))
     ("PkgImports2" (pkg-imports "KEYWORD"))
-    ("PkgImports3" (pkg-imports "JAVA"))))
+    ("PkgImports3" (pkg-imports "STD"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -580,7 +580,7 @@
   '(("PkgWitness0" (pkg-witness "COMMON-LISP"))
     ("PkgWitness1" (pkg-witness "ACL2"))
     ("PkgWitness2" (pkg-witness "KEYWORD"))
-    ("PkgWitness3" (pkg-witness "JAVA"))))
+    ("PkgWitness3" (pkg-witness "STD"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
