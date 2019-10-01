@@ -21,14 +21,17 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "term-function-recognizers")
 
+(include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/macro-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
+(include-book "kestrel/std/system/theorem-name-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-namep" :dir :system)
 (include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
@@ -81,29 +84,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist function-name-listp (x wrld)
-  (function-namep x wrld)
-  :guard (plist-worldp wrld)
-  :parents (world-queries)
-  :short "Recognize true lists of symbols that name functions."
-  :true-listp t)
-
-(std::deflist theorem-name-listp (x wrld)
-  (theorem-namep x wrld)
-  :guard (plist-worldp wrld)
-  :parents (world-queries)
-  :short "Recognize true lists of symbols that name theorems."
-  :true-listp t)
-
-(std::deflist macro-name-listp (x wrld)
-  (macro-namep x wrld)
-  :guard (plist-worldp wrld)
-  :parents (world-queries)
-  :short "Recognize true lists of symbols that name macros."
-  :true-listp t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -16,24 +16,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (remove-progn-from-term 'x) 'x)
+(assert-equal (remove-progn 'x) 'x)
 
-(assert-equal (remove-progn-from-term '(quote #c(1 2))) '(quote #c(1 2)))
+(assert-equal (remove-progn '(quote #c(1 2))) '(quote #c(1 2)))
 
-(assert-equal (remove-progn-from-term '(f a b)) '(f a b))
+(assert-equal (remove-progn '(f a b)) '(f a b))
 
-(assert-equal (remove-progn-from-term '((lambda (x) (cons x x)) (g y)))
+(assert-equal (remove-progn '((lambda (x) (cons x x)) (g y)))
               '((lambda (x) (cons x x)) (g y)))
 
-(assert-equal (remove-progn-from-term '(return-last 'progn (f x) (g y)))
+(assert-equal (remove-progn '(return-last 'progn (f x) (g y)))
               '(g y))
 
-(assert-equal (remove-progn-from-term '(return-last 'progn
-                                                    x
-                                                    (return-last 'progn
-                                                                 (f a b)
-                                                                 (g c d))))
+(assert-equal (remove-progn '(return-last 'progn
+                                          x
+                                          (return-last 'progn
+                                                       (f a b)
+                                                       (g c d))))
               '(g c d))
 
-(assert-equal (remove-progn-from-term '(return-last 'mbe1-raw a b))
+(assert-equal (remove-progn '(return-last 'mbe1-raw a b))
               '(return-last 'mbe1-raw a b))

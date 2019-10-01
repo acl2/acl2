@@ -16,23 +16,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (remove-unused-vars-from-term 'var) 'var)
+(assert-equal (remove-unused-vars 'var) 'var)
 
-(assert-equal (remove-unused-vars-from-term '(quote 3/4)) '(quote 3/4))
+(assert-equal (remove-unused-vars '(quote 3/4)) '(quote 3/4))
 
-(assert-equal (remove-unused-vars-from-term '(f x y)) '(f x y))
+(assert-equal (remove-unused-vars '(f x y)) '(f x y))
 
-(assert-equal (remove-unused-vars-from-term '((lambda (x) x) y))
+(assert-equal (remove-unused-vars '((lambda (x) x) y))
               '((lambda (x) x) y))
 
-(assert-equal (remove-unused-vars-from-term
+(assert-equal (remove-unused-vars
                '((lambda (x y) (cons x x)) (1st a b) (2nd c d)))
               '((lambda (x) (cons x x)) (1st a b)))
 
-(assert-equal (remove-unused-vars-from-term
+(assert-equal (remove-unused-vars
                '((lambda (x y z) (f)) '1 '2 '3))
               '(f))
 
-(assert-equal (remove-unused-vars-from-term
+(assert-equal (remove-unused-vars
                '(f x ((lambda (y z) z) '1 '2)))
               '(f x ((lambda (z) z) '2)))

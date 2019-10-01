@@ -51,7 +51,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
 
     /**
      * Evaluates this term to a value,
-     * with respect to the given binding of values to variable indices.
+     * with respect to the given binding of variable indices to values.
      * The binding is specified as an array of values:
      * the variable with index {@code i}
      * is bound to the value {@code bindings[i]}.

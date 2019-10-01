@@ -10,10 +10,16 @@
 
 (in-package "ACL2")
 
+(include-book "function-name-listp")
+(include-book "function-namep")
 (include-book "function-symbol-listp")
 (include-book "function-symbolp")
+(include-book "macro-name-listp")
+(include-book "macro-namep")
 (include-book "macro-symbol-listp")
 (include-book "macro-symbolp")
+(include-book "theorem-name-listp")
+(include-book "theorem-namep")
 (include-book "theorem-symbol-listp")
 (include-book "theorem-symbolp")
 

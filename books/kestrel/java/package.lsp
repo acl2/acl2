@@ -81,11 +81,11 @@
                          pure-raw-p
                          quote-listp
                          rawp
-                         remove-mbe-exec-from-term
-                         remove-mbe-logic-from-term
-                         remove-progn-from-term
-                         remove-trivial-lambda-vars
-                         remove-unused-vars-from-term
+                         remove-mbe-exec
+                         remove-mbe-logic
+                         remove-progn
+                         remove-trivial-vars
+                         remove-unused-vars
                          sbyte16
                          sbyte32
                          sbyte64
