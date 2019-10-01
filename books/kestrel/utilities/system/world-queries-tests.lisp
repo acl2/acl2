@@ -15,63 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (function-name-listp nil (w state)))
-
-(assert! (function-name-listp '(len cons atom) (w state)))
-
-(assert! (not (function-name-listp '(len cons aaaaatom) (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (defun g (x) x)
- (assert! (function-name-listp '(f g g) (w state))))
-
-(assert! (not (function-name-listp 33 (w state))))
-
-(assert! (not (function-name-listp '(1 2 3) (w state))))
-
-(assert! (not (function-name-listp "ab" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (theorem-name-listp nil (w state)))
-
-(assert! (theorem-name-listp '(car-cdr-elim cons-car-cdr) (w state)))
-
-(assert! (not (theorem-name-listp '(car-cdr-elim len) (w state))))
-
-(must-succeed*
- (defthm th1 (acl2-numberp (+ x y)))
- (defthm th2 (acl2-numberp (- x)))
- (assert! (theorem-name-listp '(th2 th1) (w state))))
-
-(assert! (not (theorem-name-listp 33 (w state))))
-
-(assert! (not (theorem-name-listp '(1 2 3) (w state))))
-
-(assert! (not (theorem-name-listp "ab" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (macro-name-listp nil (w state)))
-
-(assert! (macro-name-listp '(append + * *) (w state)))
-
-(assert! (not (macro-name-listp '(append binary-+) (w state))))
-
-(must-succeed*
- (defmacro m (x) `(list ,x))
- (defmacro n (x) `(cons ,x ,x))
- (assert! (macro-name-listp '(m n append) (w state))))
-
-(assert! (not (macro-name-listp 33 (w state))))
-
-(assert! (not (macro-name-listp '(1 2 3) (w state))))
-
-(assert! (not (macro-name-listp "ab" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (logical-name-listp '(append "ACL2" car-cdr-elim cons) (w state)))
 
 (assert! (not (logical-name-listp '(1 2 3) (w state))))
