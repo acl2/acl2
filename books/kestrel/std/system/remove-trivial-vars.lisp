@@ -58,9 +58,9 @@
      without any trivial bindings.
      In other languages,
      @(tsee let) expressions are normally not closed.")
-   (xdoc::@def "remove-trivial-vars-aux")
    (xdoc::@def "remove-trivial-vars")
-   (xdoc::@def "remove-trivial-vars-lst"))
+   (xdoc::@def "remove-trivial-vars-lst")
+   (xdoc::@def "remove-trivial-vars-aux"))
 
   (define remove-trivial-vars ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))

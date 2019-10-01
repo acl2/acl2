@@ -85,7 +85,7 @@
                          remove-mbe-logic
                          remove-progn
                          remove-trivial-vars
-                         remove-unused-vars-from-term
+                         remove-unused-vars
                          sbyte16
                          sbyte32
                          sbyte64

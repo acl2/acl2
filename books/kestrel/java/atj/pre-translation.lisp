@@ -126,7 +126,7 @@
      thus, this removal is safe and semantics-preserving.")
    (xdoc::p
     "This is accomplished
-     via the @(tsee remove-unused-vars-from-term) system utility.
+     via the @(tsee remove-unused-vars) system utility.
      No other code is needed to do this in ATJ.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1259,7 +1259,7 @@
     (xdoc::seetopic "atj-pre-translation" "here")
     "."))
   (b* ((body (atj-remove-return-last body guards$))
-       (body (remove-unused-vars-from-term body))
+       (body (remove-unused-vars body))
        ((when deep$) (mv formals body))
        (body (remove-trivial-vars body))
        ((mv formals body) (atj-type-annotate-formals+body
