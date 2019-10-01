@@ -17,7 +17,7 @@
 
 (define macro-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :parents (std/system)
+  :parents (std/system/event-name-queries)
   :short "Check if a symbol names a macro,
           i.e. it has a @('macro-args') property."
   :long

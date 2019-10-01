@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection function-symbolp-theorems
-  :parents (std/system)
+  :parents (std/system/event-name-queries)
   :short "Theorems about @(tsee function-symbolp)."
 
   (defthm function-symbolp-forward-to-symbolp

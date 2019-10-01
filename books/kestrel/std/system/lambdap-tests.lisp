@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "term-function-recognizers")
+(include-book "lambdap")
 
 (include-book "misc/assert" :dir :system)
 

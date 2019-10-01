@@ -3689,38 +3689,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       `(cond
         (*safe-mode-verified-p* ; see below for discussion of this case
          ,x)
-        (t
+
+; Through Version_8.2 we had a single funcall below, where the first argument
+; depended on whether (fboundp ',*1*fn) or else (fboundp ',*1*fn$inline).  But
+; SBCL took a very long to compile the function apply$-prim in
+; books/projects/apply-model-2/apply-prim.lisp (and perhaps other such
+; apply$-prim definitions), which we fixed by lifting those fboundp tests above
+; the calls of funcall.  This reduced the time (presumably virtually all of it
+; for compilation) from 1294.33 seconds to 8.12 seconds.
+
+        ((fboundp ',*1*fn)
+         (funcall ',*1*fn ,@(cdr x)))
+        ((fboundp ',*1*fn$inline)
          (funcall
-          (cond
-           ((fboundp ',*1*fn) ',*1*fn)
-           ((fboundp ',*1*fn$inline)
-            (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
-                     ',*1*fn$inline))
-           (t
-
-; We should never hit this case, unless the user is employing trust tags or raw
-; Lisp.  For ACL2 events that might hit this case, such as a defconst using
-; ec-call in a book (see below), we should ensure that *safe-mode-verified-p*
-; is bound to t.  For example, we do so in the raw Lisp definition of defconst,
-; which is justified because when ACL2 processes the defconst it will evaluate
-; in safe-mode to ensure that no raw Lisp error could occur.
-
-; Why is the use above of *safe-mode-verified-p* necessary?  If an event in a
-; book calls ec-call in raw Lisp, then we believe that the event is a defpkg or
-; defconst event.  In such cases, ec-call may be expected to invoke a *1*
-; function.  Unfortunately, the *1* function definitions are laid down (by
-; write-expansion-file) at the end of the expansion file.  However, we cannot
-; simply move the *1* definitions to the front of the expansion file, because
-; some may refer to constants or packages defined in the book.  We might wish
-; to consider interleaving *1* definitions with events from the book but that
-; seems difficult to do.  Instead, we arrange with *safe-mode-verified-p* to
-; avoid the *1* function calls entirely when loading the expansion file (or its
-; compilation).
-
-            (error "Undefined function, ~s.  Please contact the ACL2 ~
-                  implementors."
-                   ',*1*fn)))
-          ,@(cdr x))))))))
+          (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
+                   ',*1*fn$inline)
+          ,@(cdr x)))
+        (t
+         (error "Undefined function, ~s.  Please contact the ACL2 ~
+                 implementors."
+                ',*1*fn)))))))
 
 (defmacro ec-call1 (ign x)
 

@@ -1137,73 +1137,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-trim-lambda ((formals symbol-listp)
-                         (args pseudo-term-listp)
-                         (jargs jexpr-listp))
-  :guard (and (int= (len formals) (len args))
-              (int= (len args) (len jargs)))
-  :returns (mv (trimmed-formals symbol-listp :hyp :guard)
-               (trimmed-jargs jexpr-listp :hyp :guard))
-  :verify-guards nil
-  :short "Remove unneeded arguments from an ACL2 lambda expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "ACL2 lambda expressions are always closed,
-     which means that often they include formal parameters
-     that are replaced by themselves (i.e. by the same symbols)
-     when the lambda expression is applied.
-     For instance, the untranslated term @('(let ((x 3)) (+ x y))')
-     is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
-     the lambda expression includes the extra formal parameter @('y')
-     which is not bound by the @(tsee let),
-     applied to @('y') itself,
-     making the lambda expression closed.")
-   (xdoc::p
-    "When generating shallowly embedded lambda expressions,
-     to avoid generating Java local variables
-     for formal parameters such as @('y') in the above example,
-     we remove such parameters from consideration.
-     This function does that.
-     It removes not only the formal parameters from @('formals')
-     that are the same as the corresponding actual parameters @('args'),
-     but it also removes the corresponding elements from @('jargs')
-     (i.e. the Java expressions generated from @('args')).
-     These all come from @(tsee atj-gen-shallow-lambda):
-     looking at that function and how it calls this function
-     should make the purpose of this function clearer.")
-   (xdoc::p
-    "Note that terms have been type-annotated before this function is called.
-     This means that the example term above will have the form")
-   (xdoc::codeblock
-    "(<...>to<...>"
-    " ((lambda (x<integer> y<ty>)"
-    "          (<...>to<...> (binary-+ (<integer>to<...> x<integer>)"
-    "                                  (<ty>to<...> y<ty>))))"
-    "  (<integer>to<integer> '3)"
-    "  (<ty>to<ty> y<ty>)))")
-   (xdoc::p
-    "where @('ty') is the type of the actual argument @('y')
-     determined outside the lambda expression.
-     In other words, to find the lambda expression parameters to remove,
-     we must compare each formal parameter @('y<ty>')
-     not to itself as the actual argument,
-     but as @('(<ty>to<ty> y<ty>)')."))
-  (b* (((when (endp formals)) (mv nil nil))
-       (formal (car formals))
-       (arg (car args))
-       (jarg (car jargs))
-       ((mv & type) (atj-type-unannotate-var formal))
-       (conv (atj-type-conv type type))
-       ((when (equal arg (fcons-term* conv formal)))
-        (atj-trim-lambda (cdr formals) (cdr args) (cdr jargs)))
-       ((mv formals jargs)
-        (atj-trim-lambda (cdr formals) (cdr args) (cdr jargs))))
-    (mv (cons formal formals)
-        (cons jarg jargs))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
@@ -1731,7 +1664,6 @@
               jvar-value-index
               jvar-result-index) (atj-gen-shallow-lambda (lambda-formals fn)
                                                          (lambda-body fn)
-                                                         args
                                                          arg-jexprs
                                                          src-type
                                                          dst-type
@@ -1756,7 +1688,6 @@
 
   (define atj-gen-shallow-lambda ((formals symbol-listp)
                                   (body pseudo-termp)
-                                  (args pseudo-term-listp)
                                   (jargs jexpr-listp)
                                   (src-type atj-typep)
                                   (dst-type atj-typep)
@@ -1767,8 +1698,7 @@
                                   (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (and (int= (len args) (len formals))
-                (int= (len jargs) (len formals))
+    :guard (and (int= (len jargs) (len formals))
                 (not (equal curr-apkg "")))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
@@ -1780,14 +1710,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We remove the formal parameters
-       (and the corresponding arguments and types)
-       that are the same as the actual arguments
-       (see @(tsee atj-trim-lambda)).
-       We generate @(tsee let) bindings for the remaining formal parameters.
-       Finally, we generate Java code for the body of the lambda expression."))
-    (b* (((mv formals jargs) (atj-trim-lambda formals args jargs))
-         (let-jblock (atj-gen-shallow-let-bindings formals jargs))
+      "We generate @(tsee let) bindings for the remaining formal parameters.
+       Then we generate Java code for the body of the lambda expression."))
+    (b* ((let-jblock (atj-gen-shallow-let-bindings formals jargs))
          ((mv body-jblock
               body-jexpr
               jvar-value-index

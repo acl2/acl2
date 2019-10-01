@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist macro-symbol-listp (x wrld)
-  :parents (std/system)
+  :parents (std/system/event-name-queries)
   :short "Lift @(tsee macro-symbolp) to lists."
   :guard (and (symbol-listp x)
               (plist-worldp wrld))
