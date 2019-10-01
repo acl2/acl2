@@ -736,6 +736,9 @@ returns (mv rule rules-rest bindings rp-context)"
       (('cons ('cons ('quote a) b) rest)
        (cons (cons a b)
              (rp-rw-fix-hard-error-alist rest)))
+      (('cons ('quote x) rest)
+       (cons x
+             (rp-rw-fix-hard-error-alist rest)))
       (('quote x)
        x)
       (''nil
