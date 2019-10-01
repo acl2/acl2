@@ -21,7 +21,7 @@
 (include-book "rawp")
 (include-book "remove-mbe")
 (include-book "remove-progn")
-(include-book "remove-trivial-lambda-vars")
+(include-book "remove-trivial-vars")
 (include-book "remove-unused-vars")
 (include-book "term-function-recognizers")
 (include-book "unquote-term")

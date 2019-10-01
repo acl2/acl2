@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "remove-trivial-lambda-vars")
+(include-book "remove-trivial-vars")
 
 (include-book "misc/assert" :dir :system)
 
