@@ -84,7 +84,7 @@
                          remove-mbe-exec
                          remove-mbe-logic
                          remove-progn
-                         remove-trivial-lambda-vars
+                         remove-trivial-vars
                          remove-unused-vars-from-term
                          sbyte16
                          sbyte32

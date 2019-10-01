@@ -16,28 +16,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (remove-trivial-lambda-vars 'x) 'x)
+(assert-equal (remove-trivial-vars 'x) 'x)
 
-(assert-equal (remove-trivial-lambda-vars '(quote "abc")) '(quote "abc"))
+(assert-equal (remove-trivial-vars '(quote "abc")) '(quote "abc"))
 
-(assert-equal (remove-trivial-lambda-vars '(f x y z)) '(f x y z))
+(assert-equal (remove-trivial-vars '(f x y z)) '(f x y z))
 
-(assert-equal (remove-trivial-lambda-vars '((lambda (x) x) (f u)))
+(assert-equal (remove-trivial-vars '((lambda (x) x) (f u)))
               '((lambda (x) x) (f u)))
 
-(assert-equal (remove-trivial-lambda-vars
+(assert-equal (remove-trivial-vars
                '((lambda (x y) (cons x y)) (f u) y))
               '((lambda (x) (cons x y)) (f u)))
 
-(assert-equal (remove-trivial-lambda-vars
+(assert-equal (remove-trivial-vars
                '((lambda (x y) (cons x y)) x (g v)))
               '((lambda (y) (cons x y)) (g v)))
 
-(assert-equal (remove-trivial-lambda-vars
+(assert-equal (remove-trivial-vars
                '((lambda (x y) (cons x y)) (f u) (g v)))
               '((lambda (x y) (cons x y)) (f u) (g v)))
 
-(assert-equal (remove-trivial-lambda-vars
+(assert-equal (remove-trivial-vars
                '((lambda (x y) (cons x y))
                  ((lambda (u v w) (binary-+ u (binary-* v w)))
                   u (f '3) w)
@@ -46,7 +46,7 @@
                 ((lambda (v) (binary-+ u (binary-* v w)))
                  (f '3))))
 
-(assert-equal (remove-trivial-lambda-vars
+(assert-equal (remove-trivial-vars
                '((lambda (x y) ((lambda (a b) (cons a b))
                                 a
                                 (f '0)))

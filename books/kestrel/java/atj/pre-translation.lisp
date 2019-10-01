@@ -143,7 +143,7 @@
     "We remove all the lambda-bound variables,
      and corresponding actual arguments,
      that are identical to the corresponding actual arguments.
-     See the discussion in @(tsee remove-trivial-lambda-vars),
+     See the discussion in @(tsee remove-trivial-vars),
      which is the utility that we use
      to accomplish this pre-translation step.")
    (xdoc::p
@@ -1261,7 +1261,7 @@
   (b* ((body (atj-remove-return-last body guards$))
        (body (remove-unused-vars-from-term body))
        ((when deep$) (mv formals body))
-       (body (remove-trivial-lambda-vars body))
+       (body (remove-trivial-vars body))
        ((mv formals body) (atj-type-annotate-formals+body
                            formals body in-types out-type guards$ wrld))
        ((mv formals body) (atj-rename-formals+body

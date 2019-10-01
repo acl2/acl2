@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines remove-trivial-lambda-vars
+(defines remove-trivial-vars
   :parents (std/system)
   :short "Remove the trivial lambda-bound variables."
   :long
@@ -58,47 +58,45 @@
      without any trivial bindings.
      In other languages,
      @(tsee let) expressions are normally not closed.")
-   (xdoc::@def "remove-identical-lambda-formals-actuals")
-   (xdoc::@def "remove-trivial-lambda-vars")
-   (xdoc::@def "remove-trivial-lambda-vars-lst"))
+   (xdoc::@def "remove-trivial-vars-aux")
+   (xdoc::@def "remove-trivial-vars")
+   (xdoc::@def "remove-trivial-vars-lst"))
 
-  (define remove-trivial-lambda-vars ((term pseudo-termp))
+  (define remove-trivial-vars ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
          (fn (ffn-symb term))
          ((when (symbolp fn))
-          (fcons-term fn (remove-trivial-lambda-vars-lst (fargs term))))
+          (fcons-term fn (remove-trivial-vars-lst (fargs term))))
          (formals (lambda-formals fn))
          (body (lambda-body fn))
          (actuals (fargs term))
          ((unless (mbt (equal (len formals)
                               (len actuals)))) nil) ; for termination
          ((mv nontrivial-formals nontrivial-actuals)
-          (remove-identical-lambda-formals-actuals formals actuals)))
+          (remove-trivial-vars-aux formals actuals)))
       (fcons-term (make-lambda nontrivial-formals
-                               (remove-trivial-lambda-vars body))
-                  (remove-trivial-lambda-vars-lst nontrivial-actuals))))
+                               (remove-trivial-vars body))
+                  (remove-trivial-vars-lst nontrivial-actuals))))
 
-  (define remove-trivial-lambda-vars-lst ((terms pseudo-term-listp))
+  (define remove-trivial-vars-lst ((terms pseudo-term-listp))
     :returns (new-terms (and (pseudo-term-listp new-terms)
                              (equal (len new-terms) (len terms)))
                         :hyp (pseudo-term-listp terms))
     (b* (((when (endp terms)) nil)
          ((cons term terms) terms)
-         (new-term (remove-trivial-lambda-vars term))
-         (new-terms (remove-trivial-lambda-vars-lst terms)))
+         (new-term (remove-trivial-vars term))
+         (new-terms (remove-trivial-vars-lst terms)))
       (cons new-term new-terms)))
 
   :guard-hints (("Goal" :expand ((pseudo-termp term))))
 
-  :returns-hints
-  (("Goal"
-    :in-theory (enable remove-identical-lambda-formals-actuals-same-len)))
+  :returns-hints (("Goal" :in-theory (enable remove-trivial-vars-aux-same-len)))
 
   :prepwork
-  ((define remove-identical-lambda-formals-actuals ((formals symbol-listp)
-                                                    (actuals pseudo-term-listp))
+  ((define remove-trivial-vars-aux ((formals symbol-listp)
+                                    (actuals pseudo-term-listp))
      :guard (= (len formals) (len actuals))
      :returns (mv (new-formals symbol-listp
                                :hyp (symbol-listp formals))
@@ -108,27 +106,23 @@
           (formal (car formals))
           (actual (car actuals))
           ((when (eq formal actual))
-           (remove-identical-lambda-formals-actuals (cdr formals)
-                                                    (cdr actuals)))
+           (remove-trivial-vars-aux (cdr formals) (cdr actuals)))
           ((mv rest-formals rest-actuals)
-           (remove-identical-lambda-formals-actuals (cdr formals)
-                                                    (cdr actuals))))
+           (remove-trivial-vars-aux (cdr formals) (cdr actuals))))
        (mv (cons formal rest-formals)
            (cons actual rest-actuals)))
      ///
 
-     (defthmd remove-identical-lambda-formals-actuals-same-len
-       (equal (len (mv-nth 0 (remove-identical-lambda-formals-actuals
-                              formals actuals)))
-              (len (mv-nth 1 (remove-identical-lambda-formals-actuals
-                              formals actuals)))))
+     (defthmd remove-trivial-vars-aux-same-len
+       (equal (len (mv-nth 0 (remove-trivial-vars-aux formals actuals)))
+              (len (mv-nth 1 (remove-trivial-vars-aux formals actuals)))))
 
      (more-returns
       (new-formals true-listp
-                   :name remove-trivial-returns-lemma
+                   :name remove-trivial-vars-returns-lemma
                    :rule-classes :type-prescription)
       (new-actuals (<= (acl2-count new-actuals)
                        (acl2-count actuals))
-                   :name remove-trivial-lambda-vars-termination-lemma
+                   :name remove-trivial-vars-termination-lemma
                    :hyp (equal (len formals) (len actuals))
                    :rule-classes :linear)))))
