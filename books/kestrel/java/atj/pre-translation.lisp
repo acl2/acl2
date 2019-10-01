@@ -102,7 +102,7 @@
   (b* ((term (if guards$
                  (remove-mbe-logic term)
                (remove-mbe-exec term)))
-       (term (remove-progn-from-term term)))
+       (term (remove-progn term)))
     term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

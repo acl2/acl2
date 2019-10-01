@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines remove-progn-from-term
+(defines remove-progn
   :parents (std/system)
   :short "Turn every call of @(tsee prog2$) and @(tsee progn$) in a term
           into just its last argument."
@@ -26,7 +26,7 @@
      have the form @('(return-last 'progn a b)').
      We turn that form into just @('b')."))
 
-  (define remove-progn-from-term ((term pseudo-termp))
+  (define remove-progn ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
@@ -34,20 +34,20 @@
          (args (fargs term))
          ((when (and (eq fn 'return-last)
                      (equal (first args) '(quote progn))))
-          (remove-progn-from-term (third args)))
+          (remove-progn (third args)))
          (new-fn (if (symbolp fn)
                      fn
                    (make-lambda (lambda-formals fn)
-                                (remove-progn-from-term (lambda-body fn)))))
-         (new-args (remove-progn-from-terms args)))
+                                (remove-progn (lambda-body fn)))))
+         (new-args (remove-progn-lst args)))
       (fcons-term new-fn new-args)))
 
-  (define remove-progn-from-terms ((terms pseudo-term-listp))
+  (define remove-progn-lst ((terms pseudo-term-listp))
     :returns (new-terms (and (pseudo-term-listp new-terms)
                              (equal (len new-terms) (len terms)))
                         :hyp (pseudo-term-listp terms))
     (b* (((when (endp terms)) nil)
          ((cons term terms) terms)
-         (new-term (remove-progn-from-term term))
-         (new-terms (remove-progn-from-terms terms)))
+         (new-term (remove-progn term))
+         (new-terms (remove-progn-lst terms)))
       (cons new-term new-terms))))

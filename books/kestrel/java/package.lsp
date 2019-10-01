@@ -83,7 +83,7 @@
                          rawp
                          remove-mbe-exec
                          remove-mbe-logic
-                         remove-progn-from-term
+                         remove-progn
                          remove-trivial-lambda-vars
                          remove-unused-vars-from-term
                          sbyte16
