@@ -16,56 +16,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (remove-mbe-logic-from-term 'x) 'x)
+(assert-equal (remove-mbe-logic 'x) 'x)
 
-(assert-equal (remove-mbe-logic-from-term '(quote 0)) '(quote 0))
+(assert-equal (remove-mbe-logic '(quote 0)) '(quote 0))
 
-(assert-equal (remove-mbe-logic-from-term '(f x y z)) '(f x y z))
+(assert-equal (remove-mbe-logic '(f x y z)) '(f x y z))
 
-(assert-equal (remove-mbe-logic-from-term '((lambda (a b) (cons a b))
-                                            x '(1 2 3)))
+(assert-equal (remove-mbe-logic '((lambda (a b) (cons a b))
+                                  x '(1 2 3)))
               '((lambda (a b) (cons a b))
                 x '(1 2 3)))
 
-(assert-equal (remove-mbe-logic-from-term '(return-last 'mbe1-raw (f x) (g y)))
+(assert-equal (remove-mbe-logic '(return-last 'mbe1-raw (f x) (g y)))
               '(f x))
 
-(assert-equal (remove-mbe-logic-from-term '(g x (return-last 'mbe1-raw a b)))
+(assert-equal (remove-mbe-logic '(g x (return-last 'mbe1-raw a b)))
               '(g x a))
 
-(assert-equal (remove-mbe-logic-from-term
+(assert-equal (remove-mbe-logic
                '(return-last 'mbe1-raw
                              (return-last 'mbe1-raw a b)
                              (return-last 'mbe1-raw c d)))
               'a)
 
-(assert-equal (remove-mbe-logic-from-term '(f (return-last 'progn a b)))
+(assert-equal (remove-mbe-logic '(f (return-last 'progn a b)))
               '(f (return-last 'progn a b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (remove-mbe-exec-from-term 'x) 'x)
+(assert-equal (remove-mbe-exec 'x) 'x)
 
-(assert-equal (remove-mbe-exec-from-term '(quote 0)) '(quote 0))
+(assert-equal (remove-mbe-exec '(quote 0)) '(quote 0))
 
-(assert-equal (remove-mbe-exec-from-term '(f x y z)) '(f x y z))
+(assert-equal (remove-mbe-exec '(f x y z)) '(f x y z))
 
-(assert-equal (remove-mbe-exec-from-term '((lambda (a b) (cons a b))
-                                           x '(1 2 3)))
+(assert-equal (remove-mbe-exec '((lambda (a b) (cons a b))
+                                 x '(1 2 3)))
               '((lambda (a b) (cons a b))
                 x '(1 2 3)))
 
-(assert-equal (remove-mbe-exec-from-term '(return-last 'mbe1-raw (f x) (g y)))
+(assert-equal (remove-mbe-exec '(return-last 'mbe1-raw (f x) (g y)))
               '(g y))
 
-(assert-equal (remove-mbe-exec-from-term '(g x (return-last 'mbe1-raw a b)))
+(assert-equal (remove-mbe-exec '(g x (return-last 'mbe1-raw a b)))
               '(g x b))
 
-(assert-equal (remove-mbe-exec-from-term
+(assert-equal (remove-mbe-exec
                '(return-last 'mbe1-raw
                              (return-last 'mbe1-raw a b)
                              (return-last 'mbe1-raw c d)))
               'd)
 
-(assert-equal (remove-mbe-exec-from-term '(f (return-last 'progn a b)))
+(assert-equal (remove-mbe-exec '(f (return-last 'progn a b)))
               '(f (return-last 'progn a b)))

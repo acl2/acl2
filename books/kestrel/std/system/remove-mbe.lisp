@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines remove-mbe-logic/exec-from-term
+(defines remove-mbe-logic/exec
   :parents (std/system)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a') or @(':exec') part @('b')."
@@ -29,8 +29,8 @@
      @(tsee mbe)s have the form @('(return-last 'mbe1-raw b a)').
      We turn that form into @('a') or @('b'), based on the flag."))
 
-  (define remove-mbe-logic/exec-from-term ((term pseudo-termp)
-                                           (logic? booleanp))
+  (define remove-mbe-logic/exec ((term pseudo-termp)
+                                 (logic? booleanp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
@@ -38,40 +38,40 @@
          (args (fargs term))
          ((when (and (eq fn 'return-last)
                      (equal (first args) '(quote mbe1-raw))))
-          (remove-mbe-logic/exec-from-term (if logic?
-                                               (second args)
-                                             (third args))
-                                           logic?))
+          (remove-mbe-logic/exec (if logic?
+                                     (second args)
+                                   (third args))
+                                 logic?))
          (new-fn (if (symbolp fn)
                      fn
                    (make-lambda (lambda-formals fn)
-                                (remove-mbe-logic/exec-from-term
+                                (remove-mbe-logic/exec
                                  (lambda-body fn)
                                  logic?))))
-         (new-args (remove-mbe-logic/exec-from-terms args logic?)))
+         (new-args (remove-mbe-logic/exec-lst args logic?)))
       (fcons-term new-fn new-args)))
 
-  (define remove-mbe-logic/exec-from-terms ((terms pseudo-term-listp)
-                                            (logic? booleanp))
+  (define remove-mbe-logic/exec-lst ((terms pseudo-term-listp)
+                                  (logic? booleanp))
     :returns (new-terms (and (pseudo-term-listp new-terms)
                              (equal (len new-terms) (len terms)))
                         :hyp (pseudo-term-listp terms))
     (b* (((when (endp terms)) nil)
          ((cons term terms) terms)
-         (new-term (remove-mbe-logic/exec-from-term term logic?))
-         (new-terms (remove-mbe-logic/exec-from-terms terms logic?)))
+         (new-term (remove-mbe-logic/exec term logic?))
+         (new-terms (remove-mbe-logic/exec-lst terms logic?)))
       (cons new-term new-terms))))
 
-(define remove-mbe-logic-from-term ((term pseudo-termp))
+(define remove-mbe-logic ((term pseudo-termp))
   :returns (new-term pseudo-termp :hyp :guard)
-  :parents (std/system remove-mbe-logic/exec-from-term)
+  :parents (std/system remove-mbe-logic/exec)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':exec') part @('b')."
-  (remove-mbe-logic/exec-from-term term t))
+  (remove-mbe-logic/exec term t))
 
-(define remove-mbe-exec-from-term ((term pseudo-termp))
+(define remove-mbe-exec ((term pseudo-termp))
   :returns (new-term pseudo-termp :hyp :guard)
-  :parents (std/system remove-mbe-logic/exec-from-term)
+  :parents (std/system remove-mbe-logic/exec)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a')."
-  (remove-mbe-logic/exec-from-term term nil))
+  (remove-mbe-logic/exec term nil))

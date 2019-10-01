@@ -100,8 +100,8 @@
   :returns (new-term pseudo-termp :hyp (pseudo-termp term))
   :short "Remove all the @(tsee return-last)s from a term."
   (b* ((term (if guards$
-                 (remove-mbe-logic-from-term term)
-               (remove-mbe-exec-from-term term)))
+                 (remove-mbe-logic term)
+               (remove-mbe-exec term)))
        (term (remove-progn-from-term term)))
     term))
 
