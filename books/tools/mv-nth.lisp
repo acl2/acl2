@@ -70,4 +70,9 @@
          (eval-for-mv-nth (mv-nth-eval-fn x) a))
   :rule-classes ((:meta :trigger-fns (mv-nth))))
 
-(in-theory (disable mv-nth))
+(defthm mv-nth-of-cons
+  (implies (syntaxp (quotep n))
+           (equal (mv-nth n (cons a b))
+                  (if (zp n) a (mv-nth (1- n) b)))))
+
+(in-theory (disable mv-nth mv-nth-cons-meta))
