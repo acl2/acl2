@@ -227,6 +227,13 @@
 
 (ubt! 1)
 
+; After the Computer-Aided Reasoning book was written, the
+; representation and handling of ordinals in ACL2 has changed. The
+; following two forms allow us to revert back to the previous handling
+; of ordinals.
+(include-book "ordinals/e0-ordinal" :dir :system)
+(set-well-founded-relation e0-ord-<)
+
 (thm (implies (and (integerp i) (<= 0 i)
                    (integerp j) (<= 0 j)
                    (integerp m) (<= 0 m)
@@ -866,6 +873,9 @@
 ; Here is a suitable m.
 
 (ubt! 1)
+
+(include-book "ordinals/e0-ordinal" :dir :system)
+(set-well-founded-relation e0-ord-<)
 
 (defun m (x) (acl2-count x))
 
