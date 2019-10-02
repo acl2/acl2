@@ -172,6 +172,10 @@
       xdoc
       get-tau-runes
       arglist
+      bash
+      simp
+      bash-term-to-dnf
+      ?
       
       => ;sig
       _  ;range
