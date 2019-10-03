@@ -44,6 +44,12 @@
      Applying this function to the example above yields
      @('((lambda (x) (binary-+ x y)) '3)').")
    (xdoc::p
+    "If all the formal parameters are trivial,
+     we replace the lambda expression with its body.
+     A lambda expression with all trivial formal parameters
+     may not result from hand-written code,
+     but could result from generated code.")
+   (xdoc::p
     "We obtain terms whose lambda expressions may not be closed.
      These do not satisfy @(tsee termp),
      but they still satisfy @(tsee pseudo-termp).
@@ -75,7 +81,8 @@
          ((unless (mbt (equal (len formals)
                               (len actuals)))) nil) ; for termination
          ((mv nontrivial-formals nontrivial-actuals)
-          (remove-trivial-vars-aux formals actuals)))
+          (remove-trivial-vars-aux formals actuals))
+         ((when (eq nontrivial-formals nil)) (remove-trivial-vars body)))
       (fcons-term (make-lambda nontrivial-formals
                                (remove-trivial-vars body))
                   (remove-trivial-vars-lst nontrivial-actuals))))
