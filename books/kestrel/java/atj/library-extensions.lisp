@@ -31,6 +31,7 @@
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,8 +42,7 @@
 ; basic:
 
 (define organize-symbols-by-pkg ((syms symbol-listp))
-  :returns (syms-by-pkg "A @(tsee string-symbollist-alistp).")
-  :verify-guards nil
+  :returns (syms-by-pkg string-symbollist-alistp :hyp :guard)
   :short "Organize a list of symbols by their packages."
   :long
   (xdoc::topstring-p
@@ -54,8 +54,7 @@
   :prepwork
   ((define organize-symbols-by-pkg-aux ((syms symbol-listp)
                                         (acc string-symbollist-alistp))
-     :returns syms-by-pkg ; STRING-SYMBOLLIST-ALISTP
-     :verify-guards nil
+     :returns (syms-by-pkg string-symbollist-alistp :hyp :guard)
      :parents nil
      (b* (((when (endp syms)) acc)
           (sym (car syms))
@@ -68,8 +67,7 @@
                                      acc))))))
 
 (define organize-symbols-by-name ((syms symbol-listp))
-  :returns (syms-by-name "A @(tsee string-symbollist-alistp).")
-  :verify-guards nil
+  :returns (syms-by-name string-symbollist-alistp :hyp :guard)
   :short "Organize a list of symbols by their names."
   :long
   (xdoc::topstring-p
@@ -81,8 +79,7 @@
   :prepwork
   ((define organize-symbols-by-name-aux ((syms symbol-listp)
                                          (acc string-symbollist-alistp))
-     :returns syms-by-name ; STRING-SYMBOLLIST-ALISTP
-     :verify-guards nil
+     :returns (syms-by-name string-symbollist-alistp :hyp :guard)
      :parents nil
      (b* (((when (endp syms)) acc)
           (sym (car syms))
