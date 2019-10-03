@@ -52,10 +52,10 @@
          (body (lambda-body fn))
          (actuals (fargs term))
          (body-vars (all-vars body))
-         ((unless (mbt (equal (len formals) (len actuals)))) nil)
-         ((mv formals actuals) (remove-unused-vars-aux formals
-                                                       actuals
-                                                       body-vars))
+         ((unless (mbt (equal (len formals)
+                              (len actuals)))) nil) ; for termination
+         ((mv formals actuals)
+          (remove-unused-vars-aux formals actuals body-vars))
          ((when (eq formals nil)) (remove-unused-vars body))
          (actuals (remove-unused-vars-lst actuals))
          (body (remove-unused-vars body)))
