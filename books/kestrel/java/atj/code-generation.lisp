@@ -953,18 +953,24 @@
    (xdoc::p
     "In the shallow embedding approach,
      ACL2 lambda expressions (i.e. @(tsee let)s)
-     are handled by introducing Java local variables
-     for the formal parameters of the lambda expression
-     and assigning to them the Java expressions
-     generated from the actual parameters of the lambda expression.
+     are handled by assigning the Java expressions
+     generated from the actual parameters of the lambda expression
+     to Java local variables corresponding to the formal parameters.
      This function generates these bindings,
      given the ACL2 variables that are the formal arguments
      and the Java expressions to assign to them.")
    (xdoc::p
     "Prior to calling this function,
+     the variables of all the lambda expressiona have been marked
+     as `new' or `old' via @(tsee atj-mark-term).
+     We extract this mark and use it to generate
+     either a variable declaration with initializer (for `new')
+     or an assignment to an existing variable (for `old').")
+   (xdoc::p
+    "Prior to calling this function,
      the variables of all the lambda expressions have been annotated
      via @(tsee atj-type-annotate-term).
-     Thus, each ACL2 variable name carried its own type,
+     Thus, each ACL2 variable name carries its own type,
      which we use to determine the Java type of the Java variable.")
    (xdoc::p
     "Prior to calling this function,
@@ -975,9 +981,12 @@
   (b* (((when (endp vars)) nil)
        (var (car vars))
        (jexpr (car jexprs))
+       ((mv var new?) (atj-unmark-var var))
        ((mv var type) (atj-type-unannotate-var var))
        (jvar (symbol-name var))
-       (first-jblock (jblock-locvar (atj-type-to-jtype type) jvar jexpr))
+       (first-jblock (if new?
+                         (jblock-locvar (atj-type-to-jtype type) jvar jexpr)
+                       (jblock-asg (jexpr-name jvar) jexpr)))
        (rest-jblock (atj-gen-shallow-let-bindings (cdr vars)
                                                   (cdr jexprs))))
     (append first-jblock rest-jblock)))
@@ -1159,8 +1168,9 @@
    (xdoc::p
     "These code generation functions assume that the ACL2 terms
      have been type-annotated via @(tsee atj-type-annotate-term).
-     They also assume that all the variables of the ACL2 terms
-     have been renamed via @(tsee atj-rename-term).
+     They also assume that all the variables of the ACL2 terms have been marked
+     via @(tsee atj-mark-var-new) and @(tsee atj-mark-var-old),
+     and renamed via @(tsee atj-rename-term).
      If the @(':guards') input is @('nil'),
      then all the type annotations consist of
      the type @(':value') of all ACL2 values,
@@ -1769,7 +1779,8 @@
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-value-index jvar-result-index))
          ((when (variablep term))
-          (b* (((mv var &) (atj-type-unannotate-var term))
+          (b* (((mv var &) (atj-unmark-var term))
+               ((mv var &) (atj-type-unannotate-var var))
                (jexpr (jexpr-name (symbol-name var)))
                (jexpr (atj-adapt-jexpr-to-type jexpr src-type dst-type)))
             (mv nil jexpr jvar-value-index jvar-result-index)))
@@ -2370,6 +2381,7 @@
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
        (jmethod-name (atj-gen-shallow-fnname fn curr-pkg))
+       ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
        (jmethod-params (atj-gen-jparamlist (symbol-name-lst formals)
                                            (atj-types-to-jtypes in-types)))

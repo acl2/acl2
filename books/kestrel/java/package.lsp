@@ -81,6 +81,7 @@
                          pure-raw-p
                          quote-listp
                          rawp
+                         remove-assocs-eq
                          remove-mbe-exec
                          remove-mbe-logic
                          remove-progn
