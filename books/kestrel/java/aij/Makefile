@@ -23,7 +23,7 @@ java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
 	javac -d java/out/production/AIJ java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate jar file:"
 	mkdir -p java/out/artifacts/AIJ_jar
-	jar cfM java/out/artifacts/AIJ_jar/AIJ.jar -C java/out/production/AIJ/ .
+	jar cfm java/out/artifacts/AIJ_jar/AIJ.jar java/META-INF/MANIFEST.MF -C java/out/production/AIJ/ .
 
 clean:
 	@echo "Delete class files and jar file:"
