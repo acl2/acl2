@@ -3291,10 +3291,12 @@
                          (simplifiable-mv-nth1 n (cdr temp) nil)
                          (declare (ignore rewritep))
 
-; Since (cdr temp) has already been rewritten, so has term1 (if non-nil), so we
-; return rewritep = nil.  This is a change after Version_8.2.  At one time we
-; always rewrote the result, but Sol Swords noticed that such double rewriting
-; can be very expensive.
+; The rewritep returned by this call is t if a term was returned, because alist
+; = nil.  But since (cdr temp) has already been rewritten, so has term1 (if
+; non-nil); so we return rewritep = nil.  The use of rewritep in the definition
+; of rewrite, where simplifiable-mv-nth is called, is a change after
+; Version_8.2.  At one time we always rewrote the new term (called term1 here),
+; but Sol Swords noticed that such double rewriting can be very expensive.
 
                          (mv term1 nil)))
                  (t (mv nil nil)))))
