@@ -545,7 +545,7 @@
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::aij"
-                           "AIJ, the Deep Embedding of ACL2 into Java"))
+                             "AIJ, the Deep Embedding of ACL2 into Java"))
 
    (xdoc::p
     "The return types of some of the methods that provide
