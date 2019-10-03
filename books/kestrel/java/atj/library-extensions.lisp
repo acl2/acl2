@@ -45,10 +45,14 @@
   :returns (syms-by-pkg string-symbollist-alistp :hyp :guard)
   :short "Organize a list of symbols by their packages."
   :long
-  (xdoc::topstring-p
-   "The result is an alist from package names (strings)
-    to the non-empty lists of the symbols
-    that are in the respective packages.")
+  (xdoc::topstring
+   (xdoc::p
+    "The result is an alist from package names (strings)
+     to the non-empty lists of the symbols
+     that are in the respective packages.")
+   (xdoc::p
+    "The alist has unique keys,
+     and each of its values has no duplicates."))
   (organize-symbols-by-pkg-aux syms nil)
 
   :prepwork
@@ -70,10 +74,14 @@
   :returns (syms-by-name string-symbollist-alistp :hyp :guard)
   :short "Organize a list of symbols by their names."
   :long
-  (xdoc::topstring-p
-   "The result is an alist from symbol names (strings)
-    to the non-empty lists of the symbols
-    that have the respective names.")
+  (xdoc::topstring
+   (xdoc::p
+    "The result is an alist from symbol names (strings)
+     to the non-empty lists of the symbols
+     that have the respective names.")
+   (xdoc::p
+    "The alist has unique keys,
+     and each of its values has no duplicates."))
   (organize-symbols-by-name-aux syms nil)
 
   :prepwork
