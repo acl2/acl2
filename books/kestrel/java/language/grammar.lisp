@@ -141,7 +141,7 @@
      "Considering the lexical grammar as a whole would imply that
       terminal symbols like the three forming the keyword @('for')
       have to be exactly those ASCII characters.
-      However, [JLS:3.1] distinguishes three lexical translation steps,
+      However, [JLS:3.2] distinguishes three lexical translation steps,
       where the first one turns Unicode escapes into Unicode characters,
       which in particular turns Unicode escapes for ASCII characters
       into the corresponding ASCII characters.
