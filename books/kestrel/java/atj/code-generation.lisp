@@ -1168,8 +1168,8 @@
    (xdoc::p
     "These code generation functions assume that the ACL2 terms
      have been type-annotated via @(tsee atj-type-annotate-term).
-     They also assume that all the variables of the ACL2 terms
-     have been maked via @(tsee atj-mark-var)
+     They also assume that all the variables of the ACL2 terms have been marked
+     via @(tsee atj-mark-var-new) and @(tsee atj-mark-var-old),
      and renamed via @(tsee atj-rename-term).
      If the @(':guards') input is @('nil'),
      then all the type annotations consist of
