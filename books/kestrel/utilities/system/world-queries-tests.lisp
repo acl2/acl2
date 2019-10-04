@@ -15,16 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (logical-name-listp '(append "ACL2" car-cdr-elim cons) (w state)))
-
-(assert! (not (logical-name-listp '(1 2 3) (w state))))
-
-(assert! (not (logical-name-listp '(cccccccc) (w state))))
-
-(assert! (not (logical-name-listp "xyz" (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (logic-function-namep 'len (w state)))
 
 (assert! (not (logic-function-namep 'car-cdr-elim (w state))))

@@ -24,6 +24,7 @@
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/logical-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
 (include-book "kestrel/std/system/macro-name-listp" :dir :system)
@@ -84,24 +85,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define logical-name-listp (names (wrld plist-worldp))
-  ;; we cannot use STD::DEFLIST to define LOGICAL-NAME-LISTP
-  ;; because STD::DEFLIST attempts to prove that LOGICAL-NAMEP is boolean,
-  ;; but it is not
-  :returns (yes/no booleanp)
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Recognize true lists of logical names."
-  :long
-  "<p>
-   See @('logical-namep') in the ACL2 source code.
-   </p>"
-  (cond ((atom names) (null names))
-        (t (and (logical-namep (car names) wrld)
-                (logical-name-listp (cdr names) wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

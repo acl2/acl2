@@ -14,6 +14,7 @@
 (include-book "function-namep")
 (include-book "function-symbol-listp")
 (include-book "function-symbolp")
+(include-book "logical-name-listp")
 (include-book "macro-name-listp")
 (include-book "macro-namep")
 (include-book "macro-symbol-listp")
