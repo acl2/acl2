@@ -1422,15 +1422,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-rename-var ((var symbolp)
-                        (index natp)
-                        (curr-pkg stringp)
-                        (vars-by-name string-symbollist-alistp))
+(define atj-rename-formal ((var symbolp)
+                           (index natp)
+                           (curr-pkg stringp)
+                           (vars-by-name string-symbollist-alistp))
   :guard (not (equal curr-pkg ""))
   :returns (new-var symbolp)
-  :short "Rename an ACL2 variable to its Java name."
+  :short "Rename a formal parameters of
+          a defined function or lambda expression."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-rename-formals),
+     the renaming of a variable is established
+     when the variable is encountered as a formal parameter.
+     This motivates the name of this function.")
    (xdoc::p
     "Each ACL2 function is turned into a Java method,
      whose body is a shallowly embedded representation
@@ -1584,7 +1590,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(tsee atj-rename-var),
+    "As explained in @(tsee atj-rename-formal),
      the shallowly embedded ACL2 variables are made unique via indices.
      There is an independent index for each ACL2 variable,
      so we use an alist from symbols to natural numbers
@@ -1667,7 +1673,7 @@
        (uuformal+index (assoc-eq uuformal indices))
        (index (if (consp uuformal+index) (cdr uuformal+index) 0))
        (indices (acons uuformal (1+ index) indices))
-       (new-uuformal (atj-rename-var uuformal index curr-pkg vars-by-name))
+       (new-uuformal (atj-rename-formal uuformal index curr-pkg vars-by-name))
        (new-uformal (atj-type-annotate-var new-uuformal type))
        (renaming-new (acons uformal new-uformal renaming-new))
        (renaming-old (acons uformal new-uformal renaming-old))

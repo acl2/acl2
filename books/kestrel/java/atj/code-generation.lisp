@@ -913,7 +913,7 @@
      not dissmilarly to @('<pkg>::<fn>') in ACL2.
      However, inside @('<jclass>'), it suffices to use @('<jmethod>'),
      which is more readable.
-     Thus, somewhat analogously to @(tsee atj-rename-var),
+     Thus, somewhat analogously to @(tsee atj-rename-formal),
      we prepend the Java class name to the Java method name
      if and only if the current ACL2 package (the @('curr-pkg') argument)
      differs from the ACL2 function's package.")
