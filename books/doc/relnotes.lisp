@@ -633,6 +633,12 @@
      has been moved to the Std extensions in the Kestrel Books,
      under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
 
+   (xdoc::p
+    "The functions @(tsee organize-symbols-by-name)
+     and @(tsee organize-symbols-by-pkg)
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "stobjs::std/stobjs" "Standard STOBJs Library"))
