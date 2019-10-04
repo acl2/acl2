@@ -28,76 +28,9 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
-(local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "std/typed-lists/character-listp" :dir :system))
-(local (include-book "std/typed-lists/string-listp" :dir :system))
-(local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-library-extensions atj)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; basic:
-
-(define organize-symbols-by-pkg ((syms symbol-listp))
-  :returns (syms-by-pkg string-symbollist-alistp :hyp :guard)
-  :short "Organize a list of symbols by their packages."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The result is an alist from package names (strings)
-     to the non-empty lists of the symbols
-     that are in the respective packages.")
-   (xdoc::p
-    "The alist has unique keys,
-     and each of its values has no duplicates."))
-  (organize-symbols-by-pkg-aux syms nil)
-
-  :prepwork
-  ((define organize-symbols-by-pkg-aux ((syms symbol-listp)
-                                        (acc string-symbollist-alistp))
-     :returns (syms-by-pkg string-symbollist-alistp :hyp :guard)
-     :parents nil
-     (b* (((when (endp syms)) acc)
-          (sym (car syms))
-          (pkg (symbol-package-name sym))
-          (prev-syms-for-pkg (cdr (assoc-equal pkg acc))))
-       (organize-symbols-by-pkg-aux (cdr syms)
-                                    (put-assoc-equal
-                                     pkg
-                                     (add-to-set-eq sym prev-syms-for-pkg)
-                                     acc))))))
-
-(define organize-symbols-by-name ((syms symbol-listp))
-  :returns (syms-by-name string-symbollist-alistp :hyp :guard)
-  :short "Organize a list of symbols by their names."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The result is an alist from symbol names (strings)
-     to the non-empty lists of the symbols
-     that have the respective names.")
-   (xdoc::p
-    "The alist has unique keys,
-     and each of its values has no duplicates."))
-  (organize-symbols-by-name-aux syms nil)
-
-  :prepwork
-  ((define organize-symbols-by-name-aux ((syms symbol-listp)
-                                         (acc string-symbollist-alistp))
-     :returns (syms-by-name string-symbollist-alistp :hyp :guard)
-     :parents nil
-     (b* (((when (endp syms)) acc)
-          (sym (car syms))
-          (name (symbol-name sym))
-          (prev-syms-for-name (cdr (assoc-equal name acc))))
-       (organize-symbols-by-name-aux (cdr syms)
-                                     (put-assoc-equal
-                                      name
-                                      (add-to-set-eq sym prev-syms-for-name)
-                                      acc))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

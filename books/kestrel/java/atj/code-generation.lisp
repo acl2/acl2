@@ -20,6 +20,7 @@
 (include-book "pre-translation")
 (include-book "primitives")
 
+(include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)

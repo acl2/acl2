@@ -12,6 +12,7 @@
 
 (include-book "types")
 
+(include-book "kestrel/std/basic/organize-symbols-by-name" :dir :system)
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)

@@ -71,6 +71,8 @@
                          msg-listp
                          nats=>string
                          no-stobjs-p
+                         organize-symbols-by-name
+                         organize-symbols-by-pkg
                          packn-pos
                          partition-rest-and-keyword-args
                          patbind-run-when
