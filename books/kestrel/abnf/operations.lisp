@@ -35,14 +35,13 @@
   :parents (operations)
   :short "Well-formed ABNF grammars."
   :long
-  "<p>
-   Certain ABNF @(see grammar)s are valid according to the
-   <see topic='@(url abstract-syntax)'>formalized abstract syntax</see>,
-   but (include parts that) violate certain conditions that are
+  (xdoc::topstring-p
+   "Certain ABNF @(see grammar)s are valid according to the "
+   (xdoc::seetopic "abstract-syntax" "formalized abstract syntax")
+   ", but (include parts that) violate certain conditions that are
    either required by the concrete syntax defined in [RFC:4]
    or otherwise reasonably justifiable.
-   These additional conditions are captured by the notion of well-formedness.
-   </p>"
+   These additional conditions are captured by the notion of well-formedness.")
   :order-subtopics t)
 
 (define rulename-wfp ((rulename rulenamep))
@@ -51,13 +50,12 @@
   :short "A rule name must start with a lowercase letter (and thus not be empty)
           and contain only lowercase letters, numbers, and dashes."
   :long
-  "<p>
-   Aside from all letters being lowercase,
-   these constraints are required by the rule @('rulename') in [RFC:4].
-   The constraint that all letters be lowercase
-   provides a normalized representation of rule names,
-   which are case-insensitive [RFC:2.1].
-   </p>"
+  (xdoc::topstring-p
+   "Aside from all letters being lowercase,
+    these constraints are required by the rule @('rulename') in [RFC:4].
+    The constraint that all letters be lowercase
+    provides a normalized representation of rule names,
+    which are case-insensitive [RFC:2.1].")
   (b* ((charstring (rulename->get rulename))
        (chars (explode charstring)))
     (and (consp chars)
@@ -75,13 +73,12 @@
           a range numeric value notation is well-formed iff
           the minimum does not exceed the maximum."
   :long
-  "<p>
-   The condition on direct numeric value notations is required
-   by the rules @('bin-val'), @('dec-val'), and @('hex-val') in [RFC:4].
-   The condition on range numeric value notations is reasonably justifiable
-   because no number exists in a range whose minimum exceeds the maximum;
-   formally, no tree matches a malformed range numeric value notation.
-   </p>"
+  (xdoc::topstring-p
+   "The condition on direct numeric value notations is required
+    by the rules @('bin-val'), @('dec-val'), and @('hex-val') in [RFC:4].
+    The condition on range numeric value notations is reasonably justifiable
+    because no number exists in a range whose minimum exceeds the maximum;
+    formally, no tree matches a malformed range numeric value notation.")
   (num-val-case num-val
                 :direct (consp num-val.get)
                 :range (<= num-val.min num-val.max))
@@ -102,16 +99,15 @@
           it consists of only non-control ASCII characters,
           except for the double quote character."
   :long
-  "<p>
-   These allowed characters are consistent with
-   the rule @('quoted-string') in [RFC:4].
-   That rule allows empty strings,
-   so the rule @('char-val') in [RFC:4] also allows empty strings.
-   An empty character value notation
-   may play the role of the empty sequence of symbols
-   (often denoted by @($\\epsilon$) in textbooks)
-   even though ABNF includes constructs like @('[...]').
-   </p>"
+  (xdoc::topstring-p
+   "These allowed characters are consistent with
+    the rule @('quoted-string') in [RFC:4].
+    That rule allows empty strings,
+    so the rule @('char-val') in [RFC:4] also allows empty strings.
+    An empty character value notation
+    may play the role of the empty sequence of symbols
+    (often denoted by @($\\epsilon$) in textbooks)
+    even though ABNF includes constructs like @('[...]').")
   (b* ((allowed-chars (nats=>chars (append (integers-from-to #x20 #x21)
                                            (integers-from-to #x23 #x7e)))))
     (char-val-case char-val
@@ -128,14 +124,13 @@
           it consists of only non-control ASCII characters,
           except for the right angle bracket character."
   :long
-  "<p>
-   These allowed characters are consistent with
-   the rule @('prose-val') in [RFC:4].
-   That rule allows empty bracketed strings.
-   Normally prose should be non-empty (so it provides some description),
-   but in the formal semantics any tree matches prose,
-   so the emptiness of prose makes no difference in the formal semantics.
-   </p>"
+  (xdoc::topstring-p
+   "These allowed characters are consistent with
+    the rule @('prose-val') in [RFC:4].
+    That rule allows empty bracketed strings.
+    Normally prose should be non-empty (so it provides some description),
+    but in the formal semantics any tree matches prose,
+    so the emptiness of prose makes no difference in the formal semantics.")
   (b* ((allowed-chars (nats=>chars (append (integers-from-to #x20 #x3d)
                                            (integers-from-to #x3f #x7e)))))
     (subsetp (explode (prose-val->get prose-val))
@@ -148,11 +143,10 @@
   :short "A repetition range is well-formed iff
           the minimum does not exceed the maximum."
   :long
-  "<p>
-   This condition is reasonably justifiable because
-   no number of repetitions exists in a range
-   whose minimum exceeds the maximum.
-   </p>"
+  (xdoc::topstring-p
+   "This condition is reasonably justifiable because
+    no number of repetitions exists in a range
+    whose minimum exceeds the maximum.")
   (b* ((min (repeat-range->min range))
        (max (repeat-range->max range)))
     (or (nati-case max :infinity)
@@ -175,12 +169,12 @@
     :short "An alternation is well-formed iff
             it is not empty and all its concatenations are well-formed."
     :long
-    "<p>
-     This non-emptiness condition
-     is required by the rule @('alternation') in [RFC:4].
-     The well-formedness condition on the concatenations is structural.
-     </p>
-     @(def alternation-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This non-emptiness condition
+       is required by the rule @('alternation') in [RFC:4].
+       The well-formedness condition on the concatenations is structural.")
+     (xdoc::@def "alternation-wfp"))
     (and (consp alternation)
          (concatenation-list-wfp alternation))
     :measure (two-nats-measure (alternation-count alternation) 1)
@@ -191,7 +185,7 @@
     :parents (well-formedness)
     :short "Check if all the concatenations in a list of concatenations
             are well-formed."
-    :long "@(def concatenation-list-wfp)"
+    :long (xdoc::topstring-@def "concatenation-list-wfp")
     (or (endp concatenations)
         (and (concatenation-wfp (car concatenations))
              (concatenation-list-wfp (cdr concatenations))))
@@ -204,12 +198,12 @@
     :short "A concatenation is well-formed iff
             it is not empty and all its repetitions are well-formed."
     :long
-    "<p>
-     This non-emptiness condition
-     is required by the rule @('concatenation') in [RFC:4].
-     The well-formedness condition on the repetitions is structural.
-     </p>
-     @(def concatenation-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This non-emptiness condition
+       is required by the rule @('concatenation') in [RFC:4].
+       The well-formedness condition on the repetitions is structural.")
+     (xdoc::@def "concatenation-wfp"))
     (and (consp concatenation)
          (repetition-list-wfp concatenation))
     :measure (two-nats-measure (concatenation-count concatenation) 1)
@@ -220,7 +214,7 @@
     :parents (well-formedness)
     :short "Check if all the repetitions in a list of repetitions
             are well-formed."
-    :long "@(def repetition-list-wfp)"
+    :long (xdoc::topstring-@def "repetition-list-wfp")
     (or (endp repetitions)
         (and (repetition-wfp (car repetitions))
              (repetition-list-wfp (cdr repetitions))))
@@ -233,10 +227,10 @@
     :short "A repetition is well-formed iff
             its repetition range and its element are well-formed."
     :long
-    "<p>
-     This condition is structural.
-     </p>
-     @(def repetition-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This condition is structural.")
+     (xdoc::@def "repetition-wfp"))
     (and (repeat-range-wfp (repetition->range repetition))
          (element-wfp (repetition->element repetition)))
     :measure (two-nats-measure (repetition-count repetition) 1)
@@ -247,10 +241,10 @@
     :parents (well-formedness)
     :short "An element is well-formed iff its constituents are well-formed."
     :long
-    "<p>
-     This condition is structural.
-     </p>
-     @(def element-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This condition is structural.")
+     (xdoc::@def "element-wfp"))
     (element-case element
                   :rulename (rulename-wfp element.get)
                   :group (alternation-wfp element.get)
@@ -278,9 +272,8 @@
   :parents (well-formedness)
   :short "A rule is well-formed iff its name and definiens are well-formed."
   :long
-  "<p>
-   This condition is structural.
-   </p>"
+  (xdoc::topstring-p
+   "This condition is structural.")
   (and (rulename-wfp (rule->name rule))
        (alternation-wfp (rule->definiens rule)))
   :no-function t)
@@ -298,12 +291,11 @@
   :short "Check if incremental rules appear after
           non-incremental rules with the same names."
   :long
-  "<p>
-   An incremental rule may appear
-   only if there is a preceding rule with the same name.
-   A non-incremental rule may appear
-   only if there is no preceding rule with the same name.
-   </p>"
+  (xdoc::topstring-p
+   "An incremental rule may appear
+    only if there is a preceding rule with the same name.
+    A non-incremental rule may appear
+    only if there is no preceding rule with the same name.")
   (rulelist-incremental-ok-p-aux nil rules)
   :no-function t
 
@@ -314,11 +306,10 @@
      :parents (rulelist-incremental-ok-p)
      :short "Auxiliary function to define @(tsee rulelist-incremental-ok-p)."
      :long
-     "<p>
-      The rules in @('next-rules') are examined one after the other,
-      and checked against the rules already examined,
-      which are accumulated in @('previous-rules').
-      </p>"
+     (xdoc::topstring-p
+      "The rules in @('next-rules') are examined one after the other,
+       and checked against the rules already examined,
+       which are accumulated in @('previous-rules').")
      (or (endp next-rules)
          (and (iff (rule->incremental (car next-rules))
                    (lookup-rulename (rule->name (car next-rules))
@@ -337,16 +328,15 @@
           there are no duplicate rules,
           and incremental rules follow non-incremental rules."
   :long
-  "<p>
-   The first condition is structural.
-   The second condition is justifiable
-   because duplicate rules are redundant.
-   The third condition is reasonably implied by [RFC:3.3].
-   </p>
-   <p>
-   Non-emptiness is not required by the rule @('rulelist') in [RFC:4],
-   which allows just @('(*c-wsp c-nl)') groups without @('rule')s.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The first condition is structural.
+     The second condition is justifiable
+     because duplicate rules are redundant.
+     The third condition is reasonably implied by [RFC:3.3].")
+   (xdoc::p
+    "Non-emptiness is not required by the rule @('rulelist') in [RFC:4],
+     which allows just @('(*c-wsp c-nl)') groups without @('rule')s."))
   (and (rule-list-wfp rules)
        (no-duplicatesp-equal rules)
        (rulelist-incremental-ok-p rules))
