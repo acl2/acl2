@@ -1148,6 +1148,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-gen-cond-exprs*
+  :short "Flag saying whether ATJ should attempt to
+          generate Java conditional expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an internal flag, developer-oriented.
+     If @('t'), ATJ will generate shallowly embedded
+     Java conditional expressions @('... ? ... : ...')
+     under suitable conditions;
+     see the code generation functions that reference this flag.")
+   (xdoc::p
+    "This flag is currently @('nil'),
+     because, with the current tests,
+     the code looked less readable overall
+     then when this flag is @('t').
+     This flag may be removed eventually."))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
@@ -1206,7 +1227,7 @@
        and similarly for @('b') and @('c'),
        we generate the Java block")
      (xdoc::codeblock
-      "<a-blocks>"
+      "<a-block>"
       "<type> <result> = null;"
       "if (Acl2Symbol.NIL.equals(<a-expr>)) {"
       "    <c-blocks>"
@@ -1228,7 +1249,17 @@
      (xdoc::p
       "The type @('<type>') of the result variable is
        derived from the ATJ type passed to this code generation function.
-       See @(tsee atj-gen-shallow-fnapp) for details."))
+       See @(tsee atj-gen-shallow-fnapp) for details.")
+     (xdoc::p
+      "If the flag @(tsee *atj-gen-cond-exprs*) is set,
+       and if both @('<b-block>') and @('<c-block>') are empty,
+       we generate the Java block")
+     (xdoc::codeblock
+      "<a-block>")
+     (xdoc::p
+      "and the Java expression")
+     (xdoc::codeblock
+      "Acl2Symbol.NIL.equals(<a-expr>) ? <c-expr> : <b-expr>"))
     (b* (((mv test-jblock
               test-jexpr
               jvar-value-index
@@ -1262,6 +1293,19 @@
                                                        curr-apkg
                                                        guards$
                                                        wrld))
+         ((when (and *atj-gen-cond-exprs*
+                     (null then-jblock)
+                     (null else-jblock)))
+          (b* ((jblock test-jblock)
+               (jexpr (jexpr-cond (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
+                                                 "equals"
+                                                 (list test-jexpr))
+                                  else-jexpr
+                                  then-jexpr)))
+            (mv jblock
+                jexpr
+                jvar-value-index
+                jvar-result-index)))
          (jtype (atj-type-to-jtype type))
          ((mv result-locvar-jblock jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
@@ -1319,7 +1363,7 @@
        Similarly to how we treat @(tsee if),
        we generate the Java block")
      (xdoc::codeblock
-      "<a-blocks>"
+      "<a-block>"
       "<type> <result> = null;"
       "if (Acl2Symbol.NIL.equals(<a-expr>)) {"
       "    <b-blocks>"
@@ -1328,7 +1372,17 @@
       "    <result> = <a-expr>;"
       "}")
      (xdoc::p
-      "and the Java expression @('<result>')."))
+      "and the Java expression @('<result>').")
+     (xdoc::p
+      "If the flag @(tsee *atj-gen-cond-exprs*) is set,
+       and if @('<b-block>') is empty,
+       we generate the Java block")
+     (xdoc::codeblock
+      "<a-block>")
+     (xdoc::p
+      "and the Java expression")
+     (xdoc::codeblock
+      "Acl2Symbol.NIL.equals(<a-expr>) ? <b-expr> : <a-expr>"))
     (b* (((mv first-jblock
               first-jexpr
               jvar-value-index
@@ -1351,6 +1405,18 @@
                                                        curr-apkg
                                                        guards$
                                                        wrld))
+         ((when (and *atj-gen-cond-exprs*
+                     (null second-jblock)))
+          (b* ((jblock first-jblock)
+               (jexpr (jexpr-cond (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
+                                                 "equals"
+                                                 (list first-jexpr))
+                                  second-jexpr
+                                  first-jexpr)))
+            (mv jblock
+                jexpr
+                jvar-value-index
+                jvar-result-index)))
          (jtype (atj-type-to-jtype type))
          ((mv result-locvar-jblock jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
