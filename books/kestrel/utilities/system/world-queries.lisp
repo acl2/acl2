@@ -24,6 +24,7 @@
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/logic-function-namep" :dir :system)
 (include-book "kestrel/std/system/logical-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
@@ -85,21 +86,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define logic-function-namep (x (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize symbols that name logic-mode functions."
-  :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
-  (and (function-namep x wrld)
-       (logicp x wrld))
-  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

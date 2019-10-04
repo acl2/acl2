@@ -15,26 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (logic-function-namep 'len (w state)))
-
-(assert! (not (logic-function-namep 'car-cdr-elim (w state))))
-
-(assert! (not (logic-function-namep 'aaaaaaaaa (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (assert! (logic-function-namep 'f (w state))))
-
-(assert! (not (logic-function-namep "len" (w state))))
-
-(assert! (not (logic-function-namep 'error1 (w state))))
-
-(must-succeed*
- (defun f (x) (declare (xargs :mode :program)) x)
- (assert! (not (logic-function-namep 'f (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (formals+ 'len (w state)) '(x))
 
 (must-succeed*
