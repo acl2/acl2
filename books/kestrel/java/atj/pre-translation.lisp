@@ -19,6 +19,7 @@
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
+(include-book "kestrel/std/typed-alists/symbol-nat-alistp" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
