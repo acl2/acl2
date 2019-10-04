@@ -1360,29 +1360,16 @@
        (see the AIJ documentation for details).
        We treat @('(or a b)') non-strictly like @('(if a a b)'),
        but we avoid calculating @('a') twice.
-       Similarly to how we treat @(tsee if),
+       Somewhat similarly to how we treat @(tsee if),
        we generate the Java block")
      (xdoc::codeblock
       "<a-block>"
-      "<type> <result> = null;"
-      "if (Acl2Symbol.NIL.equals(<a-expr>)) {"
+      "<type> <result> = <a-expr>;"
+      "if (Acl2Symbol.NIL.equals(<result>)) {"
       "    <b-blocks>"
-      "    <result> = <b-expr>;"
-      "} else {"
-      "    <result> = <a-expr>;"
-      "}")
+      "    <result> = <b-expr>;")
      (xdoc::p
-      "and the Java expression @('<result>').")
-     (xdoc::p
-      "If the flag @(tsee *atj-gen-cond-exprs*) is set,
-       and if @('<b-block>') is empty,
-       we generate the Java block")
-     (xdoc::codeblock
-      "<a-block>")
-     (xdoc::p
-      "and the Java expression")
-     (xdoc::codeblock
-      "Acl2Symbol.NIL.equals(<a-expr>) ? <b-expr> : <a-expr>"))
+      "and the Java expression @('<result>')."))
     (b* (((mv first-jblock
               first-jexpr
               jvar-value-index
@@ -1405,31 +1392,18 @@
                                                        curr-apkg
                                                        guards$
                                                        wrld))
-         ((when (and *atj-gen-cond-exprs*
-                     (null second-jblock)))
-          (b* ((jblock first-jblock)
-               (jexpr (jexpr-cond (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
-                                                 "equals"
-                                                 (list first-jexpr))
-                                  second-jexpr
-                                  first-jexpr)))
-            (mv jblock
-                jexpr
-                jvar-value-index
-                jvar-result-index)))
          (jtype (atj-type-to-jtype type))
          ((mv result-locvar-jblock jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
                                    jvar-result-base
                                    jvar-result-index
-                                   (jexpr-literal-null)))
-         (if-jblock (jblock-ifelse
+                                   first-jexpr))
+         (if-jblock (jblock-if
                      (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
                                     "equals"
-                                    (list first-jexpr))
+                                    (list (jexpr-name jvar-result)))
                      (append second-jblock
-                             (jblock-asg-name jvar-result second-jexpr))
-                     (jblock-asg-name jvar-result first-jexpr)))
+                             (jblock-asg-name jvar-result second-jexpr))))
          (jblock (append first-jblock
                          result-locvar-jblock
                          if-jblock))
