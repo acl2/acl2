@@ -65,83 +65,84 @@
   :returns (mode gl-function-mode-p)
   (or (cdr (hons-get fn (make-fast-alist (gl-function-mode-alist-fix alist)))) 0))
 
-(defprod glcp-config
-  ((trace-rewrites booleanp :default nil)
-   (reclimit posp :rule-classes (:rewrite :type-prescription) :default 1000000)
-   (make-ites booleanp :default nil)
-   (rewrite-rule-table :default nil)
-   (definition-table :default nil)
-   (branch-merge-rules :default nil)
-   (function-modes :default nil gl-function-mode-alist)
-   (prof-enabledp booleanp :default t)
-   (sat-config)
+(defconst *glcp-config-fields*
+  '((trace-rewrites booleanp :default 'nil)
+    (reclimit posp :rule-classes (:rewrite :type-prescription) :default '1000000)
+    (make-ites booleanp :default 'nil)
+    (rewrite-rule-table :default (table-alist 'gl-rewrite-rules (w state)))
+    (branch-merge-rules :default (cdr (hons-assoc-equal 'fgl::gl-branch-merge-rules (table-alist 'gl-branch-merge-rules (w state)))))
+    (function-modes gl-function-mode-alist :default (table-alist 'gl-fn-modes (w state)))
+    (prof-enabledp booleanp :default 't)
+    (sat-config)
+    (skip-toplevel-sat-check booleanp :default 'nil)
+    
+    ))
+
+(local
+ (defun glcp-config-process-field (field)
+   (cond ((atom field) field)
+         ((eq (car field) ':default)
+          (if (quotep (cadr field))
+              (cons :default (cons (unquote (cadr field)) (cddr field)))
+            (cons :default (cons nil (cddr field)))))
+         (t (cons (car field)
+                  (glcp-config-process-field (cdr field)))))))
+
+(local
+ (defun glcp-config-process-fields (fields)
+   (if (atom fields)
+       nil
+     (cons (glcp-config-process-field (car fields))
+           (glcp-config-process-fields (cdr fields))))))
+
+(make-event
+ `(defprod glcp-config
+    ,(glcp-config-process-fields *glcp-config-fields*)
+    :layout :tree))
 
 
-   (abort-indeterminate booleanp :default t)
-   (abort-ctrex booleanp :default t)
-   (exec-ctrex booleanp :default t)
-   (ctrex-transform :default '(lambda (x) x))
-   (abort-vacuous booleanp :default t)
-   (check-vacuous booleanp :default t)
+(define glcp-config-setting ((table-key symbolp)
+                             (state-key symbolp)
+                             default
+                             table
+                             (args keyword-value-listp)
+                             state)
+  (b* ((look (assoc-keyword table-key args))
+       ((when look) (cadr look))
+       ((when (boundp-global state-key state))
+        (f-get-global state-key state))
+       (look (hons-assoc-equal table-key table))
+       ((when look) (cdr look)))
+    default))
 
-   (n-counterexamples natp :rule-classes (:rewrite :type-prescription) :default 3)
-   (hyp-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)
-   (clause-proc symbolp :rule-classes (:rewrite :type-prescription))
-   (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check
-     ;;  the guards in clause processors
-   (param-bfr :default t)
-   (term-level-counterexample-scheme symbolp :default :depgraph)
-   top-level-term
-   ;; (shape-spec-alist shape-spec-bindingsp)
-   run-before-cases
-   run-after-cases
-   case-split-override
-   (lift-ifsp booleanp :default t)
-   (split-conses booleanp :default nil)
-   (split-fncalls booleanp :default nil)
-   
-   )
-  :layout :tree)
+(local
+ (defun default-glcp-config-settings (fields state)
+   (declare (xargs :stobjs state :mode :program))
+   (b* (((when (atom fields)) nil)
+        ((cons fieldname fieldargs) (car fields))
+        (type (if (keywordp (car fieldargs))
+                  nil
+                (car fieldargs)))
+        (fixtype (and type
+                      (fty::find-fixtype type (fty::get-fixtypes-alist (w state)))))
+        (fix (and type (fty::fixtype->fix fixtype)))
+        (key (intern-in-package-of-symbol (symbol-name fieldname) :keyword))
+        (state-key (intern-in-package-of-symbol (concatenate 'string "FGL-" (symbol-name fieldname)) :keyword))
+        (default (cadr (member ':default fieldargs)))
+        (setting-term `(glcp-config-setting ,key ,state-key ,default configtab args state))
+        (setting-term-fix (if fix `(ec-call (,fix ,setting-term)) setting-term)))
+     (cons key
+           (cons setting-term-fix
+                (default-glcp-config-settings (cdr fields) state))))))
 
-
-(defund-inline glcp-config-update-param (p config)
-  (declare (xargs :guard (glcp-config-p config)))
-  (change-glcp-config config :param-bfr p))
-
-(defthm param-bfr-of-glcp-config-update-param
-  (equal (glcp-config->param-bfr (glcp-config-update-param p config))
-         p)
-  :hints(("Goal" :in-theory (enable glcp-config-update-param))))
-
-(defthm glcp-config->overrides-of-glcp-config-update-param
-  (equal (glcp-config->overrides (glcp-config-update-param p config))
-         (glcp-config->overrides config))
-  :hints(("Goal" :in-theory (enable glcp-config-update-param))))
-
-(defthm glcp-config->top-level-term-of-glcp-config-update-param
-  (equal (glcp-config->top-level-term (glcp-config-update-param p config))
-         (glcp-config->top-level-term config))
-  :hints(("Goal" :in-theory (enable glcp-config-update-param))))
+(make-event
+ `(define default-glcp-config-fn ((args keyword-value-listp) state)
+    (b* ((configtab (table-alist 'fgl-config-table (w state))))
+      (make-glcp-config
+       . ,(default-glcp-config-settings *glcp-config-fields* state)))))
 
 
+(defmacro default-glcp-config (&rest args)
+  `(default-glcp-config-fn ',args state))
 
-(defund-inline glcp-config-update-term (term config)
-  (declare (xargs :guard (glcp-config-p config)))
-  (change-glcp-config config :top-level-term term))
-
-(defthm param-bfr-of-glcp-config-update-term
-  (equal (glcp-config->param-bfr (glcp-config-update-term term config))
-         (glcp-config->param-bfr config))
-  :hints(("Goal" :in-theory (enable glcp-config-update-term))))
-
-(defthm glcp-config->overrides-of-glcp-config-update-term
-  (equal (glcp-config->overrides (glcp-config-update-term term config))
-         (glcp-config->overrides config))
-  :hints(("Goal" :in-theory (enable glcp-config-update-term))))
-
-(defthm glcp-config->top-level-term-of-glcp-config-update-term
-  (equal (glcp-config->top-level-term (glcp-config-update-term term config))
-         term)
-  :hints(("Goal" :in-theory (enable glcp-config-update-term))))
-
-
+(table fgl-config-table)

@@ -42,7 +42,7 @@
      (implies ,(cadr (assoc-keyword :hyp args))
               ,(cadr (assoc-keyword :concl args)))
      :hints (("goal" :clause-processor expand-an-implies-cp)
-             '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
+             '(:clause-processor (gl-interp-cp clause (default-glcp-config . ,args) interp-st state)))))
 
 (defmacro fgl-thm (&rest args)
   (fgl-thm-fn args))

@@ -621,6 +621,16 @@
                                  (interp-state state))))
        (- (and (interp-st-prof-enabledp interp-st)
                (interp-st-prof-print-report interp-st)))
+       ((acl2::hintcontext-bind ((early-interp-st interp-st)
+                                 (early-state state))))
+       ((when (and (equal ans-interp t)
+                   (not (interp-st->errmsg interp-st))))
+        ;; Proved!
+        (acl2::hintcontext :interp-early
+                           (mv nil interp-st state)))
+       ((when (glcp-config->skip-toplevel-sat-check config))
+        (mv (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check.")
+            interp-st state))
        (sat-config (fgl-toplevel-sat-check-config-wrapper
                     (glcp-config->sat-config config)))
        ((mv ans interp-st state)
@@ -766,6 +776,43 @@
                          (state ,(acl2::hq interp-state))
                          (env ,(acl2::hq env)))
                         (:instance gl-interp-test-correct
+                         (x ,(acl2::hq goal))
+                         (interp-st ,(acl2::hq init-interp-st))
+                         (env ,(acl2::hq env))
+                         (st state)
+                         (state ,(acl2::hq init-interp-state)))
+                        (:instance iff-forall-extensions-necc
+                         (obj ,(acl2::hq ans-eval))
+                         (term ,(acl2::hq goal))
+                         (eval-alist ,(acl2::hq eval-alist))
+                         (ext ,(acl2::hq eval-alist)))
+                        (:instance fgl-ev-of-extension-when-term-vars-bound
+                         (b ,(acl2::hq eval-alist))
+                         (a ,(acl2::hq orig-alist))
+                         (x ,(acl2::hq goal))))
+                  :in-theory (disable eval-of-interp-st-validity-check
+                                      gl-interp-test-correct
+                                      iff-forall-extensions-necc
+                                      fgl-ev-of-extension-when-term-vars-bound))))
+
+             (:interp-early
+              (b* ((NEW-LOGICMAN (INTERP-ST->LOGICMAN early-INTERP-ST))
+                   (LOGICMAN (INTERP-ST->LOGICMAN init-INTERP-ST))
+                   (NEW-STACK (INTERP-ST->STACK early-INTERP-ST))
+                   (STACK (INTERP-ST->STACK init-INTERP-ST))
+                   (new-bvar-db (interp-st->bvar-db early-interp-st))
+                   (env (gl-env a nil))
+                   (env (fix-env-for-bvar-db env new-bvar-db new-logicman))
+                   (ans-eval (gobj-bfr-eval ans-interp env new-logicman))
+                   (orig-alist (fgl-object-bindings-eval (stack$a-bindings stack) env logicman))
+                   (MAJOR-ALIST
+                    (FGL-OBJECT-BINDINGS-EVAL (STACK$A-BINDINGS NEW-STACK)
+                                           ENV NEW-LOGICMAN))
+                   (MINOR-ALIST
+                    (FGL-OBJECT-BINDINGS-EVAL (STACK$A-MINOR-BINDINGS STACK)
+                                           ENV LOGICMAN))
+                   (?EVAL-ALIST (APPEND MINOR-ALIST MAJOR-ALIST)))
+                `(:use ((:instance gl-interp-test-correct
                          (x ,(acl2::hq goal))
                          (interp-st ,(acl2::hq init-interp-st))
                          (env ,(acl2::hq env))

@@ -213,36 +213,6 @@ be a string or message identifying the particular SAT check.</p>"
 
 
 
-(table fgl-config-table)
-
-(define glcp-config-lookup ((table-key symbolp)
-                            (state-key symbolp)
-                            default
-                            (alist alistp)
-                            state)
-  (b* (((when (boundp-global state-key state))
-        (f-get-global state-key state))
-       (look (assoc table-key alist))
-       ((when look) (cdr look)))
-    default))
-        
-
-;; Convenience macro to create a glcp-config object that captures the current
-;; definitions, rewrite rules, branch merge rules, and function modes from
-;; their respective tables.
-(defmacro default-glcp-config ()
-  '(b* ((configtab (table-alist 'fgl-config-table (w state))))
-     (make-glcp-config
-      :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
-      :definition-table (table-alist 'gl-definition-rules (w state))
-      :branch-merge-rules (cdr (assoc 'FGL::GL-BRANCH-MERGE-RULES (table-alist 'gl-branch-merge-rules (w state))))
-      :function-modes (table-alist 'gl-fn-modes (w state))
-      :trace-rewrites (glcp-config-lookup :trace-rewrites :fgl-trace-rewrites nil configtab state)
-      :reclimit (glcp-config-lookup :reclimit :fgl-reclimit 10000 configtab state)
-      :make-ites (glcp-config-lookup :make-ites :fgl-make-ites nil configtab state)
-      :prof-enabledp (glcp-config-lookup :prof-enabledp :fgl-prof-enabledp t configtab state)
-      :sat-config (glcp-config-lookup :sat-config :fgl-sat-config nil configtab state))))
-
 
 
 ;; Debugging utilities

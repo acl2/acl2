@@ -144,6 +144,9 @@ is interpreted under the @('unequiv') equivalence context, then the second is
 interpreted normally and returned.</p>"
   y)
 
+(defmacro fgl-progn (&rest args)
+  (xxxjoin 'fgl-prog2 args))
+
 (define fgl-interp-obj (term)
   :ignore-ok t
   :irrelevant-formals-ok t

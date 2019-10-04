@@ -452,6 +452,10 @@ any).  This allows all functions that were added using
     (def-fancy-ev-primitives-fn ',fnname state)))
 
 (logic)
+
+(fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
+
+
 (local
  (progn
 
@@ -463,11 +467,52 @@ any).  This allows all functions that were added using
        (equal (w new-state) (w state))
        :hints(("Goal" :in-theory (enable w)))))
 
-   (fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
-
    (fancy-ev-add-primitive my-set-debug t)
 
    (def-fancy-ev-primitives foo)))
+
+
+(local
+ (defun make-interp-st-fancy-ev-primitives (keys)
+   (if (atom keys)
+       nil
+     (let ((key (caar keys))
+           (guard (cdar keys)))
+       (cons `(fancy-ev-add-primitive ,(intern-in-package-of-symbol
+                                        (if (eq guard t)
+                                            (concatenate 'string "INTERP-ST->" (symbol-name key))
+                                          (concatenate 'string "INTERP-ST->" (symbol-name key) "$INLINE"))
+                                        'fgl-fgl)
+                                      t)
+             (if (or (member key *logically-relevant-interp-st-fields*)
+                     (eq key :cgraph)
+                     (eq key :errmsg))
+                 (make-interp-st-fancy-ev-primitives (cdr keys))
+               (cons `(fancy-ev-add-primitive ,(intern-in-package-of-symbol
+                                                (if (eq guard t)
+                                                    (concatenate 'string "UPDATE-INTERP-ST->" (symbol-name key))
+                                                  (concatenate 'string "UPDATE-INTERP-ST->" (symbol-name key) "$INLINE"))
+                                                'fgl-fgl)
+                                              ,guard)
+                     (make-interp-st-fancy-ev-primitives (cdr keys)))))))))
+(make-event
+ (cons 'progn (make-interp-st-fancy-ev-primitives
+               '((:constraint-db . (constraint-db-p constraint-db))
+                 (:backchain-limit . (integerp backchain-limit))
+                 (:equiv-contexts . (equiv-contextsp equiv-contexts))
+                 (:reclimit       . (natp reclimit))
+                 (:config         . (glcp-config-p config))
+                 (:flags          . (interp-flags-p flags))
+                 (:next-fgarray   . (natp next-fgarray))
+                 (:cgraph         . (cgraph-p cgraph))
+                 (:cgraph-memo    . (cgraph-alist-p cgraph-memo))
+                 (:cgraph-index   . (natp cgraph-index))
+                 (:user-scratch   . (obj-alist-p user-scratch))
+                 (:trace-scratch  . t)
+                 (:errmsg         . t)
+                 (:debug-info     . t)
+                 (:debug-stack    . (major-stack-p debug-stack))))))
+
 
 
 
