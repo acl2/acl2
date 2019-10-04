@@ -142,6 +142,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * Returns a named function with the given name.
      *
      * @param name The name of the named function.
+     * @return The named function.
      * @throws IllegalArgumentException if name is null
      */
     public static Acl2NamedFunction make(Acl2Symbol name) {
@@ -184,6 +185,8 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     /**
      * Calls this named function on the given values.
      *
+     * @param values The arguments of the call.
+     * @return The result of calling this named function on the arguments.
      * @throws IllegalArgumentException If {@code values} is {@code null},
      *                                  or any of its elements is {@code null}.
      * @throws IllegalStateException    If not all the defined functions

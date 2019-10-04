@@ -60,6 +60,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Constructs a native function with the given name.
+     *
+     * @param name Name of the native function.
      */
     private Acl2NativeFunction(Acl2Symbol name) {
         super(name);
@@ -1647,6 +1649,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
+     * @throws Acl2EvaluationException If the package name is invalid
+     *                                 or the package is not defined.
      */
     public static Acl2Value execPkgImports(Acl2Value pkg)
             throws Acl2EvaluationException {
@@ -1660,6 +1664,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
+     * @throws Acl2EvaluationException If the package name is invalid
+     *                                 or the package is not defined.
      */
     public static Acl2Value execPkgImportsUnderGuard(Acl2String pkg)
             throws Acl2EvaluationException {
@@ -1674,6 +1680,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
+     * @throws Acl2EvaluationException If the package name is invalid
+     *                                 or the package is not defined.
      */
     public static Acl2Symbol execPkgWitness(Acl2Value pkg)
             throws Acl2EvaluationException {
@@ -1687,6 +1695,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
+     * @throws Acl2EvaluationException If the package name is invalid
+     *                                 or the package is not defined.
      */
     public static Acl2Symbol execPkgWitnessUnderGuard(Acl2String pkg)
             throws Acl2EvaluationException {

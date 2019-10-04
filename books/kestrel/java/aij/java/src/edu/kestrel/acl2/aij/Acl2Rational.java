@@ -304,7 +304,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * @param denominator The denominator of the rational.
      * @return The rational.
      * @throws IllegalArgumentException If {@code numerator} or
-     *                                  {@code denominator} is {@codee null},
+     *                                  {@code denominator} is {@code null},
      *                                  or {@code denominator} is 0.
      */
     public static Acl2Rational make(Acl2Integer numerator,

@@ -165,7 +165,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
     /**
      * Returns a hash code for this lambda expression.
      *
-     * @retun The hash code for this lambda expression.
+     * @return The hash code for this lambda expression.
      */
     @Override
     public int hashCode() {
