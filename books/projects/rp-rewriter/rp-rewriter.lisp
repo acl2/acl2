@@ -245,6 +245,31 @@
         (rp-does-lhs-match (car subterms) (car sublhs))
         (rp-does-lhs-match-subterms (cdr subterms) (cdr sublhs)))))))
 
+
+  (define rp-match-lhs-precheck (term rule-fnc rule-lhs state)
+    (declare (xargs :stobjs (state))
+             (ignorable state rule-fnc))
+    :inline t
+    :guard (and (consp term)
+                (consp rule-lhs)
+                (not (eq (car rule-lhs) 'quote))
+                (pseudo-termp2 rule-lhs)
+                (not (eq (car term) 'quote))
+                ;(pseudo-term-listp2 (cdr term))
+                )
+                
+    (and ;(consp rule-lhs)
+         ;(not (eq (car rule-lhs) 'quote))
+         (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs))
+         #|(or (not rule-fnc)
+             (apply$-userfn rule-fnc (list term))
+             #|(b* (((mv err result)
+                   (magic-ev-fncall rule-fnc (list term)
+                                    state
+                                    nil t)))
+               (if err t result))||#)||#))
+                  
+               
   (defmacro rp-get-rules-for-term (fn-name rules)
     `(cdr (hons-get ,fn-name ,rules))))
 
@@ -520,13 +545,14 @@
             (rp-rw-relieve-synp-subterms (cdr subterms) bindings exc-rules
                                          state)))))
 
-  (defund rp-rw-relieve-synp-wrap (term bindings exc-rules state)
+  (defund rp-rw-relieve-synp-wrap (term  bindings exc-rules state)
     (declare (xargs  :stobjs (state)
                      :guard (and #|(pseudo-termp2 term)||#
                              (alistp bindings)
                              (symbol-alistp exc-rules))
                      :verify-guards nil))
-    (or (not (include-fnc term 'synp))
+    (or 
+        (not (include-fnc term 'synp))
         (rp-rw-relieve-synp term
                             (remove-rp-from-bindings bindings)
                             exc-rules state)))
@@ -540,11 +566,13 @@
         (remove-rp-from-bindings var-bindings)
       var-bindings)))
 
-(defun rp-rw-rule-aux (term rules-for-term context iff-flg)
+(defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
   (declare (xargs :mode :logic
                   :verify-guards nil
+                  :stobjs (state)
                   :guard (and #|(pseudo-termp2 term)||#
                           (consp term)
+                          (not (equal (car term) 'quote))
                           (rule-list-syntaxp rules-for-term)
                           #|(context-syntaxp context)||#)))
   ;; if rules-for-term-rest is not nil, the first element is the applied ruled.
@@ -557,15 +585,15 @@ returns (mv rule rules-rest bindings rp-context)"
          ;; if rule has is an iff relation and iff-flg is not set, then keep searching.
          ((when (and (rp-iff-flag rule)
                      (not iff-flg)))
-          (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg))
+          (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg state))
          (lhs (rp-lhs rule))
          ((mv rp-context bindings bindings-valid)
-          (if (rp-does-lhs-match term lhs)
+          (if (rp-match-lhs-precheck term (rp-rule-fnc rule) lhs state) ;(rp-does-lhs-match term lhs)
               (rp-match-lhs term lhs context nil)
             (mv context nil nil))))
       (if bindings-valid
           (mv rule (cdr rules-for-term)  bindings rp-context)
-        (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg)))))
+        (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg state)))))
 
 #|(encapsulate
   nil
@@ -829,7 +857,7 @@ returns (mv rule rules-rest bindings rp-context)"
          (zp limit))
      (mv nil (rp-check-context term context iff-flg) nil rp-state));))
     (t (b* (((mv rule rules-for-term-rest var-bindings rp-context)
-             (rp-rw-rule-aux term rules-for-term context iff-flg))
+             (rp-rw-rule-aux term rules-for-term context iff-flg state))
             ((when (not rule)) ;; no rules found
              (mv nil (rp-check-context term context iff-flg) nil rp-state))
             #|(no-rp-var-bindings
@@ -839,6 +867,7 @@ returns (mv rule rules-rest bindings rp-context)"
                                                rp-context rp-state))
             (synp-relieved
              (rp-rw-relieve-synp-wrap (rp-hyp rule)
+                                      ;;(rp-rule-fnc rule)
                                       var-bindings ;no-rp-var-bindings
                                       exc-rules
                                       state))

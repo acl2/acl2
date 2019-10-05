@@ -596,7 +596,7 @@
 (encapsulate
   nil
   (defrec custom-rewrite-rule
-    (lhs (flg . hyp) (rhs . rune))
+    (lhs (flg . hyp) rule-fnc . (rhs . rune))
     t) ; t when we are confident that the code is OK
 
   (defun weak-custom-rewrite-rule-listp (rules)
@@ -628,7 +628,11 @@
 
   (defun-inline rp-iff-flag (rule)
     (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
-    (access custom-rewrite-rule rule :flg)))
+    (access custom-rewrite-rule rule :flg))
+
+  (defun-inline rp-rule-fnc (rule)
+    (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
+    (access custom-rewrite-rule rule :rule-fnc)))
 
 (encapsulate
   nil
@@ -1074,7 +1078,34 @@
              (atom subterm2))
          (equal subterm1 subterm2)
        (and (rp-equal-cnt (car subterm1) (car subterm2) cnt)
-            (rp-equal-cnt-subterms (cdr subterm1) (cdr subterm2) cnt))))))
+            (rp-equal-cnt-subterms (cdr subterm1) (cdr subterm2) cnt)))))
+
+
+  (mutual-recursion
+   ;; check if two terms are equivalent by discarding rp terms
+   (defun p-rp-equal-cnt (term1 term2 cnt)
+     (declare (xargs :mode :program))
+     "Same as rp-equal but also runs equal after counter goes below 0."
+     (or (if (and (< cnt 0))
+             (equal term1 term2)
+           nil)
+         (let* ((term1 (ex-from-rp-loose term1))
+                (term2 (ex-from-rp-loose term2)))
+           (cond
+            ((or (atom term1) (atom term2)
+                 (acl2::fquotep term1)
+                 (acl2::fquotep term2))
+             (equal term1 term2))
+            (t ;(or (if (< cnt 0) (equal term1 term2) nil)
+             (and (equal (car term1) (car term2))
+                  (p-rp-equal-cnt-subterms (cdr term1) (cdr term2) (1- cnt))))))))
+
+   (defun p-rp-equal-cnt-subterms (subterm1 subterm2 cnt)
+     (if (or (atom subterm1)
+             (atom subterm2))
+         (equal subterm1 subterm2)
+       (and (p-rp-equal-cnt (car subterm1) (car subterm2) cnt)
+            (p-rp-equal-cnt-subterms (cdr subterm1) (cdr subterm2) cnt))))))
 
 (encapsulate
   nil
@@ -1110,6 +1141,8 @@
      (not (include-fnc (rp-rhs rule) 'falist))
      (not (include-fnc (rp-hyp rule) 'falist))
      (not (include-fnc (rp-lhs rule) 'if))
+     (consp (rp-lhs rule))
+     (not (acl2::fquotep (rp-lhs rule)))
      (not (include-fnc (rp-lhs rule) 'synp))
      (no-free-variablep rule)))
 

@@ -37,7 +37,6 @@
 ; Mertcan Temel         <mert@utexas.edu>
 
 
-
 (in-package "RP")
 (include-book "../extract-formula")
 
@@ -1047,12 +1046,74 @@
                             (rule-syntaxp
                              valid-rulep))))))
 
+
+(progn
+  (local
+   (defthm valid-rulesp-try-to-add-rule-fnc-lemma-1
+     (equal (valid-rulep-sk-body (change custom-rewrite-rule
+                                         rule
+                                         :rule-fnc x)
+                                 a)
+            (valid-rulep-sk-body rule a))))
+
+
+  (local
+   (defthm valid-rulesp-try-to-add-rule-fnc-lemma-2
+     (implies (valid-rulep-sk rule)
+              (valid-rulep-sk (change custom-rewrite-rule
+                                      rule
+                                      :rule-fnc x)))
+     :otf-flg t
+     :hints (("goal"
+              :expand (valid-rulep-sk (list* (car rule)
+                                             (cadr rule)
+                                             x (cdddr rule)))
+              :use ((:instance valid-rulep-sk-necc
+                               (a (list* (car rule)
+                                         (cadr rule)
+                                         x (cdddr rule)))))
+              :in-theory (e/d ()
+                              (rule-syntaxp
+                               valid-rulep-sk
+                               valid-rulep-sk-body))))))
+
+
+  (local
+   (defthm valid-rulesp-try-to-add-rule-fnc-lemma-3
+     (implies (valid-rulep rule)
+              (valid-rulep (change custom-rewrite-rule
+                                   rule
+                                   :rule-fnc x)))
+     :otf-flg t
+     :hints (("goal"
+              :in-theory (e/d (valid-rulep-sk-necc)
+                              (valid-rulep-sk))))))
+
+  (defthm valid-rulesp-try-to-add-rule-fnc
+    (implies (valid-rulesp rules)
+             (valid-rulesp (try-to-add-rule-fnc rules rule-fnc-alist)))
+    :hints (("goal"
+             :in-theory (e/d (try-to-add-rule-fnc
+                              len)
+                             (rule-syntaxp
+                              weak-custom-rewrite-rule-p
+                              valid-rulep
+                              check-if-def-rule-should-be-saved
+                              custom-rewrite-with-meta-extract
+                              update-rules-with-sc))))))
+
 (defthm valid-rulesp-get-rules
   (implies (rp-evl-meta-extract-global-facts :state state)
-           (valid-rulesp (get-rule-list runes sc-alist new-synps state)))
+           (valid-rulesp (get-rule-list runes sc-alist new-synps rule-fnc-alist
+                                        state)))
   :hints (("Goal"
+           :do-not-induct t
+           :induct (get-rule-list runes sc-alist new-synps rule-fnc-alist
+                                        state)
            :in-theory (e/d ()
                            (rule-syntaxp
+                            WEAK-CUSTOM-REWRITE-RULE-P
+                            ACL2::EQUAL-LEN-1
                             check-if-def-rule-should-be-saved
                             custom-rewrite-with-meta-extract
                             update-rules-with-sc)))))
@@ -1102,5 +1163,6 @@
                             rule-list-to-alist
                             get-rule-list
                             table-alist)))))
-(defthm SYMBOL-ALISTP-GET-ENABLED-EXEC-RULES
-  (symbol-alistp (GET-ENABLED-EXEC-RULES runes)))
+
+(defthm symbol-alistp-get-enabled-exec-rules
+  (symbol-alistp (get-enabled-exec-rules runes)))

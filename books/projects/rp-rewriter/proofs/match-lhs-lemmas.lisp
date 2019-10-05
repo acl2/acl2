@@ -378,23 +378,23 @@
                 (all-falist-consistent term)
                 (pseudo-termp2 term))
            (context-syntaxp (mv-nth 3 (rp-rw-rule-aux term rules-for-term
-                                                      context iff-flg)))))
+                                                      context iff-flg state)))))
 
 (defthm return-val-of-rp-rw-rule-aux-bindings
   (implies (and (rule-list-syntaxp rules-for-term)
                 (pseudo-termp2 term))
            (bindings-alistp (mv-nth 2 (rp-rw-rule-aux term rules-for-term
-                                                      context iff-flg)))))
+                                                      context iff-flg state)))))
 
 (defthm return-val-of-rp-rw-rule-aux-bindings-alistp
   (alistp (mv-nth 2 (rp-rw-rule-aux term rules-for-term
-                                    context iff-flg))))
+                                    context iff-flg state))))
 
 (defthm return-val-of-rp-rw-rule-aux-valid-rule
   (implies (and (rule-list-syntaxp rules-for-term)
-                (mv-nth 0 (rp-rw-rule-aux term rules-for-term context iff-flg)))
+                (mv-nth 0 (rp-rw-rule-aux term rules-for-term context iff-flg state)))
            (rule-syntaxp (mv-nth 0 (rp-rw-rule-aux term rules-for-term
-                                                   context iff-flg))))
+                                                   context iff-flg state))))
   :hints (("Goal"
            :in-theory (disable (:DEFINITION LEN)
                                (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
@@ -427,7 +427,7 @@
   (implies (rule-list-syntaxp rules-for-term)
            (rule-list-syntaxp (mv-nth 1
                                       (rp-rw-rule-aux term rules-for-term
-                                                      context iff-flg))))
+                                                      context iff-flg state))))
   :hints (("goal" :in-theory (e/d (rp-rw-rule-aux)
                                   (rule-syntaxp
                                    VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP
@@ -454,7 +454,7 @@
 
   (defthm valid-sc-bindings-rp-rw-rule-aux
     (mv-let (rule rules-rest bindings rp-context)
-      (rp-rw-rule-aux term rules-for-term context iff-flg)
+      (rp-rw-rule-aux term rules-for-term context iff-flg state)
       (declare (ignorable rules-rest rp-context))
       (implies (and rule
                     (rule-list-syntaxp rules-for-term)
@@ -472,9 +472,9 @@
  (defthm consp-rule-syntaxp
    ;; not used !!!!!!!!!!!!!!!!!!!
    (implies (rule-syntaxp (mv-nth 0 (rp-rw-rule-aux term rules-for-term
-                                                    context iff-flg)))
+                                                    context iff-flg state)))
             (consp (mv-nth 0 (rp-rw-rule-aux term rules-for-term
-                                             context iff-flg))))
+                                             context iff-flg state))))
    :hints (("Goal"
             :in-theory (e/d (rule-syntaxp)
                             (rp-rw-rule-aux))))))
@@ -524,7 +524,7 @@
     (implies (all-falist-consistent term)
              (all-falist-consistent-bindings
               (mv-nth 2 (rp-rw-rule-aux term rules-for-term
-                                        context iff-flg))))
+                                        context iff-flg state))))
     :hints (("Goal" :in-theory (e/d nil (ALL-FALIST-CONSISTENT-BINDINGS
                                          all-falist-consistent))))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -556,7 +556,7 @@
                   (rule-list-syntaxp rules-for-term))
              (rp-syntaxp-bindings
               (mv-nth 2 (rp-rw-rule-aux term rules-for-term
-                                        context iff-flg))))
+                                        context iff-flg state))))
     :hints (("Goal" :in-theory (e/d (rp-syntaxp-bindings-rp-match-lhs
                                      rp-rw-rule-aux
                                      valid-rulesp)
@@ -566,10 +566,10 @@
 (defthm rp-rw-rule-aux-does-not-return-rule-with-iff-flg-when-iff-flg=nil
   (implies
    (mv-nth 0
-           (rp-rw-rule-aux term rules-for-term context nil))
+           (rp-rw-rule-aux term rules-for-term context nil state))
    (not (rp-iff-flag
          (mv-nth 0
-                 (rp-rw-rule-aux term rules-for-term context nil)))))
+                 (rp-rw-rule-aux term rules-for-term context nil state)))))
   :hints (("goal"
            :in-theory (e/d (rp-rw-rule-aux) (rp-match-lhs
                                              rp-does-lhs-match
@@ -648,7 +648,7 @@
                   (rp-syntaxp term))
              (valid-sc-subterms
               (mv-nth 3
-                      (rp-rw-rule-aux term rules-for-term context iff-flg))
+                      (rp-rw-rule-aux term rules-for-term context iff-flg state))
               a))
     :hints (("Goal"
              :in-theory (e/d () (;RULE-SYNTAXP
@@ -730,7 +730,7 @@
                   (eval-and-all context a)
                   (valid-sc term a))
              (eval-and-all
-              (mv-nth 3 (rp-rw-rule-aux term rules-for-term context iff-flg)) a))
+              (mv-nth 3 (rp-rw-rule-aux term rules-for-term context iff-flg state)) a))
     :hints (("Goal" :in-theory (e/d (rule-list-syntaxp
                                      rule-syntaxp-implies)
                                     (rp-iff-flag
@@ -1329,7 +1329,7 @@
 
   (defthm rp-rw-rule-aux-returns-valid-bindings
     (mv-let (rule rules-rest bindings rp-context)
-      (rp-rw-rule-aux term rules-for-term context iff-flg)
+      (rp-rw-rule-aux term rules-for-term context iff-flg state)
       (declare (ignorable rules-rest rp-context))
       (implies (and rule
                     (alistp a)
@@ -1340,7 +1340,7 @@
 ;(rp-equal2 (rp-apply-bindings (rp-lhs rule) bindings) term)
                ))
     :hints (("Goal"
-             :induct (rp-rw-rule-aux term rules-for-term context iff-flg)
+             :induct (rp-rw-rule-aux term rules-for-term context iff-flg state)
              :do-not-induct t
              :in-theory (e/d (rule-list-syntaxp
                               rule-syntaxp-implies)
@@ -1359,7 +1359,7 @@
 
   (defthm rp-rw-rule-aux-returns-valid-rulep
     (mv-let (rule rules-rest bindings rp-context)
-      (rp-rw-rule-aux term rules-for-term context iff-flg)
+      (rp-rw-rule-aux term rules-for-term context iff-flg state)
       (declare (ignorable bindings rp-context))
       (implies (and rule
                     (valid-rulesp rules-for-term))
