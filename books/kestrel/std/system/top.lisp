@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "all-free-bound-vars")
+(include-book "all-vars-open")
 (include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "event-name-queries")
