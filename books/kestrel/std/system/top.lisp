@@ -15,6 +15,7 @@
 (include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "event-name-queries")
+(include-book "logic-friendly")
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
 (include-book "primitivep")
