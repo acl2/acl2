@@ -532,6 +532,97 @@
   :short "Bulid a block consisting of a single Java @('for') statement."
   (list (jstatem-for init test update body)))
 
+(defines jstatems+jblocks-count-ifs
+  :short "Number of @('if')s in a statement or block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is useful as a measure for certain recursive functions.")
+   (xdoc::p
+    "We prove some theorems about the results of these counting functions.
+     Additional similar theorems could be added as needed."))
+
+  (define jstatem-count-ifs ((statem jstatemp))
+    :returns (count natp)
+    (jstatem-case statem
+                  :locvar 0
+                  :expr 0
+                  :return 0
+                  :throw 0
+                  :if (1+ (jblock-count-ifs statem.then))
+                  :ifelse (1+ (+ (jblock-count-ifs statem.then)
+                                 (jblock-count-ifs statem.else)))
+                  :do (jblock-count statem.body)
+                  :for (jblock-count statem.body))
+    :measure (jstatem-count statem))
+
+  (define jblock-count-ifs ((block jblockp))
+    :returns (count natp)
+    (cond ((endp block) 0)
+          (t (+ (jstatem-count-ifs (car block))
+                (jblock-count-ifs (cdr block)))))
+    :measure (jblock-count block))
+
+  ///
+
+  (defrule jblock-count-ifs-of-cons
+    (equal (jblock-count-ifs (cons statem block))
+           (+ (jstatem-count-ifs statem)
+              (jblock-count-ifs block))))
+
+  (defrule jblock-count-ifs-of-append
+    (equal (jblock-count-ifs (append block1 block2))
+           (+ (jblock-count-ifs block1)
+              (jblock-count-ifs block2)))
+    :enable append)
+
+  (defrule jstatem-count-ifs-of-return
+    (equal (jstatem-count-ifs (jstatem-return expr?))
+           0))
+
+  (defrule jblock-count-ifs-of-jstatem-ifelse->then-decreases
+    (implies (jstatem-case statem :ifelse)
+             (< (jblock-count-ifs (jstatem-ifelse->then statem))
+                (jstatem-count-ifs statem)))
+    :rule-classes :linear
+    :expand ((jstatem-count-ifs statem)))
+
+  (defrule jblock-count-ifs-of-jstatem-ifelse->else-decreases
+    (implies (jstatem-case statem :ifelse)
+             (< (jblock-count-ifs (jstatem-ifelse->else statem))
+                (jstatem-count-ifs statem)))
+    :rule-classes :linear
+    :expand ((jstatem-count-ifs statem)))
+
+  (defrule jblock-count-ifs-of-take-not-increases
+    (<= (jblock-count-ifs (take n block))
+        (jblock-count-ifs block))
+    :rule-classes :linear
+    :enable take)
+
+  (defrule jblock-count-ifs-of-nthcdr-not-increases
+    (<= (jblock-count-ifs (nthcdr n block))
+        (jblock-count-ifs block))
+    :rule-classes :linear
+    :enable nthcdr)
+
+  (defrule jstatem-count-ifs-of-car-not-increases
+    (<= (jstatem-count-ifs (car block))
+        (jblock-count-ifs block))
+    :rule-classes :linear)
+
+  (defrule jblock-count-ifs-of-cdr-not-increases
+    (<= (jblock-count-ifs (cdr block))
+        (jblock-count-ifs block))
+    :rule-classes :linear)
+
+  (defrule jblock-count-ifs-positive-when-nth-ifelse
+    (implies (jstatem-case (nth i block) :ifelse) ; free I
+             (> (jblock-count-ifs block) 0))
+    :rule-classes :linear
+    :expand ((jblock-count-ifs block)
+             (jstatem-count-ifs (car block)))))
+
 (fty::deftagsum jaccess
   :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
   (:public ())

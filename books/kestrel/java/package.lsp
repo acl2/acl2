@@ -77,6 +77,7 @@
                          organize-symbols-by-pkg
                          packn-pos
                          partition-rest-and-keyword-args
+                         patbind-fun
                          patbind-run-when
                          primitivep
                          printable-charlist-p

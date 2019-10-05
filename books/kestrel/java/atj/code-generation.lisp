@@ -18,6 +18,7 @@
 (include-book "test-structures")
 (include-book "pretty-printer")
 (include-book "pre-translation")
+(include-book "post-translation")
 (include-book "primitives")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
@@ -96,12 +97,16 @@
    (xdoc::p
     "The code generation process consists of "
     (xdoc::seetopic "atj-pre-translation" "a pre-translation from ACL2 to ACL2")
-    ", followed by a translation from ACL2 to Java.
-     The pre-translation turns the ACL2 code into a form
+    ", followed by a translation from ACL2 to Java,
+     followed by "
+    (xdoc::seetopic "atj-post-translation"
+                    "a post-translation from Java to Java")
+    ". The pre-translation turns the ACL2 code into a form
      that is closer to the target Java code,
      thus making the translation simpler.
      The correctness of the pre-translation can be formally proved within ACL2,
-     without involving (the semantics of) Java."))
+     without involving (the semantics of) Java.
+     The post-translation makes some improvements directly on the Java code."))
   :order-subtopics t
   :default-parent t)
 
@@ -2435,7 +2440,8 @@
                               guards$
                               wrld))
        (jmethod-body (append body-jblock
-                             (jblock-return body-jexpr))))
+                             (jblock-return body-jexpr)))
+       (jmethod-body (atj-post-translate jmethod-body)))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
