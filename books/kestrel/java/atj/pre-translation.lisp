@@ -1666,7 +1666,9 @@
   (xdoc::topstring
    (xdoc::p
     "The alist from variables to indices
-     is threaded through this function and its mutually recursive companion.
+     is threaded through this function and its mutually recursive companion,
+     in the same way as the renaming alist for the `old' variables;
+     thus different variables in different Java scopes may have the same index.
      This alist contains variables without annotations or markings;
      see @(tsee atj-rename-formals) for motivation.")
    (xdoc::p
@@ -1750,12 +1752,12 @@
                                                     vars-by-name))
                      ((mv new-else
                           &
-                          indices) (atj-rename-term else
-                                                    renaming-new
-                                                    renaming-old
-                                                    indices
-                                                    curr-pkg
-                                                    vars-by-name)))
+                          &) (atj-rename-term else
+                                              renaming-new
+                                              renaming-old
+                                              indices
+                                              curr-pkg
+                                              vars-by-name)))
                   (mv `(if ,new-test ,new-test ,new-else)
                       renaming-old
                       indices))
@@ -1769,20 +1771,20 @@
                                                   vars-by-name))
                    ((mv new-then
                         &
-                        indices) (atj-rename-term then
-                                                  renaming-new
-                                                  renaming-old
-                                                  indices
-                                                  curr-pkg
-                                                  vars-by-name))
+                        &) (atj-rename-term then
+                                            renaming-new
+                                            renaming-old
+                                            indices
+                                            curr-pkg
+                                            vars-by-name))
                    ((mv new-else
                         &
-                        indices) (atj-rename-term else
-                                                  renaming-new
-                                                  renaming-old
-                                                  indices
-                                                  curr-pkg
-                                                  vars-by-name)))
+                        &) (atj-rename-term else
+                                            renaming-new
+                                            renaming-old
+                                            indices
+                                            curr-pkg
+                                            vars-by-name)))
                 (mv `(if ,new-test ,new-then ,new-else)
                     renaming-old
                     indices)))))
