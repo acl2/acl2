@@ -14,6 +14,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-name" :dir :system)
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
+(include-book "kestrel/std/system/all-vars-open" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
@@ -872,53 +873,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-all-vars
-  :short "Free variables in a term
-          that may contain non-closed lambda expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The pre-translation step that removes trivial variables
-     may produce non-closed lambda expressions.
-     For terms with possibly non-closed lambda expressions,
-     the system utility @(tsee all-vars) is inadequate,
-     because it skips over lambda expressions, assuming they are closed.
-     Thus, here we define a utility similar to @(tsee all-vars)
-     that does not skip over lambda expressions.
-     Instead, it collects the free variables of the body of a lambda expression,
-     removes the formal parameters of the lambda expressions,
-     and regards the remaining variables
-     as the free ones of the lambda expression.
-     This is the standard treatment of lambda expressions
-     in languages where lambda expressions are not necessarily closed.")
-   (xdoc::p
-    "The returned list of variables has no duplicates.
-     The list is in no particular order.")
-   (xdoc::p
-    "This utility is more general than ATJ,
-     and thus should be renamed and moved to a more general library."))
-
-  (define atj-all-vars ((term pseudo-termp))
-    :returns (vars symbol-listp :hyp :guard)
-    :verify-guards :after-returns
-    (b* (((when (variablep term)) (list term))
-         ((when (fquotep term)) nil)
-         (fn (ffn-symb term))
-         (fn-vars (if (symbolp fn)
-                      nil
-                    (set-difference-eq (atj-all-vars (lambda-body fn))
-                                       (lambda-formals fn))))
-         (args-vars (atj-all-vars-lst (fargs term))))
-      (union-eq fn-vars args-vars)))
-
-  (define atj-all-vars-lst ((terms pseudo-term-listp))
-    :returns (vars symbol-listp :hyp :guard)
-    (cond ((endp terms) nil)
-          (t (union-eq (atj-all-vars (car terms))
-                       (atj-all-vars-lst (cdr terms)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atj-var-free-in-term-p
   :short "Check if a variable occurs free in a term."
   :long
@@ -1144,7 +1098,7 @@
                (else (fargn term 3)))
             (if (equal test then)
                 (b* ((vars-used-after-test (union-eq vars-used-after
-                                                     (atj-all-vars else)))
+                                                     (all-vars-open else)))
                      ((mv test
                           vars-in-scope) (atj-mark-term test
                                                         vars-in-scope
@@ -1157,7 +1111,7 @@
                   (mv `(if ,test ,test ,else)
                       vars-in-scope))
               (b* ((vars-used-after-test (union-eq vars-used-after
-                                                   (atj-all-vars-lst
+                                                   (all-vars-open-lst
                                                     (list then else))))
                    ((mv test
                         vars-in-scope) (atj-mark-term test
@@ -1179,7 +1133,7 @@
           (if (symbolp fn)
               vars-used-after
             (union-eq vars-used-after
-                      (set-difference-eq (atj-all-vars (lambda-body fn))
+                      (set-difference-eq (all-vars-open (lambda-body fn))
                                          (lambda-formals fn)))))
          ((mv marked-args vars-in-scope) (atj-mark-terms args
                                                          vars-in-scope
@@ -1217,7 +1171,7 @@
          (first-term (car terms))
          (rest-terms (cdr terms))
          (vars-used-after-first-term (union-eq vars-used-after
-                                               (atj-all-vars-lst rest-terms)))
+                                               (all-vars-open-lst rest-terms)))
          ((mv marked-first-term
               vars-in-scope) (atj-mark-term first-term
                                             vars-in-scope

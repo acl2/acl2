@@ -23,6 +23,8 @@
                          all-ffn-symbs
                          all-free/bound-vars
                          all-pkgs-in-world
+                         all-vars-open
+                         all-vars-open-lst
                          alpha/digit-chars
                          alpha/digit/dash-charlist-p
                          alpha/digit/uscore/dollar-charlist-p
