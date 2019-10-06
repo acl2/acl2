@@ -51,8 +51,9 @@ doc-private: java/src/edu/kestrel/acl2/aij/*.java
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
 
 clean:
-	@echo "Delete class files, jar file, and Javadoc output:"
+	@echo "Delete class files and jar file:"
 	/bin/rm -rf java/out
+	@echo "Delete Javadoc HTML files:"
 	/bin/rm -rf javadoc-public
 	/bin/rm -rf javadoc-package
 	/bin/rm -rf javadoc-private
