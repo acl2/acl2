@@ -14,6 +14,7 @@
 (include-book "all-vars-open")
 (include-book "close-lambdas")
 (include-book "conjoin")
+(include-book "dumb-occur-var-open")
 (include-book "event-name-queries")
 (include-book "logic-friendly")
 (include-book "macro-keyword-args")
