@@ -24,6 +24,8 @@
 
 ################################################################################
 
+all: aij doc-all
+
 aij: java/out/artifacts/AIJ_jar/AIJ.jar
 
 java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
@@ -33,6 +35,8 @@ java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate jar file:"
 	mkdir -p java/out/artifacts/AIJ_jar
 	jar cfm java/out/artifacts/AIJ_jar/AIJ.jar java/META-INF/MANIFEST.MF -C java/out/production/AIJ/ .
+
+doc-all: doc-public doc-package doc-private
 
 doc-public: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate public Javadoc documentation:"
@@ -46,10 +50,8 @@ doc-private: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate private Javadoc documentation:"
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
 
-doc-all: doc-public doc-package doc-private
-
 clean:
-	@echo "Delete class files and jar file:"
+	@echo "Delete class files, jar file, and Javadoc output:"
 	/bin/rm -rf java/out
 	/bin/rm -rf javadoc-public
 	/bin/rm -rf javadoc-package
