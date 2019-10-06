@@ -37,6 +37,8 @@
                          chars=>nats
                          defxdoc+
                          doublets-to-alist
+                         dumb-occur-var-open
+                         dumb-occur-var-open-lst
                          ensure-boolean$
                          ensure-doublet-list$
                          ensure-function-name$

@@ -15,6 +15,7 @@
 (include-book "kestrel/std/basic/organize-symbols-by-name" :dir :system)
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
+(include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
@@ -873,44 +874,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-var-free-in-term-p
-  :short "Check if a variable occurs free in a term."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is more efficient than testing membership of the variable
-     in the free variables of the term,
-     because it avoids creating the list of free variables.")
-   (xdoc::p
-    "This utility does not assume that lambda expressions are closed:
-     the pre-translation step that removes trivial variables
-     may produce non-closed lambda expressions.
-     Thus, this utility descends into the body of the lambda expression,
-     unless it is among the formal parameters of the lambda expression.
-     This is the standard treatment of lambda expressions
-     in languages where lambda expressions are not necessarily closed.")
-   (xdoc::p
-    "This utility is more general than ATJ,
-     and thus should be renamed and moved to a more general library."))
-
-  (define atj-var-free-in-term-p ((var symbolp) (term pseudo-termp))
-    :returns (yes/no booleanp)
-    (b* (((when (variablep term)) (eq var term))
-         ((when (fquotep term)) nil)
-         (fn (ffn-symb term)))
-      (or (atj-var-free-in-term-p-lst var (fargs term))
-          (and (flambdap fn)
-               (not (member-eq var (lambda-formals fn)))
-               (atj-var-free-in-term-p var (lambda-body fn))))))
-
-  (define atj-var-free-in-term-p-lst ((var symbolp) (terms pseudo-term-listp))
-    :returns (yes/no booleanp)
-    (cond ((endp terms) nil)
-          (t (or (atj-var-free-in-term-p var (car terms))
-                 (atj-var-free-in-term-p-lst var (cdr terms)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atj-mark-term
   :short "Mark the variables in a term as `new' or `old'."
   :long
@@ -1206,7 +1169,7 @@
           (formal (car formals))
           (new? (or (not (member-eq formal vars-in-scope))
                     (member-eq formal vars-used-after)
-                    (atj-var-free-in-term-p-lst formal (cdr actuals))))
+                    (dumb-occur-var-open-lst formal (cdr actuals))))
           (marked-formal (if new?
                              (atj-mark-var-new formal)
                            (atj-mark-var-old formal)))
