@@ -310,6 +310,7 @@
     (('svl::4vec-concat$ & & &)  (cons 'sv::concat   (cdr term)))
 
     (('sv::4vec-fix$inline &) (cons 'id (cdr term)))
+    (('svl::4vec-fix2 &) (cons 'id (cdr term)))
     (('sv::4vec-bit-extract & &) (cons 'sv::bitsel (cdr term)))
     (('sv::3vec-fix &)           (cons 'sv::unfloat  (cdr term)))
     (('4vec-bitnot &)            (cons 'sv::bitnot   (cdr term)))
@@ -375,7 +376,9 @@
               (cdr entry)))
            ((and (quotep term)
                  (consp (cdr term)))
-            (unquote term))
+            (if (atom (unquote term))
+                (unquote term)
+              term))
            (t (b* ((fnc (car term))
                    (args (4vec-to-svex-lst (cdr term)
                                            reverse-env
