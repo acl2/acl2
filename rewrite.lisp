@@ -11443,8 +11443,8 @@
 
 (defun dumb-occur-var (var term)
 
-; This function determines if variable var occurs in the given term.  This is
-; the same as dumb-occur, but optimized for the case that var is a variable.
+; This function determines if variable var occurs free in the given term.  This
+; is the same as dumb-occur, but optimized for the case that var is a variable.
 
   (cond ((eq var term) t)
         ((variablep term) nil)
