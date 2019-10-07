@@ -215,6 +215,13 @@
            (fat32-entry-p (bpb_rootclus fat32-in-memory)))
   :hints (("goal" :in-theory (enable fat32-entry-p))))
 
+(defthm
+  fat-entry-count-of-update-fati
+  (equal (fat-entry-count (update-fati i v fat32-in-memory))
+         (fat-entry-count fat32-in-memory))
+  :hints
+  (("goal" :in-theory (enable fat-entry-count update-fati))))
+
 (encapsulate
   ()
 

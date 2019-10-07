@@ -1481,6 +1481,17 @@
   (("goal" :in-theory (enable update-fati
                               fat32-in-memoryp fat-length))))
 
+(defthm update-fati-of-update-fati-coincident
+  (equal (update-fati i v1 (update-fati i v2 fat32-in-memory))
+         (update-fati i v1 fat32-in-memory))
+  :hints (("goal" :in-theory (enable update-fati))))
+
+(defthm update-fati-of-update-fati-disjoint
+  (implies (not (equal (nfix i1) (nfix i2)))
+           (equal (update-fati i1 v1 (update-fati i2 v2 fat32-in-memory))
+                  (update-fati i2 v2 (update-fati i1 v1 fat32-in-memory))))
+  :hints (("goal" :in-theory (e/d (update-fati) (update-nth)))))
+
 (defthm
   fat-length-of-update-nth
   (implies
