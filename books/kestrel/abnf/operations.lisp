@@ -348,19 +348,18 @@
   :parents (operations)
   :short "Closure in ABNF grammars."
   :long
-  "<p>
-   A rule's definiens may reference (i.e. ``call'') other rules.
-   Those rules may in turn call further rules,
-   and so on until a ``closed'' set of rules is reached.
-   </p>
-   <p>
-   When grammars are modularly defined, a grammar may not be closed,
-   but after the modules are composed into one grammar for parsing,
-   the resulting grammar should be closed.
-   When composing grammars, sometimes only a portion of a grammar is selected,
-   consisting of a subset of its rules (perhaps called by other grammars)
-   along with their closure.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A rule's definiens may reference (i.e. ``call'') other rules.
+     Those rules may in turn call further rules,
+     and so on until a ``closed'' set of rules is reached.")
+   (xdoc::p
+    "When grammars are modularly defined, a grammar may not be closed,
+     but after the modules are composed into one grammar for parsing,
+     the resulting grammar should be closed.
+     When composing grammars, sometimes only a portion of a grammar is selected,
+     consisting of a subset of its rules (perhaps called by other grammars)
+     along with their closure."))
   :order-subtopics t)
 
 (defines alt/conc/rep/elem-called-rules
@@ -370,7 +369,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in an alternation."
-    :long "@(def alternation-called-rules)"
+    :long (xdoc::topstring-@def "alternation-called-rules")
     (cond ((endp alternation) nil)
           (t (union (concatenation-called-rules (car alternation))
                     (alternation-called-rules (cdr alternation)))))
@@ -381,7 +380,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in a concatenation."
-    :long "@(def concatenation-called-rules)"
+    :long (xdoc::topstring-@def "concatenation-called-rules")
     (cond ((endp concatenation) nil)
           (t (union (repetition-called-rules (car concatenation))
                     (concatenation-called-rules (cdr concatenation)))))
@@ -392,7 +391,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in a repetition."
-    :long "@(def repetition-called-rules)"
+    :long (xdoc::topstring-@def "repetition-called-rules")
     (element-called-rules (repetition->element repetition))
     :measure (repetition-count repetition)
     :no-function t)
@@ -401,7 +400,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in an element."
-    :long "@(def element-called-rules)"
+    :long (xdoc::topstring-@def "element-called-rules")
     (element-case element
                   :rulename (insert element.get nil)
                   :group (alternation-called-rules element.get)
@@ -455,13 +454,12 @@
   :parents (closure)
   :short "Separate from some rules the ones that define a rule name."
   :long
-  "<p>
-   We scan @('rules'), taking out the rules that define @('rulename').
-   The first result contains the rules that have been taken out,
-   in the same order in which they appear in @('rules').
-   The second result contains the remaining rules in @('rules'),
-   after the ones in the first result have been taken out.
-   </p>"
+  (xdoc::topstring-p
+   "We scan @('rules'), taking out the rules that define @('rulename').
+    The first result contains the rules that have been taken out,
+    in the same order in which they appear in @('rules').
+    The second result contains the remaining rules in @('rules'),
+    after the ones in the first result have been taken out.")
   (b* (((when (endp rules)) (mv nil nil))
        (rule (rule-fix (car rules)))
        ((mv rulename-rules other-rules) (rules-of-name rulename (cdr rules))))
@@ -477,7 +475,7 @@
        (equal (len other-rules)
               (- (len rules) (len rulename-rules))))))
 
-  (defrule len-of-other-rules-of-ruls-of-name-<
+  (defrule len-of-other-rules-of-rules-of-name-<
     (b* (((mv rulename-rules other-rules) (rules-of-name rulename rules)))
       (implies rulename-rules
                (< (len other-rules) (len rules))))
@@ -492,26 +490,25 @@
           that transitively define names in a list of rule names,
           collecting them into an accumulator (list of rules)."
   :long
-  "<p>
-   This is a work set algorithm.
-   When the work set is empty,
-   we are done and we return the rules collected so far.
-   Otherwise, we remove one rule name from the work set
-   and take out of @('rules') the rules that define it.
-   If no rules in @('rules') define the rule name,
-   we make a recursive call to examine the next rule name in the work set.
-   Otherwise, we add these rules to the current result,
-   extend the work set with the rule names referenced by these rules,
-   and make a recursive call to re-examine the work set.
-   </p>
-   <p>
-   The algorithm makes progress
-   either by reducing the length of @('rules')
-   (if rules are taken out of @('rules')),
-   or by reducing the size of the work set
-   (if no rules are taken out of @('rules')),
-   in which case the length of @('rules') stays the same.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is a work set algorithm.
+     When the work set is empty,
+     we are done and we return the rules collected so far.
+     Otherwise, we remove one rule name from the work set
+     and take out of @('rules') the rules that define it.
+     If no rules in @('rules') define the rule name,
+     we make a recursive call to examine the next rule name in the work set.
+     Otherwise, we add these rules to the current result,
+     extend the work set with the rule names referenced by these rules,
+     and make a recursive call to re-examine the work set.")
+   (xdoc::p
+    "The algorithm makes progress
+     either by reducing the length of @('rules')
+     (if rules are taken out of @('rules')),
+     or by reducing the size of the work set
+     (if no rules are taken out of @('rules')),
+     in which case the length of @('rules') stays the same."))
   (b* (((when (empty workset)) (rulelist-fix accumulator))
        (rulename (head workset))
        (workset (tail workset))
@@ -538,20 +535,19 @@
   :parents (operations)
   :short "ABNF grammars that generate only terminals in given sets."
   :long
-  "<p>
-   If all the terminal value notations used in a rule list denote values
-   that belong to a certain set of terminals (natural numbers),
-   then the terminal strings of that rule list
-   consist of only terminals that belong to that set.
-   This is proved below.
-   </p>
-   <p>
-   For example, if all the terminal value notations are octets,
-   the terminal strings consist of octets
-   and can be parsed starting from character strings
-   (since @(see acl2::characters) are isomorphic to octets)
-   instead of natural numbers.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "If all the terminal value notations used in a rule list denote values
+     that belong to a certain set of terminals (natural numbers),
+     then the terminal strings of that rule list
+     consist of only terminals that belong to that set.
+     This is proved below.")
+   (xdoc::p
+    "For example, if all the terminal value notations are octets,
+     the terminal strings consist of octets
+     and can be parsed starting from character strings
+     (since @(see acl2::characters) are isomorphic to octets)
+     instead of natural numbers."))
   :order-subtopics t)
 
 (define num-val-in-termset-p ((num-val num-val-p) (termset nat-setp))
@@ -627,7 +623,7 @@
     :parents (in-terminal-set)
     :short "Check if all the terminal value notations in an alternation
             denote values in a set."
-    :long "@(def alternation-in-termset-p)"
+    :long (xdoc::topstring-@def "alternation-in-termset-p")
     (or (endp alternation)
         (and (concatenation-in-termset-p (car alternation) termset)
              (alternation-in-termset-p (cdr alternation) termset)))
@@ -640,7 +636,7 @@
     :parents (in-terminal-set)
     :short "Check if all the terminal value notations in a concatenation
             denote values in a set."
-    :long "@(def concatenation-in-termset-p)"
+    :long (xdoc::topstring-@def "concatenation-in-termset-p")
     (or (endp concatenation)
         (and (repetition-in-termset-p (car concatenation) termset)
              (concatenation-in-termset-p (cdr concatenation) termset)))
@@ -654,7 +650,7 @@
     :short "Check if all the terminal value notations in a repetition
             denote values in a set,
             or the repetition consists of zero instances."
-    :long "@(def repetition-in-termset-p)"
+    :long (xdoc::topstring-@def "repetition-in-termset-p")
     (or (element-in-termset-p (repetition->element repetition) termset)
         (equal (repetition->range repetition)
                (repeat-range 0 (nati-finite 0))))
@@ -667,7 +663,7 @@
     :parents (in-terminal-set)
     :short "Check if all the terminal value notations in an element
             denote values in a set."
-    :long "@(def element-in-termset-p)"
+    :long (xdoc::topstring-@def "element-in-termset-p")
     (element-case element
                   :rulename t
                   :group (alternation-in-termset-p element.get termset)
@@ -720,16 +716,16 @@
   :parents (in-terminal-set)
   :short "Check if a symbol is either a rule name or a natural number in a set."
   :long
-  "<p>
-   To prove that the terminal strings generated by a rule list
-   consist of only terminals in a set,
-   it is convenient to work with trees whose rule names may not all be expanded,
-   to avoid dealing with this additional constraint.
-   For these trees,
-   we need to weaken the notion that @(tsee tree->string)
-   only consists of terminals in the set,
-   by allowing non-terminal symbols as well.
-   </p>"
+  (xdoc::topstring-p
+   "To prove that the terminal strings generated by a rule list
+    consist of only terminals in a set,
+    it is convenient to work with trees
+    whose rule names may not all be expanded,
+    to avoid dealing with this additional constraint.
+    For these trees,
+    we need to weaken the notion that @(tsee tree->string)
+    only consists of terminals in the set,
+    by allowing non-terminal symbols as well.")
   (symbol-case symbol
                :terminal (in symbol.get termset)
                :nonterminal t)
@@ -780,10 +776,9 @@
   :short "Lemma to prove
           @(tsee nats-in-termset-when-match-sensitive-chars-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nat-match-sensitive-char-p nat char)
                 (char-sensitive-in-termset-p char termset))
            (in nat termset))
@@ -795,10 +790,9 @@
   :short "Lemma to prove
           @(tsee leaves-in-termset-when-match-char-val-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nats-match-sensitive-chars-p nats chars)
                 (chars-sensitive-in-termset-p chars termset))
            (list-in nats termset))
@@ -811,10 +805,9 @@
   :short "Lemma to prove
           @(tsee nats-in-termset-when-match-insensitive-chars-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nat-match-insensitive-char-p nat char)
                 (char-insensitive-in-termset-p char termset))
            (in nat termset))
@@ -826,10 +819,9 @@
   :short "Lemma to prove
           @(tsee leaves-in-termset-when-match-char-val-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nats-match-insensitive-chars-p nats chars)
                 (chars-insensitive-in-termset-p chars termset))
            (list-in nats termset))
@@ -857,11 +849,10 @@
           can be matched only by (lists of (lists of)) trees
           whose terminal leaves are in the set."
   :long
-  "<p>
-   The proof uses
-   @(tsee leaves-in-termset-when-match-num-val-in-termset) and
-   @(tsee leaves-in-termset-when-match-char-val-in-termset).
-   </p>"
+  (xdoc::topstring-p
+   "The proof uses
+    @(tsee leaves-in-termset-when-match-num-val-in-termset) and
+    @(tsee leaves-in-termset-when-match-char-val-in-termset).")
 
   (defthm-tree-match-alt/conc/rep/elem-p-flag
 
@@ -926,10 +917,9 @@
   :short "Rules whose terminal value notations all denote values in a set,
           generate terminal strings consisting of terminals in the set."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (terminal-string-for-rules-p nats rules)
                 (rulelist-in-termset-p rules termset))
            (list-in nats termset))
