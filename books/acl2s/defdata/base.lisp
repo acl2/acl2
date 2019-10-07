@@ -1669,8 +1669,36 @@ No longer needed.
   :domain-size t
   :enumerator nth-all-builtin
   :enum/acc nth-all-uniform-builtin)
-  
 
+(defun nth-quote-builtin (n)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (natp n)))
+  `(quote ,(nth-all-builtin n)))
+
+(defun nth-quote-uniform-builtin (m seed)
+  (declare (xargs :mode :program))
+  (declare (type (unsigned-byte 31) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (b* (((mv val seed)
+        (nth-all-uniform-builtin m seed)))
+    (mv `(quote ,val) seed)))
+
+; A recognizer for quoted objects. Notice that quotep and fquotep only
+; recognize quoted object for pseudo-terms, even though they have a
+; guard of t.
+
+(defun rquotep (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (consp (cdr x))
+       (eq (car x) 'quote)
+       (null (cdr (cdr x)))))
+
+(defdata::register-type quote
+  :predicate rquotep
+  :domain-size t
+  :enumerator nth-quote-builtin
+  :enum/acc nth-quote-uniform-builtin)
 
 ;We will also name a special type, the empty type, which has no elements in its typeset.
 (defconst *empty-values* '())

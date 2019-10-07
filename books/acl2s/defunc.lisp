@@ -255,7 +255,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun add-output-contract-check (body output-contract fun-name fun-args wrld)
   "To body, we insert a runtime check for output-contract."
   (b* (;(ctx 'add-output-contract-check)
-       ((mv ?erp tbody) (acl2::pseudo-translate body (list (cons fun-name fun-args)) wrld))
+       ((mv ?erp tbody)
+        (acl2::pseudo-translate body (list (cons fun-name fun-args)) wrld))
        (vars (all-vars tbody))
        (avoid-lst (union-eq fun-args vars))
        (return-var (acl2::generate-variable '_ret avoid-lst nil nil wrld)))
