@@ -501,14 +501,18 @@ Useful for testing defunc/definec errors
 ; a strict version of nth requiring that the list have at least n+1
 ; elements (since we use 0 indexing)
 (definec lnth (n :nat l :tl) :all
-  :pre (< (len l) n)
+  :pre (< n (len l))
   (nth n l))
+
+(check= (lnth 2 '(0 1 2 3)) 2)
 
 ; a strict version of nthcdr, requiring that we have at least n
 ; elements ((nthcdr 0 l) is the identity)
 (definec lnthcdr (n :nat l :tl) :tl
-  :pre (<= (len l) n)
+  :pre (<= n (len l))
   (nthcdr n l))
+
+(check= (lnthcdr 2 '(0 1 2 3)) '(2 3))
 
 ; The definitions below are used to define gen-car-cdr-macros.
 (defdata str-all (list string all))
@@ -838,5 +842,4 @@ Useful for testing defunc/definec errors
 
 (definec lendp (x :tl) :bool
   (atom x))
-
 
