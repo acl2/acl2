@@ -15,20 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (formals+ 'len (w state)) '(x))
-
-(must-succeed*
- (defun f (x y zz aaa b77) (list x y zz aaa b77))
- (assert-equal (formals+ 'f (w state)) '(x y zz aaa b77)))
-
-(assert-equal (formals+ '(lambda (x y) (binary-+ x y)) (w state))
-              '(x y))
-
-(assert-equal (formals+ '(lambda () '33) (w state))
-              nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (arity+ 'len (w state)) 1)
 
 (must-succeed*

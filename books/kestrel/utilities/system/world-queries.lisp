@@ -21,6 +21,7 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "term-function-recognizers")
 
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
@@ -86,34 +87,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define formals+ ((fn (or (function-namep fn wrld)
-                          (pseudo-lambdap fn)))
-                  (wrld plist-worldp-with-formals))
-  :returns (formals symbol-listp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee formals)."
-  :long
-  "<p>
-   This returns the same result as @(tsee formals) on named functions,
-   but it has a stronger guard for named functions
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>
-   <p>
-   This utility also operates on lambda expressions, unlike @(tsee formals).
-   </p>"
-  (b* ((result (cond ((symbolp fn) (formals fn wrld))
-                     (t (lambda-formals fn)))))
-    (if (symbol-listp result)
-        result
-      (raise "Internal error: ~
-              the formals ~x0 of ~x1 are not a true list of symbols."
-             result fn)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
