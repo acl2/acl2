@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -33,7 +33,7 @@
 (include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "centaur/misc/prev-stobj-binding" :dir :system)
-(include-book "gl-object")
+(include-book "fgl-object")
 ;; (include-book "std/lists/index-of" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/final-cdr" :dir :system))
@@ -47,30 +47,30 @@
 
 (local (std::add-default-post-define-hook :fix))
 
-(fty::defmap term-bvars :key-type gl-object :val-type natp :true-listp t)
-(fty::defmap term-equivs :key-type gl-object :val-type nat-listp :true-listp t)
+(fty::defmap term-bvars :key-type fgl-object :val-type natp :true-listp t)
+(fty::defmap term-equivs :key-type fgl-object :val-type nat-listp :true-listp t)
 
 ;; ----------- Implementation ----------------
 ;; The "terms" stored in the bvar-db$c are really g-apply objects
 (defstobj bvar-db$c
   (base-bvar$c :type (integer 0 *) :initially 0)
   (next-bvar$c :type (integer 0 *) :initially 0)
-  (bvar-terms$c :type (array (satisfies gl-object-p) (0)) :resizable t)
+  (bvar-terms$c :type (array (satisfies fgl-object-p) (0)) :resizable t)
   (term-bvars$c :type (satisfies term-bvars-p))
   (term-equivs$c :type (satisfies term-equivs-p)))
 
-(defthm bvar-terms$cp-is-gl-objectlist-p
+(defthm bvar-terms$cp-is-fgl-objectlist-p
   (equal (bvar-terms$cp x)
-         (gl-objectlist-p x)))
+         (fgl-objectlist-p x)))
 
-(defthm gl-object-p-nth-of-gl-objectlist-p
-  (implies (gl-objectlist-p x)
-           (gl-object-p (nth n x)))
+(defthm fgl-object-p-nth-of-fgl-objectlist-p
+  (implies (fgl-objectlist-p x)
+           (fgl-object-p (nth n x)))
   :hints(("Goal" :in-theory (enable nth))))
 
-(define get-term->bvar$c ((x gl-object-p) bvar-db$c)
+(define get-term->bvar$c ((x fgl-object-p) bvar-db$c)
   :returns (bvar acl2::maybe-natp :rule-classes ((:type-prescription :typed-term bvar)))
-  (cdr (hons-get (gl-object-fix x)
+  (cdr (hons-get (fgl-object-fix x)
                  (term-bvars-fix (term-bvars$c bvar-db$c))))
   ///
   (defthm get-term->bvar$c-of-update-term-equivs$c
@@ -94,16 +94,16 @@
               (< n (next-bvar$c bvar-db$c))
               (bvar-db-wfp$c bvar-db$c))
   :split-types t
-  :returns (term gl-object-p)
+  :returns (term fgl-object-p)
   :guard-hints (("goal" :in-theory (enable bvar-db-wfp$c)))
-  (gl-object-fix (bvar-terms$ci (- (lnfix n) (lnfix (base-bvar$c bvar-db$c))) bvar-db$c))
+  (fgl-object-fix (bvar-terms$ci (- (lnfix n) (lnfix (base-bvar$c bvar-db$c))) bvar-db$c))
   ///
   (defthm get-bvar->term$c-of-update-term-equivs$c
     (equal (get-bvar->term$c x (update-term-equivs$c q bvar-db$c))
            (get-bvar->term$c x bvar-db$c))))
 
 
-(define add-term-bvar$c ((x gl-object-p) bvar-db$c)
+(define add-term-bvar$c ((x fgl-object-p) bvar-db$c)
   :guard (bvar-db-wfp$c bvar-db$c)
   :guard-hints (("goal" :in-theory (enable bvar-db-wfp$c)))
   :returns new-bvar-db$c
@@ -115,7 +115,7 @@
                       (resize-bvar-terms$c
                        (max 16 (* 2 terms-len)) bvar-db$c)
                     bvar-db$c))
-       (x (hons-copy (gl-object-fix x)))
+       (x (hons-copy (fgl-object-fix x)))
        (bvar-db$c (update-bvar-terms$ci idx x bvar-db$c))
        (bvar-db$c (update-next-bvar$c (+ 1 next) bvar-db$c)))
     (update-term-bvars$c
@@ -125,7 +125,7 @@
 
   (defthm get-term->bvar$c-of-add-term-bvar$c
     (equal (get-term->bvar$c x (add-term-bvar$c y bvar-db$c))
-           (if (gl-object-equiv x y)
+           (if (fgl-object-equiv x y)
                (nfix (next-bvar$c bvar-db$c))
              (get-term->bvar$c x bvar-db$c)))
     :hints(("Goal" :in-theory (enable get-term->bvar$c))))
@@ -140,7 +140,7 @@
                       (nfix (next-bvar$c bvar-db$c))))
              (equal (get-bvar->term$c n (add-term-bvar$c x bvar-db$c))
                     (if (equal (nfix n) (nfix (next-bvar$c bvar-db$c)))
-                        (gl-object-fix x)
+                        (fgl-object-fix x)
                       (get-bvar->term$c n bvar-db$c))))
     :hints(("Goal" :in-theory (enable get-bvar->term$c))))
 
@@ -268,7 +268,7 @@
   (if (atom equivs)
       t
     (and (or (not (mbt (and (consp (car equivs))
-                            (gl-object-p (caar equivs)))))
+                            (fgl-object-p (caar equivs)))))
              (bvar-list-okp$c (cdar equivs) bvar-db$c))
          (term-equivs-okp$c (cdr equivs) bvar-db$c)))
   ///
@@ -424,10 +424,10 @@
                 (< n (next-bvar$a bvar-db$a))))
    ((get-term->bvar$a * *) => *
     :formals (x bvar-db$a)
-    :guard (gl-object-p x))
+    :guard (fgl-object-p x))
    ((add-term-bvar$a * *) => *
     :formals (x bvar-db$a)
-    :guard (gl-object-p x))
+    :guard (fgl-object-p x))
    ((term-equivs$a *) => *
     :formals (bvar-db$a)
     :guard t)
@@ -475,7 +475,7 @@
        (if (atom x)
            nil
          (if (mbt (and (consp (car x))
-                       (gl-object-p (caar x))))
+                       (fgl-object-p (caar x))))
              (cons (cons (caar x) (filter-bvars (cdar x) bvar-db$a))
                    (filter-equivs (cdr x) bvar-db$a))
            (filter-equivs (cdr x) bvar-db$a)))
@@ -486,7 +486,7 @@
        (declare (xargs :guard (and (<= (base-bvar$a bvar-db$a) n)
                                    (< n (next-bvar$a bvar-db$a)))))
        (and (< (nfix n) (next-bvar$a bvar-db$a))
-            (ec-call (gl-object-fix
+            (ec-call (fgl-object-fix
                       (ec-call (nth (+ -1 (len (ec-call (car bvar-db$a))) (base-bvar$a bvar-db$a) (- (nfix n) ))
                                     (ec-call (car bvar-db$a))))))))
 
@@ -507,7 +507,7 @@
        (if (atom equivs)
            t
          (and (or (not (mbt (and (consp (car equivs))
-                                 (gl-object-p (caar equivs)))))
+                                 (fgl-object-p (caar equivs)))))
                   (bvar-list-okp$a (cdar equivs) bvar-db$a))
               (term-equivs-okp$a (cdr equivs) bvar-db$a)))
        ///
@@ -518,15 +518,15 @@
        (cons (ec-call (car bvar-db$a))
              (filter-equivs (term-equivs-fix equivs) bvar-db$a)))
 
-     (define get-term->bvar$a ((x gl-object-p) bvar-db$a)
+     (define get-term->bvar$a ((x fgl-object-p) bvar-db$a)
        (declare (xargs :guard t))
-       (let ((suff (ec-call (member-equal (gl-object-fix x)
-                                          (ec-call (gl-objectlist-fix (ec-call (car bvar-db$a))))))))
+       (let ((suff (ec-call (member-equal (fgl-object-fix x)
+                                          (ec-call (fgl-objectlist-fix (ec-call (car bvar-db$a))))))))
          (and suff (+ -1 (len suff) (base-bvar$a bvar-db$a)))))
 
-     (define add-term-bvar$a ((x gl-object-p) bvar-db$a)
+     (define add-term-bvar$a ((x fgl-object-p) bvar-db$a)
        (declare (xargs :guard t))
-       (cons (cons (gl-object-fix x) (ec-call (car bvar-db$a)))
+       (cons (cons (fgl-object-fix x) (ec-call (car bvar-db$a)))
              (filter-equivs (ec-call (term-equivs-fix (ec-call (cdr bvar-db$a)))) bvar-db$a)))))
 
   (fty::deffixequiv init-bvar-db$a)
@@ -552,7 +552,7 @@
            (if (atom equivs)
                t
              (and (or (not (mbt (and (consp (car equivs))
-                                     (gl-object-p (caar equivs)))))
+                                     (fgl-object-p (caar equivs)))))
                       (bvar-list-okp$a (cdar equivs) bvar-db$a))
                   (term-equivs-okp$a (cdr equivs) bvar-db$a))))
     :hints(("Goal" :in-theory (enable term-equivs-okp$a)))
@@ -587,7 +587,7 @@
     :rule-classes :type-prescription)
 
   (defthm type-of-get-bvar->term$a
-    (gl-object-p (get-bvar->term$a n bvar-db$a)))
+    (fgl-object-p (get-bvar->term$a n bvar-db$a)))
 
   (local (defthm bvar-list-okp$a-of-filter-bvars
            (bvar-list-okp$a (filter-bvars x bvar-db$a) bvar-db$a)
@@ -602,7 +602,7 @@
            :hints(("Goal" :in-theory (enable filter-equivs)))))
 
   (local (defthm lookup-of-filter-equivs
-           (implies (gl-object-p x)
+           (implies (fgl-object-p x)
                     (equal (cdr (hons-assoc-equal x (filter-equivs y bvar-db$a)))
                            (filter-bvars (cdr (hons-assoc-equal x y)) bvar-db$a)))
            :hints(("Goal" :in-theory (enable filter-equivs)
@@ -642,7 +642,7 @@
 
   (defthm bvar-list-okp$a-of-lookup
     (implies (and (term-equivs-okp$a q bvar-db$a)
-                  (gl-object-p x))
+                  (fgl-object-p x))
              (bvar-list-okp$a (cdr (hons-assoc-equal x q)) bvar-db$a))
     :hints(("Goal" :in-theory (enable term-equivs-okp$a))))
 
@@ -772,7 +772,7 @@
     ;; (implies (<= (base-bvar$a bvar-db$a) (nfix n))
     (equal (get-bvar->term$a n (add-term-bvar$a x bvar-db$a))
            (if (equal (nfix n) (next-bvar$a bvar-db$a))
-               (gl-object-fix x)
+               (fgl-object-fix x)
              (get-bvar->term$a n bvar-db$a))))
 
   ;; (defthm get-bvar->term$a-of-add-term-bvar$a-existing
@@ -789,7 +789,7 @@
 
   (defthm get-term->bvar$a-of-add-term-bvar$a-split
     (equal (get-term->bvar$a y (add-term-bvar$a x bvar-db$a))
-           (if (gl-object-equiv x y)
+           (if (fgl-object-equiv x y)
                (next-bvar$a bvar-db$a)
              (get-term->bvar$a y bvar-db$a))))
 
@@ -832,17 +832,17 @@
                            x))
            :hints(("Goal" :in-theory (enable nth member)))))
 
-  (local (defthm nth-by-member-gl-object-fix
-           (implies (member (gl-object-fix x)
-                            (gl-objectlist-fix z))
-                    (gl-object-equiv (nth (+ (len z)
-                                             (- (len (member (gl-object-fix x)
-                                                             (gl-objectlist-fix z)))))
+  (local (defthm nth-by-member-fgl-object-fix
+           (implies (member (fgl-object-fix x)
+                            (fgl-objectlist-fix z))
+                    (fgl-object-equiv (nth (+ (len z)
+                                             (- (len (member (fgl-object-fix x)
+                                                             (fgl-objectlist-fix z)))))
                                           z)
                                      x))
            :hints(("Goal" :use ((:instance nth-by-member
-                                 (x (gl-object-fix x))
-                                 (z (gl-objectlist-fix z))))
+                                 (x (fgl-object-fix x))
+                                 (z (fgl-objectlist-fix z))))
                    :in-theory (disable nth-by-member)))))
 
 
@@ -850,7 +850,7 @@
     (let ((bvar (get-term->bvar$a x bvar-db$a)))
       (implies bvar
                (equal (get-bvar->term$a bvar bvar-db$a)
-                      (gl-object-fix x)))))
+                      (fgl-object-fix x)))))
 
   ;; (local (defthm no-duplicatesp-of-remove-duplicates
   ;;          (no-duplicatesp (remove-duplicates-equal x))))
@@ -862,17 +862,17 @@
   ;;                          (- (len x) (nfix n))))
   ;;          :hints(("Goal" :in-theory (enable nth)))))
 
-  (local (defthm nth-of-gl-objectlist-fix
-           (equal (nth n (gl-objectlist-fix x))
-                  (gl-object-fix (nth n x)))
+  (local (defthm nth-of-fgl-objectlist-fix
+           (equal (nth n (fgl-objectlist-fix x))
+                  (fgl-object-fix (nth n x)))
            :hints(("Goal" :in-theory (enable nth)))))
 
-  (local (defthm member-of-nth-gl-object-fix
+  (local (defthm member-of-nth-fgl-object-fix
            (implies (< (nfix n) (len x))
-                    (member (gl-object-fix (nth n x))
-                            (gl-objectlist-fix x)))
+                    (member (fgl-object-fix (nth n x))
+                            (fgl-objectlist-fix x)))
            :hints (("goal" :use ((:instance acl2::member-of-nth
-                                  (n n) (x (gl-objectlist-fix x))))
+                                  (n n) (x (fgl-objectlist-fix x))))
                     :in-theory (disable acl2::member-of-nth)))))
 
   (defthm get-term->bvar$a-of-get-bvar->term
@@ -1071,7 +1071,7 @@
 
 
 
-(define add-term-bvar-unique ((x gl-object-p) bvar-db)
+(define add-term-bvar-unique ((x fgl-object-p) bvar-db)
   (let ((look (get-term->bvar x bvar-db)))
     (if look
         (mv look bvar-db)
@@ -1101,17 +1101,17 @@
     (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
       (equal (get-bvar->term$a v new-bvar-db)
              (if (equal (nfix v) (nfix bvar))
-                 (gl-object-fix x)
+                 (fgl-object-fix x)
                (get-bvar->term$a v bvar-db))))
     :hints(("Goal" :in-theory (e/d ()
                                    (get-bvar->term$a-of-get-term->bvar))
             :use ((:instance get-bvar->term$a-of-get-term->bvar
                    (bvar-db$a bvar-db)))))))
 
-(define get-term->equivs ((x gl-object-p) bvar-db)
+(define get-term->equivs ((x fgl-object-p) bvar-db)
   (declare (xargs :stobjs bvar-db))
   :returns (equivs nat-listp :rule-classes (:rewrite (:type-prescription :typed-term equivs)))
-  (cdr (hons-get (gl-object-fix x) (term-equivs bvar-db)))
+  (cdr (hons-get (fgl-object-fix x) (term-equivs bvar-db)))
   ///
   (local (in-theory (enable get-term->equivs)))
 
@@ -1120,12 +1120,12 @@
     :hints(("Goal" :in-theory (enable get-term->equivs)))))
 
 
-(define add-term-equiv ((x gl-object-p)
+(define add-term-equiv ((x fgl-object-p)
                         (n natp)
                         bvar-db)
   :guard (and (<= (base-bvar bvar-db) n)
               (< n (next-bvar bvar-db)))
-  (update-term-equivs (hons-acons (gl-object-fix x)
+  (update-term-equivs (hons-acons (fgl-object-fix x)
                                   (cons (lnfix n) (get-term->equivs x bvar-db))
                                   (term-equivs bvar-db))
                       bvar-db)

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -42,7 +42,7 @@
      (implies ,(cadr (assoc-keyword :hyp args))
               ,(cadr (assoc-keyword :concl args)))
      :hints (("goal" :clause-processor expand-an-implies-cp)
-             '(:clause-processor (gl-interp-cp clause (default-glcp-config . ,args) interp-st state)))))
+             '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))))
 
 (defmacro fgl-thm (&rest args)
   (fgl-thm-fn args))
@@ -82,7 +82,7 @@
                            :solve-params ,(cadr (assoc-keyword :solve-params args))
                            :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
                            :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
-            '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
+            '(:clause-processor (fgl-interp-cp clause (default-fgl-config) interp-st state)))))
 
 (defmacro fgl-param-thm (&rest args)
   (fgl-param-thm-fn args))

@@ -1,4 +1,4 @@
- ; GL - A Symbolic Simulation Framework for ACL2
+ ; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -40,16 +40,16 @@
 
 (set-ignore-ok t)
 
-(define gl-keyval-pair-p (x)
+(define fgl-keyval-pair-p (x)
   (if (atom x)
       (eq x nil)
-    (gl-object-p (cdr x)))
+    (fgl-object-p (cdr x)))
   ///
-  (defthm gl-keyval-pair-of-lookup-in-gl-object-alist
-    (implies (gl-object-alist-p x)
-             (gl-keyval-pair-p (hons-assoc-equal k x)))))
+  (defthm fgl-keyval-pair-of-lookup-in-fgl-object-alist
+    (implies (fgl-object-alist-p x)
+             (fgl-keyval-pair-p (hons-assoc-equal k x)))))
 
-(define fgl-keyval-pair-eval ((x gl-keyval-pair-p) env logicman)
+(define fgl-keyval-pair-eval ((x fgl-keyval-pair-p) env logicman)
   :verify-guards nil
   (if (atom x)
       nil
@@ -63,46 +63,46 @@
             :induct (hons-assoc-equal k x)
             :expand ((fgl-object-alist-eval k x))))))
 
-(define gl-keyval-pair-to-object ((x gl-keyval-pair-p))
-  :guard-hints (("goal" :in-theory (enable gl-keyval-pair-p)))
-  :returns (new-x gl-object-p
-                  :hints (("goal" :expand ((:free (x y) (gl-object-p (cons x y)))
-                                           (gl-object-p (car x)))
+(define fgl-keyval-pair-to-object ((x fgl-keyval-pair-p))
+  :guard-hints (("goal" :in-theory (enable fgl-keyval-pair-p)))
+  :returns (new-x fgl-object-p
+                  :hints (("goal" :expand ((:free (x y) (fgl-object-p (cons x y)))
+                                           (fgl-object-p (car x)))
                            :in-theory (enable g-concrete g-map-tag-p))))
   (if (atom x)
       nil
     (mk-g-cons (g-concrete (car x))
-               (gl-object-fix (cdr x))))
+               (fgl-object-fix (cdr x))))
   ///
-  ;; (local (defthm kind-of-cons-gl-object
-  ;;          (implies (gl-object-p x)
-  ;;                   (equal (gl-object-kind (cons x y)) :g-cons))
-  ;;          :hints(("Goal" :in-theory (enable gl-object-kind gl-object-p)))))
+  ;; (local (defthm kind-of-cons-fgl-object
+  ;;          (implies (fgl-object-p x)
+  ;;                   (equal (fgl-object-kind (cons x y)) :g-cons))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-kind fgl-object-p)))))
 
-  (defthm fgl-object-eval-of-gl-keyval-pair-to-object
-    (equal (fgl-object-eval (gl-keyval-pair-to-object x) env logicman)
+  (defthm fgl-object-eval-of-fgl-keyval-pair-to-object
+    (equal (fgl-object-eval (fgl-keyval-pair-to-object x) env logicman)
            (fgl-keyval-pair-eval x env logicman))
     :hints(("Goal" :in-theory (enable fgl-keyval-pair-eval
                                       ;; g-cons->car g-cons->cdr
                                       )
             :expand ((:free (x y) (fgl-object-eval (cons x y) env))))))
 
-  (defthm gl-object-bfrlist-of-gl-keyval-pair-to-object
-    (implies (not (member v (gl-object-alist-bfrlist x)))
-             (not (member v (gl-object-bfrlist
-                             (gl-keyval-pair-to-object
+  (defthm fgl-object-bfrlist-of-fgl-keyval-pair-to-object
+    (implies (not (member v (fgl-object-alist-bfrlist x)))
+             (not (member v (fgl-object-bfrlist
+                             (fgl-keyval-pair-to-object
                               (hons-assoc-equal k x))))))
     :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
 
-(def-gl-primitive hons-get (key x)
-  (b* (((when (gl-object-case x '(:g-integer :g-boolean)))
+(def-fgl-primitive hons-get (key x)
+  (b* (((when (fgl-object-case x '(:g-integer :g-boolean)))
         (mv t nil interp-st))
-       ((unless (gl-object-case key :g-concrete))
+       ((unless (fgl-object-case key :g-concrete))
         (mv nil nil interp-st))
        (key (g-concrete->val key)))
-    (gl-object-case x
-      :g-map (mv t (gl-keyval-pair-to-object (hons-get key x.alist)) interp-st)
+    (fgl-object-case x
+      :g-map (mv t (fgl-keyval-pair-to-object (hons-get key x.alist)) interp-st)
       :g-concrete (mv t (g-concrete (hons-get key x.val)) interp-st)
       :otherwise (mv nil nil interp-st)))
   :formula-check fast-alist-formula-checks)
@@ -112,11 +112,11 @@
                   (equal (fgl-object-alist-eval x env) x))
          :hints(("Goal" :in-theory (enable fgl-object-alist-eval)))))
 
-(def-gl-primitive hons-acons (key val x)
-  (b* (((unless (gl-object-case key :g-concrete))
+(def-fgl-primitive hons-acons (key val x)
+  (b* (((unless (fgl-object-case key :g-concrete))
         (mv nil nil interp-st))
        (key (g-concrete->val key)))
-    (gl-object-case x
+    (fgl-object-case x
       :g-map (mv t (g-map x.tag (hons-acons key val x.alist)) interp-st)
       :g-concrete (if (atom x.val)
                       (mv t (g-map '(:g-map) (hons-acons key val x.val)) interp-st)
@@ -124,10 +124,10 @@
       :otherwise (mv nil nil interp-st)))
   :formula-check fast-alist-formula-checks)
 
-(defthm gl-object-alist-bfrlist-of-fast-alist-fork
-  (implies (and (not (member v (gl-object-alist-bfrlist x)))
-                (not (member v (gl-object-alist-bfrlist y))))
-           (not (member v (gl-object-alist-bfrlist (fast-alist-fork x y))))))
+(defthm fgl-object-alist-bfrlist-of-fast-alist-fork
+  (implies (and (not (member v (fgl-object-alist-bfrlist x)))
+                (not (member v (fgl-object-alist-bfrlist y))))
+           (not (member v (fgl-object-alist-bfrlist (fast-alist-fork x y))))))
 
 (defthm fgl-keyval-pair-eval-under-iff
   (iff (fgl-keyval-pair-eval x env logicman)
@@ -143,8 +143,8 @@
           :expand ((fgl-object-alist-eval x env)
                    (:free (a b) (fgl-object-alist-eval (cons a b) env))))))
 
-(def-gl-primitive fast-alist-fork (x y)
-  (gl-object-case x
+(def-fgl-primitive fast-alist-fork (x y)
+  (fgl-object-case x
     :g-concrete (if (atom x.val)
                     (mv t y interp-st)
                   (mv nil nil interp-st))
@@ -152,7 +152,7 @@
     :g-integer (mv t y interp-st)
     :g-map (if (atom x.alist)
                (mv t y interp-st)
-             (gl-object-case y
+             (fgl-object-case y
                :g-concrete (if (atom y.val)
                                (mv t (g-map x.tag (fast-alist-fork x.alist y.val)) interp-st)
                              (mv nil nil interp-st))
@@ -178,8 +178,8 @@
                   (and stable-under-simplificationp
                        '(:expand ((fgl-object-alist-eval (cdr x) env)))))))
 
-  (def-gl-primitive fast-alist-clean (x)
-    (gl-object-case x
+  (def-fgl-primitive fast-alist-clean (x)
+    (fgl-object-case x
       :g-concrete (if (atom x.val)
                       (mv t x interp-st)
                     (mv nil nil interp-st))
@@ -189,13 +189,13 @@
       :otherwise (mv nil nil interp-st))
     :formula-check fast-alist-formula-checks))
 
-(define gl-make-fast-alist-concrete-rec (x)
-  :returns (mv ok (new-x gl-object-alist-p))
+(define fgl-make-fast-alist-concrete-rec (x)
+  :returns (mv ok (new-x fgl-object-alist-p))
   (if (atom x)
       (mv t x)
     (if (atom (car x))
         (mv nil nil)
-      (b* (((mv ok rest) (gl-make-fast-alist-concrete-rec (cdr x))))
+      (b* (((mv ok rest) (fgl-make-fast-alist-concrete-rec (cdr x))))
         (if ok
             (mv t (cons (cons (caar x) (g-concrete (cdar x))) rest))
           (mv nil nil)))))
@@ -204,23 +204,23 @@
     (implies ok
              (equal (fgl-object-alist-eval new-x env) x)))
 
-  (defret gl-object-alist-bfrlist-of-<fn>
-    (equal (gl-object-alist-bfrlist new-x) nil)))
+  (defret fgl-object-alist-bfrlist-of-<fn>
+    (equal (fgl-object-alist-bfrlist new-x) nil)))
         
 
-(define gl-make-fast-alist-rec ((x gl-object-p))
-  :returns (mv ok (new-x gl-object-alist-p))
-  :measure (gl-object-count x)
-  (gl-object-case x
-    :g-concrete (gl-make-fast-alist-concrete-rec x.val)
+(define fgl-make-fast-alist-rec ((x fgl-object-p))
+  :returns (mv ok (new-x fgl-object-alist-p))
+  :measure (fgl-object-count x)
+  (fgl-object-case x
+    :g-concrete (fgl-make-fast-alist-concrete-rec x.val)
     :g-map (mv t x.alist)
-    :g-cons (b* (((mv rest-ok rest) (gl-make-fast-alist-rec x.cdr))
+    :g-cons (b* (((mv rest-ok rest) (fgl-make-fast-alist-rec x.cdr))
                  ((unless rest-ok) (mv nil nil)))
-              (gl-object-case x.car
+              (fgl-object-case x.car
                 :g-concrete (if (consp x.car.val)
                                 (mv t (cons (cons (car x.car.val) (g-concrete (cdr x.car.val))) rest))
                               (mv nil nil))
-                :g-cons (gl-object-case x.car.car
+                :g-cons (fgl-object-case x.car.car
                           :g-concrete (mv t (cons (cons x.car.car.val x.car.cdr)
                                                   rest))
                           :otherwise (mv nil nil))
@@ -232,15 +232,15 @@
              (equal (fgl-object-alist-eval new-x env)
                     (fgl-object-eval x env))))
 
-  (defret gl-object-alist-bfrlist-of-<fn>
-    (implies (not (member v (gl-object-bfrlist x)))
-             (not (member v (gl-object-alist-bfrlist new-x))))))
+  (defret fgl-object-alist-bfrlist-of-<fn>
+    (implies (not (member v (fgl-object-bfrlist x)))
+             (not (member v (fgl-object-alist-bfrlist new-x))))))
 
-(def-gl-primitive make-fast-alist (x)
-  (b* (((mv ok alist) (gl-make-fast-alist-rec x))
+(def-fgl-primitive make-fast-alist (x)
+  (b* (((mv ok alist) (fgl-make-fast-alist-rec x))
        ((when ok) (mv t (g-map '(:g-map) (make-fast-alist alist)) interp-st)))
     (mv nil nil interp-st))
   :formula-check fast-alist-formula-checks)
 
 
-(local (install-gl-primitives falprims))
+(local (install-fgl-primitives falprims))

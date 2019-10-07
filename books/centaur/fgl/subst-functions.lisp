@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -660,6 +660,6 @@
 
 ;; (make-event
 ;;  (b* (((mv event &)
-;;        (substitute-functions 'prims1- '(gl-interp-test) '((gl-primitive-fncall-stub . gl-primitive-fncall-base)) (w state))))
+;;        (substitute-functions 'prims1- '(fgl-interp-test) '((fgl-primitive-fncall-stub . fgl-primitive-fncall-base)) (w state))))
 ;;    event))
 

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -30,15 +30,15 @@
 
 (in-package "FGL")
 
-(include-book "def-gl-rewrite")
+(include-book "def-fgl-rewrite")
 (include-book "syntax-bind")
-(include-book "gl-object")
+(include-book "fgl-object")
 
 
 (local (in-theory (enable if!)))
 
-(def-gl-rewrite if-nil
-  (implies (syntaxp (gl-object-case then
+(def-fgl-rewrite if-nil
+  (implies (syntaxp (fgl-object-case then
                       :g-boolean nil
                       :g-ite nil
                       :g-concrete (not (booleanp then.val))
@@ -46,8 +46,8 @@
            (equal (if test then nil)
                   (if! test then nil))))
 
-(def-gl-branch-merge if-with-if-with-nil
-  (implies (syntaxp (gl-object-case else
+(def-fgl-branch-merge if-with-if-with-nil
+  (implies (syntaxp (fgl-object-case else
                       :g-concrete else.val
                       :g-ite nil
                       :otherwise t))
@@ -56,11 +56,11 @@
                        (if test then2 else)
                        nil))))
 
-(def-gl-branch-merge if-with-if-with-nil-nil
+(def-fgl-branch-merge if-with-if-with-nil-nil
   (equal (if test (if test2 then nil) nil)
          (if! (and test test2) then nil)))
 
-(def-gl-branch-merge if-with-ifs-with-nil
+(def-fgl-branch-merge if-with-ifs-with-nil
   (equal (if test (if test2 then2 nil) (if test3 then3 nil))
          (if! (if test test2 test3)
               (if test then2 then3)
@@ -68,7 +68,7 @@
 
 
 
-(def-gl-branch-merge if-of-atomic-consts
+(def-fgl-branch-merge if-of-atomic-consts
   (implies (syntaxp (b* (((g-concrete then))
                          ((g-concrete else)))
                       (and (atom then.val)
@@ -79,15 +79,15 @@
            (equal (if test (concrete then) (concrete else))
                   (if! test then else))))
 
-;; (def-gl-branch-merge if-of-atomic-const/if
+;; (def-fgl-branch-merge if-of-atomic-const/if
 ;;   (implies (syntaxp (b* (((g-concrete then)))
 ;;                       (and (atom then.val)
 ;;                            (not (integerp then.val))
-;;                            (gl-object-case else :g-ite))))
+;;                            (fgl-object-case else :g-ite))))
 ;;            (equal (if test (concrete then) else)
 ;;                   (if! test then else))))
 
-(def-gl-branch-merge if-of-if/atomic-const
+(def-fgl-branch-merge if-of-if/atomic-const
   (implies (syntaxp (and thenthen thenelse
                          (atom (g-concrete->val else))))
            (equal (if test (if test2 thenthen thenelse) (concrete else))
@@ -95,7 +95,7 @@
                        (if! test2 thenthen thenelse)
                        else))))
 
-(def-gl-branch-merge if-of-ifs
+(def-fgl-branch-merge if-of-ifs
   (implies (syntaxp (and thenthen thenelse
                          elsethen elseelse))
            (equal (if test (if test2 thenthen thenelse)
@@ -104,15 +104,15 @@
                        (if! test2 thenthen thenelse)
                        (if! test3 elsethen elseelse)))))
 
-;; (def-gl-rewrite if-integer-nil
+;; (def-fgl-rewrite if-integer-nil
 ;;   (equal (if test (int then) nil)
 ;;          (if! test (int then) nil)))
 
-;; (def-gl-branch-merge if-integer-nil-integer
+;; (def-fgl-branch-merge if-integer-nil-integer
 ;;   (equal (if test (if test2 (int then) nil) (int else))
 ;;          (if! (or (not test) test2) (if test (int then) (int else)) nil)))
 
-;; (def-gl-branch-merge if-integer-nil-if-integer-nil
+;; (def-fgl-branch-merge if-integer-nil-if-integer-nil
 ;;   (equal (if test (if test2 (int then) nil) (if test3 (int else) nil))
 ;;          (if! (if test test2 test3)
 ;;               (if test (int then) (int else))

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -37,13 +37,13 @@
 (local (std::add-default-post-define-hook :fix))
 (set-state-ok t)
 
-(define env->env$ ((x gl-env-p) logicman)
+(define env->env$ ((x fgl-env-p) logicman)
   :guard (stobj-let ((aignet (logicman->aignet logicman)))
                     (ok)
                     (eql (aignet::num-regs aignet) 0)
                     ok)
   (b* ((bfrstate (logicman->bfrstate))
-       ((gl-env x))
+       ((fgl-env x))
        ((acl2::local-stobjs env$)
         (mv env$ returned-env$))
        (env$ (update-env$->obj-alist x.obj-alist env$)))
@@ -374,138 +374,138 @@
                    :hyp 't
                    :ruletype nil))
 
-(include-book "glcp-unify-thms")
+(include-book "unify-thms")
 
-(defthm glcp-unify-concrete-produces-concrete-objs
-  (b* (((mv ?flag new-alist) (glcp-unify-concrete pat x alist)))
+(defthm fgl-unify-concrete-produces-concrete-objs
+  (b* (((mv ?flag new-alist) (fgl-unify-concrete pat x alist)))
     (implies (and flag (not (hons-assoc-equal k alist)))
-             (equal (gl-object-kind (cdr (hons-assoc-equal k new-alist)))
+             (equal (fgl-object-kind (cdr (hons-assoc-equal k new-alist)))
                     :g-concrete)))
-  :hints(("Goal" :in-theory (e/d ((:i glcp-unify-concrete))
+  :hints(("Goal" :in-theory (e/d ((:i fgl-unify-concrete))
                                  (logcar logcdr))
-          :induct (glcp-unify-concrete pat x alist))
+          :induct (fgl-unify-concrete pat x alist))
          (acl2::use-termhint
-          `(:expand ((glcp-unify-concrete ,(acl2::hq pat)
+          `(:expand ((fgl-unify-concrete ,(acl2::hq pat)
                                           ,(acl2::hq x)
                                           ,(acl2::hq alist)))))))
 
 (encapsulate nil
-  (flag::make-flag glcp-unify-term/gobj-flg glcp-unify-term/gobj-fn
+  (flag::make-flag fgl-unify-term/gobj-flg fgl-unify-term/gobj-fn
                    :local t
                    :hints ((and stable-under-simplificationp
                                 '(:expand ((pseudo-term-count pat)
                                            (pseudo-term-list-count (pseudo-term-call->args pat))
                                            (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))))))
 
-  (local (defthm gl-object-count-of-mk-g-boolean
-           (equal (gl-object-count (mk-g-boolean x)) 1)
-           :hints(("Goal" :in-theory (enable mk-g-boolean gl-object-count)))))
+  (local (defthm fgl-object-count-of-mk-g-boolean
+           (equal (fgl-object-count (mk-g-boolean x)) 1)
+           :hints(("Goal" :in-theory (enable mk-g-boolean fgl-object-count)))))
 
-  (local (defthm gl-object-count-of-mk-g-integer
-           (equal (gl-object-count (mk-g-integer x)) 1)
-           :hints(("Goal" :in-theory (enable mk-g-integer gl-object-count)))))
+  (local (defthm fgl-object-count-of-mk-g-integer
+           (equal (fgl-object-count (mk-g-integer x)) 1)
+           :hints(("Goal" :in-theory (enable mk-g-integer fgl-object-count)))))
 
-  (local (defthm gl-object-count-when-g-concrete
-           (implies (gl-object-case x :g-concrete)
-                    (equal (gl-object-count x) 1))
-           :hints(("Goal" :in-theory (enable gl-object-count)))))
+  (local (defthm fgl-object-count-when-g-concrete
+           (implies (fgl-object-case x :g-concrete)
+                    (equal (fgl-object-count x) 1))
+           :hints(("Goal" :in-theory (enable fgl-object-count)))))
 
   (local (in-theory (disable len acl2::member-of-cons member-equal)))
 
-  (local (defthm gl-object-count-of-gobj-syntactic-boolean-fix
-           (<= (gl-object-count (mv-nth 1 (gobj-syntactic-boolean-fix x)))
-               (gl-object-count x))
+  (local (defthm fgl-object-count-of-gobj-syntactic-boolean-fix
+           (<= (fgl-object-count (mv-nth 1 (gobj-syntactic-boolean-fix x)))
+               (fgl-object-count x))
            :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix
-                                             gl-object-count)))
+                                             fgl-object-count)))
            :rule-classes :linear))
 
-  (local (defthm gl-object-count-of-gobj-syntactic-boolean-negate
-           (<= (gl-object-count (gobj-syntactic-boolean-negate x))
-               (gl-object-count x))
+  (local (defthm fgl-object-count-of-gobj-syntactic-boolean-negate
+           (<= (fgl-object-count (gobj-syntactic-boolean-negate x))
+               (fgl-object-count x))
            :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-negate
-                                             gl-object-count)))
+                                             fgl-object-count)))
            :rule-classes :linear))
 
 
-  (defthm-glcp-unify-term/gobj-flg
-    (defthm gl-object-count-of-glcp-unify-term/gobj
+  (defthm-fgl-unify-term/gobj-flg
+    (defthm fgl-object-count-of-fgl-unify-term/gobj
       (b* (((mv flag new-alist)
-            (glcp-unify-term/gobj pat x alist)))
+            (fgl-unify-term/gobj pat x alist)))
         (implies (and flag
                       (not (hons-assoc-equal k alist))
                       (hons-assoc-equal k new-alist))
-                 (<= (gl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (gl-object-count x))))
+                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (fgl-object-count x))))
       :hints ((acl2::use-termhint
-               `(:expand ((glcp-unify-term/gobj ,(acl2::hq pat)
+               `(:expand ((fgl-unify-term/gobj ,(acl2::hq pat)
                                                 ,(acl2::hq x)
                                                 ,(acl2::hq alist)))))
               (and stable-under-simplificationp
-                   '(:expand ((gl-object-count x)
-                              (gl-objectlist-count (g-apply->args x))
-                              (gl-objectlist-count (cdr (g-apply->args x)))))))
-      :flag glcp-unify-term/gobj-fn
+                   '(:expand ((fgl-object-count x)
+                              (fgl-objectlist-count (g-apply->args x))
+                              (fgl-objectlist-count (cdr (g-apply->args x)))))))
+      :flag fgl-unify-term/gobj-fn
       :rule-classes :linear)
-    (defthm gl-object-count-of-glcp-unify-term/gobj-commutative-args
+    (defthm fgl-object-count-of-fgl-unify-term/gobj-commutative-args
       (b* (((mv flag new-alist)
-            (glcp-unify-term/gobj-commutative-args pat1 pat2 x1 x2 alist)))
+            (fgl-unify-term/gobj-commutative-args pat1 pat2 x1 x2 alist)))
         (implies (and flag
                       (not (hons-assoc-equal k alist))
                       (hons-assoc-equal k new-alist))
-                 (<= (gl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (max (gl-object-count x1)
-                          (gl-object-count x2)))))
+                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (max (fgl-object-count x1)
+                          (fgl-object-count x2)))))
       :hints ((acl2::use-termhint
-               `(:expand ((glcp-unify-term/gobj-commutative-args ,(acl2::hq pat1)
+               `(:expand ((fgl-unify-term/gobj-commutative-args ,(acl2::hq pat1)
                                                                  ,(acl2::hq pat2)
                                                                  ,(acl2::hq x1)
                                                                  ,(acl2::hq x2)
                                                                  ,(acl2::hq alist))))))
-      :flag glcp-unify-term/gobj-commutative-args-fn
+      :flag fgl-unify-term/gobj-commutative-args-fn
       :rule-classes :linear)
-    (defthm gl-object-count-of-glcp-unify-term/gobj-if
+    (defthm fgl-object-count-of-fgl-unify-term/gobj-if
       (b* (((mv flag new-alist)
-            (glcp-unify-term/gobj-if pat-test pat-then pat-else x-test x-then x-else alist)))
+            (fgl-unify-term/gobj-if pat-test pat-then pat-else x-test x-then x-else alist)))
         (implies (and flag
                       (not (hons-assoc-equal k alist))
                       (hons-assoc-equal k new-alist))
-                 (<= (gl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (max (gl-object-count x-test)
-                          (max (gl-object-count x-then)
-                               (gl-object-count x-else))))))
+                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (max (fgl-object-count x-test)
+                          (max (fgl-object-count x-then)
+                               (fgl-object-count x-else))))))
       :hints ((acl2::use-termhint
-               `(:expand ((glcp-unify-term/gobj-if ,(acl2::hq pat-test)
+               `(:expand ((fgl-unify-term/gobj-if ,(acl2::hq pat-test)
                                                    ,(acl2::hq pat-then)
                                                    ,(acl2::hq pat-else)
                                                    ,(acl2::hq x-test)
                                                    ,(acl2::hq x-then)
                                                    ,(acl2::hq x-else)
                                                    ,(acl2::hq alist))))))
-      :flag glcp-unify-term/gobj-if-fn
+      :flag fgl-unify-term/gobj-if-fn
       :rule-classes :linear)
-    (defthm gl-object-count-of-glcp-unify-term/gobj-list
+    (defthm fgl-object-count-of-fgl-unify-term/gobj-list
       (b* (((mv flag new-alist)
-            (glcp-unify-term/gobj-list pat x alist)))
+            (fgl-unify-term/gobj-list pat x alist)))
         (implies (and flag
                       (not (hons-assoc-equal k alist))
                       (hons-assoc-equal k new-alist))
-                 (< (gl-object-count (cdr (hons-assoc-equal k new-alist)))
-                    (gl-objectlist-count x))))
+                 (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                    (fgl-objectlist-count x))))
       :hints ((acl2::use-termhint
-               `(:expand ((glcp-unify-term/gobj-list ,(acl2::hq pat)
+               `(:expand ((fgl-unify-term/gobj-list ,(acl2::hq pat)
                                                      ,(acl2::hq x)
                                                      ,(acl2::hq alist))))))
-      :flag glcp-unify-term/gobj-list-fn
+      :flag fgl-unify-term/gobj-list-fn
       :rule-classes :linear))
 
-  (defthmd gl-object-count-of-glcp-unify-term/gobj-casesplit
+  (defthmd fgl-object-count-of-fgl-unify-term/gobj-casesplit
     (b* (((mv flag new-alist)
-          (glcp-unify-term/gobj pat x alist)))
+          (fgl-unify-term/gobj pat x alist)))
       (implies (and flag
                     (case-split (not (hons-assoc-equal k alist)))
                     (hons-assoc-equal k new-alist))
-               (<= (gl-object-count (cdr (hons-assoc-equal k new-alist)))
-                   (gl-object-count x))))
+               (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                   (fgl-object-count x))))
     :rule-classes :linear)
 
   (local (defthm <=-max-forward-3
@@ -520,40 +520,40 @@
                     (<= x (+ y z)))
            :rule-classes :forward-chaining))
 
-  (local (in-theory (enable gl-object-count-of-glcp-unify-term/gobj-casesplit)))
+  (local (in-theory (enable fgl-object-count-of-fgl-unify-term/gobj-casesplit)))
   (local (in-theory (disable max)))
-  (defthm gl-object-count-of-glcp-unify-term/gobj-strict
+  (defthm fgl-object-count-of-fgl-unify-term/gobj-strict
     (b* (((mv flag new-alist)
-          (glcp-unify-term/gobj pat x alist)))
+          (fgl-unify-term/gobj pat x alist)))
       (implies (and flag (not (hons-assoc-equal k alist))
                     (hons-assoc-equal k new-alist)
                     (not (pseudo-term-case pat :var))
-                    (not (gl-object-case x '(:g-concrete :g-boolean :g-integer))))
-               (< (gl-object-count (cdr (hons-assoc-equal k new-alist)))
-                  (gl-object-count x))))
-    :hints (("goal" :expand ((glcp-unify-term/gobj pat x alist)
-                             (gl-object-count x)))
+                    (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer))))
+               (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                  (fgl-object-count x))))
+    :hints (("goal" :expand ((fgl-unify-term/gobj pat x alist)
+                             (fgl-object-count x)))
             (and stable-under-simplificationp
-                 '(:expand ((gl-objectlist-count (g-apply->args x))
-                            (gl-objectlist-count (cdr (g-apply->args x))))
-                   :use ((:instance gl-object-count-of-glcp-unify-term/gobj-commutative-args
+                 '(:expand ((fgl-objectlist-count (g-apply->args x))
+                            (fgl-objectlist-count (cdr (g-apply->args x))))
+                   :use ((:instance fgl-object-count-of-fgl-unify-term/gobj-commutative-args
                           (pat1 (car (pseudo-term-call->args pat)))
                           (pat2 (cadr (pseudo-term-call->args pat)))
                           (x1 (car (g-apply->args x)))
                           (x2 (cadr (g-apply->args x))))
-                         (:instance gl-object-count-of-glcp-unify-term/gobj-commutative-args
+                         (:instance fgl-object-count-of-fgl-unify-term/gobj-commutative-args
                           (pat1 (car (pseudo-term-call->args pat)))
                           (pat2 (cadr (pseudo-term-call->args pat)))
                           (x2 (car (g-apply->args x)))
                           (x1 (cadr (g-apply->args x))))
-                         (:instance gl-object-count-of-glcp-unify-term/gobj-if
+                         (:instance fgl-object-count-of-fgl-unify-term/gobj-if
                           (pat-test (car (pseudo-term-call->args pat)))
                           (pat-then (cadr (pseudo-term-call->args pat)))
                           (pat-else (caddr (pseudo-term-call->args pat)))
                           (x-test (g-ite->test x))
                           (x-then (g-ite->then x))
                           (x-else (g-ite->else x)))
-                         (:instance gl-object-count-of-glcp-unify-term/gobj-if
+                         (:instance fgl-object-count-of-fgl-unify-term/gobj-if
                           (pat-test (car (pseudo-term-call->args pat)))
                           (pat-then (cadr (pseudo-term-call->args pat)))
                           (pat-else (caddr (pseudo-term-call->args pat)))
@@ -562,8 +562,8 @@
                                            (gobj-syntactic-boolean-fix (g-ite->test x)))))
                           (x-then (g-ite->else x))
                           (x-else (g-ite->then x))))
-                   :in-theory (disable gl-object-count-of-glcp-unify-term/gobj-commutative-args
-                                       gl-object-count-of-glcp-unify-term/gobj-if))))
+                   :in-theory (disable fgl-object-count-of-fgl-unify-term/gobj-commutative-args
+                                       fgl-object-count-of-fgl-unify-term/gobj-if))))
     :rule-classes :linear))
 
 
@@ -624,11 +624,11 @@
                             :subst (my-join-alists x.subst y.subst))))
 
   ///
-  (local (defthm gl-object-bindings-bfrlist-of-fast-alist-fork
-           (implies (and (not (member v (gl-object-bindings-bfrlist x)))
-                         (not (member v (gl-object-bindings-bfrlist y))))
-                    (not (member v (gl-object-bindings-bfrlist (fast-alist-fork x y)))))
-           :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist fast-alist-fork)))))
+  (local (defthm fgl-object-bindings-bfrlist-of-fast-alist-fork
+           (implies (and (not (member v (fgl-object-bindings-bfrlist x)))
+                         (not (member v (fgl-object-bindings-bfrlist y))))
+                    (not (member v (fgl-object-bindings-bfrlist (fast-alist-fork x y)))))
+           :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist fast-alist-fork)))))
 
   (defret cgraph-edge-bfrlist-of-<fn>
     (implies (and (not (member v (cgraph-edge-bfrlist x)))
@@ -658,12 +658,12 @@
                   
 
 (define add-cgraph-edge ((matchvar pseudo-var-p)
-                         (subst gl-object-bindings-p)
+                         (subst fgl-object-bindings-p)
                          (rule ctrex-rule-p)
                          (cgraph cgraph-p))
   :returns (new-cgraph cgraph-p)
   (b* (((ctrex-rule rule))
-       (to (cdr (hons-assoc-equal rule.assigned-var (gl-object-bindings-fix subst))))
+       (to (cdr (hons-assoc-equal rule.assigned-var (fgl-object-bindings-fix subst))))
        (edge (make-cgraph-edge :match-vars (list matchvar) :rule rule :subst subst))
        (cgraph (cgraph-fix cgraph))
        (edges (cdr (hons-get to cgraph)))
@@ -672,7 +672,7 @@
     (hons-acons to new-edges cgraph))
   ///
   (defret cgraph-edgelist-bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bindings-bfrlist subst)))
+    (implies (and (not (member v (fgl-object-bindings-bfrlist subst)))
                   (not (member v (cgraph-bfrlist cgraph))))
              (not (member v (cgraph-bfrlist new-cgraph))))
     :hints(("Goal" :in-theory (e/d (cgraph-bfrlist
@@ -724,29 +724,29 @@
                   (equal (equal (len x) n)
                          (len-is x n)))))                  
 
-(defines gl-object-add-to-cgraph
-  (define gl-object-add-to-cgraph ((x gl-object-p)
+(defines fgl-object-add-to-cgraph
+  (define fgl-object-add-to-cgraph ((x fgl-object-p)
                                    (cgraph cgraph-p)
                                    (memo cgraph-alist-p)
                                    (ruletable ctrex-ruletable-p)
                                    (bfrstate bfrstate-p)
                                    (wrld plist-worldp))
     :well-founded-relation acl2::nat-list-<
-    :measure (list (gl-object-count x) 10 0 0)
+    :measure (list (fgl-object-count x) 10 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-    :guard (bfr-listp (gl-object-bfrlist x))
+    :guard (bfr-listp (fgl-object-bfrlist x))
     :verify-guards nil
-    (b* ((fnsym (gl-object-case x
+    (b* ((fnsym (fgl-object-case x
                   (:g-ite 'if)
                   (:g-cons 'cons)
                   (:g-apply x.fn)
                   (otherwise nil)))
          ((unless fnsym)
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((when (hons-get (gl-object-fix x) (cgraph-alist-fix memo)))
+         ((when (hons-get (fgl-object-fix x) (cgraph-alist-fix memo)))
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         (memo (hons-acons (gl-object-fix x) t (cgraph-alist-fix memo)))
-         ((when (and (gl-object-case x :g-apply)
+         (memo (hons-acons (fgl-object-fix x) t (cgraph-alist-fix memo)))
+         ((when (and (fgl-object-case x :g-apply)
                      (fgetprop fnsym 'acl2::coarsenings nil wrld)))
           ;; Equivalence relation.  Add edges between two args
           (b* (((g-apply x))
@@ -756,41 +756,41 @@
                (rule (change-ctrex-rule *fake-ctrex-rule-for-equivs* :equiv x.fn))
                (cgraph (add-cgraph-edge 'y `((x . ,arg2) (y . ,arg1)) rule cgraph))
                (cgraph (add-cgraph-edge 'y `((x . ,arg1) (y . ,arg2)) rule cgraph))
-               ((mv cgraph memo) (gl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld)))
-            (gl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld)))
+               ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld)))
+            (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld)))
          (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
-      (gl-object-add-to-cgraph-rules x rules cgraph memo ruletable bfrstate wrld)))
+      (fgl-object-add-to-cgraph-rules x rules cgraph memo ruletable bfrstate wrld)))
 
-  (define gl-object-add-to-cgraph-rules ((x gl-object-p)
+  (define fgl-object-add-to-cgraph-rules ((x fgl-object-p)
                                          (rules ctrex-rulelist-p)
                                          (cgraph cgraph-p)
                                          (memo cgraph-alist-p)
                                          (ruletable ctrex-ruletable-p)
                                          (bfrstate bfrstate-p)
                                          (wrld plist-worldp))
-    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
-                (bfr-listp (gl-object-bfrlist x)))
-    :measure (list (gl-object-count x) 7 (len rules) 0)
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (fgl-object-bfrlist x)))
+    :measure (list (fgl-object-count x) 7 (len rules) 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (atom rules)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((mv cgraph memo) (gl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable bfrstate wrld)))
-      (gl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable bfrstate wrld)))
+         ((mv cgraph memo) (fgl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable bfrstate wrld)))
+      (fgl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable bfrstate wrld)))
 
-  (define gl-object-add-to-cgraph-rule ((x gl-object-p)
+  (define fgl-object-add-to-cgraph-rule ((x fgl-object-p)
                                         (rule ctrex-rule-p)
                                         (cgraph cgraph-p)
                                         (memo cgraph-alist-p)
                                         (ruletable ctrex-ruletable-p)
                                         (bfrstate bfrstate-p)
                                         (wrld plist-worldp))
-    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
-                (bfr-listp (gl-object-bfrlist x)))
-    :measure (list (gl-object-count x) 7 0 0)
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (fgl-object-bfrlist x)))
+    :measure (list (fgl-object-count x) 7 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((ctrex-rule rule)))
-      (gl-object-add-to-cgraph-matches x rule.match rule cgraph memo ruletable bfrstate wrld)))
+      (fgl-object-add-to-cgraph-matches x rule.match rule cgraph memo ruletable bfrstate wrld)))
 
-  (define gl-object-add-to-cgraph-matches ((x gl-object-p)
+  (define fgl-object-add-to-cgraph-matches ((x fgl-object-p)
                                            (matches pseudo-term-subst-p)
                                            (rule ctrex-rule-p)
                                            (cgraph cgraph-p)
@@ -798,18 +798,18 @@
                                            (ruletable ctrex-ruletable-p)
                                            (bfrstate bfrstate-p)
                                            (wrld plist-worldp))
-    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
-                (bfr-listp (gl-object-bfrlist x)))
-    :measure (list (gl-object-count x) 5 (len matches) 0)
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (fgl-object-bfrlist x)))
+    :measure (list (fgl-object-count x) 5 (len matches) 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (atom matches)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((unless (mbt (and (consp (car matches))
                             (pseudo-var-p (caar matches)))))
-          (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld))
-         ((mv cgraph memo) (gl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph memo ruletable bfrstate wrld)))
-      (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld)))
+          (fgl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld))
+         ((mv cgraph memo) (fgl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph memo ruletable bfrstate wrld)))
+      (fgl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld)))
 
-  (define gl-object-add-to-cgraph-match ((x gl-object-p)
+  (define fgl-object-add-to-cgraph-match ((x fgl-object-p)
                                          (matchvar pseudo-var-p)
                                          (match pseudo-termp)
                                          (rule ctrex-rule-p)
@@ -818,16 +818,16 @@
                                          (ruletable ctrex-ruletable-p)
                                          (bfrstate bfrstate-p)
                                          (wrld plist-worldp))
-    :guard (and (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
-                (bfr-listp (gl-object-bfrlist x)))
-    :measure (list (gl-object-count x) 5 0 0)
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+                (bfr-listp (fgl-object-bfrlist x)))
+    :measure (list (fgl-object-count x) 5 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (pseudo-term-case match :var))
           (cw "Bad ctrex rule? Match is a variable: ~x0" (ctrex-rule->name rule))
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((unless (mbt (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))))
+         ((unless (mbt (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))))
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((mv ok subst) (glcp-unify-term/gobj match x nil))
+         ((mv ok subst) (fgl-unify-term/gobj match x nil))
          ((unless ok) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((ctrex-rule rule))
          (to-look (hons-assoc-equal rule.assigned-var subst))
@@ -836,16 +836,16 @@
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          (to (cdr to-look))
          (cgraph (add-cgraph-edge matchvar subst rule cgraph)))
-      (gl-object-add-to-cgraph to cgraph memo ruletable bfrstate wrld)))
+      (fgl-object-add-to-cgraph to cgraph memo ruletable bfrstate wrld)))
   ///
-  (verify-guards gl-object-add-to-cgraph
+  (verify-guards fgl-object-add-to-cgraph
     :hints (("goal" :do-not-induct t
              :in-theory (enable bfr-listp-when-not-member-witness))))
-  (local (in-theory (disable gl-object-add-to-cgraph
-                             gl-object-add-to-cgraph-rules
-                             gl-object-add-to-cgraph-rule
-                             gl-object-add-to-cgraph-matches
-                             gl-object-add-to-cgraph-match)))
+  (local (in-theory (disable fgl-object-add-to-cgraph
+                             fgl-object-add-to-cgraph-rules
+                             fgl-object-add-to-cgraph-rule
+                             fgl-object-add-to-cgraph-matches
+                             fgl-object-add-to-cgraph-match)))
 
   (local (defthm pseudo-term-subst-fix-when-bad-car
            (implies (not (and (consp (car x))
@@ -856,39 +856,39 @@
 
   (local (in-theory (enable bfr-listp-when-not-member-witness)))
 
-  (defret-mutual cgraph-bfrlist-of-gl-object-add-to-cgraph
+  (defret-mutual cgraph-bfrlist-of-fgl-object-add-to-cgraph
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (gl-object-bfrlist x))
+      (implies (and (bfr-listp (fgl-object-bfrlist x))
                     (bfr-listp (cgraph-bfrlist cgraph)))
                (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
-      :fn gl-object-add-to-cgraph)
+      :fn fgl-object-add-to-cgraph)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (gl-object-bfrlist x))
+      (implies (and (bfr-listp (fgl-object-bfrlist x))
                     (bfr-listp (cgraph-bfrlist cgraph)))
                (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
-      :fn gl-object-add-to-cgraph-rules)
+      :fn fgl-object-add-to-cgraph-rules)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (gl-object-bfrlist x))
+      (implies (and (bfr-listp (fgl-object-bfrlist x))
                     (bfr-listp (cgraph-bfrlist cgraph)))
                (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
-      :fn gl-object-add-to-cgraph-rule)
+      :fn fgl-object-add-to-cgraph-rule)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (gl-object-bfrlist x))
+      (implies (and (bfr-listp (fgl-object-bfrlist x))
                     (bfr-listp (cgraph-bfrlist cgraph)))
                (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
-      :fn gl-object-add-to-cgraph-matches)
+      :fn fgl-object-add-to-cgraph-matches)
     (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (gl-object-bfrlist x))
+      (implies (and (bfr-listp (fgl-object-bfrlist x))
                     (bfr-listp (cgraph-bfrlist cgraph)))
                (bfr-listp (cgraph-bfrlist new-cgraph)))
       :hints ('(:expand (<call>)))
-      :fn gl-object-add-to-cgraph-match))
+      :fn fgl-object-add-to-cgraph-match))
 
-  (fty::deffixequiv-mutual gl-object-add-to-cgraph))
+  (fty::deffixequiv-mutual fgl-object-add-to-cgraph))
 
 (define bvar-db-add-to-cgraph-aux ((n natp)
                                    (bvar-db)
@@ -905,7 +905,7 @@
   (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
                    :exec (eql n (next-bvar bvar-db))))
         (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-       ((mv cgraph memo) (gl-object-add-to-cgraph (get-bvar->term n bvar-db)
+       ((mv cgraph memo) (fgl-object-add-to-cgraph (get-bvar->term n bvar-db)
                                                   cgraph memo ruletable bfrstate wrld)))
     (bvar-db-add-to-cgraph-aux (1+ (lnfix n))
                                bvar-db cgraph memo ruletable bfrstate wrld))
@@ -963,7 +963,7 @@
 
 
 
-;; (define cgraph-edges-invert ((from gl-object-p)
+;; (define cgraph-edges-invert ((from fgl-object-p)
 ;;                              (edges cgraph-edgelist-p)
 ;;                              (acc cgraph-p))
 ;;   :returns (new-acc cgraph-p)
@@ -980,15 +980,15 @@
 ;;   (if (atom cgraph)
 ;;       (cgraph-fix acc)
 ;;     (if (mbt (and (consp (car cgraph))
-;;                   (gl-object-p (caar cgraph))))
+;;                   (fgl-object-p (caar cgraph))))
 ;;         (b* ((acc (cgraph-edges-invert (caar cgraph) (cdar cgraph) acc)))
 ;;           (cgraph-invert (cdr cgraph) acc))
 ;;       (cgraph-invert (cdr cgraph) acc))))
 
-;; (fty::defmap cgraph-indexmap :key-type gl-object :val-type natp :true-listp t)
+;; (fty::defmap cgraph-indexmap :key-type fgl-object :val-type natp :true-listp t)
 
 
-;; (fty::deflist gl-objectlistlist :elt-type gl-objectlist :true-listp t)
+;; (fty::deflist fgl-objectlistlist :elt-type fgl-objectlist :true-listp t)
 
 
 ;; (define cgraph-stack-pop-n ((n natp)
@@ -997,13 +997,13 @@
 ;;               (<= n (len stk)))
 ;;   :guard-hints (("goal" :in-theory (enable cgraph-alist-p)))
 ;;   :measure (len stk)
-;;   :returns (mv (popped gl-objectlist-p)
+;;   :returns (mv (popped fgl-objectlist-p)
 ;;                (new-stk cgraph-alist-p))
 ;;   (if (zp n)
 ;;       (mv nil (cgraph-alist-fix stk))
 ;;     (if (mbt (and (consp stk)
 ;;                   (consp (car stk))
-;;                   (gl-object-p (caar stk))))
+;;                   (fgl-object-p (caar stk))))
 ;;         (b* ((obj (caar stk))
 ;;              (stk (acl2::fast-alist-pop stk))
 ;;              ((mv rest stk) (cgraph-stack-pop-n (1- n) stk)))
@@ -1033,7 +1033,7 @@
 ;;     :hints(("Goal" :in-theory (enable alist-keys cgraph-alist-fix)))))
 
 ;; (define cgraph-edgelist->triggers ((x cgraph-edgelist-p))
-;;   :returns (triggers gl-objectlist-p)
+;;   :returns (triggers fgl-objectlist-p)
 ;;   (if (Atom x)
 ;;       nil
 ;;     (cons (cgraph-edge->trigger (car x))
@@ -1041,7 +1041,7 @@
 
 ;; (local
 ;;  (defprojection cgraph-edgelist->triggers ((x cgraph-edgelist-p))
-;;    :returns (triggers gl-objectlist-p)
+;;    :returns (triggers fgl-objectlist-p)
 ;;    (cgraph-edge->trigger x)
 ;;    :already-definedp t))
 
@@ -1065,13 +1065,13 @@
 ;;                            cgraph-indexmap-p-when-subsetp-equal)))
 
 ;; (defines cgraph-tarjan-sccs
-;;   (define cgraph-tarjan-sccs ((x gl-object-p)
+;;   (define cgraph-tarjan-sccs ((x fgl-object-p)
 ;;                               (cgraph cgraph-p)
 ;;                               (preorder cgraph-indexmap-p)
 ;;                               (preorder-next)
 ;;                               (stk cgraph-alist-p)
 ;;                               (stack-size)
-;;                               (sccs-acc gl-objectlistlist-p))
+;;                               (sccs-acc fgl-objectlistlist-p))
 ;;     :guard (and (no-duplicatesp-equal (alist-keys stk))
 ;;                 (equal stack-size (len stk))
 ;;                 (equal preorder-next (len preorder))
@@ -1084,11 +1084,11 @@
 ;;                   ;; need to prove this later
 ;;                   ;; (equal new-stack-size (len new-stk))
 ;;                   )
-;;                  (sccs gl-objectlistlist-p))
+;;                  (sccs fgl-objectlistlist-p))
 ;;     :well-founded-relation acl2::nat-list-<
 ;;     :measure (list (let ((rem (len (set-difference$ (alist-keys (cgraph-fix cgraph))
 ;;                                                     (alist-keys (cgraph-indexmap-fix preorder))))))
-;;                      (+ rem ;; (if (hons-assoc-equal (gl-object-fix x) (cgraph-fix cgraph)) 0 1)
+;;                      (+ rem ;; (if (hons-assoc-equal (fgl-object-fix x) (cgraph-fix cgraph)) 0 1)
 ;;                         ))
 ;;                    0 1)
 ;;     :verify-guards nil
@@ -1096,8 +1096,8 @@
 ;;          (stk (cgraph-alist-fix stk))
 ;;          (preorder-next (mbe :logic (len preorder) :exec preorder-next))
 ;;          (stack-size (mbe :logic (len stk) :exec stack-size))
-;;          (sccs-acc (gl-objectlistlist-fix sccs-acc))
-;;          (x (gl-object-fix x))
+;;          (sccs-acc (fgl-objectlistlist-fix sccs-acc))
+;;          (x (fgl-object-fix x))
 ;;          (index (cdr (hons-get x preorder)))
 ;;          ((when index)
 ;;           (mv (if (hons-get x stk)
@@ -1129,7 +1129,7 @@
 ;;                                     (preorder-next)
 ;;                                     (stk cgraph-alist-p)
 ;;                                     (stack-size)
-;;                                     (sccs-acc gl-objectlistlist-p))
+;;                                     (sccs-acc fgl-objectlistlist-p))
 ;;     :guard (and (no-duplicatesp-equal (alist-keys stk))
 ;;                 (equal stack-size (len stk))
 ;;                 (equal preorder-next (len preorder))
@@ -1142,7 +1142,7 @@
 ;;                   ;; need to prove this later
 ;;                   ;; (equal new-stack-size (len new-stk))
 ;;                   )
-;;                  (sccs gl-objectlistlist-p))
+;;                  (sccs fgl-objectlistlist-p))
 ;;     :measure (list (let ((rem (len (set-difference$ (alist-keys (cgraph-fix cgraph))
 ;;                                                     (alist-keys (cgraph-indexmap-fix preorder))))))
 ;;                      (+ rem ;; (if (subsetp (cgraph-edgelist->triggers x)
@@ -1154,7 +1154,7 @@
 ;;          (stk (cgraph-alist-fix stk))
 ;;          (preorder-next (mbe :logic (len preorder) :exec preorder-next))
 ;;          (stack-size (mbe :logic (len stk) :exec stack-size))
-;;          (sccs-acc (gl-objectlistlist-fix sccs-acc))
+;;          (sccs-acc (fgl-objectlistlist-fix sccs-acc))
 
 ;;          ((when (atom x))
 ;;           (mv preorder-next preorder preorder-next stk stack-size sccs-acc))
@@ -1333,18 +1333,18 @@
 ;;                                  (preorder-next)
 ;;                                  (stk cgraph-alist-p)
 ;;                                  (stack-size)
-;;                                  (sccs-acc gl-objectlistlist-p))
+;;                                  (sccs-acc fgl-objectlistlist-p))
 ;;   :guard (and (no-duplicatesp-equal (alist-keys stk))
 ;;               (equal stack-size (len stk))
 ;;               (equal preorder-next (len preorder))
 ;;               (subsetp-equal (alist-keys stk) (alist-keys preorder)))
-;;   :returns (sccs gl-objectlistlist-p)
+;;   :returns (sccs fgl-objectlistlist-p)
 ;;   :verify-guards nil
 ;;   (b* (;; (preorder (cgraph-indexmap-fix preorder))
 ;;        ;; (stk (cgraph-alist-fix stk))
 ;;        ;; (preorder-next (mbe :logic (len preorder) :exec preorder-next))
 ;;        ;; (stack-size (mbe :logic (len stk) :exec stack-size))
-;;        (sccs-acc (gl-objectlistlist-fix sccs-acc))
+;;        (sccs-acc (fgl-objectlistlist-fix sccs-acc))
        
 ;;        ((when (atom x))
 ;;         ;; (mv preorder
@@ -1353,7 +1353,7 @@
 ;;         ;;     stack-size
 ;;             sccs-acc)
 ;;        ((unless (mbt (and (consp (car x))
-;;                           (gl-object-p (caar x)))))
+;;                           (fgl-object-p (caar x)))))
 ;;         (cgraph-tarjan-sccs-iter (cdr x) cgraph preorder preorder-next stk stack-size sccs-acc))
 ;;        ((mv ?lowlink
 ;;             preorder
@@ -1367,25 +1367,25 @@
 ;;   (verify-guards cgraph-tarjan-sccs-iter))
 
 ;; (define cgraph-tarjan-sccs-top ((cgraph cgraph-p))
-;;   :returns (sccs gl-objectlistlist-p)
+;;   :returns (sccs fgl-objectlistlist-p)
 ;;   (cgraph-tarjan-sccs-iter cgraph cgraph nil 0 nil 0 nil))
  
 
-;; ;; This is very similar to gl-objectlistlist-p...
-;; (fty::defmap cgraph-scc-map :key-type gl-object :val-type gl-objectlist :true-listp t)
+;; ;; This is very similar to fgl-objectlistlist-p...
+;; (fty::defmap cgraph-scc-map :key-type fgl-object :val-type fgl-objectlist :true-listp t)
 
-;; (define cgraph-map-one-scc ((objs gl-objectlist-p)
-;;                             (scc gl-objectlist-p)
+;; (define cgraph-map-one-scc ((objs fgl-objectlist-p)
+;;                             (scc fgl-objectlist-p)
 ;;                             (scc-map cgraph-scc-map-p))
 ;;   :returns (new-scc-map cgraph-scc-map-p)
 ;;   (if (atom objs)
 ;;       (cgraph-scc-map-fix scc-map)
 ;;     (cgraph-map-one-scc
-;;      (cdr objs) scc (hons-acons (gl-object-fix (car objs))
-;;                                 (gl-objectlist-fix scc)
+;;      (cdr objs) scc (hons-acons (fgl-object-fix (car objs))
+;;                                 (fgl-objectlist-fix scc)
 ;;                                 scc-map))))
 
-;; (define cgraph-map-sccs ((sccs gl-objectlistlist-p)
+;; (define cgraph-map-sccs ((sccs fgl-objectlistlist-p)
 ;;                          (scc-map cgraph-scc-map-p))
 ;;   :returns (new-scc-map cgraph-scc-map-p)
 ;;   (if (atom sccs)
@@ -1397,14 +1397,14 @@
 ;; (defprod scc-cgraph-edges
 ;;   ((tree-edges cgraph-edgelist-p)
 ;;    (scc-edges cgraph-edgelist-p)
-;;    (scc gl-objectlist-p))
+;;    (scc fgl-objectlist-p))
 ;;   :layout :tree)
 
-;; (fty::defmap scc-cgraph :key-type gl-object :val-type scc-cgraph-edges :true-listp t)
+;; (fty::defmap scc-cgraph :key-type fgl-object :val-type scc-cgraph-edges :true-listp t)
 
 
 ;; (define cgraph-edges-scc-split ((edges cgraph-edgelist-p)
-;;                                 (scc gl-objectlist-p))
+;;                                 (scc fgl-objectlist-p))
 ;;   :returns (mv (tree-edges cgraph-edgelist-p)
 ;;                (scc-edges cgraph-edgelist-p))
 ;;   (b* (((when (atom edges))
@@ -1416,13 +1416,13 @@
 ;;     (mv (cons x1 tree-edges) scc-edges)))
 
 
-;; (define scc-to-scc-cgraph ((rest gl-objectlist-p)
-;;                            (scc gl-objectlist-p)
+;; (define scc-to-scc-cgraph ((rest fgl-objectlist-p)
+;;                            (scc fgl-objectlist-p)
 ;;                            (cgraph cgraph-p)
 ;;                            (scc-cgraph scc-cgraph-p))
 ;;   :returns (new-scc-cgraph scc-cgraph-p)
 ;;   (b* (((when (atom rest)) (scc-cgraph-fix scc-cgraph))
-;;        (first (gl-object-fix (car rest)))
+;;        (first (fgl-object-fix (car rest)))
 ;;        (edges (cdr (hons-get first (cgraph-fix cgraph))))
 ;;        ((unless edges)
 ;;         ;; must be a singleton, leaf scc
@@ -1435,7 +1435,7 @@
 ;;                                scc-cgraph)))
 ;;     (scc-to-scc-cgraph (cdr rest) scc cgraph scc-cgraph)))
 
-;; (define cgraph-to-scc-cgraph ((sccs gl-objectlistlist-p)
+;; (define cgraph-to-scc-cgraph ((sccs fgl-objectlistlist-p)
 ;;                               (cgraph cgraph-p)
 ;;                               (scc-cgraph scc-cgraph-p))
 ;;   :returns (new-scc-cgraph scc-cgraph-p)
@@ -1451,36 +1451,36 @@
 
 
 
-(defines gl-object-variable-free-p
-  (define gl-object-variable-free-p ((x gl-object-p))
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
-    (gl-object-case x
+(defines fgl-object-variable-free-p
+  (define fgl-object-variable-free-p ((x fgl-object-p))
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    (fgl-object-case x
       :g-var nil
-      :g-apply (gl-objectlist-variable-free-p x.args)
-      :g-cons (and (gl-object-variable-free-p x.car)
-                   (gl-object-variable-free-p x.cdr))
-      :g-map (gl-object-alist-variable-free-p x.alist)
-      :g-ite (and (gl-object-variable-free-p x.test)
-                  (gl-object-variable-free-p x.then)
-                  (gl-object-variable-free-p x.else))
+      :g-apply (fgl-objectlist-variable-free-p x.args)
+      :g-cons (and (fgl-object-variable-free-p x.car)
+                   (fgl-object-variable-free-p x.cdr))
+      :g-map (fgl-object-alist-variable-free-p x.alist)
+      :g-ite (and (fgl-object-variable-free-p x.test)
+                  (fgl-object-variable-free-p x.then)
+                  (fgl-object-variable-free-p x.else))
       :otherwise t))
 
-  (define gl-objectlist-variable-free-p ((x gl-objectlist-p))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+  (define fgl-objectlist-variable-free-p ((x fgl-objectlist-p))
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (if (atom x)
         t
-      (and (gl-object-variable-free-p (car x))
-           (gl-objectlist-variable-free-p (cdr x)))))
+      (and (fgl-object-variable-free-p (car x))
+           (fgl-objectlist-variable-free-p (cdr x)))))
 
-  (define gl-object-alist-variable-free-p ((x gl-object-alist-p))
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+  (define fgl-object-alist-variable-free-p ((x fgl-object-alist-p))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     (if (atom x)
         t
       (and (or (not (mbt (consp (car x))))
-               (gl-object-variable-free-p (cdar x)))
-           (gl-object-alist-variable-free-p (cdr x)))))
+               (fgl-object-variable-free-p (cdar x)))
+           (fgl-object-alist-variable-free-p (cdr x)))))
   ///
-  (memoize 'gl-object-variable-free-p))
+  (memoize 'fgl-object-variable-free-p))
 
 
 (define magitastic-ev-definition ((fn pseudo-fnsym-p) state)
@@ -1589,85 +1589,85 @@
                   (equal (assoc k x)
                          (hons-assoc-equal k x)))))
 
-(defines magic-gl-object-eval
-  (define magic-gl-object-eval ((x gl-object-p)
+(defines magic-fgl-object-eval
+  (define magic-fgl-object-eval ((x fgl-object-p)
                                 (env$)
                                 &optional
                                 (logicman 'logicman)
                                 (state 'state))
     :guard (and (bfr-env$-p env$ (logicman->bfrstate))
-                (lbfr-listp (gl-object-bfrlist x)))
+                (lbfr-listp (fgl-object-bfrlist x)))
     :returns (mv err val)
     :verify-guards nil
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
-    (gl-object-case x
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    (fgl-object-case x
       :g-concrete (mv nil x.val)
       :g-boolean (mv nil (bfr-eval-fast x.bool env$))
       :g-integer (mv nil (bools->int (bfr-list-eval-fast x.bits env$)))
-      :g-ite (b* (((mv err test) (magic-gl-object-eval x.test env$))
+      :g-ite (b* (((mv err test) (magic-fgl-object-eval x.test env$))
                   ((when err) (mv err nil)))
                (if test
-                   (magic-gl-object-eval x.then env$)
-                 (magic-gl-object-eval x.else env$)))
-      :g-cons (b* (((mv err car) (magic-gl-object-eval x.car env$))
+                   (magic-fgl-object-eval x.then env$)
+                 (magic-fgl-object-eval x.else env$)))
+      :g-cons (b* (((mv err car) (magic-fgl-object-eval x.car env$))
                    ((when err) (mv err nil))
-                   ((mv err cdr) (magic-gl-object-eval x.cdr env$))
+                   ((mv err cdr) (magic-fgl-object-eval x.cdr env$))
                    ((when err) (mv err nil)))
                 (mv nil (cons car cdr)))
-      :g-map (magic-gl-object-alist-eval x.alist env$)
+      :g-map (magic-fgl-object-alist-eval x.alist env$)
       :g-var (mv nil (cdr (assoc-eq x.name (env$->obj-alist env$))))
-      :g-apply (b* (((mv err args) (magic-gl-objectlist-eval x.args env$))
+      :g-apply (b* (((mv err args) (magic-fgl-objectlist-eval x.args env$))
                     ((when err) (mv err nil)))
                  (magitastic-ev-fncall x.fn args 1000 state t t))))
 
-  (define magic-gl-objectlist-eval ((x gl-objectlist-p)
+  (define magic-fgl-objectlist-eval ((x fgl-objectlist-p)
                                     (env$)
                                     &optional
                                     (logicman 'logicman)
                                     (state 'state))
     :guard (and (bfr-env$-p env$ (logicman->bfrstate))
-                (lbfr-listp (gl-objectlist-bfrlist x)))
+                (lbfr-listp (fgl-objectlist-bfrlist x)))
     :returns (mv err (val true-listp))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (b* (((when (atom x)) (mv nil nil))
-         ((mv err car) (magic-gl-object-eval (car x) env$))
+         ((mv err car) (magic-fgl-object-eval (car x) env$))
          ((when err) (mv err nil))
-         ((mv err cdr) (magic-gl-objectlist-eval (cdr x) env$))
+         ((mv err cdr) (magic-fgl-objectlist-eval (cdr x) env$))
          ((when err) (mv err nil)))
       (mv nil (cons car cdr))))
 
-  (define magic-gl-object-alist-eval ((x gl-object-alist-p)
+  (define magic-fgl-object-alist-eval ((x fgl-object-alist-p)
                                       (env$)
                                       &optional
                                       (logicman 'logicman)
                                       (state 'state))
     :guard (and (bfr-env$-p env$ (logicman->bfrstate))
-                (lbfr-listp (gl-object-alist-bfrlist x)))
+                (lbfr-listp (fgl-object-alist-bfrlist x)))
     :returns (mv err val)
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     (b* (((when (atom x)) (mv nil x))
          ((unless (mbt (consp (car x))))
-          (magic-gl-object-alist-eval (cdr x) env$))
-         ((mv err val1) (magic-gl-object-eval (cdar x) env$))
+          (magic-fgl-object-alist-eval (cdr x) env$))
+         ((mv err val1) (magic-fgl-object-eval (cdar x) env$))
          ((when err) (mv err nil))
-         ((mv err rest) (magic-gl-object-alist-eval (cdr x) env$))
+         ((mv err rest) (magic-fgl-object-alist-eval (cdr x) env$))
          ((when err) (mv err nil)))
       (mv nil (cons (cons (caar x) val1) rest))))
   ///
-  (verify-guards magic-gl-object-eval-fn
-    :hints (("goal" :expand (gl-object-bfrlist x)
-             :in-theory (disable magic-gl-object-eval-fn
-                                 magic-gl-objectlist-eval
-                                 magic-gl-object-alist-eval))))
+  (verify-guards magic-fgl-object-eval-fn
+    :hints (("goal" :expand (fgl-object-bfrlist x)
+             :in-theory (disable magic-fgl-object-eval-fn
+                                 magic-fgl-objectlist-eval
+                                 magic-fgl-object-alist-eval))))
 
-  (local (defthm gl-object-alist-fix-when-bad-car
+  (local (defthm fgl-object-alist-fix-when-bad-car
            (implies (and (consp X)
                          (not (consp (car x))))
-                    (equal (gl-object-alist-fix x)
-                           (gl-object-alist-fix (cdr x))))
-           :hints(("Goal" :in-theory (enable gl-object-alist-fix)))))
+                    (equal (fgl-object-alist-fix x)
+                           (fgl-object-alist-fix (cdr x))))
+           :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
 
-  (fty::deffixequiv-mutual magic-gl-object-eval))
+  (fty::deffixequiv-mutual magic-fgl-object-eval))
 
 
 (define pairlis-vars ((x symbol-listp)
@@ -1681,60 +1681,60 @@
                 (pairlis-vars (cdr x) (cdr args)))
         (pairlis-vars (cdr x) (cdr args)))))
   ///
-  (defthm gl-object-bindings-p-of-pairlis-vars
-    (implies (gl-objectlist-p args)
-             (gl-object-bindings-p (pairlis-vars x args))))
+  (defthm fgl-object-bindings-p-of-pairlis-vars
+    (implies (fgl-objectlist-p args)
+             (fgl-object-bindings-p (pairlis-vars x args))))
 
   (local (in-theory (disable symbol-listp symbol-listp-when-pseudo-var-list-p)))
 
-  (defthm gl-object-bindings-bfrlist-of-pairlis-vars
-    (implies (not (member v (gl-objectlist-bfrlist args)))
-             (not (member v (gl-object-bindings-bfrlist (pairlis-vars x args)))))))
+  (defthm fgl-object-bindings-bfrlist-of-pairlis-vars
+    (implies (not (member v (fgl-objectlist-bfrlist args)))
+             (not (member v (fgl-object-bindings-bfrlist (pairlis-vars x args)))))))
 
 
-(defines pseudo-term-subst-gl-objects
-  (define pseudo-term-subst-gl-objects ((x pseudo-termp)
-                                        (alist gl-object-bindings-p))
-    :returns (new-x gl-object-p)
+(defines pseudo-term-subst-fgl-objects
+  (define pseudo-term-subst-fgl-objects ((x pseudo-termp)
+                                        (alist fgl-object-bindings-p))
+    :returns (new-x fgl-object-p)
     :measure (pseudo-term-count x)
     :verify-guards nil
     (pseudo-term-case x
       :const (g-concrete x.val)
-      :var (cdr (assoc x.name (gl-object-bindings-fix alist)))
-      :fncall (g-apply x.fn (pseudo-term-list-subst-gl-objects x.args alist))
-      :lambda (pseudo-term-subst-gl-objects
+      :var (cdr (assoc x.name (fgl-object-bindings-fix alist)))
+      :fncall (g-apply x.fn (pseudo-term-list-subst-fgl-objects x.args alist))
+      :lambda (pseudo-term-subst-fgl-objects
                x.body
                (pairlis-vars x.formals
-                             (pseudo-term-list-subst-gl-objects x.args alist)))))
-  (define pseudo-term-list-subst-gl-objects ((x pseudo-term-listp)
-                                             (alist gl-object-bindings-p))
-    :returns (new-x gl-objectlist-p)
+                             (pseudo-term-list-subst-fgl-objects x.args alist)))))
+  (define pseudo-term-list-subst-fgl-objects ((x pseudo-term-listp)
+                                             (alist fgl-object-bindings-p))
+    :returns (new-x fgl-objectlist-p)
     :measure (pseudo-term-list-count x)
     (if (atom x)
         nil
-      (hons (pseudo-term-subst-gl-objects (car x) alist)
-            (pseudo-term-list-subst-gl-objects (cdr x) alist))))
+      (hons (pseudo-term-subst-fgl-objects (car x) alist)
+            (pseudo-term-list-subst-fgl-objects (cdr x) alist))))
   ///
-  (defthm len-of-pseudo-term-list-subst-gl-objects
-    (equal (len (pseudo-term-list-subst-gl-objects x alist))
+  (defthm len-of-pseudo-term-list-subst-fgl-objects
+    (equal (len (pseudo-term-list-subst-fgl-objects x alist))
            (len x))
     :hints(("Goal" :in-theory (enable len))))
 
-  (defret-mutual gl-object-bfrlist-of-pseudo-term-subst-gl-objects
-    (defret gl-object-bfrlist-of-<fn>
-      (implies (not (member v (gl-object-bindings-bfrlist alist)))
-               (not (member v (gl-object-bfrlist new-x))))
+  (defret-mutual fgl-object-bfrlist-of-pseudo-term-subst-fgl-objects
+    (defret fgl-object-bfrlist-of-<fn>
+      (implies (not (member v (fgl-object-bindings-bfrlist alist)))
+               (not (member v (fgl-object-bfrlist new-x))))
       :hints ('(:expand (<call>)))
-      :fn pseudo-term-subst-gl-objects)
-    (defret gl-objectlist-bfrlist-of-<fn>
-      (implies (not (member v (gl-object-bindings-bfrlist alist)))
-               (not (member v (gl-objectlist-bfrlist new-x))))
+      :fn pseudo-term-subst-fgl-objects)
+    (defret fgl-objectlist-bfrlist-of-<fn>
+      (implies (not (member v (fgl-object-bindings-bfrlist alist)))
+               (not (member v (fgl-objectlist-bfrlist new-x))))
       :hints ('(:expand (<call>)))
-      :fn pseudo-term-list-subst-gl-objects))
+      :fn pseudo-term-list-subst-fgl-objects))
 
-  (verify-guards pseudo-term-subst-gl-objects)
+  (verify-guards pseudo-term-subst-fgl-objects)
 
-  (fty::deffixequiv-mutual pseudo-term-subst-gl-objects))
+  (fty::deffixequiv-mutual pseudo-term-subst-fgl-objects))
 
 
 
@@ -1748,7 +1748,7 @@
    (result-msg))
   :layout :tree)
 
-(fty::defmap cgraph-derivstates :key-type gl-object :val-type cgraph-derivstate :true-listp t)
+(fty::defmap cgraph-derivstates :key-type fgl-object :val-type cgraph-derivstate :true-listp t)
 
 (define cgraph-derive-assigns-measure ((cgraph cgraph-p)
                                        (assigns cgraph-alist-p)
@@ -1758,7 +1758,7 @@
   :measure (len cgraph)
   (b* (((when (atom cgraph)) 0)
        ((unless (mbt (and (consp (car cgraph))
-                          (gl-object-p (caar cgraph)))))
+                          (fgl-object-p (caar cgraph)))))
         (cgraph-derive-assigns-measure (cdr cgraph) assigns sts replimit))
        (obj (caar cgraph))
        (assignedp (hons-get obj (cgraph-alist-fix assigns)))
@@ -1783,7 +1783,7 @@
     :rule-classes :linear)
 
   (defthm cgraph-derive-assigns-measure-of-add-assign-unseen
-    (implies (and (gl-object-p obj)
+    (implies (and (fgl-object-p obj)
                   (not (hons-assoc-equal obj assigns))
                   (not (hons-assoc-equal obj sts))
                   (hons-assoc-equal obj cgraph))
@@ -1796,7 +1796,7 @@
     :rule-classes :linear)
 
   (defthm cgraph-derive-assigns-measure-of-add-assign-seen
-    (implies (and (gl-object-p obj)
+    (implies (and (fgl-object-p obj)
                   (not (hons-assoc-equal obj assigns))
                   (hons-assoc-equal obj sts)
                   (b* ((st (cdr (hons-assoc-equal obj sts))))
@@ -1825,7 +1825,7 @@
   ;;                 (not (hons-assoc-equal obj assigns))
   ;;                 (not (hons-assoc-equal obj sts))
   ;;                 (hons-assoc-equal obj cgraph)
-  ;;                 (gl-object-p obj))
+  ;;                 (fgl-object-p obj))
   ;;            (<= (+ (acl2::pos-fix replimit)
   ;;                   (cgraph-derive-assigns-measure cgraph assigns (cons (cons obj st) sts) replimit))
   ;;                (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
@@ -1842,7 +1842,7 @@
   ;;                   (and (cgraph-derivstate-case st :seen)
   ;;                        (< (cgraph-derivstate->times-seen st) (acl2::pos-fix replimit))))
   ;;                 (hons-assoc-equal obj cgraph)
-  ;;                 (gl-object-p obj))
+  ;;                 (fgl-object-p obj))
   ;;            (<= (+ (acl2::pos-fix replimit)
   ;;                   (- (cgraph-derivstate->times-seen (cdr (hons-assoc-equal obj sts))))
   ;;                   (cgraph-derive-assigns-measure cgraph assigns (cons (cons obj st) sts) replimit))
@@ -1868,7 +1868,7 @@
                   (not (hons-assoc-equal obj assigns))
                   (not (hons-assoc-equal obj sts))
                   (hons-assoc-equal obj cgraph)
-                  (gl-object-p obj))
+                  (fgl-object-p obj))
              (<= (+ (cgraph-derivstate->times-seen st)
                     (cgraph-derive-assigns-measure cgraph assigns (cons (cons obj st) sts) replimit))
                  (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
@@ -1903,7 +1903,7 @@
                          (<= (cgraph-derivstate->times-seen st1)
                              (cgraph-derivstate->times-seen st))))
                   (hons-assoc-equal obj cgraph)
-                  (gl-object-p obj))
+                  (fgl-object-p obj))
              (<= (+ (cgraph-derivstate->times-seen st)
                     (- (cgraph-derivstate->times-seen (cdr (hons-assoc-equal obj sts))))
                     (cgraph-derive-assigns-measure cgraph assigns (cons (cons obj st) sts) replimit))
@@ -1915,7 +1915,7 @@
 
   (local (defthm cgraph-fix-when-bad-car
            (implies (not (and (consp (car x))
-                              (gl-object-p (caar x))))
+                              (fgl-object-p (caar x))))
                     (equal (cgraph-fix x)
                            (cgraph-fix (cdr x))))
            :hints(("Goal" :in-theory (enable cgraph-fix))))))
@@ -1951,11 +1951,11 @@
         (t (msg "~% * ~@0" (combine-error-messages1 errors)))))
 
 
-(define cgraph-set-error ((x gl-object-p)
+(define cgraph-set-error ((x fgl-object-p)
                           (msg)
                           (sts cgraph-derivstates-p))
   :returns (new-sts cgraph-derivstates-p)
-  (b* ((x (gl-object-fix x))
+  (b* ((x (fgl-object-fix x))
        (sts (cgraph-derivstates-fix sts))
        (st (cdr (hons-get x sts)))
        ((unless st)
@@ -1967,10 +1967,10 @@
         (cgraph-derive-assigns-measure cgraph assigns sts replimit))
     :rule-classes :linear))
 
-(define cgraph-incr-seen ((x gl-object-p)
+(define cgraph-incr-seen ((x fgl-object-p)
                           (sts cgraph-derivstates-p))
   :returns (new-sts cgraph-derivstates-p)
-  (b* ((x (gl-object-fix x))
+  (b* ((x (fgl-object-fix x))
        (sts (cgraph-derivstates-fix sts))
        (st (cdr (hons-get x sts)))
        ((unless st)
@@ -1984,25 +1984,25 @@
     :rule-classes :linear)
 
   (defret cgraph-derive-assigns-measure-of-<fn>-unseen
-    (implies (and (not (hons-assoc-equal (gl-object-fix x) sts))
-                  (hons-assoc-equal (gl-object-fix x) cgraph)
-                  (not (hons-assoc-equal (gl-object-fix x) assigns)))
+    (implies (and (not (hons-assoc-equal (fgl-object-fix x) sts))
+                  (hons-assoc-equal (fgl-object-fix x) cgraph)
+                  (not (hons-assoc-equal (fgl-object-fix x) assigns)))
              (< (cgraph-derive-assigns-measure cgraph assigns new-sts replimit)
                 (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
     :rule-classes :linear)
 
   (defret cgraph-derive-assigns-measure-of-<fn>-seen
-    (implies (and (< (cgraph-derivstate->times-seen (cdr (hons-assoc-equal (gl-object-fix x) sts)))
+    (implies (and (< (cgraph-derivstate->times-seen (cdr (hons-assoc-equal (fgl-object-fix x) sts)))
                      (acl2::pos-fix replimit))
-                  (hons-assoc-equal (gl-object-fix x) cgraph)
-                  (not (hons-assoc-equal (gl-object-fix x) assigns)))
+                  (hons-assoc-equal (fgl-object-fix x) cgraph)
+                  (not (hons-assoc-equal (fgl-object-fix x) assigns)))
              (< (cgraph-derive-assigns-measure cgraph assigns new-sts replimit)
                 (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
     :rule-classes :linear))
     
 
 
-(define cgraph-summarize-errors-and-assign ((x gl-object-p)
+(define cgraph-summarize-errors-and-assign ((x fgl-object-p)
                                             errors
                                             (cands candidate-assigns-p)
                                             (assigns cgraph-alist-p)
@@ -2021,7 +2021,7 @@
                   error-summary))
        (assigns (cgraph-alist-fix assigns))
        (assigns (if (consp vals)
-                    (hons-acons (gl-object-fix x) (car vals) assigns)
+                    (hons-acons (fgl-object-fix x) (car vals) assigns)
                   assigns))
        (sts (cgraph-set-error x summary sts)))
     (mv assigns sts))
@@ -2066,12 +2066,12 @@
                        (symbol-alistp y))
                   (symbol-alistp (append x y)))))
 
-(local (defthm symbol-alistp-when-gl-object-bindings-p
-         (implies (gl-object-bindings-p x)
+(local (defthm symbol-alistp-when-fgl-object-bindings-p
+         (implies (fgl-object-bindings-p x)
                   (symbol-alistp x))))
 
 (defines cgraph-derive-assignments
-  (define cgraph-derive-assignments-obj ((x gl-object-p)
+  (define cgraph-derive-assignments-obj ((x fgl-object-p)
                                          (assigns cgraph-alist-p)
                                          (sts cgraph-derivstates-p)
                                          (env$)
@@ -2081,7 +2081,7 @@
                                          (logicman 'logicman)
                                          (bvar-db 'bvar-db)
                                          (state 'state))
-    :guard (and (lbfr-listp (gl-object-bfrlist x))
+    :guard (and (lbfr-listp (fgl-object-bfrlist x))
                 (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
@@ -2092,7 +2092,7 @@
                    0
                    0)
     :verify-guards nil
-    (b* ((x (gl-object-fix x))
+    (b* ((x (fgl-object-fix x))
          (assigns (cgraph-alist-fix assigns))
          (sts (cgraph-derivstates-fix sts))
          (cgraph (cgraph-fix cgraph))
@@ -2103,8 +2103,8 @@
           (or (cdr (hons-get x sts)) '(0)))
          ((when (<= (lposfix replimit) st.times-seen))
           (mv assigns sts))
-         ((when (gl-object-variable-free-p x))
-          (b* (((mv err val) (magic-gl-object-eval x env$))
+         ((when (fgl-object-variable-free-p x))
+          (b* (((mv err val) (magic-fgl-object-eval x env$))
                ((when err)
                 (b* ((sts (cgraph-set-error x
                                             (msg "Failed to evaluate the object: ~@0"
@@ -2222,7 +2222,7 @@
                
   (define cgraph-derive-assignments-matches ((x pseudo-var-list-p)
                                              (rule ctrex-rule-p)
-                                             (subst gl-object-bindings-p)
+                                             (subst fgl-object-bindings-p)
                                              (assigns cgraph-alist-p)
                                              (sts cgraph-derivstates-p)
                                              (env$)
@@ -2238,7 +2238,7 @@
     :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
                    7
                    (len x))
-    :guard (and (lbfr-listp (gl-object-bindings-bfrlist subst))
+    :guard (and (lbfr-listp (fgl-object-bindings-bfrlist subst))
                 (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
@@ -2264,7 +2264,7 @@
 
   (define cgraph-derive-assignments-match ((x pseudo-var-p)
                                            (rule ctrex-rule-p)
-                                           (subst gl-object-bindings-p)
+                                           (subst fgl-object-bindings-p)
                                            (assigns cgraph-alist-p)
                                            (sts cgraph-derivstates-p)
                                            (env$)
@@ -2280,13 +2280,13 @@
     :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
                    6
                    0)
-    :guard (and (lbfr-listp (gl-object-bindings-bfrlist subst))
+    :guard (and (lbfr-listp (fgl-object-bindings-bfrlist subst))
                 (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
     (b* (((ctrex-rule rule))
          (term (cdr (assoc (pseudo-var-fix x) rule.match)))
-         (obj (pseudo-term-subst-gl-objects term subst))
+         (obj (pseudo-term-subst-fgl-objects term subst))
          ((mv assigns sts)
           (cgraph-derive-assignments-obj obj assigns sts env$ cgraph replimit))
          (assigns-look (hons-get obj assigns)))
@@ -2338,45 +2338,45 @@
   (fty::deffixequiv-mutual cgraph-derive-assignments))
 
 
-(defines gl-object-vars
-  (define gl-object-vars ((x gl-object-p) (acc pseudo-var-list-p))
+(defines fgl-object-vars
+  (define fgl-object-vars ((x fgl-object-p) (acc pseudo-var-list-p))
     :returns (vars pseudo-var-list-p)
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     :verify-guards nil
-    (gl-object-case x
+    (fgl-object-case x
       :g-var (add-to-set-eq x.name (pseudo-var-list-fix acc))
-      :g-apply (gl-objectlist-vars x.args acc)
-      :g-ite (gl-object-vars x.test (gl-object-vars x.then (gl-object-vars x.else acc)))
-      :g-cons (gl-object-vars x.car (gl-object-vars x.cdr acc))
-      :g-map (gl-object-alist-vars x.alist acc)
+      :g-apply (fgl-objectlist-vars x.args acc)
+      :g-ite (fgl-object-vars x.test (fgl-object-vars x.then (fgl-object-vars x.else acc)))
+      :g-cons (fgl-object-vars x.car (fgl-object-vars x.cdr acc))
+      :g-map (fgl-object-alist-vars x.alist acc)
       :otherwise (pseudo-var-list-fix acc)))
 
-  (define gl-objectlist-vars ((x gl-objectlist-p) (acc pseudo-var-list-p))
+  (define fgl-objectlist-vars ((x fgl-objectlist-p) (acc pseudo-var-list-p))
     :returns (vars pseudo-var-list-p)
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (if (atom x)
         (pseudo-var-list-fix acc)
-      (gl-objectlist-vars (cdr x) (gl-object-vars (car x) acc))))
+      (fgl-objectlist-vars (cdr x) (fgl-object-vars (car x) acc))))
 
-  (define gl-object-alist-vars ((x gl-object-alist-p) (acc pseudo-var-list-p))
+  (define fgl-object-alist-vars ((x fgl-object-alist-p) (acc pseudo-var-list-p))
     :returns (vars pseudo-var-list-p)
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     (if (atom x)
         (pseudo-var-list-fix acc)
-      (gl-object-alist-vars (cdr x)
+      (fgl-object-alist-vars (cdr x)
                             (if (mbt (consp (car x)))
-                                (gl-object-vars (cdar x) acc)
+                                (fgl-object-vars (cdar x) acc)
                               acc))))
   ///
-  (verify-guards gl-object-vars)
+  (verify-guards fgl-object-vars)
 
-  (local (defthm gl-object-alist-fix-when-bad-car
+  (local (defthm fgl-object-alist-fix-when-bad-car
            (implies (and (consp x) (not (Consp (car x))))
-                    (equal (gl-object-alist-fix x)
-                           (gl-object-alist-fix (cdr x))))
-           :hints(("Goal" :in-theory (enable gl-object-alist-fix)))))
+                    (equal (fgl-object-alist-fix x)
+                           (fgl-object-alist-fix (cdr x))))
+           :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
 
-  (fty::deffixequiv-mutual gl-object-vars))
+  (fty::deffixequiv-mutual fgl-object-vars))
 
 (define cgraph-derive-assignments-for-vars ((x pseudo-var-list-p)
                                             (vals obj-alist-p)
@@ -2414,7 +2414,7 @@
   :returns (errmsg-or-nil)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
-                          (gl-object-p (caar x)))))
+                          (fgl-object-p (caar x)))))
         (cgraph-derivstates-summarize-errors (cdr x)))
        (err1 (cgraph-derivstate->result-msg (cdar x)))
        (rest (cgraph-derivstates-summarize-errors (cdr x))))
@@ -2461,20 +2461,20 @@
     deriv-errors))
 
 
-(local (defthm gl-objectlist-p-alist-vals-of-gl-object-bindings
-         (implies (gl-object-bindings-p x)
-                  (gl-objectlist-p (alist-vals x)))
+(local (defthm fgl-objectlist-p-alist-vals-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
+                  (fgl-objectlist-p (alist-vals x)))
          :hints(("Goal" :in-theory (enable alist-vals)))))
          
-(local (defthm gl-objectlist-bfrlist-alist-vals-of-gl-object-bindings
-         (implies (gl-object-bindings-p x)
-                  (equal (gl-objectlist-bfrlist (alist-vals x))
-                         (gl-object-bindings-bfrlist x)))
-         :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist
+(local (defthm fgl-objectlist-bfrlist-alist-vals-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
+                  (equal (fgl-objectlist-bfrlist (alist-vals x))
+                         (fgl-object-bindings-bfrlist x)))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist
                                            alist-vals)))))
                 
-(local (defthm symbol-listp-keys-of-gl-object-bindings
-         (implies (gl-object-bindings-p x)
+(local (defthm symbol-listp-keys-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
                   (symbol-listp (alist-keys x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
@@ -2557,9 +2557,9 @@
 
 
 (fty::deftagsum bvar-db-consistency-error
-  (:eval-error ((obj gl-object-p)
+  (:eval-error ((obj fgl-object-p)
                 (msg)))
-  (:inconsistency ((obj gl-object-p)
+  (:inconsistency ((obj fgl-object-p)
                    (var-val)
                    (obj-val)))
   :layout :tree)
@@ -2586,7 +2586,7 @@
        (var (bfr-var n logicman))
        (obj (get-bvar->term n bvar-db))
        (var-val (bfr-eval-fast var env$))
-       ((mv eval-err obj-val) (magic-gl-object-eval obj env$))
+       ((mv eval-err obj-val) (magic-fgl-object-eval obj env$))
        (acc (cond (eval-err (cons (make-bvar-db-consistency-error-eval-error :obj obj :msg eval-err)
                                   acc))
                   ((xor var-val obj-val)
@@ -2620,7 +2620,7 @@
                interp-st)))
 
 
-(define interp-st-counterex-bindings ((x gl-object-bindings-p)
+(define interp-st-counterex-bindings ((x fgl-object-bindings-p)
                                       (interp-st)
                                       (state))
   :returns (mv (errmsg)
@@ -2628,17 +2628,17 @@
                (var-vals obj-alist-p)
                (new-interp-st))
   :guard (and (interp-st-bfrs-ok interp-st)
-              (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
+              (interp-st-bfr-listp (fgl-object-bindings-bfrlist x)))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable interp-st-bfrs-ok
                                           bfr-listp-when-not-member-witness))))
-  :prepwork ((local (defthm gl-object-alist-p-when-gl-object-bindings-p
-                      (implies (gl-object-bindings-p x)
-                               (gl-object-alist-p x))
-                      :hints(("Goal" :in-theory (enable gl-object-alist-p
-                                                        gl-object-bindings-p))))))
-  (b* ((x (gl-object-bindings-fix x))
-       (vars (gl-object-alist-vars x nil))
+  :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
+                      (implies (fgl-object-bindings-p x)
+                               (fgl-object-alist-p x))
+                      :hints(("Goal" :in-theory (enable fgl-object-alist-p
+                                                        fgl-object-bindings-p))))))
+  (b* ((x (fgl-object-bindings-fix x))
+       (vars (fgl-object-alist-vars x nil))
        ((mv err interp-st)
         (interp-st-infer-ctrex-var-assignments vars interp-st state))
        ((when err)
@@ -2647,7 +2647,7 @@
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (env$ (interp-st->ctrex-env interp-st)))
                (errmsg binding-vals var-vals)
-               (b* (((mv eval-err objs) (magic-gl-objectlist-eval (alist-vals x) env$))
+               (b* (((mv eval-err objs) (magic-fgl-objectlist-eval (alist-vals x) env$))
                     ;; (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
                     (binding-vals (pairlis$ (alist-keys x) objs))
                     (var-vals (env$->obj-alist env$)))
@@ -2729,14 +2729,14 @@
              (interp-st-bfrs-ok new-interp-st))
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
-(define interp-st-counterex-bindings/print-errors ((x gl-object-bindings-p)
+(define interp-st-counterex-bindings/print-errors ((x fgl-object-bindings-p)
                                                           (interp-st)
                                                           (state))
   :returns (mv (bindings-vals symbol-alistp)
                (var-vals obj-alist-p)
                (new-interp-st))
   :guard (and (interp-st-bfrs-ok interp-st)
-              (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
+              (interp-st-bfr-listp (fgl-object-bindings-bfrlist x)))
   (b* (((mv errmsg bindings-vals var-vals interp-st)
         (interp-st-counterex-bindings x interp-st state)))
     (and errmsg
@@ -2765,7 +2765,7 @@
   :guard (< 1 (interp-st-stack-frames interp-st))
   :guard-hints (("Goal" :in-theory (enable interp-st-stack-frames
                                            stack$a-nth-frame-minor-frames)))
-  :returns (bindings gl-object-bindings-p)
+  :returns (bindings fgl-object-bindings-p)
   :prepwork ((local (defthm len-when-minor-stack-p
                       (implies (minor-stack-p x)
                                (< 0 (len x)))

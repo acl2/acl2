@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -34,14 +34,14 @@
 (include-book "primitives-stub")
 (include-book "bfr-arithmetic")
 (include-book "subst-functions")
-(include-book "def-gl-rewrite")
+(include-book "def-fgl-rewrite")
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable w)))
-;; (def-gl-object-eval fgl-prim
+;; (def-fgl-object-eval fgl-prim
 ;;   (acl2-numberp
 ;;    binary-* binary-+
 ;;    unary-- unary-/ < char-code characterp
@@ -63,10 +63,10 @@
 
 (enable-split-ifs equal)
 
-;; (def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-integer-fix)
-;; (def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-integerp)
-;; (def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-boolean-fix)
-;; (def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-booleanp)
+;; (def-fgl-object-eval-inst fgl-object-eval-of-gobj-syntactic-integer-fix)
+;; (def-fgl-object-eval-inst fgl-object-eval-when-gobj-syntactic-integerp)
+;; (def-fgl-object-eval-inst fgl-object-eval-of-gobj-syntactic-boolean-fix)
+;; (def-fgl-object-eval-inst fgl-object-eval-when-gobj-syntactic-booleanp)
 
 (set-state-ok t)
 (set-ignore-ok t)
@@ -84,33 +84,33 @@
                           fgl-apply)))
 
 
-(def-gl-rewrite int-to-ifix
+(def-fgl-rewrite int-to-ifix
   (equal (int x) (ifix x)))
 
 (enable-split-ifs ifix)
-(def-gl-primitive ifix (x)
+(def-fgl-primitive ifix (x)
   (b* (((mv ok fix) (gobj-syntactic-integer-fix x))
        ((unless ok) (mv nil nil interp-st)))
     (mv t fix interp-st))
   :formula-check primitives-formula-checks)
 
-(def-gl-rewrite ifix-when-integerp
+(def-fgl-rewrite ifix-when-integerp
   (implies (integerp x)
            (equal (ifix x) x)))
 
 (local (defthm integerp-of-fgl-object-alist-eval
          (iff (integerp (fgl-object-alist-eval x env))
-              (integerp (gl-object-alist-fix x)))
+              (integerp (fgl-object-alist-fix x)))
          :hints(("Goal" :induct (len x)
                  :in-theory (enable (:i len))
                  :expand ((fgl-object-alist-eval x env)
-                          (gl-object-alist-fix x))))))
+                          (fgl-object-alist-fix x))))))
 
 
-(local (defthm gl-object-kind-when-booleanp
+(local (defthm fgl-object-kind-when-booleanp
          (implies (booleanp x)
-                  (equal (gl-object-kind x) :g-concrete))
-         :hints(("Goal" :in-theory (enable gl-object-kind)))))
+                  (equal (fgl-object-kind x) :g-concrete))
+         :hints(("Goal" :in-theory (enable fgl-object-kind)))))
 
 (local (defthm fgl-object-eval-when-booleanp
          (implies (booleanp x)
@@ -119,8 +119,8 @@
 
 
 (enable-split-ifs integerp)
-(def-gl-primitive integerp (x)
-  (gl-object-case x
+(def-fgl-primitive integerp (x)
+  (fgl-object-case x
     :g-concrete (mv t (integerp x.val) interp-st)
     :g-integer (mv t t interp-st)
     :g-boolean (mv t nil interp-st)
@@ -138,19 +138,19 @@
 
 (local (defthm fgl-object-alist-eval-under-iff
          (iff (fgl-object-alist-eval x env)
-              (gl-object-alist-fix x))
+              (fgl-object-alist-fix x))
          :hints(("Goal" :induct (len x)
                  :in-theory (enable (:i len))
                  :expand ((fgl-object-alist-eval x env)
-                          (gl-object-alist-fix x))))))
+                          (fgl-object-alist-fix x))))))
 
 (local (defthm bool->bit-of-nonnil
          (implies x
                   (equal (bool->bit x) 1))))
 
 (enable-split-ifs endint)
-(def-gl-primitive endint (x)
-  (gl-object-case x
+(def-fgl-primitive endint (x)
+  (fgl-object-case x
     :g-concrete (mv t (if x.val -1 0) interp-st)
     :g-boolean (mv t (mk-g-integer (list x.bool)) interp-st)
     :g-cons (mv t -1 interp-st)
@@ -161,7 +161,7 @@
 
 
 (enable-split-ifs intcons)
-(def-gl-primitive intcons (car cdr)
+(def-fgl-primitive intcons (car cdr)
   (b* (((mv ok car-fix) (gobj-syntactic-boolean-fix car))
        ((unless ok) (mv nil nil interp-st))
        ((mv ok cdr-fix) (gobj-syntactic-integer-fix cdr))
@@ -170,7 +170,7 @@
                                (gobj-syntactic-integer->bits cdr-fix)))
         interp-st)))
 
-(def-gl-rewrite intcons-of-ifix
+(def-fgl-rewrite intcons-of-ifix
   (equal (intcons car (ifix cdr))
          (intcons car cdr)))
 
@@ -180,25 +180,25 @@
          :hints(("Goal" :in-theory (enable logcar)))))
 
 (local (defthm fgl-object-alist-eval-when-atom
-         (implies (atom (gl-object-alist-fix x))
+         (implies (atom (fgl-object-alist-fix x))
                   (equal (fgl-object-alist-eval x env)
-                         (gl-object-alist-fix x)))
+                         (fgl-object-alist-fix x)))
          :hints(("Goal" :induct (len x)
                  :in-theory (enable (:i len))
                  :expand ((fgl-object-alist-eval x env)
-                          (gl-object-alist-fix x))))))
+                          (fgl-object-alist-fix x))))))
 
 (local (defthm consp-of-fgl-object-alist-eval
          (iff (consp (fgl-object-alist-eval x env))
-              (consp (gl-object-alist-fix x)))
+              (consp (fgl-object-alist-fix x)))
          :hints(("Goal" :induct (len x)
                  :in-theory (enable (:i len))
                  :expand ((fgl-object-alist-eval x env)
-                          (gl-object-alist-fix x))))))
+                          (fgl-object-alist-fix x))))))
 
 (local (defthm integerp-of-fgl-object-alist-eval
          (iff (integerp (fgl-object-alist-eval x env))
-              (integerp (gl-object-alist-fix x)))
+              (integerp (fgl-object-alist-fix x)))
          :hints (("goal" :use (fgl-object-alist-eval-when-atom
                                consp-of-fgl-object-alist-eval)
                   :in-theory (disable fgl-object-alist-eval-when-atom
@@ -209,8 +209,8 @@
                 (not (not x)))))
 
 (enable-split-ifs intcar)
-(def-gl-primitive intcar (x)
-  (gl-object-case x
+(def-fgl-primitive intcar (x)
+  (fgl-object-case x
     :g-concrete (mv t (and (integerp x.val)
                            (intcar x.val))
                     interp-st)
@@ -222,11 +222,11 @@
                interp-st)
     :otherwise (mv nil nil interp-st)))
 
-(def-gl-rewrite intcar-of-ifix
+(def-fgl-rewrite intcar-of-ifix
   (equal (intcar (ifix x)) (intcar x)))
 
 (local (in-theory (enable int-endp
-                          gl-object-bfrlist-when-g-concrete)))
+                          fgl-object-bfrlist-when-g-concrete)))
 
 (local (defthm gobj-bfr-list-eval-when-atom-cdr
          (implies (not (consp (cdr bits)))
@@ -236,8 +236,8 @@
          :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))
                  
 (enable-split-ifs int-endp)          
-(def-gl-primitive int-endp (x)
-  (gl-object-case x
+(def-fgl-primitive int-endp (x)
+  (fgl-object-case x
     :g-concrete (mv t (or (not (integerp x.val))
                           (int-endp x.val))
                     interp-st)
@@ -251,7 +251,7 @@
                interp-st)
     :otherwise (mv nil nil interp-st)))
 
-(def-gl-rewrite int-endp-of-ifix
+(def-fgl-rewrite int-endp-of-ifix
   (equal (int-endp (ifix x)) (int-endp x)))
 
 (local (defthm logcdr-when-not-integerp
@@ -259,14 +259,14 @@
                   (equal (logcdr x) 0))
          :hints(("Goal" :in-theory (enable logcdr)))))
 
-(local (in-theory (enable gl-object-kind-when-integerp
+(local (in-theory (enable fgl-object-kind-when-integerp
                           g-concrete->val-when-integerp)))
 
 (local (in-theory (disable logcdr-of-bools->int)))
 
 (enable-split-ifs intcdr)
-(def-gl-primitive intcdr (x)
-  (gl-object-case x
+(def-fgl-primitive intcdr (x)
+  (fgl-object-case x
     :g-concrete (mv t (if (integerp x.val)
                           (intcdr x.val)
                         0)
@@ -280,30 +280,30 @@
                interp-st)
     :otherwise (mv nil nil interp-st)))
 
-(def-gl-rewrite intcdr-of-ifix
+(def-fgl-rewrite intcdr-of-ifix
   (equal (intcdr (ifix x)) (intcdr x)))
 
 (local (in-theory (enable bool-fix)))
 
-(def-gl-rewrite bool-is-bool-fix
+(def-fgl-rewrite bool-is-bool-fix
   (equal (bool x)
          (bool-fix x)))
 
 (enable-split-ifs bool-fix$inline)
-(def-gl-primitive bool-fix$inline (x)
-  (gl-object-case x
+(def-fgl-primitive bool-fix$inline (x)
+  (fgl-object-case x
     :g-concrete (mv t (bool-fix x.val) interp-st)
-    :g-boolean (mv t (gl-object-fix x) interp-st)
+    :g-boolean (mv t (fgl-object-fix x) interp-st)
     :g-integer (mv t t interp-st)
     :g-cons (mv t t interp-st)
     :g-map (mv t (bool-fix x.alist) interp-st)
     :otherwise (mv nil nil interp-st))
   :formula-check primitives-formula-checks)
 
-(def-gl-primitive cons (car cdr)
+(def-fgl-primitive cons (car cdr)
   (mv t
-      (if (and (gl-object-case car :g-concrete)
-               (gl-object-case cdr :g-concrete))
+      (if (and (fgl-object-case car :g-concrete)
+               (fgl-object-case cdr :g-concrete))
           (g-concrete (cons (g-concrete->val car)
                             (g-concrete->val cdr)))
         (g-cons car cdr))
@@ -312,8 +312,8 @@
 (set-ignore-ok t)
 
 (enable-split-ifs consp)
-(def-gl-primitive consp (x)
-  (gl-object-case x
+(def-fgl-primitive consp (x)
+  (fgl-object-case x
     :g-concrete (mv t (consp x.val) interp-st)
     :g-integer (mv t nil interp-st)
     :g-boolean (mv t nil interp-st)
@@ -322,8 +322,8 @@
     :otherwise (mv nil nil interp-st)))
 
 (enable-split-ifs atom)
-(def-gl-primitive atom (x)
-  (gl-object-case x
+(def-fgl-primitive atom (x)
+  (fgl-object-case x
     :g-concrete (mv t (atom x.val) interp-st)
     :g-integer (mv t t interp-st)
     :g-boolean (mv t t interp-st)
@@ -332,8 +332,8 @@
     :otherwise (mv nil nil interp-st))
   :formula-check primitives-formula-checks)
 
-(local (defthm consp-car-when-gl-object-alist-p
-         (implies (and (gl-object-alist-p x)
+(local (defthm consp-car-when-fgl-object-alist-p
+         (implies (and (fgl-object-alist-p x)
                        (consp x))
                   (consp (car x)))))
 
@@ -345,8 +345,8 @@
                                (fgl-object-alist-eval (cdr x) env))))))
 
 (enable-split-ifs car)
-(def-gl-primitive car (x)
-  (gl-object-case x
+(def-fgl-primitive car (x)
+  (fgl-object-case x
     :g-concrete (mv t (g-concrete (mbe :logic (car x.val)
                                        :exec (and (consp x.val) (car x.val))))
                     interp-st)
@@ -360,8 +360,8 @@
     :otherwise (mv nil nil interp-st)))
 
 (enable-split-ifs cdr)
-(def-gl-primitive cdr (x)
-  (gl-object-case x
+(def-fgl-primitive cdr (x)
+  (fgl-object-case x
     :g-concrete (mv t (g-concrete (mbe :logic (cdr x.val)
                                        :exec (and (consp x.val) (cdr x.val))))
                     interp-st)
@@ -378,7 +378,7 @@
   (local (defthm fgl-object-eval-under-iff-when-concrete-syntactic-boolean-fix
            (b* (((mv ok fix) (gobj-syntactic-boolean-fix x)))
              (implies (and ok
-                           (gl-object-case fix :g-concrete))
+                           (fgl-object-case fix :g-concrete))
                       (iff (fgl-object-eval x env)
                            (g-concrete->val fix))))
            :hints(("Goal" :in-theory (enable fgl-object-eval gobj-syntactic-boolean-fix)))))
@@ -395,10 +395,10 @@
                              equal-of-booleans-rewrite)))
          
 
-  (def-gl-primitive if! (x y z)
+  (def-fgl-primitive if! (x y z)
     (b* (((mv ok x-fix) (gobj-syntactic-boolean-fix x))
          ((unless ok) (mv t (g-ite x y z) interp-st))
-         ((when (gl-object-case x-fix :g-concrete))
+         ((when (fgl-object-case x-fix :g-concrete))
           (mv t (if (g-concrete->val x-fix) y z) interp-st)))
       (mv t (g-ite x-fix y z) interp-st))
     :formula-check primitives-formula-checks))
@@ -413,20 +413,20 @@
 
 
 
-;;   (local (defthmd gl-object-bfrlist-of-get-bvar->term$a-aux
+;;   (local (defthmd fgl-object-bfrlist-of-get-bvar->term$a-aux
 ;;            (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
 ;;                          (< (nfix n) (nfix m))
 ;;                          (<= (base-bvar$a bvar-db) (nfix n)))
-;;                     (not (member v (gl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+;;                     (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
 ;;            :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
 
-;;   (local (defthm gl-object-bfrlist-of-get-bvar->term$a
+;;   (local (defthm fgl-object-bfrlist-of-get-bvar->term$a
 ;;            (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
 ;;                          (<= (base-bvar$a bvar-db) (nfix n))
 ;;                          (< (nfix n) (next-bvar$a bvar-db)))
-;;                     (not (member v (gl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+;;                     (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
 ;;            :hints (("goal" :in-theory (enable bvar-db-bfrlist)
-;;                     :use ((:instance gl-object-bfrlist-of-get-bvar->term$a-aux
+;;                     :use ((:instance fgl-object-bfrlist-of-get-bvar->term$a-aux
 ;;                            (m (next-bvar$a bvar-db))))))))
 
 ;;(local (in-theory (enable gobj-bfr-list-eval-is-bfr-list-eval)))
@@ -436,7 +436,7 @@
 
 
 
-;; (def-gl-formula-checks int+-formula-checks (int+ ifix))
+;; (def-fgl-formula-checks int+-formula-checks (int+ ifix))
 
 ;; (define w-equiv (x y)
 ;;   :non-executable t
@@ -504,7 +504,7 @@
 ;;                                            gobj-syntactic-integer-fix)))))
 
 
-;; (def-gl-primitive int+ (x y)
+;; (def-fgl-primitive int+ (x y)
 ;;   (b* (((mv ok xfix) (gobj-syntactic-integer-fix x))
 ;;        ((unless ok) (mv nil nil interp-st))
 ;;        ((mv ok yfix) (gobj-syntactic-integer-fix y))
@@ -518,12 +518,12 @@
 ;;   :formula-check int+-formula-checks
 ;;   :prepwork ((local (in-theory (enable int+)))))
 
-(define gl-object-mv-nth ((n natp) (x gl-object-p))
-  :returns (mv ok (nth gl-object-p))
-  (gl-object-case x
+(define fgl-object-mv-nth ((n natp) (x fgl-object-p))
+  :returns (mv ok (nth fgl-object-p))
+  (fgl-object-case x
     :g-concrete (mv t (g-concrete (ec-call (nth n x.val))))
     :g-cons (b* (((when (zp n)) (mv t x.car)))
-              (gl-object-mv-nth (1- n) x.cdr))
+              (fgl-object-mv-nth (1- n) x.cdr))
     :g-boolean (mv t nil)
     :g-integer (mv t nil)
     :otherwise (mv nil nil))
@@ -531,15 +531,15 @@
   (local (defthm mv-nth-is-nth
            (equal (mv-nth n x) (nth n x))
            :hints(("Goal" :in-theory (enable mv-nth nth)))))
-  (defret gl-object-mv-nth-correct
+  (defret fgl-object-mv-nth-correct
     (implies ok
              (equal (fgl-object-eval nth env)
                     (mv-nth n (fgl-object-eval x env))))
     :hints(("Goal" :in-theory (enable mv-nth))))
 
   (defret bfr-listp-of-<fn>
-    (implies (bfr-listp (gl-object-bfrlist x))
-             (bfr-listp (gl-object-bfrlist nth)))
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (bfr-listp (fgl-object-bfrlist nth)))
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
     
 (local (in-theory (enable bfr-listp-when-not-member-witness)))
@@ -549,20 +549,20 @@
                 (mv-nth n x))
          :hints(("Goal" :in-theory (enable mv-nth)))))
 
-(def-gl-primitive mv-nth (n x)
-  (b* (((unless (gl-object-case n :g-concrete))
+(def-fgl-primitive mv-nth (n x)
+  (b* (((unless (fgl-object-case n :g-concrete))
         (mv nil nil interp-st))
        (n (nfix (g-concrete->val n)))
-       ((mv ok ans) (gl-object-mv-nth n x)))
+       ((mv ok ans) (fgl-object-mv-nth n x)))
     (mv ok ans interp-st))
   :formula-check primitives-formula-checks)
     
        
 
 
-(local (install-gl-primitives baseprims))
+(local (install-fgl-primitives baseprims))
 
-(local (install-gl-metafns baseprims))
+(local (install-fgl-metafns baseprims))
 
 
 

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-(include-book "gl-object")
+(include-book "fgl-object")
 (include-book "constraint-inst")
 
 (local (include-book "scratchobj"))
@@ -99,7 +99,7 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 ;; A stack has one or more major stack frames.  A major stack frame has a base
 ;; binding list, a debug area, and one or more minor stack frames.  A minor
-;; stack frame has a binding list, two scratch lists: one for gl-objects and
+;; stack frame has a binding list, two scratch lists: one for fgl-objects and
 ;; one for BFRs, and a debug area.
 
 ;; See stack.lisp for the stobj implementation of the stack.
@@ -153,7 +153,7 @@ passed into a function or bound to a different variable in a lambda.</p>
 (fty::defprod minor-frame
   :parents (fgl-stack)
   :short "A minor stack frame representing a lambda body scope."
-  ((bindings gl-object-bindings-p "The full list of bindings for locally bound variables.")
+  ((bindings fgl-object-bindings-p "The full list of bindings for locally bound variables.")
    (scratch scratchlist-p "The current scratch list.")
    (debug "Debug info identifying the lambda from which this frame arose.")))
 
@@ -173,7 +173,7 @@ passed into a function or bound to a different variable in a lambda.</p>
     :parents (fgl-stack)
     :short "A major stack frame representing an entirely new namespace such as
             a function definition or rewrite rule."
-    ((bindings gl-object-bindings-p "Top-level variable bindings of the scope.")
+    ((bindings fgl-object-bindings-p "Top-level variable bindings of the scope.")
      (debug "Debug info identifying the rule being applied and the current phase of its application.")
      (minor-stack minor-stack-p :default ',(list (make-minor-frame))
                   "The minor stack representing the current nesting of lambdas within the scope."))))
@@ -246,19 +246,19 @@ passed into a function or bound to a different variable in a lambda.</p>
                                (cons (make-minor-frame) jframe.minor-stack))
            (cdr x)))))
 
-(define stack$a-set-bindings ((bindings gl-object-bindings-p)
+(define stack$a-set-bindings ((bindings fgl-object-bindings-p)
                               (x major-stack-p))
   :returns (stack major-stack-p)  
   (major-stack-fix (cons (change-major-frame (car x) :bindings bindings)
                          (cdr x))))
 
 (define stack$a-add-binding ((var pseudo-var-p)
-                             (val gl-object-p)
+                             (val fgl-object-p)
                              (x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame frame) (car x)))
     (major-stack-fix (cons (change-major-frame frame :bindings (cons (cons (pseudo-var-fix var)
-                                                                           (gl-object-fix val))
+                                                                           (fgl-object-fix val))
                                                                      frame.bindings))
                            (cdr x)))))
 
@@ -269,12 +269,12 @@ passed into a function or bound to a different variable in a lambda.</p>
                          (cdr x))))
 
 
-(local (defthm gl-object-bindings-p-of-append
-           (implies (and (gl-object-bindings-p x)
-                         (gl-object-bindings-p y))
-                    (gl-object-bindings-p (append x y)))))
+(local (defthm fgl-object-bindings-p-of-append
+           (implies (and (fgl-object-bindings-p x)
+                         (fgl-object-bindings-p y))
+                    (fgl-object-bindings-p (append x y)))))
 
-(define stack$a-set-minor-bindings ((bindings gl-object-bindings-p)
+(define stack$a-set-minor-bindings ((bindings fgl-object-bindings-p)
                                     (x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame jframe) (car x))
@@ -284,7 +284,7 @@ passed into a function or bound to a different variable in a lambda.</p>
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
-(define stack$a-add-minor-bindings ((bindings gl-object-bindings-p)
+(define stack$a-add-minor-bindings ((bindings fgl-object-bindings-p)
                                     (x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame jframe) (car x))
@@ -307,7 +307,7 @@ passed into a function or bound to a different variable in a lambda.</p>
                            (cdr x)))))
 
 (define stack$a-bindings ((x major-stack-p))
-  :returns (bindings gl-object-bindings-p)
+  :returns (bindings fgl-object-bindings-p)
   (major-frame->bindings (car x)))
 
                   
@@ -316,14 +316,14 @@ passed into a function or bound to a different variable in a lambda.</p>
                                     (x major-stack-p))
   :guard (< n (stack$a-frames x))
   :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
-  :returns (bindings gl-object-bindings-p)
+  :returns (bindings fgl-object-bindings-p)
   (major-frame->bindings (nth (mbe :logic (min (1- (stack$a-frames x)) (nfix n))
                                    :exec n)
                               (major-stack-fix x))))
 
 
 (define stack$a-minor-bindings ((x major-stack-p))
-  :returns (binings gl-object-bindings-p)
+  :returns (binings fgl-object-bindings-p)
   (minor-frame->bindings (car (major-frame->minor-stack (car x)))))
 
 (define stack$a-nth-frame-minor-bindings ((n natp)
@@ -333,7 +333,7 @@ passed into a function or bound to a different variable in a lambda.</p>
               (< m (stack$a-nth-frame-minor-frames n x)))
   :guard-hints (("goal" :in-theory (enable stack$a-frames stack$a-nth-frame-minor-frames
                                            max)))
-  :returns (bindings gl-object-bindings-p)
+  :returns (bindings fgl-object-bindings-p)
   (minor-frame->bindings
    (nth (mbe :logic (min (1- (stack$a-nth-frame-minor-frames n x)) (nfix m))
              :exec m)
@@ -546,8 +546,8 @@ passed into a function or bound to a different variable in a lambda.</p>
 (define scratchobj->bfrlist ((x scratchobj-p))
   :returns (bfrs)
   (scratchobj-case x
-    :gl-obj (gl-object-bfrlist x.val)
-    :gl-objlist (gl-objectlist-bfrlist x.val)
+    :fgl-obj (fgl-object-bfrlist x.val)
+    :fgl-objlist (fgl-objectlist-bfrlist x.val)
     :bfr (list x.val)
     :bfrlist x.val
     :cinst (constraint-instance-bfrlist x.val)
@@ -611,17 +611,17 @@ passed into a function or bound to a different variable in a lambda.</p>
 (define minor-frame-bfrlist ((x minor-frame-p))
   :returns (bfrs)
   (b* (((minor-frame x)))
-    (append (gl-object-bindings-bfrlist x.bindings)
+    (append (fgl-object-bindings-bfrlist x.bindings)
             (scratchlist-bfrlist x.scratch)))
   ///
   (defthm minor-frame-bfrlist-of-minor-frame
     (equal (minor-frame-bfrlist (minor-frame bindings scratch debug))
-           (append (gl-object-bindings-bfrlist bindings)
+           (append (fgl-object-bindings-bfrlist bindings)
                    (scratchlist-bfrlist scratch))))
 
   (defthm bfrlist-of-minor-frame->bindings
     (implies (not (member v (minor-frame-bfrlist x)))
-             (not (member v (gl-object-bindings-bfrlist (minor-frame->bindings x))))))
+             (not (member v (fgl-object-bindings-bfrlist (minor-frame->bindings x))))))
 
   (defthm bfrlist-of-minor-frame->scratch
     (implies (not (member v (minor-frame-bfrlist x)))
@@ -650,17 +650,17 @@ passed into a function or bound to a different variable in a lambda.</p>
 (define major-frame-bfrlist ((x major-frame-p))
   :returns (bfrs)
   (b* (((major-frame x)))
-    (append (gl-object-bindings-bfrlist x.bindings)
+    (append (fgl-object-bindings-bfrlist x.bindings)
             (minor-stack-bfrlist x.minor-stack)))
   ///
   (defthm major-frame-bfrlist-of-major-frame
     (equal (major-frame-bfrlist (major-frame bindings debug minor-stack))
-           (append (gl-object-bindings-bfrlist bindings)
+           (append (fgl-object-bindings-bfrlist bindings)
                    (minor-stack-bfrlist minor-stack))))
 
   (defthm bfrlist-of-major-frame->bindings
     (implies (not (member v (major-frame-bfrlist x)))
-             (not (member v (gl-object-bindings-bfrlist (major-frame->bindings x))))))
+             (not (member v (fgl-object-bindings-bfrlist (major-frame->bindings x))))))
 
   (defthm bfrlist-of-major-frame->minor-stack
     (implies (not (member v (major-frame-bfrlist x)))

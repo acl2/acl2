@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -227,13 +227,13 @@
 
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar
     (implies (and (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-listp (gl-object-bfrlist x)))
+                  (interp-st-bfr-listp (fgl-object-bfrlist x)))
              (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar x interp-st state))))
     :hints(("Goal" :in-theory (enable interp-st-add-term-bvar))))
 
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar-unique
     (implies (and (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-listp (gl-object-bfrlist x)))
+                  (interp-st-bfr-listp (fgl-object-bfrlist x)))
              (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar-unique x interp-st state))))
     :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique)))))
 

@@ -1,4 +1,4 @@
- ; GL - A Symbolic Simulation Framework for ACL2
+ ; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -46,7 +46,7 @@
 (set-ignore-ok t)
 
 
-(def-gl-primitive create-fgarray$a ()
+(def-fgl-primitive create-fgarray$a ()
   (b* ((next (interp-st->next-fgarray interp-st))
        (interp-st (if (<= (interp-st->fgarrays-length interp-st) next)
                       (resize-interp-st->fgarrays (max 16 (* 2 next)) interp-st)
@@ -69,11 +69,11 @@
     
   
 
-(def-gl-primitive fgarray-get$a (n x)
-  (gl-object-case n
+(def-fgl-primitive fgarray-get$a (n x)
+  (fgl-object-case n
     :g-concrete
     (let ((key (nfix n.val)))
-      (gl-object-case x
+      (fgl-object-case x
         :g-concrete
         (if (atom x.val)
             (mv t nil interp-st)
@@ -83,18 +83,18 @@
         (b* ((index (g-map-tag->index x.tag))
              ((unless index)
               (prog2$ (warn-about-bad-fgarray-access 'fgarray-get "no index")
-                      (mv t (gl-keyval-pair-to-object (hons-assoc-equal key x.alist)) interp-st)))
+                      (mv t (fgl-keyval-pair-to-object (hons-assoc-equal key x.alist)) interp-st)))
              ((unless (< index (interp-st->fgarrays-length interp-st)))
               (prog2$ (warn-about-bad-fgarray-access 'fgarray-get "index out of bounds")
-                      (mv t (gl-keyval-pair-to-object (hons-assoc-equal key x.alist)) interp-st))))
+                      (mv t (fgl-keyval-pair-to-object (hons-assoc-equal key x.alist)) interp-st))))
           (stobj-let ((fgarray (interp-st->fgarraysi index interp-st)))
                      (res)
                      (b* ((fg-alist (fgarray->alist fgarray))
                           ;; BOZO it would be really nice to make this an EQ check!
                           ((unless (equal x.alist fg-alist))
                            (prog2$ (warn-about-bad-fgarray-access 'fgarray-get "alists mismatched")
-                                   (gl-keyval-pair-to-object (hons-assoc-equal key x.alist)))))
-                       (gl-keyval-pair-to-object (fgarray-get key fgarray)))
+                                   (fgl-keyval-pair-to-object (hons-assoc-equal key x.alist)))))
+                       (fgl-keyval-pair-to-object (fgarray-get key fgarray)))
                      (mv t res interp-st)))
         :otherwise
         (prog2$ (warn-about-bad-fgarray-access 'fgarray-get "bad alist object")
@@ -107,11 +107,11 @@
 
 (local (in-theory (disable boolean-listp member integer-listp)))
 
-(def-gl-primitive fgarray-set$a (n v x)
-  (gl-object-case n
+(def-fgl-primitive fgarray-set$a (n v x)
+  (fgl-object-case n
     :g-concrete
     (let ((key (nfix n.val)))
-      (gl-object-case x
+      (fgl-object-case x
         :g-concrete
         (if (eq x.val nil)
             (b* ((next (interp-st->next-fgarray interp-st))
@@ -156,19 +156,19 @@
             (mv nil nil interp-st)))
   :formula-check fgarray-formula-checks)
 
-(defthm gl-object-alist-p-of-fgarray-compress$a-aux
-  (implies (gl-object-alist-p x)
-           (gl-object-alist-p (fgarray-compress$a-aux i max x)))
+(defthm fgl-object-alist-p-of-fgarray-compress$a-aux
+  (implies (fgl-object-alist-p x)
+           (fgl-object-alist-p (fgarray-compress$a-aux i max x)))
   :hints(("Goal" :in-theory (enable fgarray-compress$a-aux))))
 
-(defthm member-gl-object-bfrlist-of-lookup
-  (implies (not (member v (gl-object-alist-bfrlist x)))
-           (not (member v (gl-object-bfrlist (cdr (hons-assoc-equal k x))))))
+(defthm member-fgl-object-bfrlist-of-lookup
+  (implies (not (member v (fgl-object-alist-bfrlist x)))
+           (not (member v (fgl-object-bfrlist (cdr (hons-assoc-equal k x))))))
   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm gl-object-alist-bfrlist-of-fgarray-compress$a-aux
-  (implies (not (member v (gl-object-alist-bfrlist x)))
-           (not (member v (gl-object-alist-bfrlist (fgarray-compress$a-aux i max x)))))
+(defthm fgl-object-alist-bfrlist-of-fgarray-compress$a-aux
+  (implies (not (member v (fgl-object-alist-bfrlist x)))
+           (not (member v (fgl-object-alist-bfrlist (fgarray-compress$a-aux i max x)))))
   :hints(("Goal" :in-theory (enable fgarray-compress$a-aux))))
 
 (defthm fgarray-compress$a-aux-when-atom
@@ -190,8 +190,8 @@
 
 (local (in-theory (disable fgarray-compress$a-aux-of-greater-than-max-key)))
 
-(def-gl-primitive fgarray-compress$a (x)
-  (gl-object-case x
+(def-fgl-primitive fgarray-compress$a (x)
+  (fgl-object-case x
     :g-concrete
     (if (atom x.val)
         (b* ((next (interp-st->next-fgarray interp-st))
@@ -248,8 +248,8 @@
                    (mv (g-map (g-map-tag next) alist) fgarray))
                  (mv t obj interp-st)))
     ///
-    (defret gl-object-p-ans-of-<fn>
-      (gl-object-p ans))
+    (defret fgl-object-p-ans-of-<fn>
+      (fgl-object-p ans))
     
     (defret interp-st-bfrs-ok-of-<fn>
       (implies (and (interp-st-bfrs-ok interp-st))
@@ -258,7 +258,7 @@
     (defret bfr-listp-of-<fn>
       (implies (and
                 (interp-st-bfrs-ok interp-st))
-               (lbfr-listp (gl-object-bfrlist ans)
+               (lbfr-listp (fgl-object-bfrlist ans)
                            (interp-st->logicman new-interp-st))))
 
     (defret interp-st-get-of-<fn>
@@ -356,9 +356,9 @@
 
 (local (in-theory (disable w acl2::member-equal-append)))
 
-(def-gl-primitive fgarray-init$a (size x)
+(def-fgl-primitive fgarray-init$a (size x)
   (b* ((size
-        (gl-object-case size
+        (fgl-object-case size
           :g-concrete
           (b* (((unless (natp size.val))
                 (prog2$ (warn-about-bad-fgarray-access 'fgarray-init "non-natp size")
@@ -367,7 +367,7 @@
           :otherwise
           (prog2$ (warn-about-bad-fgarray-access 'fgarray-init "non-concrete size")
                   0))))
-    (gl-object-case x
+    (fgl-object-case x
       :g-concrete
       (prog2$ (and (consp x.val)
                    (warn-about-bad-fgarray-access 'fgarray-init "non-atom constant alist"))
@@ -397,4 +397,4 @@
   :formula-check fgarray-formula-checks)
 
 
-(local (install-gl-primitives fgarrayprims))
+(local (install-fgl-primitives fgarrayprims))

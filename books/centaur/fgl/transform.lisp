@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -40,7 +40,7 @@
 (include-book "bvar-db-equivs")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "add-primitives")
-(include-book "def-gl-rewrite")
+(include-book "def-fgl-rewrite")
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -70,7 +70,7 @@
    :measure (nfix (- (nfix max) (nfix n)))
    (if (zp (- (nfix max) (nfix n)))
        nil
-     (append (gl-object-bfrlist (get-bvar->term n bvar-db))
+     (append (fgl-object-bfrlist (get-bvar->term n bvar-db))
              (bvar-db-bfrlist-alt (1+ (lnfix n)) max bvar-db)))
    ///
    (defthmd bvar-db-bfrlist-aux-in-terms-of-decr-max
@@ -78,7 +78,7 @@
             (if (zp (- (nfix max) (nfix n)))
                 nil
               (append (bvar-db-bfrlist-alt n (1- (lnfix max)) bvar-db)
-                      (gl-object-bfrlist (get-bvar->term (1- (lnfix max)) bvar-db)))))
+                      (fgl-object-bfrlist (get-bvar->term (1- (lnfix max)) bvar-db)))))
      :rule-classes :definition)
 
    (defthmd bvar-db-bfrlist-aux-in-terms-of-alt
@@ -89,7 +89,7 @@
 
 
 (define bvar-db-objectlist ((n natp) bvar-db)
-  :returns (objs gl-objectlist-p)
+  :returns (objs fgl-objectlist-p)
   :guard (and (<= n (next-bvar bvar-db))
               (<= (base-bvar bvar-db) n))
   :measure (nfix (- (next-bvar bvar-db) (nfix n)))
@@ -112,41 +112,41 @@
             :induct (nth-of-bvar-db-objectlist-ind k n)
             :expand (<call>))))
 
-  (local (defretd gl-objectlist-bfrlist-of-<fn>-in-terms-of-alt
-           (equal (gl-objectlist-bfrlist objs)
+  (local (defretd fgl-objectlist-bfrlist-of-<fn>-in-terms-of-alt
+           (equal (fgl-objectlist-bfrlist objs)
                   (bvar-db-bfrlist-alt n (next-bvar$a bvar-db) bvar-db))
            :hints(("Goal" :in-theory (enable bvar-db-bfrlist-alt)))))
 
-  (defret gl-objectlist-bfrlist-of-<fn>
-    (set-equiv (gl-objectlist-bfrlist (bvar-db-objectlist (base-bvar$a bvar-db) bvar-db))
+  (defret fgl-objectlist-bfrlist-of-<fn>
+    (set-equiv (fgl-objectlist-bfrlist (bvar-db-objectlist (base-bvar$a bvar-db) bvar-db))
                (bvar-db-bfrlist bvar-db))
     :hints(("Goal" :in-theory (enable bvar-db-bfrlist
                                       bvar-db-bfrlist-aux-in-terms-of-alt
-                                      gl-objectlist-bfrlist-of-<fn>-in-terms-of-alt))))
+                                      fgl-objectlist-bfrlist-of-<fn>-in-terms-of-alt))))
 
 
   (defret bfr-listp-of-<fn>
     (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
                   (<= (base-bvar bvar-db) (nfix n)))
-             (bfr-listp (gl-objectlist-bfrlist objs))))
+             (bfr-listp (fgl-objectlist-bfrlist objs))))
 
   (defret len-of-<fn>
     (equal (len objs)
            (nfix (- (next-bvar bvar-db) (nfix n))))))
 
-(define bvar-db-from-objectlist ((x gl-objectlist-p) bvar-db state)
+(define bvar-db-from-objectlist ((x fgl-objectlist-p) bvar-db state)
   :returns (new-bvar-db)
   (b* (((when (atom x))
         bvar-db)
        (nextvar (next-bvar bvar-db))
-       (x1 (gl-object-fix (car x)))
+       (x1 (fgl-object-fix (car x)))
        (bvar-db (add-term-bvar x1 bvar-db))
        (bvar-db (maybe-add-equiv-term x1 nextvar bvar-db state)))
     (bvar-db-from-objectlist (cdr x) bvar-db state))
   ///
   (defret bvar-db-bfrlist-of-<fn>
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                  (not (member v (gl-objectlist-bfrlist x))))
+                  (not (member v (fgl-objectlist-bfrlist x))))
              (not (member v (bvar-db-bfrlist new-bvar-db)))))
 
   (defret next-bvar-of-<fn>
@@ -161,7 +161,7 @@
     (equal (get-bvar->term$a n new-bvar-db)
            (cond ((and (<= (next-bvar$a bvar-db) (nfix n))
                        (< (nfix n) (+ (len x) (next-bvar$a bvar-db))))
-                  (gl-object-fix (nth (- (nfix n) (next-bvar$a bvar-db)) x)))
+                  (fgl-object-fix (nth (- (nfix n) (next-bvar$a bvar-db)) x)))
                  (t (get-bvar->term$a n bvar-db))))))
 
 
@@ -232,7 +232,7 @@
 
                      ((mv bitarr seen) (acl2::cwtime (constraint-db-mark-bfrs constraint-db bitarr seen)))
                      ((mv bitarr seen) (acl2::cwtime (major-stack-mark-bfrs stack-obj bitarr seen)))
-                     ((mv bitarr seen) (acl2::cwtime (gl-objectlist-mark-bfrs bvar-db-objs bitarr seen)))
+                     ((mv bitarr seen) (acl2::cwtime (fgl-objectlist-mark-bfrs bvar-db-objs bitarr seen)))
                      (- (fast-alist-free seen))
 
                      (bitarr
@@ -265,7 +265,7 @@
 
                      ((mv constraint-db memo) (acl2::cwtime (constraint-db-map-bfrs constraint-db litarr memo)))
                      ((mv stack-obj memo) (acl2::cwtime (major-stack-map-bfrs stack-obj litarr memo)))
-                     ((mv bvar-db-objs memo) (acl2::cwtime (gl-objectlist-map-bfrs-memo bvar-db-objs litarr memo)))
+                     ((mv bvar-db-objs memo) (acl2::cwtime (fgl-objectlist-map-bfrs-memo bvar-db-objs litarr memo)))
 
                      (- (fast-alist-free memo))
 
@@ -308,24 +308,24 @@
   (set-ignore-ok t)
 
   (local (defthm bfrs-markedp-of-mark-bvar-db-objectlist
-           (b* (((mv new-bitarr &) (gl-objectlist-mark-bfrs
+           (b* (((mv new-bitarr &) (fgl-objectlist-mark-bfrs
                                     (bvar-db-objectlist (base-bvar$a bvar-db) bvar-db)
                                     bitarr seen)))
-             (implies (gl-object-mark-bfrs-invar seen bitarr)
+             (implies (fgl-object-mark-bfrs-invar seen bitarr)
                       (bfrs-markedp (bvar-db-bfrlist bvar-db) new-bitarr)))
-           :hints (("goal" :use ((:instance gl-objectlist-mark-bfrs-marks-bfrs
+           :hints (("goal" :use ((:instance fgl-objectlist-mark-bfrs-marks-bfrs
                                   (x (bvar-db-objectlist (base-bvar$a bvar-db) bvar-db))))
-                    :in-theory (disable gl-objectlist-mark-bfrs-marks-bfrs)))))
+                    :in-theory (disable fgl-objectlist-mark-bfrs-marks-bfrs)))))
 
   (local (defthm bfrs-markedp-of-mark-bvar-db-objectlist
-           (b* (((mv new-bitarr &) (gl-objectlist-mark-bfrs
+           (b* (((mv new-bitarr &) (fgl-objectlist-mark-bfrs
                                     (bvar-db-objectlist (base-bvar$a bvar-db) bvar-db)
                                     bitarr seen)))
-             (implies (gl-object-mark-bfrs-invar seen bitarr)
+             (implies (fgl-object-mark-bfrs-invar seen bitarr)
                       (bfrs-markedp (bvar-db-bfrlist bvar-db) new-bitarr)))
-           :hints (("goal" :use ((:instance gl-objectlist-mark-bfrs-marks-bfrs
+           :hints (("goal" :use ((:instance fgl-objectlist-mark-bfrs-marks-bfrs
                                   (x (bvar-db-objectlist (base-bvar$a bvar-db) bvar-db))))
-                    :in-theory (disable gl-objectlist-mark-bfrs-marks-bfrs)))))
+                    :in-theory (disable fgl-objectlist-mark-bfrs-marks-bfrs)))))
 
 
   (defret stack-concretize-of-<fn>
@@ -351,7 +351,7 @@
                                     (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
                                     (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
-                      (env (gl-env->bfr-vals ,(acl2::hq env)))
+                      (env (fgl-env->bfr-vals ,(acl2::hq env)))
                       (logicman ,(acl2::hq old-logicman))
                       (bitarr ,(acl2::hq bitarr))
                       (litarr ,(acl2::hq old-litarr))
@@ -472,7 +472,7 @@
   ;; (local (defthm subsetp-bfrlist-of-get-bvar->term$a-aux
   ;;          (implies (and (<= (base-bvar$a bvar-db) (nfix n))
   ;;                        (< (nfix n) (nfix m)))
-  ;;                   (subsetp (gl-object-bfrlist (get-bvar->term$a n bvar-db))
+  ;;                   (subsetp (fgl-object-bfrlist (get-bvar->term$a n bvar-db))
   ;;                            (bvar-db-bfrlist-aux m bvar-db)))
   ;;          :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)
   ;;                  :induct (bvar-db-bfrlist-aux m bvar-db)
@@ -481,27 +481,27 @@
   ;; (local (defthm subsetp-bfrlist-of-get-bvar->term$a
   ;;          (implies (and (<= (base-bvar$a bvar-db) (nfix n))
   ;;                        (< (nfix n) (next-bvar$a bvar-db)))
-  ;;                   (subsetp (gl-object-bfrlist (get-bvar->term$a n bvar-db))
+  ;;                   (subsetp (fgl-object-bfrlist (get-bvar->term$a n bvar-db))
   ;;                            (bvar-db-bfrlist bvar-db)))
   ;;          :hints(("Goal" :in-theory (enable bvar-db-bfrlist)))))
 
   (local (defret eval-of-<fn>-match-any-bfr-litarr-correct
            (implies (and (bfr-litarr-correct-p some-bfrlist
-                                               (gl-env->bfr-vals env)
+                                               (fgl-env->bfr-vals env)
                                                litarr logicman2 logicman)
-                         (bfr-litarr-correct-p (gl-object-bfrlist x)
-                                               (gl-env->bfr-vals env)
+                         (bfr-litarr-correct-p (fgl-object-bfrlist x)
+                                               (fgl-env->bfr-vals env)
                                                litarr logicman2 logicman))
                     (equal (fgl-object-eval new-x env logicman2)
                            (fgl-object-eval x env logicman)))
-           :fn gl-object-map-bfrs))
+           :fn fgl-object-map-bfrs))
 
   (local (Defthm bfr-litarr-correct-p-of-get-bvar->term$a
            (implies (and (bfr-litarr-correct-p (bvar-db-bfrlist bvar-db) env litarr logicman2 logicman)
                          (<= (base-bvar$a bvar-db) (nfix n))
                          (< (nfix n) (next-bvar$a bvar-db)))
                     (bfr-litarr-correct-p
-                     (gl-object-bfrlist (get-bvar->term$a n bvar-db))
+                     (fgl-object-bfrlist (get-bvar->term$a n bvar-db))
                      env litarr logicman2 logicman))))
 
   (local (Defthm bfr-litarr-correct-p-all-envs-of-get-bvar->term$a
@@ -509,7 +509,7 @@
                          (<= (base-bvar$a bvar-db) (nfix n))
                          (< (nfix n) (next-bvar$a bvar-db)))
                     (bfr-litarr-correct-p-all-envs
-                     (gl-object-bfrlist (get-bvar->term$a n bvar-db)) litarr logicman2 logicman))
+                     (fgl-object-bfrlist (get-bvar->term$a n bvar-db)) litarr logicman2 logicman))
            :hints(("Goal" :in-theory (enable bfr-litarr-correct-p-all-envs-of-subset)))))
 
   (local (Defthm bfr-litarr-p-of-get-bvar->term$a
@@ -517,7 +517,7 @@
                          (<= (base-bvar$a bvar-db) (nfix n))
                          (< (nfix n) (next-bvar$a bvar-db)))
                     (bfr-litarr-p
-                     (gl-object-bfrlist (get-bvar->term$a n bvar-db)) litarr bound))
+                     (fgl-object-bfrlist (get-bvar->term$a n bvar-db)) litarr bound))
            :hints(("Goal" :in-theory (enable bfr-litarr-p-of-subset)))))
 
   ;; (local (defthm fgl-object-eval-of-nth
@@ -525,11 +525,11 @@
   ;;                 (nth n (fgl-objectlist-eval x env)))
   ;;          :hints(("Goal" :in-theory (enable fgl-objectlist-eval nth)))))
 
-  (local (defthm nth-of-gl-objectlist-map-bfrs
-           (equal (nth n (gl-objectlist-map-bfrs x litarr))
-                  (gl-object-map-bfrs (nth n x) litarr))
-           :hints(("Goal" :in-theory (enable nth gl-objectlist-map-bfrs)
-                   :expand ((gl-object-map-bfrs nil litarr))))))
+  (local (defthm nth-of-fgl-objectlist-map-bfrs
+           (equal (nth n (fgl-objectlist-map-bfrs x litarr))
+                  (fgl-object-map-bfrs (nth n x) litarr))
+           :hints(("Goal" :in-theory (enable nth fgl-objectlist-map-bfrs)
+                   :expand ((fgl-object-map-bfrs nil litarr))))))
 
   (defret get-bvar->term-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
@@ -557,7 +557,7 @@
                                     (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-pathcond))))
                                     (remove 0 (aignet::nbalist-to-cube (pathcond-aignet ,(acl2::hq old-constraint-pathcond))))))
                       (bound (bfrstate->bound (logicman->bfrstate ,(acl2::hq logicman))))
-                      (env (gl-env->bfr-vals ,(acl2::hq env)))
+                      (env (fgl-env->bfr-vals ,(acl2::hq env)))
                       (logicman ,(acl2::hq old-logicman))
                       (bitarr ,(acl2::hq bitarr))
                       (litarr ,(acl2::hq old-litarr))
@@ -567,13 +567,13 @@
   (local (defret bfrlist-boundedp-of-<fn>-bind
            (implies (and (bfr-litarr-correct-p-all-envs some-bfrs
                                                         litarr logicman2 logicman)
-                         (bfr-litarr-correct-p-all-envs (gl-object-bfrlist x)
+                         (bfr-litarr-correct-p-all-envs (fgl-object-bfrlist x)
                                                         litarr logicman2 logicman)
                          (equal (logicman->mode logicman2)
                                 (logicman->mode logicman))
-                         (bfrlist-boundedp (gl-object-bfrlist x) n logicman))
-                    (bfrlist-boundedp (gl-object-bfrlist new-x) n logicman2))
-           :fn gl-object-map-bfrs))
+                         (bfrlist-boundedp (fgl-object-bfrlist x) n logicman))
+                    (bfrlist-boundedp (fgl-object-bfrlist new-x) n logicman2))
+           :fn fgl-object-map-bfrs))
 
   (defret bfrlist-boundedp-of-get-bvar->term-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
@@ -581,10 +581,10 @@
                   ;; (not contra)
                   (<= (base-bvar$a (interp-st->bvar-db interp-st)) (nfix n))
                   (< (nfix n) (next-bvar$a (interp-st->bvar-db interp-st)))
-                  (bfrlist-boundedp (gl-object-bfrlist (get-bvar->term$a n (interp-st->bvar-db interp-st)))
+                  (bfrlist-boundedp (fgl-object-bfrlist (get-bvar->term$a n (interp-st->bvar-db interp-st)))
                                k (interp-st->logicman interp-st)))
              (bfrlist-boundedp
-                   (gl-object-bfrlist (get-bvar->term$a n (interp-st->bvar-db new-interp-st)))
+                   (fgl-object-bfrlist (get-bvar->term$a n (interp-st->bvar-db new-interp-st)))
                    k (interp-st->logicman new-interp-st)))
     :hints(("Goal" :in-theory (enable interp-st-bfrs-ok))
            (acl2::function-termhint
@@ -736,12 +736,12 @@
 
 (local (include-book "primitive-lemmas"))
 
-(def-gl-primitive fgl-global-transform (config)
+(def-fgl-primitive fgl-global-transform (config)
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
         (cw "Warning: skipping global transform because we're not in aignet mode~%")
         (mv t nil interp-st state))
-       ((unless (gl-object-case config :g-concrete))
-        (gl-interp-error :msg "Fgl-global-transform: config must be a concrete object"
+       ((unless (fgl-object-case config :g-concrete))
+        (fgl-interp-error :msg "Fgl-global-transform: config must be a concrete object"
                          :debug-obj config
                          :nvals 2))
        (config (g-concrete->val config))

@@ -31,8 +31,8 @@
 (in-package "FGL")
 (include-book "rules")
 
-;; We want to add/remove runes from the gl-rewrite-rules and
-;; gl-branch-merge-rules tables.  To do this properly, we need to know which
+;; We want to add/remove runes from the fgl-rewrite-rules and
+;; fgl-branch-merge-rules tables.  To do this properly, we need to know which
 ;; leading function symbols (for rewrite rules) and branch function symbols
 ;; (for branch merge rules) to store/delete them under.  Since a rune can stand
 ;; for more than one rule, we may need to store/delete them under multiple
@@ -177,218 +177,218 @@
     (alist-remove-rune-entries (cdr fns) rune alist)))
     
 
-(defun add-gl-rewrite-fn (name alist world)
+(defun add-fgl-rewrite-fn (name alist world)
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->leading-function-syms lhses))
        ((when (atom fns))
-        (er hard? 'add-gl-rewrite-fn
+        (er hard? 'add-fgl-rewrite-fn
             "No valid rewrite rules found for ~x0" name)))
     (rewrite-alist-add-rune-entries fns rune alist world)))
 
-(defun remove-gl-rewrite-fn (name alist world)
+(defun remove-fgl-rewrite-fn (name alist world)
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->leading-function-syms lhses))
        ((when (atom fns))
-        (er hard? 'remove-gl-rewrite-fn
+        (er hard? 'remove-fgl-rewrite-fn
             "No valid rewrite rules found for ~x0" name)))
     (alist-remove-rune-entries fns rune alist)))
 
-(defun add-gl-branch-merge-fn (name alist world)
+(defun add-fgl-branch-merge-fn (name alist world)
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
-        (er hard? 'add-gl-branch-merge-fn
+        (er hard? 'add-fgl-branch-merge-fn
             "No valid branch-merge rules found for ~x0" name)))
     (branch-merge-alist-add-rune-entries fns rune alist)))
 
-(defun remove-gl-branch-merge-fn (name alist world)
+(defun remove-fgl-branch-merge-fn (name alist world)
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
-        (er hard? 'remove-gl-branch-merge-fn
+        (er hard? 'remove-fgl-branch-merge-fn
             "No valid branch-merge rules found for ~x0" name)))
     (alist-remove-rune-entries fns rune alist)))
 
 
-(defun add-gl-rewrites-fn (names alist world)
+(defun add-fgl-rewrites-fn (names alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
-    (add-gl-rewrites-fn (cdr names)
-                        (add-gl-rewrite-fn (car names) alist world)
+    (add-fgl-rewrites-fn (cdr names)
+                        (add-fgl-rewrite-fn (car names) alist world)
                         world)))
 
-(defun remove-gl-rewrites-fn (names alist world)
+(defun remove-fgl-rewrites-fn (names alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
-    (remove-gl-rewrites-fn (cdr names)
-                           (remove-gl-rewrite-fn (car names) alist world)
+    (remove-fgl-rewrites-fn (cdr names)
+                           (remove-fgl-rewrite-fn (car names) alist world)
                            world)))
 
-(defun add-gl-branch-merges-fn (names alist world)
+(defun add-fgl-branch-merges-fn (names alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
-    (add-gl-branch-merges-fn (cdr names)
-                             (add-gl-branch-merge-fn (car names) alist world)
+    (add-fgl-branch-merges-fn (cdr names)
+                             (add-fgl-branch-merge-fn (car names) alist world)
                              world)))
 
-(defun remove-gl-branch-merges-fn (names alist world)
+(defun remove-fgl-branch-merges-fn (names alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
-    (remove-gl-branch-merges-fn (cdr names)
-                                (remove-gl-branch-merge-fn (car names) alist world)
+    (remove-fgl-branch-merges-fn (cdr names)
+                                (remove-fgl-branch-merge-fn (car names) alist world)
                                 world)))
 
 
 
-(defmacro add-gl-rewrite (name)
-  `(table gl-rewrite-rules
+(defmacro add-fgl-rewrite (name)
+  `(table fgl-rewrite-rules
           nil
-          (add-gl-rewrite-fn ',name (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
+          (add-fgl-rewrite-fn ',name (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
           :clear))
 
-(defmacro remove-gl-rewrite (name)
-  `(table gl-rewrite-rules
+(defmacro remove-fgl-rewrite (name)
+  `(table fgl-rewrite-rules
           nil
-          (remove-gl-rewrite-fn ',name (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
+          (remove-fgl-rewrite-fn ',name (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
           :clear))
 
-(defmacro add-gl-branch-merge (name)
-  `(table gl-branch-merge-rules
+(defmacro add-fgl-branch-merge (name)
+  `(table fgl-branch-merge-rules
           nil
-          (add-gl-branch-merge-fn ',name (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
+          (add-fgl-branch-merge-fn ',name (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
           :clear))
 
-(defmacro remove-gl-branch-merge (name)
-  `(table gl-branch-merge-rules
+(defmacro remove-fgl-branch-merge (name)
+  `(table fgl-branch-merge-rules
           nil
-          (remove-gl-branch-merge-fn ',name (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
-          :clear))
-
-
-(defmacro add-gl-rewrites (&rest names)
-  `(table gl-rewrite-rules
-          nil
-          (add-gl-rewrites-fn ',names (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
-          :clear))
-
-(defmacro remove-gl-rewrites (&rest names)
-  `(table gl-rewrite-rules
-          nil
-          (remove-gl-rewrites-fn ',names (make-fast-alist (table-alist 'gl-rewrite-rules world)) world)
-          :clear))
-
-(defmacro add-gl-branch-merges (&rest names)
-  `(table gl-branch-merge-rules
-          nil
-          (add-gl-branch-merges-fn ',names (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
-          :clear))
-
-(defmacro remove-gl-branch-merges (&rest names)
-  `(table gl-branch-merge-rules
-          nil
-          (remove-gl-branch-merges-fn ',names (make-fast-alist (table-alist 'gl-branch-merge-rules world)) world)
-          :clear))
-
-(defmacro clean-gl-rewrite-table ()
-  `(table gl-rewrite-rules
-          nil
-          (fast-alist-clean (make-fast-alist (table-alist 'gl-rewrite-rules world)))
-          :clear))
-
-(defmacro clean-gl-branch-merge-table ()
-  `(table gl-branch-merge-rules
-          nil
-          (fast-alist-clean (make-fast-alist (table-alist 'gl-branch-merge-rules world)))
+          (remove-fgl-branch-merge-fn ',name (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
           :clear))
 
 
-(defmacro add-gl-primitive (trigger-fn primitive-fn)
-  `(table gl-rewrite-rules
+(defmacro add-fgl-rewrites (&rest names)
+  `(table fgl-rewrite-rules
+          nil
+          (add-fgl-rewrites-fn ',names (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
+          :clear))
+
+(defmacro remove-fgl-rewrites (&rest names)
+  `(table fgl-rewrite-rules
+          nil
+          (remove-fgl-rewrites-fn ',names (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
+          :clear))
+
+(defmacro add-fgl-branch-merges (&rest names)
+  `(table fgl-branch-merge-rules
+          nil
+          (add-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
+          :clear))
+
+(defmacro remove-fgl-branch-merges (&rest names)
+  `(table fgl-branch-merge-rules
+          nil
+          (remove-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
+          :clear))
+
+(defmacro clean-fgl-rewrite-table ()
+  `(table fgl-rewrite-rules
+          nil
+          (fast-alist-clean (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
+          :clear))
+
+(defmacro clean-fgl-branch-merge-table ()
+  `(table fgl-branch-merge-rules
+          nil
+          (fast-alist-clean (make-fast-alist (table-alist 'fgl-branch-merge-rules world)))
+          :clear))
+
+
+(defmacro add-fgl-primitive (trigger-fn primitive-fn)
+  `(table fgl-rewrite-rules
           nil
           (rewrite-alist-add-rune-entries '(,trigger-fn)
                                           ',(fgl-rune-primitive primitive-fn)
-                                          (make-fast-alist (table-alist 'gl-rewrite-rules world))
+                                          (make-fast-alist (table-alist 'fgl-rewrite-rules world))
                                           world)
           :clear))
 
-(defmacro remove-gl-primitive (trigger-fn primitive-fn)
-  `(table gl-rewrite-rules
+(defmacro remove-fgl-primitive (trigger-fn primitive-fn)
+  `(table fgl-rewrite-rules
           nil
           (alist-remove-rune-entries '(,trigger-fn)
                                      ',(fgl-rune-primitive primitive-fn)
-                                     (make-fast-alist (table-alist 'gl-rewrite-rules world)))
+                                     (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
           :clear))
 
-(defmacro add-gl-meta (trigger-fn meta-fn)
-  `(table gl-rewrite-rules
+(defmacro add-fgl-meta (trigger-fn meta-fn)
+  `(table fgl-rewrite-rules
           nil
           (rewrite-alist-add-rune-entries '(,trigger-fn)
                                           ',(fgl-rune-meta meta-fn)
-                                          (make-fast-alist (table-alist 'gl-rewrite-rules world))
+                                          (make-fast-alist (table-alist 'fgl-rewrite-rules world))
                                           world)
           :clear))
 
-(defmacro remove-gl-meta (trigger-fn meta-fn)
-  `(table gl-rewrite-rules
+(defmacro remove-fgl-meta (trigger-fn meta-fn)
+  `(table fgl-rewrite-rules
           nil
           (alist-remove-rune-entries '(,trigger-fn)
                                      ',(fgl-rune-meta meta-fn)
-                                     (make-fast-alist (table-alist 'gl-rewrite-rules world)))
+                                     (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
           :clear))
 
 
 
 (defmacro disable-definition (fnname)
-  `(remove-gl-rewrite ,fnname))
+  `(remove-fgl-rewrite ,fnname))
 
 (defmacro disable-execution (fnname)
-  `(table gl-fn-modes
+  `(table fgl-fn-modes
           ',fnname
-          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
-            (change-gl-function-mode mode :dont-concrete-exec t))))
+          (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
+            (change-fgl-function-mode mode :dont-concrete-exec t))))
 
 (defmacro enable-execution (fnname)
-  `(table gl-fn-modes
+  `(table fgl-fn-modes
           ',fnname
-          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
-            (change-gl-function-mode mode :dont-concrete-exec nil))))
+          (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
+            (change-fgl-function-mode mode :dont-concrete-exec nil))))
 
 (defmacro enable-split-ifs (fnname)
-  `(table gl-fn-modes
+  `(table fgl-fn-modes
           ',fnname
-          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
-            (change-gl-function-mode mode :split-ifs t))))
+          (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
+            (change-fgl-function-mode mode :split-ifs t))))
 
 (defmacro disable-split-ifs (fnname)
-  `(table gl-fn-modes
+  `(table fgl-fn-modes
           ',fnname
-          (b* ((mode (gl-function-mode-lookup ',fnname (table-alist 'gl-fn-modes world))))
-            (change-gl-function-mode mode :split-ifs nil))))
+          (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
+            (change-fgl-function-mode mode :split-ifs nil))))
 
 
-(defsection def-gl-rewrite
+(defsection def-fgl-rewrite
   :parents (fgl-rewrite-rules)
   :short "Define a rewrite rule for FGL to use on term-level objects"
   :long
   "<p>FGL can use ACL2-style rewrite rules to simplify term-level symbolic
 objects.  However, typically one wants a different theory for ACL2 theorem
-proving than one wants to use inside FGL.  @('FGL::DEF-GL-REWRITE') defines a
+proving than one wants to use inside FGL.  @('FGL::DEF-FGL-REWRITE') defines a
 rewrite rule that is only used inside FGL:</p>
 
 @({
-  (fgl::def-gl-rewrite my-rewrite-rule
+  (fgl::def-fgl-rewrite my-rewrite-rule
      (implies (and (syntaxp (and (integerp n) (< 0 (integer-length n))))
                    (< 0 m))
               (equal (logand n m)
@@ -398,28 +398,28 @@ rewrite rule that is only used inside FGL:</p>
 })
 
 <p>This defines a disabled ACL2 rewrite rule called my-rewrite-rule, and adds
-my-rewrite-rule to the table of rules GL is allowed to use. (GL will still use
+my-rewrite-rule to the table of rules FGL is allowed to use. (FGL will still use
 it even though it is disabled, as long as it is in that table.)</p>
 
-<p>Def-gl-rewrite supports syntaxp hypotheses, but the term representation used
+<p>Def-fgl-rewrite supports syntaxp hypotheses, but the term representation used
 is different from ACL2's.  Instead of being bound to TERMPs, the variables are
-bound to symbolic objects.  See @(see fgl::gl-object) for
+bound to symbolic objects.  See @(see fgl::fgl-object) for
 reference.</p>"
 
-  (defmacro def-gl-rewrite (name &rest args)
+  (defmacro def-fgl-rewrite (name &rest args)
     `(progn (defthmd ,name . ,args)
-            (add-gl-rewrite ,name))))
+            (add-fgl-rewrite ,name))))
 
 
 
-(defsection def-gl-branch-merge
+(defsection def-fgl-branch-merge
   :parents (fgl-rewrite-rules)
-  :short "Define a rule for GL to use in merging IF branches"
+  :short "Define a rule for FGL to use in merging IF branches"
   :long
   "<p>Usage:</p>
 
 @({
-  (fgl::def-gl-branch-merge my-branch-merge-rule
+  (fgl::def-fgl-branch-merge my-branch-merge-rule
      (implies (and (syntaxp (integerp m))
                    (integerp m))
               (equal (if cond (logcons b n) m)
@@ -429,7 +429,7 @@ reference.</p>"
 })
 
 <p>This form creates an ACL2 theorem with :rule-classes nil and installs it in
-a table that GL references when attempting to merge branches of an IF term.</p>
+a table that FGL references when attempting to merge branches of an IF term.</p>
 
 <p>Branch merge rules work similarly to normal rewrite rules, except that:</p>
 <ul>
@@ -438,16 +438,16 @@ a table that GL references when attempting to merge branches of an IF term.</p>
 must be a function call.</li>
 </ul>"
 
-  (defun def-gl-branch-merge-fn (name body hints otf-flg)
+  (defun def-fgl-branch-merge-fn (name body hints otf-flg)
     `(progn
        (defthmd ,name
          ,body
          :hints ,hints
          :otf-flg ,otf-flg)
-       (add-gl-branch-merge ,name)))
+       (add-fgl-branch-merge ,name)))
 
-  (defmacro def-gl-branch-merge (name body &key hints otf-flg)
-    (def-gl-branch-merge-fn name body hints otf-flg)))
+  (defmacro def-fgl-branch-merge (name body &key hints otf-flg)
+    (def-fgl-branch-merge-fn name body hints otf-flg)))
 
 
 
@@ -463,7 +463,7 @@ to define a function the way you want it to run in FGL: if you want to use
 defining the function, which isn't allowed for ACL2 definitions.  Instead, you
 may provide a function definition without @('bind-var') calls, disable that
 definition for FGL (using @(see disable-definition)), and add an FGL rewrite
-rule with @(see def-gl-rewrite) that rewrites calls of the function to the body
+rule with @(see def-fgl-rewrite) that rewrites calls of the function to the body
 containing the bind-var calls.</p>
 
 <p>@('Def-fgl-program') provides a convenient macro for this. It wraps @(see
@@ -506,7 +506,7 @@ them with their second arguments; otherwise, it just provides a body of @('nil')
        (new-rest-events (append guts.rest-events
                                 `((disable-definition ,name)
                                   (disable-execution ,name)
-                                  (def-gl-rewrite ,(intern-in-package-of-symbol
+                                  (def-fgl-rewrite ,(intern-in-package-of-symbol
                                                          (concatenate 'string (symbol-name name) "-FGL")
                                                          name)
                                     (,(std::getarg :equiv 'unequiv guts.kwd-alist)

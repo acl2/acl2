@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -201,13 +201,13 @@
          :hints(("Goal" :in-theory (enable bitops::logapp**)))))
     
 
-(def-gl-meta logapp-expand
-  (gl-object-case call
+(def-fgl-meta logapp-expand
+  (fgl-object-case call
     :g-apply (b* (((unless (and (eq call.fn 'logapp)
                                 (eql (len call.args) 3)))
                    (mv nil nil nil interp-st state))
                   ((list n x y) call.args)
-                  ((unless (gl-object-case n :g-concrete))
+                  ((unless (fgl-object-case n :g-concrete))
                    (mv nil nil nil interp-st state))
                   (n (g-concrete->val n))
                   ((unless (posp n))
@@ -218,23 +218,23 @@
     :otherwise (mv nil nil nil interp-st state))
   :formula-check bitops-formula-checks)
 
-(add-gl-meta logapp logapp-expand)
+(add-fgl-meta logapp logapp-expand)
 
-;; (LOCAL (FGL::INSTALL-GL-PRIMITIVES FGL::BITOPS-PRIMITIVES))
-;; (LOCAL (FGL::INSTALL-GL-METAFNS FGL::BITOPS-METAFNS))
-;; (FGL::ADD-GL-META LOGAPP FGL::LOGAPP-expand)
-;; (FGL::ADD-GL-META ACL2::LOGTAIL$INLINE
+;; (LOCAL (FGL::INSTALL-FGL-PRIMITIVES FGL::BITOPS-PRIMITIVES))
+;; (LOCAL (FGL::INSTALL-FGL-METAFNS FGL::BITOPS-METAFNS))
+;; (FGL::ADD-FGL-META LOGAPP FGL::LOGAPP-expand)
+;; (FGL::ADD-FGL-META ACL2::LOGTAIL$INLINE
 ;;                   FGL::LOGTAIL-EXPAND)
-;; (FGL::REMOVE-GL-PRIMITIVE ACL2::LOGTAIL$INLINE
-;;                           FGL::GL-LOGTAIL$INLINE-PRIMITIVE)
-;; (FGL::REMOVE-GL-PRIMITIVE LOGAPP FGL::GL-LOGAPP-PRIMITIVE)
-;; (FGL::ADD-GL-PRIMITIVE ACL2::LOGTAIL$INLINE
-;;                        FGL::GL-LOGTAIL$INLINE-PRIMITIVE)
-;; (FGL::ADD-GL-PRIMITIVE LOGAPP FGL::GL-LOGAPP-PRIMITIVE)
+;; (FGL::REMOVE-FGL-PRIMITIVE ACL2::LOGTAIL$INLINE
+;;                           FGL::FGL-LOGTAIL$INLINE-PRIMITIVE)
+;; (FGL::REMOVE-FGL-PRIMITIVE LOGAPP FGL::FGL-LOGAPP-PRIMITIVE)
+;; (FGL::ADD-FGL-PRIMITIVE ACL2::LOGTAIL$INLINE
+;;                        FGL::FGL-LOGTAIL$INLINE-PRIMITIVE)
+;; (FGL::ADD-FGL-PRIMITIVE LOGAPP FGL::FGL-LOGAPP-PRIMITIVE)
 
 
-(def-gl-primitive logapp (width lsbs msbs)
-  (b* (((unless (gl-object-case width :g-concrete))
+(def-fgl-primitive logapp (width lsbs msbs)
+  (b* (((unless (fgl-object-case width :g-concrete))
         (mv nil nil interp-st))
        ((mv ok lsbs) (gobj-syntactic-integer-fix lsbs))
        ((unless ok) (mv nil nil interp-st))
@@ -277,13 +277,13 @@
          (implies (zp n)
                   (equal (logtail n x) (ifix x)))))
 
-(def-gl-meta logtail-expand
-  (gl-object-case call
+(def-fgl-meta logtail-expand
+  (fgl-object-case call
     :g-apply (b* (((unless (and (eq call.fn 'acl2::logtail$inline)
                                 (eql (len call.args) 2)))
                    (mv nil nil nil interp-st state))
                   ((list n x) call.args)
-                  ((unless (gl-object-case n :g-concrete))
+                  ((unless (fgl-object-case n :g-concrete))
                    (mv nil nil nil interp-st state))
                   (n (g-concrete->val n))
                   ((unless (posp n))
@@ -294,7 +294,7 @@
     :otherwise (mv nil nil nil interp-st state))
   :formula-check bitops-formula-checks)
                 
-(add-gl-meta acl2::logtail$inline logtail-expand)
+(add-fgl-meta acl2::logtail$inline logtail-expand)
 
 
 (define tail-bits ((n natp) x)
@@ -331,8 +331,8 @@
     (iff (true-listp (tail-bits n x))
          (true-listp x))))
 
-(def-gl-primitive acl2::logtail$inline (n x)
-  (b* (((unless (gl-object-case n :g-concrete))
+(def-fgl-primitive acl2::logtail$inline (n x)
+  (b* (((unless (fgl-object-case n :g-concrete))
         (mv nil nil interp-st))
        ((mv ok x) (gobj-syntactic-integer-fix x))
        ((unless ok) (mv nil nil interp-st))
@@ -342,7 +342,7 @@
   :formula-check bitops-formula-checks)
 
 
-(def-gl-primitive < (x y)
+(def-fgl-primitive < (x y)
   (b* ((ok (gobj-syntactic-integerp x))
        ((unless ok) (mv nil nil interp-st))
        (ok (gobj-syntactic-integerp y))
@@ -354,7 +354,7 @@
                (bfr-<-ss x-bits y-bits logicman)
                (mv t (mk-g-boolean ans) interp-st))))
 
-(def-gl-primitive integer-length (x)
+(def-fgl-primitive integer-length (x)
   (b* (((mv ok x) (gobj-syntactic-integer-fix x))
        ((unless ok) (mv nil nil interp-st))
        (x-bits (gobj-syntactic-integer->bits x)))
@@ -365,32 +365,32 @@
   :formula-check bitops-formula-checks)
 
 
-(local (defthm gl-objectlist-fix-when-consp
+(local (defthm fgl-objectlist-fix-when-consp
          (implies (consp x)
-                  (equal (gl-objectlist-fix x)
-                         (cons (gl-object-fix (car x))
-                               (gl-objectlist-fix (cdr x)))))))
+                  (equal (fgl-objectlist-fix x)
+                         (cons (fgl-object-fix (car x))
+                               (fgl-objectlist-fix (cdr x)))))))
 
 (local (defthm equal-of-g-concrete->val
-         (implies (and (gl-object-case x :g-concrete)
-                       (gl-object-case y :g-concrete))
+         (implies (and (fgl-object-case x :g-concrete)
+                       (fgl-object-case y :g-concrete))
                   (equal (equal (g-concrete->val x)
                                 (g-concrete->val y))
-                         (equal (gl-object-fix x)
-                                (gl-object-fix y))))
-         :hints(("Goal" :in-theory (e/d (gl-object-fix-when-g-concrete)
+                         (equal (fgl-object-fix x)
+                                (fgl-object-fix y))))
+         :hints(("Goal" :in-theory (e/d (fgl-object-fix-when-g-concrete)
                                         (g-concrete-of-fields))))))
 
 (local (defthmd g-concrete->val-type-when-not-syntactic-integer
          (implies (and (not (gobj-syntactic-integerp x))
-                       (gl-object-case x :g-concrete))
+                       (fgl-object-case x :g-concrete))
                   (not (integerp (g-concrete->val x))))
          :hints(("Goal" :in-theory (enable gobj-syntactic-integerp)))
          :rule-classes :type-prescription))
 
 (local (defthmd g-concrete->val-type-when-not-syntactic-boolean
          (implies (and (not (gobj-syntactic-booleanp x))
-                       (gl-object-case x :g-concrete))
+                       (fgl-object-case x :g-concrete))
                   (not (booleanp (g-concrete->val x))))
          :hints(("Goal" :in-theory (enable gobj-syntactic-booleanp)))
          :rule-classes :type-prescription))
@@ -405,10 +405,10 @@
 
 (local (in-theory (enable gobj-bfr-eval)))
 
-(def-gl-primitive equal (x y)
+(def-fgl-primitive equal (x y)
   (b* (((when (equal x y)) (mv t t interp-st))
-       ((when (and (gl-object-case x :g-concrete)
-                   (gl-object-case y :g-concrete)))
+       ((when (and (fgl-object-case x :g-concrete)
+                   (fgl-object-case y :g-concrete)))
         (mv t nil interp-st))
        ((when (gobj-syntactic-integerp x))
         (cond ((gobj-syntactic-integerp y)
@@ -418,7 +418,7 @@
                                     (gobj-syntactic-integer->bits y)
                                     logicman)
                           (mv t (mk-g-boolean ans) interp-st)))
-              ((gl-object-case y '(:g-boolean :g-concrete :g-cons))
+              ((fgl-object-case y '(:g-boolean :g-concrete :g-cons))
                (mv t nil interp-st))
               (t (mv nil nil interp-st))))
        ((when (gobj-syntactic-booleanp x))
@@ -429,14 +429,14 @@
                                    (gobj-syntactic-boolean->bool y)
                                    logicman)
                           (mv t (mk-g-boolean ans) interp-st)))
-              ((gl-object-case y '(:g-integer :g-concrete :g-cons))
+              ((fgl-object-case y '(:g-integer :g-concrete :g-cons))
                (mv t nil interp-st))
               (t (mv nil nil interp-st))))
        ((when (gobj-syntactic-integerp y))
-        (mv (gl-object-case x '(:g-boolean :g-concrete :g-cons))
+        (mv (fgl-object-case x '(:g-boolean :g-concrete :g-cons))
             nil interp-st))
        ((when (gobj-syntactic-booleanp y))
-        (mv (gl-object-case x '(:g-integer :g-concrete :g-cons))
+        (mv (fgl-object-case x '(:g-integer :g-concrete :g-cons))
             nil interp-st)))
     ;; BOZO add support for recursive primitives and add CONS case
     (mv nil nil interp-st)))
@@ -451,12 +451,12 @@
        ;;                    (bfr-iff (gobj-syntactic-boolean->bool x)
        ;;                             (gobj-syntactic-boolean->bool y))
        ;;                    (mv t (mk-g-boolean ans) interp-st)))
-       ;;        ((gl-object-case y '(:g-integer :g-concrete :g-cons))
+       ;;        ((fgl-object-case y '(:g-integer :g-concrete :g-cons))
        ;;         (mv t nil interp-st))
        ;;        (t (mv nil nil interp-st)))
           
 
-(def-gl-primitive lognot (x)
+(def-fgl-primitive lognot (x)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
        ((unless xok) (mv nil nil interp-st))
        (x-bits (gobj-syntactic-integer->bits x)))
@@ -467,7 +467,7 @@
   :formula-check bitops-formula-checks)
 
 
-(def-gl-primitive acl2::binary-logand (x y)
+(def-fgl-primitive acl2::binary-logand (x y)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
        ((unless xok) (mv nil nil interp-st))
        ((mv yok y) (gobj-syntactic-integer-fix y))
@@ -480,7 +480,7 @@
                (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
-(def-gl-primitive acl2::binary-logior (x y)
+(def-fgl-primitive acl2::binary-logior (x y)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
        ((unless xok) (mv nil nil interp-st))
        ((mv yok y) (gobj-syntactic-integer-fix y))
@@ -493,7 +493,7 @@
                (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
-(def-gl-primitive acl2::binary-logxor (x y)
+(def-fgl-primitive acl2::binary-logxor (x y)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
        ((unless xok) (mv nil nil interp-st))
        ((mv yok y) (gobj-syntactic-integer-fix y))
@@ -506,7 +506,7 @@
                (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
-(def-gl-primitive acl2::binary-logeqv (x y)
+(def-fgl-primitive acl2::binary-logeqv (x y)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
        ((unless xok) (mv nil nil interp-st))
        ((mv yok y) (gobj-syntactic-integer-fix y))
@@ -520,7 +520,7 @@
   :formula-check bitops-formula-checks)
 
 
-(def-gl-primitive binary-+ (x y)
+(def-fgl-primitive binary-+ (x y)
   (b* (((unless (and (gobj-syntactic-integerp x)
                      (gobj-syntactic-integerp y)))
         (mv nil nil interp-st))
@@ -531,7 +531,7 @@
                (bfr-+-ss nil x-bits y-bits logicman)
                (mv t (mk-g-integer ans-bits) interp-st))))
 
-(def-gl-primitive unary-- (x)
+(def-fgl-primitive unary-- (x)
   (b* (((unless (gobj-syntactic-integerp x))
         (mv nil nil interp-st))
        (x-bits (gobj-syntactic-integer->bits x)))
@@ -542,8 +542,8 @@
 
 (local (in-theory (enable +carry-trunc)))
 
-(def-gl-primitive +carry-trunc (width c x y)
-  (b* (((unless (gl-object-case width :g-concrete))
+(def-fgl-primitive +carry-trunc (width c x y)
+  (b* (((unless (fgl-object-case width :g-concrete))
         (mv nil nil interp-st))
        ((mv cok c) (gobj-syntactic-boolean-fix c))
        ((unless cok) (mv nil nil interp-st))
@@ -566,7 +566,7 @@
 
 (local (in-theory (enable +carry)))
 
-(def-gl-primitive +carry (c x y)
+(def-fgl-primitive +carry (c x y)
   (b* (((mv cok c) (gobj-syntactic-boolean-fix c))
        ((unless cok) (mv nil nil interp-st))
        ((mv xok x) (gobj-syntactic-integer-fix x))
@@ -585,52 +585,52 @@
   :formula-check bitops-formula-checks)
 
 
-(local (install-gl-primitives bitops-primitives))
-(local (install-gl-metafns bitops-metafns))
+(local (install-fgl-primitives bitops-primitives))
+(local (install-fgl-metafns bitops-metafns))
 
 
 ;; ;; Downgrade the rewrite rules concerning these to definitions so they'll be tried after the primitives.
 ;; ;; NOTE: Now rules (including rewrites and primitives) are tried in the
 ;; ;; reverse of the ordere they're introduced, so we shouldn't need this.
-;; (remove-gl-rewrite logapp-const-width)
-;; (remove-gl-rewrite logtail-const-shift)
-;; (remove-gl-rewrite integer-length-impl)
-;; (remove-gl-rewrite <-impl)
-;; (remove-gl-rewrite fgl-equal)
-;; (remove-gl-rewrite fgl-lognot)
-;; (remove-gl-rewrite fgl-logand)
-;; (remove-gl-rewrite fgl-logior)
-;; (remove-gl-rewrite fgl-logxor)
-;; (remove-gl-rewrite fgl-logeqv)
-;; (remove-gl-rewrite +-to-+carry)
-;; (remove-gl-rewrite minus-to-+carry)
-;; (remove-gl-rewrite fgl-+carry)
-;; (remove-gl-rewrite fgl-+carry-trunc)
+;; (remove-fgl-rewrite logapp-const-width)
+;; (remove-fgl-rewrite logtail-const-shift)
+;; (remove-fgl-rewrite integer-length-impl)
+;; (remove-fgl-rewrite <-impl)
+;; (remove-fgl-rewrite fgl-equal)
+;; (remove-fgl-rewrite fgl-lognot)
+;; (remove-fgl-rewrite fgl-logand)
+;; (remove-fgl-rewrite fgl-logior)
+;; (remove-fgl-rewrite fgl-logxor)
+;; (remove-fgl-rewrite fgl-logeqv)
+;; (remove-fgl-rewrite +-to-+carry)
+;; (remove-fgl-rewrite minus-to-+carry)
+;; (remove-fgl-rewrite fgl-+carry)
+;; (remove-fgl-rewrite fgl-+carry-trunc)
 
 
-;; (add-gl-definition logapp-const-width)
-;; (add-gl-definition logtail-const-shift)
-;; (add-gl-definition integer-length-impl)
-;; (add-gl-definition <-impl)
-;; (add-gl-definition fgl-equal)
-;; (add-gl-definition fgl-lognot)
-;; (add-gl-definition fgl-logand)
-;; (add-gl-definition fgl-logior)
-;; (add-gl-definition fgl-logxor)
-;; (add-gl-definition fgl-logeqv)
-;; (add-gl-definition +-to-+carry)
-;; (add-gl-definition minus-to-+carry)
-;; (add-gl-definition fgl-+carry)
-;; (add-gl-definition fgl-+carry-trunc)
+;; (add-fgl-definition logapp-const-width)
+;; (add-fgl-definition logtail-const-shift)
+;; (add-fgl-definition integer-length-impl)
+;; (add-fgl-definition <-impl)
+;; (add-fgl-definition fgl-equal)
+;; (add-fgl-definition fgl-lognot)
+;; (add-fgl-definition fgl-logand)
+;; (add-fgl-definition fgl-logior)
+;; (add-fgl-definition fgl-logxor)
+;; (add-fgl-definition fgl-logeqv)
+;; (add-fgl-definition +-to-+carry)
+;; (add-fgl-definition minus-to-+carry)
+;; (add-fgl-definition fgl-+carry)
+;; (add-fgl-definition fgl-+carry-trunc)
 
 
 
-;; (def-gl-rewrite logapp-const-width-allow-primitive
+;; (def-fgl-rewrite logapp-const-width-allow-primitive
 ;;   (implies (syntaxp (and (integerp n)
 ;;                          ;; Allow this only when x is a g-var or g-apply, so
 ;;                          ;; that the primitive would fail but this can
 ;;                          ;; potentially generate bits for x.
-;;                          (gl-object-case x '(:g-var :g-apply))))
+;;                          (fgl-object-case x '(:g-var :g-apply))))
 ;;            (equal (logapp n x y)
 ;;                   (cond ((zp n) (int y))
 ;;                         (t (intcons (and (intcar x) t)
@@ -638,9 +638,9 @@
 ;;   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
 ;;                                     bitops::logapp**))))
 
-;; (def-gl-rewrite logtail-const-shift-allow-primitive
+;; (def-fgl-rewrite logtail-const-shift-allow-primitive
 ;;   (implies (syntaxp (and (integerp n)
-;;                          (gl-object-case x '(:g-var :g-apply))))
+;;                          (fgl-object-case x '(:g-var :g-apply))))
 ;;            (equal (logtail n x)
 ;;                   (if (or (zp n)
 ;;                           (check-int-endp x (syntax-bind xsyn (g-concrete x))))
@@ -651,7 +651,7 @@
 
 
 
-;; (def-gl-rewrite fgl-equal-of-cons
+;; (def-fgl-rewrite fgl-equal-of-cons
 ;;   (equal (equal x y)
 ;;          (let ((xsyn (syntax-bind xsyn (g-concrete x)))
 ;;                (ysyn (syntax-bind ysyn (g-concrete y))))
@@ -665,26 +665,26 @@
 ;;                        (check-non-consp x xsyn)) nil)
 ;;                  (t (abort-rewrite (equal x y)))))))
 
-(remove-gl-rewrite loghead-to-logapp)
-(def-gl-rewrite loghead-to-logapp-always
+(remove-fgl-rewrite loghead-to-logapp)
+(def-fgl-rewrite loghead-to-logapp-always
   (equal (loghead n x)
          (logapp n x 0)))
 
-(remove-gl-rewrite logext-to-logapp)
-(def-gl-rewrite logext-to-logapp-always
+(remove-fgl-rewrite logext-to-logapp)
+(def-fgl-rewrite logext-to-logapp-always
   (equal (logext n x)
          (logapp n x (endint (logbitp (+ -1 (pos-fix n)) x))))
   :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
                                      bitops::ihsext-recursive-redefs
                                      pos-fix))))
 
-;; (remove-gl-rewrite logbitp-const-index)
-;; (add-gl-definition logbitp-const-index)
-;; (def-gl-rewrite logbitp-to-logtail
+;; (remove-fgl-rewrite logbitp-const-index)
+;; (add-fgl-definition logbitp-const-index)
+;; (def-fgl-rewrite logbitp-to-logtail
 ;;   (implies (syntaxp (and (integerp n)
-;;                          (gl-object-case x :g-integer)))
+;;                          (fgl-object-case x :g-integer)))
 ;;            (equal (logbitp n x)
 ;;                   (intcar (logtail n x)))))
                   
-;; (remove-gl-rewrite int-less-than-0)
-;; (add-gl-definition int-less-than-0)
+;; (remove-fgl-rewrite int-less-than-0)
+;; (add-fgl-definition int-less-than-0)

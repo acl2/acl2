@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -36,14 +36,14 @@
 
 (defprod constraint-instance
   ((thmname symbolp)
-   (subst gl-object-bindings-p))
+   (subst fgl-object-bindings-p))
   :layout :tree)
 
 (fty::deflist constraint-instancelist :elt-type constraint-instance :true-listp t)
 
 
 (define constraint-instance-bfrlist ((x constraint-instance-p))
-  (gl-object-bindings-bfrlist (constraint-instance->subst x)))
+  (fgl-object-bindings-bfrlist (constraint-instance->subst x)))
 
 (define constraint-instancelist-bfrlist ((x constraint-instancelist-p))
   (if (atom x)

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -36,7 +36,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (acl2::defstobj-clone aignet-pathcond aignet::aignet-pathcond
-  :strsubst (("abcd" . "abcd")) :pkg gl-package)
+  :strsubst (("abcd" . "abcd")) :pkg fgl-package)
 
 (defstobj pathcond
   (pathcond-bdd :type (satisfies acl2::ubddp) :initially t)

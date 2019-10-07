@@ -1,4 +1,4 @@
- ; GL - A Symbolic Simulation Framework for ACL2
+ ; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -41,11 +41,11 @@
   (acl2::aig-eval-list))
 
 
-(define gl-object-alist-to-varmap ((x gl-object-alist-p)
+(define fgl-object-alist-to-varmap ((x fgl-object-alist-p)
                                    (bfrstate bfrstate-p)
                                    (acc alistp))
   :guard (and (bfrstate-mode-is :aignet)
-              (bfr-listp (gl-object-alist-bfrlist x)))
+              (bfr-listp (fgl-object-alist-bfrlist x)))
   :returns (mv err varmap)
   (if (atom x)
       (mv nil acc)
@@ -55,17 +55,17 @@
         (b* (((mv ok obj) (gobj-syntactic-boolean-fix (cdar x)))
              ((unless ok)
               (mv (msg "Bad symbolic value for key: ~x0~%" (caar x)) nil)))
-          (gl-object-alist-to-varmap
+          (fgl-object-alist-to-varmap
            (cdr x) bfrstate
            (hons-acons (caar x)
                        (bfr->aignet-lit (gobj-syntactic-boolean->bool obj) bfrstate)
                        acc)))
-      (gl-object-alist-to-varmap (cdr x) bfrstate acc)))
+      (fgl-object-alist-to-varmap (cdr x) bfrstate acc)))
   ///
-  (defthm good-varmap-p-of-gl-object-alist-to-varmap
-    (b* (((mv ?err varmap) (gl-object-alist-to-varmap x (logicman->bfrstate) acc)))
+  (defthm good-varmap-p-of-fgl-object-alist-to-varmap
+    (b* (((mv ?err varmap) (fgl-object-alist-to-varmap x (logicman->bfrstate) acc)))
       (implies (and (bfrstate-mode-is :aignet (logicman->bfrstate))
-                    (lbfr-listp (gl-object-alist-bfrlist x))
+                    (lbfr-listp (fgl-object-alist-bfrlist x))
                     (aignet::good-varmap-p acc (logicman->aignet logicman)))
                (aignet::good-varmap-p varmap (logicman->aignet logicman))))
     :hints(("Goal" :in-theory (enable aignet::good-varmap-p))))
@@ -77,20 +77,20 @@
   ;;            (equal (hons-assoc-equal key varmap)
   ;;                   acc-pair)))
 
-  ;; (defret lookup-exists-in-gl-object-alist-to-varmap
+  ;; (defret lookup-exists-in-fgl-object-alist-to-varmap
   ;;   (implies (and (not err)
   ;;                 (acl2::aig-var-p key)
   ;;                 (hons-assoc-equal key x))
   ;;            (hons-assoc-equal key varmap)))
 
-  (defret lookup-exists-in-gl-object-alist-to-varmap-split
+  (defret lookup-exists-in-fgl-object-alist-to-varmap-split
     (implies (not err)
              (iff (hons-assoc-equal key varmap)
                   (or (hons-assoc-equal key acc)
                       (and (acl2::aig-var-p key)
                            (hons-assoc-equal key x))))))
   
-  (defret lookup-in-gl-object-alist-to-varmap
+  (defret lookup-in-fgl-object-alist-to-varmap
     (implies (and (not err)
                   (hons-assoc-equal key varmap))
              (equal (hons-assoc-equal key varmap)
@@ -103,13 +103,13 @@
                                                     bfrstate))))))
     :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-  (defret gobj-syntactic-boolean-fix-when-gl-object-alist-to-varmap
+  (defret gobj-syntactic-boolean-fix-when-fgl-object-alist-to-varmap
     (implies (and (not err)
                   (hons-assoc-equal key varmap)
                   (not (hons-assoc-equal key acc)))
              (mv-nth 0 (gobj-syntactic-boolean-fix (cdr (hons-assoc-equal key x))))))
 
-  (local (in-theory (enable gl-object-alist-fix))))
+  (local (in-theory (enable fgl-object-alist-fix))))
 
 
 
@@ -142,13 +142,13 @@
                             (bfrstate bfrstate-p))
     :guard (and (bfrstate-mode-is :aignet)
                 (<= (satlink::lit->var x) (bfrstate->bound bfrstate)))
-    :returns (obj gl-object-p)
+    :returns (obj fgl-object-p)
     (g-boolean (aignet-lit->bfr x bfrstate))
     ///
     (defret bfr-listp-of-aignet-lit->bool
       (implies (and (bfrstate-mode-is :aignet)
                     (<= (satlink::lit->var x) (bfrstate->bound bfrstate)))
-               (bfr-listp (gl-object-bfrlist obj))))
+               (bfr-listp (fgl-object-bfrlist obj))))
 
     (defret fgl-object-eval-of-<fn>
       (implies (lbfr-mode-is :aignet)
@@ -157,7 +157,7 @@
                         (bit->bool
                          (aignet::lit-eval x
                                            (alist-to-bitarr (aignet::num-ins aignet)
-                                                            (gl-env->bfr-vals env) nil)
+                                                            (fgl-env->bfr-vals env) nil)
                                            ;; (alist-to-bitarr (aignet::num-regs aignet) nil nil)
                                            nil
                                            aignet)))))
@@ -168,43 +168,43 @@
   (local (in-theory (enable lit-list-max-var+1
                             satlink::lit-listp)))
 
-  ;; (define gl-objectlist-to-object ((x gl-objectlist-p))
-  ;;   :returns (new-x gl-object-p)
+  ;; (define fgl-objectlist-to-object ((x fgl-objectlist-p))
+  ;;   :returns (new-x fgl-object-p)
   ;;   (if (atom x)
   ;;       nil
   ;;     (g-cons (car x)
-  ;;             (gl-objectlist-to-object (cdr x))))
+  ;;             (fgl-objectlist-to-object (cdr x))))
   ;;   ///
   ;;   (defret fgl-object-eval-of-<fn>
   ;;     (equal (fgl-object-eval new-x env)
   ;;            (fgl-objectlist-eval x env)))
 
-  ;;   (defret gl-objectlist-bfrlist-of-<fn>
-  ;;     (implies (not (member v (gl-objectlist-bfrlist x)))
-  ;;              (not (member v (gl-object-bfrlist new-x))))))
+  ;;   (defret fgl-objectlist-bfrlist-of-<fn>
+  ;;     (implies (not (member v (fgl-objectlist-bfrlist x)))
+  ;;              (not (member v (fgl-object-bfrlist new-x))))))
 
-  ;; (define gl-objectlist-accumulate-to-object ((x gl-objectlist-p)
-  ;;                                             (acc gl-object-p))
-  ;;   :returns (new-x gl-object-p)
+  ;; (define fgl-objectlist-accumulate-to-object ((x fgl-objectlist-p)
+  ;;                                             (acc fgl-object-p))
+  ;;   :returns (new-x fgl-object-p)
   ;;   (if (atom x)
-  ;;       (gl-object-fix acc)
-  ;;     (gl-objectlist-accumulate-to-object
+  ;;       (fgl-object-fix acc)
+  ;;     (fgl-objectlist-accumulate-to-object
   ;;      (cdr x)
   ;;      (g-cons (car x) acc)))
   ;;   )
 
   ;; (define aignet-lit-list->bools-aux ((x aignet::lit-listp)
   ;;                                     (bfrstate bfrstate-p)
-  ;;                                     (acc gl-objectlist-p))
-  ;;   :returns (obj gl-object-p)
+  ;;                                     (acc fgl-objectlist-p))
+  ;;   :returns (obj fgl-object-p)
   ;;   (if (Atom x)
-  ;;       (gl-objectlist-accumulate-to-object acc nil)
+  ;;       (fgl-objectlist-accumulate-to-object acc nil)
   ;;     (aignet-lit-list->bools-aux
   ;;      (cdr x) bfrstate (cons (aignet-lit->bool (car x) bfrstate acc)))))
 
   (define aignet-lit-list->bools ((x aignet::lit-listp)
                                   (bfrstate bfrstate-p))
-    :returns (new-x gl-object-p)
+    :returns (new-x fgl-object-p)
     :guard (and (bfrstate-mode-is :aignet)
                 (<= (lit-list-max-var+1 x) (+ 1 (bfrstate->bound bfrstate))))
     :guard-debug t
@@ -222,7 +222,7 @@
     (defthm bfr-listp-of-aignet-lit-list->bools
       (implies (and (<= (lit-list-max-var+1 x) (+ 1 (bfrstate->bound bfrstate)))
                     (bfrstate-mode-is :aignet))
-               (bfr-listp (gl-object-bfrlist (aignet-lit-list->bools x bfrstate))))
+               (bfr-listp (fgl-object-bfrlist (aignet-lit-list->bools x bfrstate))))
       :hints(("Goal" :in-theory (enable aignet-lit-list->bools
                                         lit-list-max-var+1))))
     (defthm fgl-object-eval-of-aignet-lit-list->bools
@@ -232,7 +232,7 @@
                         (bits->bools
                          (aignet::lit-eval-list x
                                                 (alist-to-bitarr (aignet::num-ins aignet)
-                                                                 (gl-env->bfr-vals env) nil)
+                                                                 (fgl-env->bfr-vals env) nil)
                                                 nil
                                                 aignet)))))
       :hints(("Goal" :in-theory (enable bits->bools))))))
@@ -336,7 +336,7 @@
                   (equal (aignet::lit-eval
                           (bfr->aignet-lit x (logicman->bfrstate))
                           (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
-                                           (gl-env->bfr-vals env) nil)
+                                           (fgl-env->bfr-vals env) nil)
                           nil
                           (logicman->aignet logicman))
                          (bool->bit (gobj-bfr-eval x env))))
@@ -344,7 +344,7 @@
 
 
 (local (defthm aig-env-equiv-of-aignet-eval-to-env
-         (b* (((mv err varmap) (GL-OBJECT-ALIST-TO-VARMAP
+         (b* (((mv err varmap) (FGL-OBJECT-ALIST-TO-VARMAP
                                            alist
                                            (logicman->bfrstate)
                                            NIL)))
@@ -354,25 +354,25 @@
                                     varmap
                                     (ALIST-TO-BITARR
                                      (AIGNET::STYPE-COUNT :PI (logicman->aignet logicman))
-                                     (GL-ENV->BFR-VALS ENV)
+                                     (FGL-ENV->BFR-VALS ENV)
                                      NIL)
                                     NIL
                                     (logicman->aignet logicman))
                                    (fgl-object-alist-eval alist env))))
          :hints(("Goal" :in-theory (e/d (aig-env-equiv
-                                         lookup-exists-in-gl-object-alist-to-varmap-split))))))
+                                         lookup-exists-in-fgl-object-alist-to-varmap-split))))))
 
 
 
-(def-gl-primitive acl2::aig-eval-list (x a)
-  (gl-object-case x
-    :g-concrete (gl-object-case a
+(def-fgl-primitive acl2::aig-eval-list (x a)
+  (fgl-object-case x
+    :g-concrete (fgl-object-case a
                   :g-map (stobj-let ((logicman (interp-st->logicman interp-st)))
                                     (ok val logicman)
                                     (b* ((bfrstate (logicman->bfrstate))
                                          ((unless (bfrstate-mode-is :aignet))
                                           (mv nil nil logicman))
-                                         ((mv err varmap) (gl-object-alist-to-varmap a.alist bfrstate nil))
+                                         ((mv err varmap) (fgl-object-alist-to-varmap a.alist bfrstate nil))
                                          ((when err)
                                           (cw "~x0 primitive error: ~@1" 'acl2::aig-eval-list err)
                                           (mv nil nil logicman)))

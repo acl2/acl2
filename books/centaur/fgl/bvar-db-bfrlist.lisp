@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -40,14 +40,14 @@
               (<= n (next-bvar bvar-db)))
   (if (zp (- (lnfix n) (base-bvar bvar-db)))
       nil
-    (append (gl-object-bfrlist (get-bvar->term (1- (lnfix n)) bvar-db))
+    (append (fgl-object-bfrlist (get-bvar->term (1- (lnfix n)) bvar-db))
             (bvar-db-bfrlist-aux (1- (lnfix n)) bvar-db)))
   ///
   (defthm bfrlist-aux-of-get-bvar->term
     (implies (and (not (member v (bvar-db-bfrlist-aux n bvar-db)))
                   (< (nfix m) (nfix n))
                   (<= (base-bvar$a bvar-db) (nfix m)))
-             (not (member v (gl-object-bfrlist (get-bvar->term$a m bvar-db))))))
+             (not (member v (fgl-object-bfrlist (get-bvar->term$a m bvar-db))))))
 
   (defthm bfrlist-aux-of-add-term-bvar
     (implies (<= (nfix n) (next-bvar$a bvar-db))
@@ -61,7 +61,7 @@
   (defthm subsetp-bfrlist-of-bvar-db-bfrlist-aux
     (implies (and (< (nfix m) (nfix n))
                   (<= (base-bvar$a bvar-db) (nfix m)))
-             (subsetp (gl-object-bfrlist (get-bvar->term$a m bvar-db))
+             (subsetp (fgl-object-bfrlist (get-bvar->term$a m bvar-db))
                       (bvar-db-bfrlist-aux n bvar-db)))
     :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
 
@@ -72,23 +72,23 @@
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
                   (< (nfix m) (next-bvar$a bvar-db))
                   (<= (base-bvar$a bvar-db) (nfix m)))
-             (not (member v (gl-object-bfrlist (get-bvar->term$a m bvar-db))))))
+             (not (member v (fgl-object-bfrlist (get-bvar->term$a m bvar-db))))))
 
   (defthm bvar-db-bfrlist-of-add-term-bvar
     (equal (bvar-db-bfrlist (add-term-bvar$a obj bvar-db))
-           (append (gl-object-bfrlist obj)
+           (append (fgl-object-bfrlist obj)
                    (bvar-db-bfrlist bvar-db)))
     :hints (("goal" :in-theory (enable bvar-db-bfrlist-aux))))
 
   (defthm subsetp-bfrlist-of-bvar-db-bfrlist
     (implies (and (< (nfix m) (next-bvar$a bvar-db))
                   (<= (base-bvar$a bvar-db) (nfix m)))
-             (subsetp (gl-object-bfrlist (get-bvar->term$a m bvar-db))
+             (subsetp (fgl-object-bfrlist (get-bvar->term$a m bvar-db))
                       (bvar-db-bfrlist bvar-db))))
 
   (defthm bvar-db-bfrlist-of-add-term-bvar-unique
     (acl2::set-equiv (bvar-db-bfrlist (mv-nth 1 (add-term-bvar-unique obj bvar-db)))
-                     (append (gl-object-bfrlist obj)
+                     (append (fgl-object-bfrlist obj)
                              (bvar-db-bfrlist bvar-db)))
     :hints (("goal" :in-theory (e/d (add-term-bvar-unique)
                                     (bvar-db-bfrlist

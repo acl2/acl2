@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -30,8 +30,8 @@
 
 (in-package "FGL")
 
-(include-book "def-gl-rewrite")
-(include-book "glcp-config")
+(include-book "def-fgl-rewrite")
+(include-book "config")
 (include-book "syntax-bind")
 (include-book "centaur/misc/starlogic" :dir :system)
 (local (in-theory (enable if!)))
@@ -76,12 +76,12 @@
 (disable-definition maybe-list)
 
 ;; Under IFF, maybe-list is just its truth value.
-(def-gl-rewrite maybe-list-under-iff
+(def-fgl-rewrite maybe-list-under-iff
   (iff (maybe-list true val)
        true))
 
 ;; Also under CONSP.
-(def-gl-rewrite consp-of-maybe-list
+(def-fgl-rewrite consp-of-maybe-list
   (equal (consp (maybe-list true val))
          (and true t)))
 
@@ -90,10 +90,10 @@
 
 (disable-definition maybe-consp)
 
-(def-gl-rewrite maybe-consp-of-cons
+(def-fgl-rewrite maybe-consp-of-cons
   (maybe-consp (cons x y)))
 
-(def-gl-rewrite maybe-consp-of-maybe-list
+(def-fgl-rewrite maybe-consp-of-maybe-list
   (maybe-consp (maybe-list consp val)))
 
 
@@ -103,7 +103,7 @@
 
 (disable-definition maybe-true)
 
-(def-gl-rewrite maybe-true-under-iff
+(def-fgl-rewrite maybe-true-under-iff
   (iff (maybe-true truep val)
        truep))
 
@@ -114,7 +114,7 @@
 ;; form so that we can support both simple Boolean checks and consp checks of
 ;; the OR.  When they are not member checks, we revert to maybe-true form,
 ;; which will still support Boolean checks but not consp checks.
-(def-gl-branch-merge maybe-list-merge
+(def-fgl-branch-merge maybe-list-merge
   (equal (if test (maybe-list true val) else)
          (b* ((maybe-consp (maybe-consp else))
               (maybe-consp-true (syntax-bind maybe-consp-true (eq maybe-consp t))))
@@ -123,14 +123,14 @@
              (maybe-true (if test true (and else t))
                          (if! test (if! (consp val) val '(t)) else))))))
 
-(def-gl-branch-merge maybe-true-merge
+(def-fgl-branch-merge maybe-true-merge
   (equal (if test (maybe-true true val) else)
          (maybe-true (if test true (and else t))
                      (if! test val else))))
 
 ;; We probably shouldn't need to compare maybe-list with equal, but this might
 ;; succeed if we end up needing to.
-(def-gl-rewrite equal-of-maybe-list
+(def-fgl-rewrite equal-of-maybe-list
   (equal (equal (maybe-list true val) x)
          (if true
              (if (consp val)
@@ -138,7 +138,7 @@
                (equal x '(t)))
            (not x))))
 
-(def-gl-rewrite equal-of-maybe-true
+(def-fgl-rewrite equal-of-maybe-true
   (equal (equal (maybe-true true val) x)
          (if true
              (if val
@@ -155,11 +155,11 @@
     (or (equal x (car lst))
         (memberp-equal x (cdr lst)))))
 
-(def-gl-rewrite memberp-equal-of-cons
+(def-fgl-rewrite memberp-equal-of-cons
   (equal (memberp-equal x (cons a b))
          (or (equal x a) (memberp-equal x b))))
 
-(def-gl-rewrite memberp-equal-of-nil
+(def-fgl-rewrite memberp-equal-of-nil
   (equal (memberp-equal x nil) nil))
 
 ;; We introduce a version of member-equal about which we won't prove any rules,
@@ -175,13 +175,13 @@
 (defthm memberp-equal-iff-member-equal
   (iff (memberp-equal x lst) (member-equal x lst)))
 
-(def-gl-rewrite maybe-consp-of-hide-member-equal
+(def-fgl-rewrite maybe-consp-of-hide-member-equal
   (maybe-consp (hide-member-equal x lst)))
 
 ;; Now when we see member-equal, we'll hide its full value away using
 ;; hide-member-equal and expose its Boolean value (memberp-equal) through
 ;; maybe-list.
-(def-gl-rewrite member-equal-to-maybe-list
+(def-fgl-rewrite member-equal-to-maybe-list
   (equal (member-equal x lst)
          (maybe-list (memberp-equal x lst) (hide-member-equal x lst))))
 

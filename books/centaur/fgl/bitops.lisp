@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -32,10 +32,10 @@
 
 
 (include-book "arith-base")
-(include-book "glcp-config")
-(include-book "def-gl-rewrite")
+(include-book "config")
+(include-book "def-fgl-rewrite")
 (include-book "syntax-bind")
-(include-book "gl-object")
+(include-book "fgl-object")
 (include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
@@ -49,50 +49,50 @@
 (disable-definition ifix)
 
 (disable-definition acl2::logcons$inline)
-(def-gl-rewrite logcons-is-intcons
+(def-fgl-rewrite logcons-is-intcons
   (equal (logcons a b) (intcons (eql a 1) b)))
 
 (disable-definition acl2::logcar$inline)
-(def-gl-rewrite logcar-is-intcar
+(def-fgl-rewrite logcar-is-intcar
   (equal (logcar x) (if (intcar x) 1 0)))
 
 (disable-definition acl2::logcdr$inline)
-(def-gl-rewrite logcdr-is-intcdr
+(def-fgl-rewrite logcdr-is-intcdr
   (equal (logcdr x) (intcdr x)))
 
-(def-gl-rewrite bitp-fgl
+(def-fgl-rewrite bitp-fgl
   (equal (bitp x)
          (and (equal x (bfix x)) t)))
 
-(defund gl-int-endp (x)
-  (gl-object-case x
+(defund fgl-int-endp (x)
+  (fgl-object-case x
     :g-integer (atom (cdr x.bits))
     :g-boolean t
     :g-cons t
     :g-concrete (or (zip x.val) (eql x.val -1))
     :otherwise nil))
 
-(def-gl-rewrite intcar-of-intcons
+(def-fgl-rewrite intcar-of-intcons
   (equal (intcar (intcons x y))
          (bool-fix x)))
 
-(def-gl-rewrite intcdr-of-intcons
+(def-fgl-rewrite intcdr-of-intcons
   (equal (intcdr (intcons x y))
          (ifix y)))
 
 (define check-int-endp (x xsyn)
   :verify-guards nil
-  (and (gl-int-endp xsyn)
+  (and (fgl-int-endp xsyn)
        (int-endp x))
   ///
   (defthm check-int-endp-open
     (iff (check-int-endp x xsyn)
-         (and* (gl-int-endp xsyn)
+         (and* (fgl-int-endp xsyn)
                (int-endp x)))))
 
 (disable-definition lognot)
 
-(def-gl-rewrite fgl-lognot
+(def-fgl-rewrite fgl-lognot
   (equal (lognot x)
          (b* ((x (int x))
               (xsyn (syntax-bind xsyn (g-concrete x)))
@@ -104,7 +104,7 @@
 (disable-definition binary-logand)
 
 
-(def-gl-rewrite fgl-logand
+(def-fgl-rewrite fgl-logand
   (equal (logand x y)
          (b* ((x (int x))
               (y (int y))
@@ -120,7 +120,7 @@
 
 (disable-definition binary-logior)
 
-(def-gl-rewrite fgl-logior
+(def-fgl-rewrite fgl-logior
   (equal (logior x y)
          (b* ((x (int x))
               (y (int y))
@@ -136,7 +136,7 @@
 
 (disable-definition acl2::binary-logxor)
 
-(def-gl-rewrite fgl-logxor
+(def-fgl-rewrite fgl-logxor
   (equal (logxor x y)
          (b* ((x (int x))
               (y (int y))
@@ -152,7 +152,7 @@
 
 (disable-definition acl2::binary-logeqv)
 
-(def-gl-rewrite fgl-logeqv
+(def-fgl-rewrite fgl-logeqv
   (equal (logeqv x y)
          (b* ((x (int x))
               (y (int y))
@@ -179,8 +179,8 @@
 
 
 
-(def-gl-rewrite int-less-than-0
-  (implies (and (syntaxp (gl-object-case x :g-integer))
+(def-fgl-rewrite int-less-than-0
+  (implies (and (syntaxp (fgl-object-case x :g-integer))
                 (integerp x))
            (equal (< x 0)
                   (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
@@ -194,9 +194,9 @@
 
 (disable-definition check-signed-byte-p)
 
-(def-gl-rewrite check-signed-byte-p-by-syntax-when-const-width
-  (implies (and (syntaxp (and (gl-object-case x :g-integer)
-                              (gl-object-case n :g-concrete)))
+(def-fgl-rewrite check-signed-byte-p-by-syntax-when-const-width
+  (implies (and (syntaxp (and (fgl-object-case x :g-integer)
+                              (fgl-object-case n :g-concrete)))
                 (integerp x)
                 (posp n))
            (equal (check-signed-byte-p n x)
@@ -217,9 +217,9 @@
 
 (disable-definition check-unsigned-byte-p)
 
-(def-gl-rewrite check-unsigned-byte-p-by-syntax-when-const-width
-  (implies (and (syntaxp (and (gl-object-case x :g-integer)
-                              (gl-object-case n :g-concrete)))
+(def-fgl-rewrite check-unsigned-byte-p-by-syntax-when-const-width
+  (implies (and (syntaxp (and (fgl-object-case x :g-integer)
+                              (fgl-object-case n :g-concrete)))
                 (integerp x)
                 (natp n))
            (equal (check-unsigned-byte-p n x)
@@ -237,7 +237,7 @@
 
 (disable-definition acl2::loghead$inline)
 
-(def-gl-rewrite loghead-const-width
+(def-fgl-rewrite loghead-const-width
   (implies (syntaxp (integerp n))
            (equal (loghead n x)
                   (if (or (zp n)
@@ -251,7 +251,7 @@
 
 (disable-definition logext)
 
-(def-gl-rewrite logext-const-width
+(def-fgl-rewrite logext-const-width
   (implies (syntaxp (integerp n))
            (equal (logext n x)
                   (cond ((or (zp n)
@@ -265,7 +265,7 @@
 
 (disable-definition acl2::logtail$inline)
 
-(def-gl-rewrite logtail-const-shift
+(def-fgl-rewrite logtail-const-shift
   (implies (syntaxp (integerp n))
            (equal (logtail n x)
                   (if (or (zp n)
@@ -320,7 +320,7 @@
                                             bitops::ihsext-recursive-redefs)))
          :rule-classes :type-prescription))
 
-(def-gl-rewrite logbitp-const-index
+(def-fgl-rewrite logbitp-const-index
   (implies (syntaxp (integerp n))
            (equal (logbitp n x)
                   (intcar (logtail n x))))
@@ -422,8 +422,8 @@
                   (int-revapp width x 0))
            :hints(("Goal" :in-theory (enable int-revapp bitops::loghead**)))))
 
-  (def-gl-rewrite logtail-helper-impl
-    (implies (and (syntaxp (and (gl-object-case shift-rev '(:g-integer :g-concrete))
+  (def-fgl-rewrite logtail-helper-impl
+    (implies (and (syntaxp (and (fgl-object-case shift-rev '(:g-integer :g-concrete))
                                 (natp shift-width)))
                   (natp shift-width)
                   (integerp shift-rev))
@@ -446,14 +446,14 @@
                 '(:in-theory (enable logapp
                                      bitops::expt-2-is-ash)))))
 
-  (def-gl-rewrite logtail-to-logtail-helper
-    (implies (syntaxp (not (gl-object-case n :g-concrete)))
+  (def-fgl-rewrite logtail-to-logtail-helper
+    (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logtail n x)
                     (b* ((x (int x))
                          (n (nfix (int n)))
-                         ((when (syntax-bind n-concrete (gl-object-case n :g-concrete)))
+                         ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logtail n x))
-                         (n-width (syntax-bind n-width (gl-object-case n
+                         (n-width (syntax-bind n-width (fgl-object-case n
                                                          :g-integer (max 0 (1- (len n.bits)))
                                                          :otherwise nil)))
                          ((unless (and n-width
@@ -467,7 +467,7 @@
 
 
 
-(define gobj-both-endp-and-same ((x gl-object-p) (y gl-object-p))
+(define gobj-both-endp-and-same ((x fgl-object-p) (y fgl-object-p))
   (b* (((mv xok xfix) (gobj-syntactic-integer-fix x))
        ((unless xok) nil)
        (xbits (gobj-syntactic-integer->bits xfix))
@@ -516,8 +516,8 @@
            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))))
 
-  (def-gl-rewrite logapp-helper-impl
-    (implies (and (syntaxp (and (gl-object-case shift-rev '(:g-integer :g-concrete))
+  (def-fgl-rewrite logapp-helper-impl
+    (implies (and (syntaxp (and (fgl-object-case shift-rev '(:g-integer :g-concrete))
                                 (natp shift-width)))
                   (natp shift-width)
                   (integerp shift-rev))
@@ -561,15 +561,15 @@
                                                              0)
                                                  1)))))))
 
-  (def-gl-rewrite logapp-to-logapp-helper
-    (implies (syntaxp (not (gl-object-case n :g-concrete)))
+  (def-fgl-rewrite logapp-to-logapp-helper
+    (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logapp n x y)
                     (b* ((x (int x))
                          (y (int y))
                          (n (nfix (int n)))
-                         ((when (syntax-bind n-concrete (gl-object-case n :g-concrete)))
+                         ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logapp n x y))
-                         (n-width (syntax-bind n-width (gl-object-case n
+                         (n-width (syntax-bind n-width (fgl-object-case n
                                                          :g-integer (max 0 (1- (len n.bits)))
                                                          :otherwise nil)))
                          ((unless (and n-width
@@ -581,14 +581,14 @@
 
   (disable-definition logapp-helper)
 
-  (def-gl-rewrite loghead-to-logapp
-    (implies (syntaxp (not (gl-object-case n :g-concrete)))
+  (def-fgl-rewrite loghead-to-logapp
+    (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (loghead n x)
                     (logapp n x 0))))
   )
 
                          
-(def-gl-rewrite logmask-to-logapp
+(def-fgl-rewrite logmask-to-logapp
   (equal (bitops::logmask n)
          (logapp n -1 0))
   :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
@@ -626,8 +626,8 @@
                   (int-revapp width x 0))
            :hints(("Goal" :in-theory (enable int-revapp bitops::loghead**)))))
 
-  (def-gl-rewrite logbitp-helper-impl
-    (implies (and (syntaxp (and (gl-object-case digit-rev '(:g-integer :g-concrete))
+  (def-fgl-rewrite logbitp-helper-impl
+    (implies (and (syntaxp (and (fgl-object-case digit-rev '(:g-integer :g-concrete))
                                 (natp digit-width)))
                   (natp digit-width)
                   (integerp digit-rev))
@@ -648,14 +648,14 @@
                 '(:in-theory (enable logapp
                                      bitops::expt-2-is-ash)))))
 
-  (def-gl-rewrite logbitp-to-logbitp-helper
-    (implies (syntaxp (not (gl-object-case n :g-concrete)))
+  (def-fgl-rewrite logbitp-to-logbitp-helper
+    (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logbitp n x)
                     (b* ((x (int x))
                          (n (nfix (int n)))
-                         ((when (syntax-bind n-concrete (gl-object-case n :g-concrete)))
+                         ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logbitp n x))
-                         (n-width (syntax-bind n-width (gl-object-case n
+                         (n-width (syntax-bind n-width (fgl-object-case n
                                                          :g-integer (max 0 (1- (len n.bits)))
                                                          :otherwise nil)))
                          ((unless (and n-width
@@ -675,7 +675,7 @@
 
 
 
-(def-gl-rewrite logapp-const-width
+(def-fgl-rewrite logapp-const-width
   (implies (syntaxp (integerp n))
            (equal (logapp n x y)
                   (cond ((zp n) (int y))
@@ -698,7 +698,7 @@
 
 
 
-(def-gl-rewrite ash-impl
+(def-fgl-rewrite ash-impl
   (equal (ash x sh)
          (b* ((sh (int sh))
               (x (int x))
@@ -719,7 +719,7 @@
   ///
   (disable-definition +carry)
 
-  (def-gl-rewrite fgl-+carry
+  (def-fgl-rewrite fgl-+carry
     (equal (+carry c x y)
            (intcons (xor c (xor (intcar x) (intcar y)))
                     (if (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
@@ -736,11 +736,11 @@
                                       bitops::equal-logcons-strong
                                       bitops::logxor** b-not))))
 
-  (def-gl-rewrite +-to-+carry
+  (def-fgl-rewrite +-to-+carry
     (implies (and (integerp x) (integerp y))
              (equal (+ x y) (+carry nil x y))))
 
-  (def-gl-rewrite minus-to-+carry
+  (def-fgl-rewrite minus-to-+carry
     (implies (integerp x)
              (equal (- x) (+carry t 0 (lognot x))))
     :hints(("Goal" :in-theory (enable lognot)))))
@@ -757,7 +757,7 @@
                                   (x y) (y x)))
                     :in-theory (disable associativity-of-*)))))
 
-  (def-gl-rewrite fgl-*
+  (def-fgl-rewrite fgl-*
     (implies (and (integerp x) (integerp y))
              (equal (* x y)
                     (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
@@ -783,7 +783,7 @@
            (implies (zip x) (equal (logcar x) 0))
            :hints(("Goal" :in-theory (enable logcar)))))
 
-  (def-gl-rewrite </=-impl2
+  (def-fgl-rewrite </=-impl2
     (equal (</= x y)
            (b* ((x (int x))
                 (y (int y))
@@ -817,7 +817,7 @@
            ;;      '(:in-theory (enable cons-equal)))
            ))
 
-  (def-gl-rewrite <-impl
+  (def-fgl-rewrite <-impl
     (implies (and (integerp x) (integerp y))
              (equal (< x y)
                     (if (and (syntax-bind y-0 (eql y 0))
@@ -840,8 +840,8 @@
 
 
 
-(define gobj-non-integerp ((x gl-object-p))
-  (gl-object-case x
+(define gobj-non-integerp ((x fgl-object-p))
+  (fgl-object-case x
     :g-boolean t
     :g-concrete (not (integerp x.val))
     :g-cons t
@@ -884,8 +884,8 @@
 
 
 
-(define gobj-non-booleanp ((x gl-object-p))
-  (gl-object-case x
+(define gobj-non-booleanp ((x fgl-object-p))
+  (fgl-object-case x
     :g-integer t
     :g-concrete (not (booleanp x.val))
     :g-cons t
@@ -901,8 +901,8 @@
          (and* (gobj-non-booleanp xsyn)
                (not (booleanp x))))))
 
-(define gobj-non-consp ((x gl-object-p))
-  (gl-object-case x
+(define gobj-non-consp ((x fgl-object-p))
+  (fgl-object-case x
     :g-integer t
     :g-concrete (not (consp x.val))
     :g-boolean t
@@ -918,7 +918,7 @@
          (and* (gobj-non-consp xsyn)
                (not (consp x))))))
 
-(def-gl-rewrite fgl-equal
+(def-fgl-rewrite fgl-equal
   (equal (equal x y)
          (let ((xsyn (syntax-bind xsyn (g-concrete x)))
                (ysyn (syntax-bind ysyn (g-concrete y))))
@@ -973,7 +973,7 @@
                   (endint (intcar x)))
            :hints(("Goal" :in-theory (enable bitops::logext**)))))
 
-  (def-gl-rewrite fgl-+carry-ext
+  (def-fgl-rewrite fgl-+carry-ext
     (implies (syntaxp (natp width))
              (equal (+carry-ext width c x y)
                     (b* ((bit0 (xor c (xor (intcar x) (intcar y))))
@@ -1017,7 +1017,7 @@
   ;;                 (endint (intcar x)))
   ;;          :hints(("Goal" :in-theory (enable bitops::logext**)))))
 
-  (def-gl-rewrite fgl-+carry-trunc
+  (def-fgl-rewrite fgl-+carry-trunc
     (implies (syntaxp (natp width))
              (equal (+carry-trunc width c x y)
                     (b* (((when (zp width)) 0))
@@ -1060,8 +1060,8 @@
                     :in-theory (enable* bitops::ihsext-inductions
                                         bitops::ihsext-recursive-redefs)))))
 
-  (def-gl-rewrite logcount-helper-impl
-    (implies (and (syntaxp (and (gl-object-case x :g-integer)
+  (def-fgl-rewrite logcount-helper-impl
+    (implies (and (syntaxp (and (fgl-object-case x :g-integer)
                                 (natp width)))
                   (natp width))
              (equal (logcount-helper width signbit x)
@@ -1109,12 +1109,12 @@
                   (logcount x))
            :hints (("goal" :in-theory (enable logcount)))))
 
-  (def-gl-rewrite logcount-impl
+  (def-fgl-rewrite logcount-impl
     (equal (logcount x)
            (b* ((x (int x))
-                ((when (syntax-bind x-concrete (gl-object-case x :g-concrete)))
+                ((when (syntax-bind x-concrete (fgl-object-case x :g-concrete)))
                  (logcount x))
-                (xwidth (syntax-bind xwidth (gl-object-case x
+                (xwidth (syntax-bind xwidth (fgl-object-case x
                                               :g-integer (len x.bits)
                                               :otherwise nil)))
                 ((unless (and xwidth
@@ -1128,12 +1128,12 @@
 
 
 
-(def-gl-rewrite expt-2-of-integer
+(def-fgl-rewrite expt-2-of-integer
   (implies (natp x)
            (equal (expt 2 x) (ash 1 x)))
   :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x))))
 
-(def-gl-rewrite unsigned-byte-p-const-width
+(def-fgl-rewrite unsigned-byte-p-const-width
   (implies (syntaxp (integerp n))
            (equal (unsigned-byte-p n x)
                   (and (natp n)
@@ -1142,7 +1142,7 @@
   :hints(("Goal" :in-theory (e/d (bitops::unsigned-byte-p**)
                                  (unsigned-byte-p)))))
 
-(def-gl-rewrite signed-byte-p-const-width
+(def-fgl-rewrite signed-byte-p-const-width
   (implies (syntaxp (integerp n))
            (equal (signed-byte-p n x)
                   (and (posp n)
@@ -1181,8 +1181,8 @@
                                               bitops::ihsext-recursive-redefs)))
            :rule-classes :linear))
 
-  (def-gl-rewrite integer-length-helper-impl
-    (implies (and (syntaxp (and (gl-object-case x :g-integer)
+  (def-fgl-rewrite integer-length-helper-impl
+    (implies (and (syntaxp (and (fgl-object-case x :g-integer)
                                 (posp bound)))
                   (posp bound))
              (equal (integer-length-helper bound x)
@@ -1207,13 +1207,13 @@
 
   (disable-definition integer-length)
 
-  (def-gl-rewrite integer-length-impl
+  (def-fgl-rewrite integer-length-impl
     (equal (integer-length x)
            (b* ((x (int x))
-                ((when (syntax-bind x-concrete (gl-object-case x :g-concrete)))
+                ((when (syntax-bind x-concrete (fgl-object-case x :g-concrete)))
                  (integer-length x))
                 (bound (syntax-bind x-bound
-                                    (gl-object-case x :g-integer (len x.bits) :otherwise nil)))
+                                    (fgl-object-case x :g-integer (len x.bits) :otherwise nil)))
                 ((unless (and bound
                               (check-signed-byte-p x-bound x)))
                  (abort-rewrite (integer-length x))))
@@ -1222,7 +1222,7 @@
                                    (signed-byte-p))))))
 
 
-(def-gl-rewrite logext-to-logapp
+(def-fgl-rewrite logext-to-logapp
   (implies (syntaxp (not (integerp n)))
            (equal (logext n x)
                   (logapp n x (endint (logbitp (+ -1 (pos-fix n)) x)))))
@@ -1230,12 +1230,12 @@
                                      bitops::ihsext-recursive-redefs
                                      pos-fix))))
 
-(def-gl-rewrite booleanp-fgl
+(def-fgl-rewrite booleanp-fgl
   (equal (booleanp x)
          (and (equal x (if x t nil)) t)))
 
 
-(def-gl-rewrite pos-fix-fgl
+(def-fgl-rewrite pos-fix-fgl
   (equal (pos-fix x)
          (let ((x (int x)))
            (if (< 0 x) x 1)))

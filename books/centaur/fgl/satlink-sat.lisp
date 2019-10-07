@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -241,10 +241,10 @@
                   (interp-st-bfr-p bfr)
                   (not (interp-st->errmsg new-interp-st))
                   (equal logicman (interp-st->logicman interp-st))
-                  (logicman-pathcond-eval (gl-env->bfr-vals env)
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
-                  (logicman-pathcond-eval (gl-env->bfr-vals env)
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->constraint interp-st)
                                           (interp-st->logicman interp-st)))
              (equal (gobj-bfr-eval ans env logicman)
@@ -253,7 +253,7 @@
              interp-st-satlink-sat-check-core
              (:no-xform
               (b* ((invals (alist-to-bitarr (aignet::num-ins aignet)
-                                            (gl-env->bfr-vals env) nil)))
+                                            (fgl-env->bfr-vals env) nil)))
                 `(:in-theory (e/d (gobj-bfr-eval bfr-eval)
                                   (aignet::aignet-sat-check-cube-unsat))
                   :use ((:instance aignet::aignet-sat-check-cube-unsat
@@ -265,7 +265,7 @@
                          (regvals nil))))))
              (:xform
               (b* ((invals (alist-to-bitarr (aignet::num-ins aignet)
-                                            (gl-env->bfr-vals env) nil)))
+                                            (fgl-env->bfr-vals env) nil)))
                 `(:in-theory (e/d (gobj-bfr-eval bfr-eval)
                                   (aignet::aignet-transform-sat-check-cube-unsat))
                   :use ((:instance aignet::aignet-transform-sat-check-cube-unsat
@@ -335,8 +335,8 @@
          ((when (interp-st->errmsg interp-st))
           (mv nil interp-st state))
          ((unless (fgl-satlink-monolithic-sat-config-p params))
-          (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object")))
+          (fgl-interp-error
+           :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object")))
          ((when (eq bfr nil))
           (mv nil interp-st state)))
       (interp-st-satlink-sat-check-core params bfr interp-st state))

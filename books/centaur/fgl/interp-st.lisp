@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -33,7 +33,7 @@
 (include-book "pathcond")
 (include-book "bvar-db-equivs")
 (include-book "constraint-db")
-(include-book "glcp-config")
+(include-book "config")
 (include-book "contexts")
 (include-book "stack")
 (include-book "centaur/fty/bitstruct" :dir :system)
@@ -107,7 +107,7 @@
     ;; (bvar-mode :type t)
     (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :pred equiv-contextsp)
     (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config) :fix glcp-config-fix :pred glcp-config-p)
+    (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
     (flags :type (and (unsigned-byte 60)
                       (satisfies interp-flags-p))
            :initially ,(make-interp-flags)
@@ -171,7 +171,7 @@
                              (interp-st (update-interp-st->backchain-limit -1 interp-st))
                              (interp-st (update-interp-st->equiv-contexts nil interp-st))
                              (interp-st (update-interp-st->reclimit 0 interp-st))
-                             (interp-st (update-interp-st->config (make-glcp-config) interp-st))
+                             (interp-st (update-interp-st->config (make-fgl-config) interp-st))
                              (interp-st (update-interp-st->flags (make-interp-flags) interp-st))
                              (interp-st (resize-interp-st->fgarrays 0 interp-st))
                              (interp-st (update-interp-st->next-fgarray 0 interp-st))
@@ -477,7 +477,7 @@
         *scratchobj-tmplsubsts*))))
 
 (define interp-st-add-binding ((var pseudo-var-p)
-                               (val gl-object-p)
+                               (val fgl-object-p)
                                interp-st)
   :enabled t :hooks nil
   :inline t
@@ -486,7 +486,7 @@
              (stack-add-binding var val stack)
              interp-st))
 
-(define interp-st-set-bindings ((bindings gl-object-bindings-p)
+(define interp-st-set-bindings ((bindings fgl-object-bindings-p)
                                 interp-st)
   :enabled t :hooks nil
   :inline t
@@ -495,7 +495,7 @@
              (stack-set-bindings bindings stack)
              interp-st))
 
-(define interp-st-add-minor-bindings ((bindings gl-object-bindings-p)
+(define interp-st-add-minor-bindings ((bindings fgl-object-bindings-p)
                                       interp-st)
   :enabled t :hooks nil
   :inline t
@@ -504,7 +504,7 @@
              (stack-add-minor-bindings bindings stack)
              interp-st))
 
-(define interp-st-set-minor-bindings ((bindings gl-object-bindings-p)
+(define interp-st-set-minor-bindings ((bindings fgl-object-bindings-p)
                                       interp-st)
   :enabled t :hooks nil
   :inline t
@@ -513,7 +513,7 @@
              (stack-set-minor-bindings bindings stack)
              interp-st))
 
-(define interp-st-push-frame ((bindings gl-object-bindings-p)
+(define interp-st-push-frame ((bindings fgl-object-bindings-p)
                               interp-st)
   :enabled t :hooks nil
   :inline t
@@ -570,8 +570,8 @@
 ;;        ((interp-st-bind
 ;;          (flags new-flag-expr flag-backup-var)
 ;;          (equiv-contexts new-equiv-contexts-expr))
-;;         ((gl-interp-recursive-call err successp-interp-st state)
-;;          (gl-rewrite-relieve-hyps rule.hyps interp-st state)))
+;;         ((fgl-interp-recursive-call err successp-interp-st state)
+;;          (fgl-rewrite-relieve-hyps rule.hyps interp-st state)))
 ;;        ...)
 ;;     ...)
 ;; Note: The bindings are of the form
@@ -585,19 +585,19 @@
   :mode :program
   (intern-in-package-of-symbol
    (concatenate 'string "CURRENT-INTERP-ST-" (symbol-name slotname))
-   'fgl::gl-package-symbol))
+   'fgl::fgl-package-symbol))
 
 (define interp-st-accessor (slotname)
   :mode :program
   (acl2::tmpl-sym-sublis `(("<FIELD>" . ,(symbol-name slotname)))
                          'interp-st-><field>
-                         'fgl::gl-package))
+                         'fgl::fgl-package))
 
 (define interp-st-updater (slotname)
   :mode :program
   (acl2::tmpl-sym-sublis `(("<FIELD>" . ,(symbol-name slotname)))
                          'update-interp-st-><field>
-                         'fgl::gl-package))
+                         'fgl::fgl-package))
 
 (define interp-st-bind-backup-vals (args interp-st-name)
   :mode :program
@@ -660,8 +660,8 @@
              (lbfr-listp x)
              ok))
 
-(define interp-st-gl-bfr-object-fix ((x gl-object-p) &optional (interp-st 'interp-st))
-  :guard (interp-st-bfr-listp (gl-object-bfrlist x))
+(define interp-st-fgl-bfr-object-fix ((x fgl-object-p) &optional (interp-st 'interp-st))
+  :guard (interp-st-bfr-listp (fgl-object-bfrlist x))
   :enabled t
   (mbe :logic (stobj-let ((logicman (interp-st->logicman interp-st)))
                          (new-x)
@@ -669,8 +669,8 @@
                          new-x)
        :exec x))
 
-(define interp-st-gl-bfr-objectlist-fix ((x gl-objectlist-p) &optional (interp-st 'interp-st))
-  :guard (interp-st-bfr-listp (gl-objectlist-bfrlist x))
+(define interp-st-fgl-bfr-objectlist-fix ((x fgl-objectlist-p) &optional (interp-st 'interp-st))
+  :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist x))
   :enabled t
   (mbe :logic (stobj-let ((logicman (interp-st->logicman interp-st)))
                          (new-x)
@@ -714,12 +714,12 @@
 (local
  (defthm subsetp-of-bvar-db-bfrlist-when-get-term->bvar$a
    (implies (get-term->bvar$a x bvar-db)
-            (subsetp (gl-object-bfrlist x) (bvar-db-bfrlist bvar-db)))
+            (subsetp (fgl-object-bfrlist x) (bvar-db-bfrlist bvar-db)))
    :hints (("goal" :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
                           (m (get-term->bvar$a x bvar-db))))
             :in-theory (disable subsetp-bfrlist-of-bvar-db-bfrlist)))))
 
-(define interp-st-add-term-bvar ((x gl-object-p) interp-st state)
+(define interp-st-add-term-bvar ((x fgl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
   :prepwork ((local (in-theory (enable interp-st-nvars-ok))))
@@ -727,8 +727,8 @@
               (logicman (interp-st->logicman interp-st)))
              (bfr bvar-db logicman)
              (b* ((nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar (gl-object-fix x) bvar-db))
-                  (bvar-db (maybe-add-equiv-term (gl-object-fix x) nextvar bvar-db state))
+                  (bvar-db (add-term-bvar (fgl-object-fix x) bvar-db))
+                  (bvar-db (maybe-add-equiv-term (fgl-object-fix x) nextvar bvar-db state))
                   (logicman (logicman-add-var logicman))
                   (bfr (bfr-var nextvar logicman)))
                (mv bfr bvar-db logicman))
@@ -761,7 +761,7 @@
 
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
-                     (append (gl-object-bfrlist x)
+                     (append (fgl-object-bfrlist x)
                              (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
 
   (defret logicman-get-of-<fn>
@@ -769,7 +769,7 @@
              (equal (logicman-get key (interp-st->logicman new-interp-st))
                     (logicman-get key (interp-st->logicman interp-st))))))
 
-(define interp-st-add-term-bvar-unique ((x gl-object-p) interp-st state)
+(define interp-st-add-term-bvar-unique ((x fgl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
   :prepwork ((local (in-theory (enable interp-st-nvars-ok
@@ -781,8 +781,8 @@
                   ((when var)
                    (mv (bfr-var var logicman) bvar-db logicman))
                   (nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar (gl-object-fix x) bvar-db))
-                  (bvar-db (maybe-add-equiv-term (gl-object-fix x) nextvar bvar-db state))
+                  (bvar-db (add-term-bvar (fgl-object-fix x) bvar-db))
+                  (bvar-db (maybe-add-equiv-term (fgl-object-fix x) nextvar bvar-db state))
                   (logicman (logicman-add-var logicman))
                   (bfr (bfr-var nextvar logicman)))
                (mv bfr bvar-db logicman))
@@ -815,7 +815,7 @@
 
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
-                     (append (gl-object-bfrlist x)
+                     (append (fgl-object-bfrlist x)
                              (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
 
   (defret logicman-get-of-<fn>
@@ -902,7 +902,7 @@
 
 
 ;; Trace this!
-(define glcp-interp-error-message ((str stringp)
+(define fgl-interp-error-message ((str stringp)
                                    (arglist))
   :returns (error-message (or (consp error-message)
                               (stringp error-message))
@@ -911,11 +911,11 @@
       (cons (str-fix str) arglist)
     (str-fix str)))
 
-(defmacro gl-msg (str &rest args)
-  `(glcp-interp-error-message ,str ,(make-fmt-bindings acl2::*base-10-chars* args)))
+(defmacro fgl-msg (str &rest args)
+  `(fgl-interp-error-message ,str ,(make-fmt-bindings acl2::*base-10-chars* args)))
 
 
-(define gl-interp-store-debug-info (msg obj interp-st)
+(define fgl-interp-store-debug-info (msg obj interp-st)
   :returns new-interp-st
   :guard (not (eq msg :unreachable))
   (b* (((when (interp-st->errmsg interp-st))
@@ -953,10 +953,10 @@
     (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
              (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
 
-(defmacro gl-interp-error (&key msg debug-obj (nvals '1))
+(defmacro fgl-interp-error (&key msg debug-obj (nvals '1))
   `(b* ((msg ,msg)
         (debug-obj ,debug-obj)
-        (interp-st (gl-interp-store-debug-info msg debug-obj interp-st)))
+        (interp-st (fgl-interp-store-debug-info msg debug-obj interp-st)))
      ,(if (eql nvals 0)
           '(mv interp-st state)
         `(mv ,@(acl2::repeat nvals nil) interp-st state))))

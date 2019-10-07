@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -32,26 +32,26 @@
 
 (include-book "tools/templates" :dir :system)
 (include-book "primitives-stub")
-(include-book "def-gl-rewrite")
+(include-book "def-fgl-rewrite")
 (include-book "centaur/meta/def-formula-checks" :dir :system)
 (set-state-ok t)
 
 
 (defmacro def-formula-checks (name fns)
   `(progn (cmr::def-formula-checks ,name ,fns :evl fgl-ev :evl-base-fns *fgl-ev-base-fns*)
-          (table gl-formula-checks ',name
+          (table fgl-formula-checks ',name
                  (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))))
 
 
 
 
-(defun def-gl-meta-fn (name body formula-check-fn prepwork)
+(defun def-fgl-meta-fn (name body formula-check-fn prepwork)
   (declare (Xargs :mode :program))
   (acl2::template-subst
-   '(define <metafn> ((call gl-object-p)
+   '(define <metafn> ((call fgl-object-p)
                       (interp-st interp-st-bfrs-ok)
                       state)
-      :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+      :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
       :returns (mv successp
                    rhs
                    bindings
@@ -69,11 +69,11 @@
                       <formula-check>
                       (equal (w st) (w state))
                       (interp-st-bfrs-ok interp-st)
-                      (interp-st-bfr-listp (gl-object-bfrlist call))
-                      (logicman-pathcond-eval (gl-env->bfr-vals env)
+                      (interp-st-bfr-listp (fgl-object-bfrlist call))
+                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                               (interp-st->constraint interp-st)
                                               (interp-st->logicman interp-st))
-                      (logicman-pathcond-eval (gl-env->bfr-vals env)
+                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                               (interp-st->pathcond interp-st)
                                               (interp-st->logicman interp-st)))
                  (fgl-ev-context-equiv-forall-extensions
@@ -82,8 +82,8 @@
                   rhs
                   (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
 
-      (table gl-metafns '<metafn> t))
-   :splice-alist `((<thms> . ,*gl-meta-rule-thms*)
+      (table fgl-metafns '<metafn> t))
+   :splice-alist `((<thms> . ,*fgl-meta-rule-thms*)
                    (<formula-check> . 
                                     ,(and formula-check-fn
                                           `((,formula-check-fn st)))))
@@ -93,30 +93,30 @@
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
 
-(defmacro def-gl-meta (name body &key (formula-check) (prepwork))
-  (def-gl-meta-fn name body formula-check prepwork))
+(defmacro def-fgl-meta (name body &key (formula-check) (prepwork))
+  (def-fgl-meta-fn name body formula-check prepwork))
 
 
-(defun def-gl-primitive-fn (fn formals body name-override formula-check-fn updates-state prepwork)
+(defun def-fgl-primitive-fn (fn formals body name-override formula-check-fn updates-state prepwork)
   (declare (Xargs :mode :program))
   (b* ((primfn (or name-override
                    (intern-in-package-of-symbol
-                    (concatenate 'string "GL-" (symbol-name fn) "-PRIMITIVE")
-                    'gl-package))))
+                    (concatenate 'string "FGL-" (symbol-name fn) "-PRIMITIVE")
+                    'fgl-package))))
     (acl2::template-subst
-     '(define <primfn> ((call gl-object-p)
+     '(define <primfn> ((call fgl-object-p)
                                  (interp-st interp-st-bfrs-ok)
                                  state)
-        :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+        :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
         :returns (mv successp
                      ans
                      new-interp-st
                      new-state)
         :prepwork <prepwork>
-        (gl-object-case call
+        (fgl-object-case call
           :g-apply (if (and (eq call.fn '<fn>)
                             (eql (len call.args) <arity>))
-                       (b* (((list <formals>) (gl-objectlist-fix call.args)))
+                       (b* (((list <formals>) (fgl-objectlist-fix call.args)))
                          (:@ (not :updates-state)
                           (b* (((mv successp ans interp-st) <body>))
                             (mv successp ans interp-st state)))
@@ -133,11 +133,11 @@
                         <formula-check>
                         (equal (w st) (w state))
                         (interp-st-bfrs-ok interp-st)
-                        (interp-st-bfr-listp (gl-object-bfrlist call))
-                        (logicman-pathcond-eval (gl-env->bfr-vals env)
+                        (interp-st-bfr-listp (fgl-object-bfrlist call))
+                        (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                 (interp-st->constraint interp-st)
                                                 (interp-st->logicman interp-st))
-                        (logicman-pathcond-eval (gl-env->bfr-vals env)
+                        (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                 (interp-st->pathcond interp-st)
                                                 (interp-st->logicman interp-st)))
                    (equal (fgl-ev-context-fix contexts
@@ -145,11 +145,11 @@
                           (fgl-ev-context-fix contexts
                                               (fgl-object-eval call env (interp-st->logicman interp-st))))))
 
-        (table gl-primitives '<primfn> '<fn>)
-        (add-gl-primitive <fn> <primfn>)
+        (table fgl-primitives '<primfn> '<fn>)
+        (add-fgl-primitive <fn> <primfn>)
         )
      :splice-alist `((<formals> . ,formals)
-                     (<thms> . ,*gl-primitive-rule-thms*)
+                     (<thms> . ,*fgl-primitive-rule-thms*)
                      (<formula-check> . 
                                       ,(and formula-check-fn
                                             `((,formula-check-fn st)))))
@@ -161,19 +161,19 @@
      :str-alist `(("<FN>" . ,(symbol-name fn)))
      :features (and updates-state '(:updates-state)))))
 
-(defun def-gl-primitive-as-metafn (fn formals body name-override formula-check-fn updates-state prepwork)
+(defun def-fgl-primitive-as-metafn (fn formals body name-override formula-check-fn updates-state prepwork)
   (declare (Xargs :mode :program))
   (b* ((primfn (or name-override
                    (intern-in-package-of-symbol
-                    (concatenate 'string "GL-" (symbol-name fn) "-PRIMITIVE")
-                    'gl-package))))
+                    (concatenate 'string "FGL-" (symbol-name fn) "-PRIMITIVE")
+                    'fgl-package))))
     (acl2::template-subst
      '(progn
-        (def-gl-meta <primfn>
-          (gl-object-case call
+        (def-fgl-meta <primfn>
+          (fgl-object-case call
             :g-apply (if (and (eq call.fn '<fn>)
                               (eql (len call.args) <arity>))
-                         (b* (((list <formals>) (gl-objectlist-fix call.args))
+                         (b* (((list <formals>) (fgl-objectlist-fix call.args))
                               (:@ (not :updates-state)
                                ((mv successp ans interp-st) <body>))
                               (:@ :updates-state
@@ -184,7 +184,7 @@
           :prepwork <prepwork>
           <formula-check>)
 
-        (add-gl-meta <fn> <primfn>))
+        (add-fgl-meta <fn> <primfn>))
      :splice-alist `((<formals> . ,formals)
                      (<formula-check> . 
                                       ,(and formula-check-fn
@@ -199,9 +199,9 @@
      :pkg-sym primfn)))
 
 
-(defmacro def-gl-primitive (fn formals body &key (fnname) (formula-check) (prepwork) (updates-state))
+(defmacro def-fgl-primitive (fn formals body &key (fnname) (formula-check) (prepwork) (updates-state))
   `(make-event
-    (def-gl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',updates-state ',prepwork)))
+    (def-fgl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',updates-state ',prepwork)))
 
 
 
@@ -218,7 +218,7 @@
 
 
 
-(defun gl-primitive-fncall-entries (table last)
+(defun fgl-primitive-fncall-entries (table last)
   (Declare (Xargs :mode :program))
   (if (atom table)
       `((otherwise ,last))
@@ -226,7 +226,7 @@
       (cons (acl2::template-subst
              '(<fn> (<fn> call interp-st state))
              :atom-alist `((<fn> . ,fn)))
-            (gl-primitive-fncall-entries (cdr table) last)))))
+            (fgl-primitive-fncall-entries (cdr table) last)))))
 
 (defun formula-check-thms (name table)
   (if (atom table)
@@ -242,36 +242,36 @@
             (formula-check-thms name (cdr table))))))
 
 
-(defun install-gl-primitives-fn (prefix state)
+(defun install-fgl-primitives-fn (prefix state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((wrld (w state))
        (name-formula-checks (intern-in-package-of-symbol
                              (concatenate 'string (symbol-name prefix) "-FORMULA-CHECKS")
                              prefix))
-       (formula-checks-table (table-alist 'gl-formula-checks wrld))
+       (formula-checks-table (table-alist 'fgl-formula-checks wrld))
        (formula-check-fns (set::mergesort (append-alist-vals formula-checks-table)))
        (formula-check-thms (formula-check-thms name-formula-checks formula-checks-table))
        )
     (acl2::template-subst
      '(progn
-        ;; (def-gl-object-eval <prefix> nil :union-previous t)
+        ;; (def-fgl-object-eval <prefix> nil :union-previous t)
         (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
         (progn . <formula-check-thms>)
 
         ;; (make-event
         ;;  (cons 'progn
-        ;;        (instantiate-gl-primitive-correctness-thms-fn
-        ;;         (table-alist 'gl-primitives (w state)))))
+        ;;        (instantiate-fgl-primitive-correctness-thms-fn
+        ;;         (table-alist 'fgl-primitives (w state)))))
 
         (define <prefix>-primitive-fncall ((primfn pseudo-fnsym-p)
-                                           (call gl-object-p)
+                                           (call fgl-object-p)
                                            (interp-st interp-st-bfrs-ok)
                                            state)
-          :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+          :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
           :returns (mv successp ans new-interp-st new-state)
           :ignore-ok t
           (case (pseudo-fnsym-fix primfn)
-            . <entries>) ;;,(gl-primitive-fncall-entries (table-alist 'gl-primitives wrld)))
+            . <entries>) ;;,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld)))
           ///
           <thms>
           (defret eval-of-<fn>
@@ -282,11 +282,11 @@
                           (<prefix>-formula-checks st)
                           (equal (w st) (w state))
                           (interp-st-bfrs-ok interp-st)
-                          (interp-st-bfr-listp (gl-object-bfrlist call))
-                          (logicman-pathcond-eval (gl-env->bfr-vals env)
+                          (interp-st-bfr-listp (fgl-object-bfrlist call))
+                          (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->constraint interp-st)
                                                   (interp-st->logicman interp-st))
-                          (logicman-pathcond-eval (gl-env->bfr-vals env)
+                          (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->pathcond interp-st)
                                                   (interp-st->logicman interp-st)))
                      (equal (fgl-ev-context-fix contexts
@@ -312,8 +312,8 @@
           ;; (fgl-object-alist-eval-fn <prefix>-object-alist-eval-fn :attach nil)
           ;; (fgl-ev-falsify <prefix>-ev-falsify :attach nil)
           ;; (fgl-ev-meta-extract-global-badguy <prefix>-ev-meta-extract-global-badguy :attach nil)
-          (gl-primitive-fncall-stub <prefix>-primitive-fncall)
-          (gl-primitive-formula-checks-stub <prefix>-formula-checks)
+          (fgl-primitive-fncall-stub <prefix>-primitive-fncall)
+          (fgl-primitive-formula-checks-stub <prefix>-formula-checks)
           :hints(("Goal"
                   :do-not '(preprocess simplify)
                   :clause-processor dumb-clausify-cp)
@@ -329,49 +329,49 @@
      :str-alist `(("<PREFIX>" ,(symbol-name prefix) . ,prefix))
      :atom-alist `(;; (<all-formulas> . ,all-formulas)
                    ;; (<formula-check-thms> . ,formula-check-thms)
-                   (<entries> . ,(gl-primitive-fncall-entries (table-alist 'gl-primitives wrld) '(mv nil nil interp-st state)))
+                   (<entries> . ,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld) '(mv nil nil interp-st state)))
                    ;; (<all-formulas> . ,all-formulas)
                    (<formula-check-thms> . ,formula-check-thms)
                    (<formula-check-fns> . ,formula-check-fns))
-     :splice-alist `((<thms> . ,*gl-primitive-rule-thms*)))
+     :splice-alist `((<thms> . ,*fgl-primitive-rule-thms*)))
     
     ))
 
-(defmacro install-gl-primitives (name)
+(defmacro install-fgl-primitives (name)
   `(make-event
-    (install-gl-primitives-fn ',name state)))
+    (install-fgl-primitives-fn ',name state)))
 
 
-(defun install-gl-metafns-fn (prefix state)
+(defun install-fgl-metafns-fn (prefix state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((wrld (w state))
        (name-formula-checks (intern-in-package-of-symbol
                              (concatenate 'string (symbol-name prefix) "-FORMULA-CHECKS")
                              prefix))
-       (formula-checks-table (table-alist 'gl-formula-checks wrld))
+       (formula-checks-table (table-alist 'fgl-formula-checks wrld))
        (formula-check-fns (set::mergesort (append-alist-vals formula-checks-table)))
        (formula-check-thms (formula-check-thms name-formula-checks formula-checks-table))
        )
     (acl2::template-subst
      '(progn
-        ;; (def-gl-object-eval <prefix> nil :union-previous t)
+        ;; (def-fgl-object-eval <prefix> nil :union-previous t)
         (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
         (progn . <formula-check-thms>)
 
         ;; (make-event
         ;;  (cons 'progn
-        ;;        (instantiate-gl-primitive-correctness-thms-fn
-        ;;         (table-alist 'gl-primitives (w state)))))
+        ;;        (instantiate-fgl-primitive-correctness-thms-fn
+        ;;         (table-alist 'fgl-primitives (w state)))))
 
         (define <prefix>-meta-fncall ((metafn pseudo-fnsym-p)
-                                      (call gl-object-p)
+                                      (call fgl-object-p)
                                       (interp-st interp-st-bfrs-ok)
                                       state)
-          :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+          :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
           :returns (mv successp rhs bindings new-interp-st new-state)
           :ignore-ok t
           (case (pseudo-fnsym-fix metafn)
-            . <entries>) ;;,(gl-primitive-fncall-entries (table-alist 'gl-primitives wrld)))
+            . <entries>) ;;,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld)))
           ///
           <thms>
           (defret eval-of-<fn>
@@ -382,11 +382,11 @@
                           (<prefix>-formula-checks st)
                           (equal (w st) (w state))
                           (interp-st-bfrs-ok interp-st)
-                          (interp-st-bfr-listp (gl-object-bfrlist call))
-                          (logicman-pathcond-eval (gl-env->bfr-vals env)
+                          (interp-st-bfr-listp (fgl-object-bfrlist call))
+                          (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->constraint interp-st)
                                                   (interp-st->logicman interp-st))
-                          (logicman-pathcond-eval (gl-env->bfr-vals env)
+                          (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->pathcond interp-st)
                                                   (interp-st->logicman interp-st)))
                      (fgl-ev-context-equiv-forall-extensions
@@ -413,8 +413,8 @@
           ;; (fgl-object-alist-eval-fn <prefix>-object-alist-eval-fn :attach nil)
           ;; (fgl-ev-falsify <prefix>-ev-falsify :attach nil)
           ;; (fgl-ev-meta-extract-global-badguy <prefix>-ev-meta-extract-global-badguy :attach nil)
-          (gl-meta-fncall-stub <prefix>-meta-fncall)
-          (gl-meta-formula-checks-stub <prefix>-formula-checks)
+          (fgl-meta-fncall-stub <prefix>-meta-fncall)
+          (fgl-meta-formula-checks-stub <prefix>-formula-checks)
           :hints(("Goal"
                   :do-not '(preprocess simplify)
                   :clause-processor dumb-clausify-cp)
@@ -430,16 +430,16 @@
      :str-alist `(("<PREFIX>" ,(symbol-name prefix) . ,prefix))
      :atom-alist `(;; (<all-formulas> . ,all-formulas)
                    ;; (<formula-check-thms> . ,formula-check-thms)
-                   (<entries> . ,(gl-primitive-fncall-entries (table-alist 'gl-metafns wrld) '(mv nil nil nil interp-st state)))
+                   (<entries> . ,(fgl-primitive-fncall-entries (table-alist 'fgl-metafns wrld) '(mv nil nil nil interp-st state)))
                    ;; (<all-formulas> . ,all-formulas)
                    (<formula-check-thms> . ,formula-check-thms)
                    (<formula-check-fns> . ,formula-check-fns))
-     :splice-alist `((<thms> . ,*gl-meta-rule-thms*)))
+     :splice-alist `((<thms> . ,*fgl-meta-rule-thms*)))
     
     ))
 
-(defmacro install-gl-metafns (name)
+(defmacro install-fgl-metafns (name)
   `(make-event
-    (install-gl-metafns-fn ',name state)))
+    (install-fgl-metafns-fn ',name state)))
 
 

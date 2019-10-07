@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -33,7 +33,7 @@
 (include-book "nat-var-aig")
 (include-book "ubdd")
 (include-book "centaur/satlink/litp" :dir :system)
-(include-book "gl-object")
+(include-book "fgl-object")
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
@@ -63,7 +63,7 @@ current bound.</p>")
 (std::defenum bfr-mode-p (0 1 2))
 
 (defxdoc bfr-mode
-  :short "Determines whether GL is using @(see ubdds), hons-@(see aig)s, or @(see
+  :short "Determines whether FGL is using @(see ubdds), hons-@(see aig)s, or @(see
           aignet) literals as its Boolean function representation."
   :long "<p>This is encoded using the numbers 0, 1, 2 so that it can be packed
 into a @(see bfrstate) object efficiently.  0 means aignet, 1 means UBDDs, and
@@ -569,637 +569,637 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 
 
-(defines gl-bfr-object-p-aux
-  (define gl-bfr-object-p-aux ((x gl-object-p)
+(defines fgl-bfr-object-p-aux
+  (define fgl-bfr-object-p-aux ((x fgl-object-p)
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
-    (gl-object-case x
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    (fgl-object-case x
       :g-concrete t
       :g-boolean (bfr-p x.bool)
       :g-integer (bfr-listp x.bits)
-      :g-ite (and (gl-bfr-object-p-aux x.test)
-                  (gl-bfr-object-p-aux x.then)
-                  (gl-bfr-object-p-aux x.else))
-      :g-apply (gl-bfr-objectlist-p-aux x.args)
+      :g-ite (and (fgl-bfr-object-p-aux x.test)
+                  (fgl-bfr-object-p-aux x.then)
+                  (fgl-bfr-object-p-aux x.else))
+      :g-apply (fgl-bfr-objectlist-p-aux x.args)
       :g-var t
-      :g-cons (and (gl-bfr-object-p-aux x.car)
-                   (gl-bfr-object-p-aux x.cdr))
-      :g-map (gl-bfr-object-alist-p-aux x.alist)))
-  (define gl-bfr-objectlist-p-aux ((x gl-objectlist-p)
+      :g-cons (and (fgl-bfr-object-p-aux x.car)
+                   (fgl-bfr-object-p-aux x.cdr))
+      :g-map (fgl-bfr-object-alist-p-aux x.alist)))
+  (define fgl-bfr-objectlist-p-aux ((x fgl-objectlist-p)
                                    &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (if (atom x)
         t
-      (and (gl-bfr-object-p-aux (car x))
-           (gl-bfr-objectlist-p-aux (cdr x)))))
+      (and (fgl-bfr-object-p-aux (car x))
+           (fgl-bfr-objectlist-p-aux (cdr x)))))
 
-  (define gl-bfr-object-alist-p-aux ((x gl-object-alist-p)
+  (define fgl-bfr-object-alist-p-aux ((x fgl-object-alist-p)
                                      &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
       (if (atom x)
           t
         (if (mbt (consp (car x)))
-            (and (gl-bfr-object-p-aux (cdar x))
-                 (gl-bfr-object-alist-p-aux (cdr x)))
-          (gl-bfr-object-alist-p-aux (cdr x)))))
+            (and (fgl-bfr-object-p-aux (cdar x))
+                 (fgl-bfr-object-alist-p-aux (cdr x)))
+          (fgl-bfr-object-alist-p-aux (cdr x)))))
   ///
-  (local (in-theory (disable (:d gl-bfr-object-p-aux)
-                             (:d gl-bfr-objectlist-p-aux)
-                             (:d gl-bfr-object-alist-p-aux))))
+  (local (in-theory (disable (:d fgl-bfr-object-p-aux)
+                             (:d fgl-bfr-objectlist-p-aux)
+                             (:d fgl-bfr-object-alist-p-aux))))
 
-  (fty::deffixequiv-mutual gl-bfr-object-p-aux
-    :hints (("goal" :expand ((gl-object-alist-fix x)))
+  (fty::deffixequiv-mutual fgl-bfr-object-p-aux
+    :hints (("goal" :expand ((fgl-object-alist-fix x)))
             (acl2::use-termhint
-             `(:expand ((gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
-                        (gl-bfr-object-p-aux ,(acl2::hq (gl-object-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq (gl-objectlist-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
-                        (gl-bfr-object-alist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
-                        (gl-bfr-object-alist-p-aux ,(acl2::hq (gl-object-alist-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-object-alist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))))))))
+             `(:expand ((fgl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+                        (fgl-bfr-object-p-aux ,(acl2::hq (fgl-object-fix x)) ,(acl2::hq bfrstate))
+                        (fgl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
+                        (fgl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+                        (fgl-bfr-objectlist-p-aux ,(acl2::hq (fgl-objectlist-fix x)) ,(acl2::hq bfrstate))
+                        (fgl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
+                        (fgl-bfr-object-alist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+                        (fgl-bfr-object-alist-p-aux ,(acl2::hq (fgl-object-alist-fix x)) ,(acl2::hq bfrstate))
+                        (fgl-bfr-object-alist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))))))))
 
 
-(defines gl-bfr-object-p
-  (define gl-bfr-object-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-object-count x)
+(defines fgl-bfr-object-p
+  (define fgl-bfr-object-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
+    :measure (fgl-object-count x)
     :verify-guards nil
-    (mbe :logic (and (gl-object-p x)
-                     (gl-object-case x
+    (mbe :logic (and (fgl-object-p x)
+                     (fgl-object-case x
                        :g-concrete t
                        :g-boolean (bfr-p x.bool)
                        :g-integer (bfr-listp x.bits)
-                       :g-ite (and (gl-bfr-object-p x.test)
-                                   (gl-bfr-object-p x.then)
-                                   (gl-bfr-object-p x.else))
-                       :g-apply (gl-bfr-objectlist-p x.args)
+                       :g-ite (and (fgl-bfr-object-p x.test)
+                                   (fgl-bfr-object-p x.then)
+                                   (fgl-bfr-object-p x.else))
+                       :g-apply (fgl-bfr-objectlist-p x.args)
                        :g-var t
-                       :g-cons (and (gl-bfr-object-p x.car)
-                                    (gl-bfr-object-p x.cdr))
-                       :g-map (gl-bfr-object-alist-p x.alist)))
-         :exec (and (gl-object-p x)
-                    (gl-bfr-object-p-aux x))))
-  (define gl-bfr-objectlist-p (x
+                       :g-cons (and (fgl-bfr-object-p x.car)
+                                    (fgl-bfr-object-p x.cdr))
+                       :g-map (fgl-bfr-object-alist-p x.alist)))
+         :exec (and (fgl-object-p x)
+                    (fgl-bfr-object-p-aux x))))
+  (define fgl-bfr-objectlist-p (x
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-objectlist-count x)
-    (mbe :logic (and (gl-objectlist-p x)
+    :measure (fgl-objectlist-count x)
+    (mbe :logic (and (fgl-objectlist-p x)
                      (if (atom x)
                          t
-                       (and (gl-bfr-object-p (car x))
-                            (gl-bfr-objectlist-p (cdr x)))))
-         :exec (and (gl-objectlist-p x)
-                    (gl-bfr-objectlist-p-aux x))))
-  (define gl-bfr-object-alist-p (x
+                       (and (fgl-bfr-object-p (car x))
+                            (fgl-bfr-objectlist-p (cdr x)))))
+         :exec (and (fgl-objectlist-p x)
+                    (fgl-bfr-objectlist-p-aux x))))
+  (define fgl-bfr-object-alist-p (x
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-object-alist-count x)
-    (mbe :logic (and (gl-object-alist-p x)
+    :measure (fgl-object-alist-count x)
+    (mbe :logic (and (fgl-object-alist-p x)
                      (if (atom x)
                          t
-                       (and (gl-bfr-object-p (cdar x))
-                            (gl-bfr-object-alist-p (cdr x)))))
-         :exec (and (gl-object-alist-p x)
-                    (gl-bfr-object-alist-p-aux x))))
+                       (and (fgl-bfr-object-p (cdar x))
+                            (fgl-bfr-object-alist-p (cdr x)))))
+         :exec (and (fgl-object-alist-p x)
+                    (fgl-bfr-object-alist-p-aux x))))
   ///
   (local
-   (defthm-gl-bfr-object-p-flag
-     (defthm gl-bfr-object-p-aux-elim
-       (implies (gl-object-p x)
-                (equal (gl-bfr-object-p-aux x)
-                       (gl-bfr-object-p x)))
-       :hints ('(:expand ((gl-bfr-object-p-aux x)
-                          (gl-bfr-object-p x))))
-       :flag gl-bfr-object-p)
-     (defthm gl-bfr-objectlist-p-aux-elim
-       (implies (gl-objectlist-p x)
-                (equal (gl-bfr-objectlist-p-aux x)
-                       (gl-bfr-objectlist-p x)))
-       :hints ('(:expand ((gl-bfr-objectlist-p-aux x)
-                          (gl-bfr-objectlist-p-aux nil)
-                          (gl-bfr-objectlist-p x)
-                          (gl-bfr-objectlist-p nil))))
-       :flag gl-bfr-objectlist-p)
+   (defthm-fgl-bfr-object-p-flag
+     (defthm fgl-bfr-object-p-aux-elim
+       (implies (fgl-object-p x)
+                (equal (fgl-bfr-object-p-aux x)
+                       (fgl-bfr-object-p x)))
+       :hints ('(:expand ((fgl-bfr-object-p-aux x)
+                          (fgl-bfr-object-p x))))
+       :flag fgl-bfr-object-p)
+     (defthm fgl-bfr-objectlist-p-aux-elim
+       (implies (fgl-objectlist-p x)
+                (equal (fgl-bfr-objectlist-p-aux x)
+                       (fgl-bfr-objectlist-p x)))
+       :hints ('(:expand ((fgl-bfr-objectlist-p-aux x)
+                          (fgl-bfr-objectlist-p-aux nil)
+                          (fgl-bfr-objectlist-p x)
+                          (fgl-bfr-objectlist-p nil))))
+       :flag fgl-bfr-objectlist-p)
      
-     (defthm gl-bfr-object-alist-p-aux-elim
-       (implies (gl-object-alist-p x)
-                (equal (gl-bfr-object-alist-p-aux x)
-                       (gl-bfr-object-alist-p x)))
-       :hints ('(:expand ((gl-bfr-object-alist-p-aux x)
-                          (gl-bfr-object-alist-p-aux nil)
-                          (gl-bfr-object-alist-p x)
-                          (gl-bfr-object-alist-p nil))))
-       :flag gl-bfr-object-alist-p)))
+     (defthm fgl-bfr-object-alist-p-aux-elim
+       (implies (fgl-object-alist-p x)
+                (equal (fgl-bfr-object-alist-p-aux x)
+                       (fgl-bfr-object-alist-p x)))
+       :hints ('(:expand ((fgl-bfr-object-alist-p-aux x)
+                          (fgl-bfr-object-alist-p-aux nil)
+                          (fgl-bfr-object-alist-p x)
+                          (fgl-bfr-object-alist-p nil))))
+       :flag fgl-bfr-object-alist-p)))
   
-  (verify-guards gl-bfr-object-p-fn)
+  (verify-guards fgl-bfr-object-p-fn)
 
-  (defthm gl-object-p-when-gl-bfr-object-p
-    (implies (gl-bfr-object-p x)
-             (gl-object-p x))
+  (defthm fgl-object-p-when-fgl-bfr-object-p
+    (implies (fgl-bfr-object-p x)
+             (fgl-object-p x))
     :rule-classes (:rewrite :forward-chaining))
 
-  (defthm gl-objectlist-p-when-gl-bfr-objectlist-p
-    (implies (gl-bfr-objectlist-p x)
-             (gl-objectlist-p x))
+  (defthm fgl-objectlist-p-when-fgl-bfr-objectlist-p
+    (implies (fgl-bfr-objectlist-p x)
+             (fgl-objectlist-p x))
     :rule-classes (:rewrite :forward-chaining))
 
-  (defthm gl-bfr-object-p-when-g-boolean
-    (implies (and (gl-object-case x :g-boolean)
-                  (gl-bfr-object-p x))
+  (defthm fgl-bfr-object-p-when-g-boolean
+    (implies (and (fgl-object-case x :g-boolean)
+                  (fgl-bfr-object-p x))
              (bfr-p (g-boolean->bool x)))
-    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+    :hints (("goal" :expand ((fgl-bfr-object-p x)))))
 
-  (defthm gl-bfr-object-p-when-g-integer
-    (implies (and (gl-object-case x :g-integer)
-                  (gl-bfr-object-p x))
+  (defthm fgl-bfr-object-p-when-g-integer
+    (implies (and (fgl-object-case x :g-integer)
+                  (fgl-bfr-object-p x))
              (bfr-listp (g-integer->bits x)))
-    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+    :hints (("goal" :expand ((fgl-bfr-object-p x)))))
 
-  (defthm gl-bfr-object-p-when-g-ite
-    (implies (and (gl-object-case x :g-ite)
-                  (gl-bfr-object-p x))
-             (and (gl-bfr-object-p (g-ite->test x))
-                  (gl-bfr-object-p (g-ite->then x))
-                  (gl-bfr-object-p (g-ite->else x))))
-    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+  (defthm fgl-bfr-object-p-when-g-ite
+    (implies (and (fgl-object-case x :g-ite)
+                  (fgl-bfr-object-p x))
+             (and (fgl-bfr-object-p (g-ite->test x))
+                  (fgl-bfr-object-p (g-ite->then x))
+                  (fgl-bfr-object-p (g-ite->else x))))
+    :hints (("goal" :expand ((fgl-bfr-object-p x)))))
 
-  (defthm gl-bfr-object-p-when-g-apply
-    (implies (and (gl-object-case x :g-apply)
-                  (gl-bfr-object-p x))
-             (gl-bfr-objectlist-p (g-apply->args x)))
-    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+  (defthm fgl-bfr-object-p-when-g-apply
+    (implies (and (fgl-object-case x :g-apply)
+                  (fgl-bfr-object-p x))
+             (fgl-bfr-objectlist-p (g-apply->args x)))
+    :hints (("goal" :expand ((fgl-bfr-object-p x)))))
 
-  (defthm gl-bfr-object-p-when-g-cons
-    (implies (and (gl-object-case x :g-cons)
-                  (gl-bfr-object-p x))
-             (and (gl-bfr-object-p (g-cons->car x))
-                  (gl-bfr-object-p (g-cons->cdr x))))
-    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+  (defthm fgl-bfr-object-p-when-g-cons
+    (implies (and (fgl-object-case x :g-cons)
+                  (fgl-bfr-object-p x))
+             (and (fgl-bfr-object-p (g-cons->car x))
+                  (fgl-bfr-object-p (g-cons->cdr x))))
+    :hints (("goal" :expand ((fgl-bfr-object-p x)))))
 
-  (defthm gl-bfr-object-p-when-g-map
-    (implies (and (gl-object-case x :g-map)
-                  (gl-bfr-object-p x))
-             (gl-bfr-object-alist-p (g-map->alist x)))
-    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+  (defthm fgl-bfr-object-p-when-g-map
+    (implies (and (fgl-object-case x :g-map)
+                  (fgl-bfr-object-p x))
+             (fgl-bfr-object-alist-p (g-map->alist x)))
+    :hints (("goal" :expand ((fgl-bfr-object-p x)))))
 
-  (defthm gl-bfr-objectlist-p-implies-car/cdr
-    (implies (gl-bfr-objectlist-p x)
-             (and (gl-bfr-object-p (car x))
-                  (gl-bfr-objectlist-p (cdr x))))
-    :hints (("goal" :expand ((gl-bfr-objectlist-p x)
-                             (gl-bfr-object-p nil)
-                             (gl-bfr-objectlist-p nil)))))
+  (defthm fgl-bfr-objectlist-p-implies-car/cdr
+    (implies (fgl-bfr-objectlist-p x)
+             (and (fgl-bfr-object-p (car x))
+                  (fgl-bfr-objectlist-p (cdr x))))
+    :hints (("goal" :expand ((fgl-bfr-objectlist-p x)
+                             (fgl-bfr-object-p nil)
+                             (fgl-bfr-objectlist-p nil)))))
 
-  (defthm gl-bfr-object-alist-p-implies-cdar/cdr
-    (implies (gl-bfr-object-alist-p x)
-             (and (gl-bfr-object-p (cdar x))
-                  (gl-bfr-object-alist-p (cdr x))))
-    :hints (("goal" :expand ((gl-bfr-object-alist-p x)
-                             (gl-bfr-object-p nil)
-                             (gl-bfr-object-alist-p nil)))))
+  (defthm fgl-bfr-object-alist-p-implies-cdar/cdr
+    (implies (fgl-bfr-object-alist-p x)
+             (and (fgl-bfr-object-p (cdar x))
+                  (fgl-bfr-object-alist-p (cdr x))))
+    :hints (("goal" :expand ((fgl-bfr-object-alist-p x)
+                             (fgl-bfr-object-p nil)
+                             (fgl-bfr-object-alist-p nil)))))
 
-  (defthm gl-bfr-objectlist-p-of-cons
-    (implies (and (gl-bfr-object-p x)
-                  (gl-bfr-objectlist-p y))
-             (gl-bfr-objectlist-p (cons x y)))
-    :hints (("goal" :expand ((gl-bfr-objectlist-p (cons x y))))))
+  (defthm fgl-bfr-objectlist-p-of-cons
+    (implies (and (fgl-bfr-object-p x)
+                  (fgl-bfr-objectlist-p y))
+             (fgl-bfr-objectlist-p (cons x y)))
+    :hints (("goal" :expand ((fgl-bfr-objectlist-p (cons x y))))))
 
-  (defthm gl-bfr-objectlist-p-of-nil
-    (gl-bfr-objectlist-p nil)
-    :hints (("goal" :expand ((gl-bfr-objectlist-p nil)))))
+  (defthm fgl-bfr-objectlist-p-of-nil
+    (fgl-bfr-objectlist-p nil)
+    :hints (("goal" :expand ((fgl-bfr-objectlist-p nil)))))
 
-  (defthm gl-bfr-object-p-of-g-concrete
-    (gl-bfr-object-p (g-concrete val))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-concrete val))))))
+  (defthm fgl-bfr-object-p-of-g-concrete
+    (fgl-bfr-object-p (g-concrete val))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-concrete val))))))
 
-  (defthm gl-bfr-object-p-of-g-boolean
+  (defthm fgl-bfr-object-p-of-g-boolean
     (implies (bfr-p bool)
-             (gl-bfr-object-p (g-boolean bool)))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-boolean bool))))))
+             (fgl-bfr-object-p (g-boolean bool)))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-boolean bool))))))
 
-  (defthm gl-bfr-object-p-of-g-integer
+  (defthm fgl-bfr-object-p-of-g-integer
     (implies (bfr-listp bits)
-             (gl-bfr-object-p (g-integer bits)))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-integer bits))))))
+             (fgl-bfr-object-p (g-integer bits)))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-integer bits))))))
 
-  (defthm gl-bfr-object-p-of-g-ite
-    (implies (and (gl-bfr-object-p test)
-                  (gl-bfr-object-p then)
-                  (gl-bfr-object-p else))
-             (gl-bfr-object-p (g-ite test then else)))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-ite test then else))))))
+  (defthm fgl-bfr-object-p-of-g-ite
+    (implies (and (fgl-bfr-object-p test)
+                  (fgl-bfr-object-p then)
+                  (fgl-bfr-object-p else))
+             (fgl-bfr-object-p (g-ite test then else)))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-ite test then else))))))
 
-  (defthm gl-bfr-object-p-of-g-apply
-    (implies (and (gl-bfr-objectlist-p args))
-             (gl-bfr-object-p (g-apply fn args)))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-apply fn args))))))
+  (defthm fgl-bfr-object-p-of-g-apply
+    (implies (and (fgl-bfr-objectlist-p args))
+             (fgl-bfr-object-p (g-apply fn args)))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-apply fn args))))))
 
-  (defthm gl-bfr-object-p-of-g-var
-    (gl-bfr-object-p (g-var name))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-var name))))))
+  (defthm fgl-bfr-object-p-of-g-var
+    (fgl-bfr-object-p (g-var name))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-var name))))))
 
-  (defthm gl-bfr-object-p-of-g-cons
-    (implies (and (gl-bfr-object-p car)
-                  (gl-bfr-object-p cdr))
-             (gl-bfr-object-p (g-cons car cdr)))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-cons car cdr))))))
+  (defthm fgl-bfr-object-p-of-g-cons
+    (implies (and (fgl-bfr-object-p car)
+                  (fgl-bfr-object-p cdr))
+             (fgl-bfr-object-p (g-cons car cdr)))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-cons car cdr))))))
 
-  (defthm gl-bfr-object-p-of-g-map
-    (implies (gl-bfr-object-alist-p alist)
-             (gl-bfr-object-p (g-map tag alist)))
-    :hints (("goal" :expand ((gl-bfr-object-p (g-map tag alist))
-                             (gl-bfr-object-alist-p alist)
-                             (gl-bfr-object-alist-p (gl-object-alist-fix alist))))))
+  (defthm fgl-bfr-object-p-of-g-map
+    (implies (fgl-bfr-object-alist-p alist)
+             (fgl-bfr-object-p (g-map tag alist)))
+    :hints (("goal" :expand ((fgl-bfr-object-p (g-map tag alist))
+                             (fgl-bfr-object-alist-p alist)
+                             (fgl-bfr-object-alist-p (fgl-object-alist-fix alist))))))
 
-  (fty::deffixequiv-mutual gl-bfr-object-p
+  (fty::deffixequiv-mutual fgl-bfr-object-p
     :hints ((acl2::use-termhint
-             `(:expand ((gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
-                        (gl-bfr-object-p-aux ,(acl2::hq (gl-object-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq (gl-objectlist-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate))))))))
+             `(:expand ((fgl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+                        (fgl-bfr-object-p-aux ,(acl2::hq (fgl-object-fix x)) ,(acl2::hq bfrstate))
+                        (fgl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
+                        (fgl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+                        (fgl-bfr-objectlist-p-aux ,(acl2::hq (fgl-objectlist-fix x)) ,(acl2::hq bfrstate))
+                        (fgl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate))))))))
 
-  (defthm-gl-bfr-object-p-flag
-    (defthm gl-bfr-object-p-when-bfrstate>=
+  (defthm-fgl-bfr-object-p-flag
+    (defthm fgl-bfr-object-p-when-bfrstate>=
       (implies (and (bfrstate>= new old)
-                    (gl-bfr-object-p x old))
-               (gl-bfr-object-p x new))
-      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-p x)))))
-      :flag gl-bfr-object-p)
-    (defthm gl-bfr-objectlist-p-when-bfrstate>=
+                    (fgl-bfr-object-p x old))
+               (fgl-bfr-object-p x new))
+      :hints ('(:expand ((:free (bfrstate) (fgl-bfr-object-p x)))))
+      :flag fgl-bfr-object-p)
+    (defthm fgl-bfr-objectlist-p-when-bfrstate>=
       (implies (and (bfrstate>= new old)
-                    (gl-bfr-objectlist-p x old))
-               (gl-bfr-objectlist-p x new))
-      :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x)))))
-      :flag gl-bfr-objectlist-p)
-    (defthm gl-bfr-object-alist-p-when-bfrstate>=
+                    (fgl-bfr-objectlist-p x old))
+               (fgl-bfr-objectlist-p x new))
+      :hints ('(:expand ((:free (bfrstate) (fgl-bfr-objectlist-p x)))))
+      :flag fgl-bfr-objectlist-p)
+    (defthm fgl-bfr-object-alist-p-when-bfrstate>=
       (implies (and (bfrstate>= new old)
-                    (gl-bfr-object-alist-p x old))
-               (gl-bfr-object-alist-p x new))
-      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-alist-p x)))))
-      :flag gl-bfr-object-alist-p)
-    :hints (("goal" :induct (gl-bfr-object-p-flag flag x old)))))
+                    (fgl-bfr-object-alist-p x old))
+               (fgl-bfr-object-alist-p x new))
+      :hints ('(:expand ((:free (bfrstate) (fgl-bfr-object-alist-p x)))))
+      :flag fgl-bfr-object-alist-p)
+    :hints (("goal" :induct (fgl-bfr-object-p-flag flag x old)))))
 
-(define gl-bfr-object-bindings-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
+(define fgl-bfr-object-bindings-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
   (if (atom x)
       (eq x nil)
     (and (consp (car x))
          (pseudo-var-p (caar x))
-         (gl-bfr-object-p (cdar x))
-         (gl-bfr-object-bindings-p (cdr x))))
+         (fgl-bfr-object-p (cdar x))
+         (fgl-bfr-object-bindings-p (cdr x))))
   ///
-  (defthmd gl-bfr-object-bindings-p-implies-gl-object-bindings-p
-    (implies (gl-bfr-object-bindings-p x)
-             (gl-object-bindings-p x))
-    :hints(("Goal" :in-theory (enable gl-object-bindings-p)))))
+  (defthmd fgl-bfr-object-bindings-p-implies-fgl-object-bindings-p
+    (implies (fgl-bfr-object-bindings-p x)
+             (fgl-object-bindings-p x))
+    :hints(("Goal" :in-theory (enable fgl-object-bindings-p)))))
 
 
 
-(defines gl-bfr-object-fix
+(defines fgl-bfr-object-fix
   :flag-local nil
-  (define gl-bfr-object-fix ((x gl-bfr-object-p)
+  (define fgl-bfr-object-fix ((x fgl-bfr-object-p)
                              &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
-    :returns (new-x gl-bfr-object-p
-                    :hints ('(:in-theory (enable gl-bfr-object-p))))
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    :returns (new-x fgl-bfr-object-p
+                    :hints ('(:in-theory (enable fgl-bfr-object-p))))
     :verify-guards nil
     (mbe :logic
-         (gl-object-case x
+         (fgl-object-case x
            :g-concrete (g-concrete x.val)
            :g-boolean (g-boolean (bfr-fix x.bool))
            :g-integer (g-integer (bfr-list-fix x.bits))
-           :g-ite (g-ite (gl-bfr-object-fix x.test)
-                         (gl-bfr-object-fix x.then)
-                         (gl-bfr-object-fix x.else))
-           :g-apply (g-apply x.fn (gl-bfr-objectlist-fix x.args))
+           :g-ite (g-ite (fgl-bfr-object-fix x.test)
+                         (fgl-bfr-object-fix x.then)
+                         (fgl-bfr-object-fix x.else))
+           :g-apply (g-apply x.fn (fgl-bfr-objectlist-fix x.args))
            :g-var (g-var x.name)
-           :g-cons (g-cons (gl-bfr-object-fix x.car)
-                           (gl-bfr-object-fix x.cdr))
-           :g-map (g-map x.tag (gl-bfr-object-alist-fix x.alist)))
+           :g-cons (g-cons (fgl-bfr-object-fix x.car)
+                           (fgl-bfr-object-fix x.cdr))
+           :g-map (g-map x.tag (fgl-bfr-object-alist-fix x.alist)))
          :exec x))
-  (define gl-bfr-objectlist-fix ((x gl-bfr-objectlist-p)
+  (define fgl-bfr-objectlist-fix ((x fgl-bfr-objectlist-p)
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
-    :returns (new-x gl-bfr-objectlist-p
-                    :hints ('(:in-theory (enable gl-bfr-objectlist-p))))
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
+    :returns (new-x fgl-bfr-objectlist-p
+                    :hints ('(:in-theory (enable fgl-bfr-objectlist-p))))
     (mbe :logic (if (atom x)
                     nil
-                  (cons (gl-bfr-object-fix (car x))
-                        (gl-bfr-objectlist-fix (cdr x))))
+                  (cons (fgl-bfr-object-fix (car x))
+                        (fgl-bfr-objectlist-fix (cdr x))))
          :exec x))
   
-  (define gl-bfr-object-alist-fix ((x gl-bfr-object-alist-p)
+  (define fgl-bfr-object-alist-fix ((x fgl-bfr-object-alist-p)
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
-    :returns (new-x gl-bfr-object-alist-p
-                    :hints ('(:in-theory (enable gl-bfr-object-alist-p))))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
+    :returns (new-x fgl-bfr-object-alist-p
+                    :hints ('(:in-theory (enable fgl-bfr-object-alist-p))))
     (mbe :logic
          (if (atom x)
              x
            (if (consp (car x))
-               (cons (cons (caar x) (gl-bfr-object-fix (cdar x)))
-                     (gl-bfr-object-alist-fix (cdr x)))
-             (gl-bfr-object-alist-fix (cdr x))))
+               (cons (cons (caar x) (fgl-bfr-object-fix (cdar x)))
+                     (fgl-bfr-object-alist-fix (cdr x)))
+             (fgl-bfr-object-alist-fix (cdr x))))
          :exec x))
   ///
-  (defthm-gl-bfr-object-fix-flag gl-bfr-object-fix-when-gl-bfr-object-p
-    (defthm gl-bfr-object-fix-when-gl-bfr-object-p
-      (implies (gl-bfr-object-p x)
-               (equal (gl-bfr-object-fix x) x))
-      :hints ('(:expand ((gl-bfr-object-p x)
-                         (gl-bfr-object-fix x))))
-      :flag gl-bfr-object-fix)
-    (defthm gl-bfr-objectlist-fix-when-gl-bfr-objectlist-p
-      (implies (gl-bfr-objectlist-p x)
-               (equal (gl-bfr-objectlist-fix x) x))
-      :hints ('(:expand ((gl-bfr-objectlist-p x)
-                         (gl-bfr-objectlist-fix x))))
-      :flag gl-bfr-objectlist-fix)
-    (defthm gl-bfr-object-alist-fix-when-gl-bfr-object-alist-p
-      (implies (gl-bfr-object-alist-p x)
-               (equal (gl-bfr-object-alist-fix x) x))
-      :hints ('(:expand ((gl-bfr-object-alist-p x)
-                         (gl-bfr-object-alist-fix x))))
-      :flag gl-bfr-object-alist-fix))
+  (defthm-fgl-bfr-object-fix-flag fgl-bfr-object-fix-when-fgl-bfr-object-p
+    (defthm fgl-bfr-object-fix-when-fgl-bfr-object-p
+      (implies (fgl-bfr-object-p x)
+               (equal (fgl-bfr-object-fix x) x))
+      :hints ('(:expand ((fgl-bfr-object-p x)
+                         (fgl-bfr-object-fix x))))
+      :flag fgl-bfr-object-fix)
+    (defthm fgl-bfr-objectlist-fix-when-fgl-bfr-objectlist-p
+      (implies (fgl-bfr-objectlist-p x)
+               (equal (fgl-bfr-objectlist-fix x) x))
+      :hints ('(:expand ((fgl-bfr-objectlist-p x)
+                         (fgl-bfr-objectlist-fix x))))
+      :flag fgl-bfr-objectlist-fix)
+    (defthm fgl-bfr-object-alist-fix-when-fgl-bfr-object-alist-p
+      (implies (fgl-bfr-object-alist-p x)
+               (equal (fgl-bfr-object-alist-fix x) x))
+      :hints ('(:expand ((fgl-bfr-object-alist-p x)
+                         (fgl-bfr-object-alist-fix x))))
+      :flag fgl-bfr-object-alist-fix))
 
-  (defret-mutual gl-object-p-of-gl-bfr-object-fix
-    (defret gl-object-p-of-gl-bfr-object-fix
-      (gl-object-p new-x)
-      :fn gl-bfr-object-fix)
-    (defret gl-objectlist-p-of-gl-bfr-objectlist-fix
-      (gl-objectlist-p new-x)
-      :fn gl-bfr-objectlist-fix)
-    (defret gl-object-alist-p-of-gl-bfr-object-alist-fix
-      (gl-object-alist-p new-x)
-      :fn gl-bfr-object-alist-fix))
+  (defret-mutual fgl-object-p-of-fgl-bfr-object-fix
+    (defret fgl-object-p-of-fgl-bfr-object-fix
+      (fgl-object-p new-x)
+      :fn fgl-bfr-object-fix)
+    (defret fgl-objectlist-p-of-fgl-bfr-objectlist-fix
+      (fgl-objectlist-p new-x)
+      :fn fgl-bfr-objectlist-fix)
+    (defret fgl-object-alist-p-of-fgl-bfr-object-alist-fix
+      (fgl-object-alist-p new-x)
+      :fn fgl-bfr-object-alist-fix))
 
-  (defthm-gl-bfr-object-fix-flag gl-bfr-object-fix-of-gl-object-fix
-    (defthm gl-bfr-object-fix-of-gl-object-fix
-      (equal (gl-bfr-object-fix (gl-object-fix x))
-             (gl-bfr-object-fix x))
-      :hints ('(:expand ((gl-object-fix x)
-                         (gl-bfr-object-fix x))
-                :in-theory (enable gl-bfr-object-fix)))
-      :flag gl-bfr-object-fix)
-    (defthm gl-bfr-objectlist-fix-of-gl-objectlist-fix
-      (equal (gl-bfr-objectlist-fix (gl-objectlist-fix x))
-             (gl-bfr-objectlist-fix x))
-      :hints ('(:expand ((gl-objectlist-fix x)
-                         (gl-bfr-objectlist-fix x)
-                         (:free (a b) (gl-bfr-objectlist-fix (cons a b))))))
-      :flag gl-bfr-objectlist-fix)
-    (defthm gl-bfr-object-alist-fix-of-gl-object-alist-fix
-      (equal (gl-bfr-object-alist-fix (gl-object-alist-fix x))
-             (gl-bfr-object-alist-fix x))
-      :hints ('(:expand ((gl-object-alist-fix x)
-                         (gl-bfr-object-alist-fix x)
-                         (:free (a b) (gl-bfr-object-alist-fix (cons a b))))))
-      :flag gl-bfr-object-alist-fix))
+  (defthm-fgl-bfr-object-fix-flag fgl-bfr-object-fix-of-fgl-object-fix
+    (defthm fgl-bfr-object-fix-of-fgl-object-fix
+      (equal (fgl-bfr-object-fix (fgl-object-fix x))
+             (fgl-bfr-object-fix x))
+      :hints ('(:expand ((fgl-object-fix x)
+                         (fgl-bfr-object-fix x))
+                :in-theory (enable fgl-bfr-object-fix)))
+      :flag fgl-bfr-object-fix)
+    (defthm fgl-bfr-objectlist-fix-of-fgl-objectlist-fix
+      (equal (fgl-bfr-objectlist-fix (fgl-objectlist-fix x))
+             (fgl-bfr-objectlist-fix x))
+      :hints ('(:expand ((fgl-objectlist-fix x)
+                         (fgl-bfr-objectlist-fix x)
+                         (:free (a b) (fgl-bfr-objectlist-fix (cons a b))))))
+      :flag fgl-bfr-objectlist-fix)
+    (defthm fgl-bfr-object-alist-fix-of-fgl-object-alist-fix
+      (equal (fgl-bfr-object-alist-fix (fgl-object-alist-fix x))
+             (fgl-bfr-object-alist-fix x))
+      :hints ('(:expand ((fgl-object-alist-fix x)
+                         (fgl-bfr-object-alist-fix x)
+                         (:free (a b) (fgl-bfr-object-alist-fix (cons a b))))))
+      :flag fgl-bfr-object-alist-fix))
 
-  (verify-guards gl-bfr-object-fix-fn
-    :hints('(:expand ((gl-bfr-object-p x)
-                      (gl-bfr-objectlist-p x)
-                      (gl-bfr-object-alist-p x))))))
-
-
+  (verify-guards fgl-bfr-object-fix-fn
+    :hints('(:expand ((fgl-bfr-object-p x)
+                      (fgl-bfr-objectlist-p x)
+                      (fgl-bfr-object-alist-p x))))))
 
 
 
-(defines gl-object-bfrlist
-  (define gl-object-bfrlist ((x gl-object-p))
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
+
+
+(defines fgl-object-bfrlist
+  (define fgl-object-bfrlist ((x fgl-object-p))
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     :verify-guards nil
     :returns (bfrlist true-listp :rule-classes :type-prescription)
-    (gl-object-case x
+    (fgl-object-case x
       :g-concrete nil
       :g-boolean (list x.bool)
       :g-integer x.bits
-      :g-ite (append (gl-object-bfrlist x.test)
-                     (append (gl-object-bfrlist x.then)
-                             (gl-object-bfrlist x.else)))
-      :g-apply (gl-objectlist-bfrlist x.args)
+      :g-ite (append (fgl-object-bfrlist x.test)
+                     (append (fgl-object-bfrlist x.then)
+                             (fgl-object-bfrlist x.else)))
+      :g-apply (fgl-objectlist-bfrlist x.args)
       :g-var nil
-      :g-cons (append (gl-object-bfrlist x.car)
-                      (gl-object-bfrlist x.cdr))
-      :g-map (gl-object-alist-bfrlist x.alist)))
-  (define gl-objectlist-bfrlist ((x gl-objectlist-p))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+      :g-cons (append (fgl-object-bfrlist x.car)
+                      (fgl-object-bfrlist x.cdr))
+      :g-map (fgl-object-alist-bfrlist x.alist)))
+  (define fgl-objectlist-bfrlist ((x fgl-objectlist-p))
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     :returns (bfrlist true-listp :rule-classes :type-prescription)
     (if (atom x)
         nil
-      (append (gl-object-bfrlist (car x))
-              (gl-objectlist-bfrlist (cdr x)))))
-  (define gl-object-alist-bfrlist ((x gl-object-alist-p))
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+      (append (fgl-object-bfrlist (car x))
+              (fgl-objectlist-bfrlist (cdr x)))))
+  (define fgl-object-alist-bfrlist ((x fgl-object-alist-p))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     :returns (bfrlist true-listp :rule-classes :type-prescription)
     (if (atom x)
         nil
       (if (mbt (consp (car x)))
-          (append (gl-object-bfrlist (cdar x))
-                  (gl-object-alist-bfrlist (cdr x)))
-        (gl-object-alist-bfrlist (cdr x)))))
+          (append (fgl-object-bfrlist (cdar x))
+                  (fgl-object-alist-bfrlist (cdr x)))
+        (fgl-object-alist-bfrlist (cdr x)))))
   ///
   
-  (verify-guards gl-object-bfrlist)
+  (verify-guards fgl-object-bfrlist)
 
-  (fty::deffixequiv-mutual gl-object-bfrlist
+  (fty::deffixequiv-mutual fgl-object-bfrlist
     :hints ((and stable-under-simplificationp
-                 '(:expand ((gl-object-alist-fix x))))))
+                 '(:expand ((fgl-object-alist-fix x))))))
 
-  (defthm gl-object-bfrlist-when-g-concrete
-    (implies (gl-object-case x :g-concrete)
-             (equal (gl-object-bfrlist x) nil))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+  (defthm fgl-object-bfrlist-when-g-concrete
+    (implies (fgl-object-case x :g-concrete)
+             (equal (fgl-object-bfrlist x) nil))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-boolean
-    (implies (gl-object-case x :g-boolean)
-             (equal (gl-object-bfrlist x)
+  (defthm fgl-object-bfrlist-when-g-boolean
+    (implies (fgl-object-case x :g-boolean)
+             (equal (fgl-object-bfrlist x)
                     (list (g-boolean->bool x))))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-integer
-    (implies (gl-object-case x :g-integer)
-             (equal (gl-object-bfrlist x)
+  (defthm fgl-object-bfrlist-when-g-integer
+    (implies (fgl-object-case x :g-integer)
+             (equal (fgl-object-bfrlist x)
                     (g-integer->bits x)))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-ite
-    (implies (gl-object-case x :g-ite)
-             (equal (gl-object-bfrlist x)
-                    (append (gl-object-bfrlist (g-ite->test x))
-                            (append (gl-object-bfrlist (g-ite->then x))
-                                    (gl-object-bfrlist (g-ite->else x))))))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+  (defthm fgl-object-bfrlist-when-g-ite
+    (implies (fgl-object-case x :g-ite)
+             (equal (fgl-object-bfrlist x)
+                    (append (fgl-object-bfrlist (g-ite->test x))
+                            (append (fgl-object-bfrlist (g-ite->then x))
+                                    (fgl-object-bfrlist (g-ite->else x))))))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-apply
-    (implies (gl-object-case x :g-apply)
-             (equal (gl-object-bfrlist x)
-                    (gl-objectlist-bfrlist (g-apply->args x))))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+  (defthm fgl-object-bfrlist-when-g-apply
+    (implies (fgl-object-case x :g-apply)
+             (equal (fgl-object-bfrlist x)
+                    (fgl-objectlist-bfrlist (g-apply->args x))))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-var
-    (implies (gl-object-case x :g-var)
-             (equal (gl-object-bfrlist x) nil))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+  (defthm fgl-object-bfrlist-when-g-var
+    (implies (fgl-object-case x :g-var)
+             (equal (fgl-object-bfrlist x) nil))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-cons
-    (implies (gl-object-case x :g-cons)
-             (equal (gl-object-bfrlist x)
-                    (append (gl-object-bfrlist (g-cons->car x))
-                            (gl-object-bfrlist (g-cons->cdr x)))))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+  (defthm fgl-object-bfrlist-when-g-cons
+    (implies (fgl-object-case x :g-cons)
+             (equal (fgl-object-bfrlist x)
+                    (append (fgl-object-bfrlist (g-cons->car x))
+                            (fgl-object-bfrlist (g-cons->cdr x)))))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-object-bfrlist-when-g-map
-    (implies (gl-object-case x :g-map)
-             (equal (gl-object-bfrlist x)
-                    (gl-object-alist-bfrlist (g-map->alist x))))
-    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+  (defthm fgl-object-bfrlist-when-g-map
+    (implies (fgl-object-case x :g-map)
+             (equal (fgl-object-bfrlist x)
+                    (fgl-object-alist-bfrlist (g-map->alist x))))
+    :hints (("goal" :expand ((fgl-object-bfrlist x)))))
 
-  (defthm gl-objectlist-bfrlist-when-consp
+  (defthm fgl-objectlist-bfrlist-when-consp
     (implies (consp x)
-             (equal (gl-objectlist-bfrlist x)
-                    (append (gl-object-bfrlist (car x))
-                            (gl-objectlist-bfrlist (cdr x)))))
-    :hints (("goal" :expand ((gl-objectlist-bfrlist x)))))
+             (equal (fgl-objectlist-bfrlist x)
+                    (append (fgl-object-bfrlist (car x))
+                            (fgl-objectlist-bfrlist (cdr x)))))
+    :hints (("goal" :expand ((fgl-objectlist-bfrlist x)))))
 
-  (defthm gl-objectlist-bfrlist-when-atom
+  (defthm fgl-objectlist-bfrlist-when-atom
     (implies (not (consp x))
-             (equal (gl-objectlist-bfrlist x) nil))
-    :hints (("goal" :expand ((gl-objectlist-bfrlist x)))))
+             (equal (fgl-objectlist-bfrlist x) nil))
+    :hints (("goal" :expand ((fgl-objectlist-bfrlist x)))))
 
-  (defthm gl-object-alist-bfrlist-when-consp
+  (defthm fgl-object-alist-bfrlist-when-consp
     (implies (consp (car x))
-             (equal (gl-object-alist-bfrlist x)
-                    (append (gl-object-bfrlist (cdar x))
-                            (gl-object-alist-bfrlist (cdr x))))))
+             (equal (fgl-object-alist-bfrlist x)
+                    (append (fgl-object-bfrlist (cdar x))
+                            (fgl-object-alist-bfrlist (cdr x))))))
 
-  (defthm gl-object-alist-bfrlist-when-atom
+  (defthm fgl-object-alist-bfrlist-when-atom
     (implies (not (consp x))
-             (equal (gl-object-alist-bfrlist x) nil)))
+             (equal (fgl-object-alist-bfrlist x) nil)))
 
-  (def-ruleset! gl-object-bfrlist-when-thms
-    '(gl-object-bfrlist-when-g-concrete
-      gl-object-bfrlist-when-g-boolean
-      gl-object-bfrlist-when-g-integer
-      gl-object-bfrlist-when-g-ite
-      gl-object-bfrlist-when-g-apply
-      gl-object-bfrlist-when-g-cons
-      gl-object-bfrlist-when-g-map
-      gl-objectlist-bfrlist-when-consp
-      gl-objectlist-bfrlist-when-atom
-      gl-object-alist-bfrlist-when-consp
-      gl-object-alist-bfrlist-when-atom))
+  (def-ruleset! fgl-object-bfrlist-when-thms
+    '(fgl-object-bfrlist-when-g-concrete
+      fgl-object-bfrlist-when-g-boolean
+      fgl-object-bfrlist-when-g-integer
+      fgl-object-bfrlist-when-g-ite
+      fgl-object-bfrlist-when-g-apply
+      fgl-object-bfrlist-when-g-cons
+      fgl-object-bfrlist-when-g-map
+      fgl-objectlist-bfrlist-when-consp
+      fgl-objectlist-bfrlist-when-atom
+      fgl-object-alist-bfrlist-when-consp
+      fgl-object-alist-bfrlist-when-atom))
 
-  (defthm gl-objectlist-bfrlist-of-cons
-    (equal (gl-objectlist-bfrlist (cons x y))
-           (append (gl-object-bfrlist x)
-                   (gl-objectlist-bfrlist y)))
-    :hints (("goal" :expand ((gl-objectlist-bfrlist (cons x y))))))
+  (defthm fgl-objectlist-bfrlist-of-cons
+    (equal (fgl-objectlist-bfrlist (cons x y))
+           (append (fgl-object-bfrlist x)
+                   (fgl-objectlist-bfrlist y)))
+    :hints (("goal" :expand ((fgl-objectlist-bfrlist (cons x y))))))
 
-  ;; (defthm gl-objectlist-bfrlist-of-nil
-  ;;   (equal (gl-objectlist-bfrlist nil) nil)
-  ;;   :hints (("goal" :expand ((gl-objectlist-bfrlist nil)))))
+  ;; (defthm fgl-objectlist-bfrlist-of-nil
+  ;;   (equal (fgl-objectlist-bfrlist nil) nil)
+  ;;   :hints (("goal" :expand ((fgl-objectlist-bfrlist nil)))))
 
-  (defthm gl-object-alist-bfrlist-of-cons
-    (equal (gl-object-alist-bfrlist (cons (cons key val) x))
-           (append (gl-object-bfrlist val)
-                   (gl-object-alist-bfrlist x)))
-    :hints (("Goal" :expand ((gl-object-alist-bfrlist (cons (cons key val) x))))))
+  (defthm fgl-object-alist-bfrlist-of-cons
+    (equal (fgl-object-alist-bfrlist (cons (cons key val) x))
+           (append (fgl-object-bfrlist val)
+                   (fgl-object-alist-bfrlist x)))
+    :hints (("Goal" :expand ((fgl-object-alist-bfrlist (cons (cons key val) x))))))
 
-  (defthm gl-object-bfrlist-of-g-concrete
-    (equal (gl-object-bfrlist (g-concrete val)) nil))
+  (defthm fgl-object-bfrlist-of-g-concrete
+    (equal (fgl-object-bfrlist (g-concrete val)) nil))
 
-  (defthm gl-object-bfrlist-of-g-boolean
-    (equal (gl-object-bfrlist (g-boolean bool)) (list bool))
-    :hints (("goal" :expand ((gl-object-bfrlist (g-boolean bool))))))
+  (defthm fgl-object-bfrlist-of-g-boolean
+    (equal (fgl-object-bfrlist (g-boolean bool)) (list bool))
+    :hints (("goal" :expand ((fgl-object-bfrlist (g-boolean bool))))))
 
-  (defthm gl-object-bfrlist-of-g-integer
-    (equal (gl-object-bfrlist (g-integer bits))
+  (defthm fgl-object-bfrlist-of-g-integer
+    (equal (fgl-object-bfrlist (g-integer bits))
            (acl2::true-list-fix bits)))
 
-  (defthm gl-object-bfrlist-of-g-ite
-    (equal (gl-object-bfrlist (g-ite test then else))
-           (append (gl-object-bfrlist test)
-                   (append (gl-object-bfrlist then)
-                           (gl-object-bfrlist else)))))
+  (defthm fgl-object-bfrlist-of-g-ite
+    (equal (fgl-object-bfrlist (g-ite test then else))
+           (append (fgl-object-bfrlist test)
+                   (append (fgl-object-bfrlist then)
+                           (fgl-object-bfrlist else)))))
 
-  (defthm gl-object-bfrlist-of-g-apply
-    (equal (gl-object-bfrlist (g-apply fn args))
-           (gl-objectlist-bfrlist args)))
+  (defthm fgl-object-bfrlist-of-g-apply
+    (equal (fgl-object-bfrlist (g-apply fn args))
+           (fgl-objectlist-bfrlist args)))
 
-  (defthm gl-object-bfrlist-of-g-var
-    (equal (gl-object-bfrlist (g-var name))nil))
+  (defthm fgl-object-bfrlist-of-g-var
+    (equal (fgl-object-bfrlist (g-var name))nil))
 
-  (defthm gl-object-bfrlist-of-g-cons
-    (equal (gl-object-bfrlist (g-cons car cdr))
-           (append (gl-object-bfrlist car)
-                   (gl-object-bfrlist cdr))))
+  (defthm fgl-object-bfrlist-of-g-cons
+    (equal (fgl-object-bfrlist (g-cons car cdr))
+           (append (fgl-object-bfrlist car)
+                   (fgl-object-bfrlist cdr))))
 
-  (defthm gl-object-bfrlist-of-g-map
-    (equal (gl-object-bfrlist (g-map tag alist))
-           (gl-object-alist-bfrlist alist)))
+  (defthm fgl-object-bfrlist-of-g-map
+    (equal (fgl-object-bfrlist (g-map tag alist))
+           (fgl-object-alist-bfrlist alist)))
 
-  (in-theory (disable* gl-object-bfrlist-when-thms))
+  (in-theory (disable* fgl-object-bfrlist-when-thms))
 
-  (def-ruleset! gl-object-bfrlist-of-thms
-    '(gl-object-bfrlist-of-g-concrete
-      gl-object-bfrlist-of-g-boolean
-      gl-object-bfrlist-of-g-integer
-      gl-object-bfrlist-of-g-ite
-      gl-object-bfrlist-of-g-apply
-      gl-object-bfrlist-of-g-var
-      gl-object-bfrlist-of-g-cons
-      gl-object-bfrlist-of-g-map
-      gl-objectlist-bfrlist-of-cons
-      gl-object-alist-bfrlist-of-cons
-      ;; gl-objectlist-bfrlist-of-nil
+  (def-ruleset! fgl-object-bfrlist-of-thms
+    '(fgl-object-bfrlist-of-g-concrete
+      fgl-object-bfrlist-of-g-boolean
+      fgl-object-bfrlist-of-g-integer
+      fgl-object-bfrlist-of-g-ite
+      fgl-object-bfrlist-of-g-apply
+      fgl-object-bfrlist-of-g-var
+      fgl-object-bfrlist-of-g-cons
+      fgl-object-bfrlist-of-g-map
+      fgl-objectlist-bfrlist-of-cons
+      fgl-object-alist-bfrlist-of-cons
+      ;; fgl-objectlist-bfrlist-of-nil
       ))
 
-  (defthm-gl-object-bfrlist-flag
-    (defthm gl-bfr-object-p-when-gl-object-p
-      (implies (gl-object-p x)
-               (equal (gl-bfr-object-p x)
-                      (bfr-listp (gl-object-bfrlist x))))
-      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-p x))
-                         (gl-object-p x)
-                         (gl-object-bfrlist x))))
-      :flag gl-object-bfrlist)
-    (defthm gl-bfr-objectlist-p-when-gl-objectlist-p
-      (implies (gl-objectlist-p x)
-               (equal (gl-bfr-objectlist-p x)
-                      (bfr-listp (gl-objectlist-bfrlist x))))
-      :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x))
-                         (gl-objectlist-p x)
-                         (gl-objectlist-bfrlist x))))
-      :flag gl-objectlist-bfrlist)
-    (defthm gl-bfr-object-alist-p-when-gl-object-alist-p
-      (implies (gl-object-alist-p x)
-               (equal (gl-bfr-object-alist-p x)
-                      (bfr-listp (gl-object-alist-bfrlist x))))
-      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-alist-p x))
-                         (gl-object-alist-p x)
-                         (gl-object-alist-bfrlist x))))
-      :flag gl-object-alist-bfrlist))
+  (defthm-fgl-object-bfrlist-flag
+    (defthm fgl-bfr-object-p-when-fgl-object-p
+      (implies (fgl-object-p x)
+               (equal (fgl-bfr-object-p x)
+                      (bfr-listp (fgl-object-bfrlist x))))
+      :hints ('(:expand ((:free (bfrstate) (fgl-bfr-object-p x))
+                         (fgl-object-p x)
+                         (fgl-object-bfrlist x))))
+      :flag fgl-object-bfrlist)
+    (defthm fgl-bfr-objectlist-p-when-fgl-objectlist-p
+      (implies (fgl-objectlist-p x)
+               (equal (fgl-bfr-objectlist-p x)
+                      (bfr-listp (fgl-objectlist-bfrlist x))))
+      :hints ('(:expand ((:free (bfrstate) (fgl-bfr-objectlist-p x))
+                         (fgl-objectlist-p x)
+                         (fgl-objectlist-bfrlist x))))
+      :flag fgl-objectlist-bfrlist)
+    (defthm fgl-bfr-object-alist-p-when-fgl-object-alist-p
+      (implies (fgl-object-alist-p x)
+               (equal (fgl-bfr-object-alist-p x)
+                      (bfr-listp (fgl-object-alist-bfrlist x))))
+      :hints ('(:expand ((:free (bfrstate) (fgl-bfr-object-alist-p x))
+                         (fgl-object-alist-p x)
+                         (fgl-object-alist-bfrlist x))))
+      :flag fgl-object-alist-bfrlist))
 
-  ;; (defthm-gl-object-bfrlist-flag
-  ;;   (defthm gl-object-bfrlist-when-symbolic-boolean-free
-  ;;     (equal (gl-object-symbolic-boolean-free x)
-  ;;            (equal (gl-object-bfrlist x) nil))
-  ;;     :hints ('(:expand ((gl-object-bfrlist x)
-  ;;                        (gl-object-symbolic-boolean-free x))))
-  ;;     :flag gl-object-bfrlist)
-  ;;   (defthm gl-objectlist-bfrlist-when-symbolic-boolean-free
-  ;;     (equal (gl-objectlist-symbolic-boolean-free x)
-  ;;            (equal (gl-objectlist-bfrlist x) nil))
-  ;;     :hints ('(:expand ((gl-objectlist-bfrlist x)
-  ;;                        (gl-objectlist-symbolic-boolean-free x))))
-  ;;     :flag gl-objectlist-bfrlist)
-  ;;   (defthm gl-object-alist-bfrlist-when-symbolic-boolean-free
-  ;;     (equal (gl-object-alist-symbolic-boolean-free x)
-  ;;            (equal (gl-object-alist-bfrlist x) nil))
-  ;;     :hints ('(:expand ((gl-object-alist-bfrlist x)
-  ;;                        (gl-object-alist-symbolic-boolean-free x))))
-  ;;     :flag gl-object-alist-bfrlist))
+  ;; (defthm-fgl-object-bfrlist-flag
+  ;;   (defthm fgl-object-bfrlist-when-symbolic-boolean-free
+  ;;     (equal (fgl-object-symbolic-boolean-free x)
+  ;;            (equal (fgl-object-bfrlist x) nil))
+  ;;     :hints ('(:expand ((fgl-object-bfrlist x)
+  ;;                        (fgl-object-symbolic-boolean-free x))))
+  ;;     :flag fgl-object-bfrlist)
+  ;;   (defthm fgl-objectlist-bfrlist-when-symbolic-boolean-free
+  ;;     (equal (fgl-objectlist-symbolic-boolean-free x)
+  ;;            (equal (fgl-objectlist-bfrlist x) nil))
+  ;;     :hints ('(:expand ((fgl-objectlist-bfrlist x)
+  ;;                        (fgl-objectlist-symbolic-boolean-free x))))
+  ;;     :flag fgl-objectlist-bfrlist)
+  ;;   (defthm fgl-object-alist-bfrlist-when-symbolic-boolean-free
+  ;;     (equal (fgl-object-alist-symbolic-boolean-free x)
+  ;;            (equal (fgl-object-alist-bfrlist x) nil))
+  ;;     :hints ('(:expand ((fgl-object-alist-bfrlist x)
+  ;;                        (fgl-object-alist-symbolic-boolean-free x))))
+  ;;     :flag fgl-object-alist-bfrlist))
   (local (defthm bfr-list-fix-of-append
            (equal (bfr-list-fix (append a b))
                   (append (bfr-list-fix a) (bfr-list-fix b)))
@@ -1214,72 +1214,72 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                     (true-listp (bfr-list-fix x)))
            :hints(("Goal" :in-theory (enable bfr-list-fix)))))
   
-  (defthm-gl-object-bfrlist-flag
-    (defthm gl-object-bfrlist-of-gl-bfr-object-fix
-      (equal (gl-object-bfrlist (gl-bfr-object-fix x))
-             (bfr-list-fix (gl-object-bfrlist x)))
-      :hints ('(:expand ((gl-bfr-object-fix x)
-                         (gl-object-bfrlist x))))
-      :flag gl-object-bfrlist)
-    (defthm gl-objectlist-bfrlist-of-gl-bfr-objectlist-fix
-      (equal (gl-objectlist-bfrlist (gl-bfr-objectlist-fix x))
-             (bfr-list-fix (gl-objectlist-bfrlist x)))
-      :hints ('(:expand ((gl-bfr-objectlist-fix x)
-                         (gl-objectlist-bfrlist x))))
-      :flag gl-objectlist-bfrlist)
-    (defthm gl-object-alist-bfrlist-of-gl-bfr-object-alist-fix
-      (equal (gl-object-alist-bfrlist (gl-bfr-object-alist-fix x))
-             (bfr-list-fix (gl-object-alist-bfrlist x)))
-      :hints ('(:expand ((gl-bfr-object-alist-fix x)
-                         (gl-object-alist-bfrlist x))))
-      :flag gl-object-alist-bfrlist))
+  (defthm-fgl-object-bfrlist-flag
+    (defthm fgl-object-bfrlist-of-fgl-bfr-object-fix
+      (equal (fgl-object-bfrlist (fgl-bfr-object-fix x))
+             (bfr-list-fix (fgl-object-bfrlist x)))
+      :hints ('(:expand ((fgl-bfr-object-fix x)
+                         (fgl-object-bfrlist x))))
+      :flag fgl-object-bfrlist)
+    (defthm fgl-objectlist-bfrlist-of-fgl-bfr-objectlist-fix
+      (equal (fgl-objectlist-bfrlist (fgl-bfr-objectlist-fix x))
+             (bfr-list-fix (fgl-objectlist-bfrlist x)))
+      :hints ('(:expand ((fgl-bfr-objectlist-fix x)
+                         (fgl-objectlist-bfrlist x))))
+      :flag fgl-objectlist-bfrlist)
+    (defthm fgl-object-alist-bfrlist-of-fgl-bfr-object-alist-fix
+      (equal (fgl-object-alist-bfrlist (fgl-bfr-object-alist-fix x))
+             (bfr-list-fix (fgl-object-alist-bfrlist x)))
+      :hints ('(:expand ((fgl-bfr-object-alist-fix x)
+                         (fgl-object-alist-bfrlist x))))
+      :flag fgl-object-alist-bfrlist))
 
-  (defthm gl-object-bfrlist-of-mk-g-integer
+  (defthm fgl-object-bfrlist-of-mk-g-integer
     (implies (not (member v bits))
-             (not (member v (gl-object-bfrlist (mk-g-integer bits)))))
+             (not (member v (fgl-object-bfrlist (mk-g-integer bits)))))
     :hints(("Goal" :in-theory (e/d (mk-g-integer)
                                    (bools->int)))))
 
-  (defthm gl-object-bfrlist-of-mk-g-cons
-    (implies (and (not (member v (gl-object-bfrlist a)))
-                  (not (member v (gl-object-bfrlist b))))
-             (not (member v (gl-object-bfrlist (mk-g-cons a b)))))
+  (defthm fgl-object-bfrlist-of-mk-g-cons
+    (implies (and (not (member v (fgl-object-bfrlist a)))
+                  (not (member v (fgl-object-bfrlist b))))
+             (not (member v (fgl-object-bfrlist (mk-g-cons a b)))))
     :hints(("Goal" :in-theory (e/d (mk-g-cons)))))
 
   (defthm bfr-listp-of-mk-g-boolean
          (implies (bfr-p x)
-                  (bfr-listp (gl-object-bfrlist (mk-g-boolean x))))
+                  (bfr-listp (fgl-object-bfrlist (mk-g-boolean x))))
          :hints(("Goal" :in-theory (enable mk-g-boolean))))
 
-  (defthm gl-object-bfrlist-of-gobj-syntactic-boolean-fix
-    (implies (not (member v (gl-object-bfrlist x)))
-             (not (member v (gl-object-bfrlist (mv-nth 1 (gobj-syntactic-boolean-fix x))))))
+  (defthm fgl-object-bfrlist-of-gobj-syntactic-boolean-fix
+    (implies (not (member v (fgl-object-bfrlist x)))
+             (not (member v (fgl-object-bfrlist (mv-nth 1 (gobj-syntactic-boolean-fix x))))))
     :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix)))))
 
-(define gl-object-bindings-bfrlist ((x gl-object-bindings-p))
+(define fgl-object-bindings-bfrlist ((x fgl-object-bindings-p))
   :returns (bfrlist)
   (if (atom x)
       nil
     (append (and (mbt (and (consp (car x))
                            (pseudo-var-p (caar x))))
-                 (gl-object-bfrlist (cdar x)))
-            (gl-object-bindings-bfrlist (cdr x))))
+                 (fgl-object-bfrlist (cdar x)))
+            (fgl-object-bindings-bfrlist (cdr x))))
   ///
-  (defthm gl-object-bindings-bfrlist-of-cons
+  (defthm fgl-object-bindings-bfrlist-of-cons
     (implies (pseudo-var-p var)
-             (equal (gl-object-bindings-bfrlist (cons (cons var val) rest))
-                    (append (gl-object-bfrlist val)
-                            (gl-object-bindings-bfrlist rest)))))
+             (equal (fgl-object-bindings-bfrlist (cons (cons var val) rest))
+                    (append (fgl-object-bfrlist val)
+                            (fgl-object-bindings-bfrlist rest)))))
 
-  (defthm bfr-listp-of-gl-object-bindings-bfrlist
-    (implies (gl-object-bindings-p x)
-             (equal (gl-bfr-object-bindings-p x)
-                    (bfr-listp (gl-object-bindings-bfrlist x))))
-    :hints(("Goal" :in-theory (enable gl-bfr-object-bindings-p
-                                      gl-object-bindings-p))))
+  (defthm bfr-listp-of-fgl-object-bindings-bfrlist
+    (implies (fgl-object-bindings-p x)
+             (equal (fgl-bfr-object-bindings-p x)
+                    (bfr-listp (fgl-object-bindings-bfrlist x))))
+    :hints(("Goal" :in-theory (enable fgl-bfr-object-bindings-p
+                                      fgl-object-bindings-p))))
     
 
-  (local (in-theory (enable gl-object-bindings-fix))))
+  (local (in-theory (enable fgl-object-bindings-fix))))
 
 
 
@@ -1316,69 +1316,69 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
              (not (member (bfr-listp-witness y bfrstate) x)))))
 
 
-(defsection bfrlist-of-gl-object-accessors
-  (local (in-theory (enable* gl-object-bfrlist-when-thms)))
+(defsection bfrlist-of-fgl-object-accessors
+  (local (in-theory (enable* fgl-object-bfrlist-when-thms)))
 
   (defthm bfrlist-of-g-ite-accessors
-    (implies (and (gl-object-case x :g-ite)
-                  (not (member v (gl-object-bfrlist x))))
+    (implies (and (fgl-object-case x :g-ite)
+                  (not (member v (fgl-object-bfrlist x))))
              (b* (((g-ite x)))
-               (and (not (member v (gl-object-bfrlist x.test)))
-                    (not (member v (gl-object-bfrlist x.then)))
-                    (not (member v (gl-object-bfrlist x.else)))))))
+               (and (not (member v (fgl-object-bfrlist x.test)))
+                    (not (member v (fgl-object-bfrlist x.then)))
+                    (not (member v (fgl-object-bfrlist x.else)))))))
 
   (defthm bfrlist-of-g-boolean-accessor
-    (implies (and (gl-object-case x :g-boolean)
-                  (not (member v (gl-object-bfrlist x))))
+    (implies (and (fgl-object-case x :g-boolean)
+                  (not (member v (fgl-object-bfrlist x))))
              (b* (((g-boolean x)))
                (not (equal v x.bool)))))
 
   (defthm bfrlist-of-g-integer-accessor
-    (implies (and (gl-object-case x :g-integer)
-                  (not (member v (gl-object-bfrlist x))))
+    (implies (and (fgl-object-case x :g-integer)
+                  (not (member v (fgl-object-bfrlist x))))
              (b* (((g-integer x)))
                (not (member v x.bits)))))
 
   (defthm bfrlist-of-g-apply-accessor
-    (implies (and (gl-object-case x :g-apply)
-                  (not (member v (gl-object-bfrlist x))))
+    (implies (and (fgl-object-case x :g-apply)
+                  (not (member v (fgl-object-bfrlist x))))
              (b* (((g-apply x)))
-               (not (member v (gl-objectlist-bfrlist x.args))))))
+               (not (member v (fgl-objectlist-bfrlist x.args))))))
 
   (defthm bfrlist-of-g-cons-accessor
-    (implies (and (gl-object-case x :g-cons)
-                  (not (member v (gl-object-bfrlist x))))
+    (implies (and (fgl-object-case x :g-cons)
+                  (not (member v (fgl-object-bfrlist x))))
              (b* (((g-cons x)))
-               (and (not (member v (gl-object-bfrlist x.car)))
-                    (not (member v (gl-object-bfrlist x.cdr)))))))
+               (and (not (member v (fgl-object-bfrlist x.car)))
+                    (not (member v (fgl-object-bfrlist x.cdr)))))))
 
   (defthm bfrlist-of-g-map-accessor
-    (implies (and (gl-object-case x :g-map)
-                  (not (member v (gl-object-bfrlist x))))
+    (implies (and (fgl-object-case x :g-map)
+                  (not (member v (fgl-object-bfrlist x))))
              (b* (((g-map x)))
-               (not (member v (gl-object-alist-bfrlist x.alist))))))
+               (not (member v (fgl-object-alist-bfrlist x.alist))))))
 
-  (defthm member-gl-objectlist-bfrlist-of-cdr
-    (implies (not (member v (gl-objectlist-bfrlist x)))
-             (not (member v (gl-objectlist-bfrlist (cdr x)))))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+  (defthm member-fgl-objectlist-bfrlist-of-cdr
+    (implies (not (member v (fgl-objectlist-bfrlist x)))
+             (not (member v (fgl-objectlist-bfrlist (cdr x)))))
+    :hints(("Goal" :in-theory (enable fgl-objectlist-bfrlist))))
 
-  (defthm member-gl-object-bfrlist-of-car
-    (implies (not (member v (gl-objectlist-bfrlist x)))
-             (not (member v (gl-object-bfrlist (car x)))))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+  (defthm member-fgl-object-bfrlist-of-car
+    (implies (not (member v (fgl-objectlist-bfrlist x)))
+             (not (member v (fgl-object-bfrlist (car x)))))
+    :hints(("Goal" :in-theory (enable fgl-objectlist-bfrlist))))
 
-  (defthm member-gl-object-alist-bfrlist-of-cdr
-    (implies (not (member v (gl-object-alist-bfrlist x)))
-             (not (member v (gl-object-alist-bfrlist (cdr x)))))
-    :hints(("Goal" :expand ((gl-object-alist-bfrlist x)
-                            (gl-object-alist-bfrlist (cdr x))
-                            (gl-object-alist-fix x)))))
+  (defthm member-fgl-object-alist-bfrlist-of-cdr
+    (implies (not (member v (fgl-object-alist-bfrlist x)))
+             (not (member v (fgl-object-alist-bfrlist (cdr x)))))
+    :hints(("Goal" :expand ((fgl-object-alist-bfrlist x)
+                            (fgl-object-alist-bfrlist (cdr x))
+                            (fgl-object-alist-fix x)))))
 
-  (defthm member-gl-object-bfrlist-of-cdar
-    (implies (not (member v (gl-object-alist-bfrlist x)))
-             (not (member v (gl-object-bfrlist (cdar x)))))
-    :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist)))))
+  (defthm member-fgl-object-bfrlist-of-cdar
+    (implies (not (member v (fgl-object-alist-bfrlist x)))
+             (not (member v (fgl-object-bfrlist (cdar x)))))
+    :hints(("Goal" :in-theory (enable fgl-object-alist-bfrlist)))))
 
 
 

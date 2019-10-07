@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -34,28 +34,28 @@
 (include-book "stack")
 (local (std::add-default-post-define-hook :fix))
 
-(define fgl-object-concretize ((x gl-object-p)
-                      (env gl-env-p)
+(define fgl-object-concretize ((x fgl-object-p)
+                      (env fgl-env-p)
                       &optional (logicman 'logicman))
-  :guard (lbfr-listp (gl-object-bfrlist x))
-  :returns (new-x gl-object-p)
+  :guard (lbfr-listp (fgl-object-bfrlist x))
+  :returns (new-x fgl-object-p)
   (g-concrete (fgl-object-eval x env))
   ///
 
   (defthm fgl-object-concretize-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (lbfr-listp (gl-object-bfrlist x) old))
+                  (lbfr-listp (fgl-object-bfrlist x) old))
              (equal (fgl-object-concretize x env new)
                     (fgl-object-concretize x env old)))
-    :hints(("Goal" :in-theory (enable gl-object-bfrlist))))
+    :hints(("Goal" :in-theory (enable fgl-object-bfrlist))))
 
   (defcong logicman-equiv equal (fgl-object-concretize x env logicman) 3))
 
-(define fgl-objectlist-concretize ((x gl-objectlist-p)
-                      (env gl-env-p)
+(define fgl-objectlist-concretize ((x fgl-objectlist-p)
+                      (env fgl-env-p)
                       &optional (logicman 'logicman))
-  :guard (lbfr-listp (gl-objectlist-bfrlist x))
-  :returns (new-x gl-objectlist-p)
+  :guard (lbfr-listp (fgl-objectlist-bfrlist x))
+  :returns (new-x fgl-objectlist-p)
   (if (atom x)
       nil
     (cons (fgl-object-concretize (car x) env)
@@ -64,20 +64,20 @@
 
   (defthm fgl-objectlist-concretize-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (lbfr-listp (gl-objectlist-bfrlist x) old))
+                  (lbfr-listp (fgl-objectlist-bfrlist x) old))
              (equal (fgl-objectlist-concretize x env new)
                     (fgl-objectlist-concretize x env old)))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+    :hints(("Goal" :in-theory (enable fgl-objectlist-bfrlist))))
 
   (defcong logicman-equiv equal (fgl-objectlist-concretize x env logicman) 3))
 
-(define fgl-object-alist-concretize ((x gl-object-alist-p)
-                      (env gl-env-p)
+(define fgl-object-alist-concretize ((x fgl-object-alist-p)
+                      (env fgl-env-p)
                       &optional (logicman 'logicman))
-  :guard (lbfr-listp (gl-object-alist-bfrlist x))
-  :prepwork ((local (in-theory (enable gl-object-alist-bfrlist
-                                       gl-object-alist-fix))))
-  :returns (new-x gl-object-alist-p)
+  :guard (lbfr-listp (fgl-object-alist-bfrlist x))
+  :prepwork ((local (in-theory (enable fgl-object-alist-bfrlist
+                                       fgl-object-alist-fix))))
+  :returns (new-x fgl-object-alist-p)
   (if (atom x)
       x
     (if (mbt (consp (car x)))
@@ -89,24 +89,24 @@
 
   (defthm fgl-object-alist-concretize-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (lbfr-listp (gl-object-alist-bfrlist x) old))
+                  (lbfr-listp (fgl-object-alist-bfrlist x) old))
              (equal (fgl-object-alist-concretize x env new)
                     (fgl-object-alist-concretize x env old)))
-    :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist)
+    :hints(("Goal" :in-theory (enable fgl-object-alist-bfrlist)
             :induct t
-            :expand ((gl-object-alist-bfrlist x)))))
+            :expand ((fgl-object-alist-bfrlist x)))))
 
   (defcong logicman-equiv equal (fgl-object-alist-concretize x env logicman) 3))
 
 
 
 
-(define fgl-object-bindings-concretize ((x gl-object-bindings-p)
-                                   (env gl-env-p)
+(define fgl-object-bindings-concretize ((x fgl-object-bindings-p)
+                                   (env fgl-env-p)
                                    &optional (logicman 'logicman))
-  :guard (lbfr-listp (gl-object-bindings-bfrlist x))
-  :guard-hints (("goal" :in-theory (enable gl-object-bindings-bfrlist)))
-  :returns (ans gl-object-bindings-p)
+  :guard (lbfr-listp (fgl-object-bindings-bfrlist x))
+  :guard-hints (("goal" :in-theory (enable fgl-object-bindings-bfrlist)))
+  :returns (ans fgl-object-bindings-p)
   (if (atom x)
       nil
     (if (mbt (and (consp (car x))
@@ -116,21 +116,21 @@
               (fgl-object-bindings-concretize (cdr x) env))
       (fgl-object-bindings-concretize (cdr x) env)))
   ///
-  (local (in-theory (enable gl-object-bindings-fix)))
+  (local (in-theory (enable fgl-object-bindings-fix)))
 
   (defthm fgl-object-bindings-concretize-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (lbfr-listp (gl-object-bindings-bfrlist x) old))
+                  (lbfr-listp (fgl-object-bindings-bfrlist x) old))
              (equal (fgl-object-bindings-concretize x env new)
                     (fgl-object-bindings-concretize x env old)))
-    :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist))))
+    :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist))))
 
-  (defret lookup-under-iff-of-gl-object-bindings-ev
+  (defret lookup-under-iff-of-fgl-object-bindings-ev
     (implies (pseudo-var-p k)
              (iff (hons-assoc-equal k ans)
                   (hons-assoc-equal k x))))
 
-  (defret lookup-of-gl-object-bindings-ev
+  (defret lookup-of-fgl-object-bindings-ev
     (implies (and (pseudo-var-p k)
                   (hons-assoc-equal k x))
              (equal (hons-assoc-equal k ans)
@@ -139,7 +139,7 @@
   (defcong logicman-equiv equal (fgl-object-bindings-concretize x env logicman) 3))
 
 (define fgl-constraint-instance-concretize ((x constraint-instance-p)
-                                       (env gl-env-p)
+                                       (env fgl-env-p)
                                        &optional (logicman 'logicman))
   :guard (lbfr-listp (constraint-instance-bfrlist x))
   :prepwork ((local (in-theory (enable constraint-instance-bfrlist))))
@@ -158,7 +158,7 @@
   (defcong logicman-equiv equal (fgl-constraint-instance-concretize x env logicman) 3))
 
 (define fgl-constraint-instancelist-concretize ((x constraint-instancelist-p)
-                                           (env gl-env-p)
+                                           (env fgl-env-p)
                                            &optional (logicman 'logicman))
   :guard (lbfr-listp (constraint-instancelist-bfrlist x))
   :prepwork ((local (in-theory (enable constraint-instancelist-bfrlist))))
@@ -177,7 +177,7 @@
   (defcong logicman-equiv equal (fgl-constraint-instancelist-concretize x env logicman) 3))
 
 (define fgl-scratchobj-concretize ((x scratchobj-p)
-                              (env gl-env-p)
+                              (env fgl-env-p)
                               &optional (logicman 'logicman))
   :guard (lbfr-listp (scratchobj->bfrlist x))
   :returns (ev scratchobj-p)
@@ -185,8 +185,8 @@
                      '(:expand ((scratchobj->bfrlist x)))))
   ;; :prepwork ((local (in-theory (enable scratchobj->bfrlist))))
   (scratchobj-case x
-    :gl-obj (scratchobj-gl-obj (fgl-object-concretize x.val env))
-    :gl-objlist (scratchobj-gl-objlist (fgl-objectlist-concretize x.val env))
+    :fgl-obj (scratchobj-fgl-obj (fgl-object-concretize x.val env))
+    :fgl-objlist (scratchobj-fgl-objlist (fgl-objectlist-concretize x.val env))
     :bfr (scratchobj-bfr (gobj-bfr-eval x.val env))
     :bfrlist (scratchobj-bfrlist (gobj-bfr-list-eval x.val env))
     :cinst (scratchobj-cinst (fgl-constraint-instance-concretize x.val env))
@@ -200,29 +200,29 @@
     :hints ((and stable-under-simplificationp
                      '(:expand ((scratchobj->bfrlist x))))))
 
-  (defthm fgl-scratchobj-concretize-of-scratchobj-gl-obj
-    (equal (fgl-scratchobj-concretize (Scratchobj-gl-obj val) env)
-           (scratchobj-gl-obj (fgl-object-concretize val env))))
+  (defthm fgl-scratchobj-concretize-of-scratchobj-fgl-obj
+    (equal (fgl-scratchobj-concretize (Scratchobj-fgl-obj val) env)
+           (scratchobj-fgl-obj (fgl-object-concretize val env))))
 
-  (defthm fgl-scratchobj-concretize-of-scratchobj-gl-objlist
-    (equal (fgl-scratchobj-concretize (Scratchobj-gl-objlist val) env)
-           (scratchobj-gl-objlist (fgl-objectlist-concretize val env))))
+  (defthm fgl-scratchobj-concretize-of-scratchobj-fgl-objlist
+    (equal (fgl-scratchobj-concretize (Scratchobj-fgl-objlist val) env)
+           (scratchobj-fgl-objlist (fgl-objectlist-concretize val env))))
 
   (defthm fgl-scratchobj-concretize-of-scratchobj-bfr
     (equal (fgl-scratchobj-concretize (Scratchobj-bfr val) env)
            (scratchobj-bfr (gobj-bfr-eval val env))))
 
   (defcong logicman-equiv equal (fgl-scratchobj-concretize x env logicman) 3
-    :hints(("Goal" :in-theory (disable fgl-scratchobj-concretize-of-scratchobj-gl-obj
-                                       fgl-scratchobj-concretize-of-scratchobj-gl-objlist
+    :hints(("Goal" :in-theory (disable fgl-scratchobj-concretize-of-scratchobj-fgl-obj
+                                       fgl-scratchobj-concretize-of-scratchobj-fgl-objlist
                                        fgl-scratchobj-concretize-of-scratchobj-bfr
-                                       ;; fgl-object-ev-of-scratchobj-gl-obj->val
-                                       ;; FGL-OBJECTLIST-EV-OF-SCRATCHOBJ-GL-OBJLIST->VAL
+                                       ;; fgl-object-ev-of-scratchobj-fgl-obj->val
+                                       ;; FGL-OBJECTLIST-EV-OF-SCRATCHOBJ-FGL-OBJLIST->VAL
                                        ;; GOBJ-BFR-EVAL-OF-SCRATCHOBJ-BFR->VAL
                                        )))))
 
 (define fgl-scratchlist-concretize ((x scratchlist-p)
-                        (env gl-env-p)
+                        (env fgl-env-p)
                         &optional (logicman 'logicman))
   :guard (lbfr-listp (scratchlist-bfrlist x))
   :returns (ev scratchlist-p)
@@ -240,7 +240,7 @@
   (defcong logicman-equiv equal (fgl-scratchlist-concretize x env logicman) 3))
 
 (define fgl-minor-frame-concretize ((x minor-frame-p)
-                               (env gl-env-p)
+                               (env fgl-env-p)
                                &optional (logicman 'logicman))
   :guard (lbfr-listp (minor-frame-bfrlist x))
   :prepwork ((local (in-theory (enable minor-frame-bfrlist))))
@@ -260,7 +260,7 @@
   (defcong logicman-equiv equal (fgl-minor-frame-concretize x env logicman) 3))
 
 (define fgl-minor-stack-concretize ((x minor-stack-p)
-                               (env gl-env-p)
+                               (env fgl-env-p)
                                &optional (logicman 'logicman))
   :guard (lbfr-listp (minor-stack-bfrlist x))
   :returns (ev minor-stack-p)
@@ -281,7 +281,7 @@
 
 
 (define fgl-major-frame-concretize ((x major-frame-p)
-                               (env gl-env-p)
+                               (env fgl-env-p)
                                &optional (logicman 'logicman))
   :guard (lbfr-listp (major-frame-bfrlist x))
   :prepwork ((local (in-theory (enable major-frame-bfrlist))))
@@ -301,7 +301,7 @@
   (defcong logicman-equiv equal (fgl-major-frame-concretize x env logicman) 3))
 
 (define fgl-major-stack-concretize ((x major-stack-p)
-                               (env gl-env-p)
+                               (env fgl-env-p)
                                &optional (logicman 'logicman))
   :guard (lbfr-listp (major-stack-bfrlist x))
   :returns (ev major-stack-p)

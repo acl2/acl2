@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -32,14 +32,14 @@
 
 (include-book "centaur/sv/svex/symbolic" :dir :system)
 (include-book "arith-base")
-(include-book "glcp-config")
-(include-book "def-gl-rewrite")
+(include-book "config")
+(include-book "def-fgl-rewrite")
 (include-book "syntax-bind")
-(include-book "gl-object")
+(include-book "fgl-object")
 (include-book "centaur/misc/starlogic" :dir :system)
 
 #!sv
-(fgl::def-gl-rewrite svexlist-eval-for-fgl
+(fgl::def-fgl-rewrite svexlist-eval-for-fgl
   (equal (svexlist-eval-for-symbolic x env symbolic-params)
          (b* ((orig-x x)
               (env (make-fast-alist (svex-env-fix env)))
@@ -79,7 +79,7 @@
                            (svexlist-eval-gl-is-svexlist-eval)))))
 
 #!sv
-(fgl::def-gl-rewrite svex-env-check-boolmasks-fgl
+(fgl::def-fgl-rewrite svex-env-check-boolmasks-fgl
   (equal (svex-env-check-boolmasks boolmasks env)
          (b* (((when (atom boolmasks)) t)
               ((unless (svar-p (caar boolmasks)))
@@ -94,12 +94,12 @@
                 ok)))
   :hints(("Goal" :in-theory (enable svex-env-check-boolmasks))))
 
-(add-gl-rewrite sv::a4veclist-eval-redef)
-(add-gl-rewrite sv::svex-alist-eval-gl-rewrite)
-(add-gl-rewrite sv::svex-eval-gl-rewrite)
+(add-fgl-rewrite sv::a4veclist-eval-redef)
+(add-fgl-rewrite sv::svex-alist-eval-gl-rewrite)
+(add-fgl-rewrite sv::svex-eval-gl-rewrite)
 
 #!sv
-(fgl::def-gl-rewrite svexlist/env-list-eval-fgl
+(fgl::def-fgl-rewrite svexlist/env-list-eval-fgl
   (equal (svexlist/env-list-eval-gl x envs symbolic-params)
          (b* ((envs (take (len x) envs))
               (x (svexlistlist-fix x))
@@ -129,7 +129,7 @@
   :hints (("goal" :in-theory (e/d (svexlist/env-list-eval-gl)
                                   (svexlist/env-list-eval-gl-correct)))))
 
-(add-gl-rewrite sv::svexlist/env-list-eval-for-symbolic-redef)
+(add-fgl-rewrite sv::svexlist/env-list-eval-for-symbolic-redef)
 
 
 
@@ -149,7 +149,7 @@
 
 
 
-;; (def-gl-rewrite svex-env-fix-use-debug
+;; (def-fgl-rewrite svex-env-fix-use-debug
 ;;   (equal (sv::svex-env-fix x)
 ;;          (b* ((res (svex-env-fix-debug x))
 ;;               (?ign (syntax-bind foo (cw "svex-env-fix res: ~x0~%" res))))
@@ -158,7 +158,7 @@
 
 ;; (encapsulate nil
 ;;   (local (in-theory (disable (tau-system) member set::empty-set-unique)))
-;;   (install-gl-primitives patched-primitives))
+;;   (install-fgl-primitives patched-primitives))
   
 
 ;; (defun 4vec-fix-debug (x)
@@ -166,7 +166,7 @@
 ;;       (SV::4VEC (IFIX (CAR X)) (IFIX (CDR X)))
 ;;       (IF (INTEGERP X) X (SV::4VEC-X))))
 
-;; (def-gl-rewrite 4vec-fix-use-debug
+;; (def-fgl-rewrite 4vec-fix-use-debug
 ;;   (equal (sv::4vec-fix x)
 ;;          (b* ((res (4vec-fix-debug x))
 ;;               (?ign (syntax-bind foo (cw "4vec-fix res: ~x0~%" res))))
@@ -185,19 +185,19 @@
 
 (disable-definition sv::4vec->lower$inline)
 
-(def-gl-rewrite 4vec-p-when-integerp
-  (implies (and (syntaxp (gl-object-case x :g-integer))
+(def-fgl-rewrite 4vec-p-when-integerp
+  (implies (and (syntaxp (fgl-object-case x :g-integer))
                 (integerp x))
            (sv::4vec-p x))
   :hints(("Goal" :in-theory (enable sv::4vec-p))))
 
-(def-gl-rewrite 4vec-fix-resolve
+(def-fgl-rewrite 4vec-fix-resolve
   #!sv
   (equal (4vec-fix x)
-         (b* (((when (and (fgl::syntax-bind check-integerp (fgl::gl-object-case x '(:g-concrete :g-integer)))
+         (b* (((when (and (fgl::syntax-bind check-integerp (fgl::fgl-object-case x '(:g-concrete :g-integer)))
                           (integerp x)))
                x)
-              ((when (and (fgl::syntax-bind check-consp (fgl::gl-object-case x '(:g-concrete :g-cons)))
+              ((when (and (fgl::syntax-bind check-consp (fgl::fgl-object-case x '(:g-concrete :g-cons)))
                           (consp x)))
                (4vec (fgl::int (car x)) (fgl::int (cdr x))))
               (4vecp (and (4vec-p x) t))
@@ -206,71 +206,71 @@
            (4vec (4vec->upper x) (4vec->lower x))))
   :hints ((and stable-under-simplificationp '(:in-theory (enable sv::4vec-fix sv::4vec->upper sv::4vec->lower)))))
 
-(add-gl-rewrite sv::4vec-p-of-4vec)
+(add-fgl-rewrite sv::4vec-p-of-4vec)
 
-(def-gl-rewrite integerp-of-4vec->upper
+(def-fgl-rewrite integerp-of-4vec->upper
   #!sv (integerp (sv::4vec->upper x)))
-(add-gl-rewrite sv::4vec->upper-of-4vec-fix)
-(add-gl-rewrite sv::4vec->upper-of-4vec)
+(add-fgl-rewrite sv::4vec->upper-of-4vec-fix)
+(add-fgl-rewrite sv::4vec->upper-of-4vec)
 
-(def-gl-rewrite integerp-of-4vec->lower
+(def-fgl-rewrite integerp-of-4vec->lower
   #!sv (integerp (sv::4vec->lower x)))
-(add-gl-rewrite sv::4vec->lower-of-4vec-fix)
-(add-gl-rewrite sv::4vec->lower-of-4vec)
+(add-fgl-rewrite sv::4vec->lower-of-4vec-fix)
+(add-fgl-rewrite sv::4vec->lower-of-4vec)
 
-(def-gl-rewrite 4vec->upper-of-integer
+(def-fgl-rewrite 4vec->upper-of-integer
   #!sv
   (implies (integerp x)
 
            (equal (4vec->upper x) x))
   :hints(("Goal" :in-theory (enable sv::4vec->upper))))
 
-(def-gl-rewrite 4vec->lower-of-integer
+(def-fgl-rewrite 4vec->lower-of-integer
   #!sv
   (implies (integerp x)
            (equal (4vec->lower x) x))
   :hints(("Goal" :in-theory (enable sv::4vec->lower))))
 
-(def-gl-rewrite 4vec->upper-of-cons
+(def-fgl-rewrite 4vec->upper-of-cons
   #!sv
   (implies (consp x)
            (equal (4vec->upper x) (fgl::int (car x))))
   :hints(("Goal" :in-theory (enable sv::4vec->upper))))
 
-(def-gl-rewrite 4vec->lower-of-cons
+(def-fgl-rewrite 4vec->lower-of-cons
   #!sv
   (implies (consp x)
            (equal (4vec->lower x) (fgl::int (cdr x))))
   :hints(("Goal" :in-theory (enable sv::4vec->lower))))
 
-(def-gl-rewrite equal-of-4vec
+(def-fgl-rewrite equal-of-4vec
   #!sv (equal (equal (4vec upper lower) x)
               (and (4vec-p x)
                    (equal (4vec->upper x) (fgl::int upper))
                    (equal (4vec->lower x) (fgl::int lower)))))
 
-(def-gl-rewrite integerp-of-4vec
+(def-fgl-rewrite integerp-of-4vec
   (equal (integerp (sv::4vec x y))
          (equal (int x) (int y)))
   :hints(("Goal" :in-theory (enable sv::4vec))))
 
-(def-gl-rewrite int-of-4vec
+(def-fgl-rewrite int-of-4vec
   (equal (int (sv::4vec x y))
          (b* ((x (int x)))
            (if (equal x (int y)) x 0)))
   :hints(("Goal" :in-theory (enable sv::4vec))))
 
-(def-gl-rewrite intcar-of-4vec
+(def-fgl-rewrite intcar-of-4vec
   (equal (intcar (sv::4vec x y))
          (and (equal (int x) (int y)) (intcar x)))
   :hints(("Goal" :in-theory (enable sv::4vec))))
 
-(def-gl-rewrite intcdr-of-4vec
+(def-fgl-rewrite intcdr-of-4vec
   (equal (intcdr (sv::4vec x y))
          (if (equal (int x) (int y)) (intcdr x) 0))
   :hints(("Goal" :in-theory (enable sv::4vec))))
 
-(def-gl-branch-merge if-merge-4vec
+(def-fgl-branch-merge if-merge-4vec
   (implies (sv::4vec-p x)
            (equal (if test (sv::4vec upper lower) x)
                   (sv::4vec (if test upper (sv::4vec->upper x))
@@ -306,8 +306,8 @@
                                ,@fgl::enable))))
       (if stable-under-simplificationp
           (value '(:clause-processor
-                   (gl-interp-cp clause
-                                 (default-glcp-config)
+                   (fgl-interp-cp clause
+                                 (default-fgl-config)
                                  interp-st state)))
         (value nil)))
      :in-theory (acl2::e/d**
@@ -364,7 +364,7 @@
 
 
 
-;; (fgl::def-gl-rewrite 4vec-boolmaskp-redef
+;; (fgl::def-fgl-rewrite 4vec-boolmaskp-redef
 ;;   (equal (sv::4vec-boolmaskp x mask)
 ;;          (b* (((sv::4vec x))
 ;;               (xor (logxor x.upper x.lower))
@@ -377,7 +377,7 @@
 ;;            (eql 0 and)))
 ;;   :hints(("Goal" :in-theory (enable sv::4vec-boolmaskp))))
 
-(fgl::def-gl-rewrite <-of-4vec
+(fgl::def-fgl-rewrite <-of-4vec
   (equal (< (sv::4vec a b) y)
          (< (b* ((a (int a))
                  (b (int b))
@@ -387,7 +387,7 @@
             y))
   :hints(("Goal" :in-theory (enable sv::4vec))))
 
-(fgl::def-gl-rewrite >-of-4vec
+(fgl::def-fgl-rewrite >-of-4vec
   (equal (> (sv::4vec a b) y)
          (> (b* ((a (int a))
                  (b (int b))

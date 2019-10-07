@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -526,73 +526,73 @@
 
 
 
-(defines gl-object-map-bfrs
+(defines fgl-object-map-bfrs
   :ruler-extenders :lambdas
-  (define gl-object-map-bfrs ((x gl-object-p)
+  (define fgl-object-map-bfrs ((x fgl-object-p)
                               litarr)
     :guard (and (< 0 (lits-length litarr))
-                (bfr-listp (gl-object-bfrlist x)
+                (bfr-listp (fgl-object-bfrlist x)
                            (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
     :verify-guards nil
-    :returns (new-x gl-object-p)
-    :measure (two-nats-measure (gl-object-count x) 0)
-    (b* ((x (gl-object-fix x))
-         (kind (gl-object-kind x))
+    :returns (new-x fgl-object-p)
+    :measure (two-nats-measure (fgl-object-count x) 0)
+    (b* ((x (fgl-object-fix x))
+         (kind (fgl-object-kind x))
          ((when (member-eq kind '(:g-concrete :g-var))) x))
       (case kind
         (:g-boolean (b* (((g-boolean x))) (mk-g-boolean (bfr-map x.bool litarr))))
         (:g-integer (b* (((g-integer x))) (mk-g-integer (bfrlist-map x.bits litarr))))
         (:g-ite (b* (((g-ite x))
-                     (test (gl-object-map-bfrs x.test litarr))
+                     (test (fgl-object-map-bfrs x.test litarr))
                      ((when (eq test t))
-                      (gl-object-map-bfrs x.then litarr))
+                      (fgl-object-map-bfrs x.then litarr))
                      ((when (eq test nil))
-                      (gl-object-map-bfrs x.else litarr))
-                     (then (gl-object-map-bfrs x.then litarr))
-                     (else (gl-object-map-bfrs x.else litarr)))
+                      (fgl-object-map-bfrs x.else litarr))
+                     (then (fgl-object-map-bfrs x.then litarr))
+                     (else (fgl-object-map-bfrs x.else litarr)))
                   (g-ite test then else)))
         (:g-apply (b* (((g-apply x))
-                       (args (gl-objectlist-map-bfrs x.args litarr)))
+                       (args (fgl-objectlist-map-bfrs x.args litarr)))
                     (change-g-apply x :args args)))
         (:g-map (b* (((g-map x))
-                     (alist (gl-object-alist-map-bfrs x.alist litarr)))
+                     (alist (fgl-object-alist-map-bfrs x.alist litarr)))
                   (change-g-map x :alist alist)))
         (t (b* (((g-cons x))
-                (car (gl-object-map-bfrs x.car litarr))
-                (cdr (gl-object-map-bfrs x.cdr litarr)))
+                (car (fgl-object-map-bfrs x.car litarr))
+                (cdr (fgl-object-map-bfrs x.cdr litarr)))
              (g-cons car cdr))))))
 
-  (define gl-objectlist-map-bfrs ((x gl-objectlist-p)
+  (define fgl-objectlist-map-bfrs ((x fgl-objectlist-p)
                                   litarr)
     :guard (and (< 0 (lits-length litarr))
-                (bfr-listp (gl-objectlist-bfrlist x)
+                (bfr-listp (fgl-objectlist-bfrlist x)
                            (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
-    :returns (new-x gl-objectlist-p)
-    :measure (two-nats-measure (gl-objectlist-count x) 0)
+    :returns (new-x fgl-objectlist-p)
+    :measure (two-nats-measure (fgl-objectlist-count x) 0)
     (b* (((when (atom x))
           nil)
-         (car (gl-object-map-bfrs (car x) litarr))
-         (cdr (gl-objectlist-map-bfrs (cdr x) litarr)))
+         (car (fgl-object-map-bfrs (car x) litarr))
+         (cdr (fgl-objectlist-map-bfrs (cdr x) litarr)))
       (cons car cdr)))
 
-  (define gl-object-alist-map-bfrs ((x gl-object-alist-p)
+  (define fgl-object-alist-map-bfrs ((x fgl-object-alist-p)
                                     litarr)
     :guard (and (< 0 (lits-length litarr))
-                (bfr-listp (gl-object-alist-bfrlist x)
+                (bfr-listp (fgl-object-alist-bfrlist x)
                            (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
-    :returns (new-x gl-object-alist-p)
-    :measure (two-nats-measure (gl-object-alist-count x) (len x))
+    :returns (new-x fgl-object-alist-p)
+    :measure (two-nats-measure (fgl-object-alist-count x) (len x))
     (b* (((when (atom x))
           x)
          ((unless (mbt (consp (car x))))
-          (gl-object-alist-map-bfrs (cdr x) litarr))
-         (cdar (gl-object-map-bfrs (cdar x) litarr))
-         (cdr (gl-object-alist-map-bfrs (cdr x) litarr)))
+          (fgl-object-alist-map-bfrs (cdr x) litarr))
+         (cdar (fgl-object-map-bfrs (cdar x) litarr))
+         (cdr (fgl-object-alist-map-bfrs (cdr x) litarr)))
       (cons (cons (caar x) cdar) cdr)))
   ///
-  (verify-guards gl-object-map-bfrs
-    :hints (("goal" :expand ((gl-object-bfrlist x)
-                             (gl-object-alist-bfrlist x)))))
+  (verify-guards fgl-object-map-bfrs
+    :hints (("goal" :expand ((fgl-object-bfrlist x)
+                             (fgl-object-alist-bfrlist x)))))
 
   (local (in-theory (enable bfr-listp-when-not-member-witness)))
   
@@ -604,26 +604,26 @@
 
   (defret-mutual bfr-listp-of-<fn>
     (defret bfr-listp-of-<fn>
-      (implies (and (bfr-litarr-p (gl-object-bfrlist x) litarr (bfrstate->bound bfrstate))
+      (implies (and (bfr-litarr-p (fgl-object-bfrlist x) litarr (bfrstate->bound bfrstate))
                     (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
-               (bfr-listp (gl-object-bfrlist new-x) bfrstate))
+               (bfr-listp (fgl-object-bfrlist new-x) bfrstate))
       :hints ('(:expand (<call>
-                         (gl-object-bfrlist x))))
-      :fn gl-object-map-bfrs)
+                         (fgl-object-bfrlist x))))
+      :fn fgl-object-map-bfrs)
     (defret bfr-listp-of-<fn>
-      (implies (and (bfr-litarr-p (gl-objectlist-bfrlist x) litarr (bfrstate->bound bfrstate))
+      (implies (and (bfr-litarr-p (fgl-objectlist-bfrlist x) litarr (bfrstate->bound bfrstate))
                     (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
-               (bfr-listp (gl-objectlist-bfrlist new-x) bfrstate))
+               (bfr-listp (fgl-objectlist-bfrlist new-x) bfrstate))
       :hints ('(:expand (<call>
-                         (gl-objectlist-bfrlist x))))
-      :fn gl-objectlist-map-bfrs)
+                         (fgl-objectlist-bfrlist x))))
+      :fn fgl-objectlist-map-bfrs)
     (defret bfr-listp-of-<fn>
-      (implies (and (bfr-litarr-p (gl-object-alist-bfrlist x) litarr (bfrstate->bound bfrstate))
+      (implies (and (bfr-litarr-p (fgl-object-alist-bfrlist x) litarr (bfrstate->bound bfrstate))
                     (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
-               (bfr-listp (gl-object-alist-bfrlist new-x) bfrstate))
+               (bfr-listp (fgl-object-alist-bfrlist new-x) bfrstate))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x))))
-      :fn gl-object-alist-map-bfrs))
+                         (fgl-object-alist-bfrlist x))))
+      :fn fgl-object-alist-map-bfrs))
 
 
   (local (in-theory (enable gobj-bfr-eval
@@ -631,183 +631,183 @@
 
   (defret-mutual eval-of-<fn>
     (defret eval-of-<fn>
-      (implies (bfr-litarr-correct-p (gl-object-bfrlist x)
-                                     (gl-env->bfr-vals env)
+      (implies (bfr-litarr-correct-p (fgl-object-bfrlist x)
+                                     (fgl-env->bfr-vals env)
                                      litarr logicman2 logicman)
                (equal (fgl-object-eval new-x env logicman2)
                       (fgl-object-eval x env logicman)))
       :hints ('(:expand (<call>
-                         (gl-object-bfrlist x)
+                         (fgl-object-bfrlist x)
                          (fgl-object-eval x env logicman))))
-      :fn gl-object-map-bfrs)
+      :fn fgl-object-map-bfrs)
     (defret eval-of-<fn>
-      (implies (bfr-litarr-correct-p (gl-objectlist-bfrlist x)
-                                     (gl-env->bfr-vals env)
+      (implies (bfr-litarr-correct-p (fgl-objectlist-bfrlist x)
+                                     (fgl-env->bfr-vals env)
                                      litarr logicman2 logicman)
                (equal (fgl-objectlist-eval new-x env logicman2)
                       (fgl-objectlist-eval x env logicman)))
       :hints ('(:expand (<call>
-                         (gl-objectlist-bfrlist x)
+                         (fgl-objectlist-bfrlist x)
                          (fgl-objectlist-eval x env logicman))))
-      :fn gl-objectlist-map-bfrs)
+      :fn fgl-objectlist-map-bfrs)
     (defret eval-of-<fn>
-      (implies (bfr-litarr-correct-p (gl-object-alist-bfrlist x)
-                                     (gl-env->bfr-vals env)
+      (implies (bfr-litarr-correct-p (fgl-object-alist-bfrlist x)
+                                     (fgl-env->bfr-vals env)
                                      litarr logicman2 logicman)
                (equal (fgl-object-alist-eval new-x env logicman2)
                       (fgl-object-alist-eval x env logicman)))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x)
+                         (fgl-object-alist-bfrlist x)
                          (fgl-object-alist-eval x env logicman)
                          (fgl-object-alist-eval x env logicman2))))
-      :fn gl-object-alist-map-bfrs))
+      :fn fgl-object-alist-map-bfrs))
 
 
   (defret eval-of-<fn>-all-envs
-    (implies (bfr-litarr-correct-p-all-envs (gl-object-bfrlist x)
+    (implies (bfr-litarr-correct-p-all-envs (fgl-object-bfrlist x)
                                             litarr logicman2 logicman)
              (equal (fgl-object-eval new-x env logicman2)
                     (fgl-object-eval x env logicman)))
     :hints (("goal" :use eval-of-<fn>
              :in-theory (disable eval-of-<fn>)))
-    :fn gl-object-map-bfrs)
+    :fn fgl-object-map-bfrs)
   (defret eval-of-<fn>-all-envs
-      (implies (bfr-litarr-correct-p-all-envs (gl-objectlist-bfrlist x)
+      (implies (bfr-litarr-correct-p-all-envs (fgl-objectlist-bfrlist x)
                                      litarr logicman2 logicman)
                (equal (fgl-objectlist-eval new-x env logicman2)
                       (fgl-objectlist-eval x env logicman)))
     :hints (("goal" :use eval-of-<fn>
              :in-theory (disable eval-of-<fn>)))
-      :fn gl-objectlist-map-bfrs)
+      :fn fgl-objectlist-map-bfrs)
     (defret eval-of-<fn>-all-envs
-      (implies (bfr-litarr-correct-p-all-envs (gl-object-alist-bfrlist x)
+      (implies (bfr-litarr-correct-p-all-envs (fgl-object-alist-bfrlist x)
                                      litarr logicman2 logicman)
                (equal (fgl-object-alist-eval new-x env logicman2)
                       (fgl-object-alist-eval x env logicman)))
     :hints (("goal" :use eval-of-<fn>
              :in-theory (disable eval-of-<fn>)))
-      :fn gl-object-alist-map-bfrs)
+      :fn fgl-object-alist-map-bfrs)
 
-  (local (defthm gl-object-bfrlist-of-mk-g-integer-open
-           (equal (gl-object-bfrlist (mk-g-integer bits))
+  (local (defthm fgl-object-bfrlist-of-mk-g-integer-open
+           (equal (fgl-object-bfrlist (mk-g-integer bits))
                   (if (boolean-listp (true-list-fix bits))
                       nil
                     (true-list-fix bits)))
-           :hints(("Goal" :in-theory (enable mk-g-integer gl-object-bfrlist)))))
+           :hints(("Goal" :in-theory (enable mk-g-integer fgl-object-bfrlist)))))
 
-  (local (defthm gl-object-bfrlist-of-mk-g-boolean-open
-           (equal (gl-object-bfrlist (mk-g-boolean bool))
+  (local (defthm fgl-object-bfrlist-of-mk-g-boolean-open
+           (equal (fgl-object-bfrlist (mk-g-boolean bool))
                   (if (booleanp bool)
                       nil
                     (list bool)))
-           :hints(("Goal" :in-theory (enable mk-g-boolean gl-object-bfrlist)))))
+           :hints(("Goal" :in-theory (enable mk-g-boolean fgl-object-bfrlist)))))
 
 
   (defret-mutual bfrlist-boundedp-of-<fn>
     (defret bfrlist-boundedp-of-<fn>
-      (implies (and (bfr-litarr-correct-p-all-envs (gl-object-bfrlist x)
+      (implies (and (bfr-litarr-correct-p-all-envs (fgl-object-bfrlist x)
                                                    litarr logicman2 logicman)
                     (equal (logicman->mode logicman2)
                            (logicman->mode logicman))
-                    (bfrlist-boundedp (gl-object-bfrlist x) n logicman))
-               (bfrlist-boundedp (gl-object-bfrlist new-x) n logicman2))
+                    (bfrlist-boundedp (fgl-object-bfrlist x) n logicman))
+               (bfrlist-boundedp (fgl-object-bfrlist new-x) n logicman2))
       :hints ('(:expand (<call>
-                         (gl-object-bfrlist x))))
-      :fn gl-object-map-bfrs)
+                         (fgl-object-bfrlist x))))
+      :fn fgl-object-map-bfrs)
     (defret bfrlist-boundedp-of-<fn>
-      (implies (and (bfr-litarr-correct-p-all-envs (gl-objectlist-bfrlist x)
+      (implies (and (bfr-litarr-correct-p-all-envs (fgl-objectlist-bfrlist x)
                                                    litarr logicman2 logicman)
                     (equal (logicman->mode logicman2)
                            (logicman->mode logicman))
-                    (bfrlist-boundedp (gl-objectlist-bfrlist x) n logicman))
-               (bfrlist-boundedp (gl-objectlist-bfrlist new-x) n logicman2))
+                    (bfrlist-boundedp (fgl-objectlist-bfrlist x) n logicman))
+               (bfrlist-boundedp (fgl-objectlist-bfrlist new-x) n logicman2))
       :hints ('(:expand (<call>
-                         (gl-objectlist-bfrlist x))))
-      :fn gl-objectlist-map-bfrs)
+                         (fgl-objectlist-bfrlist x))))
+      :fn fgl-objectlist-map-bfrs)
     (defret bfrlist-boundedp-of-<fn>
-      (implies (and (bfr-litarr-correct-p-all-envs (gl-object-alist-bfrlist x)
+      (implies (and (bfr-litarr-correct-p-all-envs (fgl-object-alist-bfrlist x)
                                                    litarr logicman2 logicman)
                     (equal (logicman->mode logicman2)
                            (logicman->mode logicman))
-                    (bfrlist-boundedp (gl-object-alist-bfrlist x) n logicman))
-               (bfrlist-boundedp (gl-object-alist-bfrlist new-x) n logicman2))
+                    (bfrlist-boundedp (fgl-object-alist-bfrlist x) n logicman))
+               (bfrlist-boundedp (fgl-object-alist-bfrlist new-x) n logicman2))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x))))
-      :fn gl-object-alist-map-bfrs))
+                         (fgl-object-alist-bfrlist x))))
+      :fn fgl-object-alist-map-bfrs))
 
-  (fty::deffixequiv-mutual gl-object-map-bfrs
-    :hints ('(:Expand ((gl-objectlist-map-bfrs x litarr)
-                       (gl-objectlist-map-bfrs (gl-objectlist-fix x) litarr)
-                       (gl-objectlist-map-bfrs nil litarr)
-                       (gl-object-map-bfrs x litarr)
-                       (gl-object-map-bfrs (gl-object-fix x) litarr)
-                       (gl-object-alist-map-bfrs x litarr)
-                       (gl-object-alist-fix x)
-                       (:free (x y) (gl-object-alist-map-bfrs (cons x y) litarr)))))))
+  (fty::deffixequiv-mutual fgl-object-map-bfrs
+    :hints ('(:Expand ((fgl-objectlist-map-bfrs x litarr)
+                       (fgl-objectlist-map-bfrs (fgl-objectlist-fix x) litarr)
+                       (fgl-objectlist-map-bfrs nil litarr)
+                       (fgl-object-map-bfrs x litarr)
+                       (fgl-object-map-bfrs (fgl-object-fix x) litarr)
+                       (fgl-object-alist-map-bfrs x litarr)
+                       (fgl-object-alist-fix x)
+                       (:free (x y) (fgl-object-alist-map-bfrs (cons x y) litarr)))))))
 
-(define gl-object-map-bfrs-memo-p (x &optional (litarr 'litarr))
+(define fgl-object-map-bfrs-memo-p (x &optional (litarr 'litarr))
   (if (atom x)
       (eq x nil)
     (and (consp (car x))
-         (equal (cdar x) (ec-call (gl-object-map-bfrs (caar x) litarr)))
-         (gl-object-map-bfrs-memo-p (cdr x) litarr)))
+         (equal (cdar x) (ec-call (fgl-object-map-bfrs (caar x) litarr)))
+         (fgl-object-map-bfrs-memo-p (cdr x) litarr)))
   ///
-  (defthm gl-object-map-bfrs-memo-p-of-cons
-    (equal (gl-object-map-bfrs-memo-p (cons (cons key val) x) litarr)
-           (and (equal val (gl-object-map-bfrs key litarr))
-                (gl-object-map-bfrs-memo-p x litarr))))
+  (defthm fgl-object-map-bfrs-memo-p-of-cons
+    (equal (fgl-object-map-bfrs-memo-p (cons (cons key val) x) litarr)
+           (and (equal val (fgl-object-map-bfrs key litarr))
+                (fgl-object-map-bfrs-memo-p x litarr))))
 
-  (defthm gl-object-map-bfrs-memo-p-of-nil
-    (gl-object-map-bfrs-memo-p nil litarr))
+  (defthm fgl-object-map-bfrs-memo-p-of-nil
+    (fgl-object-map-bfrs-memo-p nil litarr))
 
-  (defthmd gl-object-map-bfrs-memo-p-implies
-    (implies (and (gl-object-map-bfrs-memo-p x litarr)
+  (defthmd fgl-object-map-bfrs-memo-p-implies
+    (implies (and (fgl-object-map-bfrs-memo-p x litarr)
                   (hons-assoc-equal key x))
              (equal (cdr (hons-assoc-equal key x))
-                    (gl-object-map-bfrs key litarr)))))
+                    (fgl-object-map-bfrs key litarr)))))
 
 
-(define gl-object-map-bfrs-memo-fix (x &optional (litarr 'litarr))
-  :guard (gl-object-map-bfrs-memo-p x litarr)
+(define fgl-object-map-bfrs-memo-fix (x &optional (litarr 'litarr))
+  :guard (fgl-object-map-bfrs-memo-p x litarr)
   :inline t
-  :returns (new-x (gl-object-map-bfrs-memo-p new-x litarr))
-  :prepwork ((local (in-theory (enable gl-object-map-bfrs-memo-p))))
+  :returns (new-x (fgl-object-map-bfrs-memo-p new-x litarr))
+  :prepwork ((local (in-theory (enable fgl-object-map-bfrs-memo-p))))
   (mbe :logic
        (if (atom x)
            nil
          (if (and (consp (car x))
-                  (equal (cdar x) (ec-call (gl-object-map-bfrs (caar x) litarr))))
+                  (equal (cdar x) (ec-call (fgl-object-map-bfrs (caar x) litarr))))
              (cons (car x)
-                   (gl-object-map-bfrs-memo-fix (cdr x) litarr))
-           (gl-object-map-bfrs-memo-fix (cdr x) litarr)))
+                   (fgl-object-map-bfrs-memo-fix (cdr x) litarr))
+           (fgl-object-map-bfrs-memo-fix (cdr x) litarr)))
        :exec x)
   ///
-  (defthm gl-object-map-bfrs-memo-fix-when-memo-p
-    (implies (gl-object-map-bfrs-memo-p x litarr)
-             (equal (gl-object-map-bfrs-memo-fix x litarr) x)))
+  (defthm fgl-object-map-bfrs-memo-fix-when-memo-p
+    (implies (fgl-object-map-bfrs-memo-p x litarr)
+             (equal (fgl-object-map-bfrs-memo-fix x litarr) x)))
 
-  (defthm lookup-in-gl-object-map-bfrs-memo-fix
-    (let ((x (gl-object-map-bfrs-memo-fix x litarr)))
+  (defthm lookup-in-fgl-object-map-bfrs-memo-fix
+    (let ((x (fgl-object-map-bfrs-memo-fix x litarr)))
       (implies (hons-assoc-equal key x)
                (equal (cdr (hons-assoc-equal key x))
-                      (gl-object-map-bfrs key litarr))))))
+                      (fgl-object-map-bfrs key litarr))))))
 
 
 
-(defines gl-object-map-bfrs-memo
+(defines fgl-object-map-bfrs-memo
   :ruler-extenders :lambdas
-  (define gl-object-map-bfrs-memo ((x gl-object-p)
+  (define fgl-object-map-bfrs-memo ((x fgl-object-p)
                                    litarr
-                                   (memo gl-object-map-bfrs-memo-p))
+                                   (memo fgl-object-map-bfrs-memo-p))
     :guard (and (< 0 (lits-length litarr))
-                (bfr-listp (gl-object-bfrlist x)
+                (bfr-listp (fgl-object-bfrlist x)
                            (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
     :verify-guards nil
-    :measure (two-nats-measure (gl-object-count x) 0)
+    :measure (two-nats-measure (fgl-object-count x) 0)
     :returns (mv new-x new-memo)
-    (b* ((x (gl-object-fix x))
-         (memo (gl-object-map-bfrs-memo-fix memo litarr))
-         (kind (gl-object-kind x))
+    (b* ((x (fgl-object-fix x))
+         (memo (fgl-object-map-bfrs-memo-fix memo litarr))
+         (kind (fgl-object-kind x))
          ((when (member-eq kind '(:g-concrete :g-var)))
           (mv x memo))
          (look (hons-get x memo))
@@ -819,79 +819,79 @@
             (:g-integer (b* (((g-integer x)))
                           (mv (mk-g-integer (bfrlist-map x.bits litarr)) memo)))
             (:g-ite (b* (((g-ite x))
-                         ((mv test memo) (gl-object-map-bfrs-memo x.test litarr memo))
+                         ((mv test memo) (fgl-object-map-bfrs-memo x.test litarr memo))
                          ((when (eq test t))
-                          (gl-object-map-bfrs-memo x.then litarr memo))
+                          (fgl-object-map-bfrs-memo x.then litarr memo))
                          ((when (eq test nil))
-                          (gl-object-map-bfrs-memo x.else litarr memo))
-                         ((mv then memo) (gl-object-map-bfrs-memo x.then litarr memo))
-                         ((mv else memo) (gl-object-map-bfrs-memo x.else litarr memo)))
+                          (fgl-object-map-bfrs-memo x.else litarr memo))
+                         ((mv then memo) (fgl-object-map-bfrs-memo x.then litarr memo))
+                         ((mv else memo) (fgl-object-map-bfrs-memo x.else litarr memo)))
                       (mv (g-ite test then else) memo)))
             (:g-apply (b* (((g-apply x))
-                           ((mv args memo) (gl-objectlist-map-bfrs-memo x.args litarr memo)))
+                           ((mv args memo) (fgl-objectlist-map-bfrs-memo x.args litarr memo)))
                         (mv (change-g-apply x :args args) memo)))
             (:g-map (b* (((g-map x))
-                         ((mv alist memo) (gl-object-alist-map-bfrs-memo x.alist litarr memo)))
+                         ((mv alist memo) (fgl-object-alist-map-bfrs-memo x.alist litarr memo)))
                       (mv (change-g-map x :alist alist) memo)))
             (t (b* (((g-cons x))
-                    ((mv car memo) (gl-object-map-bfrs-memo x.car litarr memo))
-                    ((mv cdr memo) (gl-object-map-bfrs-memo x.cdr litarr memo)))
+                    ((mv car memo) (fgl-object-map-bfrs-memo x.car litarr memo))
+                    ((mv cdr memo) (fgl-object-map-bfrs-memo x.cdr litarr memo)))
                  (mv (g-cons car cdr) memo))))))
       (mv ans (hons-acons x ans memo))))
 
-  (define gl-objectlist-map-bfrs-memo ((x gl-objectlist-p)
+  (define fgl-objectlist-map-bfrs-memo ((x fgl-objectlist-p)
                                        litarr
-                                       (memo gl-object-map-bfrs-memo-p))
+                                       (memo fgl-object-map-bfrs-memo-p))
     :guard (and (< 0 (lits-length litarr))
-                (bfr-listp (gl-objectlist-bfrlist x)
+                (bfr-listp (fgl-objectlist-bfrlist x)
                            (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
-    :measure (two-nats-measure (gl-objectlist-count x) 0)
+    :measure (two-nats-measure (fgl-objectlist-count x) 0)
     :returns (mv new-x new-memo)
     (b* (((when (atom x))
-          (mv nil (gl-object-map-bfrs-memo-fix memo litarr)))
-         ((mv car memo) (gl-object-map-bfrs-memo (car x) litarr memo))
-         ((mv cdr memo) (gl-objectlist-map-bfrs-memo (cdr x) litarr memo)))
+          (mv nil (fgl-object-map-bfrs-memo-fix memo litarr)))
+         ((mv car memo) (fgl-object-map-bfrs-memo (car x) litarr memo))
+         ((mv cdr memo) (fgl-objectlist-map-bfrs-memo (cdr x) litarr memo)))
       (mv (cons car cdr) memo)))
 
-  (define gl-object-alist-map-bfrs-memo ((x gl-object-alist-p)
+  (define fgl-object-alist-map-bfrs-memo ((x fgl-object-alist-p)
                                          litarr
-                                         (memo gl-object-map-bfrs-memo-p))
+                                         (memo fgl-object-map-bfrs-memo-p))
     :guard (and (< 0 (lits-length litarr))
-                (bfr-listp (gl-object-alist-bfrlist x)
+                (bfr-listp (fgl-object-alist-bfrlist x)
                            (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
-    :measure (two-nats-measure (gl-object-alist-count x) (len x))
+    :measure (two-nats-measure (fgl-object-alist-count x) (len x))
     :returns (mv new-x new-memo)
     (b* (((when (atom x))
-          (mv x (gl-object-map-bfrs-memo-fix memo litarr)))
+          (mv x (fgl-object-map-bfrs-memo-fix memo litarr)))
          ((unless (mbt (consp (car x))))
-          (gl-object-alist-map-bfrs-memo (cdr x) litarr memo))
-         ((mv cdar memo) (gl-object-map-bfrs-memo (cdar x) litarr memo))
-         ((mv cdr memo) (gl-object-alist-map-bfrs-memo (cdr x) litarr memo)))
+          (fgl-object-alist-map-bfrs-memo (cdr x) litarr memo))
+         ((mv cdar memo) (fgl-object-map-bfrs-memo (cdar x) litarr memo))
+         ((mv cdr memo) (fgl-object-alist-map-bfrs-memo (cdr x) litarr memo)))
       (mv (cons (cons (caar x) cdar) cdr) memo)))
   ///
-  (local (in-theory (enable gl-object-map-bfrs-memo-p-implies)))
+  (local (in-theory (enable fgl-object-map-bfrs-memo-p-implies)))
 
   (defret-mutual <fn>-correct
     (defret <fn>-correct
-      (and (gl-object-map-bfrs-memo-p new-memo litarr)
-           (equal new-x (gl-object-map-bfrs x litarr)))
+      (and (fgl-object-map-bfrs-memo-p new-memo litarr)
+           (equal new-x (fgl-object-map-bfrs x litarr)))
       :hints ('(:expand (<call>
-                         (gl-object-map-bfrs x litarr))))
-      :fn gl-object-map-bfrs-memo)
+                         (fgl-object-map-bfrs x litarr))))
+      :fn fgl-object-map-bfrs-memo)
     (defret <fn>-correct
-      (and (gl-object-map-bfrs-memo-p new-memo litarr)
-           (equal new-x (gl-objectlist-map-bfrs x litarr)))
+      (and (fgl-object-map-bfrs-memo-p new-memo litarr)
+           (equal new-x (fgl-objectlist-map-bfrs x litarr)))
       :hints ('(:expand (<call>
-                         (gl-objectlist-map-bfrs x litarr))))
-      :fn gl-objectlist-map-bfrs-memo)
+                         (fgl-objectlist-map-bfrs x litarr))))
+      :fn fgl-objectlist-map-bfrs-memo)
     (defret <fn>-correct
-      (and (gl-object-map-bfrs-memo-p new-memo litarr)
-           (equal new-x (gl-object-alist-map-bfrs x litarr)))
+      (and (fgl-object-map-bfrs-memo-p new-memo litarr)
+           (equal new-x (fgl-object-alist-map-bfrs x litarr)))
       :hints ('(:expand (<call>
-                         (gl-object-alist-map-bfrs x litarr))))
-      :fn gl-object-alist-map-bfrs-memo))
+                         (fgl-object-alist-map-bfrs x litarr))))
+      :fn fgl-object-alist-map-bfrs-memo))
   
 
-  (verify-guards gl-object-map-bfrs-memo
-    :hints (("goal" :expand ((gl-object-bfrlist x)
-                             (gl-object-alist-bfrlist x))))))
+  (verify-guards fgl-object-map-bfrs-memo
+    :hints (("goal" :expand ((fgl-object-bfrlist x)
+                             (fgl-object-alist-bfrlist x))))))

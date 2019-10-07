@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -36,7 +36,7 @@
 (define scratchobj-isomorphic ((x scratchobj-p) (y scratchobj-p))
   (and (eq (scratchobj-kind x) (scratchobj-kind y))
        (scratchobj-case x
-         :gl-objlist (eql (len x.val) (len (scratchobj-gl-objlist->val y)))
+         :fgl-objlist (eql (len x.val) (len (scratchobj-fgl-objlist->val y)))
          :bfrlist (eql (len x.val) (len (scratchobj-bfrlist->val y)))
          :cinstlist (eql (len x.val) (len (scratchobj-cinstlist->val y)))
          :otherwise t))
@@ -45,11 +45,11 @@
 
   (defcong scratchobj-isomorphic equal (scratchobj-kind x) 1)
 
-  (defthm len-gl-objlist-when-scratchobj-isomorphic
+  (defthm len-fgl-objlist-when-scratchobj-isomorphic
     (implies (and (scratchobj-isomorphic x y)
-                  (scratchobj-case x :gl-objlist))
-             (= (len (scratchobj-gl-objlist->val x))
-                (len (scratchobj-gl-objlist->val y))))
+                  (scratchobj-case x :fgl-objlist))
+             (= (len (scratchobj-fgl-objlist->val x))
+                (len (scratchobj-fgl-objlist->val y))))
     :rule-classes :linear)
 
   (defthm len-bfrlist-when-scratchobj-isomorphic

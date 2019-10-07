@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -43,7 +43,7 @@
             (implies (and (natp var)
                           (<= (base-bvar$a bvar-db) var)
                           (< var (next-bvar$a bvar-db)))
-                     (bfrlist-boundedp (gl-object-bfrlist (get-bvar->term$a var bvar-db))
+                     (bfrlist-boundedp (fgl-object-bfrlist (get-bvar->term$a var bvar-db))
                                        var logicman)))
     :rewrite :direct)
 
@@ -110,20 +110,20 @@
 ;;       :define t)))
 
 
-(define check-equiv-replacement ((x gl-object-p)
-                                 (equiv-term gl-object-p)
+(define check-equiv-replacement ((x fgl-object-p)
+                                 (equiv-term fgl-object-p)
                                  (contexts equiv-contextsp)
                                  state)
   :returns (mv ok
-               (equiv gl-object-p)
+               (equiv fgl-object-p)
                negp
                iff-equiv-p)
   (declare (ignorable state))
   ;; BOZO fix these to work with context fixing terms, refinements, negated equivs, etc
-  (b* (((when (hons-equal (gl-object-fix x)
-                          (gl-object-fix equiv-term)))
+  (b* (((when (hons-equal (fgl-object-fix x)
+                          (fgl-object-fix equiv-term)))
         (mv t nil t (member-eq 'iff (equiv-contexts-fix contexts))))
-       ((unless (gl-object-case equiv-term :g-apply))
+       ((unless (fgl-object-case equiv-term :g-apply))
         (mv nil nil nil nil))
        (equiv (g-apply->fn equiv-term))
        ((unless (or (eq equiv 'equal)
@@ -132,19 +132,19 @@
        (args (g-apply->args equiv-term))
        ((unless (equal (len args) 2))
         (mv nil nil nil nil))
-       ((when (hons-equal (car args) (gl-object-fix x)))
+       ((when (hons-equal (car args) (fgl-object-fix x)))
         (mv t (cadr args) nil nil))
-       ((when (hons-equal (cadr args) (gl-object-fix x)))
+       ((when (hons-equal (cadr args) (fgl-object-fix x)))
         (mv t (car args) nil nil)))
     (mv nil nil nil nil))
   ///
-  (defret gl-object-bfrlist-of-<fn>
-    (implies (not (member v (gl-object-bfrlist equiv-term)))
-             (not (member v (gl-object-bfrlist equiv))))))
+  (defret fgl-object-bfrlist-of-<fn>
+    (implies (not (member v (fgl-object-bfrlist equiv-term)))
+             (not (member v (fgl-object-bfrlist equiv))))))
 
 
 
-(define try-equivalences ((x gl-object-p)
+(define try-equivalences ((x fgl-object-p)
                           (bvars nat-listp)
                           (contexts equiv-contextsp)
                           pathcond
@@ -154,7 +154,7 @@
   :guard (and (bvar-list-okp bvars bvar-db)
               (equal (next-bvar bvar-db) (bfr-nvars)))
   :returns (mv ok
-               (new-x gl-object-p)
+               (new-x fgl-object-p)
                (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
   :guard-hints ((and stable-under-simplificationp
                      '(:expand ((bvar-list-okp$a bvars bvar-db))
@@ -175,17 +175,17 @@
         (mv t (eql ans 1) pathcond)))
       (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
   ///
-  (local (defthm gl-object-bfrlist-of-boolean
+  (local (defthm fgl-object-bfrlist-of-boolean
            (implies (booleanp x)
-                    (equal (gl-object-bfrlist x) nil))
+                    (equal (fgl-object-bfrlist x) nil))
            :hints(("Goal" :in-theory (enable booleanp)))))
-  (defret gl-object-bfrlist-of-<fn>
+  (defret fgl-object-bfrlist-of-<fn>
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
                   (bvar-list-okp$a bvars bvar-db))
-             (not (member v (gl-object-bfrlist new-x))))))
+             (not (member v (fgl-object-bfrlist new-x))))))
 
 
-(define try-equivalences-loop ((x gl-object-p)
+(define try-equivalences-loop ((x fgl-object-p)
                                (contexts equiv-contextsp)
                                (clk natp)
                                pathcond
@@ -195,26 +195,26 @@
   :guard (equal (next-bvar bvar-db) (bfr-nvars))
   :measure (nfix clk)
   :returns (mv error
-               (replacement gl-object-p)
+               (replacement fgl-object-p)
                (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
   (b* ((pathcond (pathcond-fix pathcond))
        ((when (zp clk)) (mv "try-equivalences ran out of clock -- equiv loop?"
-                            (gl-object-fix x)
+                            (fgl-object-fix x)
                             pathcond))
        (equivs (get-term->equivs x bvar-db))
        ((mv ok repl pathcond)
         (try-equivalences x equivs contexts pathcond bvar-db logicman state))
        ((when ok)
         (try-equivalences-loop repl contexts (1- clk) pathcond bvar-db logicman state)))
-    (mv nil (gl-object-fix x) pathcond))
+    (mv nil (fgl-object-fix x) pathcond))
   ///
-  (defret gl-object-bfrlist-of-<fn>
+  (defret fgl-object-bfrlist-of-<fn>
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                  (not (member v (gl-object-bfrlist x))))
-             (not (member v (gl-object-bfrlist replacement))))))
+                  (not (member v (fgl-object-bfrlist x))))
+             (not (member v (fgl-object-bfrlist replacement))))))
 
 
-(define maybe-add-equiv-term ((test-obj gl-object-p)
+(define maybe-add-equiv-term ((test-obj fgl-object-p)
                               (bvar natp)
                               bvar-db
                               state)
@@ -230,7 +230,7 @@
   ;; Otherwise test-obj is (equal x y) and we associate either x or y to bvar;
   ;; in this case, if bvar is true, normalize (respectively) x to y or y to x.
   (declare (ignorable state))
-  (gl-object-case test-obj
+  (fgl-object-case test-obj
     :g-var (add-term-equiv test-obj bvar bvar-db)
     :g-apply (b* ((fn test-obj.fn)
                   (args test-obj.args)
@@ -244,8 +244,8 @@
 
                   ;; Heuristic 1: when a variable is equated with anything else, normalize var -> other.
                   ;; (Note this could loop, up to the user to prevent this)
-                  (a-varp (gl-object-case a :g-var))
-                  (b-varp (gl-object-case b :g-var))
+                  (a-varp (fgl-object-case a :g-var))
+                  (b-varp (fgl-object-case b :g-var))
                   ((when a-varp)
                    (if b-varp
                        (add-term-equiv test-obj bvar bvar-db)
@@ -255,11 +255,11 @@
 
                   ;; Heuristic 2: when one object is a "good" g-integer, g-boolean, or g-concrete,
                   ;;              normalize other -> good obj.
-                  (a-goodp (gl-object-case a
+                  (a-goodp (fgl-object-case a
                              :g-integer t :g-boolean t :g-concrete t :otherwise nil))
                   ((when a-goodp)
                    (add-term-equiv b bvar bvar-db))
-                  (b-goodp (gl-object-case b
+                  (b-goodp (fgl-object-case b
                              :g-integer t :g-boolean t :g-concrete t :otherwise nil))
                   ((when b-goodp)
                    (add-term-equiv a bvar bvar-db)))

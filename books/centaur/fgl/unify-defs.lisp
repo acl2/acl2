@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -34,6 +34,6 @@
 
 (acl2::ifdef-define "DEFS_ONLY")
 
-; (loads "glcp-unify.lsp")
-(make-event (er-let* ((forms (acl2::read-file "glcp-unify.lsp" state)))
+; (loads "unify.lsp")
+(make-event (er-let* ((forms (acl2::read-file "unify.lsp" state)))
                      (value (cons 'progn forms))))

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -453,7 +453,7 @@ any).  This allows all functions that were added using
 
 (logic)
 
-(fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
+(fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 
 (local
@@ -501,7 +501,7 @@ any).  This allows all functions that were added using
                  (:backchain-limit . (integerp backchain-limit))
                  (:equiv-contexts . (equiv-contextsp equiv-contexts))
                  (:reclimit       . (natp reclimit))
-                 (:config         . (glcp-config-p config))
+                 (:config         . (fgl-config-p config))
                  (:flags          . (interp-flags-p flags))
                  (:next-fgarray   . (natp next-fgarray))
                  (:cgraph         . (cgraph-p cgraph))

@@ -465,7 +465,7 @@
   (b* (((unless (prof-enabledp interp-profiler)) nil)
        (entries (prof->prof-entrylist interp-profiler))
        (by-frames (prof-entry-frames-sort entries)))
-    (cw "GL Accumulated Persistence~%~%")
+    (cw "FGL Accumulated Persistence~%~%")
     (cw "Total rule application attempts: ~x0~%~%" (prof-totalcount interp-profiler))
     (cw "   :frames   :tries    :ratio  rune~%")
     (prof-entrylist-print by-frames)))

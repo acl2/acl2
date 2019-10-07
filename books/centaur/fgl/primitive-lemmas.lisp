@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -42,11 +42,11 @@
   :hints(("Goal" :in-theory (enable fgl-objectlist-eval))))
 
 
-(in-theory (enable gl-objectlist-bfrlist-when-consp))
+(in-theory (enable fgl-objectlist-bfrlist-when-consp))
 
 
 
-(in-theory (enable gl-objectlist-bfrlist-when-consp))
+(in-theory (enable fgl-objectlist-bfrlist-when-consp))
 
 (defthm len-equal-0
   (equal (equal (len x) 0)
@@ -86,7 +86,7 @@
                     (and (consp x)
                          (equal (len (cdr x)) (1- n)))))))
 
-(in-theory (enable* gl-object-bfrlist-when-thms))
+(in-theory (enable* fgl-object-bfrlist-when-thms))
 
 (defthm gobj-bfr-list-eval-of-nil
   (equal (gobj-bfr-list-eval nil x) nil)
@@ -121,26 +121,26 @@
   :hints(("Goal" :in-theory (enable scdr gobj-bfr-list-eval))))
 
 
-(defthm gl-object-bfrlist-implies-bfr-p-gobj-syntactic-boolean->bool
-  (implies (and (bfr-listp (gl-object-bfrlist x))
+(defthm fgl-object-bfrlist-implies-bfr-p-gobj-syntactic-boolean->bool
+  (implies (and (bfr-listp (fgl-object-bfrlist x))
                 (gobj-syntactic-booleanp x))
            (bfr-p (gobj-syntactic-boolean->bool x)))
   :hints(("Goal" :in-theory (enable gobj-syntactic-booleanp
                                     gobj-syntactic-boolean->bool
-                                    gl-object-bfrlist
+                                    fgl-object-bfrlist
                                     booleanp))))
 
 (defthm bfr-listp-of-int->bools
   (bfr-listp (int->bools x))
   :hints(("Goal" :in-theory (enable int->bools))))
 
-(defthm gl-object-bfrlist-implies-bfr-listp-gobj-syntactic-integer->bits
-  (implies (and (bfr-listp (gl-object-bfrlist x))
+(defthm fgl-object-bfrlist-implies-bfr-listp-gobj-syntactic-integer->bits
+  (implies (and (bfr-listp (fgl-object-bfrlist x))
                 (gobj-syntactic-integerp x))
            (bfr-listp (gobj-syntactic-integer->bits x)))
   :hints(("Goal" :in-theory (enable gobj-syntactic-integerp
                                     gobj-syntactic-integer->bits
-                                    gl-object-bfrlist))))
+                                    fgl-object-bfrlist))))
 
 
 (defthm bools->int-when-consp
@@ -188,25 +188,25 @@
                   (ifix (fgl-object-eval x env))))
   :hints(("Goal" :in-theory (e/d (gobj-syntactic-integer-fix
                                   gobj-syntactic-integer->bits
-                                  gl-object-p-when-integerp
-                                  gl-object-kind-when-integerp
+                                  fgl-object-p-when-integerp
+                                  fgl-object-kind-when-integerp
                                   g-concrete->val-when-integerp))))
   :fn gobj-syntactic-integer-fix)
 
-(defthm gl-object-bfrlist-when-integerp
+(defthm fgl-object-bfrlist-when-integerp
   (implies (integerp x)
-           (equal (gl-object-bfrlist x) nil))
-  :hints(("Goal" :in-theory (enable gl-object-kind-when-integerp))))
+           (equal (fgl-object-bfrlist x) nil))
+  :hints(("Goal" :in-theory (enable fgl-object-kind-when-integerp))))
 
-(defret gl-object-bfrlist-of-gobj-syntactic-integer-fix
-  (implies (not (member v (gl-object-bfrlist x)))
-           (not (member v (gl-object-bfrlist new-x))))
+(defret fgl-object-bfrlist-of-gobj-syntactic-integer-fix
+  (implies (not (member v (fgl-object-bfrlist x)))
+           (not (member v (fgl-object-bfrlist new-x))))
   :hints(("Goal" :in-theory (enable gobj-syntactic-integer-fix)))
   :fn gobj-syntactic-integer-fix)
 
-(Defthm car-of-gl-objectlist-fix
-  (equal (car (gl-objectlist-fix x))
-         (gl-object-fix (car x))))
+(Defthm car-of-fgl-objectlist-fix
+  (equal (car (fgl-objectlist-fix x))
+         (fgl-object-fix (car x))))
 
 (in-theory (enable bfr-listp-when-not-member-witness))
 
@@ -231,11 +231,11 @@
 
 
 
-(defthm gl-object-bfrlist-when-booleanp
+(defthm fgl-object-bfrlist-when-booleanp
   (implies (booleanp x)
-           (equal (gl-object-bfrlist x) nil))
-  :hints(("Goal" :in-theory (enable gl-object-bfrlist
-                                    gl-object-kind))))
+           (equal (fgl-object-bfrlist x) nil))
+  :hints(("Goal" :in-theory (enable fgl-object-bfrlist
+                                    fgl-object-kind))))
 
 
 
@@ -245,14 +245,14 @@
   :hints(("Goal" :in-theory (enable gobj-syntactic-listp
                                     gobj-syntactic-consp))))
 
-(defthm gl-object-bfrlist-of-gobj-syntactic-list->car
-  (implies (not (member v (gl-object-bfrlist x)))
-           (not (member v (gl-object-bfrlist (gobj-syntactic-list->car x)))))
+(defthm fgl-object-bfrlist-of-gobj-syntactic-list->car
+  (implies (not (member v (fgl-object-bfrlist x)))
+           (not (member v (fgl-object-bfrlist (gobj-syntactic-list->car x)))))
   :hints(("Goal" :in-theory (enable gobj-syntactic-list->car))))
 
-(defthm gl-object-bfrlist-of-gobj-syntactic-list->cdr
-  (implies (not (member v (gl-object-bfrlist x)))
-           (not (member v (gl-object-bfrlist (gobj-syntactic-list->cdr x)))))
+(defthm fgl-object-bfrlist-of-gobj-syntactic-list->cdr
+  (implies (not (member v (fgl-object-bfrlist x)))
+           (not (member v (fgl-object-bfrlist (gobj-syntactic-list->cdr x)))))
   :hints(("Goal" :in-theory (enable gobj-syntactic-list->cdr))))
 
 (defthm fgl-object-eval-of-mk-g-cons

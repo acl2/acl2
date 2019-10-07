@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -31,7 +31,7 @@
 (in-package "FGL")
 
 (include-book "clause-processors/unify-subst" :dir :system)
-(include-book "glcp-unify-defs")
+(include-book "unify-defs")
 (include-book "clause-processors/magic-ev" :dir :system)
 (include-book "centaur/meta/term-vars" :dir :system)
 (include-book "constraint-inst")
@@ -40,12 +40,12 @@
 
 (local (in-theory (disable pseudo-termp acl2::magic-ev)))
 
-;; (defun gl-bool-fix (x)
+;; (defun fgl-bool-fix (x)
 ;;   (and x t))
 
 ;; A constraint rule is written as follows:
 
-;; (fgl::def-gl-boolean-constraint thmname
+;; (fgl::def-fgl-boolean-constraint thmname
 ;;        :bindings ((x (logbitp n a))
 ;;                   (y (logbitp m a)))
 ;;        :syntaxp (and (<< n m)
@@ -56,8 +56,8 @@
 
 ;; This generates an ACL2 theorem:
 ;; (defthm thmname
-;;    (let ((x (gl-bool-fix (logbitp n a)))
-;;          (y (gl-bool-fix (logbitp m a))))
+;;    (let ((x (fgl-bool-fix (logbitp n a)))
+;;          (y (fgl-bool-fix (logbitp m a))))
 ;;       (implies (equal n m)
 ;;                (equal x y)))
 ;;   :hints ...
@@ -85,7 +85,7 @@
 ;; literals).
 
 ;; Let a partial instantiation of a rule be a rule together with a list of
-;; matched literal variables and an assignment of gl-objects to the variables
+;; matched literal variables and an assignment of fgl-objects to the variables
 ;; contained in the pattern terms of the matched literals.  A full
 ;; instantiation is one with all literals matched.
 
@@ -109,7 +109,7 @@
 ;; the common variables) are consistent between the new unify alist and the
 ;; existing assignments.  To help us do this matching quickly, we store the
 ;; assignment of each partial instantiation indexed by its signature, which is
-;; the list of gl-objects assigned to the common variables.  (Each signature may
+;; the list of fgl-objects assigned to the common variables.  (Each signature may
 ;; have multiple associated substitutions.)  Note that NIL is a (in fact the
 ;; only) valid signature when there are no common vars, and all partial
 ;; instantiations will be indexed under NIL in that case.
@@ -155,7 +155,7 @@
 ;;        extract the common-vars to get the signature
 ;;        add the partial-subst to the list for that signature.
 
-;; As a GL proof progresses, new literals may be added to the bvar-db and the
+;; As a FGL proof progresses, new literals may be added to the bvar-db and the
 ;; constraint-table may be extended.  But we start with a base constraint-table
 ;; at the beginning of any proof; this is stored in an ACL2 table.  In this
 ;; initial constraing table, each tuple has empty existing-lits, thus empty
@@ -176,8 +176,8 @@
   :layout :fulltree)
 
 ;;(fty::deflist pseudo-term-substlist :elt-type pseudo-term-subst :true-listp t)
-(fty::deflist gl-object-bindingslist :elt-type gl-object-bindings :true-listp t)
-(fty::defmap sig-table :key-type gl-objectlist :val-type gl-object-bindingslist :true-listp t)
+(fty::deflist fgl-object-bindingslist :elt-type fgl-object-bindings :true-listp t)
+(fty::defmap sig-table :key-type fgl-objectlist :val-type fgl-object-bindingslist :true-listp t)
 
 
 
@@ -231,33 +231,33 @@
 (fty::defmap constraint-db :key-type pseudo-fnsym-p :val-type constraint-tuplelist :true-listp t)
 
 
-(defthm gl-object-bindings-bfrlist-of-append
-  (equal (gl-object-bindings-bfrlist (append a b))
-         (append (gl-object-bindings-bfrlist a)
-                 (gl-object-bindings-bfrlist b)))
-  :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist))))
+(defthm fgl-object-bindings-bfrlist-of-append
+  (equal (fgl-object-bindings-bfrlist (append a b))
+         (append (fgl-object-bindings-bfrlist a)
+                 (fgl-object-bindings-bfrlist b)))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist))))
 
-(define gl-object-bindingslist-bfrlist ((x gl-object-bindingslist-p))
+(define fgl-object-bindingslist-bfrlist ((x fgl-object-bindingslist-p))
   :returns (bfrs)
   (if (atom x)
       nil
-    (append (gl-object-bindings-bfrlist (car x))
-            (gl-object-bindingslist-bfrlist (cdr x))))
+    (append (fgl-object-bindings-bfrlist (car x))
+            (fgl-object-bindingslist-bfrlist (cdr x))))
   ///
-  (defthm gl-object-bindingslist-bfrlist-of-append
-    (equal (gl-object-bindingslist-bfrlist (append a b))
-           (append (gl-object-bindingslist-bfrlist a)
-                   (gl-object-bindingslist-bfrlist b)))
-    :hints(("Goal" :in-theory (enable gl-object-bindingslist-bfrlist)))))
+  (defthm fgl-object-bindingslist-bfrlist-of-append
+    (equal (fgl-object-bindingslist-bfrlist (append a b))
+           (append (fgl-object-bindingslist-bfrlist a)
+                   (fgl-object-bindingslist-bfrlist b)))
+    :hints(("Goal" :in-theory (enable fgl-object-bindingslist-bfrlist)))))
 
 (define sig-table-bfrlist ((x sig-table-p))
   :returns (bfrs)
   (if (atom x)
       nil
     (if (mbt (and (consp (car x))
-                  (gl-objectlist-p (caar x))))
-        (append (gl-objectlist-bfrlist (caar x))
-                (gl-object-bindingslist-bfrlist (cdar x))
+                  (fgl-objectlist-p (caar x))))
+        (append (fgl-objectlist-bfrlist (caar x))
+                (fgl-object-bindingslist-bfrlist (cdar x))
                 (sig-table-bfrlist (cdr x)))
       (sig-table-bfrlist (cdr x))))
   ///
@@ -268,9 +268,9 @@
     :hints(("Goal" :in-theory (enable sig-table-bfrlist))))
 
   (defthm member-bfrlist-of-sig-table-lookup
-    (implies (and (gl-objectlist-p pat)
+    (implies (and (fgl-objectlist-p pat)
                   (not (member v (sig-table-bfrlist x))))
-             (not (member v (gl-object-bindingslist-bfrlist
+             (not (member v (fgl-object-bindingslist-bfrlist
                              (cdr (hons-assoc-equal pat x)))))))
 
   (local (in-theory (enable sig-table-fix))))
@@ -445,11 +445,11 @@
              (not (member v (constraint-db-bfrlist new-ccat))))))
 
 (defmacro gbc-add-rule (name lit-alist syntaxp)
-  `(table fgl::gl-bool-constraints
+  `(table fgl::fgl-bool-constraints
           nil
           (gbc-rule-add-to-catalog
            (constraint-rule ',name ',lit-alist ',syntaxp)
-           (table-alist 'fgl::gl-bool-constraints world))
+           (table-alist 'fgl::fgl-bool-constraints world))
           :clear))
 
 
@@ -460,21 +460,21 @@
   ;; :returns (lit-alist pseudo-term-subst-p)
   (b* (((when (atom lit-patterns)) (value nil))
        ((list var term) (car lit-patterns))
-       ((er trans) (acl2::translate term t t nil 'def-gl-boolean-constraint (w state)
+       ((er trans) (acl2::translate term t t nil 'def-fgl-boolean-constraint (w state)
                               state))
        ((er rest) (gbc-translate-lit-alist (cdr lit-patterns) state)))
     (value (cons (cons var trans) rest))))
 
 
 
-(define def-gl-boolean-constraint-fn (name lit-patterns syntaxp body hints state)
+(define def-fgl-boolean-constraint-fn (name lit-patterns syntaxp body hints state)
   :mode :program
-  (b* (((er syntaxp-trans) (acl2::translate syntaxp t t nil 'def-gl-boolean-constraint
+  (b* (((er syntaxp-trans) (acl2::translate syntaxp t t nil 'def-fgl-boolean-constraint
                                       (w state) state))
        ((er alist) (gbc-translate-lit-alist lit-patterns state))
        (body1 `(let ,(pairlis$ (strip-cars lit-patterns)
                                (pairlis$ (pairlis$
-                                          (make-list-ac (len lit-patterns) 'gl-bool-fix nil)
+                                          (make-list-ac (len lit-patterns) 'fgl-bool-fix nil)
                                           (strip-cdrs lit-patterns))
                                          nil))
                  ,body)))
@@ -484,9 +484,9 @@
                      :rule-classes nil)
                    (gbc-add-rule ,name ,alist ,syntaxp-trans)))))
 
-(defsection def-gl-boolean-constraint
+(defsection def-fgl-boolean-constraint
   :parents (reference term-level-reasoning)
-  :short "Define a rule that recognizes constraints among GL generated Boolean variables"
+  :short "Define a rule that recognizes constraints among FGL generated Boolean variables"
   :long "
 <p>When using FGL in a term-level style FGL
 may generate new Boolean variables from terms that appear as IF tests.</p>
@@ -499,17 +499,17 @@ default, the Boolean variables generated this way are unconstrained.  When
 this sort of interdependency among variables exists but is not accounted for,
 it can cause FGL to find false counterexamples.</p>
 
-<p>@('Def-gl-boolean-constraint') provides a mechanism to make such constraints
+<p>@('Def-fgl-boolean-constraint') provides a mechanism to make such constraints
 known to FGL.  While symbolically executing a form, FGL maintains a constraint, a
 Boolean formula known to always be true (under the evolving assignment of
 Boolean variables to terms).  A constraint rule generated by
-@('def-gl-boolean-constraint') is triggered when a Boolean variable is
+@('def-fgl-boolean-constraint') is triggered when a Boolean variable is
 generated from an IF condition term and can cause the constraint to be updated
 with a new conjunct.</p>
 
 <p>A Boolean constraint rule is formulated as follows:</p>
 @({
- (def-gl-boolean-constraint gl-logbitp-implies-integerp
+ (def-fgl-boolean-constraint fgl-logbitp-implies-integerp
     :bindings ((bit    (logbitp n x))
                (intp   (integerp x)))
     :body (implies bit intp)
@@ -519,25 +519,25 @@ with a new conjunct.</p>
  })
 <p>This generates a proof obligation:</p>
 @({
- (defthm gl-logbitp-implies-integerp
-   (let ((bit    (gl-bool-fix (logbitp n x)))
-         (intp   (gl-bool-fix (integerp x))))
+ (defthm fgl-logbitp-implies-integerp
+   (let ((bit    (fgl-bool-fix (logbitp n x)))
+         (intp   (fgl-bool-fix (integerp x))))
      (implies bit intp))
   :hints ...
   :rule-classes nil)
  })
-<p>(The optional :hints argument to def-gl-boolean-constraint provides the
+<p>(The optional :hints argument to def-fgl-boolean-constraint provides the
 hints for the proof obligation.)</p>
 
-<p>Once this rule is established, GL will generate constraints as follows:</p>
+<p>Once this rule is established, FGL will generate constraints as follows:</p>
 <ul>
 <li>When a Boolean variable @('a') is generated from an IF condition matching
-@('(logbitp n x)'), GL will search for an existing generated Boolean variable
+@('(logbitp n x)'), FGL will search for an existing generated Boolean variable
 @('b') whose IF condition was @('(integerp x)') and, if it exists, add the
 constraint @('(implies a b)').</li>
 
 <li>Conversely, when a Boolean variable @('b') is generated from an IF
-condition matching @('(integerp x)'), GL will search for existing generated
+condition matching @('(integerp x)'), FGL will search for existing generated
 Boolean variables @('ai') matching @('(logbitp n x)'), and for each of them,
 add the constraint @('(implies ai b)').</li>
 </ul>
@@ -546,13 +546,13 @@ add the constraint @('(implies ai b)').</li>
 prior to introducing the constraint rule above, but succeed after:</p>
 
 @({
- (def-gl-thm foo1
+ (def-fgl-thm foo1
     :hyp t
     :concl (if (integerp x) t (not (logbitp n x)))
     :g-bindings nil
     :rule-classes nil)
 
- (def-gl-thm foo2
+ (def-fgl-thm foo2
     :hyp t
     :concl (if (logbitp n x) (integerp x) t)
     :g-bindings nil
@@ -561,10 +561,10 @@ prior to introducing the constraint rule above, but succeed after:</p>
 "
 
 
-  (defmacro def-gl-boolean-constraint (name &key bindings (syntaxp ''t) body
+  (defmacro def-fgl-boolean-constraint (name &key bindings (syntaxp ''t) body
                                             hints)
     `(make-event
-      (def-gl-boolean-constraint-fn
+      (def-fgl-boolean-constraint-fn
         ',name ',bindings ',syntaxp ',body ',hints state))))
 
 
@@ -573,57 +573,57 @@ prior to introducing the constraint rule above, but succeed after:</p>
                   (equal (assoc k x)
                          (hons-assoc-equal k x)))))
 
-(defthm member-bfrlist-of-lookup-in-gl-object-bindings
-  (implies (and (not (member v (gl-object-bindings-bfrlist x)))
+(defthm member-bfrlist-of-lookup-in-fgl-object-bindings
+  (implies (and (not (member v (fgl-object-bindings-bfrlist x)))
                 (pseudo-var-p k))
-           (not (member v (gl-object-bfrlist (cdr (hons-assoc-equal k x))))))
-  :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist hons-assoc-equal))))
+           (not (member v (fgl-object-bfrlist (cdr (hons-assoc-equal k x))))))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist hons-assoc-equal))))
 
 (define gbc-signature ((common-vars pseudo-var-list-p)
-                       (subst gl-object-bindings-p))
-  :returns (sig gl-objectlist-p)
+                       (subst fgl-object-bindings-p))
+  :returns (sig fgl-objectlist-p)
   (if (atom common-vars)
       nil
     (hons (cdr (assoc (pseudo-var-fix (car common-vars))
-                      (gl-object-bindings-fix subst)))
+                      (fgl-object-bindings-fix subst)))
           (gbc-signature (cdr common-vars) subst)))
   ///
   (defret bfrlist-of-<fn>
-    (implies (not (member v (gl-object-bindings-bfrlist subst)))
-             (not (member v (gl-objectlist-bfrlist sig))))))
+    (implies (not (member v (fgl-object-bindings-bfrlist subst)))
+             (not (member v (fgl-objectlist-bfrlist sig))))))
 
-(define gbc-extend-substs ((lit-subst gl-object-bindings-p)
-                           (partial-substs gl-object-bindingslist-p))
-  :returns (new-substs gl-object-bindingslist-p)
+(define gbc-extend-substs ((lit-subst fgl-object-bindings-p)
+                           (partial-substs fgl-object-bindingslist-p))
+  :returns (new-substs fgl-object-bindingslist-p)
   (if (atom partial-substs)
       nil
     ;; is append good enough? I think so
-    (cons (append (gl-object-bindings-fix lit-subst)
-                  (gl-object-bindings-fix (car partial-substs)))
+    (cons (append (fgl-object-bindings-fix lit-subst)
+                  (fgl-object-bindings-fix (car partial-substs)))
           (gbc-extend-substs lit-subst (cdr partial-substs))))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bindings-bfrlist lit-subst)))
-                  (not (member v (gl-object-bindingslist-bfrlist partial-substs))))
-             (not (member v (gl-object-bindingslist-bfrlist new-substs))))
-    :hints(("Goal" :in-theory (enable gl-object-bindingslist-bfrlist)))))
+    (implies (and (not (member v (fgl-object-bindings-bfrlist lit-subst)))
+                  (not (member v (fgl-object-bindingslist-bfrlist partial-substs))))
+             (not (member v (fgl-object-bindingslist-bfrlist new-substs))))
+    :hints(("Goal" :in-theory (enable fgl-object-bindingslist-bfrlist)))))
 
-(local (defthm symbol-alistp-when-gl-object-bindings-p
-         (implies (gl-object-bindings-p x)
+(local (defthm symbol-alistp-when-fgl-object-bindings-p
+         (implies (fgl-object-bindings-p x)
                   (symbol-alistp x))
-         :hints(("Goal" :in-theory (enable gl-object-bindings-p)))))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-p)))))
 
 (local (in-theory (disable symbol-alistp)))
 
 
 
-(define gbc-substs-check-syntaxp ((substs gl-object-bindingslist-p)
+(define gbc-substs-check-syntaxp ((substs fgl-object-bindingslist-p)
                                   (thmname symbolp)
                                   (syntaxp pseudo-termp)
                                   state)
   :returns (insts constraint-instancelist-p)
   (b* (((when (atom substs)) nil)
-       (subst (gl-object-bindings-fix (car substs)))
+       (subst (fgl-object-bindings-fix (car substs)))
        ((mv err ok) (acl2::magic-ev (pseudo-term-fix syntaxp) subst state t t))
        ((when (or err (not ok)))
         (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
@@ -631,30 +631,30 @@ prior to introducing the constraint rule above, but succeed after:</p>
           (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
   ///
   (defret bfrlist-of-<fn>
-    (implies (not (member v (gl-object-bindingslist-bfrlist substs)))
+    (implies (not (member v (fgl-object-bindingslist-bfrlist substs)))
              (not (member v (constraint-instancelist-bfrlist insts))))
-    :hints(("Goal" :in-theory (enable gl-object-bindingslist-bfrlist
+    :hints(("Goal" :in-theory (enable fgl-object-bindingslist-bfrlist
                                       constraint-instancelist-bfrlist
                                       constraint-instance-bfrlist)))))
 
 
-(define gbc-sort-substs-into-sigtable ((substs gl-object-bindingslist-p)
+(define gbc-sort-substs-into-sigtable ((substs fgl-object-bindingslist-p)
                                        (common-vars pseudo-var-list-p)
                                        (sigtable sig-table-p))
   :returns (new-sigtable sig-table-p)
   (b* (((when (atom substs)) (sig-table-fix sigtable))
-       (subst (gl-object-bindings-fix (car substs)))
+       (subst (fgl-object-bindings-fix (car substs)))
        (sig (gbc-signature common-vars subst))
        (sig-substs (cdr (hons-get sig (sig-table-fix sigtable))))
        (sigtable (hons-acons sig (cons subst sig-substs) sigtable)))
     (gbc-sort-substs-into-sigtable (cdr substs) common-vars sigtable))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
+    (implies (and (not (member v (fgl-object-bindingslist-bfrlist substs)))
                   (not (member v (sig-table-bfrlist sigtable))))
              (not (member v (sig-table-bfrlist new-sigtable))))
     :hints(("Goal" :in-theory (enable sig-table-bfrlist
-                                      gl-object-bindingslist-bfrlist)))))
+                                      fgl-object-bindingslist-bfrlist)))))
 
 
 ;; Invariant: for a given rule, existing lit set, and matching lit, there is at
@@ -668,7 +668,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
 (define gbc-add-substs-to-existing-tuple ((rule constraint-rule-p)
                                           (existing-lits pseudo-var-set-p)
                                           (lit pseudo-var-p)
-                                          (substs gl-object-bindingslist-p)
+                                          (substs fgl-object-bindingslist-p)
                                           (tuples constraint-tuplelist-p))
   :returns (mv found
                (new-tuples constraint-tuplelist-p))
@@ -692,7 +692,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
               (cdr tuples))))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
+    (implies (and (not (member v (fgl-object-bindingslist-bfrlist substs)))
                   (not (member v (constraint-tuplelist-bfrlist tuples))))
              (not (member v (constraint-tuplelist-bfrlist new-tuples))))
     :hints(("Goal" :in-theory (e/d (constraint-tuplelist-bfrlist
@@ -706,7 +706,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                               (rule constraint-rule-p)
                                               (existing-lits pseudo-var-set-p)
                                               (existing-vars pseudo-var-set-p)
-                                              (substs gl-object-bindingslist-p)
+                                              (substs fgl-object-bindingslist-p)
                                               (ccat constraint-db-p))
   :returns (new-ccat constraint-db-p)
   (b* ((ccat (constraint-db-fix ccat))
@@ -733,7 +733,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
     (hons-acons fnsym (cons new-tuple tuples) ccat))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
+    (implies (and (not (member v (fgl-object-bindingslist-bfrlist substs)))
                   (not (member v (constraint-db-bfrlist ccat))))
              (not (member v (constraint-db-bfrlist new-ccat))))
     :hints(("Goal" :in-theory (enable constraint-db-bfrlist
@@ -744,7 +744,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                                (rule constraint-rule-p)
                                                (existing-lits pseudo-var-set-p)
                                                (existing-vars pseudo-var-set-p)
-                                               (substs gl-object-bindingslist-p)
+                                               (substs fgl-object-bindingslist-p)
                                                (ccat constraint-db-p))
   :returns (new-ccat constraint-db-p)
   (if (atom unmatched-litvars)
@@ -755,41 +755,41 @@ prior to introducing the constraint rule above, but succeed after:</p>
       (car unmatched-litvars) rule existing-lits existing-vars substs ccat)))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
+    (implies (and (not (member v (fgl-object-bindingslist-bfrlist substs)))
                   (not (member v (constraint-db-bfrlist ccat))))
              (not (member v (constraint-db-bfrlist new-ccat))))))
 
-(local (defthm pseudo-var-list-p-strip-cars-of-gl-object-bindings
-         (implies (gl-object-bindings-p x)
+(local (defthm pseudo-var-list-p-strip-cars-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
                   (pseudo-var-list-p (strip-cars x)))
          :hints(("Goal" :in-theory (enable strip-cars
-                                           gl-object-bindings-p)))))
+                                           fgl-object-bindings-p)))))
 
 (local (defthm pseudo-var-list-p-strip-cars-of-pseudo-term-subst
          (implies (pseudo-term-subst-p x)
                   (pseudo-var-list-p (strip-cars x)))
          :hints(("Goal" :in-theory (enable strip-cars
-                                           gl-object-bindings-p)))))
+                                           fgl-object-bindings-p)))))
 
 (local (defthm symbol-listp-when-pseudo-var-list-p
          (implies (pseudo-var-list-p x)
                   (symbol-listp x))))
 
-(define gbc-process-new-lit-tuple ((lit gl-object-p)
+(define gbc-process-new-lit-tuple ((lit fgl-object-p)
                                    (tuple constraint-tuple-p)
                                    (ccat constraint-db-p)
                                    (bfrstate bfrstate-p)
                                    state)
   :returns (mv (insts constraint-instancelist-p)
                (new-ccat constraint-db-p))
-  :guard (bfr-listp (gl-object-bfrlist lit))
+  :guard (bfr-listp (fgl-object-bfrlist lit))
   (b* ((ccat (constraint-db-fix ccat))
        ((constraint-tuple x) tuple)
        ;; (rule existing-lits matching-lit common-vars existing-vars sig-table)
        ((constraint-rule r) x.rule)
        ;; (thmname lit-alist syntaxp)
        (pat (cdr (hons-assoc-equal x.matching-lit r.lit-alist)))
-       ((mv ok lit-subst) (glcp-unify-term/gobj pat lit nil))
+       ((mv ok lit-subst) (fgl-unify-term/gobj pat lit nil))
        ((unless ok) (mv nil ccat))
        (sig (gbc-signature x.common-vars lit-subst))
        (partial-substs (cdr (hons-get sig x.sig-table)))
@@ -817,7 +817,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
     (mv nil ccat))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (bfr-listp (gl-object-bfrlist lit))
+    (implies (and (bfr-listp (fgl-object-bfrlist lit))
                   (bfr-listp (constraint-tuple-bfrlist tuple))
                   (bfr-listp (constraint-db-bfrlist ccat)))
              (and (bfr-listp (constraint-instancelist-bfrlist insts))
@@ -828,14 +828,14 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 
 
-(define gbc-process-new-lit-tuples ((lit gl-object-p)
+(define gbc-process-new-lit-tuples ((lit fgl-object-p)
                                     (tuples constraint-tuplelist-p)
                                     (ccat constraint-db-p)
                                     (bfrstate bfrstate-p)
                                     state)
   :returns (mv (insts constraint-instancelist-p)
                (new-ccat constraint-db-p))
-  :guard (bfr-listp (gl-object-bfrlist lit))
+  :guard (bfr-listp (fgl-object-bfrlist lit))
   (b* (((when (atom tuples)) (mv nil (constraint-db-fix ccat)))
        ((mv substs1 ccat)
         (gbc-process-new-lit-tuple lit (car tuples) ccat bfrstate state))
@@ -845,7 +845,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
   ///
   
   (defret bfrlist-of-<fn>
-    (implies (and (bfr-listp (gl-object-bfrlist lit))
+    (implies (and (bfr-listp (fgl-object-bfrlist lit))
                   (bfr-listp (constraint-tuplelist-bfrlist tuples))
                   (bfr-listp (constraint-db-bfrlist ccat)))
              (and (bfr-listp (constraint-instancelist-bfrlist insts))
@@ -853,21 +853,21 @@ prior to introducing the constraint rule above, but succeed after:</p>
     :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
 
 
-(define gbc-process-new-lit ((lit gl-object-p)
+(define gbc-process-new-lit ((lit fgl-object-p)
                              (ccat constraint-db-p)
                              (bfrstate bfrstate-p)
                              state)
   :returns (mv (insts constraint-instancelist-p)
                (new-ccat constraint-db-p))
-  :guard (bfr-listp (gl-object-bfrlist lit))
+  :guard (bfr-listp (fgl-object-bfrlist lit))
   (b* ((ccat (constraint-db-fix ccat))
-       ((unless (gl-object-case lit :g-apply))
+       ((unless (fgl-object-case lit :g-apply))
         (mv nil ccat))
        (tuples (cdr (hons-get (g-apply->fn lit) ccat))))
     (gbc-process-new-lit-tuples lit tuples ccat bfrstate state))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (bfr-listp (gl-object-bfrlist lit))
+    (implies (and (bfr-listp (fgl-object-bfrlist lit))
                   (bfr-listp (constraint-db-bfrlist ccat)))
              (and (bfr-listp (constraint-instancelist-bfrlist insts))
                   (bfr-listp (constraint-db-bfrlist new-ccat))))
@@ -928,7 +928,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 #||
 
-(fgl::def-gl-boolean-constraint logbitp-n-m
+(fgl::def-fgl-boolean-constraint logbitp-n-m
        :bindings ((x (logbitp n a))
                   (y (logbitp m a)))
        :syntaxp (and (acl2::<< n m)
@@ -936,7 +936,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
        :body (implies (equal n m)
                       (equal x y)))
 
-(time$ (b* ((ccat (table-alist 'gl-bool-constraints (w state)))
+(time$ (b* ((ccat (table-alist 'fgl-bool-constraints (w state)))
      ((mv substs ccat)
       (gbc-process-new-lit '(:g-apply logbitp (fff) q) ccat state))
      (- (cw "substs1: ~x0~%" substs))

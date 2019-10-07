@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -53,8 +53,8 @@
          ((when (interp-st->errmsg interp-st))
           (mv nil interp-st state))
          ((unless (fgl-sat-config-p params))
-          (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to an fgl-sat-config object."))))
+          (fgl-interp-error
+           :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to an fgl-sat-config object."))))
       (case (tag params)
         (:fgl-satlink-config
          (interp-st-satlink-sat-check-core params bfr interp-st state))

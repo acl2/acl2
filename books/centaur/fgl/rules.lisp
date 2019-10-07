@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -36,7 +36,7 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "std/lists/append" :dir :system))
 (local (std::add-default-post-define-hook :fix))
-;; (include-book "def-gl-rewrite")
+;; (include-book "def-fgl-rewrite")
 
 (fty::deftagsum fgl-rune
   (:rewrite (name))
@@ -372,12 +372,12 @@
 (define fgl-function-rules ((fn pseudo-fnsym-p) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* ((table (make-fast-alist (table-alist 'gl-rewrite-rules world)))
+  (b* ((table (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
        (fn (pseudo-fnsym-fix fn))
        (runes (fgl-rewrite-rules-lookup fn table world))
        ((unless (fgl-runelist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 fn 'gl-rewrite-rules 'fgl-runelist-p)
+                 fn 'fgl-rewrite-rules 'fgl-runelist-p)
             nil))
        (lemmas (fgetprop fn 'acl2::lemmas nil world))
        (map (map-rewrite-rules lemmas nil))
@@ -432,12 +432,12 @@
 (define fgl-branch-merge-rules ((fn pseudo-fnsym-p) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* ((table (make-fast-alist (table-alist 'gl-branch-merge-rules world)))
+  (b* ((table (make-fast-alist (table-alist 'fgl-branch-merge-rules world)))
        (fn (pseudo-fnsym-fix fn))
        (runes (fgl-branch-merge-rules-lookup fn table))
        ((unless (fgl-runelist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 fn 'gl-rewrite-rules 'fgl-runelist-p)
+                 fn 'fgl-rewrite-rules 'fgl-runelist-p)
             nil))
        (lemmas (fgetprop 'if 'acl2::lemmas nil world))
        (map (map-rewrite-rules-memo lemmas))

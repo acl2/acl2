@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -306,8 +306,8 @@
     :hints(("Goal" :in-theory (enable fgl::bitarr-subsetp))))
 
   ;; (defret <fn>-preserves-invar
-  ;;   (implies (gl-object-mark-bfrs-invar seen bitarr)
-  ;;            (gl-object-mark-bfrs-invar new-seen new-bitarr)))
+  ;;   (implies (fgl-object-mark-bfrs-invar seen bitarr)
+  ;;            (fgl-object-mark-bfrs-invar new-seen new-bitarr)))
 
   (local (defthm nthcdr-of-gte
            (implies (and (<= (len x) (nfix n))

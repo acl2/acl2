@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -58,7 +58,7 @@
 
   (def-updater-independence-thm fgl-object-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
-                  (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman old)))
+                  (lbfr-listp (fgl-object-bfrlist x) (interp-st->logicman old)))
              (equal (fgl-object-concretize x env (interp-st->logicman new))
                     (fgl-object-concretize x env (interp-st->logicman old)))))
 
@@ -66,7 +66,7 @@
 
   (def-updater-independence-thm fgl-objectlist-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
-                  (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman old)))
+                  (lbfr-listp (fgl-objectlist-bfrlist x) (interp-st->logicman old)))
              (equal (fgl-objectlist-concretize x env (interp-st->logicman new))
                     (fgl-objectlist-concretize x env (interp-st->logicman old)))))
 
@@ -74,7 +74,7 @@
 
   (def-updater-independence-thm fgl-object-bindings-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
-                  (lbfr-listp (gl-object-bindings-bfrlist x) (interp-st->logicman old)))
+                  (lbfr-listp (fgl-object-bindings-bfrlist x) (interp-st->logicman old)))
              (equal (fgl-object-bindings-concretize x env (interp-st->logicman new))
                     (fgl-object-bindings-concretize x env (interp-st->logicman old)))))
 
@@ -175,12 +175,12 @@
              (equal (interp-st-scratch-isomorphic new x)
                     (interp-st-scratch-isomorphic old x)))))
 
-(defconst *gl-meta-and-primitive-rule-thms*
+(defconst *fgl-meta-and-primitive-rule-thms*
   '(
     
     (defret interp-st-bfrs-ok-of-<fn>
       (implies (and (interp-st-bfrs-ok interp-st)
-                    (lbfr-listp (gl-object-bfrlist call)
+                    (lbfr-listp (fgl-object-bfrlist call)
                                 (interp-st->logicman interp-st)))
                (interp-st-bfrs-ok new-interp-st)))
         (defret interp-st->reclimit-of-<fn>
@@ -292,22 +292,22 @@
                (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
                       (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))))
 
-(defconst *gl-primitive-rule-thms*
-  (append '((defret gl-object-p-ans-of-<fn>
-              (gl-object-p ans))
+(defconst *fgl-primitive-rule-thms*
+  (append '((defret fgl-object-p-ans-of-<fn>
+              (fgl-object-p ans))
 
             (defret bfr-listp-of-<fn>
               (implies (and
                         (interp-st-bfrs-ok interp-st)
-                        (lbfr-listp (gl-object-bfrlist call)
+                        (lbfr-listp (fgl-object-bfrlist call)
                                     (interp-st->logicman interp-st)))
-                       (lbfr-listp (gl-object-bfrlist ans)
+                       (lbfr-listp (fgl-object-bfrlist ans)
                                    (interp-st->logicman new-interp-st)))))
-          *gl-meta-and-primitive-rule-thms*))
+          *fgl-meta-and-primitive-rule-thms*))
 
-(defconst *gl-meta-rule-thms*
-  (append '((defret gl-object-bindings-p-bindings-of-<fn>
-              (gl-object-bindings-p bindings))
+(defconst *fgl-meta-rule-thms*
+  (append '((defret fgl-object-bindings-p-bindings-of-<fn>
+              (fgl-object-bindings-p bindings))
 
             (defret pseudo-termp-rhs-of-<fn>
               (pseudo-termp rhs))
@@ -315,58 +315,58 @@
             (defret bfr-listp-of-<fn>
               (implies (and
                         (interp-st-bfrs-ok interp-st)
-                        (lbfr-listp (gl-object-bfrlist call)
+                        (lbfr-listp (fgl-object-bfrlist call)
                                     (interp-st->logicman interp-st)))
-                       (lbfr-listp (gl-object-bindings-bfrlist bindings)
+                       (lbfr-listp (fgl-object-bindings-bfrlist bindings)
                                    (interp-st->logicman new-interp-st)))))
-          *gl-meta-and-primitive-rule-thms*))
+          *fgl-meta-and-primitive-rule-thms*))
 
 (make-event 
  `(encapsulate
-    (((gl-primitive-fncall-stub * * interp-st state) => (mv * * interp-st state)
+    (((fgl-primitive-fncall-stub * * interp-st state) => (mv * * interp-st state)
       :formals (primfn call interp-st state)
       :guard (and (pseudo-fnsym-p primfn)
-                  (gl-object-p call)
+                  (fgl-object-p call)
                   (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-listp (gl-object-bfrlist call))))
-     ((gl-primitive-formula-checks-stub state) => *
+                  (interp-st-bfr-listp (fgl-object-bfrlist call))))
+     ((fgl-primitive-formula-checks-stub state) => *
       :formals (state))
      )
                                               
 
-    (local (define gl-primitive-formula-checks-stub (state)
+    (local (define fgl-primitive-formula-checks-stub (state)
              :ignore-ok t
              :irrelevant-formals-ok t
              :returns (okp)
              t))
 
 
-    (local (define gl-primitive-fncall-stub ((primfn pseudo-fnsym-p)
-                                             (call gl-object-p)
+    (local (define fgl-primitive-fncall-stub ((primfn pseudo-fnsym-p)
+                                             (call fgl-object-p)
                                              (interp-st interp-st-bfrs-ok)
                                              state)
-             :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+             :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
              :ignore-ok t
              :irrelevant-formals-ok t
              :returns (mv successp ans new-interp-st new-state)
              (mv nil nil interp-st state)))
 
-    (local (in-theory (enable gl-primitive-fncall-stub)))
+    (local (in-theory (enable fgl-primitive-fncall-stub)))
 
-    ,@*gl-primitive-rule-thms*
+    ,@*fgl-primitive-rule-thms*
 
     (defret eval-of-<fn>
       (implies (and successp
                     (equal contexts (interp-st->equiv-contexts interp-st))
                     (fgl-ev-meta-extract-global-facts :state st)
-                    (gl-primitive-formula-checks-stub st)
+                    (fgl-primitive-formula-checks-stub st)
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st)
-                    (interp-st-bfr-listp (gl-object-bfrlist call))
-                    (logicman-pathcond-eval (gl-env->bfr-vals env)
+                    (interp-st-bfr-listp (fgl-object-bfrlist call))
+                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                             (interp-st->constraint interp-st)
                                             (interp-st->logicman interp-st))
-                    (logicman-pathcond-eval (gl-env->bfr-vals env)
+                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                             (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st)))
                (equal (fgl-ev-context-fix contexts
@@ -374,7 +374,7 @@
                       (fgl-ev-context-fix contexts
                                           (fgl-object-eval call env (interp-st->logicman interp-st))))))
 
-    (deffixequiv gl-primitive-fncall-stub)))
+    (deffixequiv fgl-primitive-fncall-stub)))
 
 
 
@@ -382,50 +382,50 @@
 
 (make-event 
  `(encapsulate
-    (((gl-meta-fncall-stub * * interp-st state) => (mv * * * interp-st state)
+    (((fgl-meta-fncall-stub * * interp-st state) => (mv * * * interp-st state)
       :formals (primfn call interp-st state)
       :guard (and (pseudo-fnsym-p primfn)
-                  (gl-object-p call)
+                  (fgl-object-p call)
                   (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-listp (gl-object-bfrlist call))))
-     ((gl-meta-formula-checks-stub state) => *
+                  (interp-st-bfr-listp (fgl-object-bfrlist call))))
+     ((fgl-meta-formula-checks-stub state) => *
       :formals (state))
      )
     
 
-    (local (define gl-meta-formula-checks-stub (state)
+    (local (define fgl-meta-formula-checks-stub (state)
              :ignore-ok t
              :irrelevant-formals-ok t
              :returns (okp)
              t))
 
 
-    (local (define gl-meta-fncall-stub ((primfn pseudo-fnsym-p)
-                                        (call gl-object-p)
+    (local (define fgl-meta-fncall-stub ((primfn pseudo-fnsym-p)
+                                        (call fgl-object-p)
                                         (interp-st interp-st-bfrs-ok)
                                         state)
-             :guard (interp-st-bfr-listp (gl-object-bfrlist call))
+             :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
              :ignore-ok t
              :irrelevant-formals-ok t
              :returns (mv successp rhs bindings new-interp-st new-state)
              (mv nil nil nil interp-st state)))
 
-    (local (in-theory (enable gl-meta-fncall-stub)))
+    (local (in-theory (enable fgl-meta-fncall-stub)))
 
-    ,@*gl-meta-rule-thms*
+    ,@*fgl-meta-rule-thms*
 
     (defret eval-of-<fn>
       (implies (and successp
                     (equal contexts (interp-st->equiv-contexts interp-st))
                     (fgl-ev-meta-extract-global-facts :state st)
-                    (gl-meta-formula-checks-stub st)
+                    (fgl-meta-formula-checks-stub st)
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st)
-                    (interp-st-bfr-listp (gl-object-bfrlist call))
-                    (logicman-pathcond-eval (gl-env->bfr-vals env)
+                    (interp-st-bfr-listp (fgl-object-bfrlist call))
+                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                             (interp-st->constraint interp-st)
                                             (interp-st->logicman interp-st))
-                    (logicman-pathcond-eval (gl-env->bfr-vals env)
+                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                             (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st)))
                (fgl-ev-context-equiv-forall-extensions
@@ -434,7 +434,7 @@
                 rhs
                 (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
 
-    (deffixequiv gl-meta-fncall-stub)))
+    (deffixequiv fgl-meta-fncall-stub)))
 
 
 

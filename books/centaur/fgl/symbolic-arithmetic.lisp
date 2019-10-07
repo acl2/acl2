@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -2295,7 +2295,7 @@ for computing:</p>
 ;;              (equal (bools->uint (aabflist-eval x env)) 0))))
 
 ;; Note: We don't have a symbolic counterpart for expt yet, but this is used in
-;; SV and it could easily be used in GL as well so we wrote it here.
+;; SV and it could easily be used in FGL as well so we wrote it here.
 (defsymbolic aabf-expt-su ((b s)
                            (e u)
                            man)

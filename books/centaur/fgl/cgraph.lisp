@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FGL")
-(include-book "gl-object")
+(include-book "fgl-object")
 (include-book "bfr")
 (include-book "centaur/meta/term-vars" :dir :system)
 (include-book "std/util/defenum" :dir :system)
@@ -53,20 +53,20 @@
 (defprod cgraph-edge
   ((match-vars pseudo-var-list-p :rule-classes :type-prescription)
    (rule ctrex-rule-p)
-   (subst gl-object-bindings))
+   (subst fgl-object-bindings))
   :layout :tree)
 
 (fty::deflist cgraph-edgelist :elt-type cgraph-edge :true-listp t)
 
-(fty::defmap cgraph :key-type gl-object :val-type cgraph-edgelist :true-listp t)
+(fty::defmap cgraph :key-type fgl-object :val-type cgraph-edgelist :true-listp t)
 
-(fty::defmap cgraph-alist :key-type gl-object :true-listp t)
+(fty::defmap cgraph-alist :key-type fgl-object :true-listp t)
 
 
 
 (define cgraph-edge-bfrlist ((x cgraph-edge-p))
   :enabled t
-  (gl-object-bindings-bfrlist (cgraph-edge->subst x)))
+  (fgl-object-bindings-bfrlist (cgraph-edge->subst x)))
 
 (define cgraph-edgelist-bfrlist ((x cgraph-edgelist-p))
   (if (atom x)
@@ -78,13 +78,13 @@
   (if (atom x)
       nil
     (append (and (mbt (And (consp (car x))
-                           (gl-object-p (caar x))))
+                           (fgl-object-p (caar x))))
                  (cgraph-edgelist-bfrlist (cdar x)))
             (cgraph-bfrlist (cdr x))))
   ///
   (defthm lookup-in-cgraph-bfrlist
     (implies (and (not (member v (cgraph-bfrlist x)))
-                  (gl-object-p k))
+                  (fgl-object-p k))
              (not (member v (cgraph-edgelist-bfrlist (cdr (hons-assoc-equal k x))))))
     :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
@@ -95,7 +95,7 @@
 
   (local (defthm cgraph-fix-of-bad-car
            (implies (not (And (consp (car x))
-                              (gl-object-p (caar x))))
+                              (fgl-object-p (caar x))))
                     (equal (cgraph-fix x)
                            (cgraph-fix (cdr x))))
            :hints(("Goal" :in-theory (enable cgraph-fix))))))

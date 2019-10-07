@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -39,8 +39,8 @@
 
 (local (in-theory (disable w)))
 
-(install-gl-primitives top-plus)
-(install-gl-metafns top-plus)
+(install-fgl-primitives top-plus)
+(install-fgl-metafns top-plus)
 
 #||
 (include-book "xdoc/save" :dir :system)

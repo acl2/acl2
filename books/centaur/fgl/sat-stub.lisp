@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -54,10 +54,10 @@
                     (interp-st-bfr-p bfr)
                     (not (interp-st->errmsg new-interp-st))
                     (equal logicman (interp-st->logicman interp-st))
-                    (logicman-pathcond-eval (gl-env->bfr-vals env)
+                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                             (interp-st->pathcond interp-st)
                                             (interp-st->logicman interp-st))
-                    (logicman-pathcond-eval (gl-env->bfr-vals env)
+                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                             (interp-st->constraint interp-st)
                                             (interp-st->logicman interp-st)))
                (equal (gobj-bfr-eval ans env logicman)
@@ -192,7 +192,7 @@
 
 
 (make-event
- `(define interp-st-sat-check-wrapper ((params gl-object-p)
+ `(define interp-st-sat-check-wrapper ((params fgl-object-p)
                                        (bfr interp-st-bfr-p)
                                        (interp-st interp-st-bfrs-ok)
                                        state)
@@ -201,9 +201,9 @@
                  new-state)
     :ignore-ok t
     :irrelevant-formals-ok t
-    (b* (((unless (gl-object-case params :g-concrete))
-          (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a value"))))
+    (b* (((unless (fgl-object-case params :g-concrete))
+          (fgl-interp-error
+           :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to a value"))))
       (interp-st-sat-check (g-concrete->val params) bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))

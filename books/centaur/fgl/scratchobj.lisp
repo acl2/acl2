@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -36,8 +36,8 @@
 (progn
 
   (defconst *scratchobj-types*
-    '((:gl-obj gl-object-p gl-object-fix gl-object 0)
-      (:gl-objlist gl-objectlist-p gl-objectlist-fix gl-objectlist 1)
+    '((:fgl-obj fgl-object-p fgl-object-fix fgl-object 0)
+      (:fgl-objlist fgl-objectlist-p fgl-objectlist-fix fgl-objectlist 1)
       (:bfr t nil bfr 2)
       (:bfrlist true-listp llist-fix bfrlist 3 :rule-classes :type-prescription)
       (:cinst constraint-instance-p constraint-instance-fix constraint-instance 4)

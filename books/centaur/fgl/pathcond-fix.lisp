@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -66,7 +66,7 @@
                     (bfr-eval x env))))
 
   (defret gobj-bfr-eval-of-fgl-pathcond-fix-bfr
-    (implies (logicman-pathcond-eval (gl-env->bfr-vals env) pathcond)
+    (implies (logicman-pathcond-eval (fgl-env->bfr-vals env) pathcond)
              (equal (gobj-bfr-eval new-x env)
                     (gobj-bfr-eval x env)))
     :hints(("Goal" :in-theory (enable gobj-bfr-eval))))
@@ -95,7 +95,7 @@
     :hints(("Goal" :in-theory (enable bfr-list-eval))))
 
   (defret gobj-bfr-list-eval-of-fgl-pathcond-fix-bfrlist
-    (implies (logicman-pathcond-eval (gl-env->bfr-vals env) pathcond)
+    (implies (logicman-pathcond-eval (fgl-env->bfr-vals env) pathcond)
              (equal (gobj-bfr-list-eval new-x env)
                     (gobj-bfr-list-eval x env)))
     :hints(("Goal" :in-theory (enable gobj-bfr-list-eval))))
@@ -117,17 +117,17 @@
                            acl2::member-equal-append)))
       
 (defines fgl-pathcond-fix-impl
-  (define fgl-object-pathcond-fix-impl ((x gl-object-p)
+  (define fgl-object-pathcond-fix-impl ((x fgl-object-p)
                                         pathcond
                                         logicman)
-    :guard (lbfr-listp (gl-object-bfrlist x))
-    :returns (mv (new-x gl-object-p)
+    :guard (lbfr-listp (fgl-object-bfrlist x))
+    :returns (mv (new-x fgl-object-p)
                  (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     :verify-guards nil
     (b* ((pathcond (pathcond-fix pathcond))
-         (x (gl-object-fix x)))
-      (gl-object-case x
+         (x (fgl-object-fix x)))
+      (fgl-object-case x
         :g-concrete (mv x pathcond)
         :g-boolean (b* (((mv new-bool pathcond) (fgl-pathcond-fix-bfr x.bool pathcond logicman)))
                      (mv (mk-g-boolean new-bool) pathcond))
@@ -135,7 +135,7 @@
                      (mv (mk-g-integer new-bits) pathcond))
         :g-ite (b* (((mv new-test pathcond)
                      (fgl-object-pathcond-fix-impl x.test pathcond logicman))
-                    ((when (gl-object-case new-test :g-concrete))
+                    ((when (fgl-object-case new-test :g-concrete))
                      (if (g-concrete->val new-test)
                          (fgl-object-pathcond-fix-impl x.then pathcond logicman)
                        (fgl-object-pathcond-fix-impl x.else pathcond logicman)))
@@ -154,13 +154,13 @@
                  ;; BOZO will need recompressing/make-fast-alist
                  (mv (change-g-map x :alist new-alist) pathcond)))))
 
-  (define fgl-objectlist-pathcond-fix-impl ((x gl-objectlist-p)
+  (define fgl-objectlist-pathcond-fix-impl ((x fgl-objectlist-p)
                                             pathcond
                                             logicman)
-    :guard (lbfr-listp (gl-objectlist-bfrlist x))
-    :returns (mv (new-x gl-objectlist-p)
+    :guard (lbfr-listp (fgl-objectlist-bfrlist x))
+    :returns (mv (new-x fgl-objectlist-p)
                  (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (b* (((when (atom x))
           (b* ((pathcond (pathcond-fix pathcond)))
             (mv nil pathcond)))
@@ -168,13 +168,13 @@
          ((mv cdr pathcond) (fgl-objectlist-pathcond-fix-impl (cdr x) pathcond logicman)))
       (mv (cons car cdr) pathcond)))
 
-  (define fgl-object-alist-pathcond-fix-impl ((x gl-object-alist-p)
+  (define fgl-object-alist-pathcond-fix-impl ((x fgl-object-alist-p)
                                             pathcond
                                             logicman)
-    :guard (lbfr-listp (gl-object-alist-bfrlist x))
-    :returns (mv (new-x gl-object-alist-p)
+    :guard (lbfr-listp (fgl-object-alist-bfrlist x))
+    :returns (mv (new-x fgl-object-alist-p)
                  (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     (b* (((when (atom x))
           (b* ((pathcond (pathcond-fix pathcond)))
             (mv x pathcond)))
@@ -188,21 +188,21 @@
 
   (defret-mutual eval-of-pathcond-fix-impl
     (defret eval-of-<fn>
-      (implies (logicman-pathcond-eval (gl-env->bfr-vals env) pathcond)
+      (implies (logicman-pathcond-eval (fgl-env->bfr-vals env) pathcond)
                (equal (fgl-object-eval new-x env)
                       (fgl-object-eval x env)))
       :hints ('(:expand (<call>
                          (fgl-object-eval x env))))
       :fn fgl-object-pathcond-fix-impl)
     (defret eval-of-<fn>
-      (implies (logicman-pathcond-eval (gl-env->bfr-vals env) pathcond)
+      (implies (logicman-pathcond-eval (fgl-env->bfr-vals env) pathcond)
                (equal (fgl-objectlist-eval new-x env)
                       (fgl-objectlist-eval x env)))
       :hints ('(:expand (<call>
                          (fgl-objectlist-eval x env))))
       :fn fgl-objectlist-pathcond-fix-impl)
     (defret eval-of-<fn>
-      (implies (logicman-pathcond-eval (gl-env->bfr-vals env) pathcond)
+      (implies (logicman-pathcond-eval (fgl-env->bfr-vals env) pathcond)
                (equal (fgl-object-alist-eval new-x env)
                       (fgl-object-alist-eval x env)))
       :hints ('(:expand (<call>
@@ -211,17 +211,17 @@
 
   (defret-mutual lbfr-listp-of-pathcond-fix-impl
     (defret lbfr-listp-of-<fn>
-      (lbfr-listp (gl-object-bfrlist new-x))
+      (lbfr-listp (fgl-object-bfrlist new-x))
       :hints ('(:expand (<call>))
               (and stable-under-simplificationp
                    '(:in-theory (enable bfr-listp-when-not-member-witness))))
       :fn fgl-object-pathcond-fix-impl)
     (defret lbfr-listp-of-<fn>
-      (lbfr-listp (gl-objectlist-bfrlist new-x))
+      (lbfr-listp (fgl-objectlist-bfrlist new-x))
       :hints ('(:expand (<call>)))
       :fn fgl-objectlist-pathcond-fix-impl)
     (defret lbfr-listp-of-<fn>
-      (lbfr-listp (gl-object-alist-bfrlist new-x))
+      (lbfr-listp (fgl-object-alist-bfrlist new-x))
       :hints ('(:expand (<call>)))
       :fn fgl-object-alist-pathcond-fix-impl)))
 
@@ -312,26 +312,26 @@
 
 
 (defines fgl-pathcond-fix-aignet-impl
-  (define fgl-object-pathcond-fix-aignet-impl ((x gl-object-p)
+  (define fgl-object-pathcond-fix-aignet-impl ((x fgl-object-p)
                                                aignet::mark
                                                aignet::copy
                                                logicman)
     :guard (and (lbfr-mode-is :aignet)
                 (posp (aignet::bits-length aignet::mark))
-                (bfr-listp (gl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (aignet::bits-length aignet::mark))))
-                (lbfr-listp (gl-object-bfrlist x))
+                (bfr-listp (fgl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (aignet::bits-length aignet::mark))))
+                (lbfr-listp (fgl-object-bfrlist x))
                 (stobj-let ((aignet (logicman->aignet logicman)))
                            (ok)
                            (aignet::self-constprop-guard aignet aignet::mark aignet::copy)
                            ok))
-    :returns (mv (new-x gl-object-p)
+    :returns (mv (new-x fgl-object-p)
                  (new-mark)
                  (new-copy)
                  (new-logicman))
-    :measure (acl2::two-nats-measure (gl-object-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     :verify-guards nil
-    (b* ((x (gl-object-fix x)))
-      (gl-object-case x
+    (b* ((x (fgl-object-fix x)))
+      (fgl-object-case x
         :g-concrete (mv x aignet::mark aignet::copy logicman)
         :g-boolean (b* ((bfrstate (logicman->bfrstate))
                         (lit (bfr->aignet-lit x.bool)))
@@ -369,7 +369,7 @@
         :g-ite (b* (((mv new-test aignet::mark aignet::copy logicman)
                      (fgl-object-pathcond-fix-aignet-impl x.test aignet::mark aignet::copy logicman))
                     ((mv okp new-test-bool) (gobj-syntactic-boolean-fix new-test))
-                    ((when (and okp (gl-object-case new-test-bool :g-concrete)))
+                    ((when (and okp (fgl-object-case new-test-bool :g-concrete)))
                      (if (g-concrete->val new-test-bool)
                          (fgl-object-pathcond-fix-aignet-impl x.then aignet::mark aignet::copy logicman)
                        (fgl-object-pathcond-fix-aignet-impl x.else aignet::mark aignet::copy logicman)))
@@ -388,44 +388,44 @@
                  ;; BOZO will need recompressing/make-fast-alist
                  (mv (change-g-map x :alist new-alist) aignet::mark aignet::copy logicman)))))
 
-  (define fgl-objectlist-pathcond-fix-aignet-impl ((x gl-objectlist-p)
+  (define fgl-objectlist-pathcond-fix-aignet-impl ((x fgl-objectlist-p)
                                                    aignet::mark aignet::copy
                                                    logicman)
     :guard (and (lbfr-mode-is :aignet)
                 (posp (aignet::bits-length aignet::mark))
-                (bfr-listp (gl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (aignet::bits-length aignet::mark))))
-                (lbfr-listp (gl-objectlist-bfrlist x))
+                (bfr-listp (fgl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (aignet::bits-length aignet::mark))))
+                (lbfr-listp (fgl-objectlist-bfrlist x))
                 (stobj-let ((aignet (logicman->aignet logicman)))
                            (ok)
                            (aignet::self-constprop-guard aignet aignet::mark aignet::copy)
                            ok))
-    :returns (mv (new-x gl-objectlist-p)
+    :returns (mv (new-x fgl-objectlist-p)
                  (new-mark)
                  (new-copy)
                  (new-logicman))
-    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (b* (((when (atom x))
           (mv nil aignet::mark aignet::copy logicman))
          ((mv car aignet::mark aignet::copy logicman) (fgl-object-pathcond-fix-aignet-impl (car x) aignet::mark aignet::copy logicman))
          ((mv cdr aignet::mark aignet::copy logicman) (fgl-objectlist-pathcond-fix-aignet-impl (cdr x) aignet::mark aignet::copy logicman)))
       (mv (cons car cdr) aignet::mark aignet::copy logicman)))
 
-  (define fgl-object-alist-pathcond-fix-aignet-impl ((x gl-object-alist-p)
+  (define fgl-object-alist-pathcond-fix-aignet-impl ((x fgl-object-alist-p)
                                                      aignet::mark aignet::copy
                                                      logicman)
     :guard (and (lbfr-mode-is :aignet)
                 (posp (aignet::bits-length aignet::mark))
-                (bfr-listp (gl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (aignet::bits-length aignet::mark))))
-                (lbfr-listp (gl-object-alist-bfrlist x))
+                (bfr-listp (fgl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (aignet::bits-length aignet::mark))))
+                (lbfr-listp (fgl-object-alist-bfrlist x))
                 (stobj-let ((aignet (logicman->aignet logicman)))
                            (ok)
                            (aignet::self-constprop-guard aignet aignet::mark aignet::copy)
                            ok))
-    :returns (mv (new-x gl-object-alist-p)
+    :returns (mv (new-x fgl-object-alist-p)
                  (new-mark)
                  (new-copy)
                  (new-logicman))
-    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     (b* (((when (atom x))
           (mv x aignet::mark aignet::copy logicman))
          ((unless (mbt (consp (car x))))
@@ -565,7 +565,7 @@
     (defret copy-len-of-<fn>
       (implies (and (lbfr-mode-is :aignet)
                     (< 0 (len aignet::copy))
-                    (bfr-listp (gl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
+                    (bfr-listp (fgl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
                (equal (len new-copy) (len aignet::copy)))
       :hints ('(:expand (<call>))
               (And stable-under-simplificationp
@@ -574,24 +574,24 @@
     (defret copy-len-of-<fn>
       (implies (and (lbfr-mode-is :aignet)
                     (< 0 (len aignet::copy))
-                    (bfr-listp (gl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
+                    (bfr-listp (fgl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
                (equal (len new-copy) (len aignet::copy)))
       :hints ('(:expand (<call>)))
       :fn fgl-objectlist-pathcond-fix-aignet-impl)
     (defret copy-len-of-<fn>
       (implies (and (lbfr-mode-is :aignet)
                     (< 0 (len aignet::copy))
-                    (bfr-listp (gl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
+                    (bfr-listp (fgl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
                (equal (len new-copy) (len aignet::copy)))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x))))
+                         (fgl-object-alist-bfrlist x))))
       :fn fgl-object-alist-pathcond-fix-aignet-impl))
 
   (defret-mutual mark-len-of-pathcond-fix-aignet-impl
     (defret mark-len-of-<fn>
       (implies (and (lbfr-mode-is :aignet)
                     (< 0 (len aignet::mark))
-                    (bfr-listp (gl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::mark)))))
+                    (bfr-listp (fgl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::mark)))))
                (equal (len new-mark) (len aignet::mark)))
       :hints ('(:expand (<call>))
               (And stable-under-simplificationp
@@ -600,17 +600,17 @@
     (defret mark-len-of-<fn>
       (implies (and (lbfr-mode-is :aignet)
                     (< 0 (len aignet::mark))
-                    (bfr-listp (gl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::mark)))))
+                    (bfr-listp (fgl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::mark)))))
                (equal (len new-mark) (len aignet::mark)))
       :hints ('(:expand (<call>)))
       :fn fgl-objectlist-pathcond-fix-aignet-impl)
     (defret mark-len-of-<fn>
       (implies (and (lbfr-mode-is :aignet)
                     (< 0 (len aignet::mark))
-                    (bfr-listp (gl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::mark)))))
+                    (bfr-listp (fgl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::mark)))))
                (equal (len new-mark) (len aignet::mark)))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x))))
+                         (fgl-object-alist-bfrlist x))))
       :fn fgl-object-alist-pathcond-fix-aignet-impl))
 
 
@@ -619,7 +619,7 @@
       (implies (and (aignet::self-constprop-guard (logicman->aignet logicman) aignet::mark aignet::copy)
                     (lbfr-mode-is :aignet)
                     (< 0 (len aignet::copy))
-                    (bfr-listp (gl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
+                    (bfr-listp (fgl-object-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
                (aignet::self-constprop-guard (logicman->aignet new-logicman) new-mark new-copy))
       :hints ('(:expand (<call>)))
       :fn fgl-object-pathcond-fix-aignet-impl)
@@ -627,7 +627,7 @@
       (implies (and (aignet::self-constprop-guard (logicman->aignet logicman) aignet::mark aignet::copy)
                     (lbfr-mode-is :aignet)
                     (< 0 (len aignet::copy))
-                    (bfr-listp (gl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
+                    (bfr-listp (fgl-objectlist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
                (aignet::self-constprop-guard (logicman->aignet new-logicman) new-mark new-copy))
       :hints ('(:expand (<call>)))
       :fn fgl-objectlist-pathcond-fix-aignet-impl)
@@ -635,19 +635,19 @@
       (implies (and (aignet::self-constprop-guard (logicman->aignet logicman) aignet::mark aignet::copy)
                     (lbfr-mode-is :aignet)
                     (< 0 (len aignet::copy))
-                    (bfr-listp (gl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
+                    (bfr-listp (fgl-object-alist-bfrlist x) (bfrstate (bfrmode :aignet) (+ -1 (len aignet::copy)))))
                (aignet::self-constprop-guard (logicman->aignet new-logicman) new-mark new-copy))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x))))
+                         (fgl-object-alist-bfrlist x))))
       :fn fgl-object-alist-pathcond-fix-aignet-impl))
 
 
 
   ;; (defret self-constprop-guard-of-<fn>-less
   ;;   (implies (and (aignet::self-constprop-guard bound (logicman->aignet logicman) aignet::mark aignet::copy)
-  ;;                 (lbfr-listp (gl-object-bfrlist x))
+  ;;                 (lbfr-listp (fgl-object-bfrlist x))
   ;;                 (lbfr-mode-is :aignet)
-  ;;                 (< (bfrlist-min-bound (gl-object-bfrlist x) (logicman->bfrstate)) (nfix bound))
+  ;;                 (< (bfrlist-min-bound (fgl-object-bfrlist x) (logicman->bfrstate)) (nfix bound))
   ;;                 (<= (nfix bound1) (nfix bound)))
   ;;            (aignet::self-constprop-guard bound1 (logicman->aignet new-logicman) new-mark new-copy))
   ;;   :hints (("goal" :use self-constprop-guard-of-fgl-object-pathcond-fix-aignet-impl
@@ -655,9 +655,9 @@
   ;;   :fn fgl-object-pathcond-fix-aignet-impl)
   ;; (defret self-constprop-guard-of-<fn>-less
   ;;   (implies (and (aignet::self-constprop-guard bound (logicman->aignet logicman) aignet::mark aignet::copy)
-  ;;                 (lbfr-listp (gl-objectlist-bfrlist x))
+  ;;                 (lbfr-listp (fgl-objectlist-bfrlist x))
   ;;                 (lbfr-mode-is :aignet)
-  ;;                 (< (bfrlist-min-bound (gl-objectlist-bfrlist x) (logicman->bfrstate)) (nfix bound))
+  ;;                 (< (bfrlist-min-bound (fgl-objectlist-bfrlist x) (logicman->bfrstate)) (nfix bound))
   ;;                 (<= (nfix bound1) (nfix bound)))
   ;;            (aignet::self-constprop-guard bound1 (logicman->aignet new-logicman) new-mark new-copy))
   ;;   :hints (("goal" :use self-constprop-guard-of-fgl-objectlist-pathcond-fix-aignet-impl
@@ -665,9 +665,9 @@
   ;;   :fn fgl-objectlist-pathcond-fix-aignet-impl)
   ;; (defret self-constprop-guard-of-<fn>-less
   ;;   (implies (and (aignet::self-constprop-guard bound (logicman->aignet logicman) aignet::mark aignet::copy)
-  ;;                 (lbfr-listp (gl-object-alist-bfrlist x))
+  ;;                 (lbfr-listp (fgl-object-alist-bfrlist x))
   ;;                 (lbfr-mode-is :aignet)
-  ;;                 (< (bfrlist-min-bound (gl-object-alist-bfrlist x) (logicman->bfrstate)) (nfix bound))
+  ;;                 (< (bfrlist-min-bound (fgl-object-alist-bfrlist x) (logicman->bfrstate)) (nfix bound))
   ;;                 (<= (nfix bound1) (nfix bound)))
   ;;            (aignet::self-constprop-guard bound1 (logicman->aignet new-logicman) new-mark new-copy))
   ;;   :hints (("goal" :use self-constprop-guard-of-fgl-object-alist-pathcond-fix-aignet-impl
@@ -700,7 +700,7 @@
     (defret self-constprop-invar-of-<fn>
       (implies (and (aignet::self-constprop-invar invals regvals (logicman->aignet logicman) aignet::mark aignet::copy)
                     (lbfr-mode-is :aignet)
-                    (lbfr-listp (gl-object-bfrlist x)))
+                    (lbfr-listp (fgl-object-bfrlist x)))
                (aignet::self-constprop-invar invals regvals (logicman->aignet new-logicman) new-mark new-copy))
       :hints ('(:expand (<call>))
               (and stable-under-simplificationp
@@ -709,40 +709,40 @@
     (defret self-constprop-invar-of-<fn>
       (implies (and (aignet::self-constprop-invar invals regvals (logicman->aignet logicman) aignet::mark aignet::copy)
                     (lbfr-mode-is :aignet)
-                    (lbfr-listp (gl-objectlist-bfrlist x)))
+                    (lbfr-listp (fgl-objectlist-bfrlist x)))
                (aignet::self-constprop-invar invals regvals (logicman->aignet new-logicman) new-mark new-copy))
       :hints ('(:expand (<call>)))
       :fn fgl-objectlist-pathcond-fix-aignet-impl)
     (defret self-constprop-invar-of-<fn>
       (implies (and (aignet::self-constprop-invar invals regvals (logicman->aignet logicman) aignet::mark aignet::copy)
                     (lbfr-mode-is :aignet)
-                    (lbfr-listp (gl-object-alist-bfrlist x)))
+                    (lbfr-listp (fgl-object-alist-bfrlist x)))
                (aignet::self-constprop-invar invals regvals (logicman->aignet new-logicman) new-mark new-copy))
       :hints ('(:expand (<call>
-                         (gl-object-alist-bfrlist x))))
+                         (fgl-object-alist-bfrlist x))))
       :fn fgl-object-alist-pathcond-fix-aignet-impl))
 
   (local (defthm bfr-listp-of-mk-g-integer
            (implies (bfr-listp bits)
-                    (bfr-listp (gl-object-bfrlist (mk-g-integer bits))))
+                    (bfr-listp (fgl-object-bfrlist (mk-g-integer bits))))
            :hints(("Goal" :in-theory (enable mk-g-integer)))))
 
   (defret-mutual lbfr-listp-of-pathcond-fix-aignet-impl
     (defret lbfr-listp-of-<fn>
       (implies (lbfr-mode-is :aignet)
-               (lbfr-listp (gl-object-bfrlist new-x) new-logicman))
+               (lbfr-listp (fgl-object-bfrlist new-x) new-logicman))
       :hints ('(:expand (<call>))
               (and stable-under-simplificationp
                    '(:in-theory (enable bfr-listp-when-not-member-witness))))
       :fn fgl-object-pathcond-fix-aignet-impl)
     (defret lbfr-listp-of-<fn>
       (implies (lbfr-mode-is :aignet)
-               (lbfr-listp (gl-objectlist-bfrlist new-x) new-logicman))
+               (lbfr-listp (fgl-objectlist-bfrlist new-x) new-logicman))
       :hints ('(:expand (<call>)))
       :fn fgl-objectlist-pathcond-fix-aignet-impl)
     (defret lbfr-listp-of-<fn>
       (implies (lbfr-mode-is :aignet)
-               (lbfr-listp (gl-object-alist-bfrlist new-x) new-logicman))
+               (lbfr-listp (fgl-object-alist-bfrlist new-x) new-logicman))
       :hints ('(:expand (<call>)))
       :fn fgl-object-alist-pathcond-fix-aignet-impl))
 
@@ -770,7 +770,7 @@
                             (aignet-lits->bfrs lits (logicman->bfrstate))
                             env logicman)
                            (b* ((invals (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
-                                                         (gl-env->bfr-vals env) nil))
+                                                         (fgl-env->bfr-vals env) nil))
                                 (regvals nil))
                              (bits->bools (aignet::lit-eval-list lits invals regvals (logicman->aignet logicman))))))
            :hints(("Goal" :in-theory (e/d (gobj-bfr-list-eval
@@ -784,7 +784,7 @@
            (implies (lbfr-mode-is :aignet)
                     (equal (aignet::lit-eval-list (bfrs->aignet-lits bfrs (logicman->bfrstate))
                                                   (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
-                                                                   (gl-env->bfr-vals env) nil)
+                                                                   (fgl-env->bfr-vals env) nil)
                                                   nil
                                                   (logicman->aignet logicman))
                            (bools->bits (gobj-bfr-list-eval bfrs env))))
@@ -848,18 +848,18 @@
   (defret-mutual eval-of-pathcond-fix-aignet-impl
     (defret eval-of-<fn>
       (b* ((invals (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
-                                    (gl-env->bfr-vals env) nil))
+                                    (fgl-env->bfr-vals env) nil))
            (regvals nil))
         (implies (and (aignet::self-constprop-invar invals regvals
                                                     (logicman->aignet logicman)
                                                     aignet::mark aignet::copy)
                       (lbfr-mode-is :aignet)
-                      (lbfr-listp (gl-object-bfrlist x)))
+                      (lbfr-listp (fgl-object-bfrlist x)))
                  (equal (fgl-object-eval new-x env new-logicman)
                         (fgl-object-eval x env logicman))))
       :hints ('(:expand (<call>))
               (acl2::use-termhint
-               (gl-object-case x
+               (fgl-object-case x
                  :g-ite
                  (b* (((mv new-test aignet::mark aignet::copy logicman)
                        (fgl-object-pathcond-fix-aignet-impl x.test aignet::mark aignet::copy logicman))
@@ -875,13 +875,13 @@
       :fn fgl-object-pathcond-fix-aignet-impl)
     (defret eval-of-<fn>
       (b* ((invals (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
-                                    (gl-env->bfr-vals env) nil))
+                                    (fgl-env->bfr-vals env) nil))
            (regvals nil))
         (implies (and (aignet::self-constprop-invar invals regvals
                                                     (logicman->aignet logicman)
                                                     aignet::mark aignet::copy)
                       (lbfr-mode-is :aignet)
-                      (lbfr-listp (gl-objectlist-bfrlist x)))
+                      (lbfr-listp (fgl-objectlist-bfrlist x)))
                  (equal (fgl-objectlist-eval new-x env new-logicman)
                         (fgl-objectlist-eval x env logicman))))
       :hints ('(:expand (<call>
@@ -889,18 +889,18 @@
       :fn fgl-objectlist-pathcond-fix-aignet-impl)
     (defret eval-of-<fn>
       (b* ((invals (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
-                                    (gl-env->bfr-vals env) nil))
+                                    (fgl-env->bfr-vals env) nil))
            (regvals nil))
         (implies (and (aignet::self-constprop-invar invals regvals
                                                     (logicman->aignet logicman)
                                                     aignet::mark aignet::copy)
                       (lbfr-mode-is :aignet)
-                      (lbfr-listp (gl-object-alist-bfrlist x)))
+                      (lbfr-listp (fgl-object-alist-bfrlist x)))
                  (equal (fgl-object-alist-eval new-x env new-logicman)
                         (fgl-object-alist-eval x env logicman))))
       :hints ('(:expand (<call>
                          (fgl-object-alist-eval x env logicman)
-                         (gl-object-alist-bfrlist x))))
+                         (fgl-object-alist-bfrlist x))))
       :fn fgl-object-alist-pathcond-fix-aignet-impl))
 )
 
@@ -912,10 +912,10 @@
 
 
 
-;; (define fgl-object-pathcond-fix ((x gl-object-p)
+;; (define fgl-object-pathcond-fix ((x fgl-object-p)
 ;;                                  (pathcond)
 ;;                                  (logicman))
-;;   :returns (mv (new-x gl-object-p)
+;;   :returns (mv (new-x fgl-object-p)
 ;;                (new-pathcond (equal new-pathcond (pathcond-fix pathcond)))
 ;;                (new-logicman))
 ;;   (lbfr-case
@@ -949,14 +949,14 @@
          (equal (aignet-eval-conjunction nil invals regvals aignet) 1)
          :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
 
-(def-gl-primitive fgl-pathcond-fix (x)
+(def-fgl-primitive fgl-pathcond-fix (x)
   (stobj-let ((logicman (interp-st->logicman interp-st))
               (pathcond (interp-st->pathcond interp-st)))
              (ans pathcond logicman)
              (lbfr-case
                :aignet (b* ((pathcond (mbe :logic (pathcond-fix pathcond) :exec pathcond))
                             ((unless (pathcond-enabledp pathcond))
-                             (mv (gl-object-fix x) pathcond logicman))
+                             (mv (fgl-object-fix x) pathcond logicman))
                             (cube (pathcond-to-cube pathcond nil))
                             ;; (lits (bfrs->aignet-lits cube (logicman->bfrstate)))
                             ((acl2::local-stobjs aignet::mark aignet::copy)

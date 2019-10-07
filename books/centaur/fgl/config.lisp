@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -35,7 +35,7 @@
 
 (include-book "centaur/fty/bitstruct" :dir :system)
 
-(fty::defbitstruct gl-function-mode
+(fty::defbitstruct fgl-function-mode
   :parents (fgl)
   :short "Limitations on what the FGL interpreter will do to resolve a call of a given function."
   ((split-ifs booleanp
@@ -58,20 +58,20 @@
    (dont-primitive-exec booleanp
     "If true, skip applying primitives to calls of the function.")))
 
-(fty::defmap gl-function-mode-alist :key-type symbolp :val-type gl-function-mode :true-listp t)
+(fty::defmap fgl-function-mode-alist :key-type symbolp :val-type fgl-function-mode :true-listp t)
 
-(define gl-function-mode-lookup ((fn symbolp)
-                                 (alist gl-function-mode-alist-p))
-  :returns (mode gl-function-mode-p)
-  (or (cdr (hons-get fn (make-fast-alist (gl-function-mode-alist-fix alist)))) 0))
+(define fgl-function-mode-lookup ((fn symbolp)
+                                 (alist fgl-function-mode-alist-p))
+  :returns (mode fgl-function-mode-p)
+  (or (cdr (hons-get fn (make-fast-alist (fgl-function-mode-alist-fix alist)))) 0))
 
-(defconst *glcp-config-fields*
+(defconst *fgl-config-fields*
   '((trace-rewrites booleanp :default 'nil)
     (reclimit posp :rule-classes (:rewrite :type-prescription) :default '1000000)
     (make-ites booleanp :default 'nil)
-    (rewrite-rule-table :default (table-alist 'gl-rewrite-rules (w state)))
-    (branch-merge-rules :default (cdr (hons-assoc-equal 'fgl::gl-branch-merge-rules (table-alist 'gl-branch-merge-rules (w state)))))
-    (function-modes gl-function-mode-alist :default (table-alist 'gl-fn-modes (w state)))
+    (rewrite-rule-table :default (table-alist 'fgl-rewrite-rules (w state)))
+    (branch-merge-rules :default (cdr (hons-assoc-equal 'fgl::fgl-branch-merge-rules (table-alist 'fgl-branch-merge-rules (w state)))))
+    (function-modes fgl-function-mode-alist :default (table-alist 'fgl-fn-modes (w state)))
     (prof-enabledp booleanp :default 't)
     (sat-config)
     (skip-toplevel-sat-check booleanp :default 'nil)
@@ -79,29 +79,29 @@
     ))
 
 (local
- (defun glcp-config-process-field (field)
+ (defun fgl-config-process-field (field)
    (cond ((atom field) field)
          ((eq (car field) ':default)
           (if (quotep (cadr field))
               (cons :default (cons (unquote (cadr field)) (cddr field)))
             (cons :default (cons nil (cddr field)))))
          (t (cons (car field)
-                  (glcp-config-process-field (cdr field)))))))
+                  (fgl-config-process-field (cdr field)))))))
 
 (local
- (defun glcp-config-process-fields (fields)
+ (defun fgl-config-process-fields (fields)
    (if (atom fields)
        nil
-     (cons (glcp-config-process-field (car fields))
-           (glcp-config-process-fields (cdr fields))))))
+     (cons (fgl-config-process-field (car fields))
+           (fgl-config-process-fields (cdr fields))))))
 
 (make-event
- `(defprod glcp-config
-    ,(glcp-config-process-fields *glcp-config-fields*)
+ `(defprod fgl-config
+    ,(fgl-config-process-fields *fgl-config-fields*)
     :layout :tree))
 
 
-(define glcp-config-setting ((table-key symbolp)
+(define fgl-config-setting ((table-key symbolp)
                              (state-key symbolp)
                              default
                              table
@@ -116,7 +116,7 @@
     default))
 
 (local
- (defun default-glcp-config-settings (fields state)
+ (defun default-fgl-config-settings (fields state)
    (declare (xargs :stobjs state :mode :program))
    (b* (((when (atom fields)) nil)
         ((cons fieldname fieldargs) (car fields))
@@ -129,20 +129,20 @@
         (key (intern-in-package-of-symbol (symbol-name fieldname) :keyword))
         (state-key (intern-in-package-of-symbol (concatenate 'string "FGL-" (symbol-name fieldname)) :keyword))
         (default (cadr (member ':default fieldargs)))
-        (setting-term `(glcp-config-setting ,key ,state-key ,default configtab args state))
+        (setting-term `(fgl-config-setting ,key ,state-key ,default configtab args state))
         (setting-term-fix (if fix `(ec-call (,fix ,setting-term)) setting-term)))
      (cons key
            (cons setting-term-fix
-                (default-glcp-config-settings (cdr fields) state))))))
+                (default-fgl-config-settings (cdr fields) state))))))
 
 (make-event
- `(define default-glcp-config-fn ((args keyword-value-listp) state)
+ `(define default-fgl-config-fn ((args keyword-value-listp) state)
     (b* ((configtab (table-alist 'fgl-config-table (w state))))
-      (make-glcp-config
-       . ,(default-glcp-config-settings *glcp-config-fields* state)))))
+      (make-fgl-config
+       . ,(default-fgl-config-settings *fgl-config-fields* state)))))
 
 
-(defmacro default-glcp-config (&rest args)
-  `(default-glcp-config-fn ',args state))
+(defmacro default-fgl-config (&rest args)
+  `(default-fgl-config-fn ',args state))
 
 (table fgl-config-table)

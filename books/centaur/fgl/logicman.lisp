@@ -1,4 +1,4 @@
- ; GL - A Symbolic Simulation Framework for ACL2
+ ; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -530,26 +530,26 @@ logicman stobj.  If no logicman argument is supplied, the variable named
              (bfr-listp x (logicman->bfrstate new)))
     :hints (("goal" :use bfrstate>=-when-logicman-extension)))
 
-  (defthm gl-bfr-object-p-when-logicman-extension
+  (defthm fgl-bfr-object-p-when-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (gl-bfr-object-p x (logicman->bfrstate old)))
-             (gl-bfr-object-p x (logicman->bfrstate new)))
+                  (fgl-bfr-object-p x (logicman->bfrstate old)))
+             (fgl-bfr-object-p x (logicman->bfrstate new)))
     :hints (("goal" :use bfrstate>=-when-logicman-extension
-             :in-theory (disable gl-bfr-object-p-when-gl-object-p))))
+             :in-theory (disable fgl-bfr-object-p-when-fgl-object-p))))
 
-  (defthm gl-bfr-objectlist-p-when-logicman-extension
+  (defthm fgl-bfr-objectlist-p-when-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (gl-bfr-objectlist-p x (logicman->bfrstate old)))
-             (gl-bfr-objectlist-p x (logicman->bfrstate new)))
+                  (fgl-bfr-objectlist-p x (logicman->bfrstate old)))
+             (fgl-bfr-objectlist-p x (logicman->bfrstate new)))
     :hints (("goal" :use bfrstate>=-when-logicman-extension
-             :in-theory (disable gl-bfr-objectlist-p-when-gl-objectlist-p))))
+             :in-theory (disable fgl-bfr-objectlist-p-when-fgl-objectlist-p))))
 
-  (defthm gl-bfr-object-alist-p-when-logicman-extension
+  (defthm fgl-bfr-object-alist-p-when-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (gl-bfr-object-alist-p x (logicman->bfrstate old)))
-             (gl-bfr-object-alist-p x (logicman->bfrstate new)))
+                  (fgl-bfr-object-alist-p x (logicman->bfrstate old)))
+             (fgl-bfr-object-alist-p x (logicman->bfrstate new)))
     :hints (("goal" :use bfrstate>=-when-logicman-extension
-             :in-theory (disable gl-bfr-object-alist-p-when-gl-object-alist-p)))))
+             :in-theory (disable fgl-bfr-object-alist-p-when-fgl-object-alist-p)))))
 
 
 
@@ -883,26 +883,26 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (defmacro lbfr-listp (x &optional (logicman 'logicman))
   `(bfr-listp ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-object-p (x &optional (logicman 'logicman))
-  `(gl-bfr-object-p ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-object-p ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-objectlist-p (x &optional (logicman 'logicman))
-  `(gl-bfr-objectlist-p ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-objectlist-p ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-object-alist-p (x &optional (logicman 'logicman))
-  `(gl-bfr-object-alist-p ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-object-alist-p ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-object-bindings-p (x &optional (logicman 'logicman))
-  `(gl-bfr-object-bindings-p ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-object-bindings-p ,x (logicman->bfrstate ,logicman)))
 
 (defmacro lbfr-fix (x &optional (logicman 'logicman))
   `(bfr-fix ,x (logicman->bfrstate ,logicman)))
 (defmacro lbfr-list-fix (x &optional (logicman 'logicman))
   `(bfr-list-fix ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-object-fix (x &optional (logicman 'logicman))
-  `(gl-bfr-object-fix ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-object-fix ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-objectlist-fix (x &optional (logicman 'logicman))
-  `(gl-bfr-objectlist-fix ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-objectlist-fix ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-object-alist-fix (x &optional (logicman 'logicman))
-  `(gl-bfr-object-alist-fix ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-object-alist-fix ,x (logicman->bfrstate ,logicman)))
 (defmacro lgl-bfr-object-bindings-fix (x &optional (logicman 'logicman))
-  `(gl-bfr-object-bindings-fix ,x (logicman->bfrstate ,logicman)))
+  `(fgl-bfr-object-bindings-fix ,x (logicman->bfrstate ,logicman)))
 
 
 
@@ -1078,7 +1078,7 @@ registers are not used.</p>"
 
    
 
-(define logicman-add-var (;; (obj gl-object-p)
+(define logicman-add-var (;; (obj fgl-object-p)
                           &optional (logicman 'logicman))
   :returns (new-logicman)
   (stobj-let
@@ -2279,7 +2279,7 @@ registers are not used.</p>"
 
 (fty::defmap obj-alist :true-listp t)
 
-(fty::defprod gl-env
+(fty::defprod fgl-env
   :parents (fgl-object-eval)
   :short "Type of environment objects for FGL object evaluation."
   ((obj-alist obj-alist "Alist mapping free variable names to their values")
@@ -2287,10 +2287,10 @@ registers are not used.</p>"
   :layout :tree)
 
 (define gobj-bfr-eval ((x lbfr-p)
-                       (env gl-env-p)
+                       (env fgl-env-p)
                        &optional (logicman 'logicman))
   :returns (bool t)
-  (bfr-eval x (gl-env->bfr-vals env))
+  (bfr-eval x (fgl-env->bfr-vals env))
   ///
   (defthm gobj-bfr-eval-consts
     (and (equal (gobj-bfr-eval t env) t)
@@ -2309,7 +2309,7 @@ registers are not used.</p>"
   (defthm gobj-bfr-eval-of-bfr-var
     (implies (bfr-varname-p n)
              (equal (gobj-bfr-eval (bfr-var n) env)
-                    (bfr-lookup n (gl-env->bfr-vals env)))))
+                    (bfr-lookup n (fgl-env->bfr-vals env)))))
 
   (defthm gobj-bfr-eval-of-bfr-not
     (equal (gobj-bfr-eval (bfr-not x) env)
@@ -2348,12 +2348,12 @@ registers are not used.</p>"
 
   
   (defthm gobj-bfr-eval-reduce-by-bfr-eval
-    (implies (and (equal ans (bfr-eval x (gl-env->bfr-vals env)))
+    (implies (and (equal ans (bfr-eval x (fgl-env->bfr-vals env)))
                   (syntaxp (pseudo-term-case ans :fncall (not (eq ans.fn 'bfr-eval-fn)) :otherwise t)))
              (equal (gobj-bfr-eval x env) ans))))
 
 
-(define gobj-bfr-list-eval ((x lbfr-listp) (env gl-env-p) &optional (logicman 'logicman))
+(define gobj-bfr-list-eval ((x lbfr-listp) (env fgl-env-p) &optional (logicman 'logicman))
   :returns (bools boolean-listp)
   (if (atom x)
       nil
@@ -2383,15 +2383,15 @@ registers are not used.</p>"
     (equal (len (gobj-bfr-list-eval x env))
            (len x)))
 
-  (fty::deffixequiv gobj-bfr-list-eval :args ((x true-listp) (env gl-env-p)))
+  (fty::deffixequiv gobj-bfr-list-eval :args ((x true-listp) (env fgl-env-p)))
 
   (defthmd gobj-bfr-list-eval-is-bfr-list-eval
     (equal (gobj-bfr-list-eval x env)
-           (bfr-list-eval x (gl-env->bfr-vals env)))
+           (bfr-list-eval x (fgl-env->bfr-vals env)))
     :hints(("Goal" :in-theory (enable bfr-list-eval gobj-bfr-eval))))
 
   (defthm gobj-bfr-list-eval-reduce-by-bfr-list-eval
-    (implies (and (equal ans (bfr-list-eval x (gl-env->bfr-vals env)))
+    (implies (and (equal ans (bfr-list-eval x (fgl-env->bfr-vals env)))
                   (syntaxp (pseudo-term-case ans :fncall (not (eq ans.fn 'bfr-list-eval-fn)) :otherwise t)))
              (equal (gobj-bfr-list-eval x env) ans))
     :hints(("Goal" :in-theory (enable gobj-bfr-list-eval-is-bfr-list-eval))))
@@ -2401,12 +2401,12 @@ registers are not used.</p>"
              (equal (gobj-bfr-list-eval x env) (true-list-fix x)))))
 
 
-(define gobj-var-lookup ((name pseudo-var-p) (env gl-env-p))
+(define gobj-var-lookup ((name pseudo-var-p) (env fgl-env-p))
   :prepwork ((local (defthm consp-of-assoc-when-obj-alist-p
                       (implies (obj-alist-p x)
                                (iff (consp (assoc key x))
                                     (assoc key x))))))
-  (cdr (assoc-equal (pseudo-var-fix name) (gl-env->obj-alist env))))
+  (cdr (assoc-equal (pseudo-var-fix name) (fgl-env->obj-alist env))))
 
 
 
@@ -2422,7 +2422,7 @@ registers are not used.</p>"
     (append (cdar x)
             (append-alist-vals (cdr x)))))
 
-(defconst *gl-object-eval-template*
+(defconst *fgl-object-eval-template*
   '(progn
      (defapply <prefix>-apply <prefix>-ev  <fns>)
      
@@ -2432,12 +2432,12 @@ registers are not used.</p>"
      (defines <prefix>-object-eval
        :flag-local nil
        (define <prefix>-object-eval ((x lgl-bfr-object-p)
-                                      (env gl-env-p)
+                                      (env fgl-env-p)
                                       &optional (logicman 'logicman))
-         :measure (acl2::two-nats-measure (gl-object-count x) 0)
+         :measure (acl2::two-nats-measure (fgl-object-count x) 0)
          :verify-guards nil
          :returns (val)
-         (gl-object-case x
+         (fgl-object-case x
            :g-concrete x.val
            :g-boolean (gobj-bfr-eval x.bool env)
            :g-integer (bools->int (gobj-bfr-list-eval x.bits env))
@@ -2450,18 +2450,18 @@ registers are not used.</p>"
                          (<prefix>-object-eval x.cdr env))
            :g-map (<prefix>-object-alist-eval x.alist env)))
        (define <prefix>-objectlist-eval ((x lgl-bfr-objectlist-p)
-                                          (env gl-env-p)
+                                          (env fgl-env-p)
                                           &optional (logicman 'logicman))
-         :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
+         :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
          :returns (vals true-listp :rule-classes :type-prescription)
          (if (atom x)
              nil
            (cons (<prefix>-object-eval (car x) env)
                  (<prefix>-objectlist-eval (cdr x) env))))
        (define <prefix>-object-alist-eval ((x lgl-bfr-object-alist-p)
-                                  (env gl-env-p)
+                                  (env fgl-env-p)
                                   &optional (logicman 'logicman))
-         :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+         :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
          :returns (vals)
          (if (atom x)
              x
@@ -2471,86 +2471,86 @@ registers are not used.</p>"
              (<prefix>-object-alist-eval (cdr x) env))))
        ///
        (verify-guards <prefix>-object-eval-fn
-         :hints(("Goal" :in-theory (disable gl-bfr-object-p-when-gl-object-p
-                                            gl-bfr-objectlist-p-when-gl-objectlist-p
-                                            gl-bfr-object-alist-p-when-gl-object-alist-p)
-                 :expand ((gl-bfr-object-alist-p x (logicman->bfrstate))))))
+         :hints(("Goal" :in-theory (disable fgl-bfr-object-p-when-fgl-object-p
+                                            fgl-bfr-objectlist-p-when-fgl-objectlist-p
+                                            fgl-bfr-object-alist-p-when-fgl-object-alist-p)
+                 :expand ((fgl-bfr-object-alist-p x (logicman->bfrstate))))))
        
-       (defret-mutual <prefix>-object-eval-of-gl-bfr-object-fix
-        (defret <prefix>-object-eval-of-gl-bfr-object-fix
+       (defret-mutual <prefix>-object-eval-of-fgl-bfr-object-fix
+        (defret <prefix>-object-eval-of-fgl-bfr-object-fix
           (equal (<prefix>-object-eval (lgl-bfr-object-fix x) env)
                  val)
           :hints ('(:expand ((lgl-bfr-object-fix x))))
           :fn <prefix>-object-eval)
-        (defret <prefix>-objectlist-eval-of-gl-bfr-objectlist-fix
+        (defret <prefix>-objectlist-eval-of-fgl-bfr-objectlist-fix
           (equal (<prefix>-objectlist-eval (lgl-bfr-objectlist-fix x) env)
                  vals)
           :hints ('(:expand ((lgl-bfr-objectlist-fix x))))
           :fn <prefix>-objectlist-eval)
-        (defret <prefix>-object-alist-eval-of-gl-bfr-object-alist-fix
+        (defret <prefix>-object-alist-eval-of-fgl-bfr-object-alist-fix
           (equal (<prefix>-object-alist-eval (lgl-bfr-object-alist-fix x) env)
                  vals)
           :hints ('(:expand ((lgl-bfr-object-alist-fix x)
-                             (gl-object-alist-fix x))))
+                             (fgl-object-alist-fix x))))
           :fn <prefix>-object-alist-eval))
 
-       (defret-mutual <prefix>-object-eval-of-gl-object-fix
-         (defret <prefix>-object-eval-of-gl-object-fix
-           (equal (<prefix>-object-eval (gl-object-fix x) env)
+       (defret-mutual <prefix>-object-eval-of-fgl-object-fix
+         (defret <prefix>-object-eval-of-fgl-object-fix
+           (equal (<prefix>-object-eval (fgl-object-fix x) env)
                   val)
-           :hints ('(:expand ((gl-object-fix x))
+           :hints ('(:expand ((fgl-object-fix x))
                                :in-theory (e/d (<prefix>-object-eval))))
            :fn <prefix>-object-eval)
-         (defret <prefix>-objectlist-eval-of-gl-object-fix
-           (equal (<prefix>-objectlist-eval (gl-objectlist-fix x) env)
+         (defret <prefix>-objectlist-eval-of-fgl-object-fix
+           (equal (<prefix>-objectlist-eval (fgl-objectlist-fix x) env)
                   vals)
-           :hints ('(:expand ((gl-objectlist-fix x)
+           :hints ('(:expand ((fgl-objectlist-fix x)
                                         (:free (a b) (<prefix>-objectlist-eval (cons a b) env))
                                         (<prefix>-objectlist-eval nil env)
                                         (<prefix>-objectlist-eval x env))))
            :fn <prefix>-objectlist-eval)
-         (defret <prefix>-object-alist-eval-of-gl-object-fix
-           (equal (<prefix>-object-alist-eval (gl-object-alist-fix x) env)
+         (defret <prefix>-object-alist-eval-of-fgl-object-fix
+           (equal (<prefix>-object-alist-eval (fgl-object-alist-fix x) env)
                   vals)
-           :hints ('(:expand ((gl-object-alist-fix x)
+           :hints ('(:expand ((fgl-object-alist-fix x)
                                         (:free (a b) (<prefix>-object-alist-eval (cons a b) env))
                                         (<prefix>-object-alist-eval nil env)
                                         (<prefix>-object-alist-eval x env))))
            :fn <prefix>-object-alist-eval))
 
-       (fty::deffixcong gl-object-equiv equal (<prefix>-object-eval x env) x)
-       (fty::deffixcong gl-objectlist-equiv equal (<prefix>-objectlist-eval x env) x)
-       (fty::deffixcong gl-object-alist-equiv equal (<prefix>-object-alist-eval x env) x)
+       (fty::deffixcong fgl-object-equiv equal (<prefix>-object-eval x env) x)
+       (fty::deffixcong fgl-objectlist-equiv equal (<prefix>-objectlist-eval x env) x)
+       (fty::deffixcong fgl-object-alist-equiv equal (<prefix>-object-alist-eval x env) x)
 
        (defthm-<prefix>-object-eval-flag
          (defthm <prefix>-object-eval-of-logicman-extension
            (implies (and (bind-logicman-extension new old)
-                         (lbfr-listp (gl-object-bfrlist x) old))
+                         (lbfr-listp (fgl-object-bfrlist x) old))
                     (equal (<prefix>-object-eval x env new)
                            (<prefix>-object-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<prefix>-object-eval x env logicman))
-                               (gl-object-bfrlist x))))
+                               (fgl-object-bfrlist x))))
            :flag <prefix>-object-eval)
          (defthm <prefix>-objectlist-eval-of-logicman-extension
            (implies (and (bind-logicman-extension new old)
-                         (lbfr-listp (gl-objectlist-bfrlist x) old))
+                         (lbfr-listp (fgl-objectlist-bfrlist x) old))
                     (equal (<prefix>-objectlist-eval x env new)
                            (<prefix>-objectlist-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<prefix>-objectlist-eval x env logicman))
-                              (gl-objectlist-bfrlist x))))
+                              (fgl-objectlist-bfrlist x))))
             :flag <prefix>-objectlist-eval)
          (defthm <prefix>-object-alist-eval-of-logicman-extension
            (implies (and (bind-logicman-extension new old)
-                         (lbfr-listp (gl-object-alist-bfrlist x) old))
+                         (lbfr-listp (fgl-object-alist-bfrlist x) old))
                     (equal (<prefix>-object-alist-eval x env new)
                            (<prefix>-object-alist-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<prefix>-object-alist-eval x env logicman))
-                              (gl-object-alist-bfrlist x))))
+                              (fgl-object-alist-bfrlist x))))
             :flag <prefix>-object-alist-eval)
          :hints (("goal" :induct (<prefix>-object-eval-flag flag x env old))))
 
        (defthm <prefix>-object-eval-when-g-concrete
-         (implies (gl-object-case x :g-concrete)
+         (implies (fgl-object-case x :g-concrete)
                   (equal (<prefix>-object-eval x env)
                          (g-concrete->val x)))
          :hints (("goal" :expand ((<prefix>-object-eval x env)))))
@@ -2560,7 +2560,7 @@ registers are not used.</p>"
                 val))
 
        (defthm <prefix>-object-eval-when-g-boolean
-         (implies (gl-object-case x :g-boolean)
+         (implies (fgl-object-case x :g-boolean)
                   (equal (<prefix>-object-eval x env)
                          (gobj-bfr-eval (g-boolean->bool x) env)))
          :hints (("goal" :expand ((<prefix>-object-eval x env)))))
@@ -2570,7 +2570,7 @@ registers are not used.</p>"
                 (gobj-bfr-eval bool env)))
 
        (defthm <prefix>-object-eval-when-g-integer
-         (implies (gl-object-case x :g-integer)
+         (implies (fgl-object-case x :g-integer)
                   (equal (<prefix>-object-eval x env)
                          (bools->int (gobj-bfr-list-eval (g-integer->bits x) env))))
          :hints (("goal" :expand ((<prefix>-object-eval x env)))))
@@ -2580,7 +2580,7 @@ registers are not used.</p>"
                 (bools->int (gobj-bfr-list-eval bits env))))
 
        (defthm <prefix>-object-eval-when-g-ite
-         (implies (gl-object-case x :g-ite)
+         (implies (fgl-object-case x :g-ite)
                   (equal (<prefix>-object-eval x env)
                          (if (<prefix>-object-eval (g-ite->test x) env)
                              (<prefix>-object-eval (g-ite->then x) env)
@@ -2594,7 +2594,7 @@ registers are not used.</p>"
                   (<prefix>-object-eval else env))))
 
        (defthm <prefix>-object-eval-when-g-apply
-         (implies (gl-object-case x :g-apply)
+         (implies (fgl-object-case x :g-apply)
                   (equal (<prefix>-object-eval x env)
                          (<prefix>-apply (g-apply->fn x)
                                                  (<prefix>-objectlist-eval (g-apply->args x) env))))
@@ -2606,7 +2606,7 @@ registers are not used.</p>"
                               (<prefix>-objectlist-eval args env))))
 
        (defthm <prefix>-object-eval-when-g-var
-         (implies (gl-object-case x :g-var)
+         (implies (fgl-object-case x :g-var)
                   (equal (<prefix>-object-eval x env)
                          (gobj-var-lookup (g-var->name x) env)))
          :hints (("goal" :expand ((<prefix>-object-eval x env)))))
@@ -2616,7 +2616,7 @@ registers are not used.</p>"
                 (gobj-var-lookup name env)))
 
        (defthm <prefix>-object-eval-when-g-cons
-         (implies (gl-object-case x :g-cons)
+         (implies (fgl-object-case x :g-cons)
                   (equal (<prefix>-object-eval x env)
                          (cons (<prefix>-object-eval (g-cons->car x) env)
                                (<prefix>-object-eval (g-cons->cdr x) env))))
@@ -2628,7 +2628,7 @@ registers are not used.</p>"
                       (<prefix>-object-eval cdr env))))
 
        (defthm <prefix>-object-eval-when-g-map
-         (implies (gl-object-case x :g-map)
+         (implies (fgl-object-case x :g-map)
                   (equal (<prefix>-object-eval x env)
                          (<prefix>-object-alist-eval (g-map->alist x) env)))
          :hints (("goal" :expand ((<prefix>-object-eval x env)))))
@@ -2667,9 +2667,9 @@ registers are not used.</p>"
        (fty::deffixequiv-mutual <prefix>-object-eval))
 
      (define <prefix>-object-bindings-eval ((x lgl-bfr-object-bindings-p)
-                                (env gl-env-p)
+                                (env fgl-env-p)
                                 &optional (logicman 'logicman))
-       :guard-hints (("goal" :in-theory (enable gl-bfr-object-bindings-p)))
+       :guard-hints (("goal" :in-theory (enable fgl-bfr-object-bindings-p)))
        :returns (val alistp)
        (if (atom x)
            nil
@@ -2680,15 +2680,15 @@ registers are not used.</p>"
                    (<prefix>-object-bindings-eval (cdr x) env))
            (<prefix>-object-bindings-eval (cdr x) env)))
        ///
-       (deffixequiv <prefix>-object-bindings-eval :args ((x gl-object-bindings-p))
-         :hints(("Goal" :in-theory (enable gl-object-bindings-fix))))
+       (deffixequiv <prefix>-object-bindings-eval :args ((x fgl-object-bindings-p))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-fix))))
        
        (defthm <prefix>-object-bindings-eval-of-logicman-extension
          (implies (and (bind-logicman-extension new old)
-                       (lbfr-listp (gl-object-bindings-bfrlist x) old))
+                       (lbfr-listp (fgl-object-bindings-bfrlist x) old))
                   (equal (<prefix>-object-bindings-eval x env new)
                          (<prefix>-object-bindings-eval x env old)))
-         :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist)))))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist)))))
 
      (table fgl-evaluators '<prefix> '<fns>)
      (table fgl-last-evaluator :last '<prefix>)))
@@ -2720,25 +2720,25 @@ registers are not used.</p>"
     intcons intcons* endint intcar intcdr int-endp
     typespec-check implies fgl-sat-check))
 
-(defun def-gl-object-eval-fn (prefix fns union-previous wrld)
+(defun def-fgl-object-eval-fn (prefix fns union-previous wrld)
   (declare (xargs :mode :program))
   (let ((fns (set::mergesort
               (append (and union-previous
                            (append-alist-vals (table-alist 'fgl-evaluators wrld)))
                       fns
                       *fgl-ev-base-fns*))))
-    (acl2::template-subst *gl-object-eval-template*
+    (acl2::template-subst *fgl-object-eval-template*
                           :atom-alist `((<prefix> . ,prefix)
                                         (<fns> . ,fns))
                           :str-alist `(("<PREFIX>" . ,(symbol-name prefix)))
                           :pkg-sym prefix)))
 
-(defmacro def-gl-object-eval (prefix fns &key union-previous)
+(defmacro def-fgl-object-eval (prefix fns &key union-previous)
   `(make-event
-    (def-gl-object-eval-fn ',prefix ',fns ',union-previous (w state))))
+    (def-fgl-object-eval-fn ',prefix ',fns ',union-previous (w state))))
 
 (defxdoc fgl-object-eval
-  :parents (gl-object)
+  :parents (fgl-object)
   :short "Evaluator for FGL symbolic objects."
   :long "
 
@@ -2783,7 +2783,7 @@ evaluated using @('fgl-object-eval').</li>
 ")
 
 
-(def-gl-object-eval fgl nil)
+(def-fgl-object-eval fgl nil)
 
 
 

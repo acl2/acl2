@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -50,7 +50,7 @@
 
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
-(local (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t))
+(local (fty::deflist fgl-objectlist :elt-type fgl-object :true-listp t :elementp-of-nil t))
 
 (local (in-theory (disable nth acl2::nth-when-zp update-nth (tau-system))))
 
@@ -458,7 +458,7 @@
 (defun-sk stack$c-minor-frames-welltyped (stack$c)
   (forall i
           (implies (natp i)
-                   (and (gl-object-bindings-p (nth (* 2 i) (nth *stack$c-minori* stack$c))))))
+                   (and (fgl-object-bindings-p (nth (* 2 i) (nth *stack$c-minori* stack$c))))))
   :rewrite :direct)
 
 (in-theory (disable stack$c-minor-frames-welltyped
@@ -469,27 +469,27 @@
 (local
  (defthm stack$c-minor-frames-welltyped-zero
    (implies (stack$c-minor-frames-welltyped stack$c)
-            (gl-object-bindings-p (nth 0 (nth *stack$c-minori* stack$c))))
+            (fgl-object-bindings-p (nth 0 (nth *stack$c-minori* stack$c))))
    :hints (("goal" :use ((:instance stack$c-minor-frames-welltyped-necc (i 0)))))))
 
-;; (defthm stack$c-minor-frames-welltyped-implies-gl-object-bindings-p
+;; (defthm stack$c-minor-frames-welltyped-implies-fgl-object-bindings-p
 ;;   (implies (and (stack$c-minor-frames-welltyped stack$c)
 ;;                 (posp n) (<= n (stack$c-nframes stack$c)))
-;;            (gl-object-bindings-p (nth (+ -3 (* 3 n)) (nth *stack$c-minori* stack$c))))
+;;            (fgl-object-bindings-p (nth (+ -3 (* 3 n)) (nth *stack$c-minori* stack$c))))
 ;;   :hints (("goal" :use ((:instance stack$c-minor-frames-welltyped-necc (i (1- n))))
 ;;            :in-theory (disable stack$c-minor-frames-welltyped-necc))))
 
-;; (defthm stack$c-minor-frames-welltyped-implies-gl-objectlist-p
+;; (defthm stack$c-minor-frames-welltyped-implies-fgl-objectlist-p
 ;;   (implies (and (stack$c-minor-frames-welltyped stack$c)
 ;;                 (posp n) (<= n (stack$c-nframes stack$c)))
-;;            (gl-objectlist-p (nth (+ -2 (* 3 n)) (nth *stack$c-minori* stack$c))))
+;;            (fgl-objectlist-p (nth (+ -2 (* 3 n)) (nth *stack$c-minori* stack$c))))
 ;;   :hints (("goal" :use ((:instance stack$c-minor-frames-welltyped-necc (i (1- n))))
 ;;            :in-theory (disable stack$c-minor-frames-welltyped-necc))))
 
 (defun-sk stack$c-major-frames-welltyped (stack$c)
   (forall i
           (implies (natp i)
-                   (gl-object-bindings-p (nth (* 2 i) (nth *stack$c-majori* stack$c)))))
+                   (fgl-object-bindings-p (nth (* 2 i) (nth *stack$c-majori* stack$c)))))
   :rewrite :direct)
 
 (in-theory (disable stack$c-major-frames-welltyped
@@ -500,7 +500,7 @@
 (local
  (defthm stack$c-major-frames-welltyped-zero
    (implies (stack$c-major-frames-welltyped stack$c)
-            (gl-object-bindings-p (nth 0 (nth *stack$c-majori* stack$c))))
+            (fgl-object-bindings-p (nth 0 (nth *stack$c-majori* stack$c))))
    :hints (("goal" :use ((:instance stack$c-major-frames-welltyped-necc (i 0)))))))
 
 
@@ -2430,11 +2430,11 @@
 
 
 
-(define stack$c-set-bindings ((bindings gl-object-bindings-p)
+(define stack$c-set-bindings ((bindings fgl-object-bindings-p)
                               (stack$c stack$c-okp))
   :returns new-stack$c
   (b* ((top-major (stack$c-top-frame stack$c)))
-    (update-stack$c-majori (* 2 top-major) (gl-object-bindings-fix bindings) stack$c))
+    (update-stack$c-majori (* 2 top-major) (fgl-object-bindings-fix bindings) stack$c))
   ///
   
   (defret stack$c-okp-of-<fn>
@@ -2468,13 +2468,13 @@
 
 
 (define stack$c-add-binding ((var pseudo-var-p)
-                             (val gl-object-p)
+                             (val fgl-object-p)
                              (stack$c stack$c-okp))
   :returns new-stack$c
   (b* ((top-major (stack$c-top-frame stack$c))
        (index (* 2 top-major)))
     (update-stack$c-majori index (cons (cons (pseudo-var-fix var)
-                                             (gl-object-fix val))
+                                             (fgl-object-fix val))
                                        (stack$c-majori index stack$c))
                            stack$c))
   ///
@@ -2546,13 +2546,13 @@
                                       stack$c-build-top-major-frame
                                       )))))
 
-(define stack$c-set-minor-bindings ((bindings gl-object-bindings-p)
+(define stack$c-set-minor-bindings ((bindings fgl-object-bindings-p)
                                     (stack$c stack$c-okp))
   :guard-hints (("goal" :do-not-induct t))
   :returns new-stack$c
   (b* ((top-minor (stack$c-top-minor stack$c)))
     (update-stack$c-minori (* 2 top-minor)
-                           (gl-object-bindings-fix bindings)
+                           (fgl-object-bindings-fix bindings)
                            stack$c))
   ///
   
@@ -2588,13 +2588,13 @@
                        bottom (nth-nat *stack$c-top-minor1* stack$c) x))
                      )))))
 
-(define stack$c-add-minor-bindings ((bindings gl-object-bindings-p)
+(define stack$c-add-minor-bindings ((bindings fgl-object-bindings-p)
                                     (stack$c stack$c-okp))
   :returns new-stack$c
   (b* ((top-minor (stack$c-top-minor stack$c))
        (index (* 2 top-minor)))
     (update-stack$c-minori index
-                           (append (gl-object-bindings-fix bindings) (stack$c-minori index stack$c))
+                           (append (fgl-object-bindings-fix bindings) (stack$c-minori index stack$c))
                            stack$c))
   ///
   
@@ -2670,7 +2670,7 @@
                      )))))
 
 (define stack$c-bindings ((stack$c stack$c-okp))
-  (gl-object-bindings-fix
+  (fgl-object-bindings-fix
    (stack$c-majori (* 2 (stack$c-top-frame stack$c)) stack$c))
   ///
   (defthm stack$a-bindings-of-stack$c-extract
@@ -2687,7 +2687,7 @@
                                         (stack$c-major-frames-welltyped-necc))
                  :use ((:instance stack$c-major-frames-welltyped-necc
                         (i (nfix (- (stack$c-top-frame stack$c) (nfix n))))))))
-  (gl-object-bindings-fix
+  (fgl-object-bindings-fix
     (stack$c-majori (* 2 (mbe :logic (nfix (- (stack$c-top-frame stack$c) (nfix n)))
                               :exec (- (stack$c-top-frame stack$c) n)))
                     stack$c))
@@ -2748,7 +2748,7 @@
 (define stack$c-minor-bindings ((stack$c stack$c-okp))
   (b* ((top-minor (stack$c-top-minor stack$c))
        (index (* 2 top-minor)))
-    (gl-object-bindings-fix (stack$c-minori index stack$c)))
+    (fgl-object-bindings-fix (stack$c-minori index stack$c)))
   ///
   (defthm stack$a-minor-bindings-of-stack$c-extract
     (equal (stack$a-minor-bindings (stack$c-extract stack$c))
@@ -2787,7 +2787,7 @@
        (m (mbe :logic (min (nfix m) (1- (stack$c-nth-frame-minor-frames n stack$c)))
                :exec m))
        (index (* 2 (- top-minor m))))
-    (gl-object-bindings-fix (stack$c-minori index stack$c)))
+    (fgl-object-bindings-fix (stack$c-minori index stack$c)))
   ///
   (local (defthm diff-equal-0
            (equal (equal (+ (- n) x) 0)

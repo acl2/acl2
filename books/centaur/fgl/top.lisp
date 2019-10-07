@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -32,7 +32,7 @@
 
 (include-book "clauseproc")
 (include-book "def-fgl-thm")
-(include-book "def-gl-rewrite")
+(include-book "def-fgl-rewrite")
 ;; (include-book "subst-functions")
 (include-book "primitives")
 (include-book "fgarrays")
@@ -46,14 +46,14 @@
 (local (in-theory (disable w)))
 
 ;; ----------------------------------------------------------------------
-;; Install GL primitives:  This event collects the primitives defined in
+;; Install FGL primitives:  This event collects the primitives defined in
 ;; primitives, fgarrays, and fast-alists and defines a new function
-;; top-primitive-fncall, which is attached to gl-primitive-fncall-stub.
+;; top-primitive-fncall, which is attached to fgl-primitive-fncall-stub.
 ;; This event may be repeated later (with a different prefix instead of top)
 ;; to install more primitives.
 
-(install-gl-primitives top)
-(install-gl-metafns top)
+(install-fgl-primitives top)
+(install-fgl-metafns top)
 
 
 
@@ -73,21 +73,21 @@
                         (< 1 (interp-st-stack-frames interp-st)))
 
 (fancy-ev-add-primitive interp-st-counterex-bindings/print-errors
-                        (and (gl-object-bindings-p x)
-                             (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
+                        (and (fgl-object-bindings-p x)
+                             (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
 
 (fancy-ev-add-primitive interp-st-counterex-stack-bindings/print-errors t)
 
 (fancy-ev-add-primitive interp-st-counterex-bindings
-                        (and (gl-object-bindings-p x)
-                             (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
+                        (and (fgl-object-bindings-p x)
+                             (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
 
 (fancy-ev-add-primitive interp-st-counterex-stack-bindings t)
 
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
 
-(fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
+(fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 (define interp-st-print-aignet-stats ((name stringp) interp-st)
   (stobj-let ((logicman (interp-st->logicman interp-st)))
@@ -106,7 +106,7 @@
 
 (fancy-ev-add-primitive interp-st->user-scratch$inline t)
 
-(fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
+(fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 (def-fancy-ev-primitives counterex-primitives)
 
@@ -118,11 +118,11 @@
 
 ;; Note: this function will just get interpreted by fancy-ev when running under
 ;; show-counterexample-rw below, so we don't bother verifying guards etc.
-(define show-counterexample-bind ((params gl-object-p)
+(define show-counterexample-bind ((params fgl-object-p)
                                   (interp-st interp-st-bfrs-ok)
                                   state)
   :verify-guards nil
-  (b* (((unless (gl-object-case params :g-concrete))
+  (b* (((unless (fgl-object-case params :g-concrete))
         (mv (list (msg "error: params provided were not concrete-valued") nil nil) interp-st))
        (params (g-concrete->val params))
        ((mv sat-ctrex-err interp-st)
@@ -136,7 +136,7 @@
         (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)))
     (mv (g-concrete (list nil bindings-vals var-vals)) interp-st)))
 
-(def-gl-rewrite show-counterexample-rw
+(def-fgl-rewrite show-counterexample-rw
   (equal (show-counterexample params msg)
          (b* (((list (list error bindings vars) &)
                (syntax-bind alists
@@ -150,11 +150,11 @@
 
 ;; Note: this function will just get interpreted by fancy-ev when running under
 ;; show-counterexample-rw below, so we don't bother verifying guards etc.
-(define show-top-counterexample-bind ((params gl-object-p)
+(define show-top-counterexample-bind ((params fgl-object-p)
                                       (interp-st interp-st-bfrs-ok)
                                       state)
   :verify-guards nil
-  (b* (((unless (gl-object-case params :g-concrete))
+  (b* (((unless (fgl-object-case params :g-concrete))
         (mv (list (msg "error: params provided were not concrete-valued") nil nil) interp-st))
        (params (g-concrete->val params))
        ((mv sat-ctrex-err interp-st)
@@ -168,7 +168,7 @@
         (interp-st-counterex-stack-bindings/print-errors interp-st state)))
     (mv (g-concrete (list nil bindings-vals var-vals)) interp-st)))
 
-(def-gl-rewrite show-top-counterexample-rw
+(def-fgl-rewrite show-top-counterexample-rw
   (equal (show-top-counterexample params msg)
          (b* (((list (list error bindings vars) &)
                (syntax-bind alists
@@ -194,7 +194,7 @@ be a string or message identifying the particular SAT check.</p>"
 
   (disable-definition fgl-sat-check/print-counterexample)
 
-  (def-gl-rewrite fgl-sat-check/print-counterexample-rw
+  (def-fgl-rewrite fgl-sat-check/print-counterexample-rw
     (equal (fgl-sat-check/print-counterexample params msg x)
            (b* ((ans (fgl-sat-check params x))
                 (unsatp (syntax-bind unsat (eq ans nil)))
@@ -250,7 +250,7 @@ be a string or message identifying the particular SAT check.</p>"
 (defmacro fgl-error! (&key msg debug-obj)
   `(syntax-interp
     (b* ((interp-st 'interp-st)) ;; fake
-      (gl-interp-store-debug-info ,msg ,debug-obj interp-st))))
+      (fgl-interp-store-debug-info ,msg ,debug-obj interp-st))))
 
 (defmacro fgl-error (&key msg debug-obj)
   `(fgl-prog2 (fgl-error! :msg ,msg :debug-obj ,debug-obj)
@@ -262,7 +262,7 @@ be a string or message identifying the particular SAT check.</p>"
      (fgl-error!
       ,@(if msg
             `(:msg ,msg)
-          `(:msg (gl-msg "Assertion failed: ~x0" ',cond)))
+          `(:msg (fgl-msg "Assertion failed: ~x0" ',cond)))
       ,@(if debug-obj
             `(:debug-obj ,debug-obj)
           `(:debug-obj ',cond)))))

@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -37,7 +37,7 @@
   :short "A prover framework that supports bit-blasting."
   :long "
 
-<p>FGL is the successor to <see topic='@(url gl::gl)'>GL</see>.  It mainly
+<p>FGL is the successor to <see topic='@(url fgl::fgl)'>GL</see>.  It mainly
 consists of a clause processor that calls on a custom rewriter/term interpreter
 which features support for efficient representations of Boolean functions.
 Compared to GL, FGL offers the following new features:</p>
@@ -67,7 +67,7 @@ point.</li>
 
 <p>FGL is currently missing some important features of GL.  In particular, BDD
 and hons-AIG modes are not complete.  Shape specifiers don't exist yet.  Many
-of the usual ways of doing things in GL are done differently in FGL.</p>
+of the usual ways of doing things in FGL are done differently in FGL.</p>
 
 <p>To get started with FGL in the default configuration:</p>
 @({
@@ -91,7 +91,7 @@ of the usual ways of doing things in GL are done differently in FGL.</p>
 <p>To learn more about FGL, here are some places to get started:</p>
 
 <ul>
-<li>@(see gl-object)</li>
+<li>@(see fgl-object)</li>
 <li>@(see fgl-getting-bits-from-objects)</li>
 <li>@(see fgl-rewrite-rules)</li>
 <li>@(see fgl-debugging)</li>
@@ -130,7 +130,7 @@ following rule (from \"fgl/bitops.lisp\") for expanding the @('loghead') of
 some object:</p>
 
 @({
- (def-gl-rewrite loghead-const-width
+ (def-fgl-rewrite loghead-const-width
    (implies (syntaxp (integerp n))
             (equal (loghead n x)
                    (if (or (zp n)
@@ -159,7 +159,7 @@ Boolean variables that we want to reason about.</p>
 use such hyps to reduce the variables to bit-blasted objects.  For example, we
 have the following rule in \"fgl/bitops.lisp\":</p>
 @({
- (def-gl-rewrite unsigned-byte-p-const-width
+ (def-fgl-rewrite unsigned-byte-p-const-width
    (implies (syntaxp (integerp n))
             (equal (unsigned-byte-p n x)
                    (and (natp n)
@@ -339,9 +339,9 @@ bindings resulting from rewriting the second term.</p>")
 ;; " <p>The correctness theorems for the core FGL interpreter are somewhat more
 ;; complicated than might be expected due to our support for binding free
 ;; variables using @(see bind-var).  For example, the top correctness theorem for
-;; @('gl-interp-term') is the following mess:</p>
+;; @('fgl-interp-term') is the following mess:</p>
 
-;; @(def gl-interp-term-correct)
+;; @(def fgl-interp-term-correct)
 
 ;; <p>We'll skip past most of the hypotheses and focus on one particular conclusion:</p>
 
@@ -353,13 +353,13 @@ bindings resulting from rewriting the second term.</p>")
 ;;   eval-alist)
 ;;  })
 
-;; <p>Here the @('xobj') is the symbolic object returned from @('gl-interp-term'),
+;; <p>Here the @('xobj') is the symbolic object returned from @('fgl-interp-term'),
 ;; @('new-logicman') is the logicman field of the resulting interpreter state
-;; after executing @('gl-interp-term'), @('x') is the input term, and
+;; after executing @('fgl-interp-term'), @('x') is the input term, and
 ;; @('eval-alist') is the combined evaluated bindings for the current major and minor stack
 ;; frame from the resulting interpreter state.  (Actually, the minor frame
 ;; bindings are pulled from the input interpreter state, but it is a theorem that
-;; the evaluation of the minor frame bindings is preserved by @('gl-interp-term'),
+;; the evaluation of the minor frame bindings is preserved by @('fgl-interp-term'),
 ;; so that is immaterial.)</p>
 
 ;; <p>The 
@@ -369,7 +369,7 @@ bindings resulting from rewriting the second term.</p>")
 
 ;; <li>
 ;; @({
-;;  (logicman-pathcond-eval (gl-env->bfr-vals env)
+;;  (logicman-pathcond-eval (fgl-env->bfr-vals env)
 ;;                          (interp-st->constraint interp-st)
 ;;                          (interp-st->logicman interp-st))
 ;;  })
@@ -390,7 +390,7 @@ bindings resulting from rewriting the second term.</p>")
 ;; through the @('meta-extract') facility are correct with respect to the term
 ;; evaluator @('fgl-ev').</li>
 
-;; <li>@('(gl-primitive-formula-checks-stub st)') says that all the formulas that
+;; <li>@('(fgl-primitive-formula-checks-stub st)') says that all the formulas that
 ;; must be stored in the logical world in order for our symbolic interpretation of
 ;; primitives to be correct (see @(see fgl-primitives)) are correctly stored in
 ;; @('st').</li>
@@ -401,16 +401,16 @@ bindings resulting from rewriting the second term.</p>")
 
 ;; <li>With the above hyps we can then show:
 ;; @({
-;;   (logicman-pathcond-eval (gl-env->bfr-vals env)
+;;   (logicman-pathcond-eval (fgl-env->bfr-vals env)
 ;;                           (interp-st->constraint new-interp-st)
 ;;                           (interp-st->logicman new-interp-st))
 ;;  })
 ;; which says that the constraint field of the new interpreter state after running
-;; @('gl-interp-term') remains true.</li>
+;; @('fgl-interp-term') remains true.</li>
 
 ;; <li>
 ;; @({
-;;   (logicman-pathcond-eval (gl-env->bfr-vals env)
+;;   (logicman-pathcond-eval (fgl-env->bfr-vals env)
 ;;                           (interp-st->pathcond interp-st)
 ;;                           logicman)
 ;;  })
@@ -428,7 +428,7 @@ bindings resulting from rewriting the second term.</p>")
 <p>The FGL interpreter is called by the FGL clause processor in order to try
 and turn the theorem term into an equivalent Boolean formula, which then can
 perhaps be solved by SAT.  In order to do this, it recursively interprets terms
-turning them into symbolic objects (see @(see gl-object)) containing Boolean formula
+turning them into symbolic objects (see @(see fgl-object)) containing Boolean formula
 objects.  In this doc topic we outline the operation of the interpreter.</p>
 
 <p>The interpreter consists of a 31-way mutual recursion.  We won't detail each
@@ -438,17 +438,17 @@ terms all of the things that happen in them.</p>
 <h3>Interpreting Terms -- Overview</h3>
 
 <p>The highest-level entry point into the interpreter when trying to compute a
-Boolean formula from a term is @('gl-interp-test').  This first interprets the
-term using another possible high-level entry point, @('gl-interp-term-equivs'),
-which calls @('gl-interp-term') to produce a symbolic object (we'll cover its
+Boolean formula from a term is @('fgl-interp-test').  This first interprets the
+term using another possible high-level entry point, @('fgl-interp-term-equivs'),
+which calls @('fgl-interp-term') to produce a symbolic object (we'll cover its
 operation shortly), then checks a database of equivalences that have been
 assumed in the current path condition and replaces that symbolic object with an
 equivalent if there are any that have been assumed (and which some heuristics
-say are a good replacement).  Finally, it calls @('gl-interp-simplify-if-test')
+say are a good replacement).  Finally, it calls @('fgl-interp-simplify-if-test')
 which is the subroutine for coercing a symbolic object into a Boolean
 formula.</p>
 
-<p>@('Gl-interp-term') is very similar to a classical interpreter or rewriter.
+<p>@('fGl-interp-term') is very similar to a classical interpreter or rewriter.
 It examines the term and treats different kinds of terms differently:</p>
 <ul>
 
@@ -469,7 +469,7 @@ lambda is itself a lambda application, it recursively adds that to the
 bindinglist, stopping when it finds a lambda body that is not itself a lambda.
 The interpreter interprets the bindinglist by recurring through the list,
 recursively interpreting each of the actuals of each pair with
-@('gl-interp-term-equivs').  When a pair is done it adds the bindings formed by
+@('fgl-interp-term-equivs').  When a pair is done it adds the bindings formed by
 pairing the formals with the symbolic object results from the actuals to the
 minor bindings of the interpreter.  When done with all the @('(formals
 actuals)') pairs, it then recursively interprets the body, then pops off the
@@ -479,7 +479,7 @@ from interpreting the body.</li>
 <li>When it is a function call, it deals with a few special cases, described
 next, and then the generic function call case.  In the generic case, it first
 recursively interprets the arguments of the function, then calls
-@('gl-interp-fncall'), described below, on the function and symbolic objects
+@('fgl-interp-fncall'), described below, on the function and symbolic objects
 resulting from the arguments.</li>
 
 </ul>
@@ -495,14 +495,14 @@ them:</p>
 <ul>
 
 <li>For @('if') terms, the test is recursively interpreted and coerced to a
-Boolean function using @('gl-interp-test').  Then, unless a syntactic analysis
+Boolean function using @('fgl-interp-test').  Then, unless a syntactic analysis
 shows that the path condition implies the test's negation, we recursively
-interpret the \"then\" branch with @('gl-interp-term-equivs') and with the test
+interpret the \"then\" branch with @('fgl-interp-term-equivs') and with the test
 conjoined to the path condition, and unless the syntactic analysis shows the
 path condition implies the test, we recursively interpret the \"else\" branch
 with the negated test conjoined to the path condition.  If both branches were
 interpreted, we then attempt to merge the results from the two branches into a
-single symbolic object using @('gl-interp-merge-branches'), described
+single symbolic object using @('fgl-interp-merge-branches'), described
 below.</li>
 
 <li>For @('return-last'), we provide special support for @('time$'), allowing
@@ -526,9 +526,9 @@ variable if it is not yet bound **** </li>
 special error keyword in the interpreter state's @('errmsg') field, which will
 get caught when returning from the current major stack frame.</li>
 
-<li>For @('fgl-sat-check'), we use @('gl-interp-test') to coerce the second
+<li>For @('fgl-sat-check'), we use @('fgl-interp-test') to coerce the second
 argument (the condition to be tested) to a Boolean function, and
-@('gl-interp-term-equivs') to interpret the first argument (params).  We then
+@('fgl-interp-term-equivs') to interpret the first argument (params).  We then
 call @('interp-st-sat-check'), an attachable function which calls SAT and
 returns NIL if the input Boolean formula is unsat.</li>
 
@@ -539,9 +539,9 @@ context.  If so, we evaluate the first argument using @('fancy-ev'), with the
 current variable bindings from the symbolic interpreter passed in as the
 evaluation environment.  For example, if a variable @('x') is bound to a
 symbolic integer in our current interpreter frame, then @('x') will be bound to
-the @(see gl-object) representation of that symbolic integer when evaluating
+the @(see fgl-object) representation of that symbolic integer when evaluating
 the @('syntax-interp') term.  This is similar to ACL2's @(see syntaxp)
-behavior, but the syntaxp term operates on GL object syntax rather than ACL2
+behavior, but the syntaxp term operates on FGL object syntax rather than ACL2
 term syntax.</li>
 
 <li>For @('assume'), we first check that we're in an @('unequiv') equivalence
@@ -575,9 +575,9 @@ that term and return its result.</li>
 
 <h3>Interpreting Function Calls -- Generic Case</h3>
 
-<p>Generic function calls are run by @('gl-interp-fncall') after reducing the
+<p>Generic function calls are run by @('fgl-interp-fncall') after reducing the
 arguments to a list of symbolic objects.  This looks up the <see topic='@(url
-gl-function-mode)'>function mode</see> of the function and, depending on the
+fgl-function-mode)'>function mode</see> of the function and, depending on the
 restrictions encoded in that mode, may do some or all of the following:</p>
 
 <ul>
@@ -588,7 +588,7 @@ magic-ev-fncall).  If it runs successfuly, return the result as a
 @('g-concrete') object.</li>
 
 <li>Otherwise try applying each of the rewrite rules enabled for that function
-in the @('gl-rewrite-rules') table using @('gl-rewrite-try-rule'); see @(see
+in the @('fgl-rewrite-rules') table using @('fgl-rewrite-try-rule'); see @(see
 fgl-rewrite-rules).  If any of those rules succeeds, return the symbolic object
 produced by recursively interpreting the RHS of the rule under the unifying
 substitution.</li>
@@ -598,7 +598,7 @@ substitution.</li>
 
 <li>Otherwise, if there exists a rule with rune @('(:definition fnname)'), or
 if there are rewrite/definition rules for that function listed in the
-@('gl-definition-rules') table, then try rewriting the call using those
+@('fgl-definition-rules') table, then try rewriting the call using those
 rules.</li>
 
 <li>Finally, if none of the above were successful, produce the object
@@ -607,27 +607,27 @@ rules.</li>
 </ul>
 
 <p>This completes the overview of how a term is interpreted and turned into
-either a symbolic object (@(see gl-object)) or Boolean formula.  Next we
+either a symbolic object (@(see fgl-object)) or Boolean formula.  Next we
 describe three subroutines that we skipped describing above:
-@('gl-rewrite-try-rule'), which attempts to apply a rewrite rule;
-@('gl-interp-simplify-if-test'), which coerces a symbolic object into a Boolean
-formula; and @('gl-interp-merge-branches'), which merges two branches of an IF
-test.  This will also lead us to discuss @('gl-interp-add-constraints'), which
+@('fgl-rewrite-try-rule'), which attempts to apply a rewrite rule;
+@('fgl-interp-simplify-if-test'), which coerces a symbolic object into a Boolean
+formula; and @('fgl-interp-merge-branches'), which merges two branches of an IF
+test.  This will also lead us to discuss @('fgl-interp-add-constraints'), which
 adds Boolean constraints according to a set of rules activated when introducing
 a new Boolean variable representing some term.</p>
 
 <h3>Applying Rewrite Rules</h3>
 
-<p>@('Gl-rewrite-try-rule') takes a rewrite rule object and a @('g-apply') GL
+<p>@('fGl-rewrite-try-rule') takes a rewrite rule object and a @('g-apply') FGL
 object.  It first tries to unify the LHS of the rule arguments with the input
 objects.  If successful, then it tries to relieve the hyps of the rule by
-calling @('gl-interp-test') on each one and checking that the result
+calling @('fgl-interp-test') on each one and checking that the result
 is (syntactically) constant-true.  It also checks @('syntaxp') and
 @('bind-free') hyps, the latter of which might extend the unifying substitution
 with some free variable bindings.</p>
 
 <p>If the hypotheses are all relieved, then it recurs on the conclusion using
-@('gl-interp-term') and returns the result unless there were errors recorded in
+@('fgl-interp-term') and returns the result unless there were errors recorded in
 the interpreter state.  If any errors exist, it returns failure; it also
 cancels the particular error produced by @('abort-rewrite'), so that the result
 of @('abort-rewrite') is simply to fail that particular rewrite rule
@@ -640,7 +640,7 @@ profiling, but none of these are logically relevant.</p>
 
 <h3>Simplifying IF Tests</h3>
 
-<p>@('Gl-interp-simplify-if-test') takes a symbolic object and attempts to
+<p>@('fGl-interp-simplify-if-test') takes a symbolic object and attempts to
 reduce it to an IFF-equivalent Boolean formula.  For some varieties of symbolic
 object, this is trivial: @(':g-concrete') objects' truth value is just the
 truth value of the quoted value, @('g-integer') and @('g-cons') objects are
@@ -649,7 +649,7 @@ exactly NIL, and @('g-boolean') objects' truth values are given by their
 Boolean formulas.  This leaves @('g-var'), @('g-ite'), and @('g-apply') objects.</p>
 
 <p>For @('g-ite') objects, we coerce the @('test') sub-object into a Boolean
-formula using @('gl-interp-simplify-if-test') recursively.  Then, similar to
+formula using @('fgl-interp-simplify-if-test') recursively.  Then, similar to
 symbolic interpretation of IF, we recur on the @('then') object unless the test
 formula is syntactically falsified by the path condition, we recur on the
 @('else') branch unless the test formula is syntactically true under the path
@@ -664,16 +664,16 @@ variable, in which case we return it.</p>
 <p>For @('g-apply') objects, we first rewrite the function call under an IFF
 context.  In many cases this is redundant, but in some cases it may produce
 reductions.  If rewriting is successful, we recursively apply
-@('gl-simplify-if-test') to the result.  Otherwise, we look up the function
+@('fgl-simplify-if-test') to the result.  Otherwise, we look up the function
 call object in the @('bvar-db') and return the associated Boolean variable, if
 any, or else introduce a fresh one and record that association.  Finally, if a
 new Boolean variable was introduced, we process the object with
-@('gl-interp-add-constraints') (see below) to record any constraints on the new
+@('fgl-interp-add-constraints') (see below) to record any constraints on the new
 Boolean variable.</p>
 
 <h3>Merging IF Branches</h3>
 
-<p>@('Gl-interp-merge-branches') takes a Boolean formula for an IF test and
+<p>@('fGl-interp-merge-branches') takes a Boolean formula for an IF test and
 symbolic objects for the then and else branch values, and returns a new
 symbolic object encapsulating the if-then-else.</p>
 
@@ -681,13 +681,13 @@ symbolic object encapsulating the if-then-else.</p>
 or branches equal -- and returns the obvious results in those cases.
 Otherwise, if either branch is a function call (@(see g-apply)) object, then it
 tries applying branch merge rules for those functions using
-@('gl-rewrite-try-rule') applied to the IF.  If any of these are successful, it
+@('fgl-rewrite-try-rule') applied to the IF.  If any of these are successful, it
 returns the result.</p>
 
 <p>Otherwise, if both branches are calls of the same function, it recursively
 merges the argument lists and returns the function applied to the merged
 arguments.  Otherwise, it calls helper function
-@('interp-st-gl-object-basic-merge'), which merges basic symbolic objects
+@('interp-st-fgl-object-basic-merge'), which merges basic symbolic objects
 together when their types match, otherwise either producing an
 if-then-else (@(see g-ite)) object or an error, depending on the configuration
 setting of @('make-ites').  (See also @(see fgl-avoiding-if-then-elses).)</p>
@@ -734,8 +734,8 @@ default attachment of @('interp-st-sat-check') is @(see fgl-sat-config).</p>
   :long "<p>FGL rewrite rules are really just ACL2 rewrite rules.  But this
 doesn't mean that any good ACL2 rewrite rule is a good FGL rewrite rule, or
 vice versa.  A particularly important difference is that @(see syntaxp) and
-@(see bind-free) forms receive <see topic='@(url gl-object)'>GL symbolic
-objects</see> as their inputs, rather than ACL2 terms.  GL rewrite rules also
+@(see bind-free) forms receive <see topic='@(url fgl-object)'>GL symbolic
+objects</see> as their inputs, rather than ACL2 terms.  FGL rewrite rules also
 allow a special form called @(see bind-var) which allows free variables to
 be bound as with @(see bind-free), but in the RHS of the rewrite rule rather
 than in the hyps.  They additionally support a form @(see abort-rewrite) which
@@ -746,30 +746,30 @@ similarly to if a hypothesis was not relieved.</p>
 <p>An FGL rewrite rule is an ACL2 rewrite rule.  You can register an existing
 ACL2 rewrite rule for use in FGL using:</p>
 @({
- (fgl::add-gl-rewrite my-rule)
+ (fgl::add-fgl-rewrite my-rule)
  })
 <p>And you can disable that rule for use by FGL using:</p>
 @({
- (fgl::remove-gl-rewrite my-rule)
+ (fgl::remove-fgl-rewrite my-rule)
  })
 <p>To create a new rewrite rule and enable it for FGL, you may use:</p>
 @({
- (fgl::def-gl-rewrite my-rule
+ (fgl::def-fgl-rewrite my-rule
     body
    :hints ...)
  })
 <p>This just expands to:</p>
 @({
  (defthmd my-rule ...)
- (fgl::add-gl-rewrite my-rule)
+ (fgl::add-fgl-rewrite my-rule)
  })
 
 <p>FGL also supports rewrite rules that are triggered not on the leading
 function symbol of the LHS, but on the leading function symbol of an
 if-then-else branch.  These rules can be added using
-@('(fgl::add-gl-branch-merge my-rule)') and they can be created using:</p>
+@('(fgl::add-fgl-branch-merge my-rule)') and they can be created using:</p>
 @({
- (fgl::def-gl-branch-merge my-rule
+ (fgl::def-fgl-branch-merge my-rule
     body
     ...)
  })
@@ -787,7 +787,7 @@ rule in both the ACL2 and FGL rewriters if it has syntaxp or bind-free
 hypotheses, because in FGL the variables in the syntaxp/bind-free forms will be
 bound to symbolic objects, whereas in ACL2 they will be bound to
 terms. Therefore to use syntaxp, bind-free, and bind-var (discussed below),
-one needs to be familiar with FGL symbolic objects -- see @(see gl-object).</p>
+one needs to be familiar with FGL symbolic objects -- see @(see fgl-object).</p>
 
 <p>Two additional features support a new style of programming rewrite rules.
 @('Bind-var') and @('syntax-bind') allow functionality similar to bind-free,
@@ -799,14 +799,14 @@ right-hand side.</p>
 \"bitops.lisp\":</p>
 
 @({
-  (def-gl-rewrite logtail-to-logtail-helper
-    (implies (syntaxp (not (gl-object-case n :g-concrete)))
+  (def-fgl-rewrite logtail-to-logtail-helper
+    (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logtail n x)
                     (b* ((x (int x))
                          (n (nfix (int n)))
-                         ((when (syntax-bind n-concrete (gl-object-case n :g-concrete)))
+                         ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logtail n x))
-                         (n-width (syntax-bind n-width (gl-object-case n
+                         (n-width (syntax-bind n-width (fgl-object-case n
                                                          :g-integer (max 0 (1- (len n.bits)))
                                                          :otherwise nil)))
                          ((unless (and n-width
@@ -836,10 +836,10 @@ prove it with the free variable @('n-concrete') in place of the syntax-bind.
 That means we are logically justified in returning anything we want from the
 syntax-bind form -- since n-concrete is a free variable not previously bound,
 the rule is applicable for any value of n-concrete.  In this case we evaluate
-@('(gl-object-case n :g-concrete)').  (Note: @('syntax-bind') is a macro that
+@('(fgl-object-case n :g-concrete)').  (Note: @('syntax-bind') is a macro that
 uses the primitive forms @(see bind-var) and @(see syntax-interp) to implement
 this behavior; see their documentation for more general usage.)  This will
-produce a Boolean value, which is a concrete GL object representing itself.  If
+produce a Boolean value, which is a concrete FGL object representing itself.  If
 true, then n is concrete and we will produce the result of again rewriting
 @('(logtail n x)') -- note that we haven't created a loop here because the
 syntaxp hyp required that the original @('n') was not concrete. Otherwise, we
@@ -978,11 +978,11 @@ encode them symbolically.</li>
  
  ;; Turn off this function's definition! Keep the if-then-else inside it hidden.
  (fgl::disable-definition vector-kind-encoding)
- (table fgl::gl-fn-modes 'vector-kind-encoding
-        (fgl::make-gl-function-mode :dont-concrete-exec t))
+ (table fgl::fgl-fn-modes 'vector-kind-encoding
+        (fgl::make-fgl-function-mode :dont-concrete-exec t))
  
  ;; Now rephrase vector-kind in terms of vector-kind-encoding:
- (fgl::def-gl-rewrite vector-kind-to-encoding2
+ (fgl::def-fgl-rewrite vector-kind-to-encoding2
    (equal (vector-kind x)
           (cond ((equal (loghead 2 x) 0) (vector-kind-encoding nil t))
                 ((equal (logtail 2 x) 0) (vector-kind-encoding t nil))
@@ -991,7 +991,7 @@ encode them symbolically.</li>
  ;; At minimum we need a rule for checking equality of a vector-kind-encoding.
  ;; Note: EQUAL will unify both ways, so no need to worry about the order of the
  ;; arguments!
- (fgl::def-gl-rewrite equal-of-vector-kind-encoding
+ (fgl::def-fgl-rewrite equal-of-vector-kind-encoding
    (equal (equal (vector-kind-encoding littlep bigp) x)
           (cond (littlep (equal x :little))
                 (bigp    (equal x :big))
@@ -1007,10 +1007,10 @@ encode them symbolically.</li>
  
  (fgl::disable-definition vector-kind-p)
  
- (fgl::def-gl-rewrite vector-kind-p-of-vector-kind-encoding
+ (fgl::def-fgl-rewrite vector-kind-p-of-vector-kind-encoding
    (vector-kind-p (vector-kind-encoding littlep bigp)))
  
- (fgl::def-gl-branch-merge if-with-vector-kind-encoding
+ (fgl::def-fgl-branch-merge if-with-vector-kind-encoding
    (implies (vector-kind-p else)
             (equal (if test (vector-kind-encoding littlep bigp) else)
                    (vector-kind-encoding (if test littlep (equal else :little))
@@ -1022,7 +1022,7 @@ encode them symbolically.</li>
  
  (fgl::disable-definition vector-kind)
  
- (fgl::def-gl-rewrite equal-of-vector-kind
+ (fgl::def-fgl-rewrite equal-of-vector-kind
    (equal (equal y (vector-kind x))
           (cond ((equal (loghead 2 x) 0) (equal y :big))
                 ((equal (logtail 2 x) 0) (equal y :little))
@@ -1033,10 +1033,10 @@ encode them symbolically.</li>
  
  (fgl::disable-definition vector-kind-p)
  
- (fgl::def-gl-rewrite vector-kind-p-of-vector-kind
+ (fgl::def-fgl-rewrite vector-kind-p-of-vector-kind
    (vector-kind-p (vector-kind x)))
  
- (fgl::def-gl-branch-merge if-then-else-of-vector-kind
+ (fgl::def-fgl-branch-merge if-then-else-of-vector-kind
    (implies (vector-kind-p else)
             (equal (if test (vector-kind x) else)
                    (vector-kind (if test x
@@ -1074,19 +1074,19 @@ prevents us from needing to reason about this extra information.</p>
  (fgl::disable-definition maybe-value)
  
  ;; Under IFF, maybe-value is just its truth value.
- (def-gl-rewrite maybe-value-under-iff
+ (def-fgl-rewrite maybe-value-under-iff
    (iff (maybe-value true val)
         true))
  
  ;; To merge a maybe-value with some other object, merge with the test under an
  ;; IFF context and then merge the value using fgl-hidden-if.
- (def-gl-branch-merge maybe-value-merge
+ (def-fgl-branch-merge maybe-value-merge
    (equal (if test (maybe-value true val) else)
           (maybe-value (if test true (and else t)) (fgl-hidden-if test val else))))
  
  ;; We probably shouldn't need to compare maybe-value with equal, but this might
  ;; succeed if we end up needing to.
- (def-gl-rewrite equal-of-maybe-value
+ (def-fgl-rewrite equal-of-maybe-value
    (equal (equal (maybe-value true val) x)
           (if true
               (if val
@@ -1118,7 +1118,7 @@ prevents us from needing to reason about this extra information.</p>
  ;; Now when we see member-equal, we'll hide its full value away using
  ;; hide-member-equal and expose its Boolean value (memberp-equal) through
  ;; maybe-value.
- (def-gl-rewrite member-equal-to-maybe-value
+ (def-fgl-rewrite member-equal-to-maybe-value
    (equal (member-equal x lst)
           (maybe-value (memberp-equal x lst) (hide-member-equal x lst))))
  })
@@ -1218,9 +1218,9 @@ constraints showing that it was not invalidly modified; usually, all a
 primitive should do with the @('interp-st') is build new gates onto the
 @('aignet') of its @('logicman') (see @(see fgl-internals)).</p>
 
-<p>New primitives can be defined with the form @('def-gl-primitive').  This is
+<p>New primitives can be defined with the form @('def-fgl-primitive').  This is
 not enough to install the new primitives; rather, after the primitives are
-defined, they must be installed with @('install-gl-primitives').</p>
+defined, they must be installed with @('install-fgl-primitives').</p>
 
 <h3>Example</h3>
 
@@ -1229,8 +1229,8 @@ defined, they must be installed with @('install-gl-primitives').</p>
 follows:</p>
 
 @({
- (def-gl-primitive intcar (x)
-   (gl-object-case x
+ (def-fgl-primitive intcar (x)
+   (fgl-object-case x
      :g-concrete (mv t (and (integerp x.val)
                             (intcar x.val))
                      interp-st)
@@ -1243,19 +1243,19 @@ follows:</p>
      :otherwise (mv nil nil interp-st)))
  })
 
-<p>@('Def-gl-primitive') sets up the correct signature and guards for the
+<p>@('Def-fgl-primitive') sets up the correct signature and guards for the
 primitive function, extracts the named formals (in this case @('x')) from the
 argument list, and proves the necessary theorems to ensure it can be installed
 as a primitive.  It stores the association between @('intcar') and the new
-primitive function, named @('gl-intcar-primitive'), in the table
-@('gl-primitives').</p>
+primitive function, named @('fgl-intcar-primitive'), in the table
+@('fgl-primitives').</p>
 
-<p>To install the primitives listed in @('gl-primitives'), use
-@('(install-gl-primitives name)'), which defines a new function
+<p>To install the primitives listed in @('fgl-primitives'), use
+@('(install-fgl-primitives name)'), which defines a new function
 @('name-primitive-fncall') that takes a function symbol, argument list,
 interp-st, and state, and dispatches based on the function symbol to that
 function's primitive, if any (if not, it returns unsuccessful).  This function
-is then attached to @('gl-primitive-fncall-stub'), which is called by the FGL
+is then attached to @('fgl-primitive-fncall-stub'), which is called by the FGL
 interpreter to run primitives.</p>
 
 <h3>Formula Checks</h3>
@@ -1314,12 +1314,12 @@ in @('bitops-primitives.lisp'), we use the form</p>
 <p>This introduces a function @('bitops-formula-checks') which checks all of
 the facts necessary to ensure that the listed functions operate as expected.
 Then, when defining a primitive that depends on this, we simply add
-@(':formula-check bitops-formula-checks') within the def-gl-primitive form.
+@(':formula-check bitops-formula-checks') within the def-fgl-primitive form.
 For example:</p>
 
 @({
- (def-gl-primitive acl2::logtail$inline (n x)
-   (b* (((unless (gl-object-case n :g-concrete))
+ (def-fgl-primitive acl2::logtail$inline (n x)
+   (b* (((unless (fgl-object-case n :g-concrete))
          (mv nil nil interp-st))
         ((mv ok x) (gobj-syntactic-integer-fix x))
         ((unless ok) (mv nil nil interp-st))

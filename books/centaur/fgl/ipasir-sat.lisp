@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+; FGL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2019 Centaur Technology
 ;
 ; Contact:
@@ -853,10 +853,10 @@
                   (interp-st-bfr-p bfr)
                   (not (interp-st->errmsg new-interp-st))
                   (equal logicman (interp-st->logicman interp-st))
-                  (logicman-pathcond-eval (gl-env->bfr-vals env)
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
-                  (logicman-pathcond-eval (gl-env->bfr-vals env)
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->constraint interp-st)
                                           (interp-st->logicman interp-st)))
              (equal (gobj-bfr-eval ans env logicman)
@@ -868,7 +868,7 @@
                    (sat-lits (logicman->sat-litsi config.ipasir-index logicman))
                    (ipasir (logicman->ipasiri config.ipasir-index logicman))
                    (aignet-invals (alist-to-bitarr (aignet::num-ins aignet)
-                                                   (gl-env->bfr-vals env) nil))
+                                                   (fgl-env->bfr-vals env) nil))
                    (cnf-vals (aignet::aignet->cnf-vals aignet-invals nil nil sat-lits aignet)))
                 `(:use ((:instance logicman-ipasir-solve-unsat-implies
                          (logicman ,(acl2::hq logicman))
@@ -975,8 +975,8 @@
          ((when (interp-st->errmsg interp-st))
           (mv nil interp-st state))
          ((unless (fgl-ipasir-config-p params))
-          (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object")))
+          (fgl-interp-error
+           :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object")))
          ((when (eq bfr nil))
           (mv nil interp-st state)))
       (interp-st-ipasir-sat-check-core params bfr interp-st state))
