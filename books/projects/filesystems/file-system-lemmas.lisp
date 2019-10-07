@@ -667,12 +667,6 @@
          (nthcdr (+ (nfix a) (nfix b)) x))
   :hints(("goal" :induct (nthcdr b x))))
 
-(defthm last-of-member-equal
-  (equal (last (member-equal x lst))
-         (if (member-equal x lst)
-             (last lst)
-           nil)))
-
 (defthm acl2-count-of-member-equal
   (<= (acl2-count (member-equal x lst))
       (acl2-count lst))
@@ -875,3 +869,18 @@
              (equal key name)
              (remove-assoc key alist)
            (put-assoc name val (remove-assoc key alist)))))
+
+(defthm last-of-member-equal
+  (equal (last (member-equal x lst))
+         (if (member-equal x lst)
+             (last lst)
+           nil)))
+
+(defthm integerp-of-car-of-last-when-integer-listp
+  (implies (and (integer-listp l) (consp l))
+           (integerp (car (last l)))))
+
+(defthm non-negativity-of-car-of-last-when-nat-listp
+  (implies (nat-listp l)
+           (<= 0 (car (last l))))
+  :rule-classes :linear)
