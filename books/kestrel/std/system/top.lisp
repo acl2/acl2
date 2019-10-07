@@ -12,6 +12,7 @@
 
 (include-book "all-free-bound-vars")
 (include-book "all-vars-open")
+(include-book "arity-plus")
 (include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "dumb-occur-var-open")

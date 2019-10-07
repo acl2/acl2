@@ -15,20 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (arity+ 'len (w state)) 1)
-
-(must-succeed*
- (defun f (x y zz aaa b77) (list x y zz aaa b77))
- (assert-equal (arity+ 'f (w state)) 5))
-
-(assert-equal (arity+ '(lambda (x y) (binary-+ x y)) (w state))
-              2)
-
-(assert-equal (arity+ '(lambda () '33) (w state))
-              0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (stobjs-in+ 'cons (w state)) '(nil nil))
 
 (assert-equal (stobjs-in+ 'fmt (w state)) '(nil nil nil state nil))

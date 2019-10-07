@@ -21,6 +21,7 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 (include-book "term-function-recognizers")
 
+(include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
@@ -87,24 +88,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define arity+ ((fn (or (function-namep fn wrld)
-                        (pseudo-lambdap fn)))
-                (wrld plist-worldp-with-formals))
-  :returns (result natp
-                   :hyp (or (function-namep fn wrld) (pseudo-lambdap fn))
-                   :hints (("Goal" :in-theory (enable arity pseudo-lambdap))))
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee arity)."
-  :long
-  "<p>
-   This returns the same result as @(tsee arity),
-   but it has a stronger guard.
-   </p>"
-  (arity fn wrld)
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
