@@ -155,10 +155,15 @@
     (xdoc::seetopic "abnf::well-formedness" "well-formed")
     " and "
     (xdoc::seetopic "abnf::closure" "closed")
-    "."))
+    ".")
+   (xdoc::p
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
   (append *lexical-grammar*
           *syntactic-grammar*)
   ///
+
+  (add-const-to-untranslate-preprocess *grammar*)
 
   (defruled rulelist-wfp-of-*grammar*
     (abnf::rulelist-wfp *grammar*))

@@ -19,6 +19,7 @@
                          *primitive-formals-and-guards*
                          access-event-tuple-namex
                          access-event-tuple-type
+                         add-const-to-untranslate-preprocess
                          add-suffix
                          add-suffix-to-fn
                          all-ffn-symbs
