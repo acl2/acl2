@@ -1328,7 +1328,8 @@
      This is not necessarily the final name of the Java variable:
      as explained in @(tsee atj-rename-formal),
      in general a numeric index is added at the end,
-     so the final name of the Java variable has generally the form
+     via @(tsee atj-var-add-index).
+     So the final name of the Java variable has generally the form
      @('java::<pname>$$$<name>$$<index>').
      This is a relatively simple and uniform scheme to keep names unique
      (in particular, the triple and double @('$') signs
@@ -1402,6 +1403,24 @@
        ;; keep package below in sync with *ATJ-INIT-INDICES*:
        (new-var (intern$ new-name "JAVA")))
     new-var))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-var-add-index ((var symbolp) (index natp))
+  :returns (new-var symbolp)
+  :short "Append a numeric index to a variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to make Java variables unique.
+     The index is appended to the result of @(tsee atj-var-to-jvar),
+     as explained there."))
+  (b* ((index-chars (if (= index 0)
+                        nil
+                      (append (list #\$ #\$)
+                              (str::natchars index))))
+       (index-string (implode index-chars)))
+    (add-suffix var index-string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1559,12 +1578,7 @@
        (jvar+index? (assoc-eq jvar indices))
        (index (if jvar+index? (cdr jvar+index?) 0))
        (indices (acons jvar (1+ index) indices))
-       ($$index-jchars (if (= index 0)
-                           nil
-                         (append (list #\$ #\$)
-                                 (str::natchars index))))
-       ($$index-string (implode $$index-jchars))
-       (jvar (add-suffix jvar $$index-string)))
+       (jvar (atj-var-add-index jvar index)))
     (mv jvar indices))
 
   :prepwork
