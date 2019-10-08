@@ -18,7 +18,7 @@
                      (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (result symbol-listp)
-  :parents (world-queries)
+  :parents (std/system)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee stobjs-out).")
