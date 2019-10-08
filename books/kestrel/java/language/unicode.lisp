@@ -117,10 +117,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ACL2 characters are ISO-8859-1: "
+    "The ACL2 characters are ISO-8859-1: see "
     (xdoc::seetopic "acl2::characters" "this topic")
-    " mentions ISO-8859,
-     and the @('acl2.lisp') system souce file mentions ISO-8859-1.")
+    ", and the @('acl2.lisp') system souce file.")
    (xdoc::p
     "Since the ISO-8859-1 characters are the first 256 Unicode characters,
      and since we model Java Unicode characters as unsigned 16-bit integers,
