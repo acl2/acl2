@@ -1340,11 +1340,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-rename-formal ((var symbolp)
-                           (index natp)
+                           (indices symbol-nat-alistp)
                            (curr-pkg stringp)
                            (vars-by-name string-symbollist-alistp))
   :guard (not (equal curr-pkg ""))
-  :returns (new-var symbolp)
+  :returns (mv (new-var symbolp)
+               (new-indices symbol-nat-alistp
+                            :hyp (and (symbol-nat-alistp indices)
+                                      (symbolp var))))
   :short "Rename a formal parameters of
           a defined function or lambda expression."
   :long
@@ -1354,6 +1357,8 @@
      the renaming of a variable is established
      when the variable is encountered as a formal parameter.
      This motivates the name of this function.")
+   (xdoc::p
+    "This function is called only on formal parameters marked as `new'.")
    (xdoc::p
     "Each ACL2 function is turned into a Java method,
      whose body is a shallowly embedded representation
@@ -1448,6 +1453,16 @@
      regardless of package prefixes.
      However, using the current package makes things uniform.")
    (xdoc::p
+    "The index to use for this variable
+     is retrieved from the @('indices') parameter,
+     which is an alist that associates each variable to its next index to use.
+     If a variable is not in the alist, it is as if it had index 0,
+     and in that case no index is added, as explained above.
+     All the indices in the alist are actually positive integers.
+     The alist is updated
+     by incrementing the next index to use for the variable,
+     and returned along with the new variable.")
+   (xdoc::p
     "This pre-translation step is performed
      after the type annotation and new/old marking steps,
      but the caller of this function decomposes the marked annotated variable
@@ -1468,6 +1483,8 @@
        (name-jchars (atj-chars-to-jchars-id (explode name)
                                             (endp pname$$$-jchars)
                                             t))
+       (var+index? (assoc-eq var indices))
+       (index (if var+index? (cdr var+index?) 0))
        ($$index-jchars (if (= index 0)
                            nil
                          (append (list #\$ #\$)
@@ -1477,8 +1494,14 @@
        (new-name (if (member-equal new-name *atj-disallowed-jvar-names*)
                      (str::cat new-name "$")
                    new-name))
-       (new-var (intern$ new-name curr-pkg)))
-    new-var))
+       (new-var (intern$ new-name curr-pkg))
+       (indices (acons var (1+ index) indices)))
+    (mv new-var indices))
+
+  :prepwork
+  ((defrulel returns-lemma
+     (implies (natp x)
+              (natp (1+ x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1547,16 +1570,14 @@
      The variables in the renaming maps are not marked as `new' or `old';
      as mentioned above, we have two separate maps for new and old variables.")
    (xdoc::p
-    "Each ACL2 formal parameter in the input list is processed as follows,
-     when it is marked as `new'.
-     If it has no index in the alist of indices,
-     it has essentially index 0,
-     and the alist is extended to associate 1 (the next index) to the symbol.
-     Otherwise, the index in the alist is used,
-     and the alist is updated with the next index.
-     Since, as explained above, the variables in this alist are not annotated,
-     we remove the annotations from the formal parameters
-     before looking up the index.")
+    "Each ACL2 formal parameter in the input list
+     is processed differently based on whether it is marked `new' or `old'.
+     If it is marked `old',
+     it is simply renamed according to the @('renaming-old') alist,
+     which must include an entry for the variable.
+     When it is marked as `new',
+     it is unmarked and unannotated and passed to @(tsee atj-rename-formal),
+     which uses and updates the index associated to the variable.")
    (xdoc::p
     "The formals @('formals') being renamed are annotated,
      because this pre-translation step happens after the type annotation step.
@@ -1587,10 +1608,8 @@
                                                vars-by-name)))
           (mv (cons new-formal new-formals) renaming-new renaming-old indices)))
        ((mv uuformal type) (atj-type-unannotate-var uformal))
-       (uuformal+index (assoc-eq uuformal indices))
-       (index (if (consp uuformal+index) (cdr uuformal+index) 0))
-       (indices (acons uuformal (1+ index) indices))
-       (new-uuformal (atj-rename-formal uuformal index curr-pkg vars-by-name))
+       ((mv new-uuformal indices)
+        (atj-rename-formal uuformal indices curr-pkg vars-by-name))
        (new-uformal (atj-type-annotate-var new-uuformal type))
        (renaming-new (acons uformal new-uformal renaming-new))
        (renaming-old (acons uformal new-uformal renaming-old))
@@ -1605,11 +1624,6 @@
                                          curr-pkg
                                          vars-by-name)))
     (mv (cons new-formal new-formals) renaming-new renaming-old indices))
-
-  :prepwork
-  ((defrulel returns-lemma
-     (implies (natp x)
-              (natp (1+ x)))))
 
   ///
 
