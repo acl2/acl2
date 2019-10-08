@@ -15,17 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (stobjs-out+ 'cons (w state)) '(nil))
-
-(assert-equal (stobjs-out+ 'fmt (w state)) '(nil state))
-
-(must-succeed*
- (defstobj s)
- (defun f (x s) (declare (xargs :stobjs s)) (mv s x))
- (assert-equal (stobjs-out+ 'f (w state)) '(s nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (macro-args+ 'list (w state)) '(&rest args))
 
 (must-succeed*

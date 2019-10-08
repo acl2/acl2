@@ -36,6 +36,7 @@
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
+(include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-name-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-namep" :dir :system)
 (include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
@@ -89,33 +90,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stobjs-out+ ((fn (function-namep fn wrld))
-                     (wrld plist-worldp))
-  :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (result symbol-listp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee stobjs-out)."
-  :long
-  "<p>
-   This returns the same result as @(tsee stobjs-out),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>
-   <p>
-   The function must not be in @('*stobjs-out-invalid*'),
-   because in that case its output stobjs depend on how it is called.
-   </p>"
-  (b* ((result (stobjs-out fn wrld)))
-    (if (symbol-listp result)
-        result
-      (raise "Internal error: ~
-              the STOBJS-OUT property ~x0 of ~x1 is not a true list of symbols."
-             result fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

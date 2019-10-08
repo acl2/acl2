@@ -29,6 +29,7 @@
 (include-book "remove-trivial-vars")
 (include-book "remove-unused-vars")
 (include-book "stobjs-in-plus")
+(include-book "stobjs-out-plus")
 (include-book "term-function-recognizers")
 (include-book "unquote-term")
 
