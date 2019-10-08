@@ -1505,6 +1505,15 @@
      by incrementing the next index to use for the variable,
      and returned along with the new variable.")
    (xdoc::p
+    "The keys of the alist are not the original ACL2 variables,
+     but the renamed variables resulting from @(tsee atj-var-to-jvar).
+     This gives us more flexibility,
+     by obviating the requirement that @(tsee atj-var-to-jvar) be injective:
+     if this function is not injective,
+     then different ACL2 variables may become the same Java variable,
+     and the next index must be the same for all of these variables,
+     so that they can be properly disambiguated.")
+   (xdoc::p
     "This pre-translation step is performed
      after the type annotation and new/old marking steps,
      but the caller of this function decomposes the marked annotated variable
@@ -1513,8 +1522,9 @@
      The @('vars-by-name') parameter of this function
      consists of variable names without annotations and markings."))
   (b* ((jvar (atj-var-to-jvar var curr-pkg vars-by-name))
-       (var+index? (assoc-eq var indices))
-       (index (if var+index? (cdr var+index?) 0))
+       (jvar+index? (assoc-eq jvar indices))
+       (index (if jvar+index? (cdr jvar+index?) 0))
+       (indices (acons jvar (1+ index) indices))
        ($$index-jchars (if (= index 0)
                            nil
                          (append (list #\$ #\$)
@@ -1524,8 +1534,7 @@
        (jvar (if (member-equal (symbol-name jvar)
                                *atj-disallowed-jvar-names*)
                  (add-suffix jvar "$")
-               jvar))
-       (indices (acons var (1+ index) indices)))
+               jvar)))
     (mv jvar indices))
 
   :prepwork
