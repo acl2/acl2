@@ -27,6 +27,7 @@
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "std/strings/symbols" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1340,7 +1341,9 @@
      Other choices are possible, but the point is that we want to ignore it.
      We incorporate the original package name @('pname')
      into the new symbol name and deal with just the symbol name afterwards,
-     for greater simplicity.")
+     for greater simplicity.
+     If this package is ever changed,
+     it must be accordingly changed in @(tsee *atj-init-indices*).")
    (xdoc::p
     "Systematically prefixing, in the generated Java variables,
      every symbol name with the package prefix affects readability.
@@ -1396,6 +1399,7 @@
                                             t))
        (jchars (append pname$$$-jchars name-jchars))
        (new-name (implode jchars))
+       ;; keep package below in sync with *ATJ-INIT-INDICES*:
        (new-var (intern$ new-name "JAVA")))
     new-var))
 
@@ -1407,8 +1411,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The function @(tsee atj-chars-to-jchars-id) turns
-     an ACL2 symbol into one whose name is a valid Java variable name,
+    "The function @(tsee atj-var-to-jvar) turns an ACL2 symbol
+     into one whose characters are all allowed in Java variable,
      but this is not sufficient:
      a Java variable name cannot be a keyword,
      a boolean literal, or the null literal.")
@@ -1425,6 +1429,33 @@
   ///
   (assert-event (string-listp *atj-disallowed-jvar-names*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-jvar-names*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-init-indices*
+  :short "Initial variable index alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When we rename ACL2 variables to Java variables,
+     we must avoid the names in @(tsee *atj-disallowed-jvar-names*).
+     We do that by initializing the alist from variables to indices
+     to associate index 1 to all the disallowed names.
+     That is, we pretend that
+     variables with the disallowed names have already been used,
+     so that an index 1 (or greater) will be appended to any variable
+     that would otherwise happen to be a disallowed name.
+     Appending an index to a disallowed name always yields an allowed name.")
+   (xdoc::p
+    "Note that @(tsee *atj-disallowed-jvar-names*) is a list of strings,
+     but the keys of the index map must be symbols.
+     We use @(tsee str::intern-list) to convert them.
+     It is critical to use the same package (currently @('\"JAVA\"'))
+     used by @(tsee atj-var-to-jvar)."))
+  (pairlis$ (str::intern-list *atj-disallowed-jvar-names* (pkg-witness "JAVA"))
+            (repeat (len *atj-disallowed-jvar-names*) 1))
+  ///
+  (assert-event (symbol-nat-alistp *atj-init-indices*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1477,8 +1508,7 @@
      we have unique Java variable names.")
    (xdoc::p
     "We use @(tsee atj-var-to-jvar) to turn @('var')
-     into a new symbol whose name is a valid Java variable name
-     (with a slight exception, handled as explained below).
+     into a new symbol whose name is a valid Java variable name.
      Then we ensure its uniqueness by retrieving and using the next index,
      from the parameter @('indices'); more on this below.
      In general, as mentioned in @(tsee atj-var-to-jvar),
@@ -1486,7 +1516,11 @@
      but if the index is 0, we omit @('$$<index>'),
      to improve readability;
      if there is just one variable with a certain name,
-     since we start with index 0, no index is added to the name.")
+     since we start with index 0, no index is added to the name.
+     When this function is called,
+     the indices alist always associates non-0 indices to
+     the symbols whose names are in @(tsee *atj-disallowed-jvar-names*):
+     see @(tsee *atj-init-indices*).")
    (xdoc::p
     "The name obtained by optionally appending the index
      may not be a valid Java identifier:
@@ -1530,11 +1564,7 @@
                          (append (list #\$ #\$)
                                  (str::natchars index))))
        ($$index-string (implode $$index-jchars))
-       (jvar (add-suffix jvar $$index-string))
-       (jvar (if (member-equal (symbol-name jvar)
-                               *atj-disallowed-jvar-names*)
-                 (add-suffix jvar "$")
-               jvar)))
+       (jvar (add-suffix jvar $$index-string)))
     (mv jvar indices))
 
   :prepwork
@@ -1900,7 +1930,8 @@
        ((mv vars &) (atj-type-unannotate-vars vars))
        (vars-by-name (organize-symbols-by-name vars))
        ((mv new-formals renaming-new renaming-old indices)
-        (atj-rename-formals formals nil nil nil curr-pkg vars-by-name))
+        (atj-rename-formals
+         formals nil nil *atj-init-indices* curr-pkg vars-by-name))
        ((mv new-body & &)
         (atj-rename-term
          body renaming-new renaming-old indices curr-pkg vars-by-name)))
