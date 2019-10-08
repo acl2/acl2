@@ -941,10 +941,9 @@
   :parents (operations)
   :short "Ambiguity (and unambiguity) in ABNF grammars."
   :long
-  "<p>
-   This part of the ABNF formalization is work in progress.
-   More definitions and theorems should be added.
-   </p>"
+  (xdoc::topstring-p
+   "This part of the ABNF formalization is work in progress.
+    More definitions and theorems should be added.")
   :order-subtopics t)
 
 (define-sk rules-ambiguousp ((rules rulelistp))
@@ -952,14 +951,13 @@
   :parents (ambiguity)
   :short "Notion of ambiguous lists of rules."
   :long
-  "<p>
-   A list of rules is ambiguous iff it includes some ambiguous string.
-   Note that the condition that
-   the existentially quantified @('rulename') be defined by @('rules')
-   would be superfluous,
-   because if @('rulename') is not defined
-   then no parse trees can originate from it.
-   </p>"
+  (xdoc::topstring-p
+   "A list of rules is ambiguous iff it includes some ambiguous string.
+    Note that the condition that
+    the existentially quantified @('rulename') be defined by @('rules')
+    would be superfluous,
+    because if @('rulename') is not defined
+    then no parse trees can originate from it.")
   (exists (string rulename)
           (and (stringp string)
                (rulenamep rulename)
@@ -969,11 +967,10 @@
   :parents (ambiguity)
   :short "Numeric value notations are never ambiguous."
   :long
-  "<p>
-   Any two trees that match a numeric value notation
-   and that have the same string at the leaves
-   are the same tree.
-   </p>"
+  (xdoc::topstring-p
+   "Any two trees that match a numeric value notation
+    and that have the same string at the leaves
+    are the same tree.")
   (implies (and (tree-match-num-val-p tree1 num-val)
                 (tree-match-num-val-p tree2 num-val))
            (equal (equal (tree->string tree1)
@@ -985,11 +982,10 @@
   :parents (ambiguity)
   :short "Character value notations are never ambiguous."
   :long
-  "<p>
-   Any two trees that match a character value notation
-   and that have the same string at the leaves
-   are the same tree.
-   </p>"
+  (xdoc::topstring-p
+   "Any two trees that match a character value notation
+    and that have the same string at the leaves
+    are the same tree.")
   (implies (and (tree-match-char-val-p tree1 char-val)
                 (tree-match-char-val-p tree2 char-val))
            (equal (equal (tree->string tree1)
@@ -1001,12 +997,11 @@
   :parents (ambiguity)
   :short "Prose value notations are always ambiguous."
   :long
-  "<p>
-   We can always construct two different trees
-   with the same string at the leaves
-   that match any prose value notation.
-   Recall that a prose value notation is matched by any tree.
-   </p>"
+  (xdoc::topstring-p
+   "We can always construct two different trees
+    with the same string at the leaves
+    that match any prose value notation.
+    Recall that a prose value notation is matched by any tree.")
   (implies (and (equal tree1 (make-tree-nonleaf
                               :rulename? nil
                               :branches (list (list (tree-leafterm '(1))
@@ -1027,11 +1022,10 @@
   :parents (ambiguity)
   :short "Notion of unambiguous elements."
   :long
-  "<p>
-   An element is unambiguous iff
-   any two trees that match the element and have the same string at the leaves
-   are the same tree.
-   </p>"
+  (xdoc::topstring-p
+   "An element is unambiguous iff
+    any two trees that match the element and have the same string at the leaves
+    are the same tree.")
   (forall (tree1 tree2)
           (implies (and (treep tree1)
                         (treep tree2)
@@ -1045,9 +1039,8 @@
   :parents (ambiguity)
   :short "Numeric value elements are never ambiguous."
   :long
-  "<p>
-   This is a simple consequnce of @(tsee num-val-unambiguous).
-   </p>"
+  (xdoc::topstring-p
+   "This is a simple consequnce of @(tsee num-val-unambiguous).")
   (implies (element-case element :num-val)
            (element-unambiguousp element rules))
   :enable (element-unambiguousp tree-match-element-p))
@@ -1056,9 +1049,8 @@
   :parents (ambiguity)
   :short "Character value elements are never ambiguous."
   :long
-  "<p>
-   This is a simple consequnce of @(tsee char-val-unambiguous).
-   </p>"
+  (xdoc::topstring
+   "This is a simple consequnce of @(tsee char-val-unambiguous).")
   (implies (element-case element :char-val)
            (element-unambiguousp element rules))
   :enable (element-unambiguousp tree-match-element-p))
@@ -1067,9 +1059,8 @@
   :parents (ambiguity)
   :short "Prose value elements are always ambiguous."
   :long
-  "<p>
-   This is a simple consequence of @(tsee prose-val-ambiguous).
-   </p>"
+  (xdoc::topstring-p
+   "This is a simple consequence of @(tsee prose-val-ambiguous).")
   (implies (element-case element :prose-val)
            (not (element-unambiguousp element rules)))
   :enable tree-match-element-p
@@ -1087,15 +1078,14 @@
   :parents (ambiguity)
   :short "Notion of unambiguous repetitions."
   :long
-  "<p>
-   A repetition is unambiguous iff
-   any two lists of trees that match the repetition
-   and have the same string at the leaves
-   are the same list of trees.
-   </p>
-   <p>
-   A repetition of 0 elements is always unambiguous.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A repetition is unambiguous iff
+     any two lists of trees that match the repetition
+     and have the same string at the leaves
+     are the same list of trees.")
+   (xdoc::p
+    "A repetition of 0 elements is always unambiguous."))
   (forall (trees1 trees2)
           (implies (and (tree-listp trees1)
                         (tree-listp trees2)
@@ -1118,15 +1108,14 @@
   :parents (ambiguity)
   :short "Notion of unambiguous concatenations."
   :long
-  "<p>
-   A concatenation is unambiguous iff
-   any two lists of lists of trees that match the concatenation
-   and have the same string at the leaves
-   are the same list of lists of trees.
-   </p>
-   <p>
-   An empty concatenation is always unambiguous.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A concatenation is unambiguous iff
+     any two lists of lists of trees that match the concatenation
+     and have the same string at the leaves
+     are the same list of lists of trees.")
+   (xdoc::p
+    "An empty concatenation is always unambiguous."))
   (forall (treess1 treess2)
           (implies (and (tree-list-listp treess1)
                         (tree-list-listp treess2)
@@ -1149,15 +1138,14 @@
   :parents (ambiguity)
   :short "Notion of unambiguous alternations."
   :long
-  "<p>
-   An alternation is unambiguous iff
-   any two lists of lists of trees that match the alternation
-   and have the same string at the leaves
-   are the same list of lists of trees.
-   </p>
-   <p>
-   An empty alternation is always unambiguous.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "An alternation is unambiguous iff
+     any two lists of lists of trees that match the alternation
+     and have the same string at the leaves
+     are the same list of lists of trees.")
+   (xdoc::p
+    "An empty alternation is always unambiguous."))
   (forall (treess1 treess2)
           (implies (and (tree-list-listp treess1)
                         (tree-list-listp treess2)
@@ -1181,16 +1169,15 @@
   :parents (ambiguity)
   :short "Notion of disjoint concatenation-alternation pairs."
   :long
-  "<p>
-   A concatenation is disjoint from an alternation iff
-   the concatenation and the alternation are matched
-   by disjoint sets of lists of lists of trees.
-   That is, there is no list of lists of trees that matches
-   both the concatenation and the alternation.
-   </p>
-   <p>
-   The empty alternation is disjoint from the empty concatenation.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A concatenation is disjoint from an alternation iff
+     the concatenation and the alternation are matched
+     by disjoint sets of lists of lists of trees.
+     That is, there is no list of lists of trees that matches
+     both the concatenation and the alternation.")
+   (xdoc::p
+    "The empty alternation is disjoint from the empty concatenation."))
   (forall (treess1 treess2)
           (implies (and (tree-list-listp treess1)
                         (tree-list-listp treess2)
@@ -1224,15 +1211,15 @@
           is disjoint from an unambiguous alternation,
           then adding the concatenation maintains the alternation unambiguous."
   :long
-  "<p>
-   This theorem can be used to show that an alternation is unambiguous,
-   one constituting concatenation at a time,
-   starting with
-   <see topic='@(url concatenation-alternation-disjointp)'
-   >@('concatenation-alternation-disjointp-of-nil')</see>.
-   In other words, it must be showed that the alternatives of the alternation
-   are all disjoint, i.e. they have no lists of lists of trees in common.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem can be used to show that an alternation is unambiguous,
+     one constituting concatenation at a time,
+     starting with "
+    (xdoc::seetopic "concatenation-alternation-disjointp"
+                    "@('concatenation-alternation-disjointp-of-nil')")
+    ". In other words, it must be showed that the alternatives of the alternation
+     are all disjoint, i.e. they have no lists of lists of trees in common."))
   (implies (and (concatenation-unambiguousp concatenation rules)
                 (alternation-unambiguousp alternation rules)
                 (concatenation-alternation-disjointp
