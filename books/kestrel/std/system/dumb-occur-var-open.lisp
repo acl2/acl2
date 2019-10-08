@@ -25,12 +25,11 @@
      via @(tsee remove-trivial-vars),
      some lambda expressions may not be closed.
      For checking whether a variable occurs free in this kind of terms,
-     the system utility @('dumb-occur-var') (see the ACL2 sources)
-     is inadequate,
+     the system utility @(tsee dumb-occur-var) is inadequate,
      because it skips over lambda expressions, assuming they are closed,
      as is the case in ACL2's internal translated form.")
    (xdoc::p
-    "Thus, we define a utility similar to @('dumb-occur-var')
+    "Thus, we define a utility similar to @(tsee dumb-occur-var)
      that does not just skip over lambda expressions.
      Instead, it skips over lambda expressions only if
      the variable is among the formal parameters of the lambda expression,
