@@ -60,6 +60,7 @@
                          ffn-symb
                          flambda-applicationp
                          flambdap
+                         flatten
                          fmt-hard-right-margin
                          fmt-soft-right-margin
                          formals

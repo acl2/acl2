@@ -950,9 +950,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-let-bindings ((vars symbol-listp)
+                                      (jblocks jblock-listp)
                                       (jexprs jexpr-listp))
-  :guard (and (int= (len jexprs) (len vars)))
-  :returns (jblock jblockp)
+  :guard (and (int= (len jblocks) (len vars))
+              (int= (len jexprs) (len vars)))
+  :returns (jblock jblockp :hyp (jblock-listp jblocks))
   :verify-guards nil
   :short "Generate shallowly embedded ACL2 @(tsee let) bindings."
   :long
@@ -965,7 +967,9 @@
      to Java local variables corresponding to the formal parameters.
      This function generates these bindings,
      given the ACL2 variables that are the formal arguments
-     and the Java expressions to assign to them.")
+     and the Java expressions to assign to them.
+     Each binding is preceded by the block (if any)
+     generated for the corresponding actual argument of the lambda expression.")
    (xdoc::p
     "Prior to calling this function,
      the variables of all the lambda expressiona have been marked
@@ -991,10 +995,12 @@
        ((mv var new?) (atj-unmark-var var))
        ((mv var type) (atj-type-unannotate-var var))
        (jvar (symbol-name var))
-       (first-jblock (if new?
-                         (jblock-locvar (atj-type-to-jtype type) jvar jexpr)
-                       (jblock-asg (jexpr-name jvar) jexpr)))
+       (var-jblock (if new?
+                       (jblock-locvar (atj-type-to-jtype type) jvar jexpr)
+                     (jblock-asg (jexpr-name jvar) jexpr)))
+       (first-jblock (append (car jblocks) var-jblock))
        (rest-jblock (atj-gen-shallow-let-bindings (cdr vars)
+                                                  (cdr jblocks)
                                                   (cdr jexprs))))
     (append first-jblock rest-jblock)))
 
@@ -1697,7 +1703,7 @@
                                      jvar-result-index
                                      curr-apkg
                                      wrld))
-         ((mv args-jblock
+         ((mv arg-jblocks
               arg-jexprs
               jvar-value-index
               jvar-result-index) (atj-gen-shallow-terms args
@@ -1712,7 +1718,7 @@
           (b* ((jexpr (jexpr-method
                        (atj-gen-shallow-fnname fn curr-apkg) arg-jexprs))
                (jexpr (atj-adapt-jexpr-to-type jexpr src-type dst-type)))
-            (mv args-jblock
+            (mv (flatten arg-jblocks)
                 jexpr
                 jvar-value-index
                 jvar-result-index)))
@@ -1721,6 +1727,7 @@
               jvar-value-index
               jvar-result-index) (atj-gen-shallow-lambda (lambda-formals fn)
                                                          (lambda-body fn)
+                                                         arg-jblocks
                                                          arg-jexprs
                                                          src-type
                                                          dst-type
@@ -1731,8 +1738,7 @@
                                                          curr-apkg
                                                          guards$
                                                          wrld)))
-      (mv (append args-jblock
-                  lambda-jblock)
+      (mv lambda-jblock
           lambda-jexpr
           jvar-value-index
           jvar-result-index))
@@ -1745,7 +1751,8 @@
 
   (define atj-gen-shallow-lambda ((formals symbol-listp)
                                   (body pseudo-termp)
-                                  (jargs jexpr-listp)
+                                  (arg-jblocks jblock-listp)
+                                  (arg-jexprs jexpr-listp)
                                   (src-type atj-typep)
                                   (dst-type atj-typep)
                                   (jvar-value-base stringp)
@@ -1755,9 +1762,10 @@
                                   (curr-apkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (and (int= (len jargs) (len formals))
+    :guard (and (int= (len arg-jblocks) (len formals))
+                (int= (len arg-jexprs) (len formals))
                 (not (equal curr-apkg "")))
-    :returns (mv (jblock jblockp)
+    :returns (mv (jblock jblockp :hyp (jblock-listp arg-jblocks))
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1767,9 +1775,11 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We generate @(tsee let) bindings for the remaining formal parameters.
+      "We generate @(tsee let) bindings for the formal parameters.
        Then we generate Java code for the body of the lambda expression."))
-    (b* ((let-jblock (atj-gen-shallow-let-bindings formals jargs))
+    (b* ((let-jblock (atj-gen-shallow-let-bindings formals
+                                                   arg-jblocks
+                                                   arg-jexprs))
          ((mv body-jblock
               body-jexpr
               jvar-value-index
@@ -1859,7 +1869,7 @@
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :guard (not (equal curr-apkg ""))
-    :returns (mv (jblock jblockp)
+    :returns (mv (jblocks jblock-listp)
                  (jexpr jexpr-listp)
                  (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
@@ -1878,7 +1888,7 @@
                                                          curr-apkg
                                                          guards$
                                                          wrld))
-           ((mv rest-jblock
+           ((mv rest-jblocks
                 rest-jexprs
                 jvar-value-index
                 jvar-result-index) (atj-gen-shallow-terms (cdr terms)
@@ -1889,7 +1899,7 @@
                                                           curr-apkg
                                                           guards$
                                                           wrld)))
-        (mv (append first-jblock rest-jblock)
+        (mv (cons first-jblock rest-jblocks)
             (cons first-jexpr rest-jexprs)
             jvar-value-index
             jvar-result-index)))

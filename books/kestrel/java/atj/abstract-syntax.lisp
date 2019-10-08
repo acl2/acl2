@@ -532,6 +532,20 @@
   :short "Bulid a block consisting of a single Java @('for') statement."
   (list (jstatem-for init test update body)))
 
+(fty::deflist jblock-list
+  :short "True lists of Java blocks."
+  :elt-type jblock
+  :true-listp t
+  :elementp-of-nil t
+  :pred jblock-listp
+  ///
+
+  (defrule jblockp-of-flatten-when-jblock-listp
+    (implies (jblock-listp blocks)
+             (jblockp (flatten blocks)))
+    :enable flatten))
+
+
 (defines jstatems+jblocks-count-ifs
   :short "Number of @('if')s in a statement or block."
   :long
