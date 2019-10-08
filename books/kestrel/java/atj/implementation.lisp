@@ -122,9 +122,12 @@
       in the shallow embedding approach.
       See @(tsee atj-code-generation).")
     (xdoc::li
-     "@('renaming') is an alist from symbols to symbols,
-      which associates to each ACL2 variable its Java name
+     "@('renaming-new') and @('renaming-old')
+      are alists from symbols to symbols,
+      which associate to each ACL2 variable its Java name
       (i.e. the name of the Java variable generated from this ACL2 variable).
+      The former is used for the variables marked as `new',
+      while the latter is used for the variables marked as `old'.
       This is used when renaming ACL2 variables to their Java names,
       in the shallow embedding approach.
       See @(tsee atj-code-generation).")
