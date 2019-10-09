@@ -1984,6 +1984,9 @@
           ((bind-var 2)
            (fgl-interp-bind-var (first args) (second args) interp-st state))
 
+          ((binder 2)
+           (fgl-interp-binder (first args) (second args) interp-st state))
+
           ((abort-rewrite 1)
            (b* ((interp-st (interp-st-set-error :abort-rewrite interp-st)))
              (fgl-interp-value nil)))
@@ -2543,6 +2546,234 @@
                             varname)))
              (interp-st (interp-st-add-binding varname val interp-st)))
           (fgl-interp-value val)))
+
+      (define fgl-interp-binder ((free-var pseudo-termp)
+                                 (form pseudo-termp)
+                                 (interp-st interp-st-bfrs-ok)
+                                 state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020 (pseudo-term-binding-count form)
+                       70)
+        :returns (mv (xobj fgl-object-p)
+                     new-interp-st new-state)
+        (b* (((unless (pseudo-term-case free-var :var))
+              (fgl-interp-error :msg (fgl-msg "Bad binder form -- first ~
+                                             argument must be a variable, but ~
+                                             was ~x0."
+                                            (pseudo-term-fix free-var))))
+             (varname (pseudo-term-var->name free-var))
+             ((unless (pseudo-term-case form :fncall))
+              (fgl-interp-error :msg (fgl-msg "Bad binder form -- second ~
+                                             argument must be a function call, but ~
+                                             was ~x0."
+                                            (pseudo-term-fix form))))
+             ((pseudo-term-fncall form))
+             ((unless (and (consp form.args)
+                           (eq (car form.args) varname)))
+              (fgl-interp-error :msg (fgl-msg "Bad binder form -- second ~
+                                               argument must be a function ~
+                                               call whose first argument is ~
+                                               the variable to be bound, in ~
+                                               this case ~x0, but instead ~@1."
+                                              varname
+                                              (if (consp form.args)
+                                                  (msg "was ~x0" (car form.args))
+                                                (msg "the function call was 0-ary.")))))
+             ((fgl-interp-recursive-call argvals)
+              (fgl-interp-arglist (cdr form.args) interp-st state))
+             ((fgl-interp-recursive-call successp var-val)
+              (fgl-rewrite-binder-fncall form.fn argvals interp-st state))
+             ((unless successp)
+              (fgl-interp-error
+               :msg (fgl-msg "Binder error: no binder rule succeeded on ~x0 to bind ~x1" form.fn varname)))
+             ((when (or (assoc-eq varname (interp-st-bindings interp-st))
+                        (assoc-eq varname (interp-st-minor-bindings interp-st))))
+              (fgl-interp-error
+               :msg (fgl-msg "Binder error: ~x0 was supposed to be bound in ~
+                             a binder form but was already bound."
+                            varname)))
+             (interp-st (interp-st-add-binding varname var-val interp-st)))
+          (fgl-interp-value var-val)))
+
+      (define fgl-rewrite-binder-fncall ((fn pseudo-fnsym-p)
+                                         (args fgl-objectlist-p)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
+        :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        :measure (list (nfix (interp-st->reclimit interp-st)) 0 0 0)
+        :returns (mv successp
+                     (ans fgl-object-p)
+                     new-interp-st new-state)
+        (b* ((reclimit (interp-st->reclimit interp-st))
+             ((when (fgl-interp-check-reclimit interp-st))
+              (fgl-interp-error :msg (fgl-msg "The recursion limit ran out.") :nvals 2))
+             ((mv rules interp-st) (interp-st-function-binder-rules fn interp-st state))
+             ((unless rules)
+              (fgl-interp-value nil nil))
+             (interp-st (interp-st-push-scratch-fgl-objlist args interp-st))
+             ((interp-st-bind
+               (reclimit (1- reclimit) reclimit))
+              ((fgl-interp-value successp ans)
+               (fgl-rewrite-binder-try-rules rules fn interp-st state)))
+             (interp-st (interp-st-pop-scratch interp-st)))
+          (fgl-interp-value successp ans)))
+      
+
+      (define fgl-rewrite-binder-try-rules ((rules fgl-binder-rulelist-p)
+                                            (fn pseudo-fnsym-p)
+                                            (interp-st interp-st-bfrs-ok)
+                                            state)
+        :guard (and (< 0 (interp-st-scratch-len interp-st))
+                    (scratchobj-case (interp-st-top-scratch interp-st) :fgl-objlist))
+        ;; :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        :measure (list (nfix (interp-st->reclimit interp-st)) 10000 (len rules) 0)
+        :returns (mv successp
+                     (ans fgl-object-p)
+                     new-interp-st new-state)
+        (b* (((when (atom rules))
+              (fgl-interp-value nil nil))
+             (args (interp-st-top-scratch-fgl-objlist interp-st))
+             ((fgl-interp-recursive-call successp ans)
+              (fgl-rewrite-binder-try-rule (car rules) fn args interp-st state))
+             ((when successp)
+              (fgl-interp-value successp ans)))
+          (fgl-rewrite-binder-try-rules (cdr rules) fn interp-st state)))
+
+      (define fgl-rewrite-binder-try-rule ((rule fgl-binder-rule-p)
+                                           (fn pseudo-fnsym-p)
+                                           (args fgl-objectlist-p)
+                                           (interp-st interp-st-bfrs-ok)
+                                           state)
+        :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        :measure (list (nfix (interp-st->reclimit interp-st)) 10000 0 1)
+        :returns (mv successp
+                     (ans fgl-object-p)
+                     new-interp-st new-state)
+        (fgl-binder-rule-case rule
+          :rewrite (fgl-rewrite-binder-try-rewrite rule fn args interp-st state)
+          :meta (fgl-rewrite-binder-try-meta rule fn args interp-st state)))
+
+      (define fgl-rewrite-binder-try-rewrite ((rule fgl-binder-rule-p)
+                                              (fn pseudo-fnsym-p)
+                                              (args fgl-objectlist-p)
+                                              (interp-st interp-st-bfrs-ok)
+                                              state)
+        :guard (and (fgl-binder-rule-case rule :rewrite)
+                    (interp-st-bfr-listp (fgl-objectlist-bfrlist args)))
+        :measure (list (nfix (interp-st->reclimit interp-st)) 10000 0 0)
+        :returns (mv successp
+                     (ans fgl-object-p)
+                     new-interp-st new-state)
+        (b* (((fgl-binder-rule-rewrite rule))
+             ;; ((unless (and** (mbt (and* (symbolp rule.equiv)
+             ;;                            (not (eq rule.equiv 'quote))
+             ;;                            ;; (ensure-equiv-relationp rule.equiv (w state))
+             ;;                            (not (eq rule.subclass 'acl2::meta))
+             ;;                            (pseudo-termp rule.lhs)))))
+             ;;  (fgl-interp-error
+             ;;   :msg (fgl-msg "Malformed rewrite rule: ~x0~%" rule)
+             ;;   :nvals 2))
+             ((unless (fgl-interp-equiv-refinementp rule.concl-equiv
+                                                   (interp-st->equiv-contexts interp-st)))
+              (fgl-interp-value nil nil))
+             ;; (rule.lhs.args (pseudo-term-call->args rule.lhs))
+             ((mv unify-ok bindings) (fgl-unify-term/gobj-list rule.args
+                                                               args
+                                                               nil
+                                                               (interp-st-bfr-state)))
+             ((unless unify-ok) (fgl-interp-value nil nil))
+             ;; ((unless (mbt (pseudo-term-listp rule.hyps)))
+             ;;  (fgl-interp-error
+             ;;   :msg (fgl-msg "Malformed rewrite rule: ~x0~%" rule)
+             ;;   :nvals 2))
+             (backchain-limit (interp-st->backchain-limit interp-st))
+             ((when (and** rule.hyps (eql 0 backchain-limit)))
+              (fgl-interp-value nil nil))
+             ((when (interp-st->errmsg interp-st))
+              ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
+              (fgl-interp-value nil nil))
+             (flags (interp-st->flags interp-st))
+             ;; BOZO support tracing
+             ;; (trace (interp-flags->trace-rewrites flags))
+             ;; (interp-st (fgl-rewrite-try-rule-trace-wrapper trace :start rule call interp-st state))
+             (hyps-flags  (!interp-flags->intro-bvars nil flags))
+             (interp-st (interp-st-push-frame bindings interp-st))
+             (interp-st (interp-st-set-debug rule interp-st))
+             (interp-st (interp-st-prof-push rule.rune interp-st))
+             ((interp-st-bind
+               (flags hyps-flags flags)
+               ;; NOTE: Even when in an unequiv context, we rewrite the hyps under IFF.
+               (equiv-contexts '(iff))
+               (backchain-limit (1- backchain-limit) backchain-limit))
+              ((fgl-interp-recursive-call failed-hyp)
+               (fgl-rewrite-relieve-hyps rule.hyps rule 0 interp-st state)))
+
+             ;; BOZO support tracing
+             ;; (interp-st (fgl-rewrite-try-rule-trace-wrapper
+             ;;             trace `(:hyps . ,failed-hyp) rule call interp-st state))
+
+             ((when (or** failed-hyp (interp-st->errmsg interp-st)))
+              (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
+                   (interp-st (interp-st-pop-frame interp-st))
+                   (interp-st (interp-st-cancel-error :intro-bvars-fail interp-st)))
+                (fgl-interp-value nil nil)))
+
+             (interp-st (interp-st-set-debug `(,rule . :rhs) interp-st))
+             ((fgl-interp-value val)
+              ;; Note: Was interp-term-equivs
+              (fgl-interp-term rule.rhs interp-st state))
+
+             ;; BOZO support tracing
+             ;; (interp-st (fgl-rewrite-try-rule-trace-wrapper
+             ;;             trace `(:finish t . ,val) rule call interp-st state))
+
+             (interp-st (interp-st-pop-frame interp-st))
+             ((when (interp-st->errmsg interp-st))
+              (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
+                   (interp-st (interp-st-cancel-error :abort-rewrite interp-st)))
+                (fgl-interp-value nil nil)))
+
+             (interp-st (interp-st-prof-pop-increment t interp-st)))
+
+          (fgl-interp-value t val)))
+
+      (define fgl-rewrite-binder-try-meta ((rule fgl-rule-p)
+                                   (call fgl-object-p)
+                                   (interp-st interp-st-bfrs-ok)
+                                   state)
+        :guard (and (fgl-rule-case rule :meta)
+                    (interp-st-bfr-listp (fgl-object-bfrlist call)))
+        :measure (list (nfix (interp-st->reclimit interp-st)) 10000 0 0)
+        :returns (mv successp
+                     (ans fgl-object-p)
+                     new-interp-st new-state)
+        (b* ((flags (interp-st->flags interp-st))
+             (trace (interp-flags->trace-rewrites flags))
+             (interp-st (fgl-rewrite-try-rule-trace-wrapper trace :start rule call interp-st state))
+             (interp-st (interp-st-prof-push (fgl-rule->rune rule) interp-st))
+             ((fgl-interp-value successp rhs bindings)
+              (fgl-meta-fncall-stub (fgl-rule-meta->name rule) call interp-st state))
+             ((when (or** (not successp) (interp-st->errmsg interp-st)))
+              (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
+                   (interp-st (fgl-rewrite-try-rule-trace-wrapper
+                               trace `(:finish nil) rule call interp-st state)))
+                (fgl-interp-value nil nil)))
+
+             (interp-st (interp-st-push-frame bindings interp-st))
+             (interp-st (interp-st-set-debug `(rule ,rhs) interp-st))
+             ((fgl-interp-value val) (fgl-interp-term rhs interp-st state))
+             
+             (interp-st (fgl-rewrite-try-rule-trace-wrapper
+                         trace `(:finish t . ,val) rule call interp-st state))
+             (interp-st (interp-st-pop-frame interp-st))
+             ((when (interp-st->errmsg interp-st))
+              (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
+                   (interp-st (interp-st-cancel-error :abort-rewrite interp-st)))
+                (fgl-interp-value nil nil)))
+
+             (interp-st (interp-st-prof-pop-increment t interp-st)))
+          (fgl-interp-value t val)))
+
 
       (define fgl-interp-if/or ((test pseudo-termp)
                                (then pseudo-termp)
