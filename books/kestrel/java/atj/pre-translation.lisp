@@ -1313,11 +1313,10 @@
      Then we ensure its uniqueness by retrieving and using the next index,
      from the parameter @('indices'); more on this below.
      In general, as mentioned in @(tsee atj-var-to-jvar),
-     we append @('$$<index>') after the result of @(tsee atj-var-to-jvar);
-     but if the index is 0, we omit @('$$<index>'),
-     to improve readability;
-     if there is just one variable with a certain name,
-     since we start with index 0, no index is added to the name.
+     we append the index after the result of @(tsee atj-var-to-jvar);
+     but if the index is 0, we do not append it, to improve readability;
+     in particular, if there is just one variable with a certain name,
+     since we start with index 0, no index is ever added to the name.
      When this function is called,
      the indices alist always associates non-0 indices to
      the symbols whose names are in @(tsee *atj-disallowed-jvar-names*):
