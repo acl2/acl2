@@ -31,7 +31,7 @@
 
 ################################################################################
 
-all: aij doc-all acl2-files
+all: aij javadoc-all acl2-files
 
 aij: java/out/artifacts/AIJ_jar/AIJ.jar
 
@@ -43,17 +43,17 @@ java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
 	mkdir -p java/out/artifacts/AIJ_jar
 	jar cfm java/out/artifacts/AIJ_jar/AIJ.jar java/META-INF/MANIFEST.MF -C java/out/production/AIJ/ .
 
-doc-all: doc-public doc-package doc-private
+javadoc-all: javadoc-public javadoc-package javadoc-private
 
-doc-public: java/src/edu/kestrel/acl2/aij/*.java
+javadoc-public: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate public Javadoc documentation:"
 	javadoc -d javadoc-public -public java/src/edu/kestrel/acl2/aij/*.java
 
-doc-package: java/src/edu/kestrel/acl2/aij/*.java
+javadoc-package: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate package Javadoc documentation:"
 	javadoc -d javadoc-package -package java/src/edu/kestrel/acl2/aij/*.java
 
-doc-private: java/src/edu/kestrel/acl2/aij/*.java
+javadoc-private: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate private Javadoc documentation:"
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
 
