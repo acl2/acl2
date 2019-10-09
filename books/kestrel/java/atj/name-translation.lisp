@@ -42,14 +42,14 @@
                                (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (characterp char))
   :short "Turn an ACL2 character into one or more Java characters
-          of an ASCII Java identifier."
+          for an ASCII Java identifier."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used to translate ACL2 variable, function, and package names
-     into Java identifiers.")
+     to Java identifiers in the shallow embedding approach.")
    (xdoc::p
-    "ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
+    "ACL2 symbol names may consist of arbitrary sequences of 8-bit characters,
      while Java identifiers may only contain certain Unicode characters;
      when Unicode is restricted to ASCII,
      Java identifiers are much more restricted than ACL2 symbols.
@@ -57,14 +57,16 @@
      although ACL2 package names have restrictions of their own
      compared to Java identifiers, notably the uppercase restriction.")
    (xdoc::p
-    "If an ACL2 character (part of an ACL2 symbol or package name) is a letter,
+    "If an ACL2 character (part of an ACL2 symbol name or package name)
+     is a letter,
      we keep it unchanged in forming the Java identifier,
      but we flip it from uppercase to lowercase or from lowercase to uppercase
      if the @('flip-case-p') flag is @('t'):
      since ACL2 symbols often have uppercase letters,
      by flipping them to lowercase we generate
      more readable and idiomatic Java identifiers;
-     and flipping lowercase letters to uppercase letters avoids conflicts.
+     and flipping lowercase letters to uppercase letters avoids conflicts
+     with ACL2 symbols that already have lowercase letters.
      If the ACL2 character is a digit, we keep it unchanged
      only if it is not at the start of the Java identifier:
      this is indicated by the @('startp') flag.
@@ -75,17 +77,19 @@
     "For the printable ASCII characters that are not letters,
      we use the descriptions in the @('*atj-char-to-jchars-id*') alist.
      These include digits, used when @('startp') is @('t').
-     The exception is dash,
-     which is very common in ACL2 symbols and package names as ``separator'':
+     The exception alluded to above is the dash character,
+     which is very common in ACL2 symbol names and package names
+     as ``separator'':
      we map that to an underscore in Java,
-     which fulfills a similar separator role.
-     Note that @('$') itself, which is valid in Java identifiers,
-     is escaped.")
+     which fulfills a similar separation role.
+     Note that @('$') itself, even though it is valid in Java identifiers,
+     is escaped to avoid conflicts with the escapes.")
    (xdoc::p
-    "For each of the other ISO 8859-1 characters,
+    "For each of the other ISO 8859-1 characters
+     (non-ASCII, or non-printable ASCII),
      we use a description that consists of @('x') (for `hexadecimal')
-     followed by the two hex digits that form the ASCII code of the character.
-     The hexadecimal digits greater than 9 are uppercase.")
+     followed by the two hex digits that form the code of the character.
+     The hexadecimal digits greater than 9 are all uppercase.")
    (xdoc::@def "*atj-char-to-jchars-id*"))
   (b* (((when (str::up-alpha-p char)) (if flip-case-p
                                           (list (str::downcase-char char))
@@ -158,8 +162,7 @@
   :long
   (xdoc::topstring-p
    "This is used on the sequence of characters
-    that form an ACL2 symbol or package name;
-    see the callers of this function for details.
+    that form an ACL2 symbol name or package name.
     The @('startp') flag becomes @('nil') at the first recursive call,
     because after the first character
     we are no longer at the start of the Java identifier.")
