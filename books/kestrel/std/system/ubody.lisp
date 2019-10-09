@@ -35,7 +35,7 @@
     "The unnormalized body of a named function
      is its @('unnormalized-body') property.
      If a function is not defined, this property is @('nil').
-     Note that some program-mode functions may be defined
+     Some program-mode functions may be defined
      but not have an @('unnormalized-body') property.")
    (xdoc::p
     "See @(tsee ubody+) for a logic-friendly variant of this utility."))
