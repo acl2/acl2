@@ -31,6 +31,8 @@
 
 ################################################################################
 
+$(info ) # print a blank line
+
 all: aij javadoc-all acl2-files
 
 aij: java/out/artifacts/AIJ_jar/AIJ.jar
@@ -39,34 +41,44 @@ java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate class files:"
 	mkdir -p java/out/production/AIJ
 	javac -d java/out/production/AIJ java/src/edu/kestrel/acl2/aij/*.java
+	@echo ""
 	@echo "Generate jar file:"
 	mkdir -p java/out/artifacts/AIJ_jar
-	jar cfm java/out/artifacts/AIJ_jar/AIJ.jar java/META-INF/MANIFEST.MF -C java/out/production/AIJ/ .
+	jar cfm java/out/artifacts/AIJ_jar/AIJ.jar java/META-INF/MANIFEST.MF \
+            -C java/out/production/AIJ/ .
+	@echo ""
 
 javadoc-all: javadoc-public javadoc-package javadoc-private
 
 javadoc-public: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate public Javadoc documentation:"
 	javadoc -d javadoc-public -public java/src/edu/kestrel/acl2/aij/*.java
+	@echo ""
 
 javadoc-package: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate package Javadoc documentation:"
 	javadoc -d javadoc-package -package java/src/edu/kestrel/acl2/aij/*.java
+	@echo ""
 
 javadoc-private: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate private Javadoc documentation:"
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
+	@echo ""
 
 acl2-files: *.lisp
 	@echo "Certify ACL2 files:"
 	../../../build/cert.pl *.lisp
+	@echo ""
 
 clean:
 	@echo "Delete class files and jar file:"
 	/bin/rm -rf java/out
+	@echo ""
 	@echo "Delete Javadoc HTML files:"
 	/bin/rm -rf javadoc-public
 	/bin/rm -rf javadoc-package
 	/bin/rm -rf javadoc-private
+	@echo ""
 	@echo "Delete ACL2 certification files:"
 	../../../build/clean.pl
+	@echo ""
