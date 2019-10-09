@@ -17,8 +17,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist macro-name-listp (x wrld)
-  (macro-namep x wrld)
-  :guard (plist-worldp wrld)
-  :parents (world-queries)
+  :parents (std/system/event-name-queries)
   :short "Recognize true lists of symbols that name macros."
+  :guard (plist-worldp wrld)
+  (macro-namep x wrld)
   :true-listp t)
