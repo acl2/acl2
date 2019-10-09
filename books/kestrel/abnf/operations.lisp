@@ -1237,38 +1237,37 @@
   :parents (operations)
   :short "Composition of ABNF grammars."
   :long
-  "<p>
-   Certain ABNF grammars are defined modularly.
-   A ``module'' may not be <see topic='@(url closure)'>closed</see>,
-   but when it is combined with other modules,
-   the resulting grammar may be closed.
-   </p>
-   <p>
-   For example, the
-   <see topic='@(url concrete-syntax-rules)'>concrete syntax rules</see>
-   are not closed.
-   But when they are combined with
-   the <see topic='@(url core-rules)'>core rules</see>,
-   the <see topic='@(url *all-concrete-syntax-rules*)'>resulting rule list</see>
-   is closed.
-   </p>
-   <p>
-   As another example,
-   the HTTP grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc7230\">RFC 7230</a>
-   includes rules defined by prose value notations
-   that refer to the URI grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc3986\">RFC 3968</a>.
-   The intended way to compose the two grammars is
-   to replace the prose HTTP rules with the corresponding URI rules.
-   </p>
-   <p>
-   Here we define an operation to accomplish the kind of composition
-   exemplified above.
-   The operation ``plugs'' a rule list into another rule list,
-   e.g. it plugs the core rules into the concrete syntax rules,
-   and it plugs the URI rules into the HTTP rules.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Certain ABNF grammars are defined modularly.
+     A ``module'' may not be "
+    (xdoc::seetopic "closure" "closed")
+    ", but when it is combined with other modules,
+     the resulting grammar may be closed.")
+   (xdoc::p
+    "For example, the "
+    (xdoc::seetopic "concrete-syntax-rules" "concrete syntax rules")
+    " are not closed.
+     But when they are combined with the "
+    (xdoc::seetopic "core-rules" "core rules")
+    ", the "
+    (xdoc::seetopic "*all-concrete-syntax-rules*" "resulting rule list")
+    " is closed.")
+   (xdoc::p
+    "As another example,
+     the HTTP grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
+    " includes rules defined by prose value notations
+     that refer to the URI grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+    ". The intended way to compose the two grammars is
+     to replace the prose HTTP rules with the corresponding URI rules.")
+   (xdoc::p
+    "Here we define an operation to accomplish the kind of composition
+    exemplified above.
+    The operation ``plugs'' a rule list into another rule list,
+    e.g. it plugs the core rules into the concrete syntax rules,
+    and it plugs the URI rules into the HTTP rules."))
   :order-subtopics t)
 
 (define rule-prosep ((rule rulep))
@@ -1294,12 +1293,11 @@
   :short "Remove from a list of rules all the prose rules
           whose names have definitions in another list of rules."
   :long
-  "<p>
-   This is the first step of the
-   <see topic='@(url plug-rules)'>plugging operation</see>.
-   This step removes from @('rules1') all the prose rules
-   whose names have definitions in @('rules2').
-   </p>"
+  (xdoc::topstring-p
+   "This is the first step of the "
+   (xdoc::seetopic "plug-rules" "plugging operation")
+   ". This step removes from @('rules1') all the prose rules
+    whose names have definitions in @('rules2').")
   (cond ((endp rules1) nil)
         (t (b* ((rule (car rules1)))
              (and (mbt (rulep rule))
@@ -1314,41 +1312,40 @@
   :parents (plugging)
   :short "Plug a list of rules into another list of rules."
   :long
-  "<p>
-   This plugs @('rules2') into @('rules1'), not vice versa.
-   This choice is motivated by the fact that grammar rules
-   are usually presented in a top-down manner,
-   and so it seems more natural to have
-   the ``plugged'' rules (e.g. HTTP)
-   appear before the ``plugging'' rules (e.g. URI).
-   </p>
-   <p>
-   After removing from @('rules1') the prose rules
-   whose names have definitions in @('rules2'),
-   we find the rules in @('rules2') that transitively define
-   rule names referenced but not defined in the remaining rules of @('rules1').
-   We append the rules found after the remaining rules of @('rules1').
-   </p>
-   <p>
-   Thus, prose rules in @('rules1') are effectively replaced
-   by corresponding rules in @('rules')
-   (assuming that each prose rule removed from @('rules1')
-   is the only rule in @('rules1') that defines its rule name).
-   Besides replacing @('prose-rules') like this,
-   the plugging operation may also provide definitions
-   for rule names that are only referenced in @('rules1').
-   </p>
-   <p>
-   Prose rules in @('rules1') whose names do not have definitions in @('rules2')
-   are not removed from @('rules1') and thus appear in the resulting rules.
-   Similarly, rules referenced in @('rules1')
-   but defined neither in @('rules1') nor in @('rules2')
-   remain referenced but not defined in the resulting rules.
-   These features allow multi-step plugging,
-   i.e. @('rules2') is plugged into @('rules1'),
-   then @('rules3') is plugged into the result of the previous operation,
-   and so on.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This plugs @('rules2') into @('rules1'), not vice versa.
+     This choice is motivated by the fact that grammar rules
+     are usually presented in a top-down manner,
+     and so it seems more natural to have
+     the ``plugged'' rules (e.g. HTTP)
+     appear before the ``plugging'' rules (e.g. URI).")
+   (xdoc::p
+    "After removing from @('rules1') the prose rules
+     whose names have definitions in @('rules2'),
+     we find the rules in @('rules2') that transitively define
+     rule names referenced but not defined
+     in the remaining rules of @('rules1').
+     We append the rules found after the remaining rules of @('rules1').")
+   (xdoc::p
+    "Thus, prose rules in @('rules1') are effectively replaced
+     by corresponding rules in @('rules')
+     (assuming that each prose rule removed from @('rules1')
+     is the only rule in @('rules1') that defines its rule name).
+     Besides replacing @('prose-rules') like this,
+     the plugging operation may also provide definitions
+     for rule names that are only referenced in @('rules1').")
+   (xdoc::p
+    "Prose rules in @('rules1')
+     whose names do not have definitions in @('rules2')
+     are not removed from @('rules1') and thus appear in the resulting rules.
+     Similarly, rules referenced in @('rules1')
+     but defined neither in @('rules1') nor in @('rules2')
+     remain referenced but not defined in the resulting rules.
+     These features allow multi-step plugging,
+     i.e. @('rules2') is plugged into @('rules1'),
+     then @('rules3') is plugged into the result of the previous operation,
+     and so on."))
   (b* ((rules1 (remove-prose-rules rules1 rules2))
        (rules2 (trans-rules-of-names (difference
                                       (rulelist-called-rules rules1)
@@ -1363,19 +1360,19 @@
   :parents (operations)
   :short "Renaming of rules in ABNF grammars."
   :long
-  "<p>
-   It is sometimes useful to systematically rename a rule in a grammar.
-   </p>
-   <p>
-   For example, the HTTP grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc7230\">RFC 7230</a>
-   includes a rule @('uri-host') defined by a prose value notation
-   that references the rule @('host') from the URI grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc3986\">RFC 3968</a>.
-   Prior to @(see plugging) the URI grammar rules into the HTTP grammar rules,
-   the rule @('host') in the URI grammar rules
-   should be renamed to @('uri-host').
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "It is sometimes useful to systematically rename a rule in a grammar.")
+   (xdoc::p
+    "For example, the HTTP grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
+    " includes a rule @('uri-host') defined by a prose value notation
+     that references the rule @('host') from the URI grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+    ". Prior to @(see plugging) the URI grammar rules
+     into the HTTP grammar rules,
+     the rule @('host') in the URI grammar rules
+     should be renamed to @('uri-host')."))
   :order-subtopics t)
 
 (defines alt/conc/rep/elem-rename-rule
@@ -1388,7 +1385,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in an alternation
             to a new rule name."
-    :long "@(def alternation-rename-rule)"
+    :long (xdoc::topstring-@def "alternation-rename-rule")
     (cond ((endp alternation) nil)
           (t (cons (concatenation-rename-rule (car alternation)
                                               oldname newname)
@@ -1404,7 +1401,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in a conatenation
             to a new rule name."
-    :long "@(def concatenation-rename-rule)"
+    :long (xdoc::topstring-@def "concatenation-rename-rule")
     (cond ((endp concatenation) nil)
           (t (cons (repetition-rename-rule (car concatenation)
                                            oldname newname)
@@ -1420,7 +1417,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in a repetition
             to a new rule name."
-    :long "@(def repetition-rename-rule)"
+    :long (xdoc::topstring-@def "repetition-rename-rule")
     (make-repetition :range (repetition->range repetition)
                      :element (element-rename-rule
                                (repetition->element repetition)
@@ -1435,7 +1432,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in an element
             to a new rule name."
-    :long "@(def element-rename-rule)"
+    :long (xdoc::topstring-@def "element-rename-rule")
     (element-case element
                   :rulename (if (equal element.get oldname)
                                 (element-rulename newname)
@@ -1488,22 +1485,21 @@
   :parents (operations)
   :short "Removal of rules in ABNF grammars."
   :long
-  "<p>
-   It is sometimes useful to remove from a grammar
-   all the rules that define certain rule names.
-   </p>
-   <p>
-   For example, the SMTP grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc5321\">RFC 5321</a>
-   references rules defined in the IMF grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc5322\">RFC 5322</a>.
-   The IMF rules depend on a rule @('atom'),
-   but the SMTP rules provide their own definition of @('Atom')
-   (recall that rule names are case-insensitive).
-   Thus, before @(see plugging) the IMF rules into the SMTP rules,
-   the removal operation can be used to remove, from the IMF rules,
-   @('atom') and possibly any other rule already defined by SMTP.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "It is sometimes useful to remove from a grammar
+     all the rules that define certain rule names.")
+   (xdoc::p
+    "For example, the SMTP grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5321" "RFC 5321")
+    " references rules defined in the IMF grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5322" "RFC 5322")
+    ". The IMF rules depend on a rule @('atom'),
+     but the SMTP rules provide their own definition of @('Atom')
+     (recall that rule names are case-insensitive).
+     Thus, before @(see plugging) the IMF rules into the SMTP rules,
+     the removal operation can be used to remove, from the IMF rules,
+     @('atom') and possibly any other rule already defined by SMTP."))
   :order-subtopics t)
 
 (define remove-rules-that-define ((rulenames rulename-setp) (rules rulelistp))
