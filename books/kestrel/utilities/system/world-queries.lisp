@@ -28,6 +28,7 @@
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/logic-function-namep" :dir :system)
 (include-book "kestrel/std/system/logical-name-listp" :dir :system)
+(include-book "kestrel/std/system/macro-args-plus" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
 (include-book "kestrel/std/system/macro-name-listp" :dir :system)
@@ -90,28 +91,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-args+ ((mac (macro-namep mac wrld))
-                     (wrld plist-worldp))
-  :returns (result true-listp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee macro-args)."
-  :long
-  "<p>
-   This returns the same result as the built-in system utility @('macro-args')
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (macro-args mac wrld)))
-    (if (true-listp result)
-        result
-      (raise "Internal error: ~
-              the MACRO-ARGS property ~x0 of ~x1 is not a true list."
-             result mac))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

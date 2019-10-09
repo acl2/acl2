@@ -19,6 +19,7 @@
 (include-book "event-name-queries")
 (include-book "formals-plus")
 (include-book "logic-friendly")
+(include-book "macro-args-plus")
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
 (include-book "primitivep")

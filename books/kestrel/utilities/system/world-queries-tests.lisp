@@ -15,15 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (macro-args+ 'list (w state)) '(&rest args))
-
-(must-succeed*
- (defmacro mac (x y z &key a (b '3) (c '(#\a 1/3) cp)) (list x y z a b c cp))
- (assert-equal (macro-args+ 'mac (w state))
-               '(x y z &key a (b '3) (c '(#\a 1/3) cp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (definedp 'not (w state)))
 
 (assert! (not (definedp 'cons (w state))))
