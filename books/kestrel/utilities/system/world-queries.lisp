@@ -36,6 +36,7 @@
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
+(include-book "kestrel/std/system/primitivep-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-name-listp" :dir :system)
@@ -121,22 +122,6 @@
    but it has a stronger guard.
    </p>"
   (definedp fn wrld))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define primitivep+ ((fn (function-namep fn wrld)) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee primitivep)."
-  :long
-  "<p>
-   This returns the same result as @(tsee guard-verified-p),
-   but it has a stronger guard.
-   The guard requires an extra @(see world) argument,
-   which is usually available when doing system programming.
-   </p>"
-  (declare (ignore wrld))
-  (primitivep fn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

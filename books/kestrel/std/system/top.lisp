@@ -23,6 +23,7 @@
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
 (include-book "primitivep")
+(include-book "primitivep-plus")
 (include-book "pure-raw-p")
 (include-book "rawp")
 (include-book "remove-mbe")
