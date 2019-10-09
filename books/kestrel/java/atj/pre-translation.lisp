@@ -21,7 +21,7 @@
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
-(include-book "kestrel/std/typed-alists/symbol-nat-alistp" :dir :system)
+(include-book "kestrel/std/typed-alists/symbol-pos-alistp" :dir :system)
 (include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "std/strings/symbols" :dir :system)
@@ -1252,18 +1252,18 @@
   (pairlis$ (str::intern-list *atj-disallowed-jvar-names* (pkg-witness "JAVA"))
             (repeat (len *atj-disallowed-jvar-names*) 1))
   ///
-  (assert-event (symbol-nat-alistp *atj-init-indices*)))
+  (assert-event (symbol-pos-alistp *atj-init-indices*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-rename-formal ((var symbolp)
-                           (indices symbol-nat-alistp)
+                           (indices symbol-pos-alistp)
                            (curr-pkg stringp)
                            (vars-by-name string-symbollist-alistp))
   :guard (not (equal curr-pkg ""))
   :returns (mv (new-var symbolp)
-               (new-indices symbol-nat-alistp
-                            :hyp (and (symbol-nat-alistp indices)
+               (new-indices symbol-pos-alistp
+                            :hyp (and (symbol-pos-alistp indices)
                                       (symbolp var))))
   :short "Rename a formal parameters of
           a defined function or lambda expression."
@@ -1330,7 +1330,6 @@
      which is an alist that associates each variable to its next index to use.
      If a variable is not in the alist, it is as if it had index 0,
      and in that case no index is added, as explained above.
-     All the indices in the alist are actually positive integers.
      The alist is updated
      by incrementing the next index to use for the variable,
      and returned along with the new variable.")
@@ -1360,15 +1359,15 @@
 
   :prepwork
   ((defrulel returns-lemma
-     (implies (natp x)
-              (natp (1+ x))))))
+     (implies (posp x)
+              (posp (1+ x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-rename-formals ((formals symbol-listp)
                             (renaming-new symbol-symbol-alistp)
                             (renaming-old symbol-symbol-alistp)
-                            (indices symbol-nat-alistp)
+                            (indices symbol-pos-alistp)
                             (curr-pkg stringp)
                             (vars-by-name string-symbollist-alistp))
   :guard (not (equal curr-pkg ""))
@@ -1381,9 +1380,9 @@
                (new-renaming-old symbol-symbol-alistp
                                  :hyp (and (symbol-listp formals)
                                            (symbol-symbol-alistp renaming-old)))
-               (new-indices symbol-nat-alistp
+               (new-indices symbol-pos-alistp
                             :hyp (and (symbol-listp formals)
-                                      (symbol-nat-alistp indices))))
+                                      (symbol-pos-alistp indices))))
   :short "Rename the formal parameters of
           a defined function or lambda expression."
   :long
@@ -1549,13 +1548,13 @@
   (define atj-rename-term ((term pseudo-termp)
                            (renaming-new symbol-symbol-alistp)
                            (renaming-old symbol-symbol-alistp)
-                           (indices symbol-nat-alistp)
+                           (indices symbol-pos-alistp)
                            (curr-pkg stringp)
                            (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (new-term pseudo-termp :hyp :guard)
                  (new-renaming-old symbol-symbol-alistp :hyp :guard)
-                 (new-indices symbol-nat-alistp :hyp :guard))
+                 (new-indices symbol-pos-alistp :hyp :guard))
     (b* (((when (variablep term))
           (b* (((mv var new?) (atj-unmark-var term))
                (renaming-pair (assoc-eq var (if new?
@@ -1662,7 +1661,7 @@
   (define atj-rename-terms ((terms pseudo-term-listp)
                             (renaming-new symbol-symbol-alistp)
                             (renaming-old symbol-symbol-alistp)
-                            (indices symbol-nat-alistp)
+                            (indices symbol-pos-alistp)
                             (curr-pkg stringp)
                             (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
@@ -1670,7 +1669,7 @@
                                  (equal (len new-terms) (len terms)))
                             :hyp :guard)
                  (new-renaming-old symbol-symbol-alistp :hyp :guard)
-                 (new-indices symbol-nat-alistp :hyp :guard))
+                 (new-indices symbol-pos-alistp :hyp :guard))
     (cond ((endp terms) (mv nil renaming-old indices))
           (t (b* (((mv new-term
                        renaming-old

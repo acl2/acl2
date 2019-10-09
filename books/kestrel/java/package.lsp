@@ -108,7 +108,7 @@
                          string-upcase
                          string=>nats
                          symbol-name-lst
-                         symbol-nat-alistp
+                         symbol-pos-alistp
                          symbol-string-alistp
                          symbol-symbol-alistp
                          symbol-package-name-lst
