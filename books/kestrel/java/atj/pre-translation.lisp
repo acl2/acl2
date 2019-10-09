@@ -286,7 +286,6 @@
 (define atj-types-of-conv ((conv symbolp))
   :returns (mv (src-type atj-typep)
                (dst-type atj-typep))
-  :verify-guards nil
   :short "Source and destination ATJ types of a conversion function."
   :long
   (xdoc::topstring-p
@@ -337,7 +336,6 @@
   :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
                (src-type atj-typep)
                (dst-type atj-typep))
-  :verify-guards nil
   :short "Unwrap an ACL2 term wrapped by @(tsee atj-type-wrap-term)."
   :long
   (xdoc::topstring
@@ -407,7 +405,6 @@
 (define atj-type-unannotate-var ((var symbolp))
   :returns (mv (unannotated-var symbolp)
                (type atj-typep))
-  :verify-guards nil
   :short "Decompose an annotated ACL2 variable into
           its unannotated counterpart and its type."
   :long
@@ -446,7 +443,6 @@
 (define atj-type-unannotate-vars ((vars symbol-listp))
   :returns (mv (unannotated-vars symbol-listp)
                (types atj-type-listp))
-  :verify-guards nil
   :short "Lift @(tsee atj-type-unannotate-var) to lists."
   (b* (((when (endp vars)) (mv nil nil))
        ((mv var type) (atj-type-unannotate-var (car vars)))
@@ -1388,7 +1384,6 @@
                (new-indices symbol-nat-alistp
                             :hyp (and (symbol-listp formals)
                                       (symbol-nat-alistp indices))))
-  :verify-guards nil
   :short "Rename the formal parameters of
           a defined function or lambda expression."
   :long
@@ -1550,7 +1545,6 @@
      we process the renaming of its formal parameters,
      which in general augments the two renaming alists,
      and then recursively process the body of the lambda expression."))
-  :verify-guards nil
 
   (define atj-rename-term ((term pseudo-termp)
                            (renaming-new symbol-symbol-alistp)
@@ -1559,9 +1553,9 @@
                            (curr-pkg stringp)
                            (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
-    :returns (mv (new-term "A @(tsee pseudo-termp).")
-                 (new-renaming-old "A @(tsee symbol-nat-alistp).")
-                 (new-indices "A @(tsee symbol-nat-alistp)."))
+    :returns (mv (new-term pseudo-termp :hyp :guard)
+                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
+                 (new-indices symbol-nat-alistp :hyp :guard))
     (b* (((when (variablep term))
           (b* (((mv var new?) (atj-unmark-var term))
                (renaming-pair (assoc-eq var (if new?
@@ -1672,9 +1666,11 @@
                             (curr-pkg stringp)
                             (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
-    :returns (mv (new-terms "A @(tsee pseudo-term-listp).")
-                 (new-renaming-old "A @(tsee symbol-nat-alistp).")
-                 (new-indices "A @(tsee symbol-nat-alistp)."))
+    :returns (mv (new-terms (and (pseudo-term-listp new-terms)
+                                 (equal (len new-terms) (len terms)))
+                            :hyp :guard)
+                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
+                 (new-indices symbol-nat-alistp :hyp :guard))
     (cond ((endp terms) (mv nil renaming-old indices))
           (t (b* (((mv new-term
                        renaming-old
@@ -1694,7 +1690,11 @@
                                                   vars-by-name)))
                (mv (cons new-term new-terms)
                    renaming-old
-                   indices))))))
+                   indices)))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-rename-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1704,7 +1704,6 @@
   :guard (not (equal curr-pkg ""))
   :returns (mv (new-formals "A @(tsee symbol-listp).")
                (new-body "A @(tsee pseudo-termp)."))
-  :verify-guards nil
   :short "Rename all the ACL2 variables to their Java names,
           in the formal parameters and body of an ACL2 function."
   :long
