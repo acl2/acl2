@@ -585,7 +585,6 @@
   :formula-check bitops-formula-checks)
 
 
-(local (install-fgl-primitives bitops-primitives))
 (local (install-fgl-metafns bitops-metafns))
 
 
