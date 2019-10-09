@@ -69,28 +69,84 @@
      only if it is not at the start of the Java identifier:
      this is indicated by the @('startp') flag.
      Otherwise, we turn it into an ``escape'' consisting of
-     @('$') followed by two hexadecimal digits for the ASCII code of the digit.
-     We use the same mapping for all the ACL2 characters
-     that are neither letters nor digits,
-     except for dash, which is very common in ACL2 symbols and package names,
-     and which we map into an underscore in Java,
-     which is allowed in Java identifiers.
-     The hexadecimal digits greater than 9 are uppercase.
+     @('$') followed by a short unambiguous description of the character
+     (with one exception, described below).")
+   (xdoc::p
+    "For the printable ASCII characters that are not letters,
+     we use the descriptions in the @('*atj-char-to-jchars-id*') alist.
+     These include digits, used when @('startp') is @('t').
+     The exception is dash,
+     which is very common in ACL2 symbols and package names as ``separator'':
+     we map that to an underscore in Java,
+     which fulfills a similar separator role.
      Note that @('$') itself, which is valid in Java identifiers,
-     is mapped to itself followed by its hex code (not just to itself)
-     when it appears in the ACL2 symbol or package name."))
-  (cond ((str::up-alpha-p char) (if flip-case-p
-                                    (list (str::downcase-char char))
-                                  (list char)))
-        ((str::down-alpha-p char) (if flip-case-p
-                                      (list (str::upcase-char char))
-                                    (list char)))
-        ((and (digit-char-p char)
-              (not startp)) (list char))
-        ((eql char #\-) (list #\_))
-        (t (b* ((acode (char-code char))
-                ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
-             (list #\$ hi-char lo-char)))))
+     is escaped.")
+   (xdoc::p
+    "For each of the other ISO 8859-1 characters,
+     we use a description that consists of @('x') (for `hexadecimal')
+     followed by the two hex digits that form the ASCII code of the character.
+     The hexadecimal digits greater than 9 are uppercase.")
+   (xdoc::@def "*atj-char-to-jchars-id*"))
+  (b* (((when (str::up-alpha-p char)) (if flip-case-p
+                                          (list (str::downcase-char char))
+                                        (list char)))
+       ((when (str::down-alpha-p char)) (if flip-case-p
+                                            (list (str::upcase-char char))
+                                          (list char)))
+       ((when (and (digit-char-p char)
+                   (not startp)))
+        (list char))
+       (pair? (assoc char *atj-char-to-jchars-id*))
+       ((when (consp pair?)) (explode (cdr pair?)))
+       (code (char-code char))
+       ((mv hi-char lo-char) (ubyte8=>hexchars code)))
+    (list #\$ #\x hi-char lo-char))
+
+  :prepwork
+  ((defconst *atj-char-to-jchars-id*
+     '((#\Space . "$SPACE")
+       (#\! . "$BANG")
+       (#\" . "$DQUOTE")
+       (#\# . "$HASH")
+       (#\$ . "$DOLLAR")
+       (#\% . "$PCENT")
+       (#\& . "$AMPER")
+       (#\' . "$SQUOTE")
+       (#\( . "$OROUND")
+       (#\) . "$CROUND")
+       (#\* . "$STAR")
+       (#\+ . "$PLUS")
+       (#\, . "$COMMA")
+       (#\- . "_")
+       (#\. . "$DOT")
+       (#\/ . "$SLASH")
+       (#\: . "$COLON")
+       (#\; . "$SCOLON")
+       (#\< . "$LT")
+       (#\= . "$EQ")
+       (#\> . "$GT")
+       (#\? . "$QMARK")
+       (#\@ . "$AT")
+       (#\[ . "$OSQUARE")
+       (#\\ . "$BSLASH")
+       (#\] . "$CSQUARE")
+       (#\^ . "$CARET")
+       (#\_ . "$USCORE")
+       (#\` . "$BQUOTE")
+       (#\{ . "$OCURLY")
+       (#\| . "$BAR")
+       (#\} . "$CCURLY")
+       (#\~ . "$TILDE")
+       (#\0 . "$D0")
+       (#\1 . "$D1")
+       (#\2 . "$D2")
+       (#\3 . "$D3")
+       (#\4 . "$D4")
+       (#\5 . "$D5")
+       (#\6 . "$D6")
+       (#\7 . "$D6")
+       (#\8 . "$D7")
+       (#\9 . "$D9")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
