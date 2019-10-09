@@ -16,6 +16,7 @@
 (include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "definedp")
+(include-book "definedp-plus")
 (include-book "dumb-occur-var-open")
 (include-book "event-name-queries")
 (include-book "formals-plus")

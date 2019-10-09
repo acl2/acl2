@@ -23,6 +23,7 @@
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
+(include-book "kestrel/std/system/definedp-plus" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
@@ -93,19 +94,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define definedp+ ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee definedp)."
-  :long
-  "<p>
-   This returns the same result as @(tsee definedp),
-   but it has a stronger guard.
-   </p>"
-  (definedp fn wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
