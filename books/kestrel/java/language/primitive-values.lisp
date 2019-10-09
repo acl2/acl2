@@ -424,75 +424,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled disjoint-primitive-values
-  :short "The tagging keywords make all the primitive values disjoint."
-  (and (implies (boolean-value-p x)
-                (and (not (char-value-p x))
-                     (not (byte-value-p x))
-                     (not (short-value-p x))
-                     (not (int-value-p x))
-                     (not (long-value-p x))
-                     (not (float-value-p x))
-                     (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (char-value-p x)
-                (and (not (byte-value-p x))
-                     (not (short-value-p x))
-                     (not (int-value-p x))
-                     (not (long-value-p x))
-                     (not (float-value-p x))
-                     (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (byte-value-p x)
-                (and (not (short-value-p x))
-                     (not (int-value-p x))
-                     (not (long-value-p x))
-                     (not (float-value-p x))
-                     (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (short-value-p x)
-                (and (not (int-value-p x))
-                     (not (long-value-p x))
-                     (not (float-value-p x))
-                     (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (int-value-p x)
-                (and (not (long-value-p x))
-                     (not (float-value-p x))
-                     (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (long-value-p x)
-                (and (not (float-value-p x))
-                     (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (float-value-p x)
-                (and (not (double-value-p x))
-                     (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (double-value-p x)
-                (and (not (floatx-value-p x))
-                     (not (doublex-value-p x))))
-       (implies (floatx-value-p x)
-                (not (doublex-value-p x))))
-  :enable (boolean-value-p
-           char-value-p
-           byte-value-p
-           short-value-p
-           int-value-p
-           long-value-p
-           float-value-p
-           double-value-p
-           floatx-value-p
-           doublex-value-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defflexsum integral-value
   :short "Java integral values [JLS:4.2.1]."
   (:char
@@ -514,7 +445,16 @@
   (:long
    :fields ((get :type long-value :acc-body x))
    :ctor-body get)
-  :prepwork ((local (in-theory (enable disjoint-primitive-values))))
+  :prepwork ((local (in-theory (enable char-value-p
+                                       byte-value-p
+                                       short-value-p
+                                       int-value-p
+                                       long-value-p
+                                       char-value-fix
+                                       byte-value-fix
+                                       short-value-fix
+                                       int-value-fix
+                                       long-value-fix))))
   ///
 
   (local (in-theory (enable integral-value-p)))
@@ -571,7 +511,20 @@
   (:double
    :fields ((get :type double-value :acc-body x))
    :ctor-body get)
-  :prepwork ((local (in-theory (enable disjoint-primitive-values))))
+  :prepwork ((local (in-theory (enable char-value-p
+                                       byte-value-p
+                                       short-value-p
+                                       int-value-p
+                                       long-value-p
+                                       float-value-p
+                                       double-value-p
+                                       char-value-fix
+                                       byte-value-fix
+                                       short-value-fix
+                                       int-value-fix
+                                       long-value-fix
+                                       float-value-fix
+                                       double-value-fix))))
   ///
 
   (local (in-theory (enable numeric-value-p)))
@@ -671,7 +624,22 @@
   (:double
    :fields ((get :type double-value :acc-body x))
    :ctor-body get)
-  :prepwork ((local (in-theory (enable disjoint-primitive-values))))
+  :prepwork ((local (in-theory (enable boolean-value-p
+                                       char-value-p
+                                       byte-value-p
+                                       short-value-p
+                                       int-value-p
+                                       long-value-p
+                                       float-value-p
+                                       double-value-p
+                                       boolean-value-fix
+                                       char-value-fix
+                                       byte-value-fix
+                                       short-value-fix
+                                       int-value-fix
+                                       long-value-fix
+                                       float-value-fix
+                                       double-value-fix))))
   ///
 
   (local (in-theory (enable primitive-value-p)))
@@ -727,3 +695,72 @@
     :define t
     :forward t
     :topic primitivex-value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled disjoint-primitive-values
+  :short "The tagging keywords make all the primitive values disjoint."
+  (and (implies (boolean-value-p x)
+                (and (not (char-value-p x))
+                     (not (byte-value-p x))
+                     (not (short-value-p x))
+                     (not (int-value-p x))
+                     (not (long-value-p x))
+                     (not (float-value-p x))
+                     (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (char-value-p x)
+                (and (not (byte-value-p x))
+                     (not (short-value-p x))
+                     (not (int-value-p x))
+                     (not (long-value-p x))
+                     (not (float-value-p x))
+                     (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (byte-value-p x)
+                (and (not (short-value-p x))
+                     (not (int-value-p x))
+                     (not (long-value-p x))
+                     (not (float-value-p x))
+                     (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (short-value-p x)
+                (and (not (int-value-p x))
+                     (not (long-value-p x))
+                     (not (float-value-p x))
+                     (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (int-value-p x)
+                (and (not (long-value-p x))
+                     (not (float-value-p x))
+                     (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (long-value-p x)
+                (and (not (float-value-p x))
+                     (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (float-value-p x)
+                (and (not (double-value-p x))
+                     (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (double-value-p x)
+                (and (not (floatx-value-p x))
+                     (not (doublex-value-p x))))
+       (implies (floatx-value-p x)
+                (not (doublex-value-p x))))
+  :enable (boolean-value-p
+           char-value-p
+           byte-value-p
+           short-value-p
+           int-value-p
+           long-value-p
+           float-value-p
+           double-value-p
+           floatx-value-p
+           doublex-value-p))
