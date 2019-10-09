@@ -19,12 +19,19 @@
 # javadoc-public, javadoc-package, and javadoc-private,
 # from where it can be opened in a browser.
 
+# This file also certifies the ACL2 files in this directory,
+# which currently just consist of XDOC documentation for AIJ.
+# Note that the ACL2 files do not depend on the Java-related files,
+# and that the Java-related files do not depend on the ACL2 files.
+# This file does not assume cert.pl and clean.pl to be in the path:
+# it references them via a relative path from this directory.
+
 # This file assumes that OpenJDK Java 12 is in the path,
 # but it may well work with other Java versions or implementations.
 
 ################################################################################
 
-all: aij doc-all
+all: aij doc-all acl2-files
 
 aij: java/out/artifacts/AIJ_jar/AIJ.jar
 
@@ -50,6 +57,10 @@ doc-private: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate private Javadoc documentation:"
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
 
+acl2-files: *.lisp
+	@echo "Certify ACL2 files:"
+	../../../build/cert.pl *.lisp
+
 clean:
 	@echo "Delete class files and jar file:"
 	/bin/rm -rf java/out
@@ -57,3 +68,5 @@ clean:
 	/bin/rm -rf javadoc-public
 	/bin/rm -rf javadoc-package
 	/bin/rm -rf javadoc-private
+	@echo "Delete ACL2 certification files:"
+	../../../build/clean.pl
