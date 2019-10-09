@@ -46,6 +46,7 @@
 (include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
+(include-book "kestrel/std/system/ubody-plus" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -119,33 +120,6 @@
    but it has a stronger guard.
    </p>"
   (guard-verified-p fn/thm wrld))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ubody+ ((fn (or (and (logic-function-namep fn wrld)
-                             (definedp fn wrld))
-                        (pseudo-lambdap fn)))
-                (wrld plist-worldp))
-  :returns (body pseudo-termp
-                 :hyp (or (symbolp fn) (pseudo-lambdap fn))
-                 :hints (("Goal" :in-theory (enable pseudo-lambdap))))
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee ubody)."
-  :long
-  "<p>
-   This returns the same result as @(tsee ubody),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (ubody fn wrld)))
-    (if (pseudo-termp result)
-        result
-      (raise "Internal error: ~
-              the unnormalized body ~x0 of ~x1 is not a pseudo-term."
-             result fn)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

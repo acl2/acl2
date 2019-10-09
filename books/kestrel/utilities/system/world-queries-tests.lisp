@@ -61,25 +61,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (ubody+ 'atom (w state)) '(not (consp x)))
-
-(must-succeed*
- (defun f (x) x)
- (assert-equal (ubody+ 'f (w state)) 'x))
-
-(must-succeed*
- (defun p (x) (and (natp x) (natp 3)))
- (assert-equal (body 'p t (w state)) '(natp x))
- (assert-equal (ubody+ 'p (w state)) '(if (natp x) (natp '3) 'nil)))
-
-(assert-equal (ubody+ '(lambda (x y) (cons x (h '3))) (w state))
-              '(cons x (h '3)))
-
-(assert-equal (ubody+ '(lambda (a) (h a '"abc")) (w state))
-              '(h a '"abc"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (uguard 'atom (w state)) *t*)
 
 (assert-equal (uguard 'car (w state)) '(if (consp x) 't (equal x 'nil)))
