@@ -11,15 +11,21 @@
 (in-package "ACL2")
 
 (include-book "string-string-alistp")
-(include-book "string-symbollist-alistp")
-(include-book "symbol-nat-alistp")
-(include-book "symbol-pos-alistp")
-(include-book "symbol-pseudoterm-alistp")
-(include-book "symbol-string-alistp")
-(include-book "symbol-symbol-alistp")
+
+(include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/typed-alists
-  :parents (std)
-  :short "Typed alists.")
+(assert! (string-string-alistp nil))
+
+(assert! (string-string-alistp '(("abc" . "def"))))
+
+(assert! (string-string-alistp '(("" . "1") ("U" . "string"))))
+
+(assert! (not (string-string-alistp 465)))
+
+(assert! (not (string-string-alistp '("a" "b" "c"))))
+
+(assert! (not (string-string-alistp '(("a" . "b") (c . "d")))))
+
+(assert! (not (string-string-alistp '(("a" . "b") ("c" . d)))))
