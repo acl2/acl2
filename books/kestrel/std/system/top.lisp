@@ -15,6 +15,7 @@
 (include-book "arity-plus")
 (include-book "close-lambdas")
 (include-book "conjoin")
+(include-book "definedp")
 (include-book "dumb-occur-var-open")
 (include-book "event-name-queries")
 (include-book "formals-plus")

@@ -22,6 +22,7 @@
 (include-book "term-function-recognizers")
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
+(include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
@@ -94,23 +95,6 @@
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define definedp ((fn symbolp) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Check if a named logic-mode function is defined."
-  :long
-  "<p>
-   We check if the function symbol has an @('unnormalized-body') property.
-   </p>
-   <p>
-   Note that some program-mode functions may be defined
-   but not have an @('unnormalized-body') property.
-   </p>
-   <p>
-   See @(tsee definedp+) for a logic-friendly variant of this utility.
-   </p>"
-  (if (getpropc fn 'unnormalized-body nil wrld) t nil))
 
 (define definedp+ ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
