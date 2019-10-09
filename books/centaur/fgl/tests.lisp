@@ -560,7 +560,7 @@
 (include-book "member-equal")
 (include-book "bitops-primitives")
 (local (in-theory (disable w)))
-(install-fgl-primitives tests)
+(install-fgl-metafns tests)
 
 (define pythag-triple-p ((x natp) (y natp) (z natp))
   (and (< 0 (lnfix x))

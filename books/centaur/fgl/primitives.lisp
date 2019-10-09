@@ -560,8 +560,6 @@
        
 
 
-(local (install-fgl-primitives baseprims))
-
 (local (install-fgl-metafns baseprims))
 
 

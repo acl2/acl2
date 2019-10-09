@@ -158,7 +158,7 @@
 
 ;; (encapsulate nil
 ;;   (local (in-theory (disable (tau-system) member set::empty-set-unique)))
-;;   (install-fgl-primitives patched-primitives))
+;;   (install-fgl-metafns patched-primitives))
   
 
 ;; (defun 4vec-fix-debug (x)

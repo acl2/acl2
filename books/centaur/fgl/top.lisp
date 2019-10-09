@@ -52,7 +52,6 @@
 ;; This event may be repeated later (with a different prefix instead of top)
 ;; to install more primitives.
 
-(install-fgl-primitives top)
 (install-fgl-metafns top)
 
 

@@ -243,4 +243,4 @@
   :formula-check fast-alist-formula-checks)
 
 
-(local (install-fgl-primitives falprims))
+(local (install-fgl-metafns falprims))

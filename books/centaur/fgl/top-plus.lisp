@@ -39,7 +39,6 @@
 
 (local (in-theory (disable w)))
 
-(install-fgl-primitives top-plus)
 (install-fgl-metafns top-plus)
 
 #||

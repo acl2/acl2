@@ -47,6 +47,43 @@ must be a variable that hasn't yet been bound during the application of the
 current rewrite rule.</p>"
   dummy-var)
 
+(define binder (dummy-var val)
+  :parents (fgl-rewrite-rules)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :short "Form that can bind a free variable to the result of some (possibly
+nondeterministic) computation."
+  :long "<p>Logically, @('(binder var val)') just returns @('val').  However,
+in FGL, the intended use is to bind a free variable in a rewrite rule to the
+result of some computation with some particular properties.  The @('val')
+argument must be a function @('bindingfn') whose first argument is @('var') and
+which has either a binder rule of the following form:
+@({
+ (implies (and ... hyps ...
+               (equiv2 var (binding-impl-term ...)))
+          (equiv1 (bindingfn var arg1 ... argn) var))
+ })
+or else a binder metafunction associated.  In the first case (and assuming we
+are in an @('equiv1') equiv context),
+@({
+ (binder var (bindingfn var val1 ... valn))
+ })
+results in @('var') being bound to the result of symbolically interpreting
+@('(binding-impl-term ...)') under the substitution binding @('argi') to
+@('vali') and in the @('equiv2') context.  In the second case, the binder
+metafunction is applied to the symbolic values @('val1 ... valn'), resulting in
+a term, bindings, and equivalence context; @('var') is bound to the result of
+symbolically interpreting the term under the bindings in the equivalence
+context.</p>
+
+<p>An example application is to check whether the symbolic value of some term
+is syntactically an integer.  We can define @('(check-integer-fn var x)') to be
+@('(and (integerp x) var)') and associate this with a binding metafunction that
+returns T if @('x') is syntactically an integer.  Another application is to
+perform a SAT check and return the result (@(':unsat'), @(':sat'), or
+@(':failed')).</p>" val)
+
 (defxdoc syntax-interp
   :parents (fgl-rewrite-rules)
   :short "Interpret a form on the syntactic representations of variables."

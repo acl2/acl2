@@ -397,4 +397,4 @@
   :formula-check fgarray-formula-checks)
 
 
-(local (install-fgl-primitives fgarrayprims))
+(local (install-fgl-metafns fgarrayprims))
