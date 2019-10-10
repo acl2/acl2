@@ -437,6 +437,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-predefined-method-names*
+  :short "Predefined Java method names for certain ACL2 functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Certain primitive ACL2 functions are generally used frequently,
+     and thus we want to use more readable Java method names
+     than would be produced by
+     the default translation in @(tsee atj-fn-to-method).
+     In particular,
+     the default translation for @(tsee unary--) would be @('unary__'),
+     even though the second dash is not really a separator
+     but rather stands for the `minus' sign:
+     for this function,
+     we want to use the more readable @('unary_minus') method name.
+     Other primitive functions like @(tsee binary-+)
+     would include @('$') escapes according to their default translation;
+     while not as bad as the default for @(tsee unary--),
+     we want to use more readable method names like @('binary_plus').")
+   (xdoc::p
+    "We store these predefined method names as values of this alist,
+     whose keys are the corresponding primitive functions.
+     This alist is used in @(tsee atj-fn-to-method).")
+   (xdoc::p
+    "These predefined names currently use
+     lowercase letters separated by underscores,
+     consistently with the character translation
+     in @(tsee atj-chars-to-jchars-id)."))
+  '((bad-atom<= . "bad_atom_less_than_or_equal_to")
+    (binary-* . "binary_star")
+    (binary-+ . "binary_plus")
+    (unary-- . "unary_minus")
+    (unary-/ . "unary_slash")
+    (< . "less_than"))
+  ///
+  (assert-event (symbol-string-alistp *atj-predefined-method-names*))
+  (assert-event (no-duplicatesp-eq
+                 (strip-cars *atj-predefined-method-names*)))
+  (assert-event (no-duplicatesp-equal
+                 (strip-cdrs *atj-predefined-method-names*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-fn-to-method ((fn symbolp))
   :returns (method stringp)
   :short "Turn an ACL2 function symbol into a Java method name."
@@ -454,16 +497,26 @@
     "The name of the Java method is obtained by turning the ACL2 function name
      into a valid Java identifier, via @(tsee atj-chars-to-jchars-id).
      The resulting name must not be in @(tsee *atj-disallowed-method-names*);
-     if it is, we add a @('$') at the end, which makes the name allowed.")
+     if it is, we add a @('$') at the end, which makes the name allowed.
+     However, if the function is a key in @(tsee *atj-predefined-method-names*),
+     we directly use the associated name instead.
+     To avoid conflicts with these predefined names,
+     we add a @('$') at the end of every method name
+     that happens to be one of the predefined ones
+     (where the function is not the primitive one associated to that name.")
    (xdoc::p
     "The generation of the method name
      does not consider the package name of the function:
      the package name is used, instead, to generate the name of the Java class
      that contains the method;
      see @(tsee atj-pkg-to-class)."))
-  (b* ((jchars (atj-chars-to-jchars-id (explode (symbol-name fn)) t t))
+  (b* ((predef? (assoc-eq fn *atj-predefined-method-names*))
+       ((when (consp predef?)) (cdr predef?))
+       (jchars (atj-chars-to-jchars-id (explode (symbol-name fn)) t t))
        (jstring (implode jchars))
-       (jstring (if (member-equal jstring *atj-disallowed-method-names*)
+       (jstring (if (or (member-equal jstring *atj-disallowed-method-names*)
+                        (member-equal jstring (strip-cdrs
+                                               *atj-predefined-method-names*)))
                     (str::cat jstring "$")
                   jstring)))
     jstring))
