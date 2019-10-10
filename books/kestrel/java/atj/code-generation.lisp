@@ -30,18 +30,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel natp-of-incremented-index
-  (implies (natp x)
-           (natp (1+ x))))
-
-(defrulel posp-of-incremented-index
-  (implies (posp x)
-           (posp (1+ x))))
-
-(local (in-theory (disable natp posp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ atj-code-generation
   :parents (atj-implementation)
   :short "Code generation performed by ATJ."
