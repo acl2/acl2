@@ -2457,28 +2457,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fns ((fns symbol-listp)
+(define atj-gen-shallow-fns ((fns-in-curr-pkg symbol-listp)
                              (pkg-class-names string-string-alistp)
                              (fn-method-names symbol-string-alistp)
                              (guards$ booleanp)
                              (verbose$ booleanp)
                              (curr-pkg stringp)
                              state)
-  :guard (and (equal (symbol-package-name-lst fns)
-                     (repeat (len fns) curr-pkg))
+  :guard (and (equal (symbol-package-name-lst fns-in-curr-pkg)
+                     (repeat (len fns-in-curr-pkg) curr-pkg))
               (not (equal curr-pkg "")))
   :returns (jmethods jmethod-listp)
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-fn) to lists."
-  (cond ((endp fns) nil)
-        (t (b* ((first-jmethod (atj-gen-shallow-fn (car fns)
+  :long
+  (xdoc::topstring-p
+   "This function is called on the functions to translate to Java
+    that are all in the same package, namely @('curr-pkg').")
+  (cond ((endp fns-in-curr-pkg) nil)
+        (t (b* ((first-jmethod (atj-gen-shallow-fn (car fns-in-curr-pkg)
                                                    pkg-class-names
                                                    fn-method-names
                                                    guards$
                                                    verbose$
                                                    curr-pkg
                                                    state))
-                (rest-jmethods (atj-gen-shallow-fns (cdr fns)
+                (rest-jmethods (atj-gen-shallow-fns (cdr fns-in-curr-pkg)
                                                     pkg-class-names
                                                     fn-method-names
                                                     guards$
@@ -2489,15 +2493,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fns-in-pkg ((fns symbol-listp)
+(define atj-gen-shallow-fns-in-pkg ((fns-in-pkg symbol-listp)
                                     (pkg stringp)
                                     (pkg-class-names string-string-alistp)
                                     (fn-method-names symbol-string-alistp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
                                     state)
-  :guard (equal (symbol-package-name-lst fns)
-                (repeat (len fns) pkg))
+  :guard (equal (symbol-package-name-lst fns-in-pkg)
+                (repeat (len fns-in-pkg) pkg))
   :returns (jclass jclassp)
   :verify-guards nil
   :short "Generate the shallowly embedded ACL2 functions
@@ -2510,14 +2514,17 @@
      that includes ACL2 functions for which we generate Java code
      (each ACL2 function is turned into a Java method in this class).
      This is a public static Java class,
-     nested into the main Java class that ATJ generates."))
+     nested into the main Java class that ATJ generates.")
+   (xdoc::p
+    "This function is called on the functions to translate to Java
+     that are all in the same package, namely @('pkg')."))
   (b* ((pair (assoc-equal pkg pkg-class-names))
        ((unless (consp pair))
         (raise "Internal error: no class name for package name ~x0." pkg)
         ;; irrelevant:
         (make-jclass :access (jaccess-public) :name ""))
        (jclass-name (cdr pair))
-       (jclass-methods (atj-gen-shallow-fns fns
+       (jclass-methods (atj-gen-shallow-fns fns-in-pkg
                                             pkg-class-names
                                             fn-method-names
                                             guards$
