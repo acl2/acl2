@@ -18,6 +18,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-name" :dir :system)
 (include-book "kestrel/std/typed-alists/string-string-alistp" :dir :system)
+(include-book "kestrel/std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
@@ -409,3 +410,92 @@
        (class (atj-pkg-to-class pkg containing-class))
        (rest-alist (atj-pkgs-to-classes (cdr pkgs) containing-class)))
     (acons pkg class rest-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-disallowed-method-names*
+  :short "Disallowed Java method names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     ACL2 function names are turned into Java method names
+     that must be valid identifiers.
+     The mapping in @(tsee atj-fn-to-method) always produces
+     characters that are valid for identifiers,
+     but the sequence of such characters must not be
+     a Java keyword, boolean or null literal, or empty.")
+   (xdoc::p
+    "This constant collects these disallowed names."))
+  (append *keywords*
+          *boolean-literals*
+          (list *null-literal*)
+          (list ""))
+  ///
+  (assert-event (string-listp *atj-disallowed-method-names*))
+  (assert-event (no-duplicatesp-equal *atj-disallowed-method-names*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-fn-to-method ((fn symbolp))
+  :returns (method stringp)
+  :short "Turn an ACL2 function symbol into a Java method name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     each ACL2 function is represented as a Java method.
+     The Java methods for all the ACL2 functions that are translated to Java
+     are partitioned by ACL2 packages:
+     there is a Java class for each ACL2 package,
+     and the Java method for each ACL2 function
+     is in the Java class corresponding to the ACL2 package of the function.")
+   (xdoc::p
+    "The name of the Java method is obtained by turning the ACL2 function name
+     into a valid Java identifier, via @(tsee atj-chars-to-jchars-id).
+     The resulting name must not be in @(tsee *atj-disallowed-method-names*);
+     if it is, we add a @('$') at the end, which makes the name allowed.")
+   (xdoc::p
+    "The generation of the method name
+     does not consider the package name of the function:
+     the package name is used, instead, to generate the name of the Java class
+     that contains the method;
+     see @(tsee atj-pkg-to-class)."))
+  (b* ((jchars (atj-chars-to-jchars-id (explode (symbol-name fn)) t t))
+       (jstring (implode jchars))
+       (jstring (if (member-equal jstring *atj-disallowed-method-names*)
+                    (str::cat jstring "$")
+                  jstring)))
+    jstring))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-fns-to-methods ((fns symbol-listp))
+  :guard (no-duplicatesp-equal fns)
+  :returns (fn-method-names symbol-string-alistp :hyp :guard)
+  :short "Generate the mapping from ACL2 function symbols to Java method names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We call @(tsee atj-fn-to-method) on all the argument function symbols,
+     and generate an alist from those to the corresponding Java method names.
+     This function is called on all the functions
+     that must be translated to Java.")
+   (xdoc::p
+    "For now each function symbol is translated independently from the others,
+     but future versions of this function could generate mappings
+     according to more ``global'' strategies.
+     In this case, this function could be split into
+     one that generates an alist
+     for all the functions (to be translated) in a package
+     (as the method names need to be unambiguous only within a class),
+     and one that puts all the alist together.")
+   (xdoc::p
+    "The resulting alist is passed to the code generation functions,
+     which use the alist to look up the Java method names
+     corresponding to the ACL2 function symbols."))
+  (b* (((when (endp fns)) nil)
+       (fn (car fns))
+       (method (atj-fn-to-method fn))
+       (rest-alist (atj-fns-to-methods (cdr fns))))
+    (acons fn method rest-alist)))
