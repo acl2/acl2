@@ -10,15 +10,20 @@
 
 (in-package "ACL2")
 
-(include-book "function-namep")
+(include-book "function-symbol-listp")
 
-(include-book "std/util/deflist" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist function-name-listp (x wrld)
+(define function-name-listp (x (wrld plist-worldp))
+  :returns (yes/no booleanp)
   :parents (std/system/event-name-queries)
   :short "Recognize true lists of symbols that name functions."
-  :guard (plist-worldp wrld)
-  (function-namep x wrld)
-  :true-listp t)
+  :long
+  (xdoc::topstring-p
+   "This function is enabled because it is meant as an abbreviation.
+    Theorems triggered by this function should be generally avoided.")
+  (and (symbol-listp x)
+       (function-symbol-listp x wrld))
+  :enabled t)

@@ -10,15 +10,18 @@
 
 (in-package "ACL2")
 
-(include-book "theorem-namep")
-
-(include-book "std/util/deflist" :dir :system)
+(include-book "theorem-symbol-listp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist theorem-name-listp (x wrld)
+(define theorem-name-listp (x (wrld plist-worldp))
+  :returns (yes/no booleanp)
   :parents (std/system/event-name-queries)
   :short "Recognize true lists of symbols that name theorems."
-  :guard (plist-worldp wrld)
-  (theorem-namep x wrld)
-  :true-listp t)
+  :long
+  (xdoc::topstring-p
+   "This function is enabled because it is meant as an abbreviation.
+    Theorems triggered by this function should be generally avoided.")
+  (and (symbol-listp x)
+       (theorem-symbol-listp x wrld))
+  :enabled t)
