@@ -10,7 +10,11 @@
 
 (in-package "JAVA")
 
-(include-book "kestrel/fty/defbyte-standard-instances" :dir :system)
+(include-book "kestrel/fty/ubyte16" :dir :system)
+(include-book "kestrel/fty/sbyte8" :dir :system)
+(include-book "kestrel/fty/sbyte16" :dir :system)
+(include-book "kestrel/fty/sbyte32" :dir :system)
+(include-book "kestrel/fty/sbyte64" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
