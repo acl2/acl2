@@ -24,6 +24,7 @@
 (include-book "macro-args-plus")
 (include-book "macro-keyword-args")
 (include-book "macro-required-args")
+(include-book "macro-required-args-plus")
 (include-book "primitivep")
 (include-book "primitivep-plus")
 (include-book "pure-raw-p")

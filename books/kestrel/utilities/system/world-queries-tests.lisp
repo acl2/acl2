@@ -429,31 +429,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (macro-required-args+ 'tthm (w state)) '(fn))
-
-(assert-equal (macro-required-args+ 'list (w state)) nil)
-
-(assert-equal (macro-required-args+ 'defun (w state)) nil)
-
-(assert-equal (macro-required-args+ 'defthm (w state)) '(name term))
-
-(assert-equal (macro-required-args+ 'defun-sk (w state)) '(name args))
-
-(must-succeed*
- (defmacro m (a) `(list ,a))
- (assert-equal (macro-required-args+ 'm (w state)) '(a)))
-
-(must-succeed*
- (defmacro m (a &key b) `(list ,a ,(or b :default)))
- (assert-equal (macro-required-args+ 'm (w state)) '(a)))
-
-(must-succeed*
- (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
-   `(list ,a ,b ,c ,d ,e ,e-p ,form))
- (assert-equal (macro-required-args+ 'm (w state)) '(a)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (macro-keyword-args+ 'tthm (w state)) nil)
 
 (assert-equal (macro-keyword-args+ 'list (w state)) nil)

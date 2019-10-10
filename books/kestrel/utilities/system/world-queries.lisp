@@ -33,6 +33,7 @@
 (include-book "kestrel/std/system/macro-args-plus" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/macro-required-args-plus" :dir :system)
 (include-book "kestrel/std/system/macro-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
@@ -602,50 +603,6 @@
                 is neither a true list of symbols nor :ALL."
                ruler-extenders fn)))
     ruler-extenders))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; MACRO-REQUIRED-ARGS moved to [books]/kestrel/std/system/
-
-(define macro-required-args+ ((mac (macro-namep mac wrld))
-                              (wrld plist-worldp))
-  :returns (required-args symbol-listp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee macro-required-args)."
-  :long
-  "<p>
-   This returns the same result as @(tsee macro-required-args),
-   but it has a stronger guard,
-   is guard-verified,
-   and includes run-time checks (which should always succeed)
-   that allows us to prove the return type theorem and to verify guards
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((all-args (macro-args+ mac wrld)))
-    (if (null all-args)
-        nil
-      (if (eq (car all-args) '&whole)
-          (macro-required-args+-aux mac (cddr all-args) nil)
-        (macro-required-args+-aux mac all-args nil))))
-
-  :prepwork
-  ((define macro-required-args+-aux ((mac symbolp)
-                                     (args true-listp)
-                                     (rev-result symbol-listp))
-     :returns (final-result symbol-listp
-                            :hyp (symbol-listp rev-result))
-     (if (endp args)
-         (reverse rev-result)
-       (b* ((arg (car args)))
-         (if (lambda-keywordp arg)
-             (reverse rev-result)
-           (if (symbolp arg)
-               (macro-required-args+-aux mac
-                                         (cdr args)
-                                         (cons arg rev-result))
-             (raise "Internal error: ~
-                     the required macro argument ~x0 of ~x1 is not a symbol."
-                    arg mac))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
