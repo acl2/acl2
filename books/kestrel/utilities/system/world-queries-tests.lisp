@@ -429,37 +429,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (macro-keyword-args+ 'tthm (w state)) nil)
-
-(assert-equal (macro-keyword-args+ 'list (w state)) nil)
-
-(assert-equal (macro-keyword-args+ 'defun (w state)) nil)
-
-(assert-equal
- (macro-keyword-args+ 'defthm (w state)) '((rule-classes . (:rewrite))
-                                           (instructions . nil)
-                                           (hints . nil)
-                                           (otf-flg . nil)))
-
-(assert-equal (macro-keyword-args+ 'defun-sk (w state)) nil)
-
-(must-succeed*
- (defmacro m (a) `(list ,a))
- (assert-equal (macro-keyword-args+ 'm (w state)) nil))
-
-(must-succeed*
- (defmacro m (a &key b) `(list ,a ,(or b :default)))
- (assert-equal (macro-keyword-args+ 'm (w state)) '((b . nil))))
-
-(must-succeed*
- (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
-   `(list ,a ,b ,c ,d ,e ,e-p ,form))
- (assert-equal (macro-keyword-args+ 'm (w state)) '((c . nil)
-                                                    (d . 3)
-                                                    (e . #\e))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (thm-formula 'car-cdr-elim (w state))
               '(implies (consp x)
                         (equal (cons (car x) (cdr x)) x)))

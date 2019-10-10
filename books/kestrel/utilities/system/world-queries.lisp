@@ -32,6 +32,7 @@
 (include-book "kestrel/std/system/logical-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-args-plus" :dir :system)
 (include-book "kestrel/std/system/macro-keyword-args" :dir :system)
+(include-book "kestrel/std/system/macro-keyword-args-plus" :dir :system)
 (include-book "kestrel/std/system/macro-required-args" :dir :system)
 (include-book "kestrel/std/system/macro-required-args-plus" :dir :system)
 (include-book "kestrel/std/system/macro-name-listp" :dir :system)
@@ -603,52 +604,6 @@
                 is neither a true list of symbols nor :ALL."
                ruler-extenders fn)))
     ruler-extenders))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; MACRO-KEYWORD-ARGS moved to [books]/kestrel/std/system/
-
-(define macro-keyword-args+ ((mac (macro-namep mac wrld))
-                             (wrld plist-worldp))
-  :returns (keyword-args symbol-alistp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee macro-keyword-args)."
-  :long
-  (xdoc::topstring-p
-   "This returns the same result as @(tsee macro-keyword-args),
-    but it has a stronger guard,
-    is guard-verified,
-    and includes run-time checks (which should always succeed)
-    that allow us to prove the return type theorem and to verify the guards
-    without strengthening the guard on @('wrld').")
-  (b* ((all-args (macro-args+ mac wrld))
-       (args-after-&key (cdr (member-eq '&key all-args)))
-       (keyword-args (macro-keyword-args+-aux mac args-after-&key)))
-    keyword-args)
-
-  :prepwork
-  ((define macro-keyword-args+-aux ((mac symbolp) args)
-     :returns (keyword-args symbol-alistp)
-     :verify-guards :after-returns
-     :parents nil ; override default
-     (b* (((when (atom args)) nil)
-          (arg (car args))
-          ((when (lambda-keywordp arg)) nil)
-          ((when (symbolp arg))
-           (acons arg nil (macro-keyword-args+-aux mac (cdr args))))
-          ((unless (and (consp arg)
-                        (symbolp (first arg))
-                        (consp (cdr arg))
-                        (consp (second arg))
-                        (eq (car (second arg)) 'quote)
-                        (consp (cdr (second arg)))))
-           (raise "Internal error: ~
-                   the keyword macro argument ~x0 of ~x1 ~
-                   does not have the expected form."
-                  arg mac)))
-       (acons (first arg)
-              (unquote (second arg))
-              (macro-keyword-args+-aux mac (cdr args)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
