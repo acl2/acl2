@@ -323,7 +323,9 @@
      we need to make sure that the Java class name for an ACL2 package
      does not conflict with any of the imported classes.
      The generated Java code imports all the classes
-     in the Java package of AIJ, as well as some Java library classes.
+     in the Java package of AIJ,
+     as well as some Java library classes and interfaces,
+     including all the ones in @('java.lang').
      This constant collects all of these.
      This constant must be kept in sync with @(tsee atj-gen-jcunit),
      which generates the Java imports.")
