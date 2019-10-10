@@ -17,14 +17,10 @@
 (defpkg "JAVA" (append *std-pkg-symbols*
                        '(*pkg-witness-name*
                          *primitive-formals-and-guards*
-                         access-event-tuple-namex
-                         access-event-tuple-type
                          add-const-to-untranslate-preprocess
                          add-suffix
-                         add-suffix-to-fn
                          all-ffn-symbs
                          all-free/bound-vars
-                         all-pkgs-in-world
                          all-vars-open
                          all-vars-open-lst
                          alpha/digit-chars
@@ -104,6 +100,7 @@
                          sort-symbol-listp
                          str-fix
                          string-downcase
+                         string-string-alistp
                          string-symbollist-alistp
                          string-upcase
                          string=>nats
@@ -126,6 +123,4 @@
                          upper-case-p
                          variablep
                          str::chars-in-charset-p
-                         str::natchars16
-                         str::natstr
-                         str::strtok)))
+                         str::natstr)))
