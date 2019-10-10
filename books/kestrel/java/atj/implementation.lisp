@@ -115,7 +115,7 @@
      "@('jvar-result-index') is the index of the next Java local variable to use
       to store the results of arguments of non-strict ACL2 functions.")
     (xdoc::li
-     "@('indices') is an alist from symbols to natural numbers,
+     "@('indices') is an alist from symbols to positive integers,
       which associates to each ACL2 variable the next index to use
       to disambiguate a new instance of that variable from previous instances.
       This is used when renaming ACL2 variables to their Java names,
@@ -130,6 +130,12 @@
       while the latter is used for the variables marked as `old'.
       This is used when renaming ACL2 variables to their Java names,
       in the shallow embedding approach.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
+     "@('pkg-class-names') is an alist from strings to strings,
+      which associates to each package name in the keys of @('fns-by-pkg')
+      the name of the corresponding Java class name.
+      This is used in the shallow embedding approach.
       See @(tsee atj-code-generation).")
     (xdoc::li
      "@('curr-pkg') is the name of the ACL2 package of the ACL2 function

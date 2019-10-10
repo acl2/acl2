@@ -20,6 +20,7 @@
 (include-book "pre-translation")
 (include-book "post-translation")
 (include-book "primitives")
+(include-book "name-translation")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
@@ -801,77 +802,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-disallowed-jclass-names*
-  :short "Disallowed Java class names
-          for the shallowly embedded ACL2 packages."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     a Java class is generated for each ACL2 package
-     that includes ACL2 functions for which we generate Java code.
-     Each ACL2 function is turned into a Java method in that Java class.")
-   (xdoc::p
-    "The name of the Java class is obtained from the name of the ACL2 package,
-     but since the generated Java code imports some classes
-     from other Java packages,
-     we need to make sure that the Java class name for an ACL2 package
-     does not conflict with any of the imported classes.")
-   (xdoc::p
-    "The generated Java code imports all the classes
-     in the Java package of AIJ, as well as some other Java library classes.
-     This constant collects all of these.")
-   (xdoc::p
-    "We also disallow Java keywords, boolean literals, and null literal,
-     which are not valid Java identiers.
-     There is no need to exclude the empty string explicitly,
-     because ACL2 package names are never empty
-     and thus they never result in the empty string."))
-  (append *keywords*
-          *boolean-literals*
-          (list *null-literal*)
-          *atj-aij-class-names*
-          (list "BigInteger"
-                "ArrayList"
-                "List"))
-  ///
-  (assert-event (string-listp *atj-disallowed-jclass-names*))
-  (assert-event (no-duplicatesp-equal *atj-disallowed-jclass-names*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-pkgname ((pkg stringp) (java-class$ stringp))
-  :returns (jclass-name stringp)
-  :short "Generate a shallowly embedded ACL2 package name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     a Java class is generated for each ACL2 package
-     that includes ACL2 functions that we generate Java code for.
-     Each ACL2 function is turned into a Java method in that Java class.")
-   (xdoc::p
-    "The name of the Java class for the ACL2 package
-     is obtained by turning the ACL2 package name
-     into a valid Java identifier,
-     in the same way as done for shallowly embedded Java variables.
-     The resulting Java class name
-     must not be a keyword, a boolean or null literal,
-     or any of the imported Java classes
-     (see @(tsee *atj-disallowed-jclass-names*)).
-     We also ensure that is is distinct from the main class generated.
-     If the candidate Java class name is one of these,
-     we add a @('$') at the end."))
-  (b* ((jchars (atj-chars-to-jchars-id (explode pkg) t nil))
-       (jstring (implode jchars))
-       (jstring (if (or (member-equal jstring *atj-disallowed-jclass-names*)
-                        (equal jstring java-class$))
-                    (str::cat jstring "$")
-                  jstring)))
-    jstring))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defval *atj-disallowed-jmethod-names*
   :short "Disallowed Java method names
           for the shallowly embedded ACL2 functions."
@@ -898,7 +828,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fnname ((fn symbolp) (curr-pkg stringp))
+(define atj-gen-shallow-fnname ((fn symbolp)
+                                (pkg-class-names string-string-alistp)
+                                (curr-pkg stringp))
   :guard (not (equal curr-pkg ""))
   :returns (jmethod-name stringp)
   :short "Generate a shallowly embedded ACL2 function name."
@@ -918,32 +850,34 @@
      not dissmilarly to @('<pkg>::<fn>') in ACL2.
      However, inside @('<jclass>'), it suffices to use @('<jmethod>'),
      which is more readable.
-     Thus, somewhat analogously to @(tsee atj-rename-formal),
-     we prepend the Java class name to the Java method name
+     Thus, we prepend the Java class name to the Java method name
      if and only if the current ACL2 package (the @('curr-pkg') argument)
      differs from the ACL2 function's package.")
    (xdoc::p
-    "The Java class name @('<jclass>') is generated
-     via @(tsee atj-gen-shallow-pkgname).
-     The method name is generated using the same character mapping
-     used for shallowly embedded ACL2 variables and package names.
-     We avoid Java keyword, boolean and null literals,
+    "The Java class name @('<jclass>') is looked up
+     in the alist @('pkg-class-names').
+     The method name is generated via @(tsee atj-chars-to-jchars-id);
+     we avoid Java keywords, boolean and null literals,
      and the empty string,
      by appending a @('$') at their end if they come up."))
   (b* ((pkg (symbol-package-name fn))
-       (jclass.-jchars (if (equal pkg curr-pkg)
-                           nil
-                         (append (atj-chars-to-jchars-id (explode pkg) t nil)
-                                 (list #\.))))
+       (jclass? (if (equal pkg curr-pkg)
+                    ""
+                  (b* ((pair (assoc-equal pkg pkg-class-names))
+                       ((unless (consp pair))
+                        (raise "Internal error: ~
+                                no class name for package name ~x0." pkg)
+                        "")
+                       (jclass (cdr pair)))
+                    (str::cat jclass "."))))
        (jmethod-jchars (atj-chars-to-jchars-id (explode
                                                 (symbol-name fn)) t t))
        (jmethod-jchars (if (member-equal (implode jmethod-jchars)
                                          *atj-disallowed-jmethod-names*)
                            (rcons #\$ jmethod-jchars)
                          jmethod-jchars))
-       (jchars (append jclass.-jchars jmethod-jchars))
-       (jstring (implode jchars)))
-    jstring)
+       (jmethod (implode jmethod-jchars)))
+    (str::cat jclass? jmethod))
   :prepwork
   ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
@@ -1219,10 +1153,11 @@
                                  (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
-                                 (curr-apkg stringp)
+                                 (pkg-class-names string-string-alistp)
+                                 (curr-pkg stringp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1279,7 +1214,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        guards$
                                                        wrld))
          ((mv else-jblock
@@ -1290,7 +1226,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        guards$
                                                        wrld))
          ((mv then-jblock
@@ -1301,7 +1238,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        guards$
                                                        wrld))
          ((when (and *atj-gen-cond-exprs*
@@ -1354,10 +1292,11 @@
                                  (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
-                                 (curr-apkg stringp)
+                                 (pkg-class-names string-string-alistp)
+                                 (curr-pkg stringp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1389,7 +1328,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        guards$
                                                        wrld))
          ((mv second-jblock
@@ -1400,7 +1340,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        guards$
                                                        wrld))
          (jtype (atj-type-to-jtype type))
@@ -1437,9 +1378,10 @@
                                      (jvar-value-index posp)
                                      (jvar-result-base stringp)
                                      (jvar-result-index posp)
-                                     (curr-apkg stringp)
+                                     (pkg-class-names string-string-alistp)
+                                     (curr-pkg stringp)
                                      (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1497,7 +1439,8 @@
                                                            jvar-value-index
                                                            jvar-result-base
                                                            jvar-result-index
-                                                           curr-apkg
+                                                           pkg-class-names
+                                                           curr-pkg
                                                            t ; GUARDS$
                                                            wrld))
              (jexpr (atj-adapt-jexpr-to-type arg-jexpr :integer :jint)))
@@ -1519,9 +1462,10 @@
                                      (jvar-value-index posp)
                                      (jvar-result-base stringp)
                                      (jvar-result-index posp)
-                                     (curr-apkg stringp)
+                                     (pkg-class-names string-string-alistp)
+                                     (curr-pkg stringp)
                                      (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1562,7 +1506,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        t ; GUARDS$
                                                        wrld))
          ((mv right-jblock
@@ -1573,7 +1518,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        t ; GUARDS$
                                                        wrld))
          (binop (case fn
@@ -1603,10 +1549,11 @@
                                  (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
-                                 (curr-apkg stringp)
+                                 (pkg-class-names string-string-alistp)
+                                 (curr-pkg stringp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1663,7 +1610,8 @@
                                        jvar-value-index
                                        jvar-result-base
                                        jvar-result-index
-                                       curr-apkg
+                                       pkg-class-names
+                                       curr-pkg
                                        guards$
                                        wrld)
               (atj-gen-shallow-ifapp first
@@ -1674,7 +1622,8 @@
                                      jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
-                                     curr-apkg
+                                     pkg-class-names
+                                     curr-pkg
                                      guards$
                                      wrld))))
          ((when (and guards$
@@ -1687,7 +1636,8 @@
                                      jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
-                                     curr-apkg
+                                     pkg-class-names
+                                     curr-pkg
                                      wrld))
          ((when (and guards$
                      (member-eq fn *atj-primitive-binops*)
@@ -1701,7 +1651,8 @@
                                      jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
-                                     curr-apkg
+                                     pkg-class-names
+                                     curr-pkg
                                      wrld))
          ((mv arg-jblocks
               arg-jexprs
@@ -1711,12 +1662,14 @@
                                                         jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
-                                                        curr-apkg
+                                                        pkg-class-names
+                                                        curr-pkg
                                                         guards$
                                                         wrld))
          ((when (symbolp fn))
           (b* ((jexpr (jexpr-method
-                       (atj-gen-shallow-fnname fn curr-apkg) arg-jexprs))
+                       (atj-gen-shallow-fnname fn pkg-class-names curr-pkg)
+                       arg-jexprs))
                (jexpr (atj-adapt-jexpr-to-type jexpr src-type dst-type)))
             (mv (flatten arg-jblocks)
                 jexpr
@@ -1735,7 +1688,8 @@
                                                          jvar-value-index
                                                          jvar-result-base
                                                          jvar-result-index
-                                                         curr-apkg
+                                                         pkg-class-names
+                                                         curr-pkg
                                                          guards$
                                                          wrld)))
       (mv lambda-jblock
@@ -1759,12 +1713,13 @@
                                   (jvar-value-index posp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
-                                  (curr-apkg stringp)
+                                  (pkg-class-names string-string-alistp)
+                                  (curr-pkg stringp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :guard (and (int= (len arg-jblocks) (len formals))
                 (int= (len arg-jexprs) (len formals))
-                (not (equal curr-apkg "")))
+                (not (equal curr-pkg "")))
     :returns (mv (jblock jblockp :hyp (jblock-listp arg-jblocks))
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1788,7 +1743,8 @@
                                                        jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
-                                                       curr-apkg
+                                                       pkg-class-names
+                                                       curr-pkg
                                                        guards$
                                                        wrld)))
       (mv (append let-jblock body-jblock)
@@ -1804,10 +1760,11 @@
                                 (jvar-value-index posp)
                                 (jvar-result-base stringp)
                                 (jvar-result-index posp)
-                                (curr-apkg stringp)
+                                (pkg-class-names string-string-alistp)
+                                (curr-pkg stringp)
                                 (guards$ booleanp)
                                 (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1855,7 +1812,8 @@
                              jvar-value-index
                              jvar-result-base
                              jvar-result-index
-                             curr-apkg
+                             pkg-class-names
+                             curr-pkg
                              guards$
                              wrld))
     :measure (two-nats-measure (acl2-count term) 0))
@@ -1865,10 +1823,11 @@
                                  (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
-                                 (curr-apkg stringp)
+                                 (pkg-class-names string-string-alistp)
+                                 (curr-pkg stringp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
-    :guard (not (equal curr-apkg ""))
+    :guard (not (equal curr-pkg ""))
     :returns (mv (jblocks jblock-listp)
                  (jexpr jexpr-listp)
                  (new-jvar-value-index "A @(tsee posp).")
@@ -1885,7 +1844,8 @@
                                                          jvar-value-index
                                                          jvar-result-base
                                                          jvar-result-index
-                                                         curr-apkg
+                                                         pkg-class-names
+                                                         curr-pkg
                                                          guards$
                                                          wrld))
            ((mv rest-jblocks
@@ -1896,7 +1856,8 @@
                                                           jvar-value-index
                                                           jvar-result-base
                                                           jvar-result-index
-                                                          curr-apkg
+                                                          pkg-class-names
+                                                          curr-pkg
                                                           guards$
                                                           wrld)))
         (mv (cons first-jblock rest-jblocks)
@@ -2207,6 +2168,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fnnative ((fn symbolp)
+                                  (pkg-class-names string-string-alistp)
                                   (guards$ booleanp)
                                   (curr-pkg stringp)
                                   (wrld plist-worldp))
@@ -2254,7 +2216,7 @@
      only if the file @('types-for-natives.lisp') is included
      prior to calling ATJ;
      otherwise, @(':value') is the type of every input and output."))
-  (b* ((jmethod-name (atj-gen-shallow-fnname fn curr-pkg))
+  (b* ((jmethod-name (atj-gen-shallow-fnname fn pkg-class-names curr-pkg))
        (jmethod-param-names
         (case fn
           (intern-in-package-of-symbol (list "str" "sym"))
@@ -2369,6 +2331,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fndef ((fn symbolp)
+                               (pkg-class-names string-string-alistp)
                                (guards$ booleanp)
                                (verbose$ booleanp)
                                (curr-pkg stringp)
@@ -2437,7 +2400,7 @@
        (out-type (atj-function-type->output fn-type))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
-       (jmethod-name (atj-gen-shallow-fnname fn curr-pkg))
+       (jmethod-name (atj-gen-shallow-fnname fn pkg-class-names curr-pkg))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
        (jmethod-params (atj-gen-jparamlist (symbol-name-lst formals)
@@ -2446,6 +2409,7 @@
         (atj-gen-shallow-term body
                               "$value" 1
                               "$result" 1
+                              pkg-class-names
                               curr-pkg
                               guards$
                               wrld))
@@ -2468,6 +2432,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fn ((fn symbolp)
+                            (pkg-class-names string-string-alistp)
                             (guards$ booleanp)
                             (verbose$ booleanp)
                             (curr-pkg stringp)
@@ -2480,12 +2445,13 @@
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
   (if (atj-aij-nativep fn)
-      (atj-gen-shallow-fnnative fn guards$ curr-pkg (w state))
-    (atj-gen-shallow-fndef fn guards$ verbose$ curr-pkg state)))
+      (atj-gen-shallow-fnnative fn pkg-class-names guards$ curr-pkg (w state))
+    (atj-gen-shallow-fndef fn pkg-class-names guards$ verbose$ curr-pkg state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fns ((fns symbol-listp)
+                             (pkg-class-names string-string-alistp)
                              (guards$ booleanp)
                              (verbose$ booleanp)
                              (curr-pkg stringp)
@@ -2498,11 +2464,13 @@
   :short "Lift @(tsee atj-gen-shallow-fn) to lists."
   (cond ((endp fns) nil)
         (t (b* ((first-jmethod (atj-gen-shallow-fn (car fns)
+                                                   pkg-class-names
                                                    guards$
                                                    verbose$
                                                    curr-pkg
                                                    state))
                 (rest-jmethods (atj-gen-shallow-fns (cdr fns)
+                                                    pkg-class-names
                                                     guards$
                                                     verbose$
                                                     curr-pkg
@@ -2513,8 +2481,8 @@
 
 (define atj-gen-shallow-fns-in-pkg ((fns symbol-listp)
                                     (pkg stringp)
+                                    (pkg-class-names string-string-alistp)
                                     (guards$ booleanp)
-                                    (java-class$ stringp)
                                     (verbose$ booleanp)
                                     state)
   :guard (equal (symbol-package-name-lst fns)
@@ -2532,8 +2500,14 @@
      (each ACL2 function is turned into a Java method in this class).
      This is a public static Java class,
      nested into the main Java class that ATJ generates."))
-  (b* ((jclass-name (atj-gen-shallow-pkgname pkg java-class$))
-       (jclass-methods (atj-gen-shallow-fns fns guards$ verbose$ pkg state)))
+  (b* ((pair (assoc-equal pkg pkg-class-names))
+       ((unless (consp pair))
+        (raise "Internal error: no class name for package name ~x0." pkg)
+        ;; irrelevant:
+        (make-jclass :access (jaccess-public) :name ""))
+       (jclass-name (cdr pair))
+       (jclass-methods (atj-gen-shallow-fns
+                        fns pkg-class-names guards$ verbose$ pkg state)))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? t
@@ -2551,7 +2525,8 @@
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
                                     state)
-  :returns (jclasses jclass-listp)
+  :returns (mv (jclasses jclass-listp)
+               (pkg-class-names "A @(tsee string-string-alistp)."))
   :verify-guards nil
   :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
   :long
@@ -2559,33 +2534,45 @@
    (xdoc::p
     "We go through each pair in the alist
      from ACL2 package names to ACL2 functions,
-     and generate all the Java classes corresponding to the ACL2 packages."))
-  (b* ((pkgs (remove-duplicates-equal (strip-cars fns-by-pkg))))
-    (atj-gen-shallow-fns-by-pkg-aux
-     pkgs fns-by-pkg guards$ java-class$ verbose$ state))
+     and generate all the Java classes corresponding to the ACL2 packages.")
+   (xdoc::p
+    "We also return the alist from ACL2 package names to Java class names,
+     which must be eventually passed to the functions that generate
+     the Java test class."))
+  (b* ((pkgs (remove-duplicates-equal (strip-cars fns-by-pkg)))
+       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$)))
+    (mv (atj-gen-shallow-fns-by-pkg-aux
+         pkgs fns-by-pkg pkg-class-names guards$ java-class$ verbose$ state)
+        pkg-class-names))
 
   :prepwork
   ((define atj-gen-shallow-fns-by-pkg-aux
      ((pkgs string-listp)
       (fns-by-pkg string-symbollist-alistp)
+      (pkg-class-names string-string-alistp)
       (guards$ booleanp)
       (java-class$ stringp)
       (verbose$ booleanp)
       state)
      :returns (jclasses jclass-listp)
      :verify-guards nil
-     (cond ((endp pkgs) nil)
-           (t (b* ((pkg (car pkgs))
-                   (fns (cdr (assoc-equal pkg fns-by-pkg)))
-                   (first-jclass (atj-gen-shallow-fns-in-pkg
-                                  fns pkg guards$ java-class$ verbose$ state))
-                   (rest-jclasses (atj-gen-shallow-fns-by-pkg-aux (cdr pkgs)
-                                                                  fns-by-pkg
-                                                                  guards$
-                                                                  java-class$
-                                                                  verbose$
-                                                                  state)))
-                (cons first-jclass rest-jclasses)))))))
+     (b* (((when (endp pkgs)) nil)
+          (pkg (car pkgs))
+          (fns (cdr (assoc-equal pkg fns-by-pkg)))
+          (first-jclass (atj-gen-shallow-fns-in-pkg fns
+                                                    pkg
+                                                    pkg-class-names
+                                                    guards$
+                                                    verbose$
+                                                    state))
+          (rest-jclasses (atj-gen-shallow-fns-by-pkg-aux (cdr pkgs)
+                                                         fns-by-pkg
+                                                         pkg-class-names
+                                                         guards$
+                                                         java-class$
+                                                         verbose$
+                                                         state)))
+       (cons first-jclass rest-jclasses)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2733,7 +2720,8 @@
                         (java-class$ stringp)
                         (verbose$ booleanp)
                         state)
-  :returns (jclass jclassp)
+  :returns (mv (jclass jclassp)
+               (pkg-class-names "A @(tsee string-string-alistp)."))
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration."
   :long
@@ -2754,28 +2742,37 @@
      the ACL2 functions natively implemented in AIJ are included
      (currently the ACL2 primitive functions),
      we organize the resulting functions by packages,
-     and we proceed to generate the Java nested classes and methods."))
+     and we proceed to generate the Java nested classes and methods.")
+   (xdoc::p
+    "We also return the alist from ACL2 package names to Java class names,
+     which must be eventually passed to the functions that generate
+     the Java test class.
+     This is @('nil') in the deep embedding approach;
+     it is only used in the shallow embedding approach."))
   (b* ((init-jfield (atj-gen-init-jfield))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 packages:~%"))
        (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
-       (fn-jmembers
+       ((mv fn-jmembers pkg-class-names)
         (if deep$
-            (jmethods-to-jcmembers
-             (atj-gen-deep-fndef-jmethods fns guards$ verbose$ state))
+            (mv (jmethods-to-jcmembers
+                 (atj-gen-deep-fndef-jmethods fns guards$ verbose$ state))
+                nil)
           (b* ((fns+natives
                 (remove-duplicates-eq
                  (append fns
                          (strip-cars *primitive-formals-and-guards*))))
-               (fns-by-pkg (organize-symbols-by-pkg fns+natives)))
-            (jclasses-to-jcmembers
-             (atj-gen-shallow-fns-by-pkg fns-by-pkg
-                                         guards$
-                                         java-class$
-                                         verbose$
-                                         state)))))
+               (fns-by-pkg (organize-symbols-by-pkg fns+natives))
+               ((mv jclasses pkg-class-names)
+                (atj-gen-shallow-fns-by-pkg fns-by-pkg
+                                            guards$
+                                            java-class$
+                                            verbose$
+                                            state)))
+            (mv (jclasses-to-jcmembers jclasses)
+                pkg-class-names))))
        (init-jmethod (atj-gen-init-jmethod pkgs fns deep$))
        (call-jmethod? (and deep$
                            (list (atj-gen-call-jmethod))))
@@ -2784,15 +2781,16 @@
                             fn-jmembers
                             (list (jcmember-method init-jmethod))
                             (jmethods-to-jcmembers call-jmethod?))))
-    (make-jclass :access (jaccess-public)
-                 :abstract? nil
-                 :static? nil
-                 :final? nil
-                 :strictfp? nil
-                 :name java-class$
-                 :superclass? nil
-                 :superinterfaces nil
-                 :body body-jclass)))
+    (mv (make-jclass :access (jaccess-public)
+                     :abstract? nil
+                     :static? nil
+                     :final? nil
+                     :strictfp? nil
+                     :name java-class$
+                     :superclass? nil
+                     :superinterfaces nil
+                     :body body-jclass)
+        pkg-class-names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2844,6 +2842,7 @@
                               (guards$ booleanp)
                               (java-class$ stringp)
                               (verbose$ booleanp)
+                              (pkg-class-names string-string-alistp)
                               (wrld plist-worldp))
   :returns (jmethod jmethodp)
   :verify-guards nil
@@ -2915,8 +2914,8 @@
       Since this code is in a class that is different from
       any of the generated Java classes that correspond to ACL2 packages,
       the Java method to call must be always preceded by the class name:
-      thus, we use the empty string as the current package name,
-      which is guaranteed not to match any existing ACL2 package."))
+      thus, we use @('\"KEYWORD\"') as current package name,
+      which never contains any functions."))
    (xdoc::p
     "Examining any generated instance of this method
      should make the above documentation,
@@ -2988,7 +2987,9 @@
                                               (jexpr-name "functionArguments")))
                             (jexpr-smethod (jtype-class java-class$)
                                            (atj-gen-shallow-fnname
-                                            test.function "")
+                                            test.function
+                                            pkg-class-names
+                                            "KEYWORD")
                                            (jexpr-name-list
                                             shallow-arg-jvars))))
            (jblock-locvar (jtype-long) "endTime" current-time-jexpr)
@@ -3137,6 +3138,7 @@
                                (guards$ booleanp)
                                (java-class$ stringp)
                                (verbose$ booleanp)
+                               (pkg-class-names string-string-alistp)
                                (wrld plist-worldp))
   :returns (jmethods jmethod-listp)
   :verify-guards nil
@@ -3148,11 +3150,21 @@
   (if (endp tests$)
       nil
     (b* ((first-jmethod
-          (atj-gen-test-jmethod
-           (car tests$) deep$ guards$ java-class$ verbose$ wrld))
+          (atj-gen-test-jmethod (car tests$)
+                                deep$
+                                guards$
+                                java-class$
+                                verbose$
+                                pkg-class-names
+                                wrld))
          (rest-jmethods
-          (atj-gen-test-jmethods
-           (cdr tests$) deep$ guards$ java-class$ verbose$ wrld)))
+          (atj-gen-test-jmethods (cdr tests$)
+                                 deep$
+                                 guards$
+                                 java-class$
+                                 verbose$
+                                 pkg-class-names
+                                 wrld)))
       (cons first-jmethod rest-jmethods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3267,6 +3279,7 @@
                              (guards$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp)
+                             (pkg-class-names string-string-alistp)
                              (wrld plist-worldp))
   :returns (jclass jclassp)
   :verify-guards nil
@@ -3283,8 +3296,13 @@
   (b* (((run-when verbose$)
         (cw "~%Generating Java code for the tests:~%"))
        (failures-jfield (atj-gen-test-failures-jfield))
-       (test-jmethods (atj-gen-test-jmethods
-                       tests$ deep$ guards$ java-class$ verbose$ wrld))
+       (test-jmethods (atj-gen-test-jmethods tests$
+                                             deep$
+                                             guards$
+                                             java-class$
+                                             verbose$
+                                             pkg-class-names
+                                             wrld))
        (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
        (body-jclass (append (list (jcmember-field failures-jfield))
                             (jmethods-to-jcmembers test-jmethods)
@@ -3309,21 +3327,40 @@
                         (fns symbol-listp)
                         (verbose$ booleanp)
                         state)
-  :returns (jcunit jcunitp)
+  :returns (mv (jcunit jcunitp)
+               (pkg-class-names "A @(tsee string-string-alistp)."))
   :verify-guards nil
   :short "Generate the main Java compilation unit."
-  (make-jcunit :package? java-package$
-               :imports (list (str::cat *atj-aij-jpackage* ".*")
-                              "java.math.BigInteger"
-                              "java.util.ArrayList"
-                              "java.util.List")
-               :types (list (atj-gen-jclass pkgs
-                                            fns
-                                            deep$
-                                            guards$
-                                            java-class$
-                                            verbose$
-                                            state))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the generated imports are changed,
+     the constant @(tsee *atj-disallowed-class-names*)
+     must be modified accordingly.")
+   (xdoc::p
+    "We also return the alist from ACL2 package names to Java class names,
+     which must be eventually passed to the functions that generate
+     the Java test class.
+     This is @('nil') in the deep embedding approach;
+     it is only used in the shallow embedding approach."))
+  (b* (((mv class pkg-class-names)
+        (atj-gen-jclass pkgs
+                        fns
+                        deep$
+                        guards$
+                        java-class$
+                        verbose$
+                        state))
+       (cunit
+        (make-jcunit
+         :package? java-package$
+         :imports (list (str::cat *atj-aij-jpackage* ".*")
+                        ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
+                        "java.math.BigInteger"
+                        "java.util.ArrayList"
+                        "java.util.List")
+         :types (list class))))
+    (mv cunit pkg-class-names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3333,6 +3370,7 @@
                              (java-class$ stringp)
                              (tests$ atj-test-listp)
                              (verbose$ booleanp)
+                             (pkg-class-names string-string-alistp)
                              (wrld plist-worldp))
   :returns (jcunit jcunitp)
   :verify-guards nil
@@ -3340,8 +3378,13 @@
   (make-jcunit :package? java-package$
                :imports (list (str::cat *atj-aij-jpackage* ".*")
                               "java.math.BigInteger")
-               :types (list (atj-gen-test-jclass
-                             tests$ deep$ guards$ java-class$ verbose$ wrld))))
+               :types (list (atj-gen-test-jclass tests$
+                                                 deep$
+                                                 guards$
+                                                 java-class$
+                                                 verbose$
+                                                 pkg-class-names
+                                                 wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3354,19 +3397,30 @@
                        (fns symbol-listp)
                        (verbose$ booleanp)
                        state)
-  :returns state
+  :returns (mv (pkg-class-names "A @(tsee string-string-alistp).")
+               state)
   :mode :program
   :short "Generate the main Java file."
-  (print-to-jfile (print-jcunit (atj-gen-jcunit deep$
-                                                guards$
-                                                java-package$
-                                                java-class$
-                                                pkgs
-                                                fns
-                                                verbose$
-                                                state))
-                  output-file$
-                  state))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return the alist from ACL2 package names to Java class names,
+     which must be eventually passed to the functions that generate
+     the Java test class.
+     This is @('nil') in the deep embedding approach;
+     it is only used in the shallow embedding approach."))
+  (b* (((mv cunit pkg-class-names) (atj-gen-jcunit deep$
+                                                   guards$
+                                                   java-package$
+                                                   java-class$
+                                                   pkgs
+                                                   fns
+                                                   verbose$
+                                                   state))
+       (state (print-to-jfile (print-jcunit cunit)
+                              output-file$
+                              state)))
+    (mv pkg-class-names state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3377,6 +3431,7 @@
                             (output-file-test$ stringp)
                             (tests$ atj-test-listp)
                             (verbose$ booleanp)
+                            (pkg-class-names string-string-alistp)
                             state)
   :returns state
   :mode :program
@@ -3387,6 +3442,7 @@
                                                      java-class$
                                                      tests$
                                                      verbose$
+                                                     pkg-class-names
                                                      (w state)))
                   output-file-test$
                   state))
@@ -3415,19 +3471,23 @@
      Setting these margins to ``infinity'' is not supported.")
    (xdoc::p
     "We always generate the main Java file.
-     We generate the test Java file only if @(':tests') is not @('nil')."))
+     We generate the test Java file only if @(':tests') is not @('nil').")
+   (xdoc::p
+    "We pass the alist from ACL2 package names to Java class names
+     from one file generation function to the other.
+     This is @('nil') in the deep embedding approach."))
   (state-global-let*
    ((fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
     (fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
-   (b* ((state (atj-gen-jfile deep$
-                              guards$
-                              java-package$
-                              java-class$
-                              output-file$
-                              pkgs
-                              fns
-                              verbose$
-                              state))
+   (b* (((mv pkg-class-names state) (atj-gen-jfile deep$
+                                                   guards$
+                                                   java-package$
+                                                   java-class$
+                                                   output-file$
+                                                   pkgs
+                                                   fns
+                                                   verbose$
+                                                   state))
         (state (if tests$
                    (atj-gen-test-jfile deep$
                                        guards$
@@ -3436,6 +3496,7 @@
                                        output-file-test$
                                        tests$
                                        verbose$
+                                       pkg-class-names
                                        state)
                  state)))
      (value nil))))
