@@ -65,7 +65,9 @@ javadoc-private: java/src/edu/kestrel/acl2/aij/*.java
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
 	@echo ""
 
-acl2-files: *.lisp
+acl2-files: top.cert
+
+top.cert: top.lisp
 	@echo "Certify ACL2 files:"
 	../../../build/cert.pl *.lisp
 	@echo ""
