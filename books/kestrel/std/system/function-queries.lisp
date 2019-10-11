@@ -22,6 +22,7 @@
 (include-book "stobjs-out-plus")
 (include-book "ubody")
 (include-book "ubody-plus")
+(include-book "uguard")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

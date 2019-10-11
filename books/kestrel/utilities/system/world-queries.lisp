@@ -49,6 +49,7 @@
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -124,27 +125,6 @@
   (guard-verified-p fn/thm wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uguard ((fn pseudo-termfnp) (wrld plist-worldp))
-  :returns (guard "A @(tsee pseudo-termp).")
-  :parents (world-queries)
-  :short "Unoptimized guard of a named function or of a lambda expression."
-  :long
-  "<p>
-   This is a specialization of
-   <see topic='@(url system-utilities)'>@('guard')</see>
-   with @('nil') as the second argument.
-   Since @(tsee body) is in program mode only because of
-   the code that handles the case in which the second argument is non-@('nil'),
-   we avoid calling @(tsee guard) and instead replicate
-   the code that handles the case in which the second argument is @('nil');
-   thus, this utility is in logic mode and guard-verified.
-   </p>
-   <p>
-   See @(tsee uguard+) for a logic-friendly variant of this utility.
-   </p>"
-  (cond ((symbolp fn) (getpropc fn 'guard *t* wrld))
-        (t *t*)))
 
 (define uguard+ ((fn (or (function-namep fn wrld)
                          (pseudo-lambdap fn)))
