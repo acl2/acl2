@@ -1034,7 +1034,6 @@
      if it is in scope and not used after the @(tsee let),
      because at the time of assigning to @('y')
      its (previous) value has already been assigned to @('x')."))
-  :verify-guards nil
 
   (define atj-mark-term ((term pseudo-termp)
                          (vars-in-scope symbol-listp)
@@ -1144,6 +1143,7 @@
   :prepwork
 
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
+   ;; (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
    (define atj-mark-lambda-formals ((formals symbol-listp)
                                     (actuals pseudo-term-listp)
@@ -1185,14 +1185,29 @@
                       :rule-classes :type-prescription)
       (marked-formals (equal (len marked-formals)
                              (len formals))
-                      :name len-of-atj-mark-lambda-formals.marked-formals)))))
+                      :name len-of-atj-mark-lambda-formals.marked-formals)
+
+      (new-vars-to-mark-new
+       true-listp
+       :hyp (true-listp vars-to-mark-new)
+       :name true-listp-of-atj-mark-lambda-formals.new-vars-to-nark-new
+       :rule-classes :type-prescription))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (defrulel true-listp-when-symbol-listp
+    (implies (symbol-listp x)
+             (true-listp x)))
+
+  (verify-guards atj-mark-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-mark-formals+body ((formals symbol-listp) (body pseudo-termp))
   :returns (mv (new-formals symbol-listp)
                (new-body pseudo-termp :hyp :guard))
-  :verify-guards nil
   :short "Mark all the variables
           in the formal parameters and body of an ACL2 function definition
           as `new' or `old'"
