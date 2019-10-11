@@ -198,3 +198,46 @@
                               valid-termp
                               remove-return-last
                               beta-search-reduce))))))
+
+
+
+
+(defthm rp-meta-rule-recs-p-implies-WEAK-RP-META-RULE-REC-P
+  (implies (rp-meta-rule-recs-p meta-rules state)
+           (weak-rp-meta-rule-recs-p meta-rules))
+  :hints (("Goal"
+           :induct (weak-rp-meta-rule-recs-p meta-rules)
+           :in-theory (e/d (weak-rp-meta-rule-recs-p
+                            rp-meta-rule-recs-p) ()))))
+
+(defthm remove-disabled-meta-rules-returns-rp-meta-rule-recs-p
+  (implies (rp-meta-rule-recs-p meta-rules state)
+           (rp-meta-rule-recs-p
+            (remove-disabled-meta-rules meta-rules
+                                        disabled-meta-rules)
+            state))
+  :hints (("Goal"
+           :in-theory (e/d (rp-meta-rule-recs-p
+                            remove-disabled-meta-rules) ()))))
+
+
+(defthm remove-disabled-meta-rules-returns-valid-rp-meta-rule-listp
+  (implies (valid-rp-meta-rule-listp meta-rules state)
+           (valid-rp-meta-rule-listp
+            (remove-disabled-meta-rules meta-rules
+                                        disabled-meta-rules)
+            state))
+  :hints (("Goal"
+           :in-theory (e/d (valid-rp-meta-rule-listp
+                            remove-disabled-meta-rules) ()))))
+
+
+(defthm remove-disabled-meta-rules-returns-RP-META-VALID-SYNTAX-LISTP
+  (implies (RP-META-VALID-SYNTAX-LISTP meta-rules state)
+           (RP-META-VALID-SYNTAX-LISTP
+            (remove-disabled-meta-rules meta-rules
+                                        disabled-meta-rules)
+            state))
+  :hints (("Goal"
+           :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP
+                            remove-disabled-meta-rules) ()))))

@@ -89,6 +89,10 @@
                                 "format of rules-alist is bad ~%" nil)
                     (mv nil (list cl) rp-state state)))
            (rp-state (rp-state-new-run rp-state))
+
+           (disabled-meta-rules (table-alist 'disabled-rp-meta-rules
+                                             (w state)))
+           (meta-rules (remove-disabled-meta-rules meta-rules disabled-meta-rules))
            (meta-rules (make-fast-alist meta-rules))
            ((mv rw rp-state)
             (rp-rw-aux car-cl
@@ -122,13 +126,20 @@
                 (rp-evl (acl2::disjoin cl) a)))
   :otf-flg t
   :hints (("Goal"
+           :do-not-induct t
+           :expand ((REMOVE-DISABLED-META-RULES
+                     NIL
+                     (TABLE-ALIST 'DISABLED-RP-META-RULES
+                                  (CDR (ASSOC-EQUAL 'ACL2::CURRENT-ACL2-WORLD
+                                                    (NTH 2 STATE))))))
            :in-theory (e/d (rp-evl-of-fncall-args
-                            valid-rp-meta-rule-listp
+                            ;; valid-rp-meta-rule-listp
                             rp-evl-of-beta-search-reduce
                             rp-meta-valid-syntax-listp
                             symbol-alistp-get-enabled-exec-rules
                             rp-rw-aux-is-correct)
                            (get-rules
+                            valid-rp-meta-rule-listp
                             valid-term-syntaxp
                             valid-rp-meta-rulep
                             rp-meta-valid-syntaxp-sk

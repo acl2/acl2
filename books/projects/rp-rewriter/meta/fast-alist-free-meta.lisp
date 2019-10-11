@@ -48,7 +48,7 @@
 
 (include-book "../eval-functions")
 
-(include-book "../add-meta-rule-formula-checks")
+(include-book "../meta-rule-macros")
 
 (defund fast-alist-free-meta (term)
   (declare (xargs :guard t))

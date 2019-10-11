@@ -259,3 +259,34 @@
     :hints (("Goal"
              :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP)
                              (RP-META-VALID-SYNTAXP-SK))))))
+
+
+(progn  
+  (define disable-meta-rules-fnc (args)
+    (if (atom args)
+        nil
+      (cons `(table disabled-rp-meta-rules
+                    ',(car args)
+                    t)
+            (disable-meta-rules-fnc (cdr args)))))
+
+  (define enable-meta-rules-fnc (args)
+    (if (atom args)
+        nil
+      (cons `(table disabled-rp-meta-rules
+                    ',(car args)
+                    nil)
+            (enable-meta-rules-fnc (cdr args)))))
+
+
+  (defmacro disable-meta-rules (&rest args)
+    (if (not args)
+        `(value-triple :none)
+      `(progn
+         ,@(disable-meta-rules-fnc args))))
+
+  (defmacro enable-meta-rules (&rest args)
+    (if (not args)
+        `(value-triple :none)
+      `(progn
+         ,@(enable-meta-rules-fnc args)))))

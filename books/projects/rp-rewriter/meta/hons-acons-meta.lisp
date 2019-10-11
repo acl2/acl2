@@ -48,7 +48,7 @@
 
 (include-book "../eval-functions")
 
-(include-book "../add-meta-rule-formula-checks")
+(include-book "../meta-rule-macros")
 
 (def-formula-checks-default-evl
  rp-evl

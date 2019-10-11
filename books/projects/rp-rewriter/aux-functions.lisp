@@ -1424,3 +1424,24 @@
               (true-listp (merge-comperator-sort l comperator)))))
 
   (verify-guards merge-comperator-sort))
+
+
+
+
+(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
+                                    (disabled-meta-rules ))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (WEAK-RP-META-RULE-REC-P) ())))
+  (cond ((atom disabled-meta-rules)
+         meta-rules)
+        ((atom meta-rules)
+         meta-rules)
+        (t (b* ((entry (hons-assoc-equal (rp-meta-fnc (car meta-rules))
+                                    disabled-meta-rules)))
+             (if (and (consp entry)
+                      (cdr entry))
+                 (remove-disabled-meta-rules (cdr meta-rules)
+                                             disabled-meta-rules)
+               (cons (car meta-rules)
+                     (remove-disabled-meta-rules (cdr meta-rules)
+                                                 disabled-meta-rules)))))))
