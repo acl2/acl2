@@ -376,7 +376,7 @@
       If it is an ACL2 string,
       it must be a valid Java class name consisting of only ASCII characters.
       If this input is @('nil'),
-      the generated Java class is called @('ACL2Code').")
+      the generated Java class is called @('Acl2Code').")
     (xdoc::p
      "If the @(':tests') input (see below) is not @('nil'),
       an additional Java class for testing is generated,

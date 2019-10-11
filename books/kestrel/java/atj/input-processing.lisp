@@ -201,7 +201,7 @@
 
 (defval *atj-default-java-class*
   :short "Default Java class name to use if @(':java-class') is @('nil')."
-  "ACL2Code"
+  "Acl2Code"
   ///
   (assert-event (stringp *atj-default-java-class*)))
 
