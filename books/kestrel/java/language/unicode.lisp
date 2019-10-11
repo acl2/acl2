@@ -176,4 +176,24 @@
     ((defrule lemma
        (implies (ascii-listp x)
                 (unsigned-byte-listp 8 x))
-       :enable unsigned-byte-listp-8-when-7))))
+       :enable unsigned-byte-listp-8-when-7)))
+
+  (defruled equal-of-ascii=>string-to-equal-of-string=>unicode
+    (implies (and (ascii-listp x)
+                  (stringp y))
+             (equal (equal (ascii=>string x) y)
+                    (equal (string=>unicode y) x)))
+    :disable ascii=>string)
+
+  (defruled equal-of-string=>unicode-to-equal-of-ascii=>string
+    (implies (and (ascii-listp x)
+                  (stringp y))
+             (equal (equal (string=>unicode x) y)
+                    (equal (ascii=>string y) x)))
+    :disable ascii=>string)
+
+  (theory-invariant
+   (incompatible (:rewrite
+                  equal-of-ascii=>string-to-equal-of-string=>unicode)
+                 (:rewrite
+                  equal-of-string=>unicode-to-equal-of-ascii=>string))))
