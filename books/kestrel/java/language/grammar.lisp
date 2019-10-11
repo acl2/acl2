@@ -170,3 +170,27 @@
 
   (defruled rulelist-closedp-of-*grammar*
     (abnf::rulelist-closedp *grammar*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ttree-with-root-p (tree (rulename stringp))
+  :returns (yes/no booleanp)
+  :short "Recognize terminated ABNF trees whose root is the given rule name,
+          for the Java grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a useful abbreviation for
+     a more verbose conjunction of ABNF predicates
+     with more verbose arguments.")
+   (xdoc::p
+    "The @('t') in @('ttree') stands for `terminated'.
+     That is, the tree has Unicode characters at its leaves,
+     not rule names."))
+  (and
+   (abnf::treep tree)
+   (abnf::tree-terminatedp tree)
+   (abnf::tree-match-element-p tree
+                               (abnf::element-rulename
+                                (abnf::rulename rulename))
+                               *grammar*)))
