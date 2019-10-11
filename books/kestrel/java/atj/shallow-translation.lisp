@@ -372,7 +372,7 @@
      (xdoc::codeblock
       "<a-block>"
       "<type> <result> = null;"
-      "if (Acl2Symbol.NIL.equals(<a-expr>)) {"
+      "if (<a-expr> == Acl2Symbol.NIL) {"
       "    <c-blocks>"
       "    <result> = <c-expr>;"
       "} else {"
@@ -402,7 +402,7 @@
      (xdoc::p
       "and the Java expression")
      (xdoc::codeblock
-      "Acl2Symbol.NIL.equals(<a-expr>) ? <c-expr> : <b-expr>"))
+      "<a-expr> == Acl2Symbol.NIL ? <c-expr> : <b-expr>"))
     (b* (((mv test-jblock
               test-jexpr
               jvar-value-index
@@ -446,9 +446,9 @@
                      (null then-jblock)
                      (null else-jblock)))
           (b* ((jblock test-jblock)
-               (jexpr (jexpr-cond (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
-                                                 "equals"
-                                                 (list test-jexpr))
+               (jexpr (jexpr-cond (jexpr-binary (jbinop-eq)
+                                                test-jexpr
+                                                (jexpr-name "Acl2Symbol.NIL"))
                                   else-jexpr
                                   then-jexpr)))
             (mv jblock
@@ -462,9 +462,9 @@
                                    jvar-result-index
                                    (jexpr-literal-null)))
          (if-jblock (jblock-ifelse
-                     (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
-                                    "equals"
-                                    (list test-jexpr))
+                     (jexpr-binary (jbinop-eq)
+                                   test-jexpr
+                                   (jexpr-name "Acl2Symbol.NIL"))
                      (append else-jblock
                              (jblock-asg-name jvar-result else-jexpr))
                      (append then-jblock
@@ -516,7 +516,7 @@
      (xdoc::codeblock
       "<a-block>"
       "<type> <result> = <a-expr>;"
-      "if (Acl2Symbol.NIL.equals(<result>)) {"
+      "if (<result> == Acl2Symbol.NIL) {"
       "    <b-blocks>"
       "    <result> = <b-expr>;")
      (xdoc::p
@@ -554,9 +554,9 @@
                                    jvar-result-index
                                    first-jexpr))
          (if-jblock (jblock-if
-                     (jexpr-imethod (jexpr-name "Acl2Symbol.NIL")
-                                    "equals"
-                                    (list (jexpr-name jvar-result)))
+                     (jexpr-binary (jbinop-eq)
+                                   (jexpr-name jvar-result)
+                                   (jexpr-name "Acl2Symbol.NIL"))
                      (append second-jblock
                              (jblock-asg-name jvar-result second-jexpr))))
          (jblock (append first-jblock
