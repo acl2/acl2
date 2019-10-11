@@ -43,7 +43,6 @@
 
   (define all-vars-open ((term pseudo-termp))
     :returns (vars symbol-listp :hyp :guard)
-    :verify-guards :after-returns
     (b* (((when (variablep term)) (list term))
          ((when (fquotep term)) nil)
          (fn (ffn-symb term))
@@ -58,4 +57,20 @@
     :returns (vars symbol-listp :hyp :guard)
     (cond ((endp terms) nil)
           (t (union-eq (all-vars-open (car terms))
-                       (all-vars-open-lst (cdr terms)))))))
+                       (all-vars-open-lst (cdr terms))))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (std::defret-mutual all-vars-open
+    (defret true-listp-of-all-vars-open
+      (true-listp vars)
+      :rule-classes :type-prescription
+      :fn all-vars-open)
+    (defret true-listp-of-all-vars-open-lst
+      (true-listp vars)
+      :rule-classes :type-prescription
+      :fn all-vars-open-lst))
+
+  (verify-guards all-vars-open))
