@@ -24,21 +24,19 @@
   :parents (abnf)
   :short "Concrete syntax of ABNF."
   :long
-  "<p>
-   The concrete syntax of ABNF is specified, in [RFC:4],
-   using ABNF concrete syntax.
-   We break the circularity by formalizing the concrete syntax of ABNF
-   using the abstract syntax of ABNF.
-   </p>"
+  (xdoc::topstring-p
+   "The concrete syntax of ABNF is specified, in [RFC:4],
+    using ABNF concrete syntax.
+    We break the circularity by formalizing the concrete syntax of ABNF
+    using the abstract syntax of ABNF.")
   :order-subtopics t)
 
 (defxdoc+ concrete-syntax-rules
   :parents (concrete-syntax)
   :short "Rules that specify the concrete syntax of ABNF."
   :long
-  "<p>
-   These are the rules in [RFC:4].
-   </p>"
+  (xdoc::topstring-p
+   "These are the rules in [RFC:4].")
   :order-subtopics t)
 
 (defsection concrete-syntax-rule-names
@@ -76,11 +74,10 @@
   :parents (concrete-syntax-rules)
   :short "Definition of the concrete syntax rules."
   :long
-  "<p>
-   These definitions use the
-   <see topic='@(url convenience-constructors)'>convenience constructors</see>
-   for the abstract syntax.
-   </p>"
+  (xdoc::topstring-p
+   "These definitions use the "
+   (xdoc::seetopic "convenience-constructors" "convenience constructors")
+   " for the abstract syntax.")
 
   (local (xdoc::set-default-parents concrete-syntax-rule-definitions))
 
@@ -222,13 +219,12 @@
   :parents (concrete-syntax-rules)
   :short "The ABNF concrete syntax rules, excluding the core rules."
   :long
-  "<p>
-   The ABNF concrete syntax rules are well-formed.
-   </p>
-   <p>
-   We use @(tsee add-const-to-untranslate-preprocess)
-   to keep this constant unexpanded in output.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The ABNF concrete syntax rules are well-formed.")
+   (xdoc::p
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
   (list *rule_rulelist*
         *rule_rule*
         *rule_rulename*
@@ -268,14 +264,13 @@
   :short "All the ABNF concrete syntax rules,
           including the core rules that they reference."
   :long
-  "<p>
-   These rules are well-formed, closed,
-   and generate terminal strings consisting only of ASCII codes.
-   </p>
-   <p>
-   We use @(tsee add-const-to-untranslate-preprocess)
-   to keep this constant unexpanded in output.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "These rules are well-formed, closed,
+     and generate terminal strings consisting only of ASCII codes.")
+   (xdoc::p
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
   (plug-rules *concrete-syntax-rules*
               *core-rules*)
   ///
@@ -303,46 +298,40 @@
   :parents (concrete-syntax)
   :short "Parse a sequence of natural numbers as an ABNF grammar."
   :long
-  "<p>
-   This is a declaratively defined, non-executable parser
-   for the ABNF language itself
-   (@(tsee parse-grammar) is a verified executable parser).
-   It turns text (represented as a sequence of natural numbers)
-   with ABNF grammar rules (defining the concrete syntax of some language)
-   into parse trees;
-   the parse trees can be
-   <see topic='@(url concrete-to-abstract-syntax)'>abstracted</see>
-   to lists of rules in the ABNF abstract syntax.
-   </p>
-   <p>
-   This function may return more than one parse tree,
-   because the @('rulelist') rule in [RFC:4] is ambiguous.
-   For example, the string
-   `@('rulename defined-as alternation c-nl WSP c-nl')'
-   can be parsed in two different ways (see the theorem below):
-   </p>
-   <ol>
-     <li>
-     As a @('rulelist') consisting of
-     just a @('rule')
-     whose @('elements') has `@('c-nl WSP')' as @('*c-wsp').
-     </li>
-     <li>
-     As a @('rulelist') consisting of
-     a @('rule')
-     whose @('elements') has `' (i.e. the empty string)
-     as @('*c-wsp'),
-     followed by a @('(*c-wsp c-nl)') with @('WSP') as @('*c-wsp').
-     </li>
-   </ol>
-   <p>
-   This ambiguity only concerns blank space and comments,
-   so it does not affect the abstract syntax and the semantics.
-   </p>
-   <p>
-   It remains to be proved that this function
-   always returns a finite set of trees, never @(':infinite').
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is a declaratively defined, non-executable parser
+     for the ABNF language itself
+     (@(tsee parse-grammar) is a verified executable parser).
+     It turns text (represented as a sequence of natural numbers)
+     with ABNF grammar rules (defining the concrete syntax of some language)
+     into parse trees;
+     the parse trees can be "
+    (xdoc::seetopic "concrete-to-abstract-syntax" "abstracted")
+    " to lists of rules in the ABNF abstract syntax.")
+   (xdoc::p
+    "This function may return more than one parse tree,
+     because the @('rulelist') rule in [RFC:4] is ambiguous.
+     For example, the string
+     `@('rulename defined-as alternation c-nl WSP c-nl')'
+     can be parsed in two different ways (see the theorem below):")
+   (xdoc::ol
+    (xdoc::li
+     "As a @('rulelist') consisting of
+      just a @('rule')
+      whose @('elements') has `@('c-nl WSP')' as @('*c-wsp').")
+    (xdoc::li
+     "As a @('rulelist') consisting of
+      a @('rule')
+      whose @('elements') has `' (i.e. the empty string)
+      as @('*c-wsp'),
+      followed by a @('(*c-wsp c-nl)') with @('WSP') as @('*c-wsp')."))
+   (xdoc::p
+    "This ambiguity only concerns blank space and comments,
+     so it does not affect the abstract syntax and the semantics.")
+   (xdoc::p
+    "It remains to be proved that this function
+     always returns a finite set of trees, never @(':infinite')."))
   (parse nats *rulelist* *all-concrete-syntax-rules*)
   :no-function t
   ///
