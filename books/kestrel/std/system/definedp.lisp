@@ -17,7 +17,7 @@
 
 (define definedp ((fn symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short "Check if a named logic-mode function is defined."
   :long
   (xdoc::topstring

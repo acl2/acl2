@@ -19,7 +19,7 @@
                           (pseudo-lambdap fn)))
                   (wrld plist-worldp-with-formals))
   :returns (formals symbol-listp)
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee formals).")

@@ -18,7 +18,7 @@
 (define rawp ((fn symbolp) state)
   :returns (yes/no booleanp)
   :verify-guards nil
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short "Check if a named function has raw Lisp code."
   :long
   (xdoc::topstring

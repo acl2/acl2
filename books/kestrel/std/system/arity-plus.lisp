@@ -21,7 +21,7 @@
   :returns (result natp
                    :hyp (or (function-namep fn wrld) (pseudo-lambdap fn))
                    :hints (("Goal" :in-theory (enable arity pseudo-lambdap))))
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee arity).")

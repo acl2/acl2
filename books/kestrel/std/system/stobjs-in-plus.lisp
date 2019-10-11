@@ -17,7 +17,7 @@
 (define stobjs-in+ ((fn (function-namep fn wrld))
                     (wrld plist-worldp))
   :returns (result symbol-listp)
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee stobjs-in).")

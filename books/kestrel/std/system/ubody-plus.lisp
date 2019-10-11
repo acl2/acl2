@@ -22,7 +22,7 @@
   :returns (body pseudo-termp
                  :hyp (or (symbolp fn) (pseudo-lambdap fn))
                  :hints (("Goal" :in-theory (enable pseudo-lambdap))))
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee ubody).")

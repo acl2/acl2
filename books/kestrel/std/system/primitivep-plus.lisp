@@ -17,7 +17,7 @@
 
 (define primitivep+ ((fn (function-namep fn wrld)) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee primitivep).")

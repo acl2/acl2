@@ -16,7 +16,7 @@
 
 (define ubody ((fn pseudo-termfnp) (wrld plist-worldp))
   :returns (body "A @(tsee pseudo-termp).")
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short "Unnormalized body of a named function,
           or body of a lambda expression."
   :long
