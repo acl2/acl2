@@ -33,6 +33,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         define-sk
                          defxdoc+
                          doublets-to-alist
                          dumb-occur-var-open
