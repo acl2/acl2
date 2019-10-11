@@ -174,7 +174,7 @@
                         state)
   :returns (mv (jclass jclassp)
                (pkg-class-names "A @(tsee string-string-alistp).")
-               (fn-method-names "A @(tsee sybmol-string-alistp)."))
+               (fn-method-names "A @(tsee symbol-string-alistp)."))
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration."
   :long
