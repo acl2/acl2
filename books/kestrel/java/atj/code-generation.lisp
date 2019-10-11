@@ -21,8 +21,8 @@
 (include-book "post-translation")
 (include-book "primitives")
 (include-book "name-translation")
-(include-book "deep-translation")
-(include-book "shallow-translation")
+(include-book "deep-code-generation")
+(include-book "shallow-code-generation")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 

@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "common-translation")
+(include-book "common-code-generation")
 (include-book "pre-translation")
 
 (include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
@@ -18,10 +18,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-deep-translation
+(defxdoc+ atj-deep-code-generation
   :parents (atj-code-generation)
-  :short "Portion of the ACL2-to-Java translation performed by ATJ
-          that is specific to the deep embedding approach."
+  :short "Code generation that is specific to the deep embedding approach."
   :order-subtopics t
   :default-parent t)
 

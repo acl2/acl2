@@ -24,10 +24,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-common-translation
+(defxdoc+ atj-common-code-generation
   :parents (atj-code-generation)
-  :short "Portion of the ACL2-to-Java translation performed by ATJ
-          that is common to the deep and shallow embedding approaches."
+  :short "Code generation that is common to
+          the deep and shallow embedding approaches."
   :order-subtopics t
   :default-parent t)
 

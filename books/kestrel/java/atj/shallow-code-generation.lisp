@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "common-translation")
+(include-book "common-code-generation")
 (include-book "pre-translation")
 (include-book "post-translation")
 (include-book "primitives")
@@ -20,10 +20,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-shallow-translation
+(defxdoc+ atj-shallow-code-generation
   :parents (atj-code-generation)
-  :short "Portion of the ACL2-to-Java translation performed by ATJ
-          that is specific to the shallow embedding approach."
+  :short "Code generation that is specific to the shallow embedding approach."
   :order-subtopics t
   :default-parent t)
 
