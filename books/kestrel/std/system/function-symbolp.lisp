@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection function-symbolp-theorems
+(defsection std/system/function-symbolp
   :parents (std/system/event-name-queries)
   :short "Theorems about @(tsee function-symbolp)."
 
