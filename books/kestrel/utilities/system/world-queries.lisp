@@ -50,6 +50,7 @@
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard" :dir :system)
+(include-book "kestrel/std/system/uguard-plus" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -123,30 +124,6 @@
    but it has a stronger guard.
    </p>"
   (guard-verified-p fn/thm wrld))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uguard+ ((fn (or (function-namep fn wrld)
-                         (pseudo-lambdap fn)))
-                 (wrld plist-worldp))
-  :returns (guard pseudo-termp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee uguard)."
-  :long
-  "<p>
-   This returns the same result as @(tsee uguard),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (uguard fn wrld)))
-    (if (pseudo-termp result)
-        result
-      (raise "Internal error: ~
-              the guard ~x0 of ~x1 is not a pseudo-term."
-             result fn)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

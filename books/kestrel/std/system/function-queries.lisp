@@ -23,6 +23,7 @@
 (include-book "ubody")
 (include-book "ubody-plus")
 (include-book "uguard")
+(include-book "uguard-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
