@@ -48,9 +48,26 @@
 (local
  (include-book "proofs/rp-equal-lemmas"))
 
-(include-book "create-rule-fnc")
+(include-book "rp-rewriter")
+
+;;(include-book "create-rule-fnc")
 
 (include-book "std/strings/suffixp" :dir :system)
+
+
+(defund get-rune-name (fn  state)
+  (declare (xargs :guard (and (symbolp fn))
+                  :stobjs (state)
+                  :verify-guards t))
+  (b* ((mappings
+        (getpropc fn 'acl2::runic-mapping-pairs
+                  nil (w state)))
+       ((when (atom mappings))
+        fn)
+       (mapping (car mappings)))
+    (if (consp mapping)
+        (cdr mapping)
+      fn)))
 
 (defun custom-rewrite-from-formula (formula)
   (declare (xargs :guard t))
@@ -190,44 +207,7 @@
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp formulas)))
 
-(encapsulate
-  nil
-  (local
-   (include-book "proofs/measure-lemmas"))
-  (local
-   (use-measure-lemmas t))
-  (mutual-recursion
-   (defun attach-sc (term sc-type sc-term)
-     (declare (xargs :guard t
-                     :measure (cons-count term)))
-     (cond
-      ((atom term)
-       (if (equal term sc-term)
-           `(rp ',sc-type ,term)
-         term))
-      ((or (eq (car term) 'quote))
-       term)
-      ((eq (car term) 'if)
-       (if (equal term sc-term)
-           `(rp ',sc-type ,term)
-         (progn$
-          (and (subtermp term sc-term)
-               (hard-error 'attach-sc
-                           "We do not support side-conditions nested under if statements yet! ~%" nil))
-          term)))
-      ((equal term sc-term)
-       `(rp ',sc-type ,(cons (car term)
-                             (attach-sc-lst (cdr term) sc-type sc-term))))
-      (t (cons (car term)
-               (attach-sc-lst (cdr term) sc-type sc-term)))))
 
-   (defun attach-sc-lst (lst sc-type sc-term)
-     (declare (xargs :guard t
-                     :measure (cons-count lst)))
-     (if (atom lst)
-         lst
-       (cons (attach-sc (car lst) sc-type sc-term)
-             (attach-sc-lst (cdr lst) sc-type sc-term))))))
 
 (defun attach-sc-list-to-rhs (rhs sc-list)
   "input is rhs of the rule and a list of formulas representing the

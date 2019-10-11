@@ -46,9 +46,87 @@
 (local (include-book "apply-bindings-lemmas"))
 (local (include-book "match-lhs-lemmas"))
 (local (include-book "rp-rw-lemmas"))
+(local (include-book "extract-formula-lemmas"))
 
 (in-theory (disable rp-iff-flag rp-lhs rp-rhs rp-hyp))
 
+
+
+(encapsulate
+  nil
+
+
+  (defthm attach-sc-from-context-returns-context-syntaxp
+    (implies (context-syntaxp context)
+             (context-syntaxp (mv-nth 0 (attach-sc-from-context context term))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+  
+  (defthm eval-of-context-from-attach-sc-from-context-returns
+    (implies (eval-and-all context a)
+             (eval-and-all (mv-nth 0 (attach-sc-from-context context term)) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm VALID-SC-SUBTERMS-from-attach-sc-from-context-returns
+    (implies (VALID-SC-SUBTERMS context a)
+             (VALID-SC-SUBTERMS (mv-nth 0 (attach-sc-from-context context term)) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm eval-of-term-from-attach-sc-from-context-returns
+    (implies (and (eval-and-all context a))
+             (equal (rp-evl (mv-nth 1 (attach-sc-from-context context term)) a)
+                    (rp-evl term a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm valid-sc-term-from-attach-sc-from-context-returns
+    (implies (and (eval-and-all context a)
+                  (rp-syntaxp term)
+                  (valid-sc term a))
+             (valid-sc (mv-nth 1 (attach-sc-from-context context term)) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context is-if
+                                                     is-rp) ()))))
+
+  (defthm pseudo-termp2-attach-sc-from-context
+    (implies (and (pseudo-termp2 term)
+                  (context-syntaxp context))
+             (pseudo-termp2 (mv-nth 1 (attach-sc-from-context context term))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm rp-syntaxp-attach-sc-from-context
+    (implies (and (rp-syntaxp term)
+                  (context-syntaxp context))
+             (rp-syntaxp (mv-nth 1 (attach-sc-from-context context term))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm all-falist-consistent-attach-sc-from-context
+    (implies (and (all-falist-consistent term)
+                  (context-syntaxp context))
+             (all-falist-consistent (mv-nth 1 (attach-sc-from-context context term))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context
+                              all-falist-consistent) ())))))
 
 (local
  (encapsulate
@@ -106,6 +184,7 @@
                    (valid-rp-meta-rule-listp meta-rules state)
                    (rp-meta-valid-syntax-listp meta-rules state)
                    (symbol-alistp exc-rules)
+                   ;;(rp-syntaxp term)
                    (valid-rules-alistp rules-alist))
               (iff (rp-evl
                     (mv-nth 0 (rp-rw-aux term rules-alist exc-rules meta-rules rp-state state)) a)
@@ -125,21 +204,34 @@
                                (limit (NTH *RW-STEP-LIMIT* RP-STATE))
                                (iff-flg t))
                     (:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term (CADDR term #|(REMOVE-RETURN-LAST TERM)||#))
+                               (term (MV-NTH
+                                      1
+                                      (ATTACH-SC-FROM-CONTEXT
+                                       (RP-EXTRACT-CONTEXT
+                                        (MV-NTH 0
+                                                (RP-RW (CADR TERM)
+                                                       NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                       RULES-ALIST
+                                                       EXC-RULES META-RULES T RP-STATE STATE)))
+                                       (CADDR TERM))))
                                (dont-rw nil)
-                               (context (RP-EXTRACT-CONTEXT
-                                         (MV-NTH 0
-                                                 (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
-                                                        NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
-                                                        RULES-ALIST EXC-RULES
-                                                        meta-rules T rp-state STATE))))
+                               (context (MV-NTH
+                                         0
+                                         (ATTACH-SC-FROM-CONTEXT
+                                          (RP-EXTRACT-CONTEXT
+                                           (MV-NTH 0
+                                                   (RP-RW (CADR TERM)
+                                                          NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                          RULES-ALIST
+                                                          EXC-RULES META-RULES T RP-STATE STATE)))
+                                          (CADDR TERM))))
                                (limit (NTH *RW-STEP-LIMIT* RP-STATE))
                                (iff-flg t)
                                (rp-state (MV-NTH 1
-                                             (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
-                                                    NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
-                                                    RULES-ALIST EXC-RULES
-                                                    meta-rules T rp-state STATE)))))
+                                                 (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
+                                                        NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                        RULES-ALIST EXC-RULES
+                                                        meta-rules T rp-state STATE)))))
 ;:expand ((:free (context) (CONTEXT-SYNTAXP context)))
               :in-theory (e/d (;rp-evl-of-remove-from-last
                                context-syntaxp-implies
@@ -158,8 +250,8 @@
                                INCLUDE-FNC
                                PSEUDO-TERMP2
                                TRUE-LISTP
-                               
-                               ;remove-return-last
+
+;remove-return-last
                                beta-search-reduce)))))))
 
 (defthmd no-rp-no-falist-term-implies-valid-termp
@@ -168,6 +260,10 @@
   :hints (("Goal"
            :in-theory (e/d (EXT-SIDE-CONDITIONS ALL-FALIST-CONSISTENT
                                                 is-falist is-rp) ()))))
+
+
+
+
 
 (encapsulate
   nil
@@ -201,7 +297,6 @@
 
 
 
-
 (defthm rp-meta-rule-recs-p-implies-WEAK-RP-META-RULE-REC-P
   (implies (rp-meta-rule-recs-p meta-rules state)
            (weak-rp-meta-rule-recs-p meta-rules))
@@ -220,7 +315,6 @@
            :in-theory (e/d (rp-meta-rule-recs-p
                             remove-disabled-meta-rules) ()))))
 
-
 (defthm remove-disabled-meta-rules-returns-valid-rp-meta-rule-listp
   (implies (valid-rp-meta-rule-listp meta-rules state)
            (valid-rp-meta-rule-listp
@@ -230,7 +324,6 @@
   :hints (("Goal"
            :in-theory (e/d (valid-rp-meta-rule-listp
                             remove-disabled-meta-rules) ()))))
-
 
 (defthm remove-disabled-meta-rules-returns-RP-META-VALID-SYNTAX-LISTP
   (implies (RP-META-VALID-SYNTAX-LISTP meta-rules state)

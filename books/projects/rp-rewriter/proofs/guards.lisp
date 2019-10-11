@@ -40,6 +40,7 @@
 (in-package "RP")
 (include-book "../rp-rewriter")
 (local (include-book "rp-rw-lemmas"))
+(local (include-book "rp-correct"))
 
 (encapsulate
   nil
@@ -524,6 +525,12 @@
                         (:TYPE-PRESCRIPTION TRUE-LIST-LISTP)
                         (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
                         (:TYPE-PRESCRIPTION SYMBOL-ALISTP))))))
+
+
+
+    
+
+
 
 (verify-guards rp-rw-aux
   :otf-flg t

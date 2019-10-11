@@ -245,7 +245,6 @@
         (rp-does-lhs-match (car subterms) (car sublhs))
         (rp-does-lhs-match-subterms (cdr subterms) (cdr sublhs)))))))
 
-
   (define rp-match-lhs-precheck (term rule-fnc rule-lhs state)
     (declare (xargs :stobjs (state))
              (ignorable state rule-fnc))
@@ -255,21 +254,20 @@
                 (not (eq (car rule-lhs) 'quote))
                 (pseudo-termp2 rule-lhs)
                 (not (eq (car term) 'quote))
-                ;(pseudo-term-listp2 (cdr term))
+;(pseudo-term-listp2 (cdr term))
                 )
-                
+
     (and ;(consp rule-lhs)
-         ;(not (eq (car rule-lhs) 'quote))
-         (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs))
-         #|(or (not rule-fnc)
-             (apply$-userfn rule-fnc (list term))
-             #|(b* (((mv err result)
-                   (magic-ev-fncall rule-fnc (list term)
-                                    state
-                                    nil t)))
-               (if err t result))||#)||#))
-                  
-               
+;(not (eq (car rule-lhs) 'quote))
+     (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs))
+     #|(or (not rule-fnc)
+     (apply$-userfn rule-fnc (list term))
+     #|(b* (((mv err result)
+     (magic-ev-fncall rule-fnc (list term)
+     state
+     nil t)))
+     (if err t result))||#)||#))
+
   (defmacro rp-get-rules-for-term (fn-name rules)
     `(cdr (hons-get ,fn-name ,rules))))
 
@@ -379,10 +377,10 @@
         (mv (if err
                 (progn$
                  (fmt-to-comment-window "Error with ex. counterpart: ~p0 for term: ~p1 ~%"
-                        (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST VAL TERM))
-                        0
-                        '(nil 8 10 nil)
-                        NIL)
+                                        (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST VAL TERM))
+                                        0
+                                        '(nil 8 10 nil)
+                                        NIL)
                  term)
               (list 'quote val))
             rp-state)))))
@@ -551,11 +549,11 @@
                              (alistp bindings)
                              (symbol-alistp exc-rules))
                      :verify-guards nil))
-    (or 
-        (not (include-fnc term 'synp))
-        (rp-rw-relieve-synp term
-                            (remove-rp-from-bindings bindings)
-                            exc-rules state)))
+    (or
+     (not (include-fnc term 'synp))
+     (rp-rw-relieve-synp term
+                         (remove-rp-from-bindings bindings)
+                         exc-rules state)))
 
   (defund remove-rp-from-bindings-for-synp (rule var-bindings)
     (declare (xargs :guard (and (rule-syntaxp rule)
@@ -806,7 +804,7 @@ returns (mv rule rules-rest bindings rp-context)"
                                ('quote evisc)
                                ('quote print-base))
        (progn$
-        ;(cw "here1 ~p0 ~%" term)
+;(cw "here1 ~p0 ~%" term)
         (fmt-to-comment-window
          str
          (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list))
@@ -814,7 +812,7 @@ returns (mv rule rules-rest bindings rp-context)"
       (('fmt-to-comment-window ('quote str) alist
                                ('quote col) ('quote evisc) ('quote print-base))
        (progn$
-        ;(cw "here2 ~p0 ~%" term)
+;(cw "here2 ~p0 ~%" term)
         (fmt-to-comment-window
          str (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
       (& nil))))
@@ -1088,8 +1086,8 @@ returns (mv rule rules-rest bindings rp-context)"
           ((when (or (atom term)
                      (eq (car term) 'quote)))
            (mv term rp-state))
-         
-          ;; run used defined meta rules 
+
+          ;; run used defined meta rules
           ((mv meta-changed-term-flg term meta-dont-rw rp-state)
            (rp-rw-meta-rules term meta-rules rp-state state))
           ((when meta-changed-term-flg)
@@ -1152,6 +1150,71 @@ returns (mv rule rules-rest bindings rp-context)"
             subterms)
            rp-state))))))
 
+(encapsulate
+  nil
+  (local
+   (include-book "proofs/measure-lemmas"))
+  (local
+   (use-measure-lemmas t))
+  (mutual-recursion
+   (defun attach-sc (term sc-type sc-term)
+     (declare (xargs :guard t
+                     :measure (cons-count term)))
+     (cond
+      ((atom term)
+       (if (equal term sc-term)
+           `(rp ',sc-type ,term)
+         term))
+      ((or (eq (car term) 'quote))
+       term)
+      ((eq (car term) 'if)
+       (if (equal term sc-term)
+           `(rp ',sc-type ,term)
+         (progn$
+          (and (subtermp term sc-term)
+               (hard-error 'attach-sc
+                           "We do not support side-conditions nested under if statements yet! ~%" nil))
+          term)))
+      ((equal term sc-term)
+       `(rp ',sc-type ,(cons (car term)
+                             (attach-sc-lst (cdr term) sc-type sc-term))))
+      (t (cons (car term)
+               (attach-sc-lst (cdr term) sc-type sc-term)))))
+
+   (defun attach-sc-lst (lst sc-type sc-term)
+     (declare (xargs :guard t
+                     :measure (cons-count lst)))
+     (if (atom lst)
+         lst
+       (cons (attach-sc (car lst) sc-type sc-term)
+             (attach-sc-lst (cdr lst) sc-type sc-term))))))
+
+(define attach-sc-from-context ((context)
+                                (term))
+  
+  (cond ((atom context)
+         (mv context term))
+        ((include-fnc term 'falist)
+         (mv context term))
+        (t (b* ((cur (car context)))
+             (cond
+              ((and (consp cur)
+                    (consp (cdr cur))
+                    (not (cddr cur))
+                    (atom (cadr cur))  ;; only do it for vars
+                    ;;(not (is-rp (cadr cur)))
+                    (is-rp (list 'rp
+                                 (list 'quote (car cur))
+                                 (cadr cur))))
+               (b* ((term (attach-sc term (car cur) (cadr cur))))
+                 (attach-sc-from-context (cdr context) term)))
+       
+              (t (b* (((mv rest-context term)
+                       (attach-sc-from-context (cdr context) term)))
+                   (mv
+                    (cons-with-hint cur rest-context context)
+                    term))))))))
+
 (defun rp-rw-aux (term rules-alist exc-rules meta-rules rp-state state)
   ;; term can have lambda expressions.
   ;; rules-alist is expected to be a fast-alist
@@ -1193,6 +1256,8 @@ seconds~%"))
                                  :interval 5
                                  :msg "Elapsed runtime took ~st secs;~%"))
                 (context (rp-extract-context newp))
+                ((mv context q)
+                 (attach-sc-from-context context q))
                 (& (time-tracker :rp-rewriter :start))
                 ((mv newq rp-state)
                  (rp-rw q nil context  step-limit rules-alist exc-rules
@@ -1228,6 +1293,3 @@ Resulting  term is:~% ~p0 ~%"
 (set-not-simplified-action :error) ~% ~%" ))))
             nil)))
     (mv res- rp-state)))
-
-
-
