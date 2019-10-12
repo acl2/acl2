@@ -46,10 +46,14 @@
      we just reference the appropriate constant
      if the symbol in question is among those symbols.
      Otherwise, we build it in the general way.
-     Overall, this makes the generated Java code faster."))
+     Overall, this makes the generated Java code faster.")
+   (xdoc::p
+    "We reference the constants without the class name
+     because we import all these constants;
+     see @(tsee atj-gen-jcunit)."))
   (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
     (if pair
-        (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
+        (jexpr-name (cdr pair))
       (jexpr-smethod *atj-jtype-symbol*
                      "make"
                      (list (atj-gen-jstring
@@ -286,7 +290,7 @@
   (b* ((acl2-integer-jexpr (jexpr-smethod *atj-jtype-int*
                                           "make"
                                           (list jexpr)))
-       (acl2-symbol-nil-jexpr (jexpr-name "Acl2Symbol.NIL"))
+       (acl2-symbol-nil-jexpr (jexpr-name "NIL"))
        (acl2-inner-cons-jexpr (jexpr-smethod *atj-jtype-cons*
                                              "make"
                                              (list acl2-integer-jexpr
@@ -498,7 +502,7 @@
      (xdoc::codeblock
       "<a-block>"
       "<type> <result> = null;"
-      "if (<a-expr> == Acl2Symbol.NIL) {"
+      "if (<a-expr> == NIL) {"
       "    <c-blocks>"
       "    <result> = <c-expr>;"
       "} else {"
@@ -528,7 +532,7 @@
      (xdoc::p
       "and the Java expression")
      (xdoc::codeblock
-      "<a-expr> == Acl2Symbol.NIL ? <c-expr> : <b-expr>"))
+      "<a-expr> == NIL ? <c-expr> : <b-expr>"))
     (b* (((mv test-jblock
               test-jexpr
               jvar-value-index
@@ -574,7 +578,7 @@
           (b* ((jblock test-jblock)
                (jexpr (jexpr-cond (jexpr-binary (jbinop-eq)
                                                 test-jexpr
-                                                (jexpr-name "Acl2Symbol.NIL"))
+                                                (jexpr-name "NIL"))
                                   else-jexpr
                                   then-jexpr)))
             (mv jblock
@@ -590,7 +594,7 @@
          (if-jblock (jblock-ifelse
                      (jexpr-binary (jbinop-eq)
                                    test-jexpr
-                                   (jexpr-name "Acl2Symbol.NIL"))
+                                   (jexpr-name "NIL"))
                      (append else-jblock
                              (jblock-asg-name jvar-result else-jexpr))
                      (append then-jblock
@@ -642,7 +646,7 @@
      (xdoc::codeblock
       "<a-block>"
       "<type> <result> = <a-expr>;"
-      "if (<result> == Acl2Symbol.NIL) {"
+      "if (<result> == NIL) {"
       "    <b-blocks>"
       "    <result> = <b-expr>;")
      (xdoc::p
@@ -682,7 +686,7 @@
          (if-jblock (jblock-if
                      (jexpr-binary (jbinop-eq)
                                    (jexpr-name jvar-result)
-                                   (jexpr-name "Acl2Symbol.NIL"))
+                                   (jexpr-name "NIL"))
                      (append second-jblock
                              (jblock-asg-name jvar-result second-jexpr))))
          (jblock (append first-jblock
@@ -1748,6 +1752,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-symbol-imports ()
+  :returns (imports jimport-listp)
+  :short "Generate Java static import declarations
+          for the constants for symbols in AIJ."
+  (atj-gen-shallow-symbol-imports-aux (strip-cdrs *atj-aij-symbol-constants*))
+
+  :prepwork
+  ((define atj-gen-shallow-symbol-imports-aux ((constants string-listp))
+     :returns (imports jimport-listp)
+     (cond ((endp constants) nil)
+           (t (cons (make-jimport :static? t
+                                  :target (str::cat *atj-aij-jpackage*
+                                                    "."
+                                                    *atj-jclass-symbol*
+                                                    "."
+                                                    (car constants)))
+                    (atj-gen-shallow-symbol-imports-aux (cdr constants))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-jcunit ((guards$ booleanp)
                                 (java-package$ maybe-stringp)
                                 (java-class$ maybe-stringp)
@@ -1777,10 +1801,14 @@
        (cunit
         (make-jcunit
          :package? java-package$
-         :imports (list (jimport nil (str::cat *atj-aij-jpackage* ".*"))
-                        ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
-                        (jimport nil "java.math.BigInteger")
-                        (jimport nil "java.util.ArrayList")
-                        (jimport nil "java.util.List"))
+         :imports (append
+                   (list
+                    (make-jimport :static? nil
+                                  :target (str::cat *atj-aij-jpackage* ".*"))
+                    ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
+                    (make-jimport :static? nil :target "java.math.BigInteger")
+                    (make-jimport :static? nil :target "java.util.ArrayList")
+                    (make-jimport :static? nil :target "java.util.List"))
+                   (atj-gen-shallow-symbol-imports))
          :types (list class))))
     (mv cunit pkg-class-names fn-method-names)))
