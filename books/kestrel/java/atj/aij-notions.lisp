@@ -15,6 +15,7 @@
 (include-book "abstract-syntax")
 
 (include-book "kestrel/std/system/primitivep" :dir :system)
+(include-book "kestrel/std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
@@ -133,3 +134,52 @@
   (xdoc::topstring-p
    "Currently these are exactly the ACL2 primitive functions.")
   (primitivep fn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-aij-symbol-constants*
+  :short "AIJ's constants (i.e. static final fields)
+          for certain ACL2 symbols."
+  :long
+  (xdoc::topstring-p
+   "This is an alist from the ACL2 symbols
+    to the names of the corresponding fields.")
+  '((t . "T")
+    (nil . "NIL")
+    (list . "LIST")
+    (if . "IF")
+    (characterp . "CHARACTERP")
+    (stringp . "STRINGP")
+    (symbolp . "SYMBOLP")
+    (integerp . "INTEGERP")
+    (rationalp . "RATIONALP")
+    (complex-rationalp . "COMPLEX_RATIONALP")
+    (acl2-numberp . "ACL2_NUMBERP")
+    (consp . "CONSP")
+    (char-code . "CHAR_CODE")
+    (code-char . "CODE_CHAR")
+    (coerce . "COERCE")
+    (intern-in-package-of-symbol . "INTERN_IN_PACKAGE_OF_SYMBOL")
+    (symbol-package-name . "SYMBOL_PACKAGE_NAME")
+    (symbol-name . "SYMBOL_NAME")
+    (pkg-imports . "PKG_IMPORTS")
+    (pkg-witness . "PKG_WITNESS")
+    (unary-- . "UNARY_MINUS")
+    (unary-/ . "UNARY_SLASH")
+    (binary-+ . "BINARY_PLUS")
+    (binary-* . "BINARY_STAR")
+    (< . "LESS_THAN")
+    (complex . "COMPLEX")
+    (realpart . "REALPART")
+    (imagpart . "IMAGPART")
+    (numerator . "NUMERATOR")
+    (denominator . "DENOMINATOR")
+    (cons . "CONS")
+    (car . "CAR")
+    (cdr . "CDR")
+    (equal . "EQUAL")
+    (bad-atom<= . "BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
+    (or . "OR"))
+  ///
+  (assert-event (symbol-string-alistp *atj-aij-symbol-constants*))
+  (assert-event (no-duplicatesp-equal (strip-cdrs *atj-aij-symbol-constants*))))

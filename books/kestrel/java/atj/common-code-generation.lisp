@@ -18,7 +18,6 @@
 (include-book "name-translation")
 (include-book "test-structures")
 
-(include-book "kestrel/std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
@@ -158,63 +157,20 @@
   :long
   (xdoc::topstring-p
    "Since AIJ has a number of constants (i.e. static final fields)
-    for a number of common symbols,
+    for certain common symbols,
     we just reference the appropriate constant
     if the symbol in question is among those symbols.
     Otherwise, we build it in the general way.
-    Overall, this makes the generated Java code faster.
-    We introduce and use an alist to specify
-    the correspondence between ACL2 symbols and AIJ static final fields.")
-  (b* ((pair (assoc-eq symbol *atj-gen-symbol-alist*)))
+    Overall, this makes the generated Java code faster.")
+  (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
     (if pair
-        (jexpr-name (cdr pair))
+        (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
       (jexpr-smethod *atj-jtype-symbol*
                      "make"
                      (list (atj-gen-jstring
                             (symbol-package-name symbol))
                            (atj-gen-jstring
-                            (symbol-name symbol))))))
-
-  :prepwork
-  ((defval *atj-gen-symbol-alist*
-     '((t . "Acl2Symbol.T")
-       (nil . "Acl2Symbol.NIL")
-       (list . "Acl2Symbol.LIST")
-       (if . "Acl2Symbol.IF")
-       (characterp . "Acl2Symbol.CHARACTERP")
-       (stringp . "Acl2Symbol.STRINGP")
-       (symbolp . "Acl2Symbol.SYMBOLP")
-       (integerp . "Acl2Symbol.INTEGERP")
-       (rationalp . "Acl2Symbol.RATIONALP")
-       (complex-rationalp . "Acl2Symbol.COMPLEX_RATIONALP")
-       (acl2-numberp . "Acl2Symbol.ACL2_NUMBERP")
-       (consp . "Acl2Symbol.CONSP")
-       (char-code . "Acl2Symbol.CHAR_CODE")
-       (code-char . "Acl2Symbol.CODE_CHAR")
-       (coerce . "Acl2Symbol.COERCE")
-       (intern-in-package-of-symbol . "Acl2Symbol.INTERN_IN_PACKAGE_OF_SYMBOL")
-       (symbol-package-name . "Acl2Symbol.SYMBOL_PACKAGE_NAME")
-       (symbol-name . "Acl2Symbol.SYMBOL_NAME")
-       (pkg-imports . "Acl2Symbol.PKG_IMPORTS")
-       (pkg-witness . "Acl2Symbol.PKG_WITNESS")
-       (unary-- . "Acl2Symbol.UNARY_MINUS")
-       (unary-/ . "Acl2Symbol.UNARY_SLASH")
-       (binary-+ . "Acl2Symbol.BINARY_PLUS")
-       (binary-* . "Acl2Symbol.BINARY_STAR")
-       (< . "Acl2Symbol.LESS_THAN")
-       (complex . "Acl2Symbol.COMPLEX")
-       (realpart . "Acl2Symbol.REALPART")
-       (imagpart . "Acl2Symbol.IMAGPART")
-       (numerator . "Acl2Symbol.NUMERATOR")
-       (denominator . "Acl2Symbol.DENOMINATOR")
-       (cons . "Acl2Symbol.CONS")
-       (car . "Acl2Symbol.CAR")
-       (cdr . "Acl2Symbol.CDR")
-       (equal . "Acl2Symbol.EQUAL")
-       (bad-atom<= . "Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
-       (or . "Acl2Symbol.OR"))
-     ///
-     (assert-event (symbol-string-alistp *atj-gen-symbol-alist*)))))
+                            (symbol-name symbol)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
