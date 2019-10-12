@@ -24,8 +24,6 @@
 (include-book "deep-code-generation")
 (include-book "shallow-code-generation")
 
-(include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-code-generation
@@ -96,98 +94,6 @@
      The post-translation makes some improvements directly on the Java code."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-jclass ((pkgs string-listp)
-                        (fns symbol-listp)
-                        (deep$ booleanp)
-                        (guards$ booleanp)
-                        (java-class$ stringp)
-                        (verbose$ booleanp)
-                        state)
-  :returns (mv (jclass jclassp)
-               (pkg-class-names "A @(tsee string-string-alistp).")
-               (fn-method-names "A @(tsee symbol-string-alistp)."))
-  :verify-guards nil
-  :short "Generate the main (i.e. non-test) Java class declaration."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a public class that contains all the generated members.
-     [JLS] says that a Java implementation may require
-     public classes to be in files with the same names (plus extension).
-     The code that we generate satisfies this requirement.")
-   (xdoc::p
-    "If @(':deep') is @('t'), we generate the Java methods
-     to build the deeply embedded ACL2 functions
-     and the @('call') method.
-     If @(':deep') is @('nil'), we generate the Java classes and methods
-     for the shallowly embedded ACL2 functions,
-     and no @('call') method.
-     In the latter case, we ensure that
-     the ACL2 functions natively implemented in AIJ are included
-     (currently the ACL2 primitive functions),
-     we organize the resulting functions by packages,
-     and we proceed to generate the Java nested classes and methods.")
-   (xdoc::p
-    "We also return the alist from ACL2 package names to Java class names
-     and the alist from ACL2 function symbols to Java method names,
-     which must be eventually passed to the functions that generate
-     the Java test class.
-     These are @('nil') in the deep embedding approach;
-     they is only used in the shallow embedding approach."))
-  (b* ((init-jfield (atj-gen-init-jfield))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 packages:~%"))
-       (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 functions:~%"))
-       ((mv fn-jmembers pkg-class-names fn-method-names)
-        (if deep$
-            (mv (jmethods-to-jcmembers
-                 (atj-gen-deep-fndef-jmethods fns guards$ verbose$ state))
-                nil
-                nil)
-          (b* ((fns+natives
-                (remove-duplicates-eq
-                 (append fns
-                         (strip-cars *primitive-formals-and-guards*))))
-               (fns-by-pkg (organize-symbols-by-pkg fns+natives))
-               ((mv jclasses pkg-class-names fn-method-names)
-                (atj-gen-shallow-fns-by-pkg fns+natives
-                                            fns-by-pkg
-                                            guards$
-                                            java-class$
-                                            verbose$
-                                            state)))
-            (mv (jclasses-to-jcmembers jclasses)
-                pkg-class-names
-                fn-method-names))))
-       (fns-jblock? (and deep$
-                         (append (atj-gen-deep-fndefs fns)
-                                 (jblock-smethod *atj-jtype-named-fn*
-                                                 "validateAll"
-                                                 nil))))
-       (init-jmethod (atj-gen-init-jmethod pkgs fns-jblock?))
-       (call-jmethod? (and deep$
-                           (list (atj-gen-call-jmethod))))
-       (body-jclass (append (list (jcmember-field init-jfield))
-                            (jmethods-to-jcmembers pkg-jmethods)
-                            fn-jmembers
-                            (list (jcmember-method init-jmethod))
-                            (jmethods-to-jcmembers call-jmethod?))))
-    (mv (make-jclass :access (jaccess-public)
-                     :abstract? nil
-                     :static? nil
-                     :final? nil
-                     :strictfp? nil
-                     :name java-class$
-                     :superclass? nil
-                     :superinterfaces nil
-                     :body body-jclass)
-        pkg-class-names
-        fn-method-names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,13 +508,12 @@
      These are @('nil') in the deep embedding approach;
      they are only used in the shallow embedding approach."))
   (b* (((mv class pkg-class-names fn-method-names)
-        (atj-gen-jclass pkgs
-                        fns
-                        deep$
-                        guards$
-                        java-class$
-                        verbose$
-                        state))
+        (if deep$
+            (mv
+             (atj-gen-deep-jclass pkgs fns guards$ java-class$ verbose$ state)
+             nil
+             nil)
+          (atj-gen-shallow-jclass pkgs fns guards$ java-class$ verbose$ state)))
        (cunit
         (make-jcunit
          :package? java-package$

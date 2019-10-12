@@ -478,3 +478,57 @@
          (first-jblock (jblock-method jmethod-name nil))
          (rest-jblock (atj-gen-deep-fndefs (cdr fns))))
       (append first-jblock rest-jblock))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-deep-jclass ((pkgs string-listp)
+                             (fns symbol-listp)
+                             (guards$ booleanp)
+                             (java-class$ stringp)
+                             (verbose$ booleanp)
+                             state)
+  :returns (jclass jclassp)
+  :verify-guards nil
+  :short "Generate the main (i.e. non-test) Java class declaration,
+          in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a public class that contains all the generated members.
+     [JLS] says that a Java implementation may require
+     public classes to be in files with the same names (plus extension).
+     The code that we generate satisfies this requirement.")
+   (xdoc::p
+    "The class contains the initialization field and method,
+     the methods to build the ACL2 packages,
+     the methods to build the ACL2 functions,
+     and the method to call ACL2 code from external code."))
+  (b* ((init-jfield (atj-gen-init-jfield))
+       ((run-when verbose$)
+        (cw "~%Generating Java code for the ACL2 packages:~%"))
+       (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
+       ((run-when verbose$)
+        (cw "~%Generating Java code for the ACL2 functions:~%"))
+       (fn-jmethods (atj-gen-deep-fndef-jmethods fns guards$ verbose$ state))
+       (fns-build-jblock (atj-gen-deep-fndefs fns))
+       (fns-validate-jblock (jblock-smethod *atj-jtype-named-fn*
+                                            "validateAll"
+                                            nil))
+       (fns-jblock (append fns-build-jblock
+                           fns-validate-jblock))
+       (init-jmethod (atj-gen-init-jmethod pkgs fns-jblock))
+       (call-jmethod (atj-gen-call-jmethod))
+       (body-jclass (append (list (jcmember-field init-jfield))
+                            (jmethods-to-jcmembers pkg-jmethods)
+                            (jmethods-to-jcmembers fn-jmethods)
+                            (list (jcmember-method init-jmethod))
+                            (list (jcmember-method call-jmethod)))))
+    (make-jclass :access (jaccess-public)
+                 :abstract? nil
+                 :static? nil
+                 :final? nil
+                 :strictfp? nil
+                 :name java-class$
+                 :superclass? nil
+                 :superinterfaces nil
+                 :body body-jclass)))

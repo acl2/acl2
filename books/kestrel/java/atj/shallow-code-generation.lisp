@@ -15,6 +15,7 @@
 (include-book "post-translation")
 (include-book "primitives")
 
+(include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 
@@ -1549,3 +1550,72 @@
                                                          verbose$
                                                          state)))
        (cons first-jclass rest-jclasses)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-jclass ((pkgs string-listp)
+                                (fns symbol-listp)
+                                (guards$ booleanp)
+                                (java-class$ stringp)
+                                (verbose$ booleanp)
+                                state)
+  :returns (mv (jclass jclassp)
+               (pkg-class-names "A @(tsee string-string-alistp).")
+               (fn-method-names "A @(tsee symbol-string-alistp)."))
+  :verify-guards nil
+  :short "Generate the main (i.e. non-test) Java class declaration,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a public class that contains all the generated members.
+     [JLS] says that a Java implementation may require
+     public classes to be in files with the same names (plus extension).
+     The code that we generate satisfies this requirement.")
+   (xdoc::p
+    "The class contains the initialization field and method,
+     the methods to build the ACL2 packages,
+     and the classes that contain methods for the ACL2 functions.
+     We ensure that the ACL2 functions natively implemented in AIJ
+     (currently the ACL2 primitive functions)
+     are included,
+     we organize the resulting functions by packages,
+     and we proceed to generate the Java nested classes and methods.")
+   (xdoc::p
+    "We also return the alist from ACL2 package names to Java class names
+     and the alist from ACL2 function symbols to Java method names,
+     which must be eventually passed to the functions that generate
+     the Java test class."))
+  (b* ((init-jfield (atj-gen-init-jfield))
+       ((run-when verbose$)
+        (cw "~%Generating Java code for the ACL2 packages:~%"))
+       (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
+       ((run-when verbose$)
+        (cw "~%Generating Java code for the ACL2 functions:~%"))
+       (fns+natives (remove-duplicates-eq
+                     (append fns
+                             (strip-cars *primitive-formals-and-guards*))))
+       (fns-by-pkg (organize-symbols-by-pkg fns+natives))
+       ((mv fn-jclasses pkg-class-names fn-method-names)
+        (atj-gen-shallow-fns-by-pkg fns+natives
+                                    fns-by-pkg
+                                    guards$
+                                    java-class$
+                                    verbose$
+                                    state))
+       (init-jmethod (atj-gen-init-jmethod pkgs nil))
+       (body-jclass (append (list (jcmember-field init-jfield))
+                            (jmethods-to-jcmembers pkg-jmethods)
+                            (jclasses-to-jcmembers fn-jclasses)
+                            (list (jcmember-method init-jmethod)))))
+    (mv (make-jclass :access (jaccess-public)
+                     :abstract? nil
+                     :static? nil
+                     :final? nil
+                     :strictfp? nil
+                     :name java-class$
+                     :superclass? nil
+                     :superinterfaces nil
+                     :body body-jclass)
+        pkg-class-names
+        fn-method-names)))
