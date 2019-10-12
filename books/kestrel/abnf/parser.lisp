@@ -27,23 +27,23 @@
   :parents (abnf)
   :short "A verified executable parser of ABNF grammars."
   :long
-  "<p>
-   It may be possible to derive this parser from @(tsee parse-grammar*)
-   (or a variant of it that resolves the ambiguity discussed there)
-   via transformational refinements,
-   but here we write an implementation directly and we prove its correctness.
-   </p>
-   <p>
-   The implementation and verification techniques employed for this parser
-   seem more general than the parser.
-   They should be applicable to parsers of other languages specified in ABNF,
-   e.g. to HTTP parsers.
-   It may also be possible to build a parser generator
-   that turns ABNF grammars
-   (satisfying certain restrictions, as with typical parser generators)
-   into verified executable parsers,
-   i.e. executable parsers accompanied by proofs of correctness.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "It may be possible to derive this parser from @(tsee parse-grammar*)
+     (or a variant of it that resolves the ambiguity discussed there)
+     via transformational refinements,
+     but here we write an implementation directly
+     and we prove its correctness.")
+   (xdoc::p
+    "The implementation and verification techniques employed for this parser
+     seem more general than the parser.
+     They should be applicable to parsers of other languages specified in ABNF,
+     e.g. to HTTP parsers.
+     It may also be possible to build a parser generator
+     that turns ABNF grammars
+     (satisfying certain restrictions, as with typical parser generators)
+     into verified executable parsers,
+     i.e. executable parsers accompanied by proofs of correctness."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,304 +56,275 @@
 
   :long
 
-  "<p>
-   This is a recursive-descent, backtracking parser.
-   There is a parsing function for every rule,
-   and parsing functions for certain groups, options, and repetitions.
-   There are also parameterized parsing functions for
-   terminals (natural numbers) matching
-   exact values, ranges, and (case-insensitively) characters.
-   </p>
+  (xdoc::topstring
 
-   <h3>Inputs and Outputs</h3>
+   (xdoc::p
+    "This is a recursive-descent, backtracking parser.
+     There is a parsing function for every rule,
+     and parsing functions for certain groups, options, and repetitions.
+     There are also parameterized parsing functions for
+     terminals (natural numbers) matching
+     exact values, ranges, and (case-insensitively) characters.")
 
-   <p>
-   Each of these parsing functions
-   takes as input a list of natural numbers (i.e. terminals),
-   and returns as outputs
-   (i) an indication of success or failure,
-   (ii) the tree or list of trees
-   obtained from parsing a prefix of the input
-   (or @('nil') if parsing fails),
-   and (iii) the remaining suffix of the input that must still be parsed.
-   The indication of success or failure is
-   either @('nil') to indicate success,
-   or a <see topic='@(url msg)'>message</see> to describe the failure.
-   This is consistent with the <i>@(see Seq)</i> macros,
-   with which these parsing functions are implemented.
-   </p>
+   (xdoc::h3 "Inputs and Outputs")
 
-   <p>
-   The @(tsee parse-grammar) top-level function
-   takes as input a list of natural numbers
-   and returns as output just a tree, or @('nil') to indicate failure;
-   this function consumes all the input, failing if there is unparsed input.
-   The @(tsee parse-grammar-from-file) function
-   takes as input a file name and calls @(tsee parse-grammar) on its content,
-   returning a tree or @('nil').
-   </p>
+   (xdoc::p
+    "Each of these parsing functions
+     takes as input a list of natural numbers (i.e. terminals),
+     and returns as outputs
+     (i) an indication of success or failure,
+     (ii) the tree or list of trees
+     obtained from parsing a prefix of the input
+     (or @('nil') if parsing fails),
+     and (iii) the remaining suffix of the input that must still be parsed.
+     The indication of success or failure is
+     either @('nil') to indicate success,
+     or a <see topic='@(url msg)'>message</see> to describe the failure.
+     This is consistent with the <i>@(see Seq)</i> macros,
+     with which these parsing functions are implemented.")
 
-   <p>
-   Each parsing function definition is accompanied by a theorem stating that
-   the function fixes its input list of natural numbers.
-   The proof of each such theorem uses, as rewrite rules,
-   the theorems for the parsing functions called by
-   the parsing function whose theorem is being proved.
-   </p>
+   (xdoc::p
+    "The @(tsee parse-grammar) top-level function
+     takes as input a list of natural numbers
+     and returns as output just a tree, or @('nil') to indicate failure;
+     this function consumes all the input, failing if there is unparsed input.
+     The @(tsee parse-grammar-from-file) function
+     takes as input a file name and calls @(tsee parse-grammar) on its content,
+     returning a tree or @('nil').")
 
-   <h3>Disambiguation and Look-Ahead</h3>
+   (xdoc::p
+    "Each parsing function definition is accompanied by a theorem stating that
+     the function fixes its input list of natural numbers.
+     The proof of each such theorem uses, as rewrite rules,
+     the theorems for the parsing functions called by
+     the parsing function whose theorem is being proved.")
 
-   <p>
-   As explained in the documentation of @(tsee parse-grammar*),
-   the grammar of the ABNF concrete syntax [RFC:4] is ambiguous.
-   The rule @('rulelist') allows strings `@('c-nl WSP')'
-   either to be split into an ending @('c-nl') under a @('rule')
-   and a starting @('WSP') under an immediately following @('(*c-wsp c-nl)'),
-   or to be made into a @('c-wsp')
-   in the ending part of @('elements') under the @('rule').
-   The same kind of choice applies when,
-   instead of a @('rule') immediately followed by a @('(*c-wsp c-nl)'),
-   there are two subsequent @('(*c-wsp c-nl)')s:
-   the string `@('c-nl WSP')' can be
-   either split between the two @('(*c-wsp c-nl)')s
-   or put all under the first one.
-   Indeed, expanding @('elements') in the definiens of @('rule')
-   gives @('... *c-wsp c-nl'),
-   which ends in the same way as the group @('(*c-wsp c-nl)'):
-   this is why the ambiguity applies equally to
-   a @('rule') immediately followed by a @('(*c-wsp c-nl)')
-   and to a @('(*c-wsp c-nl)') immediately followed by a @('(*c-wsp c-nl)').
-   </p>
+   (xdoc::h3 "Disambiguation and Look-Ahead")
 
-   <p>
-   Aside from the @('rulelist') rule,
-   the rest of the grammar is LL(*):
-   </p>
+   (xdoc::p
+    "As explained in the documentation of @(tsee parse-grammar*),
+     the grammar of the ABNF concrete syntax [RFC:4] is ambiguous.
+     The rule @('rulelist') allows strings `@('c-nl WSP')'
+     either to be split into an ending @('c-nl') under a @('rule')
+     and a starting @('WSP') under an immediately following @('(*c-wsp c-nl)'),
+     or to be made into a @('c-wsp')
+     in the ending part of @('elements') under the @('rule').
+     The same kind of choice applies when,
+     instead of a @('rule') immediately followed by a @('(*c-wsp c-nl)'),
+     there are two subsequent @('(*c-wsp c-nl)')s:
+     the string `@('c-nl WSP')' can be
+     either split between the two @('(*c-wsp c-nl)')s
+     or put all under the first one.
+     Indeed, expanding @('elements') in the definiens of @('rule')
+     gives @('... *c-wsp c-nl'),
+     which ends in the same way as the group @('(*c-wsp c-nl)'):
+     this is why the ambiguity applies equally to
+     a @('rule') immediately followed by a @('(*c-wsp c-nl)')
+     and to a @('(*c-wsp c-nl)')
+     immediately followed by a @('(*c-wsp c-nl)').")
 
-   <ul>
+   (xdoc::p
+    "Aside from the @('rulelist') rule,
+     the rest of the grammar is LL(*):")
 
-     <li>
-     In the @('repeat') rule,
-     a look-ahead of an unbounded number of @('DIGIT')s
-     is needed to determine the alternative
-     (the second alternative if @('\"*\"') is found after the @('DIGIT')s,
-     otherwise the first alternative).
-     </li>
+   (xdoc::ul
 
-     <li>
-     In the @('concatenation') rule,
-     a look-ahead of an unbounded number of @('c-wsp')s
-     is needed to determine where a @('concatenation') ends
-     (it does if no @('repetition') is found after the @('c-wsp')s,
-     otherwise the @('concatenation') continues with the found @('repetition')).
-     </li>
+    (xdoc::li
+     "In the @('repeat') rule,
+      a look-ahead of an unbounded number of @('DIGIT')s
+      is needed to determine the alternative
+      (the second alternative if @('\"*\"') is found after the @('DIGIT')s,
+      otherwise the first alternative).")
 
-   </ul>
+    (xdoc::li
+     "In the @('concatenation') rule,
+      a look-ahead of an unbounded number of @('c-wsp')s
+      is needed to determine where a @('concatenation') ends
+      (it does if no @('repetition') is found after the @('c-wsp')s,
+      otherwise the @('concatenation')
+      continues with the found @('repetition'))."))
 
-   <p>
-   Aside from the @('rulelist'), @('repeat'), and @('concatenation') rules,
-   the rest of the grammar is LL(2):
-   </p>
+   (xdoc::p
+    "Aside from the @('rulelist'), @('repeat'), and @('concatenation') rules,
+     the rest of the grammar is LL(2):")
 
-   <ul>
+   (xdoc::ul
 
-     <li>
-     In the @('defined-as') rule,
-     a look-ahead of two symbols
-     is needed to distinguish @('\"=\"') and @('\"=/\"').
-     </li>
+    (xdoc::li
+     "In the @('defined-as') rule,
+      a look-ahead of two symbols
+      is needed to distinguish @('\"=\"') and @('\"=/\"').")
 
-     <li>
-     In the @('element') rule,
-     a look-ahead of two symbols
-     is needed to distinguish @('num-val') and @('char-val')
-     (the two symbols are @('\"%\"') and the one after).
-     </li>
+    (xdoc::li
+     "In the @('element') rule,
+      a look-ahead of two symbols
+      is needed to distinguish @('num-val') and @('char-val')
+      (the two symbols are @('\"%\"') and the one after).")
 
-     <li>
-     In the @('char-val') rule,
-     a look-ahead of two symbols is needed
-     to distinguish @('case-insensitive-string') and @('case-sensitive-string')
-     (the two symbols are @('\"%\"') and the one after).
-     </li>
+    (xdoc::li
+     "In the @('char-val') rule,
+      a look-ahead of two symbols is needed
+      to distinguish @('case-insensitive-string') and @('case-sensitive-string')
+      (the two symbols are @('\"%\"') and the one after)."))
 
-   </ul>
+   (xdoc::p
+    "In each of the three rules listed above,
+     the two choices have the first character in common.
+     Thus, it may seem that these rules are actually LL(1),
+     by first parsing the first character in common
+     and then deciding how to proceed based on the next character.
+     However, each character pair like @('\"=/\"') and @('\"%s\"')
+     is parsed in one shot via one call to @(tsee parse-ichars)
+     which produces a single leaf tree
+     with the list of those two character codes,
+     not via two calls to @(tsee parse-ichar)
+     which would produce two leaf trees
+     each with a singleton list of one character code.
+     If the rules were formulated as concatenations of single-character strings
+     (e.g. @('\"=\" \"/\"') and @('\"%\" \"s\"')) instead,
+     these rules would be LL(1).")
 
-   <p>
-   In each of the three rules listed above,
-   the two choices have the first character in common.
-   Thus, it may seem that these rules are actually LL(1),
-   by first parsing the first character in common
-   and then deciding how to proceed based on the next character.
-   However, each character pair like @('\"=/\"') and @('\"%s\"')
-   is parsed in one shot via one call to @(tsee parse-ichars)
-   which produces a single leaf tree with the list of those two character codes,
-   not via two calls to @(tsee parse-ichar)
-   which would produce two leaf trees
-   each with a singleton list of one character code.
-   If the rules were formulated as concatenations of single-character strings
-   (e.g. @('\"=\" \"/\"') and @('\"%\" \"s\"')) instead,
-   these rules would be LL(1).
-   </p>
+   (xdoc::p
+    "Aside from the
+     @('rulelist'),
+     @('repeat'),
+     @('concatenation'),
+     @('defined-as'),
+     @('element'), and
+     @('char-val') rules,
+     the rest of the grammar is LL(1).")
 
-   <p>
-   Aside from the
-   @('rulelist'),
-   @('repeat'),
-   @('concatenation'),
-   @('defined-as'),
-   @('element'), and
-   @('char-val') rules,
-   the rest of the grammar is LL(1).
-   </p>
+   (xdoc::p
+    "The parser resolves the @('rulelist') ambiguity
+     by keeping strings `@('c-nl WSP')' as @('c-wsp')s
+     under @('rule') or
+     under the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
+     instead of splitting them into a @('c-nl')
+     to end the @('rule') or
+     to end the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
+     and a @('WSP') to start the subsequent @('(*c-wsp c-nl)').
+     The decision point is when a @('c-nl') is encountered
+     while parsing the ending @('*c-wsp') of @('elements')
+     or while parsing the @('*c-wsp') of a @('(*c-wsp c-nl)'):
+     should the @('*c-wsp') be considered finished
+     and the @('c-nl') used to end the @('rule') or @('(*c-wsp c-nl)'),
+     or should the parser attempt to extend the @('*c-wsp')
+     with an extra @('c-wsp'), if the @('c-nl') is followed by a @('WSP')?
+     By having @(tsee parse-*cwsp) always try the extra @('c-wsp'),
+     we never split strings `@('c-nl WSP')'.
+     Thus, @(tsee parse-*cwsp) tries to parse as many @('c-wsp')s as possible,
+     like all the other @('parse-*...') parsing functions.
+     If the @('c-nl') is not followed by a @('WSP'),
+     the parsing of the extra @('c-wsp') fails
+     and the only possibility left is to finish the @('*c-wsp')
+     and use the @('c-nl') to end the @('rule') or the @('(*c-wsp c-nl)');
+     there is no ambiguity in this case.")
 
-   <p>
-   The parser resolves the @('rulelist') ambiguity
-   by keeping strings `@('c-nl WSP')' as @('c-wsp')s
-   under @('rule') or
-   under the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
-   instead of splitting them into a @('c-nl')
-   to end the @('rule') or
-   to end the first @('(*c-wsp c-nl)') of two subsequent @('(*c-wsp c-nl)')s,
-   and a @('WSP') to start the subsequent @('(*c-wsp c-nl)').
-   The decision point is when a @('c-nl') is encountered
-   while parsing the ending @('*c-wsp') of @('elements')
-   or while parsing the @('*c-wsp') of a @('(*c-wsp c-nl)'):
-   should the @('*c-wsp') be considered finished
-   and the @('c-nl') used to end the @('rule') or @('(*c-wsp c-nl)'),
-   or should the parser attempt to extend the @('*c-wsp')
-   with an extra @('c-wsp'), if the @('c-nl') is followed by a @('WSP')?
-   By having @(tsee parse-*cwsp) always try the extra @('c-wsp'),
-   we never split strings `@('c-nl WSP')'.
-   Thus, @(tsee parse-*cwsp) tries to parse as many @('c-wsp')s as possible,
-   like all the other @('parse-*...') parsing functions.
-   If the @('c-nl') is not followed by a @('WSP'),
-   the parsing of the extra @('c-wsp') fails
-   and the only possibility left is to finish the @('*c-wsp')
-   and use the @('c-nl') to end the @('rule') or the @('(*c-wsp c-nl)');
-   there is no ambiguity in this case.
-   </p>
+   (xdoc::p
+    "The look-ahead for the LL(*), LL(2), and LL(1) rules
+     is handled via backtracking.
+     The amount of backtracking
+     is expected to be small in reasonable grammars.")
 
-   <p>
-   The look-ahead for the LL(*), LL(2), and LL(1) rules
-   is handled via backtracking.
-   The amount of backtracking is expected to be small in reasonable grammars.
-   </p>
+   (xdoc::h3 "Termination")
 
-   <h3>Termination</h3>
+   (xdoc::p
+    "The termination of the singly recursive parsing functions
+     (e.g. @(tsee parse-*bit))
+     is proved by showing that the size of the input decreases.")
 
-   <p>
-   The termination of the singly recursive parsing functions
-   (e.g. @(tsee parse-*bit))
-   is proved by showing that the size of the input decreases.
-   </p>
+   (xdoc::p
+    "The termination of the mutually recursive parsing functions
+     (i.e. @(tsee parse-alternation), @(tsee parse-concatenation), etc.)
+     is proved via a lexicographic measure consisting of
+     the size of the input and an ordering of the parsing functions.
+     This is explained in the following paragraphs.")
 
-   <p>
-   The termination of the mutually recursive parsing functions
-   (i.e. @(tsee parse-alternation), @(tsee parse-concatenation), etc.)
-   is proved via a lexicographic measure consisting of
-   the size of the input and an ordering of the parsing functions.
-   This is explained in the following paragraphs.
-   </p>
+   (xdoc::p
+    "Since @(tsee parse-alternation) calls @(tsee parse-concatenation)
+     on the same input,
+     the size of the input alone is not sufficient
+     to show that the mutually recursive parsing functions terminate.
+     But @(tsee parse-concatenation) never
+     (indirectly) calls @(tsee parse-alternation) on the same input:
+     it has to go through @(tsee parse-group) or @(tsee parse-option),
+     which consume a @('\"(\"') or a @('\"[\"')
+     before calling @(tsee parse-alternation) on, therefore, a smaller input.
+     So if we order the parsing functions, by assigning numbers to them,
+     so that @(tsee parse-alternation) has
+     a larger order number than @(tsee parse-concatenation),
+     either the size of the input goes down,
+     or it stays the same but the parsing function order number goes down.
+     In other words, the lexicographic measure goes down.")
 
-   <p>
-   Since @(tsee parse-alternation) calls @(tsee parse-concatenation)
-   on the same input,
-   the size of the input alone is not sufficient
-   to show that the mutually recursive parsing functions terminate.
-   But @(tsee parse-concatenation) never
-   (indirectly) calls @(tsee parse-alternation) on the same input:
-   it has to go through @(tsee parse-group) or @(tsee parse-option),
-   which consume a @('\"(\"') or a @('\"[\"')
-   before calling @(tsee parse-alternation) on, therefore, a smaller input.
-   So if we order the parsing functions, by assigning numbers to them,
-   so that @(tsee parse-alternation) has
-   a larger order number than @(tsee parse-concatenation),
-   either the size of the input goes down,
-   or it stays the same but the parsing function order number goes down.
-   In other words, the lexicographic measure goes down.
-   </p>
+   (xdoc::p
+    "To establish the relative ordering of the parsing functions,
+     we look at which ones (may) call which other ones on the same input:
+     the former must be (assigned) larger (order numbers) than the latter.
+     Thus, we have the following ordering constraints:")
 
-   <p>
-   To establish the relative ordering of the parsing functions,
-   we look at which ones (may) call which other ones on the same input:
-   the former must be (assigned) larger (order numbers) than the latter.
-   Thus, we have the following ordering constraints:
-   </p>
+   (xdoc::ul
 
-   <ul>
+    (xdoc::li
+     "@(tsee parse-alternation) must be
+      larger than @(tsee parse-concatenation).")
 
-     <li>
-     @(tsee parse-alternation) must be larger than @(tsee parse-concatenation).
-     </li>
+    (xdoc::li
+     "@(tsee parse-concatenation) must be
+      larger than @(tsee parse-repetition).")
 
-     <li>
-     @(tsee parse-concatenation) must be larger than @(tsee parse-repetition).
-     </li>
+    (xdoc::li
+     "@(tsee parse-repetition) must be larger than @(tsee parse-element).
+      (The former calls the latter on the same input
+      if @(tsee parse-?repeat) does not consume any input.)")
 
-     <li>
-     @(tsee parse-repetition) must be larger than @(tsee parse-element).
-     (The former calls the latter on the same input
-     if @(tsee parse-?repeat) does not consume any input.)
-     </li>
+    (xdoc::li
+     "@(tsee parse-element) must be larger than @(tsee parse-group).")
 
-     <li>
-     @(tsee parse-element) must be larger than @(tsee parse-group).
-     </li>
+    (xdoc::li
+     "@(tsee parse-element) must be larger than @(tsee parse-option).")
 
-     <li>
-     @(tsee parse-element) must be larger than @(tsee parse-option).
-     </li>
+    (xdoc::li
+     "@(tsee parse-alt-rest) must be larger than
+      @(tsee parse-alt-rest-comp).")
 
-     <li>
-     @(tsee parse-alt-rest) must be larger than
-     @(tsee parse-alt-rest-comp).
-     </li>
+    (xdoc::li
+     "@(tsee parse-conc-rest) must be larger than
+      @(tsee parse-conc-rest-comp)."))
 
-     <li>
-     @(tsee parse-conc-rest) must be larger than
-     @(tsee parse-conc-rest-comp).
-     </li>
+   (xdoc::p
+    "These constraints provide a partial order on the parsing function,
+     which we can totalize as follows (from smallest to largest):")
 
-   </ul>
+   (xdoc::ol
+    (xdoc::li "@(tsee parse-conc-rest-comp)")
+    (xdoc::li "@(tsee parse-conc-rest)")
+    (xdoc::li "@(tsee parse-alt-rest-comp)")
+    (xdoc::li "@(tsee parse-alt-rest)")
+    (xdoc::li "@(tsee parse-option)")
+    (xdoc::li "@(tsee parse-group)")
+    (xdoc::li "@(tsee parse-element)")
+    (xdoc::li "@(tsee parse-repetition)")
+    (xdoc::li "@(tsee parse-concatenation)")
+    (xdoc::li "@(tsee parse-alternation)"))
 
-   <p>
-   These constraints provide a partial order on the parsing function,
-   which we can totalize as follows (from smallest to largest):
-   </p>
+   (xdoc::p
+    "Note that when a smaller function calls a larger or equal function,
+     it does so on a smaller input.
+     In particular:
+     @(tsee parse-group) and @(tsee parse-option) call @(tsee parse-alternation)
+     only after consuming a @('\"(\"') or a @('\"[\"');
+     @(tsee parse-alt-rest-comp) calls @(tsee parse-concatenation)
+     only after consuming at least a @('\"\/\"'); and
+     @(tsee parse-conc-rest-comp) calls @(tsee parse-repetition)
+     only after consuming at least one @('c-wsp'), which is never empty.")
 
-   <ol>
-     <li>@(tsee parse-conc-rest-comp)</li>
-     <li>@(tsee parse-conc-rest)</li>
-     <li>@(tsee parse-alt-rest-comp)</li>
-     <li>@(tsee parse-alt-rest)</li>
-     <li>@(tsee parse-option)</li>
-     <li>@(tsee parse-group)</li>
-     <li>@(tsee parse-element)</li>
-     <li>@(tsee parse-repetition)</li>
-     <li>@(tsee parse-concatenation)</li>
-     <li>@(tsee parse-alternation)</li>
-   </ol>
-
-   <p>
-   Note that when a smaller function calls a larger or equal function,
-   it does so on a smaller input.
-   In particular:
-   @(tsee parse-group) and @(tsee parse-option) call @(tsee parse-alternation)
-   only after consuming a @('\"(\"') or a @('\"[\"');
-   @(tsee parse-alt-rest-comp) calls @(tsee parse-concatenation)
-   only after consuming at least a @('\"\/\"'); and
-   @(tsee parse-conc-rest-comp) calls @(tsee parse-repetition)
-   only after consuming at least one @('c-wsp'), which is never empty.
-   </p>
-
-   <p>
-   The theorems about input lengths
-   that accompany the parsing function definitions
-   are used in the termination proofs,
-   both of the singly recursive functions
-   and of the mutually recursive functions.
-   </p>"
+   (xdoc::p
+    "The theorems about input lengths
+     that accompany the parsing function definitions
+     are used in the termination proofs,
+     both of the singly recursive functions
+     and of the mutually recursive functions."))
 
   :order-subtopics t)
 
