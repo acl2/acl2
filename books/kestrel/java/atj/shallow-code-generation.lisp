@@ -29,6 +29,132 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-symbol ((symbol symbolp))
+  :returns (jexpr jexprp)
+  :short "Generate Java code to build an ACL2 symbol,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atj-gen-symbol),
+     which can be used in both deep and shallow embedding,
+     but it is specialized to the shallow embedding
+     for increasing efficiency and readability.")
+   (xdoc::p
+    "Since AIJ has a number of constants (i.e. static final fields)
+     for certain common symbols,
+     we just reference the appropriate constant
+     if the symbol in question is among those symbols.
+     Otherwise, we build it in the general way.
+     Overall, this makes the generated Java code faster."))
+  (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
+    (if pair
+        (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
+      (jexpr-smethod *atj-jtype-symbol*
+                     "make"
+                     (list (atj-gen-jstring
+                            (symbol-package-name symbol))
+                           (atj-gen-jstring
+                            (symbol-name symbol)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-gen-shallow-value
+  :short "Generate Java code to build an ACL2 value,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently, this is essentially like @(tsee atj-gen-value),
+     which can be used in both deep and shallow embedding,
+     but it uses @(tsee atj-gen-shallow-symbol)
+     instead of @(tsee atj-gen-symbol).")
+   (xdoc::@def "atj-gen-shallow-value")
+   (xdoc::@def "atj-gen-shallow-conspair"))
+
+  (define atj-gen-shallow-conspair ((conspair consp)
+                                    (jvar-value-base stringp)
+                                    (jvar-value-index posp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
+                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+    :parents nil
+    (b* (((unless (mbt (consp conspair)))
+          (mv nil (jexpr-name "irrelevant") jvar-value-index))
+         ((mv car-jblock
+              car-jexpr
+              jvar-value-index) (atj-gen-shallow-value (car conspair)
+                                                       jvar-value-base
+                                                       jvar-value-index))
+         ((mv car-locvar-jblock
+              car-jvar
+              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
+                                                         jvar-value-base
+                                                         jvar-value-index
+                                                         car-jexpr))
+         ((mv cdr-jblock
+              cdr-jexpr
+              jvar-value-index) (atj-gen-shallow-value (cdr conspair)
+                                                       jvar-value-base
+                                                       jvar-value-index))
+         ((mv cdr-locvar-jblock
+              cdr-jvar
+              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
+                                                         jvar-value-base
+                                                         jvar-value-index
+                                                         cdr-jexpr))
+         (jblock (append car-jblock
+                         car-locvar-jblock
+                         cdr-jblock
+                         cdr-locvar-jblock))
+         (jexpr (jexpr-smethod *atj-jtype-cons*
+                               "make"
+                               (list (jexpr-name car-jvar)
+                                     (jexpr-name cdr-jvar)))))
+      (mv jblock jexpr jvar-value-index))
+    :measure (two-nats-measure (acl2-count conspair) 0))
+
+  (define atj-gen-shallow-value (value
+                                 (jvar-value-base stringp)
+                                 (jvar-value-index posp))
+    :returns (mv (jblock jblockp)
+                 (jexpr jexprp)
+                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+    :parents nil
+    (cond ((characterp value) (mv nil
+                                  (atj-gen-char value)
+                                  jvar-value-index))
+          ((stringp value) (mv nil
+                               (atj-gen-string value)
+                               jvar-value-index))
+          ((symbolp value) (mv nil
+                               (atj-gen-shallow-symbol value)
+                               jvar-value-index))
+          ((integerp value) (mv nil
+                                (atj-gen-integer value)
+                                jvar-value-index))
+          ((rationalp value) (mv nil
+                                 (atj-gen-rational value)
+                                 jvar-value-index))
+          ((acl2-numberp value) (mv nil
+                                    (atj-gen-number value)
+                                    jvar-value-index))
+          ((consp value) (atj-gen-shallow-conspair value
+                                                   jvar-value-base
+                                                   jvar-value-index))
+          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
+                            value)
+                     (mv nil (jexpr-name "irrelevant") jvar-value-index))))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-CONSPAIR decreases:
+    :measure (two-nats-measure (acl2-count value) 1))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-gen-shallow-value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-fnname ((fn symbolp)
                                 (pkg-class-names string-string-alistp)
                                 (fn-method-names symbol-string-alistp)
@@ -1022,7 +1148,7 @@
          ((when (fquotep term))
           (b* ((value (unquote-term term))
                ((mv jblock jexpr jvar-value-index)
-                (atj-gen-value value jvar-value-base jvar-value-index))
+                (atj-gen-shallow-value value jvar-value-base jvar-value-index))
                (jexpr (atj-adapt-jexpr-to-type jexpr src-type dst-type)))
             (mv jblock jexpr jvar-value-index jvar-result-index))))
       (atj-gen-shallow-fnapp (ffn-symb term)

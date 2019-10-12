@@ -160,8 +160,7 @@
     for certain common symbols,
     we just reference the appropriate constant
     if the symbol in question is among those symbols.
-    Otherwise, we build it in the general way.
-    Overall, this makes the generated Java code faster.")
+    Otherwise, we build it in the general way.")
   (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
     (if pair
         (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
