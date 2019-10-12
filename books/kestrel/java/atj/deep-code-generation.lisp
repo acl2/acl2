@@ -532,3 +532,24 @@
                  :superclass? nil
                  :superinterfaces nil
                  :body body-jclass)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-deep-jcunit ((guards$ booleanp)
+                             (java-package$ maybe-stringp)
+                             (java-class$ maybe-stringp)
+                             (pkgs string-listp)
+                             (fns symbol-listp)
+                             (verbose$ booleanp)
+                             state)
+  :returns (jcunit jcunitp)
+  :verify-guards nil
+  :short "Generate the main Java compilation unit,
+          in the deep embedding approach."
+  (b* ((class (atj-gen-deep-jclass pkgs fns guards$ java-class$ verbose$ state)))
+    (make-jcunit :package? java-package$
+                 :imports (list (str::cat *atj-aij-jpackage* ".*")
+                                "java.math.BigInteger"
+                                "java.util.ArrayList"
+                                "java.util.List")
+                 :types (list class))))

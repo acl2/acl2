@@ -1619,3 +1619,42 @@
                      :body body-jclass)
         pkg-class-names
         fn-method-names)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-jcunit ((guards$ booleanp)
+                                (java-package$ maybe-stringp)
+                                (java-class$ maybe-stringp)
+                                (pkgs string-listp)
+                                (fns symbol-listp)
+                                (verbose$ booleanp)
+                                state)
+  :returns (mv (jcunit jcunitp)
+               (pkg-class-names "A @(tsee string-string-alistp).")
+               (fn-method-names "A @(tsee symbol-string-alistp)."))
+  :verify-guards nil
+  :short "Generate the main Java compilation unit,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the generated imports are changed,
+     the constant @(tsee *atj-disallowed-class-names*)
+     must be modified accordingly.")
+   (xdoc::p
+    "We also return the alist from ACL2 package names to Java class names
+     and the alist from ACL2 function symbols to Java method names,
+     which must be eventually passed to the functions that generate
+     the Java test class."))
+  (b* (((mv class pkg-class-names fn-method-names)
+        (atj-gen-shallow-jclass pkgs fns guards$ java-class$ verbose$ state))
+       (cunit
+        (make-jcunit
+         :package? java-package$
+         :imports (list (str::cat *atj-aij-jpackage* ".*")
+                        ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
+                        "java.math.BigInteger"
+                        "java.util.ArrayList"
+                        "java.util.List")
+         :types (list class))))
+    (mv cunit pkg-class-names fn-method-names)))
