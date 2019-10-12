@@ -50,7 +50,7 @@
    (xdoc::p
     "We reference the constants without the class name
      because we import all these constants;
-     see @(tsee atj-gen-jcunit)."))
+     see @(tsee atj-gen-shallow-jcunit)."))
   (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
     (if pair
         (jexpr-name (cdr pair))

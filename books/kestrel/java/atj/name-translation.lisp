@@ -342,7 +342,7 @@
           *boolean-literals*
           (list *null-literal*)
           *atj-aij-class-names*
-          ;; keep in sync with ATJ-GEN-JCUNIT:
+          ;; keep in sync with ATJ-GEN-SHALLOW-JCUNIT:
           (list "BigInteger"
                 "ArrayList"
                 "List"))
