@@ -174,6 +174,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-symbols ((symbols symbol-listp))
+  :returns (jexprs jexpr-listp)
+  :short "Lift @(tsee atj-gen-symbol) to lists."
+  (cond ((endp symbols) nil)
+        (t (cons (atj-gen-symbol (car symbols))
+                 (atj-gen-symbols (cdr symbols))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-integer ((integer integerp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 integer."
@@ -357,15 +366,6 @@
              (mv (append first-jblock rest-jblock)
                  (cons first-jexpr rest-jexrps)
                  jvar-value-index)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-symbols ((symbols symbol-listp))
-  :returns (jexprs jexpr-listp)
-  :short "Lift @(tsee atj-gen-symbol) to lists."
-  (cond ((endp symbols) nil)
-        (t (cons (atj-gen-symbol (car symbols))
-                 (atj-gen-symbols (cdr symbols))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
