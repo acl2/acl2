@@ -1651,10 +1651,10 @@
        (cunit
         (make-jcunit
          :package? java-package$
-         :imports (list (str::cat *atj-aij-jpackage* ".*")
+         :imports (list (jimport nil (str::cat *atj-aij-jpackage* ".*"))
                         ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
-                        "java.math.BigInteger"
-                        "java.util.ArrayList"
-                        "java.util.List")
+                        (jimport nil "java.math.BigInteger")
+                        (jimport nil "java.util.ArrayList")
+                        (jimport nil "java.util.List"))
          :types (list class))))
     (mv cunit pkg-class-names fn-method-names)))

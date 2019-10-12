@@ -524,14 +524,20 @@
                    (print-jclass (car classes) indent-level)
                    (print-jclass-list (cdr classes) indent-level)))))
 
-(define print-jimports ((names string-listp) (indent-level natp))
+(define print-jimport ((import jimportp) (indent-level natp))
+  :returns (line msgp)
+  :short "Pretty-print an import declaration."
+  (print-jline (msg "import ~s0~@1;"
+                    (if (jimport->static? import) "static " "")
+                    (jimport->target import))
+               indent-level))
+
+(define print-jimports ((imports jimport-listp) (indent-level natp))
   :returns (lines msg-listp)
   :short "Pretty-print a sequence of import declarations."
-  (cond ((endp names) nil)
-        (t (cons (print-jline (msg "import ~@0;"
-                                   (car names))
-                              indent-level)
-                 (print-jimports (cdr names) indent-level)))))
+  (cond ((endp imports) nil)
+        (t (cons (print-jimport (car imports) indent-level)
+                 (print-jimports (cdr imports) indent-level)))))
 
 (define print-jcunit ((cunit jcunitp))
   :returns (lines msg-listp)

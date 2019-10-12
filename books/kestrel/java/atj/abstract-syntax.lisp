@@ -788,6 +788,27 @@
         (t (cons (jcmember-class (car jclasses))
                  (jclasses-to-jcmembers (cdr jclasses))))))
 
+(fty::defprod jimport
+  :short "Java import declarations [JLS:7.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We capture import declarations via
+     a flag saying whether the import is static or not
+     and a string for the name of the imported entity.
+     The string may end with a dot and a star,
+     in which case it captures an on-demand import."))
+  ((static? bool)
+   (target stringp))
+  :pred jimportp)
+
+(fty::deflist jimport-list
+  :short "True lists of Java import declarations."
+  :elt-type jimport
+  :true-listp t
+  :elementp-of-nil nil
+  :pred jimport-listp)
+
 (fty::defprod jcunit
   :short "Java compilation units [JLS:7.3]."
   :long
@@ -800,15 +821,9 @@
      as an ACL2 string for the name.
      This declaration is optional.")
    (xdoc::p
-    "We capture the import declarations [JLS:7.5]
-     as a list of ACL2 strings for the names of the imported entities,
-     possibly including the on-demand notation
-     (in the latter case, the string ends with dot and star).
-     We do not capture static import declarations.")
-   (xdoc::p
     "We do not capture interfaces, so a type declaration [JLS:7.6]
      is always a class declaration."))
   ((package? maybe-string)
-   (imports string-list)
+   (imports jimport-list)
    (types jclass-list))
   :pred jcunitp)

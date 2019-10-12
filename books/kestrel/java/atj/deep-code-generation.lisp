@@ -548,8 +548,8 @@
           in the deep embedding approach."
   (b* ((class (atj-gen-deep-jclass pkgs fns guards$ java-class$ verbose$ state)))
     (make-jcunit :package? java-package$
-                 :imports (list (str::cat *atj-aij-jpackage* ".*")
-                                "java.math.BigInteger"
-                                "java.util.ArrayList"
-                                "java.util.List")
+                 :imports (list (jimport nil (str::cat *atj-aij-jpackage* ".*"))
+                                (jimport nil "java.math.BigInteger")
+                                (jimport nil "java.util.ArrayList")
+                                (jimport nil "java.util.List"))
                  :types (list class))))

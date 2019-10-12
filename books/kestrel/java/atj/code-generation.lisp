@@ -494,8 +494,8 @@
   :verify-guards nil
   :short "Generate the test Java compilation unit."
   (make-jcunit :package? java-package$
-               :imports (list (str::cat *atj-aij-jpackage* ".*")
-                              "java.math.BigInteger")
+               :imports (list (jimport nil (str::cat *atj-aij-jpackage* ".*"))
+                              (jimport nil "java.math.BigInteger"))
                :types (list (atj-gen-test-jclass tests$
                                                  deep$
                                                  guards$
