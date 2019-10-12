@@ -481,6 +481,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-deep-call-jmethod ()
+  :returns (jmethod jmethodp)
+  :short "Generate the Java method to call ACL2 functions,
+          in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a public static method,
+     which provides the means for external Java code to call
+     the deeply embedded Java representations of ACL2 functions."))
+  (b* ((jmethod-param-function (make-jparam :final? nil
+                                            :type *atj-jtype-symbol*
+                                            :name "function"))
+       (jmethod-param-arguments (make-jparam :final? nil
+                                             :type (jtype-array
+                                                    *atj-jtype-value*)
+                                             :name "arguments"))
+       (jmethod-params (list jmethod-param-function
+                             jmethod-param-arguments))
+       (exception-message "The ACL2 environment is not initialized.")
+       (exception-message-jexpr (atj-gen-jstring exception-message))
+       (throw-jblock (jblock-throw (jexpr-newclass
+                                    (jtype-class "IllegalStateException")
+                                    (list exception-message-jexpr))))
+       (if-jblock (jblock-if (jexpr-unary (junop-logcompl)
+                                          (jexpr-name "initialized"))
+                             throw-jblock))
+       (function-jexpr (jexpr-smethod *atj-jtype-named-fn*
+                                      "make"
+                                      (list (jexpr-name "function"))))
+       (call-jexpr (jexpr-imethod function-jexpr
+                                  "call"
+                                  (list (jexpr-name "arguments"))))
+       (return-jblock (jblock-return call-jexpr))
+       (jmethod-body (append if-jblock
+                             return-jblock)))
+    (make-jmethod :access (jaccess-public)
+                  :abstract? nil
+                  :static? t
+                  :final? nil
+                  :synchronized? nil
+                  :native? nil
+                  :strictfp? nil
+                  :result (jresult-type *atj-jtype-value*)
+                  :name "call"
+                  :params jmethod-params
+                  :throws (list *atj-jclass-eval-exc*)
+                  :body jmethod-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-deep-jclass ((pkgs string-listp)
                              (fns symbol-listp)
                              (guards$ booleanp)
@@ -517,7 +568,7 @@
        (fns-jblock (append fns-build-jblock
                            fns-validate-jblock))
        (init-jmethod (atj-gen-init-jmethod pkgs fns-jblock))
-       (call-jmethod (atj-gen-call-jmethod))
+       (call-jmethod (atj-gen-deep-call-jmethod))
        (body-jclass (append (list (jcmember-field init-jfield))
                             (jmethods-to-jcmembers pkg-jmethods)
                             (jmethods-to-jcmembers fn-jmethods)
