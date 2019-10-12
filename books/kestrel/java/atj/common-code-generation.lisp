@@ -786,3 +786,58 @@
                   :params (list jmethod-param)
                   :throws (list *atj-jclass-eval-exc*)
                   :body jmethod-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-init-jmethod ((pkgs string-listp) (fns-jblock? jblockp))
+  :returns (jmethod jmethodp)
+  :short "Generate the Java public method to initialize the ACL2 environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a public static method,
+     which must be called before calling the method to call ACL2 functions,
+     and also before calling the AIJ methods
+     to translate between Java and ACL2 values.")
+   (xdoc::p
+    "If the initialization flag is cleared,
+     the initialization is performed and the flag is set.
+     Otherwise, an exception is thrown,
+     because initialization must occur only once.")
+   (xdoc::p
+    "If @(':deep') is @('t'),
+     @('fns-jblock?') contains code
+     to build the deeply embedded representations of the ACL2 functions and
+     to validate the definitions of all the deeply embedded ACL2 functions.
+     If @(':deep') is @('nil'), @('fns-jblock?') is @('nil').
+     The presence or absence of code in this block
+     is the only difference between deep and shallow embedding
+     in the initialization method generated here."))
+  (b* ((exception-message "The ACL2 environment is already initialized.")
+       (exception-message-jexpr (atj-gen-jstring exception-message))
+       (throw-jblock (jblock-throw (jexpr-newclass
+                                    (jtype-class "IllegalStateException")
+                                    (list exception-message-jexpr))))
+       (if-jblock (jblock-if (jexpr-name "initialized")
+                             throw-jblock))
+       (pkgs-jblock (atj-gen-pkgs pkgs))
+       (pkg-witness-jblock (atj-gen-pkg-witness))
+       (initialize-jblock (jblock-asg-name "initialized"
+                                           (jexpr-literal-true)))
+       (jmethod-body (append if-jblock
+                             pkgs-jblock
+                             pkg-witness-jblock
+                             fns-jblock?
+                             initialize-jblock)))
+    (make-jmethod :access (jaccess-public)
+                  :abstract? nil
+                  :static? t
+                  :final? nil
+                  :synchronized? nil
+                  :native? nil
+                  :strictfp? nil
+                  :result (jresult-void)
+                  :name "initialize"
+                  :params nil
+                  :throws nil
+                  :body jmethod-body)))

@@ -99,72 +99,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-init-jmethod ((pkgs string-listp)
-                              (fns symbol-listp)
-                              (deep$ booleanp))
-  :returns (jmethod jmethodp)
-  :short "Generate the Java public method to initialize the ACL2 environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a public static method,
-     which must be called before calling the method to call ACL2 functions,
-     and also before calling the AIJ methods
-     to translate between Java and ACL2 values.")
-   (xdoc::p
-    "If the initialization flag is cleared,
-     the initialization is performed and the flag is set.
-     Otherwise, an exception is thrown,
-     because initialization must occur only once.")
-   (xdoc::p
-    "If @(':deep') is @('t'), we generate code
-     to build the deeply embedded representations of the ACL2 functions.
-     Otherwise, we skip this step.
-     The representations of the ACL2 packages are needed for
-     both deep and shallow embedding.")
-   (xdoc::p
-    "If @(':deep') is @('t'), we generate code
-     to validate the definitions of all the deeply embedded ACL2 functions.
-     Otherwise, we skip this step."))
-  (b* ((exception-message "The ACL2 environment is already initialized.")
-       (exception-message-jexpr (atj-gen-jstring exception-message))
-       (throw-jblock (jblock-throw (jexpr-newclass
-                                    (jtype-class "IllegalStateException")
-                                    (list exception-message-jexpr))))
-       (if-jblock (jblock-if (jexpr-name "initialized")
-                             throw-jblock))
-       (pkgs-jblock (atj-gen-pkgs pkgs))
-       (pkg-witness-jblock (atj-gen-pkg-witness))
-       (fns-jblock? (if deep$
-                        (atj-gen-deep-fndefs fns)
-                      nil))
-       (validate-jblock (and deep$
-                             (jblock-smethod *atj-jtype-named-fn*
-                                             "validateAll"
-                                             nil)))
-       (initialize-jblock (jblock-asg-name "initialized"
-                                           (jexpr-literal-true)))
-       (jmethod-body (append if-jblock
-                             pkgs-jblock
-                             pkg-witness-jblock
-                             fns-jblock?
-                             validate-jblock
-                             initialize-jblock)))
-    (make-jmethod :access (jaccess-public)
-                  :abstract? nil
-                  :static? t
-                  :final? nil
-                  :synchronized? nil
-                  :native? nil
-                  :strictfp? nil
-                  :result (jresult-void)
-                  :name "initialize"
-                  :params nil
-                  :throws nil
-                  :body jmethod-body)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-gen-jclass ((pkgs string-listp)
                         (fns symbol-listp)
                         (deep$ booleanp)
@@ -230,7 +164,12 @@
             (mv (jclasses-to-jcmembers jclasses)
                 pkg-class-names
                 fn-method-names))))
-       (init-jmethod (atj-gen-init-jmethod pkgs fns deep$))
+       (fns-jblock? (and deep$
+                         (append (atj-gen-deep-fndefs fns)
+                                 (jblock-smethod *atj-jtype-named-fn*
+                                                 "validateAll"
+                                                 nil))))
+       (init-jmethod (atj-gen-init-jmethod pkgs fns-jblock?))
        (call-jmethod? (and deep$
                            (list (atj-gen-call-jmethod))))
        (body-jclass (append (list (jcmember-field init-jfield))
