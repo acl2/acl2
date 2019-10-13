@@ -17,7 +17,7 @@
 (define macro-args+ ((mac (macro-namep mac wrld))
                      (wrld plist-worldp))
   :returns (result true-listp)
-  :parents (std/system)
+  :parents (std/system/macro-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee macro-args).")

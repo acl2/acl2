@@ -17,7 +17,7 @@
 (define macro-keyword-args+ ((mac (macro-namep mac wrld))
                              (wrld plist-worldp))
   :returns (keyword-args symbol-alistp)
-  :parents (std/system)
+  :parents (std/system/macro-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee macro-keyword-args).")

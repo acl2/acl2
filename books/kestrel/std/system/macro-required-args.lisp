@@ -18,7 +18,7 @@
 (define macro-required-args ((mac symbolp) (wrld plist-worldp))
   :returns (required-args "A @(tsee symbol-listp).")
   :verify-guards nil
-  :parents (std/system)
+  :parents (std/system/macro-queries)
   :short "Required arguments of a macro, in order."
   :long
   (xdoc::topstring

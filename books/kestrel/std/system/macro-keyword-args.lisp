@@ -18,7 +18,7 @@
 (define macro-keyword-args ((mac symbolp) (wrld plist-worldp))
   :returns (keyword-args "A @(tsee symbol-alistp).")
   :verify-guards nil
-  :parents (std/system)
+  :parents (std/system/macro-queries)
   :short "Keyword arguments of a macro, in order, with their default values."
   :long
   (xdoc::topstring

@@ -17,7 +17,7 @@
 (define macro-required-args+ ((mac (macro-namep mac wrld))
                               (wrld plist-worldp))
   :returns (required-args symbol-listp)
-  :parents (std/system)
+  :parents (std/system/macro-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee macro-required-args).")
