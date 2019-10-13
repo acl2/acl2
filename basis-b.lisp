@@ -2904,15 +2904,20 @@
 (defun untranslate-and (p q iff-flg)
 
 ; The following theorem illustrates the various cases:
-; (thm (and (equal (and t q) q)
-;           (iff (and p t) p)
+
+; (thm (and (iff (and p t) p)
 ;           (equal (and p (and q1 q2)) (and p q1 q2))))
+
+; We formerly also gave special treatment corresponding to the cases (equal
+; (and t q) q) and (iff (and p t) p).  But we stopped doing so after
+; Version_8.2, when Stephen Westfold pointed out the confusion arising in the
+; proof-builder after rewriting a subterm, tst, to t, in a term (and tst x2),
+; i.e., (if tst x2 'nil).  A similar problem occurs for (and x2 tst).
 
 ; Warning: Keep this in sync with and-addr.
 
-  (cond ((eq p t) q)
-        ((and iff-flg (eq q t)) p)
-        ((and (consp q)
+  (declare (ignore iff-flg))
+  (cond ((and (consp q)
               (eq (car q) 'and))
          (cons 'and (cons p (cdr q))))
         (t (list 'and p q))))

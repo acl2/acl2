@@ -1493,14 +1493,8 @@
 ; returned here "assumes" that this further dive has already been done.)
 
   (case-match term
-    (('if *t* x2 *nil*) ; see untranslate-and
-     (addr-recur 2
-                 (and-addr n x2 iff-flg)))
     (('if x1 x2 *nil*)
-     (cond ((and iff-flg (equal x2 *t*)) ; see untranslate-and
-            (addr-recur 1
-                        (and-addr n x1 t)))
-           ((int= n 1)
+     (cond ((int= n 1)
             (mv '(1) x1 t nil))
            (t
             (addr-recur 2
