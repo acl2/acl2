@@ -15,52 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (guard-verified-p 'len (w state)))
-
-(assert! (guard-verified-p 'cons (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards t)) x)
- (assert! (guard-verified-p 'f (w state))))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert! (not (guard-verified-p 'f (w state)))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ (fix x) (fix y))))
- (verify-guards th)
- (assert! (guard-verified-p 'th (w state))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ x y)))
- (assert! (not (guard-verified-p 'th (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (guard-verified-p+ 'len (w state)))
-
-(assert! (guard-verified-p+ 'cons (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards t)) x)
- (assert! (guard-verified-p+ 'f (w state))))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert! (not (guard-verified-p+ 'f (w state)))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ (fix x) (fix y))))
- (verify-guards th)
- (assert! (guard-verified-p+ 'th (w state))))
-
-(must-succeed*
- (defthm th (acl2-numberp (+ x y)))
- (assert! (not (guard-verified-p+ 'th (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (not (non-executablep 'not (w state))))
 
 (assert! (not (non-executablep 'len (w state))))

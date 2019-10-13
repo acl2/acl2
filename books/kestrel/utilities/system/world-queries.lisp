@@ -28,6 +28,8 @@
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
 (include-book "kestrel/std/system/logic-function-namep" :dir :system)
 (include-book "kestrel/std/system/logical-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-args-plus" :dir :system)
@@ -99,31 +101,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define guard-verified-p ((fn/thm symbolp) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Check if a named function or theorem is @(tsee guard)-verified."
-  :long
-  "<p>
-   See @(tsee guard-verified-p+) for a logic-friendly variant of this utility.
-   </p>"
-  (eq (symbol-class fn/thm wrld) :common-lisp-compliant))
-
-(define guard-verified-p+ ((fn/thm (or (function-namep fn/thm wrld)
-                                       (theorem-namep fn/thm wrld)))
-                           (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee guard-verified-p)."
-  :long
-  "<p>
-   This returns the same result as @(tsee guard-verified-p),
-   but it has a stronger guard.
-   </p>"
-  (guard-verified-p fn/thm wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
