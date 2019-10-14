@@ -51,10 +51,10 @@
     "We reference the constants without the class name
      because we import all these constants;
      see @(tsee atj-gen-shallow-jcunit)."))
-  (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
+  (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
     (if pair
         (jexpr-name (cdr pair))
-      (jexpr-smethod *atj-jtype-symbol*
+      (jexpr-smethod *aij-jtype-symbol*
                      "make"
                      (list (atj-gen-jstring
                             (symbol-package-name symbol))
@@ -92,7 +92,7 @@
                                                        jvar-value-index))
          ((mv car-locvar-jblock
               car-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
+              jvar-value-index) (atj-gen-jlocvar-indexed *aij-jtype-value*
                                                          jvar-value-base
                                                          jvar-value-index
                                                          car-jexpr))
@@ -103,7 +103,7 @@
                                                        jvar-value-index))
          ((mv cdr-locvar-jblock
               cdr-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
+              jvar-value-index) (atj-gen-jlocvar-indexed *aij-jtype-value*
                                                          jvar-value-base
                                                          jvar-value-index
                                                          cdr-jexpr))
@@ -111,7 +111,7 @@
                          car-locvar-jblock
                          cdr-jblock
                          cdr-locvar-jblock))
-         (jexpr (jexpr-smethod *atj-jtype-cons*
+         (jexpr (jexpr-smethod *aij-jtype-cons*
                                "make"
                                (list (jexpr-name car-jvar)
                                      (jexpr-name cdr-jvar)))))
@@ -287,19 +287,19 @@
      and then a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol') for the keyword @(':int')
      and whose second element is the @('Acl2Integer')."))
-  (b* ((acl2-integer-jexpr (jexpr-smethod *atj-jtype-int*
+  (b* ((acl2-integer-jexpr (jexpr-smethod *aij-jtype-int*
                                           "make"
                                           (list jexpr)))
        (acl2-symbol-nil-jexpr (jexpr-name "NIL"))
-       (acl2-inner-cons-jexpr (jexpr-smethod *atj-jtype-cons*
+       (acl2-inner-cons-jexpr (jexpr-smethod *aij-jtype-cons*
                                              "make"
                                              (list acl2-integer-jexpr
                                                    acl2-symbol-nil-jexpr)))
-       (acl2-keyword-int-jexpr (jexpr-smethod *atj-jtype-symbol*
+       (acl2-keyword-int-jexpr (jexpr-smethod *aij-jtype-symbol*
                                               "makeKeyword"
                                               (list
                                                (jexpr-literal-string "INT"))))
-       (acl2-outer-cons-jexpr (jexpr-smethod *atj-jtype-cons*
+       (acl2-outer-cons-jexpr (jexpr-smethod *aij-jtype-cons*
                                              "make"
                                              (list acl2-keyword-int-jexpr
                                                    acl2-inner-cons-jexpr))))
@@ -333,13 +333,13 @@
      get its @(tsee car),
      cast it to @('Acl2Integer'),
      and get its numeric value as an @('int')."))
-  (b* ((acl2-outer-cons-jexpr (jexpr-paren (jexpr-cast *atj-jtype-cons* jexpr)))
+  (b* ((acl2-outer-cons-jexpr (jexpr-paren (jexpr-cast *aij-jtype-cons* jexpr)))
        (acl2-cdr-jexpr (jexpr-imethod acl2-outer-cons-jexpr "getCdr" nil))
        (acl2-inner-cons-jexpr (jexpr-paren
-                               (jexpr-cast *atj-jtype-cons* acl2-cdr-jexpr)))
+                               (jexpr-cast *aij-jtype-cons* acl2-cdr-jexpr)))
        (acl2-car-jexpr (jexpr-imethod acl2-inner-cons-jexpr "getCar" nil))
        (acl2-integer-jexpr (jexpr-paren
-                            (jexpr-cast *atj-jtype-int* acl2-car-jexpr))))
+                            (jexpr-cast *aij-jtype-int* acl2-car-jexpr))))
     (jexpr-imethod acl2-integer-jexpr "getJavaInt" nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1229,7 +1229,7 @@
                                   (guards$ booleanp)
                                   (curr-pkg stringp)
                                   (wrld plist-worldp))
-  :guard (and (atj-aij-nativep fn)
+  :guard (and (aij-nativep fn)
               (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :verify-guards nil
@@ -1370,7 +1370,7 @@
           (if "execIf")
           (t (impossible))))
        (jcall-arg-jexprs (jexpr-name-list jmethod-param-names))
-       (jcall (jexpr-smethod *atj-jtype-native-fn*
+       (jcall (jexpr-smethod *aij-jtype-native-fn*
                              jcall-method-name
                              jcall-arg-jexprs))
        (jmethod-body (jblock-return jcall)))
@@ -1384,9 +1384,9 @@
                   :result (jresult-type (atj-type-to-jtype fn-out-type))
                   :name jmethod-name
                   :params jmethod-params
-                  :throws (list *atj-jclass-eval-exc*)
+                  :throws (list *aij-jclass-eval-exc*)
                   :body jmethod-body))
-  :guard-hints (("Goal" :in-theory (enable atj-aij-nativep primitivep))))
+  :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1491,7 +1491,7 @@
                   :result (jresult-type (atj-type-to-jtype out-type))
                   :name jmethod-name
                   :params jmethod-params
-                  :throws (list *atj-jclass-eval-exc*)
+                  :throws (list *aij-jclass-eval-exc*)
                   :body jmethod-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1510,7 +1510,7 @@
   :short "Generate a shallowly embedded
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
-  (if (atj-aij-nativep fn)
+  (if (aij-nativep fn)
       (atj-gen-shallow-fnnative fn
                                 pkg-class-names
                                 fn-method-names
@@ -1756,16 +1756,16 @@
   :returns (imports jimport-listp)
   :short "Generate Java static import declarations
           for the constants for symbols in AIJ."
-  (atj-gen-shallow-symbol-imports-aux (strip-cdrs *atj-aij-symbol-constants*))
+  (atj-gen-shallow-symbol-imports-aux (strip-cdrs *aij-symbol-constants*))
 
   :prepwork
   ((define atj-gen-shallow-symbol-imports-aux ((constants string-listp))
      :returns (imports jimport-listp)
      (cond ((endp constants) nil)
            (t (cons (make-jimport :static? t
-                                  :target (str::cat *atj-aij-jpackage*
+                                  :target (str::cat *aij-jpackage*
                                                     "."
-                                                    *atj-jclass-symbol*
+                                                    *aij-jclass-symbol*
                                                     "."
                                                     (car constants)))
                     (atj-gen-shallow-symbol-imports-aux (cdr constants))))))))
@@ -1804,7 +1804,7 @@
          :imports (append
                    (list
                     (make-jimport :static? nil
-                                  :target (str::cat *atj-aij-jpackage* ".*"))
+                                  :target (str::cat *aij-jpackage* ".*"))
                     ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
                     (make-jimport :static? nil :target "java.math.BigInteger")
                     (make-jimport :static? nil :target "java.util.ArrayList")

@@ -190,11 +190,11 @@
                    NIL or a valid Java package name ~
                    consisting of only ASCII characters."
                   java-package))
-       ((when (equal java-package *atj-aij-jpackage*))
+       ((when (equal java-package *aij-jpackage*))
         (er-soft+ ctx t nil
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
-                  java-package *atj-aij-jpackage*)))
+                  java-package *aij-jpackage*)))
     (value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -579,7 +579,7 @@
                                                         collected-chk
                                                         deep$
                                                         guards$))
-         ((when (atj-aij-nativep fn)) (mv worklist-gen worklist-chk nil))
+         ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
                      (member-eq fn *atj-primitive-fns*)))

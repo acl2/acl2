@@ -395,14 +395,14 @@
   :returns (jtype jtypep :hyp :guard)
   :short "Java type corresponding to each ATJ type."
   (case type
-    (:character *atj-jtype-char*)
-    (:string *atj-jtype-string*)
-    (:symbol *atj-jtype-symbol*)
-    (:integer *atj-jtype-int*)
-    (:rational *atj-jtype-rational*)
-    (:number *atj-jtype-number*)
-    (:cons *atj-jtype-cons*)
-    (:value *atj-jtype-value*)
+    (:character *aij-jtype-char*)
+    (:string *aij-jtype-string*)
+    (:symbol *aij-jtype-symbol*)
+    (:integer *aij-jtype-int*)
+    (:rational *aij-jtype-rational*)
+    (:number *aij-jtype-number*)
+    (:cons *aij-jtype-cons*)
+    (:value *aij-jtype-value*)
     (:jint (jtype-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

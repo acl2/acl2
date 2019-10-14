@@ -40,7 +40,7 @@
                                              jvar-value-base
                                              jvar-value-index))
        (jblock value-jblock)
-       (jexpr (jexpr-smethod *atj-jtype-qconst*
+       (jexpr (jexpr-smethod *aij-jtype-qconst*
                              "make"
                              (list value-jexpr))))
     (mv jblock jexpr jvar-value-index)))
@@ -50,7 +50,7 @@
 (define atj-gen-deep-var ((var symbolp "The ACL2 variable."))
   :returns (jexpr jexprp)
   :short "Generate Java code to build a deeply embedded ACL2 variable."
-  (jexpr-smethod *atj-jtype-var*
+  (jexpr-smethod *aij-jtype-var*
                  "make"
                  (list (atj-gen-symbol var))))
 
@@ -63,7 +63,7 @@
   :long
   (xdoc::topstring-p
    "The generated code builds an array of the formals as symbols.")
-  (jexpr-newarray-init *atj-jtype-symbol*
+  (jexpr-newarray-init *aij-jtype-symbol*
                        (atj-gen-symbols formals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,7 +124,7 @@
               jvar-lambda-index)
           (if (symbolp fn)
               (mv nil
-                  (jexpr-smethod *atj-jtype-named-fn*
+                  (jexpr-smethod *aij-jtype-named-fn*
                                  "make"
                                  (list (atj-gen-symbol fn)))
                   jvar-value-index
@@ -151,14 +151,14 @@
                                                      jvar-lambda-base
                                                      jvar-lambda-index
                                                      guards$))
-         (args-jexpr (jexpr-newarray-init *atj-jtype-term* arg-jexprs))
-         (fnapp-jexpr (jexpr-smethod *atj-jtype-fn-app*
+         (args-jexpr (jexpr-newarray-init *aij-jtype-term* arg-jexprs))
+         (fnapp-jexpr (jexpr-smethod *aij-jtype-fn-app*
                                      "make"
                                      (list fn-jexpr
                                            args-jexpr)))
          ((mv fnapp-locvar-jblock
               fnapp-jvar
-              jvar-term-index) (atj-gen-jlocvar-indexed *atj-jtype-term*
+              jvar-term-index) (atj-gen-jlocvar-indexed *aij-jtype-term*
                                                         jvar-term-base
                                                         jvar-term-index
                                                         fnapp-jexpr)))
@@ -212,14 +212,14 @@
                                                     jvar-lambda-base
                                                     jvar-lambda-index
                                                     guards$))
-         (lambda-jexpr (jexpr-smethod *atj-jtype-lambda*
+         (lambda-jexpr (jexpr-smethod *aij-jtype-lambda*
                                       "make"
                                       (list formals-jexpr
                                             body-jexpr)))
          ((mv lambda-locvar-jblock
               lambda-jvar
               jvar-lambda-index) (atj-gen-jlocvar-indexed
-                                  *atj-jtype-lambda*
+                                  *aij-jtype-lambda*
                                   jvar-lambda-base
                                   jvar-lambda-index
                                   lambda-jexpr)))
@@ -405,12 +405,12 @@
        (out-type :value) ; actually irrelevant
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type t guards$ wrld))
-       (fn-jblock (jblock-locvar *atj-jtype-named-fn*
+       (fn-jblock (jblock-locvar *aij-jtype-named-fn*
                                  jvar-function
-                                 (jexpr-smethod *atj-jtype-named-fn*
+                                 (jexpr-smethod *aij-jtype-named-fn*
                                                 "make"
                                                 (list (atj-gen-symbol fn)))))
-       (formals-jblock (jblock-locvar (jtype-array *atj-jtype-symbol*)
+       (formals-jblock (jblock-locvar (jtype-array *aij-jtype-symbol*)
                                       jvar-formals
                                       (atj-gen-deep-formals formals)))
        ((mv body-jblock
@@ -418,7 +418,7 @@
             & & &) (atj-gen-deep-term
                     body "value" 1 "term" 1 "lambda" 1 guards$))
        (body-jblock (append body-jblock
-                            (jblock-locvar *atj-jtype-term*
+                            (jblock-locvar *aij-jtype-term*
                                            jvar-body
                                            body-jexpr)))
        (def-jblock (jblock-imethod (jexpr-name jvar-function)
@@ -492,11 +492,11 @@
      which provides the means for external Java code to call
      the deeply embedded Java representations of ACL2 functions."))
   (b* ((jmethod-param-function (make-jparam :final? nil
-                                            :type *atj-jtype-symbol*
+                                            :type *aij-jtype-symbol*
                                             :name "function"))
        (jmethod-param-arguments (make-jparam :final? nil
                                              :type (jtype-array
-                                                    *atj-jtype-value*)
+                                                    *aij-jtype-value*)
                                              :name "arguments"))
        (jmethod-params (list jmethod-param-function
                              jmethod-param-arguments))
@@ -508,7 +508,7 @@
        (if-jblock (jblock-if (jexpr-unary (junop-logcompl)
                                           (jexpr-name "initialized"))
                              throw-jblock))
-       (function-jexpr (jexpr-smethod *atj-jtype-named-fn*
+       (function-jexpr (jexpr-smethod *aij-jtype-named-fn*
                                       "make"
                                       (list (jexpr-name "function"))))
        (call-jexpr (jexpr-imethod function-jexpr
@@ -524,10 +524,10 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type *atj-jtype-value*)
+                  :result (jresult-type *aij-jtype-value*)
                   :name "call"
                   :params jmethod-params
-                  :throws (list *atj-jclass-eval-exc*)
+                  :throws (list *aij-jclass-eval-exc*)
                   :body jmethod-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -562,7 +562,7 @@
         (cw "~%Generating Java code for the ACL2 functions:~%"))
        (fn-jmethods (atj-gen-deep-fndef-jmethods fns guards$ verbose$ state))
        (fns-build-jblock (atj-gen-deep-fndefs fns))
-       (fns-validate-jblock (jblock-smethod *atj-jtype-named-fn*
+       (fns-validate-jblock (jblock-smethod *aij-jtype-named-fn*
                                             "validateAll"
                                             nil))
        (fns-jblock (append fns-build-jblock
@@ -599,7 +599,7 @@
           in the deep embedding approach."
   (b* ((class (atj-gen-deep-jclass pkgs fns guards$ java-class$ verbose$ state)))
     (make-jcunit :package? java-package$
-                 :imports (list (jimport nil (str::cat *atj-aij-jpackage* ".*"))
+                 :imports (list (jimport nil (str::cat *aij-jpackage* ".*"))
                                 (jimport nil "java.math.BigInteger")
                                 (jimport nil "java.util.ArrayList")
                                 (jimport nil "java.util.List"))

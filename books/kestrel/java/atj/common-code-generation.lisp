@@ -136,7 +136,7 @@
 (define atj-gen-char ((char characterp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 character."
-  (jexpr-smethod *atj-jtype-char*
+  (jexpr-smethod *aij-jtype-char*
                  "make"
                  (list (jexpr-literal-character char))))
 
@@ -145,7 +145,7 @@
 (define atj-gen-string ((string stringp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 string."
-  (jexpr-smethod *atj-jtype-string*
+  (jexpr-smethod *aij-jtype-string*
                  "make"
                  (list (atj-gen-jstring string))))
 
@@ -161,10 +161,10 @@
     we just reference the appropriate constant
     if the symbol in question is among those symbols.
     Otherwise, we build it in the general way.")
-  (b* ((pair (assoc-eq symbol *atj-aij-symbol-constants*)))
+  (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
     (if pair
         (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
-      (jexpr-smethod *atj-jtype-symbol*
+      (jexpr-smethod *aij-jtype-symbol*
                      "make"
                      (list (atj-gen-jstring
                             (symbol-package-name symbol))
@@ -219,7 +219,7 @@
                        (jexpr-newclass (jtype-class "BigInteger")
                                        (list
                                         (jexpr-literal-string string))))))))
-    (jexpr-smethod *atj-jtype-int*
+    (jexpr-smethod *aij-jtype-int*
                    "make"
                    (list arg))))
 
@@ -228,7 +228,7 @@
 (define atj-gen-rational ((rational rationalp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 rational."
-  (jexpr-smethod *atj-jtype-rational*
+  (jexpr-smethod *aij-jtype-rational*
                  "make"
                  (list (atj-gen-integer (numerator rational))
                        (atj-gen-integer (denominator rational)))))
@@ -238,7 +238,7 @@
 (define atj-gen-number ((number acl2-numberp))
   :returns (jexpr jexprp)
   :short "Generate Java code to build an ACL2 number."
-  (jexpr-smethod *atj-jtype-number*
+  (jexpr-smethod *aij-jtype-number*
                  "make"
                  (list (atj-gen-rational (realpart number))
                        (atj-gen-rational (imagpart number)))))
@@ -277,7 +277,7 @@
                                                jvar-value-index))
          ((mv car-locvar-jblock
               car-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
+              jvar-value-index) (atj-gen-jlocvar-indexed *aij-jtype-value*
                                                          jvar-value-base
                                                          jvar-value-index
                                                          car-jexpr))
@@ -288,7 +288,7 @@
                                                jvar-value-index))
          ((mv cdr-locvar-jblock
               cdr-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *atj-jtype-value*
+              jvar-value-index) (atj-gen-jlocvar-indexed *aij-jtype-value*
                                                          jvar-value-base
                                                          jvar-value-index
                                                          cdr-jexpr))
@@ -296,7 +296,7 @@
                          car-locvar-jblock
                          cdr-jblock
                          cdr-locvar-jblock))
-         (jexpr (jexpr-smethod *atj-jtype-cons*
+         (jexpr (jexpr-smethod *aij-jtype-cons*
                                "make"
                                (list (jexpr-name car-jvar)
                                      (jexpr-name cdr-jvar)))))
@@ -403,7 +403,7 @@
   (b* ((pair (assoc-equal pkg *atj-gen-pkg-name-alist*)))
     (if pair
         (jexpr-name (cdr pair))
-      (jexpr-smethod *atj-jtype-pkg-name*
+      (jexpr-smethod *aij-jtype-pkg-name*
                      "make"
                      (list (atj-gen-jstring pkg)))))
 
@@ -448,7 +448,7 @@
                                (atj-gen-pkg-jmethod-aux aimports
                                                         jvar-aimports)))
        (pkg-name-jexpr (atj-gen-pkg-name pkg))
-       (defpkg-jblock (jblock-smethod *atj-jtype-pkg*
+       (defpkg-jblock (jblock-smethod *aij-jtype-pkg*
                                       "define"
                                       (list pkg-name-jexpr
                                             (jexpr-name jvar-aimports))))
@@ -519,7 +519,7 @@
   (xdoc::topstring-p
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
-  (jblock-smethod *atj-jtype-pkg*
+  (jblock-smethod *aij-jtype-pkg*
                   "setWitnessName"
                   (list (atj-gen-jstring *pkg-witness-name*))))
 
@@ -688,7 +688,7 @@
                   :result (jresult-void)
                   :name "main"
                   :params (list jmethod-param)
-                  :throws (list *atj-jclass-eval-exc*)
+                  :throws (list *aij-jclass-eval-exc*)
                   :body jmethod-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

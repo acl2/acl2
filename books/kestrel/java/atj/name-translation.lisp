@@ -341,7 +341,7 @@
   (append *jkeywords*
           *boolean-literals*
           (list *null-literal*)
-          *atj-aij-class-names*
+          *aij-class-names*
           ;; keep in sync with ATJ-GEN-SHALLOW-JCUNIT:
           (list "BigInteger"
                 "ArrayList"

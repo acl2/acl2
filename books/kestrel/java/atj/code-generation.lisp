@@ -212,15 +212,15 @@
                                 (str::cat "Testing '" test.name "'..."))))
          args-jblock ; build test.arguments
          (if deep$
-             (jblock-locvar (jtype-array *atj-jtype-value*)
+             (jblock-locvar (jtype-array *aij-jtype-value*)
                             "functionArguments"
-                            (jexpr-newarray-init *atj-jtype-value*
+                            (jexpr-newarray-init *aij-jtype-value*
                                                  args-jexprs))
            shallow-arg-jblock) ; assign to argument1, argument2, ...
          ares-jblock ; build test.result
-         (jblock-locvar *atj-jtype-value* "resultAcl2" ares-jexpr)
+         (jblock-locvar *aij-jtype-value* "resultAcl2" ares-jexpr)
          (and deep$
-              (jblock-locvar *atj-jtype-symbol*
+              (jblock-locvar *aij-jtype-symbol*
                              "functionName"
                              (atj-gen-symbol test.function)))
          (jblock-locvar (jtype-boolean) "pass" (jexpr-literal-true))
@@ -238,7 +238,7 @@
           ;; body of do loop:
           (append
            (jblock-locvar (jtype-long) "startTime" current-time-jexpr)
-           (jblock-locvar *atj-jtype-value*
+           (jblock-locvar *aij-jtype-value*
                           "resultJava"
                           (if deep$
                               (jexpr-smethod (jtype-class java-class$)
@@ -367,7 +367,7 @@
                   :params (list (make-jparam :final? nil
                                              :type (jtype-int)
                                              :name "n"))
-                  :throws (list *atj-jclass-eval-exc*)
+                  :throws (list *aij-jclass-eval-exc*)
                   :body jmethod-body))
 
   :prepwork
@@ -494,7 +494,7 @@
   :verify-guards nil
   :short "Generate the test Java compilation unit."
   (make-jcunit :package? java-package$
-               :imports (list (jimport nil (str::cat *atj-aij-jpackage* ".*"))
+               :imports (list (jimport nil (str::cat *aij-jpackage* ".*"))
                               (jimport nil "java.math.BigInteger"))
                :types (list (atj-gen-test-jclass tests$
                                                  deep$
