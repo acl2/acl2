@@ -39,7 +39,7 @@
     letters, digits, underscores, and dollar signs.
     It must also be different
     from Java keywords and from the boolean and null literals.")
-  (and (not (member-equal string *keywords*))
+  (and (not (member-equal string *jkeywords*))
        (not (member-equal string *boolean-literals*))
        (not (equal string *null-literal*))
        (b* ((chars (explode string)))

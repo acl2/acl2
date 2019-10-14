@@ -25,13 +25,17 @@
      Other character sequences are Java keywords
      only in certain module-related contexts,
      as described in [JLS:3.9] in prose (i.e. without grammar productions);
-     these are called `restricted keywords'."))
+     these are called `restricted keywords'.")
+   (xdoc::p
+    "To avoid conflict or confusion with ACL2 keywords,
+     we prefix @('keyword') with @('j') in ACL2 function and constant names
+     that pertain to Java keywords."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *keywords*
+(defval *jkeywords*
   :short "The (non-restricted) Java keywords, as ACL2 strings."
   (list "abstract"
         "assert"
@@ -86,19 +90,19 @@
         "_")
   ///
 
-  (assert-event (string-listp *keywords*))
+  (assert-event (string-listp *jkeywords*))
 
-  (assert-event (= (len *keywords*) 51))
+  (assert-event (= (len *jkeywords*) 51))
 
-  (assert-event (no-duplicatesp-equal *keywords*))
+  (assert-event (no-duplicatesp-equal *jkeywords*))
 
-  (defruled ascii-listp-of-keywords
-    (implies (member-equal keyword *keywords*)
+  (defruled ascii-listp-of-*jkeywords*
+    (implies (member-equal keyword *jkeywords*)
              (ascii-listp (string=>unicode keyword)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *restricted-keywords*
+(defval *restricted-jkeywords*
   :short "The restricted Java keywords, as ACL2 strings."
   (list "open"
         "module"
@@ -112,14 +116,14 @@
         "with")
   ///
 
-  (assert-event (string-listp *restricted-keywords*))
+  (assert-event (string-listp *restricted-jkeywords*))
 
-  (assert-event (= (len *restricted-keywords*) 10))
+  (assert-event (= (len *restricted-jkeywords*) 10))
 
-  (assert-event (no-duplicatesp-equal *restricted-keywords*))
+  (assert-event (no-duplicatesp-equal *restricted-jkeywords*))
 
-  (defruled ascii-listp-of-restricted-keywords
-    (implies (member-equal keyword *restricted-keywords*)
+  (defruled ascii-listp-of-*restricted-jkeywords*
+    (implies (member-equal keyword *restricted-jkeywords*)
              (ascii-listp (string=>unicode keyword)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,17 +136,17 @@
    (xdoc::p
     "A Java keyword is a list of Java Unicode characters
      that consist of the (ASCII) codes of
-     some element in @(tsee *keywords*).")
+     some element in @(tsee *jkeywords*).")
    (xdoc::p
     "The @('j') in front of @('jkeywordp') avoids
      a conflict with the built-in @(tsee keywordp)."))
   (and (ascii-listp x)
-       (member-equal (ascii=>string x) *keywords*)
+       (member-equal (ascii=>string x) *jkeywords*)
        t)) ; turn result of MEMBER-EQUAL into boolean
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restricted-keyword-p (x)
+(define restricted-jkeywordp (x)
   :returns (yes/no booleanp)
   :short "Recognize restricted Java keywords."
   :long
@@ -152,5 +156,5 @@
      that consist of the (ASCII) codes of
      some element in @(tsee *restricted-keywords*)."))
   (and (ascii-listp x)
-       (member-equal (ascii=>string x) *restricted-keywords*)
+       (member-equal (ascii=>string x) *restricted-jkeywords*)
        t)) ; turn result of MEMBER-EQUAL into boolean

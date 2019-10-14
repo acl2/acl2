@@ -297,7 +297,7 @@
      It also includes the empty sequence,
      because an ACL2 symbol may consist of no characters,
      but a Java identifier cannot be empty."))
-  (append *keywords*
+  (append *jkeywords*
           *boolean-literals*
           (list *null-literal*)
           (list ""))
@@ -338,7 +338,7 @@
      because ACL2 package names are never empty
      and the mapping in @(tsee atj-pkg-to-class)
      never produces empty strings."))
-  (append *keywords*
+  (append *jkeywords*
           *boolean-literals*
           (list *null-literal*)
           *atj-aij-class-names*
@@ -427,7 +427,7 @@
      a Java keyword, boolean or null literal, or empty.")
    (xdoc::p
     "This constant collects these disallowed names."))
-  (append *keywords*
+  (append *jkeywords*
           *boolean-literals*
           (list *null-literal*)
           (list ""))

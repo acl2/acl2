@@ -422,7 +422,7 @@
        (identifier-start-p (car x))
        (identifier-part-listp (cdr x))
        (not (jkeywordp x))
-       (or (not (restricted-keyword-p x))
+       (or (not (restricted-jkeywordp x))
            (equal x (string=>unicode "transitive")))
        (not (boolean-literal-p x))
        (not (null-literal-p x))))
