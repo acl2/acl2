@@ -154,7 +154,7 @@
    (xdoc::p
     "A restricted Java keyword is a list of Java Unicode characters
      that consist of the (ASCII) codes of
-     some element in @(tsee *restricted-keywords*)."))
+     some element in @(tsee *restricted-jkeywords*)."))
   (and (ascii-listp x)
        (member-equal (ascii=>string x) *restricted-jkeywords*)
        t)) ; turn result of MEMBER-EQUAL into boolean

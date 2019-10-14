@@ -28,7 +28,7 @@
      and we show it equivalent to @(tsee jkeywordp).")
    (xdoc::p
     "We only perform this validation for non-restricted keywords,
-     and not for restricted keywords (see @(tsee restricted-keyword-p),
+     and not for restricted keywords (see @(tsee restricted-jkeywordp),
      because the latter do not have a grammar rule."))
   :order-subtopics t
   :default-parent t)
