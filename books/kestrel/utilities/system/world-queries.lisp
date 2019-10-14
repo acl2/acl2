@@ -41,6 +41,8 @@
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
+(include-book "kestrel/std/system/non-executablep" :dir :system)
+(include-book "kestrel/std/system/non-executablep-plus" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
@@ -101,52 +103,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define non-executablep ((fn symbolp) (wrld plist-worldp))
-  :returns (status "@('t'), @('nil'), or @(':program').")
-  :parents (world-queries)
-  :short "@(see Non-executable) status of a named logic-mode defined function."
-  :long
-  "<p>
-   See @(tsee non-executablep+) for a logic-friendly variant of this utility.
-   </p>"
-  (getpropc fn 'non-executablep nil wrld))
-
-(define non-executablep+ ((fn (function-namep fn wrld))
-                          (wrld plist-worldp))
-  :returns (nonexec (or (booleanp nonexec) (eq nonexec :program)))
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee non-executablep)."
-  :long
-  "<p>
-   This returns the same result as @(tsee non-executablep),
-   but it has a stronger guard
-   and includes run-time checks (which should always succeed) on the result
-   that allow us to prove the return type theorems
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (non-executablep fn wrld))
-       ((unless (or (booleanp result)
-                    (eq result :program)))
-        (raise "Internal error: ~
-                the non-executable status ~x0 of ~x1 is not ~
-                T, NIL, or :PROGRAM."
-               result fn))
-       ((when (and (logicp fn wrld)
-                   (eq result :program)))
-        (raise "Internal error: ~
-                the non-executable status of the logic-mode function ~x0 ~
-                is :PROGRAM instead of T or NIL."
-               fn)))
-    result)
-  ///
-
-  (more-returns
-   (nonexec booleanp
-            :hyp (logicp fn wrld)
-            :name booleanp-of-non-executablep+-when-logicp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

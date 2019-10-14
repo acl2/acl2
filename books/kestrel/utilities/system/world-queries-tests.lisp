@@ -15,44 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (not (non-executablep 'not (w state))))
-
-(assert! (not (non-executablep 'len (w state))))
-
-(must-succeed*
- (defun-nx f (x) x)
- (assert! (non-executablep 'f (w state))))
-
-(must-succeed*
- (defun-sk g (x) (forall (y z) (equal x (cons y z))))
- (assert! (non-executablep 'g (w state))))
-
-(must-succeed*
- (defun-sk h (x y) (exists z (equal z (cons x y)))
-   :witness-dcls ((declare (xargs :non-executable nil))))
- (assert! (not (non-executablep 'h (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (not (non-executablep+ 'not (w state))))
-
-(assert! (not (non-executablep+ 'len (w state))))
-
-(must-succeed*
- (defun-nx f (x) x)
- (assert! (non-executablep+ 'f (w state))))
-
-(must-succeed*
- (defun-sk g (x) (forall (y z) (equal x (cons y z))))
- (assert! (non-executablep+ 'g (w state))))
-
-(must-succeed*
- (defun-sk h (x y) (exists z (equal z (cons x y)))
-   :witness-dcls ((declare (xargs :non-executable nil))))
- (assert! (not (non-executablep+ 'h (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (must-succeed*
  (defun-nx f (x) (cons (list x) (list x)))
  (assert-equal (ubody 'f (w state))
