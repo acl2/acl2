@@ -138,6 +138,12 @@
       This is used in the shallow embedding approach.
       See @(tsee atj-code-generation).")
     (xdoc::li
+     "@('fn-method-names') is an alist from strings to strings,
+      which associates to each function name in @('fns')
+      the name of the corresponding Java method name.
+      This is used in the shallow embedding approach.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
      "@('curr-pkg') is the name of the ACL2 package of the ACL2 function
       for which Java code is being generated."))
    (xdoc::p
