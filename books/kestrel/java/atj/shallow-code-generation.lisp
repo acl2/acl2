@@ -74,11 +74,11 @@
      but it uses @(tsee atj-gen-shallow-symbol)
      instead of @(tsee atj-gen-symbol).")
    (xdoc::@def "atj-gen-shallow-value")
-   (xdoc::@def "atj-gen-shallow-conspair"))
+   (xdoc::@def "atj-gen-shallow-cons"))
 
-  (define atj-gen-shallow-conspair ((conspair consp)
-                                    (jvar-value-base stringp)
-                                    (jvar-value-index posp))
+  (define atj-gen-shallow-cons ((conspair consp)
+                                (jvar-value-base stringp)
+                                (jvar-value-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
@@ -143,14 +143,14 @@
           ((acl2-numberp value) (mv nil
                                     (atj-gen-number value)
                                     jvar-value-index))
-          ((consp value) (atj-gen-shallow-conspair value
-                                                   jvar-value-base
-                                                   jvar-value-index))
+          ((consp value) (atj-gen-shallow-cons value
+                                               jvar-value-base
+                                               jvar-value-index))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             value)
                      (mv nil (jexpr-name "irrelevant") jvar-value-index))))
     ;; 2nd component is non-0
-    ;; so that the call of ATJ-GEN-SHALLOW-CONSPAIR decreases:
+    ;; so that the call of ATJ-GEN-SHALLOW-CONS decreases:
     :measure (two-nats-measure (acl2-count value) 1))
 
   :verify-guards nil ; done below

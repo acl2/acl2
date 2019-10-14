@@ -259,11 +259,11 @@
      and returns an expression that builds the pair
      from the two local variables.")
    (xdoc::@def "atj-gen-value")
-   (xdoc::@def "atj-gen-conspair"))
+   (xdoc::@def "atj-gen-cons"))
 
-  (define atj-gen-conspair ((conspair consp)
-                            (jvar-value-base stringp)
-                            (jvar-value-index posp))
+  (define atj-gen-cons ((conspair consp)
+                        (jvar-value-base stringp)
+                        (jvar-value-index posp))
     :returns (mv (jblock jblockp)
                  (jexpr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
@@ -328,14 +328,14 @@
           ((acl2-numberp value) (mv nil
                                     (atj-gen-number value)
                                     jvar-value-index))
-          ((consp value) (atj-gen-conspair value
-                                           jvar-value-base
-                                           jvar-value-index))
+          ((consp value) (atj-gen-cons value
+                                       jvar-value-base
+                                       jvar-value-index))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             value)
                      (mv nil (jexpr-name "irrelevant") jvar-value-index))))
     ;; 2nd component is non-0
-    ;; so that the call of ATJ-GEN-CONSPAIR decreases:
+    ;; so that the call of ATJ-GEN-CONS decreases:
     :measure (two-nats-measure (acl2-count value) 1))
 
   :verify-guards nil ; done below
