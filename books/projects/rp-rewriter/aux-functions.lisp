@@ -459,7 +459,7 @@
   (local
    (in-theory (enable IS-RP-LOOSE)))
 
-  (defund-inline ex-from-rp-loose (term)
+  (defund ex-from-rp-loose (term)
     (declare (xargs :guard t))
     (mbe :logic (if (is-rp-loose term)
                     (ex-from-rp-loose (caddr term))
