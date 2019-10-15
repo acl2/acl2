@@ -530,7 +530,8 @@
      the Java test class.
      These are @('nil') in the deep embedding approach;
      they are only used in the shallow embedding approach."))
-  (b* (((mv cunit
+  (b* ((wrld (w state))
+       ((mv cunit
             pkg-class-names
             fn-method-names) (if deep$
                                  (mv (atj-gen-deep-jcunit guards$
@@ -539,7 +540,7 @@
                                                           pkgs
                                                           fns
                                                           verbose$
-                                                          state)
+                                                          wrld)
                                      nil
                                      nil)
                                (atj-gen-shallow-jcunit guards$
@@ -548,7 +549,7 @@
                                                        pkgs
                                                        fns
                                                        verbose$
-                                                       state)))
+                                                       wrld)))
        (state (print-to-jfile (print-jcunit cunit)
                               output-file$
                               state)))

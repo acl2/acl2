@@ -1402,7 +1402,7 @@
                                (guards$ booleanp)
                                (verbose$ booleanp)
                                (curr-pkg stringp)
-                               state)
+                               (wrld plist-worldp))
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :returns (jmethod jmethodp)
@@ -1457,11 +1457,10 @@
      none of which starts with a @('$') not followed by two hexadecimal digits.
      The body of the Java method consists of those Java statements,
      followed by a @('return') statement with that Java expression."))
-  (b* ((wrld (w state))
-       ((run-when verbose$)
+  (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
        (formals (formals fn wrld))
-       (body (ubody fn (w state)))
+       (body (ubody fn wrld))
        (fn-type (atj-get-function-type fn guards$ wrld))
        (in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
@@ -1508,7 +1507,7 @@
                             (guards$ booleanp)
                             (verbose$ booleanp)
                             (curr-pkg stringp)
-                            state)
+                            (wrld plist-worldp))
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :returns (jmethod jmethodp)
@@ -1522,14 +1521,14 @@
                                 fn-method-names
                                 guards$
                                 curr-pkg
-                                (w state))
+                                wrld)
     (atj-gen-shallow-fndef fn
                            pkg-class-names
                            fn-method-names
                            guards$
                            verbose$
                            curr-pkg
-                           state)))
+                           wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1539,7 +1538,7 @@
                              (guards$ booleanp)
                              (verbose$ booleanp)
                              (curr-pkg stringp)
-                             state)
+                             (wrld plist-worldp))
   :guard (and (equal (symbol-package-name-lst fns-in-curr-pkg)
                      (repeat (len fns-in-curr-pkg) curr-pkg))
               (not (equal curr-pkg "")))
@@ -1557,14 +1556,14 @@
                                                    guards$
                                                    verbose$
                                                    curr-pkg
-                                                   state))
+                                                   wrld))
                 (rest-jmethods (atj-gen-shallow-fns (cdr fns-in-curr-pkg)
                                                     pkg-class-names
                                                     fn-method-names
                                                     guards$
                                                     verbose$
                                                     curr-pkg
-                                                    state)))
+                                                    wrld)))
              (cons first-jmethod rest-jmethods)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1717,7 +1716,7 @@
                                     (fn-method-names symbol-string-alistp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
-                                    state)
+                                    (wrld plist-worldp))
   :guard (equal (symbol-package-name-lst fns-in-pkg)
                 (repeat (len fns-in-pkg) pkg))
   :returns (jclass jclassp)
@@ -1752,14 +1751,14 @@
                                         guards$
                                         verbose$
                                         pkg
-                                        state))
+                                        wrld))
        (imported-fns (intersection-eq fns (pkg-imports pkg)))
        (synonym-methods (atj-gen-shallow-fnsynonyms imported-fns
                                                     pkg-class-names
                                                     fn-method-names
                                                     guards$
                                                     pkg
-                                                    (w state)))
+                                                    wrld))
        (all-methods (append fn-methods synonym-methods)))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
@@ -1778,7 +1777,7 @@
                                     (guards$ booleanp)
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
-                                    state)
+                                    (wrld plist-worldp))
   :returns (mv (jclasses jclass-listp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp)."))
@@ -1806,7 +1805,7 @@
                                         guards$
                                         java-class$
                                         verbose$
-                                        state)
+                                        wrld)
         pkg-class-names
         fn-method-names))
 
@@ -1820,7 +1819,7 @@
       (guards$ booleanp)
       (java-class$ stringp)
       (verbose$ booleanp)
-      state)
+      (wrld plist-worldp))
      :returns (jclasses jclass-listp)
      :verify-guards nil
      (b* (((when (endp pkgs)) nil)
@@ -1833,7 +1832,7 @@
                                                     fn-method-names
                                                     guards$
                                                     verbose$
-                                                    state))
+                                                    wrld))
           (rest-jclasses (atj-gen-shallow-fns-by-pkg-aux (cdr pkgs)
                                                          fns
                                                          fns-by-pkg
@@ -1842,7 +1841,7 @@
                                                          guards$
                                                          java-class$
                                                          verbose$
-                                                         state)))
+                                                         wrld)))
        (cons first-jclass rest-jclasses)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1852,7 +1851,7 @@
                                 (guards$ booleanp)
                                 (java-class$ stringp)
                                 (verbose$ booleanp)
-                                state)
+                                (wrld plist-worldp))
   :returns (mv (jclass jclassp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp)."))
@@ -1896,7 +1895,7 @@
                                     guards$
                                     java-class$
                                     verbose$
-                                    state))
+                                    wrld))
        (init-jmethod (atj-gen-init-jmethod pkgs nil))
        (body-jclass (append (list (jcmember-field init-jfield))
                             (jmethods-to-jcmembers pkg-jmethods)
@@ -1942,7 +1941,7 @@
                                 (pkgs string-listp)
                                 (fns symbol-listp)
                                 (verbose$ booleanp)
-                                state)
+                                (wrld plist-worldp))
   :returns (mv (jcunit jcunitp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp)."))
@@ -1961,7 +1960,7 @@
      which must be eventually passed to the functions that generate
      the Java test class."))
   (b* (((mv class pkg-class-names fn-method-names)
-        (atj-gen-shallow-jclass pkgs fns guards$ java-class$ verbose$ state))
+        (atj-gen-shallow-jclass pkgs fns guards$ java-class$ verbose$ wrld))
        (cunit
         (make-jcunit
          :package? java-package$

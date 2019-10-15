@@ -362,7 +362,7 @@
 (define atj-gen-deep-fndef-jmethod ((fn symbolp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
-                                    state)
+                                    (wrld plist-worldp))
   :returns (jmethod jmethodp)
   :verify-guards nil
   :short "Generate a Java method that builds
@@ -392,8 +392,7 @@
      are all reset to 1,
      because each function definition is built in its own method
      (thus, there are no cross-references)."))
-  (b* ((wrld (w state))
-       ((run-when verbose$)
+  (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
        (jmethod-name (atj-gen-deep-fndef-jmethod-name fn))
        (jvar-function "function")
@@ -447,7 +446,7 @@
 (define atj-gen-deep-fndef-jmethods ((fns symbol-listp)
                                      (guards$ booleanp)
                                      (verbose$ booleanp)
-                                     state)
+                                     (wrld plist-worldp))
   :returns (jmethods jmethod-listp)
   :verify-guards nil
   :short "Generate all the Java methods that build
@@ -455,9 +454,9 @@
   (if (endp fns)
       nil
     (b* ((first-jmethod
-          (atj-gen-deep-fndef-jmethod (car fns) guards$ verbose$ state))
+          (atj-gen-deep-fndef-jmethod (car fns) guards$ verbose$ wrld))
          (rest-jmethods
-          (atj-gen-deep-fndef-jmethods (cdr fns) guards$ verbose$ state)))
+          (atj-gen-deep-fndef-jmethods (cdr fns) guards$ verbose$ wrld)))
       (cons first-jmethod rest-jmethods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -537,7 +536,7 @@
                              (guards$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp)
-                             state)
+                             (wrld plist-worldp))
   :returns (jclass jclassp)
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration,
@@ -560,7 +559,7 @@
        (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
-       (fn-jmethods (atj-gen-deep-fndef-jmethods fns guards$ verbose$ state))
+       (fn-jmethods (atj-gen-deep-fndef-jmethods fns guards$ verbose$ wrld))
        (fns-build-jblock (atj-gen-deep-fndefs fns))
        (fns-validate-jblock (jblock-smethod *aij-jtype-named-fn*
                                             "validateAll"
@@ -592,12 +591,12 @@
                              (pkgs string-listp)
                              (fns symbol-listp)
                              (verbose$ booleanp)
-                             state)
+                             (wrld plist-worldp))
   :returns (jcunit jcunitp)
   :verify-guards nil
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
-  (b* ((class (atj-gen-deep-jclass pkgs fns guards$ java-class$ verbose$ state)))
+  (b* ((class (atj-gen-deep-jclass pkgs fns guards$ java-class$ verbose$ wrld)))
     (make-jcunit :package? java-package$
                  :imports (list (jimport nil (str::cat *aij-jpackage* ".*"))
                                 (jimport nil "java.math.BigInteger")
