@@ -18,6 +18,8 @@
 (include-book "guard-verified-p-plus")
 (include-book "non-executablep")
 (include-book "non-executablep-plus")
+(include-book "number-of-results")
+(include-book "number-of-results-plus")
 (include-book "primitivep")
 (include-book "primitivep-plus")
 (include-book "pure-raw-p")
@@ -29,6 +31,7 @@
 (include-book "uguard")
 (include-book "uguard-plus")
 (include-book "unwrapped-nonexec-body")
+(include-book "unwrapped-nonexec-body-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

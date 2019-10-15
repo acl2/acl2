@@ -43,6 +43,8 @@
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
 (include-book "kestrel/std/system/non-executablep" :dir :system)
 (include-book "kestrel/std/system/non-executablep-plus" :dir :system)
+(include-book "kestrel/std/system/number-of-results" :dir :system)
+(include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
@@ -105,55 +107,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define number-of-results ((fn symbolp) (wrld plist-worldp))
-  :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (n natp "Actually a @(tsee posp).")
-  :parents (world-queries)
-  :short "Number of values returned by a named function."
-  :long
-  "<p>
-   This is 1, unless the function uses @(tsee mv)
-   (directly, or indirectly by calling another function that does)
-   to return multiple values.
-   </p>
-   <p>
-   The number of results of the function
-   is the length of its @(tsee stobjs-out) list.
-   </p>
-   <p>
-   The function must not be in @('*stobjs-out-invalid*'),
-   because in that case the number of its results depends on how it is called.
-   </p>
-   <p>
-   See @(tsee number-of-results+) for a logic-friendly variant of this utility.
-   </p>"
-  (len (stobjs-out fn wrld)))
-
-(define number-of-results+ ((fn (function-namep fn wrld))
-                            (wrld plist-worldp))
-  :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (n posp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee number-of-results)."
-  :long
-  "<p>
-   This returns the same result as @(tsee number-of-results),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (number-of-results fn wrld)))
-    (if (posp result)
-        result
-      (prog2$
-       (raise "Internal error: ~
-              the STOBJS-OUT property of ~x0 is empty."
-              fn)
-       1)))) ; any POSP could be used here
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
