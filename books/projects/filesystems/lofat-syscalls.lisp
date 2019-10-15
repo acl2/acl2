@@ -716,37 +716,6 @@
         (mv fat32-in-memory -1 error-code)))
     (mv fat32-in-memory 0 0)))
 
-;; Move later
-(defthm
-  bpb_rootclus-of-clear-clusterchain
-  (equal
-   (bpb_rootclus (mv-nth 0
-                         (clear-clusterchain fat32-in-memory
-                                             masked-current-cluster length)))
-   (bpb_rootclus fat32-in-memory))
-  :hints (("goal" :in-theory (enable clear-clusterchain))))
-
-(defthm
-  bpb_rootclus-of-update-dir-contents
-  (equal
-   (bpb_rootclus (mv-nth 0
-                         (update-dir-contents fat32-in-memory
-                                              first-cluster dir-contents)))
-   (bpb_rootclus fat32-in-memory))
-  :hints (("goal" :in-theory (enable update-dir-contents))))
-
-(defthm
-  bpb_rootclus-of-lofat-remove-file
-  (equal
-   (bpb_rootclus
-    (mv-nth
-     0
-     (lofat-remove-file fat32-in-memory root-dir-ent pathname)))
-   (bpb_rootclus fat32-in-memory))
-  :hints
-  (("goal" :induct (lofat-remove-file fat32-in-memory
-                                      root-dir-ent pathname))))
-
 (defthm lofat-fs-p-of-lofat-unlink
   (implies (lofat-fs-p fat32-in-memory)
            (lofat-fs-p

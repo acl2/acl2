@@ -22,9 +22,6 @@
                (and (symbolp name)
                     (or (stringp entry) (l1-fs-p entry))))))
          (l1-fs-p (cdr fs)))))
-;; this example - which evaluates to t - remains as a counterexample to an
-;; erstwhile bug.
-(defconst *test01* (l1-fs-p '((a . "Mihir") (b . "Warren") (c))))
 
 (defthm alistp-l1-fs-p
   (implies (l1-fs-p fs)
@@ -35,9 +32,6 @@
                 (consp (assoc-equal name fs))
                 (consp (cdr (assoc-equal name fs))))
            (l1-fs-p (cdr (assoc-equal name fs)))))
-
-(assert!
- (l1-fs-p '((a . "Mihir") (b . "Warren") (c (a . "Mehta") (b . "Hunt")))))
 
 (defun l1-stat (hns fs)
   (declare (xargs :guard (and (symbol-listp hns)
@@ -85,8 +79,6 @@
         (if (< file-length end)
             nil
           (subseq file start (+ start n)))))))
-
-; More for Mihir to do...
 
 ; Delete file
 (defun
@@ -148,18 +140,23 @@
   (implies (l1-fs-p fs)
            (l1-fs-p (remove1-assoc-equal s fs))))
 
-(defthm l1-wrchs-returns-fs-lemma-3
-  (implies (and (consp fs) (l1-fs-p fs)
-                (consp (assoc-equal s fs))
-                (not (stringp (cdr (assoc-equal s fs)))))
-           (l1-fs-p (cdr (assoc-equal s fs)))))
+(defthm
+  l1-wrchs-returns-fs-lemma-3
+  (implies (and (not (l1-fs-p (cdr (assoc-equal (car hns) fs))))
+                (l1-fs-p fs)
+                (not (stringp (l1-wrchs (cdr hns)
+                                        (cdr (assoc-equal (car hns) fs))
+                                        start text))))
+           (l1-fs-p (l1-wrchs (cdr hns)
+                              (cdr (assoc-equal (car hns) fs))
+                              start text)))
+  :hints (("goal" :in-theory (disable l1-wrchs-returns-fs-lemma-1)
+           :use (:instance l1-wrchs-returns-fs-lemma-1
+                           (s (car hns))))))
 
 (defthm l1-wrchs-returns-fs
-  (implies (and (symbol-listp hns) (l1-fs-p fs))
-           (l1-fs-p (l1-wrchs hns fs start text)))
-  :hints (("Subgoal *1/6''"
-           :use (:instance l1-wrchs-returns-fs-lemma-3 (s (car hns)))) )
-  :rule-classes (:rewrite :type-prescription))
+  (implies (l1-fs-p fs)
+           (l1-fs-p (l1-wrchs hns fs start text))))
 
 (defthm l1-unlink-returns-fs
   (implies (and (l1-fs-p fs))
@@ -438,29 +435,3 @@ That takes care of that
 ; Add file -- or, if you will, create a file with some initial contents
 
 ; and so on...
-
-;; (assign fs '((a . "Mihir") (b . "Warren") (c (a . "Mehta") (b . "Hunt"))))
-
-;; (assign h1 '(a))
-;; (assign h2 '(a b))
-;; (assign h3 '(c b))
-;; (assign h4 '(c))
-
-;; (l1-stat (@ h1) (@ fs))
-;; (l1-stat (@ h2) (@ fs))
-;; (l1-stat (@ h3) (@ fs))
-;; (l1-stat (@ h4) (@ fs))
-
-;; (l1-wc-len (@ h1) (@ fs))
-;; (l1-wc-len (@ h2) (@ fs))
-;; (l1-wc-len (@ h3) (@ fs))
-;; (l1-wc-len (@ h4) (@ fs))
-
-;; (l1-wrchs (@ h1) (@ fs) 1 "athur")
-;; (l1-wrchs (@ h3) (@ fs) 1 "inojosa")
-;; (l1-wrchs (@ h3) (@ fs) 5 "Alvarez")
-
-;; (l1-unlink (@ h1) (@ fs))
-;; (l1-unlink (@ h2) (@ fs))
-;; (l1-unlink (@ h3) (@ fs))
-;; (l1-unlink (@ h4) (@ fs))

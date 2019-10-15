@@ -1168,7 +1168,7 @@
   :hints (("Goal" :in-theory (enable m1-regular-file-p))))
 
 (defthm
-  m1-regular-file-p-of-m1-file-p
+  m1-regular-file-p-of-m1-file
   (equal
    (m1-regular-file-p (m1-file dir-ent contents))
    (and
@@ -1176,18 +1176,6 @@
     (unsigned-byte-p 32
                      (length (m1-file-contents-fix contents)))))
   :hints (("goal" :in-theory (enable m1-regular-file-p))))
-
-;; (defthm
-;;   length-of-m1-file->contents
-;;   (implies
-;;    (m1-regular-file-p file)
-;;    (unsigned-byte-p 32 (length (m1-file->contents file))))
-;;   :hints (("goal" :in-theory (enable m1-regular-file-p)))
-;;   :rule-classes
-;;   ((:linear :corollary
-;;             (implies (m1-regular-file-p file)
-;;                      (< (len (explode (m1-file->contents file)))
-;;                         (ash 1 32))))))
 
 (defthm
   m1-directory-file-p-correctness-1
@@ -1786,6 +1774,21 @@
   hifat-remove-file-correctness-3
   (hifat-no-dups-p (mv-nth 0 (hifat-remove-file fs pathname)))
   :hints (("goal" :in-theory (enable hifat-remove-file))))
+
+(defthm
+  hifat-remove-file-correctness-4-lemma-1
+  (implies (and (m1-file-alist-p z)
+                (hifat-no-dups-p z)
+                (m1-directory-file-p (cdr (assoc-equal key z))))
+           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key z)))))
+  :hints (("Goal" :in-theory (enable hifat-no-dups-p)) ))
+
+(defthm hifat-remove-file-correctness-4
+  (implies (not (equal (mv-nth 1 (hifat-remove-file fs pathname))
+                       0))
+           (equal (mv-nth 0 (hifat-remove-file fs pathname))
+                  (hifat-file-alist-fix fs)))
+  :hints (("goal" :in-theory (e/d (hifat-remove-file) (put-assoc-equal)))))
 
 ;; We decided to keep this around even though the motivation of preserving
 ;; fat32-filename-list-equiv is somewhat weak. The alternative is to use
