@@ -513,7 +513,7 @@
                        (java-class$ maybe-stringp)
                        (output-file$ stringp)
                        (pkgs string-listp)
-                       (fns symbol-listp)
+                       (fns-to-translate symbol-listp)
                        (verbose$ booleanp)
                        state)
   :returns (mv (pkg-class-names "A @(tsee string-string-alistp).")
@@ -538,7 +538,7 @@
                                                           java-package$
                                                           java-class$
                                                           pkgs
-                                                          fns
+                                                          fns-to-translate
                                                           verbose$
                                                           wrld)
                                      nil
@@ -547,7 +547,7 @@
                                                        java-package$
                                                        java-class$
                                                        pkgs
-                                                       fns
+                                                       fns-to-translate
                                                        verbose$
                                                        wrld)))
        (state (print-to-jfile (print-jcunit cunit)
@@ -592,7 +592,7 @@
                             (output-file-test$ maybe-stringp)
                             (tests$ atj-test-listp)
                             (pkgs string-listp)
-                            (fns symbol-listp)
+                            (fns-to-translate symbol-listp)
                             (verbose$ booleanp)
                             state)
   :returns (mv erp val state)
@@ -622,7 +622,7 @@
                                    java-class$
                                    output-file$
                                    pkgs
-                                   fns
+                                   fns-to-translate
                                    verbose$
                                    state))
         (state (if tests$

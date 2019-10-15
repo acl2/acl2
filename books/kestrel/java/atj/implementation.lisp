@@ -75,9 +75,10 @@
      "@('pkgs') is the list of names of all the currently known ACL2 packages,
       in chronological order.")
     (xdoc::li
-     "@('fns') is the list of ACL2 functions to be translated to Java.")
+     "@('fns-to-translate') is the list of ACL2 functions
+      to be translated to Java.")
     (xdoc::li
-     "@('fns-by-pkg') consists of @('fns'),
+     "@('fns-by-pkg') consists of @('fns-to-translate'),
       plus all the ACL2 functions natively implemented in AIJ
       (which currently are the ACL2 primitive functions)
       organized as an alist from ACL2 package names to
@@ -139,7 +140,7 @@
       See @(tsee atj-code-generation).")
     (xdoc::li
      "@('fn-method-names') is an alist from strings to strings,
-      which associates to each function name in @('fns')
+      which associates to each function name in @('fns-to-translate')
       the name of the corresponding Java method name.
       This is used in the shallow embedding approach.
       See @(tsee atj-code-generation).")
@@ -169,7 +170,7 @@
      no return value is printed on the screen.
      A message of successful completion is printed,
      regardless of @(':verbose')."))
-  (b* (((er (list fns
+  (b* (((er (list fns-to-translate
                   pkgs
                   deep$
                   guards$
@@ -187,7 +188,7 @@
                                    output-file-test$
                                    tests$
                                    pkgs
-                                   fns
+                                   fns-to-translate
                                    verbose$
                                    state))
        (- (if output-file-test$
