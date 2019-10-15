@@ -332,10 +332,9 @@
   :parents (grammar-parser-implementation)
   :short "Message for grammar parsing errors."
   :long
-  "<p>
-   This message does not carry a lot of information,
-   but it keeps the grammar parser simpler for now.
-   </p>"
+  (xdoc::topstring-p
+   "This message does not carry a lot of information,
+    but it keeps the grammar parser simpler for now.")
   (msg "ABNF Grammar Parser Error.~%")
   ///
 
@@ -351,12 +350,11 @@
   :parents (grammar-parser-implementation)
   :short "Parse any natural number."
   :long
-  "<p>
-   Unlike the other parsing functions,
-   this one does not return a (lists of) tree(s),
-   but it returns the parsed natural number (or @('nil') if parsing fails).
-   This function is the basic building block of the other parsing functions.
-   </p>"
+  (xdoc::topstring-p
+   "Unlike the other parsing functions,
+    this one does not return a (lists of) tree(s),
+    but it returns the parsed natural number (or @('nil') if parsing fails).
+    This function is the basic building block of the other parsing functions.")
   (b* ((input (mbe :logic (nat-list-fix input) :exec input)))
     (if (consp input)
         (mv nil (car input) (cdr input))
@@ -2054,12 +2052,11 @@
   :parents (grammar-parser-implementation)
   :short "Parse a repetition range."
   :long
-  "<p>
-   Since a non-empty sequence of digits matches
-   both @('1*DIGIT')
-   and the start of @('(*DIGIT \"*\" *DIGIT)'),
-   the latter is tried before the former.
-   </p>"
+  (xdoc::topstring-p
+   "Since a non-empty sequence of digits matches
+    both @('1*DIGIT')
+    and the start of @('(*DIGIT \"*\" *DIGIT)'),
+    the latter is tried before the former.")
   (seq-backtrack
    input
    ((tree := (parse-*digit-star-*digit input))
@@ -2201,39 +2198,35 @@
     :parents (grammar-parser-implementation)
     :short "Parse an alternation."
     :long
-    "<p>
-     Ideally the body of this function would be:
-     </p>
-     @({
-       (seq input
-            (tree := (parse-concatenation input))
-            (trees := (parse-alt-rest input))
-            (return (make-tree-nonleaf :rulename? *alternation*
-                                       :branches (list (list tree) trees))))
-     })
-     <p>
-     But that would defeat the termination proof,
-     which would include a failed subgoal saying that,
-     when @(tsee parse-concatenation) succeeds,
-     the length of its remaining input
-     is less than or equal to
-     the length of its initial input.
-     This is the case for @(tsee parse-concatenation),
-     but it can only be proved after the function has been admitted.
-     In the termination proof, it is like an uninterpreted function.
-     </p>
-     <p>
-     So we add the condition on the lengths mentioned above
-     as a redundant check.
-     To do that, we cannot use @('seq'),
-     which prevents us from referring to different versions of the input.
-     </p>
-     <p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-alternation)
-     @(def len-of-parse-alternation-linear-1)
-     @(def len-of-parse-alternation-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "Ideally the body of this function would be:")
+     (xdoc::codeblock
+      "(seq input"
+      "     (tree := (parse-concatenation input))"
+      "     (trees := (parse-alt-rest input))"
+      "     (return (make-tree-nonleaf :rulename? *alternation*"
+      "                                :branches (list (list tree) trees))))")
+     (xdoc::p
+      "But that would defeat the termination proof,
+       which would include a failed subgoal saying that,
+       when @(tsee parse-concatenation) succeeds,
+       the length of its remaining input
+       is less than or equal to
+       the length of its initial input.
+       This is the case for @(tsee parse-concatenation),
+       but it can only be proved after the function has been admitted.
+       In the termination proof, it is like an uninterpreted function.")
+     (xdoc::p
+      "So we add the condition on the lengths mentioned above
+       as a redundant check.
+       To do that, we cannot use @('seq'),
+       which prevents us from referring to different versions of the input.")
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-alternation")
+     (xdoc::@def "len-of-parse-alternation-linear-1")
+     (xdoc::@def "len-of-parse-alternation-linear-2"))
     (b* (((mv error? tree input1) (parse-concatenation input))
          ((when error?) (mv error? nil input1))
          ((unless (mbt (< (len input1) (len input)))) (mv "" nil nil))
@@ -2255,39 +2248,35 @@
     :parents (grammar-parser-implementation)
     :short "Parse a concatenation."
     :long
-    "<p>
-     Ideally the body of this function would be:
-     </p>
-     @({
-       (seq input
-            (tree := (parse-repetition input))
-            (trees := (parse-conc-rest input))
-            (return (make-tree-nonleaf :rulename? *concatenation*
-                                       :branches (list (list tree) trees))))
-     })
-     <p>
-     But that would defeat the termination proof,
-     which would include a failed subgoal saying that,
-     when @(tsee parse-repetition) succeeds,
-     the length of its remaining input
-     is less than or equal to
-     the length of its initial input.
-     This is the case for @(tsee parse-repetition),
-     but it can only be proved after the function has been admitted.
-     In the termination proof, it is like an uninterpreted function.
-     </p>
-     <p>
-     So we add the condition on the lengths mentioned above
-     as a redundant check.
-     To do that, we cannot use @('seq'),
-     which prevents us from referring to different versions of the input.
-     </p>
-     <p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-concatenation)
-     @(def len-of-parse-concatenation-linear-1)
-     @(def len-of-parse-concatenation-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "Ideally the body of this function would be:")
+     (xdoc::codeblock
+      "(seq input"
+      "     (tree := (parse-repetition input))"
+      "     (trees := (parse-conc-rest input))"
+      "     (return (make-tree-nonleaf :rulename? *concatenation*"
+      "                                :branches (list (list tree) trees))))")
+     (xdoc::p
+      "But that would defeat the termination proof,
+       which would include a failed subgoal saying that,
+       when @(tsee parse-repetition) succeeds,
+       the length of its remaining input
+       is less than or equal to
+       the length of its initial input.
+       This is the case for @(tsee parse-repetition),
+       but it can only be proved after the function has been admitted.
+       In the termination proof, it is like an uninterpreted function.")
+     (xdoc::p
+      "So we add the condition on the lengths mentioned above
+       as a redundant check.
+       To do that, we cannot use @('seq'),
+       which prevents us from referring to different versions of the input.")
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-concatenation")
+     (xdoc::@def "len-of-parse-concatenation-linear-1")
+     (xdoc::@def "len-of-parse-concatenation-linear-2"))
     (b* (((mv error? tree input1) (parse-repetition input))
          ((when error?) (mv error? nil input1))
          ((unless (mbt (< (len input1) (len input)))) (mv "" nil nil))
@@ -2309,12 +2298,12 @@
     :parents (grammar-parser-implementation)
     :short "Parse a repetition."
     :long
-    "<p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-repetition)
-     @(def len-of-parse-repetition-linear-1)
-     @(def len-of-parse-repetition-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-repetition")
+     (xdoc::@def "len-of-parse-repetition-linear-1")
+     (xdoc::@def "len-of-parse-repetition-linear-2"))
     (seq input
          (tree-repeat := (parse-?repeat input))
          (tree-element := (parse-element input))
@@ -2333,12 +2322,12 @@
     :parents (grammar-parser-implementation)
     :short "Parse an element."
     :long
-    "<p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-element)
-     @(def len-of-parse-element-linear-1)
-     @(def len-of-parse-element-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-element")
+     (xdoc::@def "len-of-parse-element-linear-1")
+     (xdoc::@def "len-of-parse-element-linear-2"))
     (seq-backtrack input
                    ((tree := (parse-rulename input))
                     (return (make-tree-nonleaf :rulename? *element*
@@ -2370,12 +2359,12 @@
     :parents (grammar-parser-implementation)
     :short "Parse a group."
     :long
-    "<p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-group)
-     @(def len-of-parse-group-linear-1)
-     @(def len-of-parse-group-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-group")
+     (xdoc::@def "len-of-parse-group-linear-1")
+     (xdoc::@def "len-of-parse-group-linear-2"))
     (seq input
          (tree-open-round := (parse-ichar #\( input))
          (trees-open-pad := (parse-*cwsp input))
@@ -2400,12 +2389,12 @@
     :parents (grammar-parser-implementation)
     :short "Parse an option."
     :long
-    "<p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-option)
-     @(def len-of-parse-option-linear-1)
-     @(def len-of-parse-option-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-option")
+     (xdoc::@def "len-of-parse-option-linear-1")
+     (xdoc::@def "len-of-parse-option-linear-2"))
     (seq input
          (tree-open-square := (parse-ichar #\[ input))
          (trees-open-pad := (parse-*cwsp input))
@@ -2429,42 +2418,39 @@
     :short "Parse a repetition @('*(*c-wsp \"/\" *c-wsp concatenation)'),
             which is the rest of the definiens of @('alternation')."
     :long
-    "<p>
-     Ideally the body of this function would be:
-     </p>
-     @({
-       (seq-backtrack
-        input
-        ((tree := (parse-alt-rest-comp input))
-         (trees := (parse-alt-rest input))
-         (return (cons tree trees)))
-        ((return-raw (mv nil nil (nat-list-fix input)))))
-     })
-     <p>
-     But that would defeat the termination proof,
-     which would include a failed subgoal saying that,
-     when @(tsee parse-alt-rest-comp) succeeds,
-     the length of its remaining input
-     is strictly less than
-     the length of its initial input.
-     This is the case for @(tsee parse-alt-rest-comp),
-     but it can only be proved after the function has been admitted.
-     In the termination proof, it is like an uninterpreted function.
-     </p>
-     <p>
-     So we add the condition on the lengths mentioned above
-     as a redundant check.
-     To do that, we cannot use @('seq-backtrack'),
-     which prevents us from referring to different versions of the input.
-     In order to maintain the invariant that
-     @(tsee parse-alt-rest) never fails,
-     we return no error if the condition is not satisfied (which never happens).
-     </p>
-     <p>
-     The linear rule below is used in the guard verification proof.
-     </p>
-     @(def parse-alt-rest)
-     @(def len-of-parse-alt-rest-linear-1)"
+    (xdoc::topstring
+     (xdoc::p
+      "Ideally the body of this function would be:")
+     (xdoc::codeblock
+      "(seq-backtrack"
+      "  input"
+      "  ((tree := (parse-alt-rest-comp input))"
+      "   (trees := (parse-alt-rest input))"
+      "   (return (cons tree trees)))"
+      "  ((return-raw (mv nil nil (nat-list-fix input)))))")
+     (xdoc::p
+      "But that would defeat the termination proof,
+       which would include a failed subgoal saying that,
+       when @(tsee parse-alt-rest-comp) succeeds,
+       the length of its remaining input
+       is strictly less than
+       the length of its initial input.
+       This is the case for @(tsee parse-alt-rest-comp),
+       but it can only be proved after the function has been admitted.
+       In the termination proof, it is like an uninterpreted function.")
+     (xdoc::p
+      "So we add the condition on the lengths mentioned above
+       as a redundant check.
+       To do that, we cannot use @('seq-backtrack'),
+       which prevents us from referring to different versions of the input.
+       In order to maintain the invariant that
+       @(tsee parse-alt-rest) never fails,
+       we return no error if the condition is not satisfied
+       (which never happens).")
+     (xdoc::p
+      "The linear rule below is used in the guard verification proof.")
+     (xdoc::@def "parse-alt-rest")
+     (xdoc::@def "len-of-parse-alt-rest-linear-1"))
     (b* (((mv error? tree input1)
           (parse-alt-rest-comp input))
          ((when error?) (mv nil nil (nat-list-fix input)))
@@ -2485,12 +2471,12 @@
             which is a component of
             the rest of the definiens of @('alternation')."
     :long
-    "<p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-alt-rest-comp)
-     @(def len-of-parse-alt-rest-comp-linear-1)
-     @(def len-of-parse-alt-rest-comp-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-alt-rest-comp")
+     (xdoc::@def "len-of-parse-alt-rest-comp-linear-1")
+     (xdoc::@def "len-of-parse-alt-rest-comp-linear-2"))
     (seq input
          (trees1 := (parse-*cwsp input))
          (tree-slash := (parse-ichar #\/ input))
@@ -2512,42 +2498,39 @@
     :short "Parse a repetition @('*(1*c-wsp repetition)'),
             which is the rest of the definiens of @('concatenation')."
     :long
-    "<p>
-     Ideally the body of this function would be:
-     </p>
-     @({
-       (seq-backtrack
-        input
-        ((tree := (parse-conc-rest-comp input))
-         (trees := (parse-conc-rest input))
-         (return (cons tree trees)))
-        ((return-raw (mv nil nil (nat-list-fix input)))))
-     })
-     <p>
-     But that would defeat the termination proof,
-     which would include a failed subgoal saying that,
-     when @(tsee parse-conc-rest-comp) succeeds,
-     the length of its remaining input
-     is strictly less than
-     the length of its initial input.
-     This is the case for @(tsee parse-conc-rest-comp),
-     but it can only be proved after the function has been admitted.
-     In the termination proof, it is like an uninterpreted function.
-     </p>
-     <p>
-     So we add the condition on the lengths mentioned above
-     as a redundant check.
-     To do that, we cannot use @('seq-backtrack'),
-     which prevents us from referring to different versions of the input.
-     In order to maintain the invariant that
-     @(tsee parse-conc-rest) never fails,
-     we return no error if the condition is not satisfied (which never happens).
-     </p>
-     <p>
-     The linear rule below is used in the guard verification proof.
-     </p>
-     @(def parse-conc-rest)
-     @(def len-of-parse-conc-rest-linear-1)"
+    (xdoc::topstring
+     (xdoc::p
+      "Ideally the body of this function would be:")
+     (xdoc::codeblock
+      "(seq-backtrack"
+      "  input"
+      "  ((tree := (parse-conc-rest-comp input))"
+      "   (trees := (parse-conc-rest input))"
+      "   (return (cons tree trees)))"
+      "  ((return-raw (mv nil nil (nat-list-fix input)))))")
+     (xdoc::p
+      "But that would defeat the termination proof,
+       which would include a failed subgoal saying that,
+       when @(tsee parse-conc-rest-comp) succeeds,
+       the length of its remaining input
+       is strictly less than
+       the length of its initial input.
+       This is the case for @(tsee parse-conc-rest-comp),
+       but it can only be proved after the function has been admitted.
+       In the termination proof, it is like an uninterpreted function.")
+     (xdoc::p
+      "So we add the condition on the lengths mentioned above
+       as a redundant check.
+       To do that, we cannot use @('seq-backtrack'),
+       which prevents us from referring to different versions of the input.
+       In order to maintain the invariant that
+       @(tsee parse-conc-rest) never fails,
+       we return no error if the condition is not satisfied
+       (which never happens).")
+     (xdoc::p
+      "The linear rule below is used in the guard verification proof.")
+     (xdoc::@def "parse-conc-rest")
+     (xdoc::@def "len-of-parse-conc-rest-linear-1"))
     (b* (((mv error? tree input1)
           (parse-conc-rest-comp input))
          ((when error?) (mv nil nil (nat-list-fix input)))
@@ -2568,12 +2551,12 @@
             which is a component of
             the rest of the definiens of @('concatenation')."
     :long
-    "<p>
-     The linear rules below are used in the guard verification proof.
-     </p>
-     @(def parse-conc-rest-comp)
-     @(def len-of-parse-conc-rest-comp-linear-1)
-     @(def len-of-parse-conc-rest-comp-linear-2)"
+    (xdoc::topstring
+     (xdoc::p
+      "The linear rules below are used in the guard verification proof.")
+     (xdoc::@def "parse-conc-rest-comp")
+     (xdoc::@def "len-of-parse-conc-rest-comp-linear-1")
+     (xdoc::@def "len-of-parse-conc-rest-comp-linear-2"))
     (seq input
          (trees := (parse-1*cwsp input))
          (tree := (parse-repetition input))
@@ -2794,10 +2777,9 @@
   :parents (grammar-parser-implementation)
   :short "Parse the group @('(\"=\" / \"=/\")')."
   :long
-  "<p>
-   Since @('\"=\"') is a prefix of @('\"=/\"'),
-   the latter is tried before the former.
-   </p>"
+  (xdoc::topstring-p
+   "Since @('\"=\"') is a prefix of @('\"=/\"'),
+    the latter is tried before the former.")
   (seq-backtrack
    input
    ((tree := (parse-ichars #\= #\/ input))
@@ -2993,14 +2975,13 @@
   :parents (grammar-parser-implementation)
   :short "Parse a sequence of natural numbers into an ABNF grammar."
   :long
-  "<p>
-   This function parses the natural numbers into a list of rules,
-   returning the corresponding parse tree,
-   or @('nil') if parsing fails.
-   This function also checks that
-   there are no leftover natural numbers when parsing ends,
-   returning @('nil') if this check fails.
-   </p>"
+  (xdoc::topstring-p
+   "This function parses the natural numbers into a list of rules,
+    returning the corresponding parse tree,
+    or @('nil') if parsing fails.
+    This function also checks that
+    there are no leftover natural numbers when parsing ends,
+    returning @('nil') if this check fails.")
   (b* (((mv error? tree? rest) (parse-rulelist nats))
        ((when error?) nil)
        ((when rest) nil))
@@ -3018,43 +2999,40 @@
   :parents (grammar-parser-implementation)
   :short "Parse a file into an ABNF grammar."
   :long
-  "<p>
-   The ABNF language consists of sequences of ASCII codes,
-   as shown by theorem
-   <see topic='@(url *all-concrete-syntax-rules*)'
-   >@('ascii-only-*all-concrete-syntax-rules*')</see>.
-   ASCII codes are octets (i.e. 8-bit bytes).
-   Thus, instead of parsing sequences of natural numbers,
-   we can parse sequences of characters (which are isomorphic to octets),
-   by converting the characters to the corresponding octets.
-   The characters can be read from a file.
-   </p>
-   <p>
-   This function parses the characters from a file into a grammar.
-   If parsing fails, @('nil') is returned.
-   If reading the characters from the file fails, @('nil') is returned.
-   </p>
-   <p>
-   Thus, a language definition in ABNF can be put into a file
-   (e.g. copied and pasted from an RFC)
-   and parsed with this function.
-   Note that in ABNF lines are terminated by a carriage return and line feed,
-   so the file must follow that convention.
-   On Unix systems (e.g. Linux and macOS),
-   this can be accomplished by writing the file in Emacs,
-   setting the buffer's end-of-line to carriage return and line feed
-   by calling @('set-buffer-file-coding-system') with @('dos'),
-   and saving the file.
-   If the file is put under a version control system,
-   it should be forced to be treated as a binary file,
-   to avoid turning carriage returns and line feeds into just line feeds
-   across Windows and Unix platforms.
-   </p>
-   <p>
-   If parsing succeeds, it returns a correct parse tree
-   for the contents of the file as a list of ABNF rules,
-   according to the concrete syntax rules.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The ABNF language consists of sequences of ASCII codes,
+     as shown by theorem "
+    (xdoc::seetopic "*all-concrete-syntax-rules*"
+                    "@('ascii-only-*all-concrete-syntax-rules*')")
+    ". ASCII codes are octets (i.e. 8-bit bytes).
+     Thus, instead of parsing sequences of natural numbers,
+     we can parse sequences of characters (which are isomorphic to octets),
+     by converting the characters to the corresponding octets.
+     The characters can be read from a file.")
+   (xdoc::p
+    "This function parses the characters from a file into a grammar.
+     If parsing fails, @('nil') is returned.
+     If reading the characters from the file fails, @('nil') is returned.")
+   (xdoc::p
+    "Thus, a language definition in ABNF can be put into a file
+     (e.g. copied and pasted from an RFC)
+     and parsed with this function.
+     Note that in ABNF lines are terminated by a carriage return and line feed,
+     so the file must follow that convention.
+     On Unix systems (e.g. Linux and macOS),
+     this can be accomplished by writing the file in Emacs,
+     setting the buffer's end-of-line to carriage return and line feed
+     by calling @('set-buffer-file-coding-system') with @('dos'),
+     and saving the file.
+     If the file is put under a version control system,
+     it should be forced to be treated as a binary file,
+     to avoid turning carriage returns and line feeds into just line feeds
+     across Windows and Unix platforms.")
+   (xdoc::p
+    "If parsing succeeds, it returns a correct parse tree
+     for the contents of the file as a list of ABNF rules,
+     according to the concrete syntax rules."))
   (b* (((mv chars state) (read-file-characters filename state))
        ((unless (character-listp chars))
         (mv (hard-error 'abnf "ABNF Grammar File Reading Error." nil)
