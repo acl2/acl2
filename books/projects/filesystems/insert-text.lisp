@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-;  insert-list.lisp                                    Mihir Mehta
+;  insert-text.lisp                                    Mihir Mehta
 
 (local (include-book "file-system-lemmas"))
 
