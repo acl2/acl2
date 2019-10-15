@@ -2903,10 +2903,9 @@
 
 (defun untranslate-and (p q iff-flg)
 
-; The following theorem illustrates the various cases:
+; The following theorem illustrates the theorem:
 
-; (thm (and (iff (and p t) p)
-;           (equal (and p (and q1 q2)) (and p q1 q2))))
+; (thm (equal (and p (and q1 q2)) (and p q1 q2)))
 
 ; We formerly also gave special treatment corresponding to the cases (equal
 ; (and t q) q) and (iff (and p t) p).  But we stopped doing so after
