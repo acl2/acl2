@@ -55,6 +55,8 @@
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
+(include-book "kestrel/std/system/unwrapped-nonexec-body" :dir :system)
+(include-book "kestrel/std/system/unwrapped-nonexec-body-plus" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -103,77 +105,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define unwrapped-nonexec-body ((fn symbolp) (wrld plist-worldp))
-  :returns (unwrapped-body "A @(tsee pseudo-termp).")
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Body of a named logic-mode defined non-executable function,
-          without the ``non-executable wrapper''."
-  :long
-  "<p>
-   @(tsee defun-nx) generates
-   a logic-mode function whose body is wrapped as follows:
-   </p>
-   @({
-     (return-last 'progn
-                  (throw-nonexec-error 'fn
-                                       (cons arg1 ... (cons argN 'nil)...))
-                  body)
-   })
-   <p>
-   If @(tsee defun) is used for a logic-mode function with
-   <see topic='@(url non-executable)'>@(':non-executable')</see> set to @('t'),
-   the submitted body (once translated) must be wrapped as above.
-   </p>
-   <p>
-   This utility returns
-   the unwrapped body of a logic-mode non-executable function @('fn'),
-   by removing the wrapper shown above.
-   </p>
-   <p>
-   See @(tsee unwrapped-nonexec-body+) for
-   a logic-friendly variant of this utility.
-   </p>"
-  (fourth (ubody fn wrld)))
-
-(define unwrapped-nonexec-body+ ((fn (and (logic-function-namep fn wrld)
-                                          (definedp fn wrld)
-                                          (non-executablep fn wrld)))
-                                 (wrld plist-worldp-with-formals))
-  :returns (unwrapped-body pseudo-termp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee unwrapped-nonexec-body)."
-  :long
-  "<p>
-   This returns the same result as @(tsee unwrapped-nonexec-body),
-   but it has a stronger guard,
-   is guard-verified,
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   This utility also includes a run-time check (which should always succeed)
-   that the wrapper around the body has the expected form,
-   via the built-in function @('throw-nonexec-error-p');
-   this allows us to verify the guards
-   without strengthening the guard of @('wrld').
-   </p>"
-  (b* ((body (ubody+ fn wrld))
-       ((unless (and (throw-nonexec-error-p body fn (formals+ fn wrld))
-                     (consp (cdddr body))))
-        (raise "Internal error: ~
-                the body ~x0 of the non-executable function ~x1 ~
-                does not have the expected wrapper."
-               body fn))
-       (unwrapped-body (fourth body))
-       ((unless (pseudo-termp unwrapped-body))
-        (raise "Internal error: ~
-                the unwrapped body ~x0 of the non-executable function ~x1 ~
-                is not a pseudo-term."
-               unwrapped-body fn)))
-    unwrapped-body))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

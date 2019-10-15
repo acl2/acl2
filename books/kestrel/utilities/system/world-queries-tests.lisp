@@ -15,28 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-succeed*
- (defun-nx f (x) (cons (list x) (list x)))
- (assert-equal (ubody 'f (w state))
-               '(return-last 'progn
-                             (throw-nonexec-error 'f (cons x 'nil))
-                             (cons (cons x 'nil) (cons x 'nil))))
- (assert-equal (unwrapped-nonexec-body 'f (w state))
-               '(cons (cons x 'nil) (cons x 'nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (defun-nx f (x) (cons (list x) (list x)))
- (assert-equal (ubody 'f (w state))
-               '(return-last 'progn
-                             (throw-nonexec-error 'f (cons x 'nil))
-                             (cons (cons x 'nil) (cons x 'nil))))
- (assert-equal (unwrapped-nonexec-body+ 'f (w state))
-               '(cons (cons x 'nil) (cons x 'nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (number-of-results 'cons (w state)) 1)
 
 (assert-equal (number-of-results 'len (w state)) 1)
