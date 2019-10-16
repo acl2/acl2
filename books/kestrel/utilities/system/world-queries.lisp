@@ -41,6 +41,8 @@
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
+(include-book "kestrel/std/system/no-stobjs-p" :dir :system)
+(include-book "kestrel/std/system/no-stobjs-p-plus" :dir :system)
 (include-book "kestrel/std/system/non-executablep" :dir :system)
 (include-book "kestrel/std/system/non-executablep-plus" :dir :system)
 (include-book "kestrel/std/system/number-of-results" :dir :system)
@@ -107,39 +109,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define no-stobjs-p ((fn symbolp) (wrld plist-worldp))
-  :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (yes/no booleanp)
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Check if a named function has no input or output @(see stobj)s."
-  :long
-  "<p>
-   The function must not be in @('*stobjs-out-invalid*'),
-   because in that case its (output) stobjs depend on how it is called.
-   </p>
-   <p>
-   See @(tsee no-stobjs-p+) for a logic-friendly variant of this utility.
-   </p>"
-  (and (all-nils (stobjs-in fn wrld))
-       (all-nils (stobjs-out fn wrld))))
-
-(define no-stobjs-p+ ((fn (function-namep fn wrld))
-                      (wrld plist-worldp))
-  :guard (not (member-eq fn *stobjs-out-invalid*))
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee no-stobjs-p)."
-  :long
-  "<p>
-   This returns the same result as @(tsee no-stobjs-p),
-   but it has a stronger guard and is guard-verified.
-   </p>"
-  (and (all-nils (stobjs-in+ fn wrld))
-       (all-nils (stobjs-out+ fn wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

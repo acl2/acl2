@@ -16,6 +16,8 @@
 (include-book "formals-plus")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
+(include-book "no-stobjs-p")
+(include-book "no-stobjs-p-plus")
 (include-book "non-executablep")
 (include-book "non-executablep-plus")
 (include-book "number-of-results")

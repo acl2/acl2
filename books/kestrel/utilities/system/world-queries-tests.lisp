@@ -15,38 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (no-stobjs-p 'cons (w state)))
-
-(assert! (no-stobjs-p 'len (w state)))
-
-(assert! (not (no-stobjs-p 'guard-obligation (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (assert! (no-stobjs-p 'f (w state))))
-
-(must-succeed*
- (defun f (state) (declare (xargs :stobjs state)) state)
- (assert! (not (no-stobjs-p 'f (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (no-stobjs-p+ 'cons (w state)))
-
-(assert! (no-stobjs-p+ 'len (w state)))
-
-(assert! (not (no-stobjs-p+ 'guard-obligation (w state))))
-
-(must-succeed*
- (defun f (x) x)
- (assert! (no-stobjs-p+ 'f (w state))))
-
-(must-succeed*
- (defun f (state) (declare (xargs :stobjs state)) state)
- (assert! (not (no-stobjs-p+ 'f (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (irecursivep 'cons (w state)) nil)
 
 (assert-equal (irecursivep 'len (w state)) '(len))
