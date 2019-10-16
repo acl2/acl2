@@ -466,9 +466,11 @@
                                              fn-method-names
                                              wrld))
        (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
-       (body-jclass (append (list (jcmember-field failures-jfield))
-                            (jmethods-to-jcmembers test-jmethods)
-                            (list (jcmember-method main-jmethod)))))
+       (body-jclass (append (list (jcbody-element-member
+                                   (jcmember-field failures-jfield)))
+                            (jmethods-to-jcbody-elements test-jmethods)
+                            (list (jcbody-element-member
+                                   (jcmember-method main-jmethod))))))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? nil
@@ -550,6 +552,9 @@
                                                        fns-to-translate
                                                        verbose$
                                                        wrld)))
+       ((unless (jcunitp cunit))
+        (raise "Internal error: generated an invalid compilation unit.")
+        (mv nil nil state))
        (state (print-to-jfile (print-jcunit cunit)
                               output-file$
                               state)))
@@ -570,17 +575,21 @@
   :returns state
   :mode :program
   :short "Generate the test Java file."
-  (print-to-jfile (print-jcunit (atj-gen-test-jcunit deep$
-                                                     guards$
-                                                     java-package$
-                                                     java-class$
-                                                     tests$
-                                                     verbose$
-                                                     pkg-class-names
-                                                     fn-method-names
-                                                     (w state)))
-                  output-file-test$
-                  state))
+  (b* ((cunit (atj-gen-test-jcunit deep$
+                                   guards$
+                                   java-package$
+                                   java-class$
+                                   tests$
+                                   verbose$
+                                   pkg-class-names
+                                   fn-method-names
+                                   (w state)))
+       ((unless (jcunitp cunit))
+        (raise "Internal error: generated an invalid compilation unit.")
+        state))
+    (print-to-jfile (print-jcunit cunit)
+                    output-file-test$
+                    state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

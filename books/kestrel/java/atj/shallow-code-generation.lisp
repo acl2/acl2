@@ -29,10 +29,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-integer-field-name ((integer integerp))
+  :returns (name stringp)
+  :short "Generate the name of the Java field for an ACL2 integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     each quoted integer constant in the ACL2 code
+     is translated to a static final field
+     that is calculate once at class initialization time
+     and then just referenced in the Java code.
+     Since ACL2 integers are objects,
+     this avoids recalculating the object every time
+     the shallowly embedded quoted integer constant
+     is executed in the Java code.")
+   (xdoc::p
+    "The name of the field consists of the decimal digits of the integer
+     preceded by @('$CONST_'), if the integer is non-negative.
+     For a negative integer, we put @('minus') just before the digits.."))
+  (str::cat "$CONST_" (if (>= integer 0)
+                    (str::natstr integer)
+                  (str::cat "minus" (str::natstr (- integer))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer ((integer integerp))
+  :returns (expr jexprp)
+  :short "Generate a shallowly embedded ACL2 integer."
+  :long
+  (xdoc::topstring-p
+   "As explained in @(tsee atj-gen-shallow-integer-field-name),
+    we translate each quoted integer to the corresponding field name.")
+  (jexpr-name (atj-gen-shallow-integer-field-name integer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-symbol ((symbol symbolp))
   :returns (jexpr jexprp)
-  :short "Generate Java code to build an ACL2 symbol,
-          in the shallow embedding approach."
+  :short "Generate a shallowly embedded ACL2 symbol."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -64,15 +99,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-gen-shallow-value
-  :short "Generate Java code to build an ACL2 value,
-          in the shallow embedding approach."
+  :short "Generate a shallowly  embedded ACL2 value."
   :long
   (xdoc::topstring
    (xdoc::p
     "Currently, this is essentially like @(tsee atj-gen-value),
      which can be used in both deep and shallow embedding,
-     but it uses @(tsee atj-gen-shallow-symbol)
-     instead of @(tsee atj-gen-symbol).")
+     but it uses
+     @(tsee atj-gen-shallow-symbol) instead of @(tsee atj-gen-symbol),
+     and @(tsee atj-gen-shallow-integer) instead of @(tsee atj-gen-integer).")
    (xdoc::@def "atj-gen-shallow-value")
    (xdoc::@def "atj-gen-shallow-cons"))
 
@@ -135,7 +170,7 @@
                                (atj-gen-shallow-symbol value)
                                jvar-value-index))
           ((integerp value) (mv nil
-                                (atj-gen-integer value)
+                                (atj-gen-shallow-integer value)
                                 jvar-value-index))
           ((rationalp value) (mv nil
                                  (atj-gen-rational value)
@@ -1396,6 +1431,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines atj-quoted-integers-in-term
+  :short "Collect all the quoted integers in a term."
+  :long
+  (xdoc::topstring
+   "We return all the integers that appear directly quoted in the term.
+    That is, for each sub-term of the form @('(quote <integer>)'),
+    we return @('<integer>').
+    This excludes integers that occur inside other quoted values,
+    e.g. @('(quote (<integer> . ...))').
+    The result list has no duplicates.")
+
+  (define atj-quoted-integers-in-term ((term pseudo-termp))
+    :returns (integers integer-listp)
+    (b* (((when (variablep term)) nil)
+         ((when (fquotep term)) (b* ((value (unquote-term term)))
+                                  (if (integerp value)
+                                      (list value)
+                                    nil)))
+         (integers-in-args (atj-quoted-integers-in-terms (fargs term)))
+         (fn (ffn-symb term)))
+      (if (flambdap fn)
+          (union$ integers-in-args
+                  (atj-quoted-integers-in-term (lambda-body fn)))
+        integers-in-args)))
+
+  (define atj-quoted-integers-in-terms ((terms pseudo-term-listp))
+    :returns (integers integer-listp)
+    (cond ((endp terms) nil)
+          (t (union$ (atj-quoted-integers-in-term (car terms))
+                     (atj-quoted-integers-in-terms (cdr terms))))))
+
+  :prepwork
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-quoted-integers-in-term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-fndef ((fn symbolp)
                                (pkg-class-names string-string-alistp)
                                (fn-method-names symbol-string-alistp)
@@ -1405,7 +1480,8 @@
                                (wrld plist-worldp))
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
-  :returns (jmethod jmethodp)
+  :returns (mv (method jmethodp)
+               (quoted-integers integer-listp))
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
@@ -1456,7 +1532,14 @@
      or with the Java local variables generated from the ACL2 variables,
      none of which starts with a @('$') not followed by two hexadecimal digits.
      The body of the Java method consists of those Java statements,
-     followed by a @('return') statement with that Java expression."))
+     followed by a @('return') statement with that Java expression.")
+   (xdoc::p
+    "We also collect and return all the quoted integers
+     in the pre-translated function body.
+     These are used to generate (in other code generation functions)
+     the corresponding Java fields;
+     see @(tsee atj-gen-shallow-integer) for motivation.
+     The list of quoted integers has no duplicates."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
        (formals (formals fn wrld))
@@ -1466,15 +1549,16 @@
        (out-type (atj-function-type->output fn-type))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
-       (jmethod-name (atj-gen-shallow-fnname fn
-                                             pkg-class-names
-                                             fn-method-names
-                                             curr-pkg))
+       (quoted-integers (atj-quoted-integers-in-term body))
+       (method-name (atj-gen-shallow-fnname fn
+                                            pkg-class-names
+                                            fn-method-names
+                                            curr-pkg))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
-       (jmethod-params (atj-gen-jparamlist (symbol-name-lst formals)
-                                           (atj-types-to-jtypes in-types)))
-       ((mv body-jblock body-jexpr & &)
+       (method-params (atj-gen-jparamlist (symbol-name-lst formals)
+                                          (atj-types-to-jtypes in-types)))
+       ((mv body-block body-expr & &)
         (atj-gen-shallow-term body
                               "$value" 1
                               "$result" 1
@@ -1483,21 +1567,22 @@
                               curr-pkg
                               guards$
                               wrld))
-       (jmethod-body (append body-jblock
-                             (jblock-return body-jexpr)))
-       (jmethod-body (atj-post-translate jmethod-body)))
-    (make-jmethod :access (jaccess-public)
-                  :abstract? nil
-                  :static? t
-                  :final? nil
-                  :synchronized? nil
-                  :native? nil
-                  :strictfp? nil
-                  :result (jresult-type (atj-type-to-jtype out-type))
-                  :name jmethod-name
-                  :params jmethod-params
-                  :throws (list *aij-jclass-eval-exc*)
-                  :body jmethod-body)))
+       (method-body (append body-block
+                            (jblock-return body-expr)))
+       (method-body (atj-post-translate method-body))
+       (method (make-jmethod :access (jaccess-public)
+                             :abstract? nil
+                             :static? t
+                             :final? nil
+                             :synchronized? nil
+                             :native? nil
+                             :strictfp? nil
+                             :result (jresult-type (atj-type-to-jtype out-type))
+                             :name method-name
+                             :params method-params
+                             :throws (list *aij-jclass-eval-exc*)
+                             :body method-body)))
+    (mv method quoted-integers)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1510,18 +1595,25 @@
                             (wrld plist-worldp))
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
-  :returns (jmethod jmethodp)
+  :returns (mv (method jmethodp)
+               (quoted-integers integer-listp))
   :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
+  :long
+  (xdoc::topstring-p
+   "We also return the list of quoted integers:
+    see @(tsee atj-gen-shallow-fndef).
+    This is @('nil') for native functions.")
   (if (aij-nativep fn)
-      (atj-gen-shallow-fnnative fn
-                                pkg-class-names
-                                fn-method-names
-                                guards$
-                                curr-pkg
-                                wrld)
+      (mv (atj-gen-shallow-fnnative fn
+                                    pkg-class-names
+                                    fn-method-names
+                                    guards$
+                                    curr-pkg
+                                    wrld)
+          nil)
     (atj-gen-shallow-fndef fn
                            pkg-class-names
                            fn-method-names
@@ -1542,29 +1634,40 @@
   :guard (and (equal (symbol-package-name-lst fns)
                      (repeat (len fns) curr-pkg))
               (not (equal curr-pkg "")))
-  :returns (jmethods jmethod-listp)
+  :returns (mv (methods jmethod-listp)
+               (quoted-integers integer-listp))
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-fn) to lists."
   :long
-  (xdoc::topstring-p
-   "This function is called on the functions to translate to Java
-    that are all in the same package, namely @('curr-pkg').")
-  (cond ((endp fns) nil)
-        (t (b* ((first-jmethod (atj-gen-shallow-fn (car fns)
-                                                   pkg-class-names
-                                                   fn-method-names
-                                                   guards$
-                                                   verbose$
-                                                   curr-pkg
-                                                   wrld))
-                (rest-jmethods (atj-gen-shallow-fns (cdr fns)
-                                                    pkg-class-names
-                                                    fn-method-names
-                                                    guards$
-                                                    verbose$
-                                                    curr-pkg
-                                                    wrld)))
-             (cons first-jmethod rest-jmethods)))))
+  (xdoc::topstring
+   (xdoc::p
+    "This function is called on the functions to translate to Java
+     that are all in the same package, namely @('curr-pkg').")
+   (xdoc::p
+    "The quoted integers for all the functions are all joined together,
+     without duplicates."))
+  (b* (((when (endp fns)) (mv nil nil))
+       ((mv first-method
+            first-qints) (atj-gen-shallow-fn (car fns)
+                                             pkg-class-names
+                                             fn-method-names
+                                             guards$
+                                             verbose$
+                                             curr-pkg
+                                             wrld))
+       ((mv rest-methods
+            rest-qints) (atj-gen-shallow-fns (cdr fns)
+                                             pkg-class-names
+                                             fn-method-names
+                                             guards$
+                                             verbose$
+                                             curr-pkg
+                                             wrld))
+       (methods (cons first-method rest-methods))
+       (qints (union$ first-qints rest-qints)))
+    (mv methods qints))
+  :prepwork
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1719,7 +1822,8 @@
                                     (wrld plist-worldp))
   :guard (equal (symbol-package-name-lst fns-in-pkg)
                 (repeat (len fns-in-pkg) pkg))
-  :returns (jclass jclassp)
+  :returns (mv (class jclassp)
+               (quoted-integers integer-listp))
   :verify-guards nil
   :short "Generate the shallowly embedded ACL2 functions
           in an ACL2 package."
@@ -1743,15 +1847,15 @@
        ((unless (consp pair))
         (raise "Internal error: no class name for package name ~x0." pkg)
         ;; irrelevant:
-        (make-jclass :access (jaccess-public) :name ""))
+        (mv (make-jclass :access (jaccess-public) :name "") nil))
        (jclass-name (cdr pair))
-       (fn-methods (atj-gen-shallow-fns fns-in-pkg
-                                        pkg-class-names
-                                        fn-method-names
-                                        guards$
-                                        verbose$
-                                        pkg
-                                        wrld))
+       ((mv fn-methods qints) (atj-gen-shallow-fns fns-in-pkg
+                                                   pkg-class-names
+                                                   fn-method-names
+                                                   guards$
+                                                   verbose$
+                                                   pkg
+                                                   wrld))
        (imported-fns (intersection-eq fns-to-translate (pkg-imports pkg)))
        (synonym-methods (atj-gen-shallow-fnsynonyms imported-fns
                                                     pkg-class-names
@@ -1759,16 +1863,17 @@
                                                     guards$
                                                     pkg
                                                     wrld))
-       (all-methods (append fn-methods synonym-methods)))
-    (make-jclass :access (jaccess-public)
-                 :abstract? nil
-                 :static? t
-                 :final? nil
-                 :strictfp? nil
-                 :name jclass-name
-                 :superclass? nil
-                 :superinterfaces nil
-                 :body (jmethods-to-jcmembers all-methods))))
+       (all-methods (append fn-methods synonym-methods))
+       (class (make-jclass :access (jaccess-public)
+                           :abstract? nil
+                           :static? t
+                           :final? nil
+                           :strictfp? nil
+                           :name jclass-name
+                           :superclass? nil
+                           :superinterfaces nil
+                           :body (jmethods-to-jcbody-elements all-methods))))
+    (mv class qints)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1778,9 +1883,10 @@
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
-  :returns (mv (jclasses jclass-listp)
+  :returns (mv (classes jclass-listp)
                (pkg-class-names "A @(tsee string-string-alistp).")
-               (fn-method-names "A @(tsee symbol-string-alistp)."))
+               (fn-method-names "A @(tsee symbol-string-alistp).")
+               (quoted-integers integer-listp))
   :verify-guards nil
   :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
   :long
@@ -1793,25 +1899,34 @@
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
      which must be eventually passed to the functions that generate
-     the Java test class."))
+     the Java test class.")
+   (xdoc::p
+    "We also return all the quoted integers
+     from the pre-translated function bodies.
+     The list of integers is without duplicates."))
   (b* ((pkgs (remove-duplicates-equal (strip-cars fns-by-pkg)))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods
-                         (remove-duplicates-equal fns-to-translate))))
-    (mv (atj-gen-shallow-fns-by-pkg-aux pkgs
-                                        fns-to-translate
-                                        fns-by-pkg
-                                        pkg-class-names
-                                        fn-method-names
-                                        guards$
-                                        java-class$
-                                        verbose$
-                                        wrld)
+                         (remove-duplicates-equal fns-to-translate)))
+       ((mv classes qints) (atj-gen-shallow-fns-by-pkg-aux pkgs
+                                                           fns-to-translate
+                                                           fns-by-pkg
+                                                           pkg-class-names
+                                                           fn-method-names
+                                                           guards$
+                                                           java-class$
+                                                           verbose$
+                                                           wrld)))
+    (mv classes
         pkg-class-names
-        fn-method-names))
+        fn-method-names
+        qints))
 
   :prepwork
-  ((define atj-gen-shallow-fns-by-pkg-aux
+
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
+
+   (define atj-gen-shallow-fns-by-pkg-aux
      ((pkgs string-listp)
       (fns-to-translate symbol-listp)
       (fns-by-pkg string-symbollist-alistp)
@@ -1821,29 +1936,127 @@
       (java-class$ stringp)
       (verbose$ booleanp)
       (wrld plist-worldp))
-     :returns (jclasses jclass-listp)
+     :returns (mv (classes jclass-listp)
+                  (quoted-integers integer-listp))
      :verify-guards nil
-     (b* (((when (endp pkgs)) nil)
+     (b* (((when (endp pkgs)) (mv nil nil))
           (pkg (car pkgs))
           (fns-in-pkg (cdr (assoc-equal pkg fns-by-pkg)))
-          (first-jclass (atj-gen-shallow-fns-in-pkg fns-in-pkg
-                                                    fns-to-translate
-                                                    pkg
-                                                    pkg-class-names
-                                                    fn-method-names
-                                                    guards$
-                                                    verbose$
-                                                    wrld))
-          (rest-jclasses (atj-gen-shallow-fns-by-pkg-aux (cdr pkgs)
-                                                         fns-to-translate
-                                                         fns-by-pkg
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         guards$
-                                                         java-class$
-                                                         verbose$
-                                                         wrld)))
-       (cons first-jclass rest-jclasses)))))
+          ((mv first-class
+               first-qints) (atj-gen-shallow-fns-in-pkg fns-in-pkg
+                                                        fns-to-translate
+                                                        pkg
+                                                        pkg-class-names
+                                                        fn-method-names
+                                                        guards$
+                                                        verbose$
+                                                        wrld))
+          ((mv rest-classes
+               rest-qints) (atj-gen-shallow-fns-by-pkg-aux (cdr pkgs)
+                                                           fns-to-translate
+                                                           fns-by-pkg
+                                                           pkg-class-names
+                                                           fn-method-names
+                                                           guards$
+                                                           java-class$
+                                                           verbose$
+                                                           wrld))
+          (classes (cons first-class rest-classes))
+          (qints (union$ first-qints rest-qints)))
+       (mv classes qints)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer-field ((integer integerp))
+  :returns (field jfieldp)
+  :short "Generate a Java field for an ACL2 integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atj-gen-shallow-integer) for motivation.")
+   (xdoc::p
+    "This is a private static final field with an initializer.
+     The initializer constructs the integer value."))
+  (b* ((name (atj-gen-shallow-integer-field-name integer))
+       (init (atj-gen-integer integer)))
+    (make-jfield :access (jaccess-private)
+                 :static? t
+                 :final? t
+                 :transient? nil
+                 :volatile? nil
+                 :type *aij-jtype-int*
+                 :name name
+                 :init init)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer-fields ((integers integer-listp))
+  :returns (fields jfield-listp)
+  :short "Lift @(tsee atj-gen-shallow-integer-field) to lists."
+  (cond ((endp integers) nil)
+        (t (cons (atj-gen-shallow-integer-field (car integers))
+                 (atj-gen-shallow-integer-fields (cdr integers))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-static-initializer ((pkgs string-listp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer
+          for the main (i.e. non-test) Java class declaration,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This contains code to initialize the ACL2 environment:
+     we build the Java representation of the ACL2 packages,
+     and we set the package witness."))
+  (b* ((pkgs-block (atj-gen-pkgs pkgs))
+       (pkg-witness-block (atj-gen-pkg-witness)))
+    (make-jcinitializer :static? t
+                        :code (append pkgs-block
+                                      pkg-witness-block))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-init-method ()
+  :returns (method jmethodp)
+  :short "Generate the Java public method to initialize the ACL2 environment,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This method just checks and sets the initialization flag,
+     because the actual initialization of the ACL2 environment
+     is performed by the static initializer generated by
+     @(tsee atj-gen-shallow-static-initializer).
+     Still, external users of the generated Java code must call this method
+     to trigger, if it has not happened already,
+     the initialization of the Java class
+     and thus the execution of the static initializer.
+     This seems a bit clumsy; it will be improved in the future."))
+  (b* ((exception-message "The ACL2 environment is already initialized.")
+       (exception-message-jexpr (atj-gen-jstring exception-message))
+       (throw-jblock (jblock-throw (jexpr-newclass
+                                    (jtype-class "IllegalStateException")
+                                    (list exception-message-jexpr))))
+       (if-jblock (jblock-if (jexpr-name "initialized")
+                             throw-jblock))
+       (initialize-jblock (jblock-asg-name "initialized"
+                                           (jexpr-literal-true)))
+       (jmethod-body (append if-jblock
+                             initialize-jblock)))
+    (make-jmethod :access (jaccess-public)
+                  :abstract? nil
+                  :static? t
+                  :final? nil
+                  :synchronized? nil
+                  :native? nil
+                  :strictfp? nil
+                  :result (jresult-void)
+                  :name "initialize"
+                  :params nil
+                  :throws nil
+                  :body jmethod-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1862,46 +2075,73 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a public class that contains all the generated members.
+    "This is a public class.
      [JLS] says that a Java implementation may require
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p
     "The class contains the initialization field and method,
      the methods to build the ACL2 packages,
-     and the classes that contain methods for the ACL2 functions.
-     We ensure that the ACL2 functions natively implemented in AIJ
+     the classes that contain methods for the ACL2 functions,
+     the fields for quoted integers,
+     and the static initializer.")
+   (xdoc::p
+    "It is critical that the static initializer
+     comes before the fields for the quoted integers,
+     so that the ACL2 environment is initialized
+     before the field initializers, which construct ACL2 values,
+     are executed;
+     [JLS:12.4.1] says that the class initialization code
+     is executed in textual order.")
+   (xdoc::p
+    "After the static initializer,
+     we generate the fields for the quoted integers,
+     followed by the initialization flag field
+     (so all the fields are together).")
+   (xdoc::p
+    "After the fields, we generate the methods to build the packages.")
+   (xdoc::p
+    "We ensure that the ACL2 functions natively implemented in AIJ
      (currently the ACL2 primitive functions)
      are included,
      we organize the resulting functions by packages,
-     and we proceed to generate the Java nested classes and methods.")
+     and we proceed to generate the Java nested classes,
+     after the methods to build the packages.")
+   (xdoc::p
+    "The initialization method is at the very end, after the nested classes.")
    (xdoc::p
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
      which must be eventually passed to the functions that generate
      the Java test class."))
-  (b* ((init-jfield (atj-gen-init-jfield))
+  (b* ((static-init (atj-gen-shallow-static-initializer pkgs))
+       (init-field (atj-gen-init-jfield))
+       (init-method (atj-gen-shallow-init-method))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 packages:~%"))
-       (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
+       (pkg-methods (atj-gen-pkg-jmethods pkgs verbose$))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
        (fns+natives (remove-duplicates-eq
                      (append fns-to-translate
                              (strip-cars *primitive-formals-and-guards*))))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
-       ((mv fn-jclasses pkg-class-names fn-method-names)
+       ((mv fn-classes pkg-class-names fn-method-names qints)
         (atj-gen-shallow-fns-by-pkg fns+natives
                                     fns-by-pkg
                                     guards$
                                     java-class$
                                     verbose$
                                     wrld))
-       (init-jmethod (atj-gen-init-jmethod pkgs nil))
-       (body-jclass (append (list (jcmember-field init-jfield))
-                            (jmethods-to-jcmembers pkg-jmethods)
-                            (jclasses-to-jcmembers fn-jclasses)
-                            (list (jcmember-method init-jmethod)))))
+       (qint-fields (atj-gen-shallow-integer-fields qints))
+       (body-class (append (list (jcbody-element-init static-init))
+                           (jfields-to-jcbody-elements (append qint-fields
+                                                               (list
+                                                                init-field)))
+                           (jmethods-to-jcbody-elements pkg-methods)
+                           (jclasses-to-jcbody-elements fn-classes)
+                           (list (jcbody-element-member
+                                  (jcmember-method init-method))))))
     (mv (make-jclass :access (jaccess-public)
                      :abstract? nil
                      :static? nil
@@ -1910,7 +2150,7 @@
                      :name java-class$
                      :superclass? nil
                      :superinterfaces nil
-                     :body body-jclass)
+                     :body body-class)
         pkg-class-names
         fn-method-names)))
 

@@ -568,11 +568,14 @@
                            fns-validate-jblock))
        (init-jmethod (atj-gen-init-jmethod pkgs fns-jblock))
        (call-jmethod (atj-gen-deep-call-jmethod))
-       (body-jclass (append (list (jcmember-field init-jfield))
-                            (jmethods-to-jcmembers pkg-jmethods)
-                            (jmethods-to-jcmembers fn-jmethods)
-                            (list (jcmember-method init-jmethod))
-                            (list (jcmember-method call-jmethod)))))
+       (body-jclass (append (list (jcbody-element-member
+                                   (jcmember-field init-jfield)))
+                            (jmethods-to-jcbody-elements pkg-jmethods)
+                            (jmethods-to-jcbody-elements fn-jmethods)
+                            (list (jcbody-element-member
+                                   (jcmember-method init-jmethod)))
+                            (list (jcbody-element-member
+                                   (jcmember-method call-jmethod))))))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? nil
