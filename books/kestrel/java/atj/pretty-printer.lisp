@@ -468,6 +468,16 @@
             (print-jblock method.body (1+ indent-level))
             (list (print-jline "}" indent-level)))))
 
+(define print-jcinitializer ((initializer jcinitializerp) (indent-level natp))
+  :returns (lines msg-listp)
+  :short "Pretty-print a class initializer."
+  (append (list (print-jline (if (jcinitializer->static? initializer)
+                                 "static {"
+                               "{")
+                             indent-level))
+          (print-jblock (jcinitializer->code initializer) (1+ indent-level))
+          (list (print-jline "}" indent-level))))
+
 (defines print-jclasses+jcmembers
 
   (define print-jcmember ((member jcmemberp) (indent-level natp))
@@ -479,17 +489,30 @@
                    :class (print-jclass member.get indent-level))
     :measure (jcmember-count member))
 
-  (define print-jcmember-list ((members jcmember-listp) (indent-level natp))
+  (define print-jcbody-element ((body-element jcbody-element-p)
+                                (indent-level natp))
     :returns (lines msg-listp)
-    :short "Pretty-print a sequence of class member declarations."
+    :short "Pretty-print a Java class body declaration."
+    (jcbody-element-case body-element
+                         :member (print-jcmember body-element.get indent-level)
+                         :init (print-jcinitializer body-element.get
+                                                    indent-level))
+    :measure (jcbody-element-count body-element))
+
+  (define print-jcbody-element-list ((body-elements jcbody-element-listp)
+                                     (indent-level natp))
+    :returns (lines msg-listp)
+    :short "Pretty-print a sequence of class body declarations."
     :long
     (xdoc::topstring-p
      "Each one is preceded by a blank line.")
-    (cond ((endp members) nil)
+    (cond ((endp body-elements) nil)
           (t (append (list (print-jline-blank))
-                     (print-jcmember (car members) indent-level)
-                     (print-jcmember-list (cdr members) indent-level))))
-    :measure (jcmember-list-count members))
+                     (print-jcbody-element (car body-elements)
+                                           indent-level)
+                     (print-jcbody-element-list (cdr body-elements)
+                                                indent-level))))
+    :measure (jcbody-element-list-count body-elements))
 
   (define print-jclass ((class jclassp) (indent-level natp))
     :returns (lines msg-listp)
@@ -509,7 +532,7 @@
                                                class.superclass?)
                                         ""))
                                  indent-level))
-              (print-jcmember-list class.body (1+ indent-level))
+              (print-jcbody-element-list class.body (1+ indent-level))
               (list (print-jline "}" indent-level))))
     :measure (jclass-count class)))
 

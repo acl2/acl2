@@ -545,7 +545,6 @@
              (jblockp (flatten blocks)))
     :enable flatten))
 
-
 (defines jstatems+jblocks-count-ifs
   :short "Number of @('if')s in a statement or block."
   :long
@@ -664,6 +663,13 @@
    (init jexpr))
   :pred jfieldp)
 
+(fty::deflist jfield-list
+  :short "True lists of Java field declarations."
+  :elt-type jfield
+  :true-listp t
+  :elementp-of-nil nil
+  :pred jfield-listp)
+
 (fty::deftagsum jresult
   :short "Result of a Java method [JLS:8.4.5]."
   (:type ((get jtype)))
@@ -723,6 +729,15 @@
   :elementp-of-nil nil
   :pred jmethod-listp)
 
+(fty::defprod jcinitializer
+  :short "Java class initializer [JLS:8.6] [JLS:8.7]."
+  :long
+  (xdoc::topstring-p
+   "This captures both static and instance intializers.")
+  ((static? bool)
+   (code jblock))
+  :pred jcinitializerp)
+
 (fty::deftypes jclasses+jcmembers
 
   (fty::deftagsum jcmember
@@ -737,12 +752,22 @@
     :pred jcmemberp
     :measure (two-nats-measure (acl2-count x) 0))
 
-  (fty::deflist jcmember-list
-    :short "True lists of Java class member declarations."
-    :elt-type jcmember
+  (fty::deftagsum jcbody-element
+    :short "Java class body declarations [JLS:8.1.6]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We do not capture constructor declarations."))
+    (:member ((get jcmember)))
+    (:init ((get jcinitializer)))
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist jcbody-element-list
+    :short "True lists of Java class body declarations."
+    :elt-type jcbody-element
     :true-listp t
     :elementp-of-nil nil
-    :pred jcmember-listp
+    :pred jcbody-element-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::defprod jclass
@@ -763,8 +788,10 @@
      (name string)
      (superclass? maybe-string)
      (superinterfaces string-list)
-     (body jcmember-list))
+     (body jcbody-element-list))
     :pred jclassp
+    ;; 2nd component of measure is non-0 so that field BODY,
+    ;; whose measure's 2nd component is 0, always decreases:
     :measure (two-nats-measure (acl2-count x) 1)))
 
 (fty::deflist jclass-list
@@ -774,19 +801,29 @@
   :elementp-of-nil nil
   :pred jclass-listp)
 
-(define jmethods-to-jcmembers ((jmethods jmethod-listp))
-  :returns (jcmembers jcmember-listp)
-  :short "Lift @(tsee jcmember-method) to lists."
-  (cond ((endp jmethods) nil)
-        (t (cons (jcmember-method (car jmethods))
-                 (jmethods-to-jcmembers (cdr jmethods))))))
+(define jfields-to-jcbody-elements ((fields jfield-listp))
+  :returns (cbody-elements jcbody-element-listp)
+  :short "Lift the composition of @(tsee jcmember-field)
+          followed by @(tsee jcbody-member-element) to lists."
+  (cond ((endp fields) nil)
+        (t (cons (jcbody-element-member (jcmember-field (car fields)))
+                 (jfields-to-jcbody-elements (cdr fields))))))
 
-(define jclasses-to-jcmembers ((jclasses jclass-listp))
-  :returns (jcmembers jcmember-listp)
-  :short "Lift @(tsee jcmember-class) to lists."
-  (cond ((endp jclasses) nil)
-        (t (cons (jcmember-class (car jclasses))
-                 (jclasses-to-jcmembers (cdr jclasses))))))
+(define jmethods-to-jcbody-elements ((methods jmethod-listp))
+  :returns (cbody-elements jcbody-element-listp)
+  :short "Lift the composition of @(tsee jcmember-method)
+          followed by @(tsee jcbody-member-element) to lists."
+  (cond ((endp methods) nil)
+        (t (cons (jcbody-element-member (jcmember-method (car methods)))
+                 (jmethods-to-jcbody-elements (cdr methods))))))
+
+(define jclasses-to-jcbody-elements ((classes jclass-listp))
+  :returns (cbody-elements jcbody-element-listp)
+  :short "Lift the composition of @(tsee jcmember-class)
+          followed by @(tsee jcbody-member-element) to lists."
+  (cond ((endp classes) nil)
+        (t (cons (jcbody-element-member (jcmember-class (car classes)))
+                 (jclasses-to-jcbody-elements (cdr classes))))))
 
 (fty::defprod jimport
   :short "Java import declarations [JLS:7.5]."
