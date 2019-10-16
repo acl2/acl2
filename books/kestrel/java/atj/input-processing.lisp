@@ -190,11 +190,11 @@
                    NIL or a valid Java package name ~
                    consisting of only ASCII characters."
                   java-package))
-       ((when (equal java-package *aij-jpackage*))
+       ((when (equal java-package *aij-package*))
         (er-soft+ ctx t nil
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
-                  java-package *aij-jpackage*)))
+                  java-package *aij-package*)))
     (value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

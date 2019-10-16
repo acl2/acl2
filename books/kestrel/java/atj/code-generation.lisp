@@ -97,15 +97,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-jmethod ((test$ atj-testp)
-                              (deep$ booleanp)
-                              (guards$ booleanp)
-                              (java-class$ stringp)
-                              (verbose$ booleanp)
-                              (pkg-class-names string-string-alistp)
-                              (fn-method-names symbol-string-alistp)
-                              (wrld plist-worldp))
-  :returns (jmethod jmethodp)
+(define atj-gen-test-method ((test$ atj-testp)
+                             (deep$ booleanp)
+                             (guards$ booleanp)
+                             (java-class$ stringp)
+                             (verbose$ booleanp)
+                             (pkg-class-names string-string-alistp)
+                             (fn-method-names symbol-string-alistp)
+                             (wrld plist-worldp))
+  :returns (method jmethodp)
   :verify-guards nil
   :short "Generate a Java method to run one of the specified tests."
   :long
@@ -185,48 +185,48 @@
   (b* (((atj-test test) test$)
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
-       (jmethod-name (atj-gen-test-jmethod-name test.name))
-       ((mv args-jblock
-            args-jexprs
+       (method-name (atj-gen-test-method-name test.name))
+       ((mv args-block
+            args-exprs
             jvar-value-index) (atj-gen-values test.arguments "value" 1))
-       ((mv ares-jblock
-            ares-jexpr
+       ((mv ares-block
+            ares-expr
             &) (atj-gen-value test.result "value" jvar-value-index))
-       (current-time-jexpr (jexpr-smethod (jtype-class "System")
-                                          "currentTimeMillis"
-                                          nil))
+       (current-time-expr (jexpr-smethod (jtype-class "System")
+                                         "currentTimeMillis"
+                                         nil))
        (fn-type (atj-get-function-type test.function guards$ wrld))
        (in-types (atj-function-type->inputs fn-type))
-       ((mv shallow-arg-jblock shallow-arg-jvars)
+       ((mv shallow-arg-block shallow-arg-jvars)
         (if deep$
             (mv nil nil)
-          (atj-gen-test-jmethod-aux args-jexprs in-types 1)))
-       (n!=0-jexpr (jexpr-binary (jbinop-ne)
-                                 (jexpr-name "n")
-                                 (jexpr-literal-0)))
-       (jmethod-body
+          (atj-gen-test-method-aux args-exprs in-types 1)))
+       (n!=0-expr (jexpr-binary (jbinop-ne)
+                                (jexpr-name "n")
+                                (jexpr-literal-0)))
+       (method-body
         (append
          (jblock-imethod (jexpr-name "System.out")
                          "print"
                          (list (atj-gen-jstring
                                 (str::cat "Testing '" test.name "'..."))))
-         args-jblock ; build test.arguments
+         args-block ; build test.arguments
          (if deep$
-             (jblock-locvar (jtype-array *aij-jtype-value*)
+             (jblock-locvar (jtype-array *aij-type-value*)
                             "functionArguments"
-                            (jexpr-newarray-init *aij-jtype-value*
-                                                 args-jexprs))
-           shallow-arg-jblock) ; assign to argument1, argument2, ...
-         ares-jblock ; build test.result
-         (jblock-locvar *aij-jtype-value* "resultAcl2" ares-jexpr)
+                            (jexpr-newarray-init *aij-type-value*
+                                                 args-exprs))
+           shallow-arg-block) ; assign to argument1, argument2, ...
+         ares-block ; build test.result
+         (jblock-locvar *aij-type-value* "resultAcl2" ares-expr)
          (and deep$
-              (jblock-locvar *aij-jtype-symbol*
+              (jblock-locvar *aij-type-symbol*
                              "functionName"
                              (atj-gen-symbol test.function)))
          (jblock-locvar (jtype-boolean) "pass" (jexpr-literal-true))
          (jblock-locvar (jtype-array (jtype-long))
                         "times"
-                        (jexpr-cond n!=0-jexpr
+                        (jexpr-cond n!=0-expr
                                     (jexpr-newarray (jtype-long)
                                                     (jexpr-name "n"))
                                     (jexpr-literal-null)))
@@ -237,8 +237,8 @@
          (jblock-do
           ;; body of do loop:
           (append
-           (jblock-locvar (jtype-long) "startTime" current-time-jexpr)
-           (jblock-locvar *aij-jtype-value*
+           (jblock-locvar (jtype-long) "startTime" current-time-expr)
+           (jblock-locvar *aij-type-value*
                           "resultJava"
                           (if deep$
                               (jexpr-smethod (jtype-class java-class$)
@@ -254,7 +254,7 @@
                                             "KEYWORD")
                                            (jexpr-name-list
                                             shallow-arg-jvars))))
-           (jblock-locvar (jtype-long) "endTime" current-time-jexpr)
+           (jblock-locvar (jtype-long) "endTime" current-time-expr)
            (jblock-asg (jexpr-name "pass")
                        (jexpr-binary (jbinop-logand)
                                      (jexpr-name "pass")
@@ -262,7 +262,7 @@
                                                     "equals"
                                                     (list (jexpr-name
                                                            "resultJava")))))
-           (jblock-if n!=0-jexpr
+           (jblock-if n!=0-expr
                       (append
                        (jblock-locvar (jtype-long)
                                       "time"
@@ -305,7 +305,7 @@
                                          (list (atj-gen-jstring " FAIL")))
                          (jblock-asg-name "failures"
                                           (jexpr-literal-true))))
-         (jblock-if n!=0-jexpr
+         (jblock-if n!=0-expr
                     (append
                      (jblock-imethod (jexpr-name "System.out")
                                      "println"
@@ -363,47 +363,47 @@
                   :native? nil
                   :strictfp? nil
                   :result (jresult-void)
-                  :name jmethod-name
+                  :name method-name
                   :params (list (make-jparam :final? nil
                                              :type (jtype-int)
                                              :name "n"))
-                  :throws (list *aij-jclass-eval-exc*)
-                  :body jmethod-body))
+                  :throws (list *aij-class-eval-exc*)
+                  :body method-body))
 
   :prepwork
-  ((define atj-gen-test-jmethod-aux ((args-jexprs jexpr-listp)
-                                     (types atj-type-listp)
-                                     (index posp))
-     :guard (= (len args-jexprs) (len types))
-     :returns (mv (jblock jblockp)
+  ((define atj-gen-test-method-aux ((args-exprs jexpr-listp)
+                                    (types atj-type-listp)
+                                    (index posp))
+     :guard (= (len args-exprs) (len types))
+     :returns (mv (block jblockp)
                   (jvars string-listp))
-     (cond ((endp args-jexprs) (mv nil nil))
+     (cond ((endp args-exprs) (mv nil nil))
            (t (b* ((first-jvar (str::cat "argument" (str::natstr index)))
                    (first-type (car types))
                    (first-jtype (atj-type-to-jtype first-type))
-                   (first-jexpr (jexpr-cast (atj-type-to-jtype first-type)
-                                            (car args-jexprs)))
-                   (first-jblock (jblock-locvar first-jtype
-                                                first-jvar
-                                                first-jexpr))
-                   ((mv rest-jblock rest-jvars)
-                    (atj-gen-test-jmethod-aux (cdr args-jexprs)
-                                              (cdr types)
-                                              (1+ index))))
-                (mv (append first-jblock rest-jblock)
+                   (first-expr (jexpr-cast (atj-type-to-jtype first-type)
+                                           (car args-exprs)))
+                   (first-block (jblock-locvar first-jtype
+                                               first-jvar
+                                               first-expr))
+                   ((mv rest-block rest-jvars)
+                    (atj-gen-test-method-aux (cdr args-exprs)
+                                             (cdr types)
+                                             (1+ index))))
+                (mv (append first-block rest-block)
                     (cons first-jvar rest-jvars))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-jmethods ((tests$ atj-test-listp)
-                               (deep$ booleanp)
-                               (guards$ booleanp)
-                               (java-class$ stringp)
-                               (verbose$ booleanp)
-                               (pkg-class-names string-string-alistp)
-                               (fn-method-names symbol-string-alistp)
-                               (wrld plist-worldp))
-  :returns (jmethods jmethod-listp)
+(define atj-gen-test-methods ((tests$ atj-test-listp)
+                              (deep$ booleanp)
+                              (guards$ booleanp)
+                              (java-class$ stringp)
+                              (verbose$ booleanp)
+                              (pkg-class-names string-string-alistp)
+                              (fn-method-names symbol-string-alistp)
+                              (wrld plist-worldp))
+  :returns (methods jmethod-listp)
   :verify-guards nil
   :short "Generate all the Java methods to run the specified tests."
   :long
@@ -412,37 +412,37 @@
     "These are generated only if the @(':tests') input is not @('nil')."))
   (if (endp tests$)
       nil
-    (b* ((first-jmethod
-          (atj-gen-test-jmethod (car tests$)
+    (b* ((first-method
+          (atj-gen-test-method (car tests$)
+                               deep$
+                               guards$
+                               java-class$
+                               verbose$
+                               pkg-class-names
+                               fn-method-names
+                               wrld))
+         (rest-methods
+          (atj-gen-test-methods (cdr tests$)
                                 deep$
                                 guards$
                                 java-class$
                                 verbose$
                                 pkg-class-names
                                 fn-method-names
-                                wrld))
-         (rest-jmethods
-          (atj-gen-test-jmethods (cdr tests$)
-                                 deep$
-                                 guards$
-                                 java-class$
-                                 verbose$
-                                 pkg-class-names
-                                 fn-method-names
-                                 wrld)))
-      (cons first-jmethod rest-jmethods))))
+                                wrld)))
+      (cons first-method rest-methods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-jclass ((tests$ atj-test-listp)
-                             (deep$ booleanp)
-                             (guards$ booleanp)
-                             (java-class$ stringp)
-                             (verbose$ booleanp)
-                             (pkg-class-names string-string-alistp)
-                             (fn-method-names symbol-string-alistp)
-                             (wrld plist-worldp))
-  :returns (jclass jclassp)
+(define atj-gen-test-class ((tests$ atj-test-listp)
+                            (deep$ booleanp)
+                            (guards$ booleanp)
+                            (java-class$ stringp)
+                            (verbose$ booleanp)
+                            (pkg-class-names string-string-alistp)
+                            (fn-method-names symbol-string-alistp)
+                            (wrld plist-worldp))
+  :returns (class jclassp)
   :verify-guards nil
   :short "Generate the test Java class declaration."
   :long
@@ -456,21 +456,21 @@
     The code that we generate satisfies this requirement."))
   (b* (((run-when verbose$)
         (cw "~%Generating Java code for the tests:~%"))
-       (failures-jfield (atj-gen-test-failures-jfield))
-       (test-jmethods (atj-gen-test-jmethods tests$
-                                             deep$
-                                             guards$
-                                             java-class$
-                                             verbose$
-                                             pkg-class-names
-                                             fn-method-names
-                                             wrld))
-       (main-jmethod (atj-gen-test-main-jmethod tests$ java-class$))
-       (body-jclass (append (list (jcbody-element-member
-                                   (jcmember-field failures-jfield)))
-                            (jmethods-to-jcbody-elements test-jmethods)
-                            (list (jcbody-element-member
-                                   (jcmember-method main-jmethod))))))
+       (failures-field (atj-gen-test-failures-field))
+       (test-methods (atj-gen-test-methods tests$
+                                           deep$
+                                           guards$
+                                           java-class$
+                                           verbose$
+                                           pkg-class-names
+                                           fn-method-names
+                                           wrld))
+       (main-method (atj-gen-test-main-method tests$ java-class$))
+       (body-class (append (list (jcbody-element-member
+                                  (jcmember-field failures-field)))
+                           (jmethods-to-jcbody-elements test-methods)
+                           (list (jcbody-element-member
+                                  (jcmember-method main-method))))))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? nil
@@ -479,7 +479,7 @@
                  :name (str::cat java-class$ "Tests")
                  :superclass? nil
                  :superinterfaces nil
-                 :body body-jclass)))
+                 :body body-class)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -496,16 +496,16 @@
   :verify-guards nil
   :short "Generate the test Java compilation unit."
   (make-jcunit :package? java-package$
-               :imports (list (jimport nil (str::cat *aij-jpackage* ".*"))
+               :imports (list (jimport nil (str::cat *aij-package* ".*"))
                               (jimport nil "java.math.BigInteger"))
-               :types (list (atj-gen-test-jclass tests$
-                                                 deep$
-                                                 guards$
-                                                 java-class$
-                                                 verbose$
-                                                 pkg-class-names
-                                                 fn-method-names
-                                                 wrld))))
+               :types (list (atj-gen-test-class tests$
+                                                deep$
+                                                guards$
+                                                java-class$
+                                                verbose$
+                                                pkg-class-names
+                                                fn-method-names
+                                                wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

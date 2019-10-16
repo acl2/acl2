@@ -30,40 +30,40 @@
   ((qconst "(Unquoted) value of the ACL2 quoted constant.")
    (jvar-value-base stringp)
    (jvar-value-index posp))
-  :returns (mv (jblock jblockp)
-               (jexpr jexprp)
+  :returns (mv (block jblockp)
+               (expr jexprp)
                (new-jvar-value-index posp :hyp (posp jvar-value-index)))
   :short "Generate Java code to build a deeply embedded ACL2 quoted constant."
-  (b* (((mv value-jblock
-            value-jexpr
+  (b* (((mv value-block
+            value-expr
             jvar-value-index) (atj-gen-value qconst
                                              jvar-value-base
                                              jvar-value-index))
-       (jblock value-jblock)
-       (jexpr (jexpr-smethod *aij-jtype-qconst*
-                             "make"
-                             (list value-jexpr))))
-    (mv jblock jexpr jvar-value-index)))
+       (block value-block)
+       (expr (jexpr-smethod *aij-type-qconst*
+                            "make"
+                            (list value-expr))))
+    (mv block expr jvar-value-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-var ((var symbolp "The ACL2 variable."))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build a deeply embedded ACL2 variable."
-  (jexpr-smethod *aij-jtype-var*
+  (jexpr-smethod *aij-type-var*
                  "make"
                  (list (atj-gen-symbol var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-formals ((formals symbol-listp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build a deeply embedded formals parameter list
           of an ACL2 named function or lambda expression."
   :long
   (xdoc::topstring-p
    "The generated code builds an array of the formals as symbols.")
-  (jexpr-newarray-init *aij-jtype-symbol*
+  (jexpr-newarray-init *aij-type-symbol*
                        (atj-gen-symbols formals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -80,8 +80,8 @@
                               (jvar-lambda-base stringp)
                               (jvar-lambda-index posp)
                               (guards$ booleanp))
-    :returns (mv (jblock jblockp)
-                 (jexpr jexprp)
+    :returns (mv (block jblockp)
+                 (expr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
@@ -117,14 +117,14 @@
                    (equal (first args) (second args)))
               (mv 'or (list (first args) (third args)))
             (mv fn args)))
-         ((mv fn-jblock
-              fn-jexpr
+         ((mv fn-block
+              fn-expr
               jvar-value-index
               jvar-term-index
               jvar-lambda-index)
           (if (symbolp fn)
               (mv nil
-                  (jexpr-smethod *aij-jtype-named-fn*
+                  (jexpr-smethod *aij-type-named-fn*
                                  "make"
                                  (list (atj-gen-symbol fn)))
                   jvar-value-index
@@ -139,8 +139,8 @@
                                  jvar-lambda-base
                                  jvar-lambda-index
                                  guards$)))
-         ((mv args-jblock
-              arg-jexprs
+         ((mv args-block
+              arg-exprs
               jvar-value-index
               jvar-term-index
               jvar-lambda-index) (atj-gen-deep-terms args
@@ -151,20 +151,20 @@
                                                      jvar-lambda-base
                                                      jvar-lambda-index
                                                      guards$))
-         (args-jexpr (jexpr-newarray-init *aij-jtype-term* arg-jexprs))
-         (fnapp-jexpr (jexpr-smethod *aij-jtype-fn-app*
-                                     "make"
-                                     (list fn-jexpr
-                                           args-jexpr)))
-         ((mv fnapp-locvar-jblock
+         (args-expr (jexpr-newarray-init *aij-type-term* arg-exprs))
+         (fnapp-expr (jexpr-smethod *aij-type-fn-app*
+                                    "make"
+                                    (list fn-expr
+                                          args-expr)))
+         ((mv fnapp-locvar-block
               fnapp-jvar
-              jvar-term-index) (atj-gen-jlocvar-indexed *aij-jtype-term*
+              jvar-term-index) (atj-gen-jlocvar-indexed *aij-type-term*
                                                         jvar-term-base
                                                         jvar-term-index
-                                                        fnapp-jexpr)))
-      (mv (append fn-jblock
-                  args-jblock
-                  fnapp-locvar-jblock)
+                                                        fnapp-expr)))
+      (mv (append fn-block
+                  args-block
+                  fnapp-locvar-block)
           (jexpr-name fnapp-jvar)
           jvar-value-index
           jvar-term-index
@@ -183,8 +183,8 @@
                                (jvar-lambda-base stringp)
                                (jvar-lambda-index posp)
                                (guards$ booleanp))
-    :returns (mv (jblock jblockp)
-                 (jexpr jexprp)
+    :returns (mv (block jblockp)
+                 (expr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
@@ -199,9 +199,9 @@
       builds the lambda expression,
       puts it to a local variable,
       and returns the local variable.")
-    (b* ((formals-jexpr (atj-gen-deep-formals formals))
-         ((mv body-jblock
-              body-jexpr
+    (b* ((formals-expr (atj-gen-deep-formals formals))
+         ((mv body-block
+              body-expr
               jvar-value-index
               jvar-term-index
               jvar-lambda-index) (atj-gen-deep-term body
@@ -212,19 +212,19 @@
                                                     jvar-lambda-base
                                                     jvar-lambda-index
                                                     guards$))
-         (lambda-jexpr (jexpr-smethod *aij-jtype-lambda*
-                                      "make"
-                                      (list formals-jexpr
-                                            body-jexpr)))
-         ((mv lambda-locvar-jblock
+         (lambda-expr (jexpr-smethod *aij-type-lambda*
+                                     "make"
+                                     (list formals-expr
+                                           body-expr)))
+         ((mv lambda-locvar-block
               lambda-jvar
               jvar-lambda-index) (atj-gen-jlocvar-indexed
-                                  *aij-jtype-lambda*
+                                  *aij-type-lambda*
                                   jvar-lambda-base
                                   jvar-lambda-index
-                                  lambda-jexpr)))
-      (mv (append body-jblock
-                  lambda-locvar-jblock)
+                                  lambda-expr)))
+      (mv (append body-block
+                  lambda-locvar-block)
           (jexpr-name lambda-jvar)
           jvar-value-index
           jvar-term-index
@@ -241,8 +241,8 @@
                              (jvar-lambda-base stringp)
                              (jvar-lambda-index posp)
                              (guards$ booleanp))
-    :returns (mv (jblock jblockp)
-                 (jexpr jexprp)
+    :returns (mv (block jblockp)
+                 (expr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
@@ -253,14 +253,14 @@
                                 jvar-value-index
                                 jvar-term-index
                                 jvar-lambda-index))
-          ((fquotep term) (b* (((mv jblock
-                                    jexpr
+          ((fquotep term) (b* (((mv block
+                                    expr
                                     jvar-value-index)
                                 (atj-gen-deep-qconst (unquote term)
                                                      jvar-value-base
                                                      jvar-value-index)))
-                            (mv jblock
-                                jexpr
+                            (mv block
+                                expr
                                 jvar-value-index
                                 jvar-term-index
                                 jvar-lambda-index)))
@@ -283,8 +283,8 @@
                               (jvar-lambda-base stringp)
                               (jvar-lambda-index posp)
                               (guards$ booleanp))
-    :returns (mv (jblock jblockp)
-                 (jexprs jexpr-listp)
+    :returns (mv (block jblockp)
+                 (exprs jexpr-listp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
@@ -296,8 +296,8 @@
             jvar-value-index
             jvar-term-index
             jvar-lambda-index)
-      (b* (((mv first-jblock
-                jexpr
+      (b* (((mv first-block
+                expr
                 jvar-value-index
                 jvar-term-index
                 jvar-lambda-index) (atj-gen-deep-term (car terms)
@@ -308,8 +308,8 @@
                                                       jvar-lambda-base
                                                       jvar-lambda-index
                                                       guards$))
-           ((mv rest-jblock
-                jexprs
+           ((mv rest-block
+                exprs
                 jvar-value-index
                 jvar-term-index
                 jvar-lambda-index) (atj-gen-deep-terms (cdr terms)
@@ -320,9 +320,9 @@
                                                        jvar-lambda-base
                                                        jvar-lambda-index
                                                        guards$)))
-        (mv (append first-jblock
-                    rest-jblock)
-            (cons jexpr jexprs)
+        (mv (append first-block
+                    rest-block)
+            (cons expr exprs)
             jvar-value-index
             jvar-term-index
             jvar-lambda-index)))
@@ -339,7 +339,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-fndef-jmethod-name ((fn symbolp))
+(define atj-gen-deep-fndef-method-name ((fn symbolp))
   :returns (method-name stringp)
   :short "Name of the Java method that builds
           a deeply embedded ACL2 function definition."
@@ -359,11 +359,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-fndef-jmethod ((fn symbolp)
-                                    (guards$ booleanp)
-                                    (verbose$ booleanp)
-                                    (wrld plist-worldp))
-  :returns (jmethod jmethodp)
+(define atj-gen-deep-fndef-method ((fn symbolp)
+                                   (guards$ booleanp)
+                                   (verbose$ booleanp)
+                                   (wrld plist-worldp))
+  :returns (method jmethodp)
   :verify-guards nil
   :short "Generate a Java method that builds
           a deeply embedded ACL2 function definition."
@@ -394,7 +394,7 @@
      (thus, there are no cross-references)."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
-       (jmethod-name (atj-gen-deep-fndef-jmethod-name fn))
+       (method-name (atj-gen-deep-fndef-method-name fn))
        (jvar-function "function")
        (jvar-formals "formals")
        (jvar-body "body")
@@ -404,30 +404,30 @@
        (out-type :value) ; actually irrelevant
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type t guards$ wrld))
-       (fn-jblock (jblock-locvar *aij-jtype-named-fn*
-                                 jvar-function
-                                 (jexpr-smethod *aij-jtype-named-fn*
-                                                "make"
-                                                (list (atj-gen-symbol fn)))))
-       (formals-jblock (jblock-locvar (jtype-array *aij-jtype-symbol*)
-                                      jvar-formals
-                                      (atj-gen-deep-formals formals)))
-       ((mv body-jblock
-            body-jexpr
+       (fn-block (jblock-locvar *aij-type-named-fn*
+                                jvar-function
+                                (jexpr-smethod *aij-type-named-fn*
+                                               "make"
+                                               (list (atj-gen-symbol fn)))))
+       (formals-block (jblock-locvar (jtype-array *aij-type-symbol*)
+                                     jvar-formals
+                                     (atj-gen-deep-formals formals)))
+       ((mv body-block
+            body-expr
             & & &) (atj-gen-deep-term
                     body "value" 1 "term" 1 "lambda" 1 guards$))
-       (body-jblock (append body-jblock
-                            (jblock-locvar *aij-jtype-term*
-                                           jvar-body
-                                           body-jexpr)))
-       (def-jblock (jblock-imethod (jexpr-name jvar-function)
-                                   "define"
-                                   (list (jexpr-name jvar-formals)
-                                         (jexpr-name jvar-body))))
-       (jmethod-body (append fn-jblock
-                             formals-jblock
-                             body-jblock
-                             def-jblock)))
+       (body-block (append body-block
+                           (jblock-locvar *aij-type-term*
+                                          jvar-body
+                                          body-expr)))
+       (def-block (jblock-imethod (jexpr-name jvar-function)
+                                  "define"
+                                  (list (jexpr-name jvar-formals)
+                                        (jexpr-name jvar-body))))
+       (method-body (append fn-block
+                            formals-block
+                            body-block
+                            def-block)))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -436,51 +436,51 @@
                   :native? nil
                   :strictfp? nil
                   :result (jresult-void)
-                  :name jmethod-name
+                  :name method-name
                   :params nil
                   :throws nil
-                  :body jmethod-body)))
+                  :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-fndef-jmethods ((fns symbol-listp)
-                                     (guards$ booleanp)
-                                     (verbose$ booleanp)
-                                     (wrld plist-worldp))
-  :returns (jmethods jmethod-listp)
+(define atj-gen-deep-fndef-methods ((fns symbol-listp)
+                                    (guards$ booleanp)
+                                    (verbose$ booleanp)
+                                    (wrld plist-worldp))
+  :returns (methods jmethod-listp)
   :verify-guards nil
-  :short "Lift @(tsee atj-gen-deep-fndef-jmethod) to lists."
+  :short "Lift @(tsee atj-gen-deep-fndef-method) to lists."
   (if (endp fns)
       nil
-    (b* ((first-jmethod
-          (atj-gen-deep-fndef-jmethod (car fns) guards$ verbose$ wrld))
-         (rest-jmethods
-          (atj-gen-deep-fndef-jmethods (cdr fns) guards$ verbose$ wrld)))
-      (cons first-jmethod rest-jmethods))))
+    (b* ((first-method
+          (atj-gen-deep-fndef-method (car fns) guards$ verbose$ wrld))
+         (rest-methods
+          (atj-gen-deep-fndef-methods (cdr fns) guards$ verbose$ wrld)))
+      (cons first-method rest-methods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-deep-fndefs ((fns-to-translate symbol-listp))
-  :returns (jblock jblockp)
+  :returns (block jblockp)
   :short "Generate Java code to build
           the deeply embedded ACL2 function definitions."
   :long
   (xdoc::topstring-p
    "This is a sequence of calls to the methods
-    generated by @(tsee atj-gen-deep-fndef-jmethods).
+    generated by @(tsee atj-gen-deep-fndef-methods).
     These calls are part of the code that
     initializes (the Java representation of) the ACL2 environment.")
   (if (endp fns-to-translate)
       nil
-    (b* ((jmethod-name (atj-gen-deep-fndef-jmethod-name (car fns-to-translate)))
-         (first-jblock (jblock-method jmethod-name nil))
-         (rest-jblock (atj-gen-deep-fndefs (cdr fns-to-translate))))
-      (append first-jblock rest-jblock))))
+    (b* ((method-name (atj-gen-deep-fndef-method-name (car fns-to-translate)))
+         (first-block (jblock-method method-name nil))
+         (rest-block (atj-gen-deep-fndefs (cdr fns-to-translate))))
+      (append first-block rest-block))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-call-jmethod ()
-  :returns (jmethod jmethodp)
+(define atj-gen-deep-call-method ()
+  :returns (method jmethodp)
   :short "Generate the Java method to call ACL2 functions,
           in the deep embedding approach."
   :long
@@ -489,32 +489,32 @@
     "This is a public static method,
      which provides the means for external Java code to call
      the deeply embedded Java representations of ACL2 functions."))
-  (b* ((jmethod-param-function (make-jparam :final? nil
-                                            :type *aij-jtype-symbol*
-                                            :name "function"))
-       (jmethod-param-arguments (make-jparam :final? nil
-                                             :type (jtype-array
-                                                    *aij-jtype-value*)
-                                             :name "arguments"))
-       (jmethod-params (list jmethod-param-function
-                             jmethod-param-arguments))
+  (b* ((method-param-function (make-jparam :final? nil
+                                           :type *aij-type-symbol*
+                                           :name "function"))
+       (method-param-arguments (make-jparam :final? nil
+                                            :type (jtype-array
+                                                   *aij-type-value*)
+                                            :name "arguments"))
+       (method-params (list method-param-function
+                            method-param-arguments))
        (exception-message "The ACL2 environment is not initialized.")
-       (exception-message-jexpr (atj-gen-jstring exception-message))
-       (throw-jblock (jblock-throw (jexpr-newclass
-                                    (jtype-class "IllegalStateException")
-                                    (list exception-message-jexpr))))
-       (if-jblock (jblock-if (jexpr-unary (junop-logcompl)
-                                          (jexpr-name "initialized"))
-                             throw-jblock))
-       (function-jexpr (jexpr-smethod *aij-jtype-named-fn*
-                                      "make"
-                                      (list (jexpr-name "function"))))
-       (call-jexpr (jexpr-imethod function-jexpr
-                                  "call"
-                                  (list (jexpr-name "arguments"))))
-       (return-jblock (jblock-return call-jexpr))
-       (jmethod-body (append if-jblock
-                             return-jblock)))
+       (exception-message-expr (atj-gen-jstring exception-message))
+       (throw-block (jblock-throw (jexpr-newclass
+                                   (jtype-class "IllegalStateException")
+                                   (list exception-message-expr))))
+       (if-block (jblock-if (jexpr-unary (junop-logcompl)
+                                         (jexpr-name "initialized"))
+                            throw-block))
+       (function-expr (jexpr-smethod *aij-type-named-fn*
+                                     "make"
+                                     (list (jexpr-name "function"))))
+       (call-expr (jexpr-imethod function-expr
+                                 "call"
+                                 (list (jexpr-name "arguments"))))
+       (return-block (jblock-return call-expr))
+       (method-body (append if-block
+                            return-block)))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -522,21 +522,21 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type *aij-jtype-value*)
+                  :result (jresult-type *aij-type-value*)
                   :name "call"
-                  :params jmethod-params
-                  :throws (list *aij-jclass-eval-exc*)
-                  :body jmethod-body)))
+                  :params method-params
+                  :throws (list *aij-class-eval-exc*)
+                  :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-jclass ((pkgs string-listp)
-                             (fns-to-translate symbol-listp)
-                             (guards$ booleanp)
-                             (java-class$ stringp)
-                             (verbose$ booleanp)
-                             (wrld plist-worldp))
-  :returns (jclass jclassp)
+(define atj-gen-deep-class ((pkgs string-listp)
+                            (fns-to-translate symbol-listp)
+                            (guards$ booleanp)
+                            (java-class$ stringp)
+                            (verbose$ booleanp)
+                            (wrld plist-worldp))
+  :returns (class jclassp)
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration,
           in the deep embedding approach."
@@ -552,30 +552,30 @@
      the methods to build the ACL2 packages,
      the methods to build the ACL2 functions,
      and the method to call ACL2 code from external code."))
-  (b* ((init-jfield (atj-gen-init-jfield))
+  (b* ((init-field (atj-gen-init-field))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 packages:~%"))
-       (pkg-jmethods (atj-gen-pkg-jmethods pkgs verbose$))
+       (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
-       (fn-jmethods (atj-gen-deep-fndef-jmethods
-                     fns-to-translate guards$ verbose$ wrld))
-       (fns-build-jblock (atj-gen-deep-fndefs fns-to-translate))
-       (fns-validate-jblock (jblock-smethod *aij-jtype-named-fn*
-                                            "validateAll"
-                                            nil))
-       (fns-jblock (append fns-build-jblock
-                           fns-validate-jblock))
-       (init-jmethod (atj-gen-init-jmethod pkgs fns-jblock))
-       (call-jmethod (atj-gen-deep-call-jmethod))
-       (body-jclass (append (list (jcbody-element-member
-                                   (jcmember-field init-jfield)))
-                            (jmethods-to-jcbody-elements pkg-jmethods)
-                            (jmethods-to-jcbody-elements fn-jmethods)
-                            (list (jcbody-element-member
-                                   (jcmember-method init-jmethod)))
-                            (list (jcbody-element-member
-                                   (jcmember-method call-jmethod))))))
+       (fn-methods (atj-gen-deep-fndef-methods
+                    fns-to-translate guards$ verbose$ wrld))
+       (fns-build-block (atj-gen-deep-fndefs fns-to-translate))
+       (fns-validate-block (jblock-smethod *aij-type-named-fn*
+                                           "validateAll"
+                                           nil))
+       (fns-block (append fns-build-block
+                          fns-validate-block))
+       (init-method (atj-gen-init-method pkgs fns-block))
+       (call-method (atj-gen-deep-call-method))
+       (body-class (append (list (jcbody-element-member
+                                  (jcmember-field init-field)))
+                           (jmethods-to-jcbody-elements pkg-methods)
+                           (jmethods-to-jcbody-elements fn-methods)
+                           (list (jcbody-element-member
+                                  (jcmember-method init-method)))
+                           (list (jcbody-element-member
+                                  (jcmember-method call-method))))))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? nil
@@ -584,7 +584,7 @@
                  :name java-class$
                  :superclass? nil
                  :superinterfaces nil
-                 :body body-jclass)))
+                 :body body-class)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,10 +599,10 @@
   :verify-guards nil
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
-  (b* ((class (atj-gen-deep-jclass
+  (b* ((class (atj-gen-deep-class
                pkgs fns-to-translate guards$ java-class$ verbose$ wrld)))
     (make-jcunit :package? java-package$
-                 :imports (list (jimport nil (str::cat *aij-jpackage* ".*"))
+                 :imports (list (jimport nil (str::cat *aij-package* ".*"))
                                 (jimport nil "java.math.BigInteger")
                                 (jimport nil "java.util.ArrayList")
                                 (jimport nil "java.util.List"))

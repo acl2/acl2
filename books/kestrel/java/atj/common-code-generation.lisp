@@ -33,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-chars-to-jhexcodes ((chars character-listp))
-  :returns (jexprs jexpr-listp)
+  :returns (exprs jexpr-listp)
   :short "Turn a list of ACL2 characters
           into a list of Java hexadecimal literal expressions
           corresponding to the character codes,
@@ -48,7 +48,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-jstring ((string stringp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build a Java string from an ACL2 string."
   :long
   (xdoc::topstring
@@ -81,9 +81,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jparamlist ((names string-listp) (jtypes jtype-listp))
-  :guard (= (len names) (len jtypes))
-  :returns (jparams jparam-listp)
+(define atj-gen-paramlist ((names string-listp) (types jtype-listp))
+  :guard (= (len names) (len types))
+  :returns (params jparam-listp)
   :short "Generate a Java formal parameter list
           from the specified names and Java types."
   :long
@@ -94,9 +94,9 @@
      that associates each type to each name, in order."))
   (cond ((endp names) nil)
         (t (cons (make-jparam :final? nil
-                              :type (car jtypes)
+                              :type (car types)
                               :name (car names))
-                 (atj-gen-jparamlist (cdr names) (cdr jtypes))))))
+                 (atj-gen-paramlist (cdr names) (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,25 +134,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-char ((char characterp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 character."
-  (jexpr-smethod *aij-jtype-char*
+  (jexpr-smethod *aij-type-char*
                  "make"
                  (list (jexpr-literal-character char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-string ((string stringp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 string."
-  (jexpr-smethod *aij-jtype-string*
+  (jexpr-smethod *aij-type-string*
                  "make"
                  (list (atj-gen-jstring string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-symbol ((symbol symbolp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 symbol."
   :long
   (xdoc::topstring-p
@@ -164,7 +164,7 @@
   (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
     (if pair
         (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
-      (jexpr-smethod *aij-jtype-symbol*
+      (jexpr-smethod *aij-type-symbol*
                      "make"
                      (list (atj-gen-jstring
                             (symbol-package-name symbol))
@@ -174,7 +174,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-symbols ((symbols symbol-listp))
-  :returns (jexprs jexpr-listp)
+  :returns (exprs jexpr-listp)
   :short "Lift @(tsee atj-gen-symbol) to lists."
   (cond ((endp symbols) nil)
         (t (cons (atj-gen-symbol (car symbols))
@@ -183,7 +183,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-integer ((integer integerp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 integer."
   :long
   (xdoc::topstring
@@ -219,16 +219,16 @@
                        (jexpr-newclass (jtype-class "BigInteger")
                                        (list
                                         (jexpr-literal-string string))))))))
-    (jexpr-smethod *aij-jtype-int*
+    (jexpr-smethod *aij-type-int*
                    "make"
                    (list arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-rational ((rational rationalp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 rational."
-  (jexpr-smethod *aij-jtype-rational*
+  (jexpr-smethod *aij-type-rational*
                  "make"
                  (list (atj-gen-integer (numerator rational))
                        (atj-gen-integer (denominator rational)))))
@@ -236,9 +236,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-number ((number acl2-numberp))
-  :returns (jexpr jexprp)
+  :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 number."
-  (jexpr-smethod *aij-jtype-number*
+  (jexpr-smethod *aij-type-number*
                  "make"
                  (list (atj-gen-rational (realpart number))
                        (atj-gen-rational (imagpart number)))))
@@ -264,50 +264,50 @@
   (define atj-gen-cons ((conspair consp)
                         (jvar-value-base stringp)
                         (jvar-value-index posp))
-    :returns (mv (jblock jblockp)
-                 (jexpr jexprp)
+    :returns (mv (block jblockp)
+                 (expr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
     :parents nil
     (b* (((unless (mbt (consp conspair)))
           (mv nil (jexpr-name "irrelevant") jvar-value-index))
-         ((mv car-jblock
-              car-jexpr
+         ((mv car-block
+              car-expr
               jvar-value-index) (atj-gen-value (car conspair)
                                                jvar-value-base
                                                jvar-value-index))
-         ((mv car-locvar-jblock
+         ((mv car-locvar-block
               car-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *aij-jtype-value*
+              jvar-value-index) (atj-gen-jlocvar-indexed *aij-type-value*
                                                          jvar-value-base
                                                          jvar-value-index
-                                                         car-jexpr))
-         ((mv cdr-jblock
-              cdr-jexpr
+                                                         car-expr))
+         ((mv cdr-block
+              cdr-expr
               jvar-value-index) (atj-gen-value (cdr conspair)
                                                jvar-value-base
                                                jvar-value-index))
-         ((mv cdr-locvar-jblock
+         ((mv cdr-locvar-block
               cdr-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *aij-jtype-value*
+              jvar-value-index) (atj-gen-jlocvar-indexed *aij-type-value*
                                                          jvar-value-base
                                                          jvar-value-index
-                                                         cdr-jexpr))
-         (jblock (append car-jblock
-                         car-locvar-jblock
-                         cdr-jblock
-                         cdr-locvar-jblock))
-         (jexpr (jexpr-smethod *aij-jtype-cons*
-                               "make"
-                               (list (jexpr-name car-jvar)
-                                     (jexpr-name cdr-jvar)))))
-      (mv jblock jexpr jvar-value-index))
+                                                         cdr-expr))
+         (block (append car-block
+                        car-locvar-block
+                        cdr-block
+                        cdr-locvar-block))
+         (expr (jexpr-smethod *aij-type-cons*
+                              "make"
+                              (list (jexpr-name car-jvar)
+                                    (jexpr-name cdr-jvar)))))
+      (mv block expr jvar-value-index))
     :measure (two-nats-measure (acl2-count conspair) 0))
 
   (define atj-gen-value (value
                          (jvar-value-base stringp)
                          (jvar-value-index posp))
-    :returns (mv (jblock jblockp)
-                 (jexpr jexprp)
+    :returns (mv (block jblockp)
+                 (expr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
     :parents nil
     (cond ((characterp value) (mv nil
@@ -347,29 +347,29 @@
 (define atj-gen-values ((values true-listp)
                         (jvar-value-base stringp)
                         (jvar-value-index posp))
-  :returns (mv (jblock jblockp)
-               (jexprs jexpr-listp)
+  :returns (mv (block jblockp)
+               (exprs jexpr-listp)
                (new-jvar-value-index posp :hyp (posp jvar-value-index)))
   :short "Lift @(tsee atj-gen-value) to lists."
   (cond ((endp values) (mv nil nil jvar-value-index))
-        (t (b* (((mv first-jblock
-                     first-jexpr
+        (t (b* (((mv first-block
+                     first-expr
                      jvar-value-index) (atj-gen-value (car values)
                                                       jvar-value-base
                                                       jvar-value-index))
-                ((mv rest-jblock
+                ((mv rest-block
                      rest-jexrps
                      jvar-value-index) (atj-gen-values (cdr values)
                                                        jvar-value-base
                                                        jvar-value-index)))
-             (mv (append first-jblock rest-jblock)
-                 (cons first-jexpr rest-jexrps)
+             (mv (append first-block rest-block)
+                 (cons first-expr rest-jexrps)
                  jvar-value-index)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-pkg-jmethod-name ((pkg stringp))
-  :returns (jmethod-name stringp)
+(define atj-gen-pkg-method-name ((pkg stringp))
+  :returns (method-name stringp)
   :short "Name of the Java method that adds an ACL2 package definition."
   :long
   (xdoc::topstring-p
@@ -403,7 +403,7 @@
   (b* ((pair (assoc-equal pkg *atj-gen-pkg-name-alist*)))
     (if pair
         (jexpr-name (cdr pair))
-      (jexpr-smethod *aij-jtype-pkg-name*
+      (jexpr-smethod *aij-type-pkg-name*
                      "make"
                      (list (atj-gen-jstring pkg)))))
 
@@ -419,8 +419,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-pkg-jmethod ((pkg stringp) (verbose$ booleanp))
-  :returns (jmethod jmethodp)
+(define atj-gen-pkg-method ((pkg stringp) (verbose$ booleanp))
+  :returns (method jmethodp)
   :short "Generate a Java method that adds an ACL2 package definition."
   :long
   (xdoc::topstring-p
@@ -436,24 +436,24 @@
   (b* (((run-when verbose$)
         (cw "  ~s0~%" pkg))
        (jvar-aimports "imports")
-       (jmethod-name (atj-gen-pkg-jmethod-name pkg))
+       (method-name (atj-gen-pkg-method-name pkg))
        (aimports (pkg-imports pkg))
-       (len-jexpr (jexpr-literal-integer-decimal (len aimports)))
-       (newlist-jexpr (jexpr-newclass (jtype-class "ArrayList<>")
-                                      (list len-jexpr)))
-       (imports-jblock (jblock-locvar (jtype-class "List<Acl2Symbol>")
-                                      jvar-aimports
-                                      newlist-jexpr))
-       (imports-jblock (append imports-jblock
-                               (atj-gen-pkg-jmethod-aux aimports
-                                                        jvar-aimports)))
-       (pkg-name-jexpr (atj-gen-pkg-name pkg))
-       (defpkg-jblock (jblock-smethod *aij-jtype-pkg*
-                                      "define"
-                                      (list pkg-name-jexpr
-                                            (jexpr-name jvar-aimports))))
-       (jmethod-body (append imports-jblock
-                             defpkg-jblock)))
+       (len-expr (jexpr-literal-integer-decimal (len aimports)))
+       (newlist-expr (jexpr-newclass (jtype-class "ArrayList<>")
+                                     (list len-expr)))
+       (imports-block (jblock-locvar (jtype-class "List<Acl2Symbol>")
+                                     jvar-aimports
+                                     newlist-expr))
+       (imports-block (append imports-block
+                              (atj-gen-pkg-method-aux aimports
+                                                      jvar-aimports)))
+       (pkg-name-expr (atj-gen-pkg-name pkg))
+       (defpkg-block (jblock-smethod *aij-type-pkg*
+                                     "define"
+                                     (list pkg-name-expr
+                                           (jexpr-name jvar-aimports))))
+       (method-body (append imports-block
+                            defpkg-block)))
     (make-jmethod :access (jaccess-private)
                   :abstract? nil
                   :static? t
@@ -462,71 +462,71 @@
                   :native? nil
                   :strictfp? nil
                   :result (jresult-void)
-                  :name jmethod-name
+                  :name method-name
                   :params nil
                   :throws nil
-                  :body jmethod-body))
+                  :body method-body))
 
   :prepwork
-  ((define atj-gen-pkg-jmethod-aux ((imports symbol-listp)
-                                    (jvar-aimports stringp))
-     :returns (jblock jblockp)
+  ((define atj-gen-pkg-method-aux ((imports symbol-listp)
+                                   (jvar-aimports stringp))
+     :returns (block jblockp)
      :parents nil
      (cond ((endp imports) nil)
-           (t (b* ((import-jexpr (atj-gen-symbol (car imports)))
-                   (first-jblock (jblock-imethod (jexpr-name jvar-aimports)
-                                                 "add"
-                                                 (list import-jexpr)))
-                   (rest-jblock (atj-gen-pkg-jmethod-aux (cdr imports)
-                                                         jvar-aimports)))
-                (append first-jblock rest-jblock)))))))
+           (t (b* ((import-expr (atj-gen-symbol (car imports)))
+                   (first-block (jblock-imethod (jexpr-name jvar-aimports)
+                                                "add"
+                                                (list import-expr)))
+                   (rest-block (atj-gen-pkg-method-aux (cdr imports)
+                                                       jvar-aimports)))
+                (append first-block rest-block)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-pkg-jmethods ((pkgs string-listp) (verbose$ booleanp))
-  :returns (jmethods jmethod-listp)
+(define atj-gen-pkg-methods ((pkgs string-listp) (verbose$ booleanp))
+  :returns (methods jmethod-listp)
   :short "Generate all the Java methods that add the ACL2 package definitions."
   (if (endp pkgs)
       nil
-    (b* ((first-jmethod (atj-gen-pkg-jmethod (car pkgs) verbose$))
-         (rest-jmethods (atj-gen-pkg-jmethods (cdr pkgs) verbose$)))
-      (cons first-jmethod rest-jmethods))))
+    (b* ((first-method (atj-gen-pkg-method (car pkgs) verbose$))
+         (rest-methods (atj-gen-pkg-methods (cdr pkgs) verbose$)))
+      (cons first-method rest-methods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-pkgs ((pkgs string-listp))
-  :returns (jblock jblockp)
+  :returns (block jblockp)
   :short "Generate Java code to build the ACL2 packages."
   :long
   (xdoc::topstring-p
    "This is a sequence of calls to the methods
-    generated by @(tsee atj-gen-pkg-jmethods).
+    generated by @(tsee atj-gen-pkg-methods).
     These calls are part of the code that
     initializes (the Java representation of) the ACL2 environment.")
   (if (endp pkgs)
       nil
-    (b* ((jmethod-name (atj-gen-pkg-jmethod-name (car pkgs)))
-         (first-jblock (jblock-method jmethod-name nil))
-         (rest-jblock (atj-gen-pkgs (cdr pkgs))))
-      (append first-jblock rest-jblock))))
+    (b* ((method-name (atj-gen-pkg-method-name (car pkgs)))
+         (first-block (jblock-method method-name nil))
+         (rest-block (atj-gen-pkgs (cdr pkgs))))
+      (append first-block rest-block))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-pkg-witness ()
-  :returns (jblock jblockp)
+  :returns (block jblockp)
   :short "Generate Java code to set the name of the ACL2 package witness."
   :long
   (xdoc::topstring-p
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
-  (jblock-smethod *aij-jtype-pkg*
+  (jblock-smethod *aij-type-pkg*
                   "setWitnessName"
                   (list (atj-gen-jstring *pkg-witness-name*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-init-jfield ()
-  :returns (jfield jfieldp)
+(define atj-gen-init-field ()
+  :returns (field jfieldp)
   :short "Generate the Java field for the initialization flag."
   :long
   (xdoc::topstring-p
@@ -545,8 +545,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-failures-jfield ()
-  :returns (jfield jfieldp)
+(define atj-gen-test-failures-field ()
+  :returns (field jfieldp)
   :short "Generate the Java field that keeps track of failures
           in the test Java class."
   :long
@@ -567,8 +567,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-jmethod-name ((test-name stringp))
-  :returns (jmethod-name stringp)
+(define atj-gen-test-method-name ((test-name stringp))
+  :returns (method-name stringp)
   :short "Name of the Java method to run one of the specified tests."
   :long
   (xdoc::topstring
@@ -589,7 +589,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-run-tests ((tests$ atj-test-listp))
-  :returns (jblock jblockp)
+  :returns (block jblockp)
   :short "Generate Java code to run the specified tests."
   :long
   (xdoc::topstring
@@ -597,21 +597,21 @@
     "This is generated only if the @(':tests') input is not @('nil').")
    (xdoc::p
     "This is a sequence of calls to the methods
-     generated by @(tsee atj-gen-test-jmethods).
+     generated by @(tsee atj-gen-test-methods).
      These calls are part of the main method of the test Java class."))
   (if (endp tests$)
       nil
-    (b* ((jmethod-name
-          (atj-gen-test-jmethod-name (atj-test->name (car tests$))))
-         (first-jblock (jblock-method jmethod-name (list (jexpr-name "n"))))
-         (rest-jblock (atj-gen-run-tests (cdr tests$))))
-      (append first-jblock rest-jblock))))
+    (b* ((method-name
+          (atj-gen-test-method-name (atj-test->name (car tests$))))
+         (first-block (jblock-method method-name (list (jexpr-name "n"))))
+         (rest-block (atj-gen-run-tests (cdr tests$))))
+      (append first-block rest-block))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-main-jmethod ((tests$ atj-test-listp)
-                                   (java-class$ stringp))
-  :returns (jmethod jmethodp)
+(define atj-gen-test-main-method ((tests$ atj-test-listp)
+                                  (java-class$ stringp))
+  :returns (method jmethodp)
   :short "Generate the Java main method for the test Java class."
   :long
   (xdoc::topstring
@@ -630,10 +630,10 @@
      Otherwise, there must exactly one argument
      that must parse to a positive integer,
      which is passed as the repetition parameter to the test methods."))
-  (b* ((jmethod-param (make-jparam :final? nil
-                                   :type (jtype-array (jtype-class "String"))
-                                   :name "args"))
-       (jmethod-body
+  (b* ((method-param (make-jparam :final? nil
+                                  :type (jtype-array (jtype-class "String"))
+                                  :name "args"))
+       (method-body
         (append
          (jblock-locvar (jtype-int) "n" (jexpr-literal-0))
          (jblock-if (jexpr-binary (jbinop-eq)
@@ -687,14 +687,14 @@
                   :strictfp? nil
                   :result (jresult-void)
                   :name "main"
-                  :params (list jmethod-param)
-                  :throws (list *aij-jclass-eval-exc*)
-                  :body jmethod-body)))
+                  :params (list method-param)
+                  :throws (list *aij-class-eval-exc*)
+                  :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-init-jmethod ((pkgs string-listp) (fns-jblock? jblockp))
-  :returns (jmethod jmethodp)
+(define atj-gen-init-method ((pkgs string-listp) (fns-block? jblockp))
+  :returns (method jmethodp)
   :short "Generate the Java public method to initialize the ACL2 environment."
   :long
   (xdoc::topstring
@@ -710,29 +710,29 @@
      because initialization must occur only once.")
    (xdoc::p
     "If @(':deep') is @('t'),
-     @('fns-jblock?') contains code
+     @('fns-block?') contains code
      to build the deeply embedded representations of the ACL2 functions and
      to validate the definitions of all the deeply embedded ACL2 functions.
-     If @(':deep') is @('nil'), @('fns-jblock?') is @('nil').
+     If @(':deep') is @('nil'), @('fns-block?') is @('nil').
      The presence or absence of code in this block
      is the only difference between deep and shallow embedding
      in the initialization method generated here."))
   (b* ((exception-message "The ACL2 environment is already initialized.")
-       (exception-message-jexpr (atj-gen-jstring exception-message))
-       (throw-jblock (jblock-throw (jexpr-newclass
-                                    (jtype-class "IllegalStateException")
-                                    (list exception-message-jexpr))))
-       (if-jblock (jblock-if (jexpr-name "initialized")
-                             throw-jblock))
-       (pkgs-jblock (atj-gen-pkgs pkgs))
-       (pkg-witness-jblock (atj-gen-pkg-witness))
-       (initialize-jblock (jblock-asg-name "initialized"
-                                           (jexpr-literal-true)))
-       (jmethod-body (append if-jblock
-                             pkgs-jblock
-                             pkg-witness-jblock
-                             fns-jblock?
-                             initialize-jblock)))
+       (exception-message-expr (atj-gen-jstring exception-message))
+       (throw-block (jblock-throw (jexpr-newclass
+                                   (jtype-class "IllegalStateException")
+                                   (list exception-message-expr))))
+       (if-block (jblock-if (jexpr-name "initialized")
+                            throw-block))
+       (pkgs-block (atj-gen-pkgs pkgs))
+       (pkg-witness-block (atj-gen-pkg-witness))
+       (initialize-block (jblock-asg-name "initialized"
+                                          (jexpr-literal-true)))
+       (method-body (append if-block
+                            pkgs-block
+                            pkg-witness-block
+                            fns-block?
+                            initialize-block)))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -744,4 +744,4 @@
                   :name "initialize"
                   :params nil
                   :throws nil
-                  :body jmethod-body)))
+                  :body method-body)))
