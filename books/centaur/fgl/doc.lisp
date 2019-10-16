@@ -95,7 +95,7 @@ of the usual ways of doing things in FGL are done differently in FGL.</p>
 <li>@(see fgl-getting-bits-from-objects)</li>
 <li>@(see fgl-rewrite-rules)</li>
 <li>@(see fgl-debugging)</li>
-<li>@(see fgl-avoiding-if-then-elses)</li>
+<li>@(see fgl-handling-if-then-elses)</li>
 <li>@(see fgl-interpreter-overview)</li>
 <li>@(see fgl-primitives)</li>
 <li>@(see fgl-sat-check)</li>
@@ -690,7 +690,7 @@ arguments.  Otherwise, it calls helper function
 @('interp-st-fgl-object-basic-merge'), which merges basic symbolic objects
 together when their types match, otherwise either producing an
 if-then-else (@(see g-ite)) object or an error, depending on the configuration
-setting of @('make-ites').  (See also @(see fgl-avoiding-if-then-elses).)</p>
+setting of @('make-ites').  (See also @(see fgl-handling-if-then-elses).)</p>
 
 <h3>Introducing Boolean Constraints</h3>
 
@@ -878,9 +878,9 @@ calls.  By default, after loading @('fgl/top'), the rewrite rule
 incremental SAT counterexample and prints it.</p>
 ")
 
-(defxdoc fgl-avoiding-if-then-elses
+(defxdoc fgl-handling-if-then-elses
   :parents (fgl)
-  :short "How and why to avoid creation of if-then-else objects in FGL."
+  :short "Discussion of how if-then-else objects are dealt with in FGL."
   :long "
 
 <h3>Why If-Then-Elses Are A Problem</h3>
@@ -918,16 +918,93 @@ catastrophic for performance.</p>
 
 <p>Because of the dilemma above, the default approach in FGL is to cause an
 error whenever we are unable to merge the two branches of an if-then-else into
-a single symbolic form!  When this happens, the FGL clause processor will
+a single symbolic form automatically.  When this happens, the FGL clause processor will
 produce an error saying that an if-then-else failed to merge and to look at the
 debug object.  This behavior can be disabled as follows:</p>
 @({
  (assign :fgl-make-ites t)
  })
 
-<p>But it is usually best to encode data so that you don't need to represent it
-using if-then-elses, but can represent all the combinations you'll encounter
-without them. The next section shows some examples of how to do this.</p>
+<p>It is also possible to use rewrite rules to allow if-then-else objects to be
+created in certain cases; we discuss how this is used to handle a couple of
+common cases in the next section.  The FGL interpreter includes support for
+making @('ifs') transparent to certain functions, so that rewrite rules for
+that purpose needn't proliferate.  But often the best option is to encode data
+so that you don't need to represent it using if-then-elses; some examples of
+how to do that follow.</p>
+
+<h3>Merge Rules</h3>
+
+<p>FGL uses a function @('gl-object-basic-merge') to merge certain combinations
+of objects: it can merge two symbolic or concrete integers into a symbolic
+integer, or merge two symbolic or concrete Boolean values into a symbolic
+Boolean.  It also comes with some merging rules that allow a couple of common
+idioms: the use of @('nil') as a \"bottom\" element for various types, and the
+use of symbols as enum types.</p>
+
+<p>To force the creation of an if-then-else, overriding the setting of
+@(':fgl-make-ites'), use the function @('if!') instead of @('if') in the
+right-hand side.  For example, one of the rules that allows the use of @('nil')
+as bottom follows:</p>
+
+@({
+ (def-gl-branch-merge if-with-if-with-nil-nil
+   (equal (if test (if test2 then nil) nil)
+          (if! (and test test2) then nil)))
+ })
+
+<p>This will ensure that a @(':g-ite') object will be created without checking
+whether @('then') can be merged with @('nil') (presumably this was already
+tried since @('(if test2 then nil)') was matched in the left-hand side.</p>
+
+<h3>Making Functions Transparent to If-Then-Elses</h3>
+
+<p>The FGL interpreter can be told to distribute calls of a given function over
+if-then-else objects that might appear in their arguments as follows:</p>
+
+@({
+ (enable-split-ifs foo)
+ })
+
+<p>This is similar to creating a rewrite rule matching an @('if') in each
+argument of @('foo') and distributing the call of @('foo') into it, as
+follows:</p>
+
+@({
+ (def-gl-rewrite foo-of-if-1
+    (equal (foo (if test a1 a2) b)
+           (if test
+               (foo a1 b)
+             (foo a2 b))))
+ (def-gl-rewrite foo-of-if-2
+    (equal (foo a (if test b1 b2))
+           (if test
+               (foo a b1)
+             (foo a b2))))
+ })
+
+<p>(Enabling if splitting for a function enables it for all the arguments; if
+this isn't desired, then providing rewrite rules like the ones above is a
+reasonable alternative.)</p>
+
+<p>Generally speaking, it is likely to be advantageous to enable splitting ifs
+on a couple of kinds of functions:</p>
+
+<ul>
+
+<li>Functions that are handled in FGL via rewrite rules wherein their
+arguments are other function calls, such as datatype accessors and predicates.</li>
+
+<li>Primitives, especially if they always return an integer or always return a
+Boolean, since these then eliminate the if-then-else once their branches are
+merged.</li>
+
+</ul>
+
+<p>Conversely, it is likely not advantageous to enable splitting ifs on
+functions that are handled by expanding a definition-style rule where the
+arguments to the function on the LHS are just variables.</p>
+
 
 <h3>Encoding Data to Avoid If-Then-Elses</h3>
 
@@ -939,15 +1016,21 @@ After that, we provide some examples to give a flavor for how this works.</p>
 <li>Think about the types of the data you'll be dealing with and how best to
 encode them symbolically.</li>
 
-<li>Wrap any if-then-elses inside function definitions and turn off expansion of those function definitions (see below).</li>
+<li>Wrap any if-then-elses inside function definitions and turn off expansion
+of those function definitions (see below).</li>
 
-<li>Set up branch merge rules to merge these functions with other data of the same type.</li>
+<li>Set up branch merge rules to merge these functions with other data of the
+same type.</li>
 
-<li>Set up rewrite rules to deal with accesses to those functions, likely including checks for equality.</li>
+<li>Set up rewrite rules to deal with accesses to those functions, likely
+including checks for equality.</li>
 
 </ul>
 
 <h4>Example 1: Enumeration Type</h4>
+
+<p>(Note: the built-in support for symbols as enum types makes the following
+example largely unnecessary, but still illustrative.)</p>
 
 @({
  (defun vector-kind (x)
