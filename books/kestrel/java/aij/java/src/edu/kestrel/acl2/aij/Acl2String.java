@@ -162,7 +162,7 @@ public final class Acl2String extends Acl2Value {
         } catch (IllegalArgumentException e) {
             throw new Acl2EvaluationException(null, e);
         }
-        String witnessName = Acl2Package.getWitnessName();
+        String witnessName = Acl2Package.WITNESS_NAME;
         if (witnessName == null)
             throw new IllegalStateException("Witness not defined yet.");
         Acl2Symbol result;

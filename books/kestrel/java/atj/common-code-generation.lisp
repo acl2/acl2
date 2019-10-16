@@ -512,19 +512,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-pkg-witness ()
-  :returns (block jblockp)
-  :short "Generate Java code to set the name of the ACL2 package witness."
-  :long
-  (xdoc::topstring-p
-   "This is a statement that is part of
-    initializing (the Java representation of) the ACL2 environment.")
-  (jblock-smethod *aij-type-pkg*
-                  "setWitnessName"
-                  (list (atj-gen-jstring *pkg-witness-name*))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-gen-init-field ()
   :returns (field jfieldp)
   :short "Generate the Java field for the initialization flag."
@@ -725,12 +712,10 @@
        (if-block (jblock-if (jexpr-name "initialized")
                             throw-block))
        (pkgs-block (atj-gen-pkgs pkgs))
-       (pkg-witness-block (atj-gen-pkg-witness))
        (initialize-block (jblock-asg-name "initialized"
                                           (jexpr-literal-true)))
        (method-body (append if-block
                             pkgs-block
-                            pkg-witness-block
                             fns-block?
                             initialize-block)))
     (make-jmethod :access (jaccess-public)

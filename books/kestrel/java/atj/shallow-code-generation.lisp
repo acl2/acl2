@@ -2008,13 +2008,9 @@
   (xdoc::topstring
    (xdoc::p
     "This contains code to initialize the ACL2 environment:
-     we build the Java representation of the ACL2 packages,
-     and we set the package witness."))
-  (b* ((pkgs-block (atj-gen-pkgs pkgs))
-       (pkg-witness-block (atj-gen-pkg-witness)))
-    (make-jcinitializer :static? t
-                        :code (append pkgs-block
-                                      pkg-witness-block))))
+     we build the Java representation of the ACL2 packages."))
+  (make-jcinitializer :static? t
+                      :code (atj-gen-pkgs pkgs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
