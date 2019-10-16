@@ -25,7 +25,7 @@
   (xdoc::topstring
    (xdoc::p
     "We formalize the Java boolean and integral values.
-     We also provide an abstract notion of the Java floating-point values,
+     We also provide abstract notions of the Java floating-point values,
      as a placeholder for a more precise formalization of them.")
    (xdoc::p
     "Our formalization tags the Java primitive values
