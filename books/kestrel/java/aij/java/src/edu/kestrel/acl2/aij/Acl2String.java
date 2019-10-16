@@ -151,7 +151,6 @@ public final class Acl2String extends Acl2Value {
      * @return The witness.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
-     * @throws IllegalStateException   If the package witness is not set yet.
      */
     @Override
     Acl2Symbol pkgWitness() throws Acl2EvaluationException {
@@ -163,8 +162,6 @@ public final class Acl2String extends Acl2Value {
             throw new Acl2EvaluationException(null, e);
         }
         String witnessName = Acl2Package.WITNESS_NAME;
-        if (witnessName == null)
-            throw new IllegalStateException("Witness not defined yet.");
         Acl2Symbol result;
         try {
             result = Acl2Symbol.make(packageName, witnessName);
