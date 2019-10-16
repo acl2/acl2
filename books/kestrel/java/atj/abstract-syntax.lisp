@@ -804,7 +804,7 @@
 (define jfields-to-jcbody-elements ((fields jfield-listp))
   :returns (cbody-elements jcbody-element-listp)
   :short "Lift the composition of @(tsee jcmember-field)
-          followed by @(tsee jcbody-member-element) to lists."
+          followed by @(tsee jcbody-element-member) to lists."
   (cond ((endp fields) nil)
         (t (cons (jcbody-element-member (jcmember-field (car fields)))
                  (jfields-to-jcbody-elements (cdr fields))))))
@@ -812,7 +812,7 @@
 (define jmethods-to-jcbody-elements ((methods jmethod-listp))
   :returns (cbody-elements jcbody-element-listp)
   :short "Lift the composition of @(tsee jcmember-method)
-          followed by @(tsee jcbody-member-element) to lists."
+          followed by @(tsee jcbody-element-member) to lists."
   (cond ((endp methods) nil)
         (t (cons (jcbody-element-member (jcmember-method (car methods)))
                  (jmethods-to-jcbody-elements (cdr methods))))))
@@ -820,7 +820,7 @@
 (define jclasses-to-jcbody-elements ((classes jclass-listp))
   :returns (cbody-elements jcbody-element-listp)
   :short "Lift the composition of @(tsee jcmember-class)
-          followed by @(tsee jcbody-member-element) to lists."
+          followed by @(tsee jcbody-element-member) to lists."
   (cond ((endp classes) nil)
         (t (cons (jcbody-element-member (jcmember-class (car classes)))
                  (jclasses-to-jcbody-elements (cdr classes))))))
