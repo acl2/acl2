@@ -3051,32 +3051,30 @@
   :parents (grammar-parser)
   :short "Correctness theorems for the parser of ABNF grammars."
   :long
-  "<p>
-   The correctness of the parser consists of two parts:
-   </p>
-   <ul>
-     <li>
-     Soundness:
-     if @(tsee parse-grammar) succeeds,
-     it returns a parse tree for the input rooted at @('rulelist'):
-     @(def parse-treep-of-parse-grammar)
-     That is, the parser recognizes only grammars (i.e. lists of rules).
-     </li>
-     <li>
-     Completeness:
-     for every terminated tree rooted at @('rulelist')
-     that satisfies the
-     <see topic='@(url grammar-parser-disambiguating-restrictions)'
-     >disambiguating restrictions</see>,
-     @(tsee parse-grammar) succeeds on the string at the leaves of the tree
-     and returns that tree:
-     @(def parse-grammar-when-tree-match)
-     That is, the parser recognizes all grammars (i.e. lists of rules)
-     whose trees satisfy the
-     <see topic='@(url grammar-parser-disambiguating-restrictions)'
-     >disambiguating restrictions</see>.
-     </li>
-   </ul>"
+  (xdoc::topstring
+   (xdoc::p
+    "The correctness of the parser consists of two parts:")
+   (xdoc::ul
+    (xdoc::li
+     "Soundness:
+      if @(tsee parse-grammar) succeeds,
+      it returns a parse tree for the input rooted at @('rulelist'):
+      @(def parse-treep-of-parse-grammar)
+      That is, the parser recognizes only grammars (i.e. lists of rules).")
+    (xdoc::li
+     "Completeness:
+      for every terminated tree rooted at @('rulelist')
+      that satisfies the "
+     (xdoc::seetopic "grammar-parser-disambiguating-restrictions"
+                     "disambiguating restrictions")
+     ", @(tsee parse-grammar) succeeds on the string at the leaves of the tree
+      and returns that tree:
+      @(def parse-grammar-when-tree-match)
+      That is, the parser recognizes all grammars (i.e. lists of rules)
+      whose trees satisfy the "
+     (xdoc::seetopic "grammar-parser-disambiguating-restrictions"
+                     "disambiguating restrictions")
+     ".")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3085,29 +3083,25 @@
   :parents (grammar-parser-correctness)
   :short "Soundness theorems for the parser of ABNF grammars."
   :long
-  "<p>
-   If @(tsee parse-grammar) succeeds,
-   it returns a parse tree for the input rooted at @('rulelist'):
-   @(def parse-treep-of-parse-grammar)
-   </p>
-   <p>
-   This is proved via two sets of theorems
-   for the parsing functions out of which @(tsee parse-grammar) is built:
-   </p>
-   <ul>
-     <li>
-     Input decomposition:
-     if parsing succeeds,
-     the string at the leaves of the returned tree(s)
-     consists of the consumed natural numbers in the input.
-     </li>
-     <li>
-     Tree matching:
-     if parsing succeeds,
-     the returned tree(s) match(es) the syntactic entity
-     that the parsing function is meant to parse.
-     </li>
-   </ul>"
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee parse-grammar) succeeds,
+     it returns a parse tree for the input rooted at @('rulelist'):")
+   (xdoc::@def "parse-treep-of-parse-grammar")
+   (xdoc::p
+    "This is proved via two sets of theorems
+     for the parsing functions out of which @(tsee parse-grammar) is built:")
+   (xdoc::ul
+    (xdoc::li
+     "Input decomposition:
+      if parsing succeeds,
+      the string at the leaves of the returned tree(s)
+      consists of the consumed natural numbers in the input.")
+    (xdoc::li
+     "Tree matching:
+      if parsing succeeds,
+      the returned tree(s) match(es) the syntactic entity
+      that the parsing function is meant to parse.")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3116,33 +3110,31 @@
   :parents (grammar-parser-soundness)
   :short "Input decomposition theorems for the parser of ABNF grammars."
   :long
-  "<p>
-   If parsing succeeds,
-   the string at the leaves of the returned tree(s)
-   consists of the consumed natural numbers in the input.
-   That is,
-   @(tsee append)ing the string at the leaves with the remaining input
-   yields the original input.
-   More precisely, it yields the original input
-   fixed according to @(tsee nat-list-fix),
-   because the parsing functions fix their input;
-   an alternative formulation is to avoid @(tsee nat-list-fix)
-   but include the hypothesis that the input satisfies @(tsee nat-listp).
-   </p>
-   <p>
-   The input decomposition theorem of @(tsee parse-any)
-   does not involve trees but makes an analogous statement:
-   concatenating the returned natural number with the remaining input
-   yields the original input.
-   </p>
-   <p>
-   The input decomposition proof of each parsing function uses,
-   as rewrite rules,
-   the input decomposition theorems of the parsing functions called by
-   the parsing function whose theorem is being proved.
-   The proofs also use the definition of @(tsee tree->string),
-   which we enable just before these theorems and disable just after.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "If parsing succeeds,
+     the string at the leaves of the returned tree(s)
+     consists of the consumed natural numbers in the input.
+     That is,
+     @(tsee append)ing the string at the leaves with the remaining input
+     yields the original input.
+     More precisely, it yields the original input
+     fixed according to @(tsee nat-list-fix),
+     because the parsing functions fix their input;
+     an alternative formulation is to avoid @(tsee nat-list-fix)
+     but include the hypothesis that the input satisfies @(tsee nat-listp).")
+   (xdoc::p
+    "The input decomposition theorem of @(tsee parse-any)
+     does not involve trees but makes an analogous statement:
+     concatenating the returned natural number with the remaining input
+     yields the original input.")
+   (xdoc::p
+    "The input decomposition proof of each parsing function uses,
+     as rewrite rules,
+     the input decomposition theorems of the parsing functions called by
+     the parsing function whose theorem is being proved.
+     The proofs also use the definition of @(tsee tree->string),
+     which we enable just before these theorems and disable just after."))
   :order-subtopics t)
 
 ; disabled just after the input decomposition theorems:
