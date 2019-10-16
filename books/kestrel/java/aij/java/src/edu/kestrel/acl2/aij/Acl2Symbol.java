@@ -371,10 +371,10 @@ public final class Acl2Symbol extends Acl2Value {
             throw new IllegalArgumentException("Null package name.");
         if (name == null)
             throw new IllegalArgumentException("Null name.");
-        Map<Acl2String, Acl2Symbol> innerMap = symbols.get(packageName);
-        if (innerMap == null)
+        if (Acl2Package.getDefined(packageName) == null)
             throw new IllegalArgumentException
                     ("Undefined package: \"" + packageName + "\".");
+        Map<Acl2String, Acl2Symbol> innerMap = symbols.get(packageName);
         Acl2Symbol symbol = innerMap.get(name);
         if (symbol == null) {
             symbol = new Acl2Symbol(packageName, name);
