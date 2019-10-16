@@ -2,4 +2,4 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)

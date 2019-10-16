@@ -17,9 +17,9 @@
 (include-book "../language/null-literal")
 
 (include-book "kestrel/std/basic/organize-symbols-by-name" :dir :system)
-(include-book "kestrel/std/typed-alists/string-string-alistp" :dir :system)
-(include-book "kestrel/std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
+(include-book "std/typed-alists/string-string-alistp" :dir :system)
+(include-book "std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

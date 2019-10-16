@@ -21,10 +21,10 @@
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
-(include-book "kestrel/std/typed-alists/symbol-pos-alistp" :dir :system)
-(include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "std/strings/symbols" :dir :system)
+(include-book "std/typed-alists/symbol-pos-alistp" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

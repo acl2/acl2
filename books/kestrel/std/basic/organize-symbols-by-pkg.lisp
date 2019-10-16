@@ -12,7 +12,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "kestrel/std/typed-alists/string-symbollist-alistp" :dir :system)
+(include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 

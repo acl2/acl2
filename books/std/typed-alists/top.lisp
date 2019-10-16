@@ -18,8 +18,15 @@
 (include-book "symbol-string-alistp")
 (include-book "symbol-symbol-alistp")
 
+(include-book "xdoc/constructors" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc std/typed-alists
   :parents (std)
-  :short "Typed alists.")
+  :short "Typed alists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A library of alists with keys and values of specific types.
+     These are built-in types, or ``general'' types in Std.")))

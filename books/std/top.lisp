@@ -39,6 +39,7 @@
 (include-book "stobjs/top")
 (include-book "osets/top")
 (include-book "util/top")
+(include-book "typed-alists/top")
 
 (defsection std
   :parents (top)
@@ -63,5 +64,3 @@ Each of these libraries provides many lemmas for reasoning about built-in
 ACL2 functions, and also many additional functions.  There is also a very
 convenient @(see std/util) macro library, with macros that automate many
 otherwise-tedious tasks.</p>")
-
-
