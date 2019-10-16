@@ -739,7 +739,7 @@ public final class Acl2Symbol extends Acl2Value {
         BINARY_PLUS = new Acl2Symbol(Acl2PackageName.ACL2, stringBinaryPlus);
         BINARY_STAR = new Acl2Symbol(Acl2PackageName.ACL2, stringBinaryTimes);
         LESS_THAN = new Acl2Symbol(Acl2PackageName.LISP, stringLessThan);
-        COMPLEX = new Acl2Symbol(Acl2PackageName.ACL2, stringComplex);
+        COMPLEX = new Acl2Symbol(Acl2PackageName.LISP, stringComplex);
         REALPART = new Acl2Symbol(Acl2PackageName.LISP, stringRealpart);
         IMAGPART = new Acl2Symbol(Acl2PackageName.LISP, stringImagpart);
         NUMERATOR = new Acl2Symbol(Acl2PackageName.LISP, stringNumerator);
@@ -769,6 +769,7 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringCoerce, COERCE);
         initialLispMap.put(stringSymbolName, SYMBOL_NAME);
         initialLispMap.put(stringLessThan, LESS_THAN);
+        initialLispMap.put(stringComplex, COMPLEX);
         initialLispMap.put(stringRealpart, REALPART);
         initialLispMap.put(stringImagpart, IMAGPART);
         initialLispMap.put(stringNumerator, NUMERATOR);
@@ -791,7 +792,6 @@ public final class Acl2Symbol extends Acl2Value {
         initialAcl2Map.put(stringUnarySlash, UNARY_SLASH);
         initialAcl2Map.put(stringBinaryPlus, BINARY_PLUS);
         initialAcl2Map.put(stringBinaryTimes, BINARY_STAR);
-        initialAcl2Map.put(stringComplex, COMPLEX);
         initialAcl2Map.put(stringBadAtomLessThanOrEqualTo,
                 BAD_ATOM_LESS_THAN_OR_EQUAL_TO);
         // initial outer map:
