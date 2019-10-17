@@ -14,7 +14,7 @@
 (include-book "event-form-lists")
 (include-book "fresh-names")
 (include-book "../prove-interface")
-(include-book "../symbol-symbol-alists")
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "../symbol-true-list-alists")
 
 (local (set-default-parents named-formulas))

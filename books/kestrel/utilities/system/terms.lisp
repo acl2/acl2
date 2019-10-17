@@ -16,7 +16,7 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "std/util/defines" :dir :system)
-(include-book "../symbol-symbol-alists")
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "term-function-recognizers")
 (include-book "world-queries")
 
