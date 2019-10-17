@@ -17,6 +17,7 @@
 (include-book "symbol-pseudoterm-alistp")
 (include-book "symbol-string-alistp")
 (include-book "symbol-symbol-alistp")
+(include-book "symbol-truelist-alistp")
 
 (include-book "xdoc/constructors" :dir :system)
 
