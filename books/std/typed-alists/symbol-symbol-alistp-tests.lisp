@@ -20,12 +20,20 @@
 
 (assert! (symbol-symbol-alistp '((a . b))))
 
+(assert! (symbol-symbol-alistp '((a . x) (b . y) (c . z))))
+
 (assert! (symbol-symbol-alistp '((t . nil) (:logic . :program))))
 
 (assert! (not (symbol-symbol-alistp 3)))
+
+(assert! (not (symbol-symbol-alistp 55)))
 
 (assert! (not (symbol-symbol-alistp '(3))))
 
 (assert! (not (symbol-symbol-alistp '((x . y) (2/3 . nil)))))
 
 (assert! (not (symbol-symbol-alistp '((xx . yy) (t . "nil")))))
+
+(assert! (not (symbol-symbol-alistp '((a . "x") (b . y)))))
+
+(assert! (not (symbol-symbol-alistp '((a . x) ("b" . y)))))
