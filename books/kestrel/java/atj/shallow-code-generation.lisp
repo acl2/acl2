@@ -29,39 +29,246 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-integer-field-name ((integer integerp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 integer."
+(defxdoc atj-shallow-quoted-constants
+  :short "Representation of quoted constants in the shallow embedding."
   :long
   (xdoc::topstring
    (xdoc::p
     "In the shallow embedding approach,
-     each quoted integer constant in the ACL2 code
+     each quoted constant in the ACL2 code
      is translated to a static final field
-     that is calculate once at class initialization time
+     that is calculated once at class initialization time
      and then just referenced in the Java code.
-     Since ACL2 integers are objects,
-     this avoids recalculating the object every time
-     the shallowly embedded quoted integer constant
+     Since ACL2 values are objects,
+     this avoids recalculating the object
+     (whether it is created or reused, e.g. when interned)
+     every time the shallowly embedded quoted constant
      is executed in the Java code.")
    (xdoc::p
-    "The name of the field consists of the decimal digits of the integer
-     preceded by @('$CONST_'), if the integer is non-negative.
-     For a negative integer, we put @('minus') just before the digits.."))
-  (str::cat "$CONST_" (if (>= integer 0)
-                          (str::natstr integer)
-                        (str::cat "minus" (str::natstr (- integer))))))
+    "We extract all the quoted constants
+     from the pre-translated bodies of the ACL2 functions,
+     and we create a static final field for each.
+     For now we only do this for quoted numbers,
+     but we will cover the other quoted values soon.
+     The fields for quoted number are declared in the main class;
+     they are named in a way that describes their value:
+     see @(tsee atj-gen-shallow-integer-field-name) and similar functions.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer-id-part ((integer integerp))
+  :returns (core stringp)
+  :short "Turn an ACL2 integer into a Java identifier part."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the names of the static final fields for quoted numbers.")
+   (xdoc::p
+    "We turn the integer into its (base 10) digits,
+     with @('minus') in front if negative."))
+  (if (>= integer 0)
+      (str::natstr integer)
+    (str::cat "minus" (str::natstr (- integer)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-rational-id-part ((rational rationalp))
+  :returns (core stringp)
+  :short "Turn an ACL2 rational into a Java identifier part."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the names of the static final fields for quoted numbers.")
+   (xdoc::p
+    "If the rational is an integer,
+     we use @(tsee atj-gen-shallow-integer-id-part).
+     Otherwise, we generate the integer numerator,
+     followed by @('_over_') to denote the fraction,
+     followed by the integer denominator (always greater than 1)."))
+  (if (integerp rational)
+      (atj-gen-shallow-integer-id-part rational)
+    (str::cat (atj-gen-shallow-integer-id-part (numerator rational))
+              "_over_"
+              (atj-gen-shallow-integer-id-part (denominator rational)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-number-id-part ((number acl2-numberp))
+  :returns (core stringp)
+  :short "Turn an ACL2 number into a Java identifier part."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the names of the static final fields for quoted numbers.")
+   (xdoc::p
+    "If the number is a rational,
+     we use @(tsee atj-gen-shallow-rational-id-part).
+     Otherwise, we generate the rational real part,
+     followed by @('_plus_i_') to denote the formal complex sum,
+     followed by the rational imaginary part (never 0)."))
+  (if (rationalp number)
+      (atj-gen-shallow-rational-id-part number)
+    (str::cat (atj-gen-shallow-rational-id-part (realpart number))
+              "_plus_i_"
+              (atj-gen-shallow-rational-id-part (imagpart number)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer-field-name ((integer integerp))
+  :returns (name stringp)
+  :short "Generate the name of the Java field for an ACL2 quoted integer."
+  :long
+  (xdoc::topstring-p
+   "We prepend @('$I_') (for `integer')
+    to the representation of the number.")
+  (str::cat "$I_" (atj-gen-shallow-integer-id-part integer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-rational-field-name ((rational rationalp))
+  :returns (name stringp)
+  :short "Generate the name of the Java field for an ACL2 quoted rational."
+  :long
+  (xdoc::topstring-p
+   "If the rational is an integer,
+    we use @(tsee atj-gen-shallow-integer-field-name).
+    Otherwise, we prepend @('$R_') (for `rational')
+    to the representation of the number.")
+  (if (integerp rational)
+      (atj-gen-shallow-integer-field-name rational)
+    (str::cat "$R_" (atj-gen-shallow-rational-id-part rational))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-number-field-name ((number acl2-numberp))
+  :returns (name stringp)
+  :short "Generate the name of the Java field for an ACL2 quoted number."
+  :long
+  (xdoc::topstring-p
+   "If the number is a rational,
+    we use @(tsee atj-gen-shallow-rational-field-name).
+    Otherwise, we prepend @('$N_') (for `number')
+    to the representation of the number.")
+  (if (rationalp number)
+      (atj-gen-shallow-rational-field-name number)
+    (str::cat "N_" (atj-gen-shallow-number-id-part number))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer-field ((integer integerp))
+  :returns (field jfieldp)
+  :short "Generate a Java field for an ACL2 quoted integer."
+  :long
+  (xdoc::topstring-p
+   "This is a private static final field with an initializer,
+    which constructs the integer value.")
+  (b* ((name (atj-gen-shallow-integer-field-name integer))
+       (init (atj-gen-integer integer)))
+    (make-jfield :access (jaccess-private)
+                 :static? t
+                 :final? t
+                 :transient? nil
+                 :volatile? nil
+                 :type *aij-type-int*
+                 :name name
+                 :init init)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-integer-fields ((integers integer-listp))
+  :returns (fields jfield-listp)
+  :short "Lift @(tsee atj-gen-shallow-integer-field) to lists."
+  (cond ((endp integers) nil)
+        (t (cons (atj-gen-shallow-integer-field (car integers))
+                 (atj-gen-shallow-integer-fields (cdr integers))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-rational-field ((rational rationalp))
+  :returns (field jfieldp)
+  :short "Generate a Java field for an ACL2 quoted rational."
+  :long
+  (xdoc::topstring-p
+   "This is a private static final field with an initializer,
+    which constructs the rational value.")
+  (b* ((name (atj-gen-shallow-rational-field-name rational))
+       (init (atj-gen-rational rational)))
+    (make-jfield :access (jaccess-private)
+                 :static? t
+                 :final? t
+                 :transient? nil
+                 :volatile? nil
+                 :type *aij-type-rational*
+                 :name name
+                 :init init)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-rational-fields ((rationals rational-listp))
+  :returns (fields jfield-listp)
+  :short "Lift @(tsee atj-gen-shallow-rational-field) to lists."
+  (cond ((endp rationals) nil)
+        (t (cons (atj-gen-shallow-rational-field (car rationals))
+                 (atj-gen-shallow-rational-fields (cdr rationals))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-number-field ((number acl2-numberp))
+  :returns (field jfieldp)
+  :short "Generate a Java field for an ACL2 quoted number."
+  :long
+  (xdoc::topstring-p
+   "This is a private static final field with an initializer,
+    which constructs the number value.")
+  (b* ((name (atj-gen-shallow-number-field-name number))
+       (init (atj-gen-number number)))
+    (make-jfield :access (jaccess-private)
+                 :static? t
+                 :final? t
+                 :transient? nil
+                 :volatile? nil
+                 :type *aij-type-number*
+                 :name name
+                 :init init)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-number-fields ((numbers acl2-number-listp))
+  :returns (fields jfield-listp)
+  :short "Lift @(tsee atj-gen-shallow-number-field) to lists."
+  (cond ((endp numbers) nil)
+        (t (cons (atj-gen-shallow-number-field (car numbers))
+                 (atj-gen-shallow-number-fields (cdr numbers))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-integer ((integer integerp))
   :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 integer."
+  :short "Generate a shallowly embedded ACL2 quoted integer."
   :long
   (xdoc::topstring-p
-   "As explained in @(tsee atj-gen-shallow-integer-field-name),
-    we translate each quoted integer to the corresponding field name.")
+   "This is just a reference to the field for the quoted integer.")
   (jexpr-name (atj-gen-shallow-integer-field-name integer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-rational ((rational rationalp))
+  :returns (expr jexprp)
+  :short "Generate a shallowly embedded ACL2 quoted rational."
+  :long
+  (xdoc::topstring-p
+   "This is just a reference to the field for the quoted rational.")
+  (jexpr-name (atj-gen-shallow-rational-field-name rational)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-number ((number acl2-numberp))
+  :returns (expr jexprp)
+  :short "Generate a shallowly embedded ACL2 quoted number."
+  :long
+  (xdoc::topstring-p
+   "This is just a reference to the field for the quoted number.")
+  (jexpr-name (atj-gen-shallow-number-field-name number)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,10 +380,10 @@
                                 (atj-gen-shallow-integer value)
                                 jvar-value-index))
           ((rationalp value) (mv nil
-                                 (atj-gen-rational value)
+                                 (atj-gen-shallow-rational value)
                                  jvar-value-index))
           ((acl2-numberp value) (mv nil
-                                    (atj-gen-number value)
+                                    (atj-gen-shallow-number value)
                                     jvar-value-index))
           ((consp value) (atj-gen-shallow-cons value
                                                jvar-value-base
@@ -1431,43 +1638,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-quoted-integers-in-term
-  :short "Collect all the quoted integers in a term."
+(defines atj-quoted-numbers-in-term
+  :short "Collect all the quoted numbers in a term."
   :long
   (xdoc::topstring
-   "We return all the integers that appear directly quoted in the term.
-    That is, for each sub-term of the form @('(quote <integer>)'),
-    we return @('<integer>').
-    This excludes integers that occur inside other quoted values,
-    e.g. @('(quote (<integer> . ...))').
-    The result list has no duplicates.")
+   (xdoc::p
+    "We return all the numbers that appear directly quoted in the term.
+     That is, for each sub-term of the form @('(quote <number>)'),
+     we return @('<number>').
+     This excludes numbers that occur inside other quoted values,
+     e.g. @('(quote (<number> . ...))').")
+   (xdoc::p
+    "We return the numbers partitioned into three lists:
+     (i) integers; (ii) other rationals; (iii) other numbers.
+     These lists are pairwise disjoint.
+     Each list has no duplicates."))
 
-  (define atj-quoted-integers-in-term ((term pseudo-termp))
-    :returns (integers integer-listp)
-    (b* (((when (variablep term)) nil)
-         ((when (fquotep term)) (b* ((value (unquote-term term)))
-                                  (if (integerp value)
-                                      (list value)
-                                    nil)))
-         (integers-in-args (atj-quoted-integers-in-terms (fargs term)))
+  (define atj-quoted-numbers-in-term ((term pseudo-termp))
+    :returns (mv (integers integer-listp)
+                 (rationals rational-listp)
+                 (numbers acl2-number-listp))
+    (b* (((when (variablep term)) (mv nil nil nil))
+         ((when (fquotep term))
+          (b* ((value (unquote-term term)))
+            (cond ((integerp value) (mv (list value) nil nil))
+                  ((rationalp value) (mv nil (list value) nil))
+                  ((acl2-numberp value) (mv nil nil (list value)))
+                  (t (mv nil nil nil)))))
+         ((mv integers-in-args
+              rationals-in-args
+              numbers-in-args) (atj-quoted-numbers-in-terms (fargs term)))
          (fn (ffn-symb term)))
       (if (flambdap fn)
-          (union$ integers-in-args
-                  (atj-quoted-integers-in-term (lambda-body fn)))
-        integers-in-args)))
+          (b* (((mv integers-in-lambda
+                    rationals-in-lambda
+                    numbers-in-lambda) (atj-quoted-numbers-in-term
+                                        (lambda-body fn))))
+            (mv (union$ integers-in-args integers-in-lambda)
+                (union$ rationals-in-args rationals-in-lambda)
+                (union$ numbers-in-args numbers-in-lambda)))
+        (mv integers-in-args rationals-in-args numbers-in-args))))
 
-  (define atj-quoted-integers-in-terms ((terms pseudo-term-listp))
-    :returns (integers integer-listp)
-    (cond ((endp terms) nil)
-          (t (union$ (atj-quoted-integers-in-term (car terms))
-                     (atj-quoted-integers-in-terms (cdr terms))))))
+  (define atj-quoted-numbers-in-terms ((terms pseudo-term-listp))
+    :returns (mv (integers integer-listp)
+                 (rationals rational-listp)
+                 (numbers acl2-number-listp))
+    (b* (((when (endp terms)) (mv nil nil nil))
+         ((mv integers-in-first
+              rationals-in-first
+              numbers-in-first) (atj-quoted-numbers-in-term (car terms)))
+         ((mv integers-in-rest
+              rationals-in-rest
+              numbers-in-rest) (atj-quoted-numbers-in-terms (cdr terms))))
+      (mv (union$ integers-in-first integers-in-rest)
+          (union$ rationals-in-first rationals-in-rest)
+          (union$ numbers-in-first numbers-in-rest))))
 
   :prepwork
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system)))
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
+   (local (include-book "std/typed-lists/rational-listp" :dir :system))
+   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system)))
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atj-quoted-integers-in-term))
+  (verify-guards atj-quoted-numbers-in-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1481,7 +1715,9 @@
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
-               (quoted-integers integer-listp))
+               (quoted-integers integer-listp)
+               (quoted-rationals rational-listp)
+               (quoted-numbers acl2-number-listp))
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
@@ -1534,12 +1770,12 @@
      The body of the Java method consists of those Java statements,
      followed by a @('return') statement with that Java expression.")
    (xdoc::p
-    "We also collect and return all the quoted integers
+    "We also collect and return all the quoted numbers
      in the pre-translated function body.
      These are used to generate (in other code generation functions)
-     the corresponding Java fields;
-     see @(tsee atj-gen-shallow-integer) for motivation.
-     The list of quoted integers has no duplicates."))
+     the corresponding Java fields; see "
+    (xdoc::seetopic "atj-shallow-quoted-constants" "here")
+    " for motivation."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
        (formals (formals fn wrld))
@@ -1549,7 +1785,9 @@
        (out-type (atj-function-type->output fn-type))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
-       (quoted-integers (atj-quoted-integers-in-term body))
+       ((mv quoted-integers
+            quoted-rationals
+            quoted-numbers) (atj-quoted-numbers-in-term body))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
                                             fn-method-names
@@ -1582,7 +1820,10 @@
                              :params method-params
                              :throws (list *aij-class-eval-exc*)
                              :body method-body)))
-    (mv method quoted-integers)))
+    (mv method quoted-integers quoted-rationals quoted-numbers))
+  :prepwork ((local (in-theory (disable integer-listp
+                                        rational-listp
+                                        acl2-number-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1596,14 +1837,16 @@
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
-               (quoted-integers integer-listp))
+               (quoted-integers integer-listp)
+               (quoted-rationals rational-listp)
+               (quoted-numbers acl2-number-listp))
   :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
   :long
   (xdoc::topstring-p
-   "We also return the list of quoted integers:
+   "We also return the lists of quoted numbers:
     see @(tsee atj-gen-shallow-fndef-method).
     This is @('nil') for native functions.")
   (if (aij-nativep fn)
@@ -1613,6 +1856,8 @@
                                            guards$
                                            curr-pkg
                                            wrld)
+          nil
+          nil
           nil)
     (atj-gen-shallow-fndef-method fn
                                   pkg-class-names
@@ -1635,7 +1880,9 @@
                      (repeat (len fns) curr-pkg))
               (not (equal curr-pkg "")))
   :returns (mv (methods jmethod-listp)
-               (quoted-integers integer-listp))
+               (quoted-integers integer-listp)
+               (quoted-rationals rational-listp)
+               (quoted-numbers acl2-number-listp))
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-fn-method) to lists."
   :long
@@ -1644,11 +1891,13 @@
     "This function is called on the functions to translate to Java
      that are all in the same package, namely @('curr-pkg').")
    (xdoc::p
-    "The quoted integers for all the functions are all joined together,
+    "The quoted numbers for all the functions are all joined together,
      without duplicates."))
-  (b* (((when (endp fns)) (mv nil nil))
+  (b* (((when (endp fns)) (mv nil nil nil nil))
        ((mv first-method
-            first-qints) (atj-gen-shallow-fn-method (car fns)
+            first-qints
+            first-qrats
+            first-qnums) (atj-gen-shallow-fn-method (car fns)
                                                     pkg-class-names
                                                     fn-method-names
                                                     guards$
@@ -1656,7 +1905,9 @@
                                                     curr-pkg
                                                     wrld))
        ((mv rest-methods
-            rest-qints) (atj-gen-shallow-fn-methods (cdr fns)
+            rest-qints
+            rest-qrats
+            rest-qnums) (atj-gen-shallow-fn-methods (cdr fns)
                                                     pkg-class-names
                                                     fn-method-names
                                                     guards$
@@ -1664,10 +1915,14 @@
                                                     curr-pkg
                                                     wrld))
        (methods (cons first-method rest-methods))
-       (qints (union$ first-qints rest-qints)))
-    (mv methods qints))
+       (qints (union$ first-qints rest-qints))
+       (qrats (union$ first-qrats rest-qrats))
+       (qnums (union$ first-qnums rest-qnums)))
+    (mv methods qints qrats qnums))
   :prepwork
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system))))
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
+   (local (include-book "std/typed-lists/rational-listp" :dir :system))
+   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1686,7 +1941,8 @@
   (atj-gen-shallow-synonym-method-params-aux n nil)
 
   :prepwork
-  ((define atj-gen-shallow-synonym-method-params-aux ((n natp) (acc string-listp))
+  ((define atj-gen-shallow-synonym-method-params-aux ((n natp)
+                                                      (acc string-listp))
      :returns (formals string-listp :hyp (string-listp acc))
      (cond ((zp n) acc)
            (t (atj-gen-shallow-synonym-method-params-aux
@@ -1824,7 +2080,9 @@
   :guard (equal (symbol-package-name-lst fns-in-pkg)
                 (repeat (len fns-in-pkg) pkg))
   :returns (mv (class jclassp)
-               (quoted-integers integer-listp))
+               (quoted-integers integer-listp)
+               (quoted-rationals rational-listp)
+               (quoted-numbers acl2-number-listp))
   :verify-guards nil
   :short "Generate the shallowly embedded ACL2 functions
           in an ACL2 package."
@@ -1848,15 +2106,18 @@
        ((unless (consp pair))
         (raise "Internal error: no class name for package name ~x0." pkg)
         ;; irrelevant:
-        (mv (make-jclass :access (jaccess-public) :name "") nil))
+        (mv (make-jclass :access (jaccess-public) :name "") nil nil nil))
        (class-name (cdr pair))
-       ((mv fn-methods qints) (atj-gen-shallow-fn-methods fns-in-pkg
-                                                          pkg-class-names
-                                                          fn-method-names
-                                                          guards$
-                                                          verbose$
-                                                          pkg
-                                                          wrld))
+       ((mv fn-methods
+            qints
+            qrats
+            qnums) (atj-gen-shallow-fn-methods fns-in-pkg
+                                               pkg-class-names
+                                               fn-method-names
+                                               guards$
+                                               verbose$
+                                               pkg
+                                               wrld))
        (imported-fns (intersection-eq fns-to-translate (pkg-imports pkg)))
        (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
                                                          pkg-class-names
@@ -1874,7 +2135,7 @@
                            :superclass? nil
                            :superinterfaces nil
                            :body (jmethods-to-jcbody-elements all-methods))))
-    (mv class qints)))
+    (mv class qints qrats qnums)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1887,7 +2148,9 @@
   :returns (mv (classes jclass-listp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp).")
-               (quoted-integers integer-listp))
+               (quoted-integers integer-listp)
+               (quoted-rationals rational-listp)
+               (quoted-numbers acl2-number-listp))
   :verify-guards nil
   :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
   :long
@@ -1902,30 +2165,36 @@
      which must be eventually passed to the functions that generate
      the Java test class.")
    (xdoc::p
-    "We also return all the quoted integers
-     from the pre-translated function bodies.
-     The list of integers is without duplicates."))
+    "We also return all the quoted numbers
+     from the pre-translated function bodies."))
   (b* ((pkgs (remove-duplicates-equal (strip-cars fns-by-pkg)))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods
                          (remove-duplicates-equal fns-to-translate)))
-       ((mv classes qints) (atj-gen-shallow-pkg-classes-aux pkgs
-                                                            fns-to-translate
-                                                            fns-by-pkg
-                                                            pkg-class-names
-                                                            fn-method-names
-                                                            guards$
-                                                            java-class$
-                                                            verbose$
-                                                            wrld)))
+       ((mv classes
+            qints
+            qrats
+            qnums) (atj-gen-shallow-pkg-classes-aux pkgs
+                                                    fns-to-translate
+                                                    fns-by-pkg
+                                                    pkg-class-names
+                                                    fn-method-names
+                                                    guards$
+                                                    java-class$
+                                                    verbose$
+                                                    wrld)))
     (mv classes
         pkg-class-names
         fn-method-names
-        qints))
+        qints
+        qrats
+        qnums))
 
   :prepwork
 
   ((local (include-book "std/typed-lists/integer-listp" :dir :system))
+   (local (include-book "std/typed-lists/rational-listp" :dir :system))
+   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system))
 
    (define atj-gen-shallow-pkg-classes-aux
      ((pkgs string-listp)
@@ -1938,13 +2207,17 @@
       (verbose$ booleanp)
       (wrld plist-worldp))
      :returns (mv (classes jclass-listp)
-                  (quoted-integers integer-listp))
+                  (quoted-integers integer-listp)
+                  (quoted-rationals rational-listp)
+                  (quoted-numbers acl2-number-listp))
      :verify-guards nil
-     (b* (((when (endp pkgs)) (mv nil nil))
+     (b* (((when (endp pkgs)) (mv nil nil nil nil))
           (pkg (car pkgs))
           (fns-in-pkg (cdr (assoc-equal pkg fns-by-pkg)))
           ((mv first-class
-               first-qints) (atj-gen-shallow-pkg-class fns-in-pkg
+               first-qints
+               first-qrats
+               first-qnums) (atj-gen-shallow-pkg-class fns-in-pkg
                                                        fns-to-translate
                                                        pkg
                                                        pkg-class-names
@@ -1953,7 +2226,9 @@
                                                        verbose$
                                                        wrld))
           ((mv rest-classes
-               rest-qints) (atj-gen-shallow-pkg-classes-aux (cdr pkgs)
+               rest-qints
+               rest-qrats
+               rest-qnums) (atj-gen-shallow-pkg-classes-aux (cdr pkgs)
                                                             fns-to-translate
                                                             fns-by-pkg
                                                             pkg-class-names
@@ -1963,40 +2238,10 @@
                                                             verbose$
                                                             wrld))
           (classes (cons first-class rest-classes))
-          (qints (union$ first-qints rest-qints)))
-       (mv classes qints)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-integer-field ((integer integerp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 integer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(tsee atj-gen-shallow-integer) for motivation.")
-   (xdoc::p
-    "This is a private static final field with an initializer.
-     The initializer constructs the integer value."))
-  (b* ((name (atj-gen-shallow-integer-field-name integer))
-       (init (atj-gen-integer integer)))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type *aij-type-int*
-                 :name name
-                 :init init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-integer-fields ((integers integer-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-integer-field) to lists."
-  (cond ((endp integers) nil)
-        (t (cons (atj-gen-shallow-integer-field (car integers))
-                 (atj-gen-shallow-integer-fields (cdr integers))))))
+          (qints (union$ first-qints rest-qints))
+          (qrats (union$ first-qrats rest-qrats))
+          (qnums (union$ first-qnums rest-qnums)))
+       (mv classes qints qrats qnums)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2080,11 +2325,11 @@
     "The class contains the initialization field and method,
      the methods to build the ACL2 packages,
      the classes that contain methods for the ACL2 functions,
-     the fields for quoted integers,
+     the fields for quoted numbers,
      and the static initializer.")
    (xdoc::p
     "It is critical that the static initializer
-     comes before the fields for the quoted integers,
+     comes before the fields for the quoted numbers,
      so that the ACL2 environment is initialized
      before the field initializers, which construct ACL2 values,
      are executed;
@@ -2092,7 +2337,7 @@
      is executed in textual order.")
    (xdoc::p
     "After the static initializer,
-     we generate the fields for the quoted integers,
+     we generate the fields for the quoted numbers,
      followed by the initialization flag field
      (so all the fields are together).")
    (xdoc::p
@@ -2123,7 +2368,7 @@
                      (append fns-to-translate
                              (strip-cars *primitive-formals-and-guards*))))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
-       ((mv fn-classes pkg-class-names fn-method-names qints)
+       ((mv fn-classes pkg-class-names fn-method-names qints qrats qnums)
         (atj-gen-shallow-pkg-classes fns+natives
                                      fns-by-pkg
                                      guards$
@@ -2131,8 +2376,12 @@
                                      verbose$
                                      wrld))
        (qint-fields (atj-gen-shallow-integer-fields qints))
+       (qrat-fields (atj-gen-shallow-rational-fields qrats))
+       (qnum-fields (atj-gen-shallow-number-fields qnums))
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements (append qint-fields
+                                                               qrat-fields
+                                                               qnum-fields
                                                                (list
                                                                 init-field)))
                            (jmethods-to-jcbody-elements pkg-methods)
