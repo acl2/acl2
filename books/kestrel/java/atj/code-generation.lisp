@@ -483,16 +483,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-jcunit ((deep$ booleanp)
-                             (guards$ booleanp)
-                             (java-package$ maybe-stringp)
-                             (java-class$ stringp)
-                             (tests$ atj-test-listp)
-                             (verbose$ booleanp)
-                             (pkg-class-names string-string-alistp)
-                             (fn-method-names symbol-string-alistp)
-                             (wrld plist-worldp))
-  :returns (jcunit jcunitp)
+(define atj-gen-test-cunit ((deep$ booleanp)
+                            (guards$ booleanp)
+                            (java-package$ maybe-stringp)
+                            (java-class$ stringp)
+                            (tests$ atj-test-listp)
+                            (verbose$ booleanp)
+                            (pkg-class-names string-string-alistp)
+                            (fn-method-names symbol-string-alistp)
+                            (wrld plist-worldp))
+  :returns (cunit jcunitp)
   :verify-guards nil
   :short "Generate the test Java compilation unit."
   (make-jcunit :package? java-package$
@@ -509,15 +509,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jfile ((deep$ booleanp)
-                       (guards$ booleanp)
-                       (java-package$ maybe-stringp)
-                       (java-class$ maybe-stringp)
-                       (output-file$ stringp)
-                       (pkgs string-listp)
-                       (fns-to-translate symbol-listp)
-                       (verbose$ booleanp)
-                       state)
+(define atj-gen-main-file ((deep$ booleanp)
+                           (guards$ booleanp)
+                           (java-package$ maybe-stringp)
+                           (java-class$ maybe-stringp)
+                           (output-file$ stringp)
+                           (pkgs string-listp)
+                           (fns-to-translate symbol-listp)
+                           (verbose$ booleanp)
+                           state)
   :returns (mv (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp).")
                state)
@@ -536,22 +536,22 @@
        ((mv cunit
             pkg-class-names
             fn-method-names) (if deep$
-                                 (mv (atj-gen-deep-jcunit guards$
-                                                          java-package$
-                                                          java-class$
-                                                          pkgs
-                                                          fns-to-translate
-                                                          verbose$
-                                                          wrld)
+                                 (mv (atj-gen-deep-main-cunit guards$
+                                                              java-package$
+                                                              java-class$
+                                                              pkgs
+                                                              fns-to-translate
+                                                              verbose$
+                                                              wrld)
                                      nil
                                      nil)
-                               (atj-gen-shallow-jcunit guards$
-                                                       java-package$
-                                                       java-class$
-                                                       pkgs
-                                                       fns-to-translate
-                                                       verbose$
-                                                       wrld)))
+                               (atj-gen-shallow-main-cunit guards$
+                                                           java-package$
+                                                           java-class$
+                                                           pkgs
+                                                           fns-to-translate
+                                                           verbose$
+                                                           wrld)))
        ((unless (jcunitp cunit))
         (raise "Internal error: generated an invalid compilation unit.")
         (mv nil nil state))
@@ -562,28 +562,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-jfile ((deep$ booleanp)
-                            (guards$ booleanp)
-                            (java-package$ maybe-stringp)
-                            (java-class$ stringp)
-                            (output-file-test$ stringp)
-                            (tests$ atj-test-listp)
-                            (verbose$ booleanp)
-                            (pkg-class-names string-string-alistp)
-                            (fn-method-names symbol-string-alistp)
-                            state)
+(define atj-gen-test-file ((deep$ booleanp)
+                           (guards$ booleanp)
+                           (java-package$ maybe-stringp)
+                           (java-class$ stringp)
+                           (output-file-test$ stringp)
+                           (tests$ atj-test-listp)
+                           (verbose$ booleanp)
+                           (pkg-class-names string-string-alistp)
+                           (fn-method-names symbol-string-alistp)
+                           state)
   :returns state
   :mode :program
   :short "Generate the test Java file."
-  (b* ((cunit (atj-gen-test-jcunit deep$
-                                   guards$
-                                   java-package$
-                                   java-class$
-                                   tests$
-                                   verbose$
-                                   pkg-class-names
-                                   fn-method-names
-                                   (w state)))
+  (b* ((cunit (atj-gen-test-cunit deep$
+                                  guards$
+                                  java-package$
+                                  java-class$
+                                  tests$
+                                  verbose$
+                                  pkg-class-names
+                                  fn-method-names
+                                  (w state)))
        ((unless (jcunitp cunit))
         (raise "Internal error: generated an invalid compilation unit.")
         state))
@@ -625,25 +625,25 @@
     (fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
    (b* (((mv pkg-class-names
              fn-method-names
-             state) (atj-gen-jfile deep$
-                                   guards$
-                                   java-package$
-                                   java-class$
-                                   output-file$
-                                   pkgs
-                                   fns-to-translate
-                                   verbose$
-                                   state))
-        (state (if tests$
-                   (atj-gen-test-jfile deep$
+             state) (atj-gen-main-file deep$
                                        guards$
                                        java-package$
                                        java-class$
-                                       output-file-test$
-                                       tests$
+                                       output-file$
+                                       pkgs
+                                       fns-to-translate
                                        verbose$
-                                       pkg-class-names
-                                       fn-method-names
-                                       state)
+                                       state))
+        (state (if tests$
+                   (atj-gen-test-file deep$
+                                      guards$
+                                      java-package$
+                                      java-class$
+                                      output-file-test$
+                                      tests$
+                                      verbose$
+                                      pkg-class-names
+                                      fn-method-names
+                                      state)
                  state)))
      (value nil))))

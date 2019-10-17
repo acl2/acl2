@@ -328,7 +328,7 @@
      as well as some Java library classes and interfaces,
      including all the ones in @('java.lang').
      This constant collects all of these.
-     This constant must be kept in sync with @(tsee atj-gen-shallow-jcunit),
+     This constant must be kept in sync with @(tsee atj-gen-shallow-main-cunit),
      which generates the Java imports.")
    (xdoc::p
     "We also disallow Java keywords, boolean literals, and the null literal,
@@ -342,7 +342,7 @@
           *boolean-literals*
           (list *null-literal*)
           *aij-class-names*
-          ;; keep in sync with ATJ-GEN-SHALLOW-JCUNIT:
+          ;; keep in sync with ATJ-GEN-SHALLOW-MAIN-CUNIT:
           (list "BigInteger"
                 "ArrayList"
                 "List"))

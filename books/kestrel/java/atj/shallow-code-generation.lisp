@@ -85,7 +85,7 @@
    (xdoc::p
     "We reference the constants without the class name
      because we import all these constants;
-     see @(tsee atj-gen-shallow-jcunit)."))
+     see @(tsee atj-gen-shallow-cunit)."))
   (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
     (if pair
         (jexpr-name (cdr pair))
@@ -218,7 +218,7 @@
      However, inside @('<class>'), it suffices to use @('<method>'),
      which is more readable.
      Furthermore, since we generate method synonyms under certain conditions,
-     as explained in @(tsee atj-gen-shallow-fnsynonym),
+     as explained in @(tsee atj-gen-shallow-synonym-method),
      it suffices to use @('<method>')
      if the function is imported by the package.
      Thus, we prepend the Java class name to the Java method name
@@ -1264,12 +1264,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fnnative ((fn symbolp)
-                                  (pkg-class-names string-string-alistp)
-                                  (fn-method-names symbol-string-alistp)
-                                  (guards$ booleanp)
-                                  (curr-pkg stringp)
-                                  (wrld plist-worldp))
+(define atj-gen-shallow-fnnative-method ((fn symbolp)
+                                         (pkg-class-names string-string-alistp)
+                                         (fn-method-names symbol-string-alistp)
+                                         (guards$ booleanp)
+                                         (curr-pkg stringp)
+                                         (wrld plist-worldp))
   :guard (and (aij-nativep fn)
               (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
@@ -1471,13 +1471,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fndef ((fn symbolp)
-                               (pkg-class-names string-string-alistp)
-                               (fn-method-names symbol-string-alistp)
-                               (guards$ booleanp)
-                               (verbose$ booleanp)
-                               (curr-pkg stringp)
-                               (wrld plist-worldp))
+(define atj-gen-shallow-fndef-method ((fn symbolp)
+                                      (pkg-class-names string-string-alistp)
+                                      (fn-method-names symbol-string-alistp)
+                                      (guards$ booleanp)
+                                      (verbose$ booleanp)
+                                      (curr-pkg stringp)
+                                      (wrld plist-worldp))
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
@@ -1586,13 +1586,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fn ((fn symbolp)
-                            (pkg-class-names string-string-alistp)
-                            (fn-method-names symbol-string-alistp)
-                            (guards$ booleanp)
-                            (verbose$ booleanp)
-                            (curr-pkg stringp)
-                            (wrld plist-worldp))
+(define atj-gen-shallow-fn-method ((fn symbolp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (guards$ booleanp)
+                                   (verbose$ booleanp)
+                                   (curr-pkg stringp)
+                                   (wrld plist-worldp))
   :guard (and (equal (symbol-package-name fn) curr-pkg)
               (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
@@ -1604,40 +1604,40 @@
   :long
   (xdoc::topstring-p
    "We also return the list of quoted integers:
-    see @(tsee atj-gen-shallow-fndef).
+    see @(tsee atj-gen-shallow-fndef-method).
     This is @('nil') for native functions.")
   (if (aij-nativep fn)
-      (mv (atj-gen-shallow-fnnative fn
-                                    pkg-class-names
-                                    fn-method-names
-                                    guards$
-                                    curr-pkg
-                                    wrld)
+      (mv (atj-gen-shallow-fnnative-method fn
+                                           pkg-class-names
+                                           fn-method-names
+                                           guards$
+                                           curr-pkg
+                                           wrld)
           nil)
-    (atj-gen-shallow-fndef fn
-                           pkg-class-names
-                           fn-method-names
-                           guards$
-                           verbose$
-                           curr-pkg
-                           wrld)))
+    (atj-gen-shallow-fndef-method fn
+                                  pkg-class-names
+                                  fn-method-names
+                                  guards$
+                                  verbose$
+                                  curr-pkg
+                                  wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fns ((fns symbol-listp)
-                             (pkg-class-names string-string-alistp)
-                             (fn-method-names symbol-string-alistp)
-                             (guards$ booleanp)
-                             (verbose$ booleanp)
-                             (curr-pkg stringp)
-                             (wrld plist-worldp))
+(define atj-gen-shallow-fn-methods ((fns symbol-listp)
+                                    (pkg-class-names string-string-alistp)
+                                    (fn-method-names symbol-string-alistp)
+                                    (guards$ booleanp)
+                                    (verbose$ booleanp)
+                                    (curr-pkg stringp)
+                                    (wrld plist-worldp))
   :guard (and (equal (symbol-package-name-lst fns)
                      (repeat (len fns) curr-pkg))
               (not (equal curr-pkg "")))
   :returns (mv (methods jmethod-listp)
                (quoted-integers integer-listp))
   :verify-guards nil
-  :short "Lift @(tsee atj-gen-shallow-fn) to lists."
+  :short "Lift @(tsee atj-gen-shallow-fn-method) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1648,21 +1648,21 @@
      without duplicates."))
   (b* (((when (endp fns)) (mv nil nil))
        ((mv first-method
-            first-qints) (atj-gen-shallow-fn (car fns)
-                                             pkg-class-names
-                                             fn-method-names
-                                             guards$
-                                             verbose$
-                                             curr-pkg
-                                             wrld))
+            first-qints) (atj-gen-shallow-fn-method (car fns)
+                                                    pkg-class-names
+                                                    fn-method-names
+                                                    guards$
+                                                    verbose$
+                                                    curr-pkg
+                                                    wrld))
        ((mv rest-methods
-            rest-qints) (atj-gen-shallow-fns (cdr fns)
-                                             pkg-class-names
-                                             fn-method-names
-                                             guards$
-                                             verbose$
-                                             curr-pkg
-                                             wrld))
+            rest-qints) (atj-gen-shallow-fn-methods (cdr fns)
+                                                    pkg-class-names
+                                                    fn-method-names
+                                                    guards$
+                                                    verbose$
+                                                    curr-pkg
+                                                    wrld))
        (methods (cons first-method rest-methods))
        (qints (union$ first-qints rest-qints)))
     (mv methods qints))
@@ -1671,10 +1671,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fnsynonym-formals ((n natp))
+(define atj-gen-shallow-synonym-method-params ((n natp))
   :returns (formals string-listp)
   :short "Generate shallowly embedded formal parameters for
-          the function synonyms generated by @(tsee atj-gen-shallow-fnsynonym)."
+          the function synonyms generated by
+          @(tsee atj-gen-shallow-synonym-method)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1682,23 +1683,23 @@
      so for now we just generate @('x1'), @('x2'), ..., @('xn'),
      where @('n') is the arity.
      These are valid Java parameter names."))
-  (atj-gen-shallow-fnsynonym-formals-aux n nil)
+  (atj-gen-shallow-synonym-method-params-aux n nil)
 
   :prepwork
-  ((define atj-gen-shallow-fnsynonym-formals-aux ((n natp) (acc string-listp))
+  ((define atj-gen-shallow-synonym-method-params-aux ((n natp) (acc string-listp))
      :returns (formals string-listp :hyp (string-listp acc))
      (cond ((zp n) acc)
-           (t (atj-gen-shallow-fnsynonym-formals-aux
+           (t (atj-gen-shallow-synonym-method-params-aux
                (1- n) (cons (str::cat "x" (str::natstr n)) acc)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fnsynonym ((fn symbolp)
-                                   (pkg-class-names string-string-alistp)
-                                   (fn-method-names symbol-string-alistp)
-                                   (guards$ booleanp)
-                                   (curr-pkg stringp)
-                                   (wrld plist-worldp))
+(define atj-gen-shallow-synonym-method ((fn symbolp)
+                                        (pkg-class-names string-string-alistp)
+                                        (fn-method-names symbol-string-alistp)
+                                        (guards$ booleanp)
+                                        (curr-pkg stringp)
+                                        (wrld plist-worldp))
   :guard (member-eq fn (pkg-imports curr-pkg))
   :returns (method jmethodp)
   :verify-guards nil
@@ -1755,7 +1756,7 @@
                                             pkg-class-names
                                             fn-method-names
                                             fn-pkg))
-       (method-param-names (atj-gen-shallow-fnsynonym-formals (arity fn wrld)))
+       (method-param-names (atj-gen-shallow-synonym-method-params (arity fn wrld)))
        (method-params (atj-gen-paramlist method-param-names
                                          (atj-types-to-jtypes in-types)))
        (pkg+class (assoc-equal fn-pkg pkg-class-names))
@@ -1786,40 +1787,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fnsynonyms ((fns symbol-listp)
-                                    (pkg-class-names string-string-alistp)
-                                    (fn-method-names symbol-string-alistp)
-                                    (guards$ booleanp)
-                                    (curr-pkg stringp)
-                                    (wrld plist-worldp))
+(define atj-gen-shallow-synonym-methods ((fns symbol-listp)
+                                         (pkg-class-names string-string-alistp)
+                                         (fn-method-names symbol-string-alistp)
+                                         (guards$ booleanp)
+                                         (curr-pkg stringp)
+                                         (wrld plist-worldp))
   :guard (subsetp-equal fns (pkg-imports curr-pkg))
   :returns (methods jmethod-listp)
   :verify-guards nil
-  :short "Lift @(tsee atj-gen-shallow-fnsynonym) to lists."
+  :short "Lift @(tsee atj-gen-shallow-synonym-method) to lists."
   (cond ((endp fns) nil)
-        (t (cons (atj-gen-shallow-fnsynonym (car fns)
-                                            pkg-class-names
-                                            fn-method-names
-                                            guards$
-                                            curr-pkg
-                                            wrld)
-                 (atj-gen-shallow-fnsynonyms (cdr fns)
-                                             pkg-class-names
-                                             fn-method-names
-                                             guards$
-                                             curr-pkg
-                                             wrld)))))
+        (t (cons (atj-gen-shallow-synonym-method (car fns)
+                                                 pkg-class-names
+                                                 fn-method-names
+                                                 guards$
+                                                 curr-pkg
+                                                 wrld)
+                 (atj-gen-shallow-synonym-methods (cdr fns)
+                                                  pkg-class-names
+                                                  fn-method-names
+                                                  guards$
+                                                  curr-pkg
+                                                  wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fns-in-pkg ((fns-in-pkg symbol-listp)
-                                    (fns-to-translate symbol-listp)
-                                    (pkg stringp)
-                                    (pkg-class-names string-string-alistp)
-                                    (fn-method-names symbol-string-alistp)
-                                    (guards$ booleanp)
-                                    (verbose$ booleanp)
-                                    (wrld plist-worldp))
+(define atj-gen-shallow-pkg-class ((fns-in-pkg symbol-listp)
+                                   (fns-to-translate symbol-listp)
+                                   (pkg stringp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (guards$ booleanp)
+                                   (verbose$ booleanp)
+                                   (wrld plist-worldp))
   :guard (equal (symbol-package-name-lst fns-in-pkg)
                 (repeat (len fns-in-pkg) pkg))
   :returns (mv (class jclassp)
@@ -1842,27 +1843,27 @@
    (xdoc::p
     "We also generate additional methods for all the functions to translate
      that are in other ACL2 packages but that are imported by @('pkg').
-     See @(tsee atj-gen-shallow-fnsynonym) for motivation."))
+     See @(tsee atj-gen-shallow-synonym-method) for motivation."))
   (b* ((pair (assoc-equal pkg pkg-class-names))
        ((unless (consp pair))
         (raise "Internal error: no class name for package name ~x0." pkg)
         ;; irrelevant:
         (mv (make-jclass :access (jaccess-public) :name "") nil))
        (class-name (cdr pair))
-       ((mv fn-methods qints) (atj-gen-shallow-fns fns-in-pkg
-                                                   pkg-class-names
-                                                   fn-method-names
-                                                   guards$
-                                                   verbose$
-                                                   pkg
-                                                   wrld))
+       ((mv fn-methods qints) (atj-gen-shallow-fn-methods fns-in-pkg
+                                                          pkg-class-names
+                                                          fn-method-names
+                                                          guards$
+                                                          verbose$
+                                                          pkg
+                                                          wrld))
        (imported-fns (intersection-eq fns-to-translate (pkg-imports pkg)))
-       (synonym-methods (atj-gen-shallow-fnsynonyms imported-fns
-                                                    pkg-class-names
-                                                    fn-method-names
-                                                    guards$
-                                                    pkg
-                                                    wrld))
+       (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
+                                                         pkg-class-names
+                                                         fn-method-names
+                                                         guards$
+                                                         pkg
+                                                         wrld))
        (all-methods (append fn-methods synonym-methods))
        (class (make-jclass :access (jaccess-public)
                            :abstract? nil
@@ -1877,12 +1878,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fns-by-pkg ((fns-to-translate symbol-listp)
-                                    (fns-by-pkg string-symbollist-alistp)
-                                    (guards$ booleanp)
-                                    (java-class$ stringp)
-                                    (verbose$ booleanp)
-                                    (wrld plist-worldp))
+(define atj-gen-shallow-pkg-classes ((fns-to-translate symbol-listp)
+                                     (fns-by-pkg string-symbollist-alistp)
+                                     (guards$ booleanp)
+                                     (java-class$ stringp)
+                                     (verbose$ booleanp)
+                                     (wrld plist-worldp))
   :returns (mv (classes jclass-listp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp).")
@@ -1908,15 +1909,15 @@
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods
                          (remove-duplicates-equal fns-to-translate)))
-       ((mv classes qints) (atj-gen-shallow-fns-by-pkg-aux pkgs
-                                                           fns-to-translate
-                                                           fns-by-pkg
-                                                           pkg-class-names
-                                                           fn-method-names
-                                                           guards$
-                                                           java-class$
-                                                           verbose$
-                                                           wrld)))
+       ((mv classes qints) (atj-gen-shallow-pkg-classes-aux pkgs
+                                                            fns-to-translate
+                                                            fns-by-pkg
+                                                            pkg-class-names
+                                                            fn-method-names
+                                                            guards$
+                                                            java-class$
+                                                            verbose$
+                                                            wrld)))
     (mv classes
         pkg-class-names
         fn-method-names
@@ -1926,7 +1927,7 @@
 
   ((local (include-book "std/typed-lists/integer-listp" :dir :system))
 
-   (define atj-gen-shallow-fns-by-pkg-aux
+   (define atj-gen-shallow-pkg-classes-aux
      ((pkgs string-listp)
       (fns-to-translate symbol-listp)
       (fns-by-pkg string-symbollist-alistp)
@@ -1943,24 +1944,24 @@
           (pkg (car pkgs))
           (fns-in-pkg (cdr (assoc-equal pkg fns-by-pkg)))
           ((mv first-class
-               first-qints) (atj-gen-shallow-fns-in-pkg fns-in-pkg
-                                                        fns-to-translate
-                                                        pkg
-                                                        pkg-class-names
-                                                        fn-method-names
-                                                        guards$
-                                                        verbose$
-                                                        wrld))
+               first-qints) (atj-gen-shallow-pkg-class fns-in-pkg
+                                                       fns-to-translate
+                                                       pkg
+                                                       pkg-class-names
+                                                       fn-method-names
+                                                       guards$
+                                                       verbose$
+                                                       wrld))
           ((mv rest-classes
-               rest-qints) (atj-gen-shallow-fns-by-pkg-aux (cdr pkgs)
-                                                           fns-to-translate
-                                                           fns-by-pkg
-                                                           pkg-class-names
-                                                           fn-method-names
-                                                           guards$
-                                                           java-class$
-                                                           verbose$
-                                                           wrld))
+               rest-qints) (atj-gen-shallow-pkg-classes-aux (cdr pkgs)
+                                                            fns-to-translate
+                                                            fns-by-pkg
+                                                            pkg-class-names
+                                                            fn-method-names
+                                                            guards$
+                                                            java-class$
+                                                            verbose$
+                                                            wrld))
           (classes (cons first-class rest-classes))
           (qints (union$ first-qints rest-qints)))
        (mv classes qints)))))
@@ -2056,12 +2057,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-class ((pkgs string-listp)
-                               (fns-to-translate symbol-listp)
-                               (guards$ booleanp)
-                               (java-class$ stringp)
-                               (verbose$ booleanp)
-                               (wrld plist-worldp))
+(define atj-gen-shallow-main-class ((pkgs string-listp)
+                                    (fns-to-translate symbol-listp)
+                                    (guards$ booleanp)
+                                    (java-class$ stringp)
+                                    (verbose$ booleanp)
+                                    (wrld plist-worldp))
   :returns (mv (class jclassp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp)."))
@@ -2123,12 +2124,12 @@
                              (strip-cars *primitive-formals-and-guards*))))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
        ((mv fn-classes pkg-class-names fn-method-names qints)
-        (atj-gen-shallow-fns-by-pkg fns+natives
-                                    fns-by-pkg
-                                    guards$
-                                    java-class$
-                                    verbose$
-                                    wrld))
+        (atj-gen-shallow-pkg-classes fns+natives
+                                     fns-by-pkg
+                                     guards$
+                                     java-class$
+                                     verbose$
+                                     wrld))
        (qint-fields (atj-gen-shallow-integer-fields qints))
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements (append qint-fields
@@ -2172,14 +2173,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-jcunit ((guards$ booleanp)
-                                (java-package$ maybe-stringp)
-                                (java-class$ maybe-stringp)
-                                (pkgs string-listp)
-                                (fns-to-translate symbol-listp)
-                                (verbose$ booleanp)
-                                (wrld plist-worldp))
-  :returns (mv (jcunit jcunitp)
+(define atj-gen-shallow-main-cunit ((guards$ booleanp)
+                                    (java-package$ maybe-stringp)
+                                    (java-class$ maybe-stringp)
+                                    (pkgs string-listp)
+                                    (fns-to-translate symbol-listp)
+                                    (verbose$ booleanp)
+                                    (wrld plist-worldp))
+  :returns (mv (cunit jcunitp)
                (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp)."))
   :verify-guards nil
@@ -2197,7 +2198,7 @@
      which must be eventually passed to the functions that generate
      the Java test class."))
   (b* (((mv class pkg-class-names fn-method-names)
-        (atj-gen-shallow-class
+        (atj-gen-shallow-main-class
          pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
        (cunit
         (make-jcunit

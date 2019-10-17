@@ -79,7 +79,7 @@
      introduced for a nested @('if')),
      we keep folding @('return')s into @('if')s.")
    (xdoc::p
-    "The function @(tsee atj-gen-shallow-fndef),
+    "The function @(tsee atj-gen-shallow-fndef-method),
      which translates an ACL2 function to a Java method,
      always produces a method body that ends with a single @('return').
      This post-translation step may replace that single @('return')

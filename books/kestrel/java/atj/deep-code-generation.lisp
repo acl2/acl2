@@ -530,12 +530,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-class ((pkgs string-listp)
-                            (fns-to-translate symbol-listp)
-                            (guards$ booleanp)
-                            (java-class$ stringp)
-                            (verbose$ booleanp)
-                            (wrld plist-worldp))
+(define atj-gen-deep-main-class ((pkgs string-listp)
+                                 (fns-to-translate symbol-listp)
+                                 (guards$ booleanp)
+                                 (java-class$ stringp)
+                                 (verbose$ booleanp)
+                                 (wrld plist-worldp))
   :returns (class jclassp)
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration,
@@ -588,18 +588,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-jcunit ((guards$ booleanp)
-                             (java-package$ maybe-stringp)
-                             (java-class$ maybe-stringp)
-                             (pkgs string-listp)
-                             (fns-to-translate symbol-listp)
-                             (verbose$ booleanp)
-                             (wrld plist-worldp))
-  :returns (jcunit jcunitp)
+(define atj-gen-deep-main-cunit ((guards$ booleanp)
+                                 (java-package$ maybe-stringp)
+                                 (java-class$ maybe-stringp)
+                                 (pkgs string-listp)
+                                 (fns-to-translate symbol-listp)
+                                 (verbose$ booleanp)
+                                 (wrld plist-worldp))
+  :returns (cunit jcunitp)
   :verify-guards nil
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
-  (b* ((class (atj-gen-deep-class
+  (b* ((class (atj-gen-deep-main-class
                pkgs fns-to-translate guards$ java-class$ verbose$ wrld)))
     (make-jcunit :package? java-package$
                  :imports (list (jimport nil (str::cat *aij-package* ".*"))
