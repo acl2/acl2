@@ -30,6 +30,8 @@
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
+(include-book "kestrel/std/system/irecursivep" :dir :system)
+(include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 (include-book "kestrel/std/system/logic-function-namep" :dir :system)
 (include-book "kestrel/std/system/logical-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-args-plus" :dir :system)
@@ -109,47 +111,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irecursivep ((fn symbolp) (wrld plist-worldp))
-  :returns (clique "A @(tsee symbol-listp).")
-  :parents (world-queries)
-  :short "List of mutually recursive functions of which
-          the specified named function is a member,
-          based on the @(tsee defun) form that introduced this function,
-          or @('nil') if the specified function is not recursive."
-  :long
-  "<p>
-   This is a specialization of @(tsee recursivep)
-   with @('nil') as the second argument:
-   the @('i') that starts the name of @('irecursivep') conveys that
-   the result is based on the @(tsee defun) form that <i>introduced</i> @('fn').
-   </p>
-   <p>
-   See @(tsee irecursivep+) for a logic-friendly variant of this utility.
-   </p>"
-  (recursivep fn nil wrld))
-
-(define irecursivep+ ((fn (logic-function-namep fn wrld))
-                      (wrld plist-worldp))
-  :returns (clique symbol-listp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee irecursivep)."
-  :long
-  "<p>
-   This returns the same result as @(tsee irecursivep),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (irecursivep fn wrld)))
-    (if (symbol-listp result)
-        result
-      (raise "Internal error: ~
-              the RECURSIVEP property ~x0 of ~x1 is not a true list of symbols."
-             result fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -16,6 +16,8 @@
 (include-book "formals-plus")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
+(include-book "irecursivep")
+(include-book "irecursivep-plus")
 (include-book "no-stobjs-p")
 (include-book "no-stobjs-p-plus")
 (include-book "non-executablep")

@@ -15,32 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (irecursivep 'cons (w state)) nil)
-
-(assert-equal (irecursivep 'len (w state)) '(len))
-
-(assert-equal (irecursivep 'pseudo-termp (w state))
-              '(pseudo-termp pseudo-term-listp))
-
-(must-succeed*
- (defun f (x) (if (consp x) (f (car x)) 0))
- (assert-equal (irecursivep 'f (w state)) '(f)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (irecursivep+ 'cons (w state)) nil)
-
-(assert-equal (irecursivep+ 'len (w state)) '(len))
-
-(assert-equal (irecursivep+ 'pseudo-termp (w state))
-              '(pseudo-termp pseudo-term-listp))
-
-(must-succeed*
- (defun f (x) (if (consp x) (f (car x)) 0))
- (assert-equal (irecursivep+ 'f (w state)) '(f)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (measure 'len (w state)) '(acl2-count x))
 
 (must-succeed*
