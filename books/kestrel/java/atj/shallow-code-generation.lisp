@@ -85,7 +85,7 @@
    (xdoc::p
     "We reference the constants without the class name
      because we import all these constants;
-     see @(tsee atj-gen-shallow-cunit)."))
+     see @(tsee atj-gen-shallow-main-cunit)."))
   (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
     (if pair
         (jexpr-name (cdr pair))
