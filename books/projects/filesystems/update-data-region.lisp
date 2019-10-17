@@ -785,7 +785,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthm
      update-data-region-alt-lemma-1

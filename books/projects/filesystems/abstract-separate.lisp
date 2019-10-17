@@ -48,6 +48,7 @@
   :hints (("goal" :in-theory (enable abs-put-assoc)))
   :rule-classes :definition)
 
+;; This is explicitly a replacement for remove-assoc-equal with a vacuous guard.
 (defund abs-remove-assoc (x alist)
   (declare (xargs :guard t))
   (cond ((atom alist) nil)
@@ -72,7 +73,7 @@
   (declare (xargs :guard t))
   (b* (((when (atom x)) (equal x nil))
        (head (car x))
-       ;; The presence of abstract variable makes this data structure not
+       ;; The presence of abstract variables makes this data structure not
        ;; strictly an alist - because they have no names and therefore they
        ;; don't need a cons pair with the car for the name.
        ((when (atom head))
@@ -538,15 +539,14 @@
                  :forward t)
 
 ;; Both these names, below, merit some thought later...
-(fty::defprod frame-pair
-              ((relpath
-                fat32-filename-list-p)
-               (partdir
-                abs-file-alist-p)))
+(fty::defprod frame-val
+              ((path fat32-filename-list-p)
+               (dir abs-file-alist-p)
+               (src natp)))
 
 (fty::defalist frame
                :key-type nat
-               :val-type frame-pair)
+               :val-type frame-val)
 
 ;; That this lemma is needed is a reminder to get some list macros around
 ;; abs-file-alist-p...
@@ -643,7 +643,7 @@
   (list
    (cons
     0
-    (frame-pair
+    (frame-val
      nil
      (list
       (cons
@@ -667,10 +667,11 @@
                   (cons
                    "LIB        "
                    (abs-file (dir-ent-fix nil) ()))
-                  1))))))
+                  1))))
+     0))
    (cons
     1
-    (frame-pair
+    (frame-val
      (list "USR        ")
      (list
       (cons
@@ -686,15 +687,17 @@
                   2
                   (cons
                    "TAC        "
-                   (abs-file (dir-ent-fix nil) ""))))))))
+                   (abs-file (dir-ent-fix nil) ""))))))
+     0))
    (cons
     2
-    (frame-pair
+    (frame-val
      (list "USR        " "BIN        ")
      (list
       (cons
        "COL        "
-       (abs-file (dir-ent-fix nil) ""))))))))
+       (abs-file (dir-ent-fix nil) "")))
+     1)))))
 
 (assert-event
  (mv-let
@@ -892,3 +895,507 @@
     (equal
      final-head
      "BIN        "))))
+
+;; Let's simplify this. We will have some prefix reasoning - that's pretty much
+;; unavoidable. Still, we aren't going to claim that we're starting from the
+;; root directory (i.e. \mathcal{F}) and following the precise sequence of
+;; paths which will lead us to the file we want at the path we want. That will
+;; require a queue, which is messy... Instead, we're going to look through
+;; all the elements in the frame until we have ruled out the existence of an
+;; abstract variable which has this file in it.
+(defund
+  stat-abs-lookup (frame path)
+  (declare (xargs :guard (and (frame-p frame)
+                              (fat32-filename-list-p path))
+                  :guard-debug t))
+  (b*
+      (((when (atom frame)) nil)
+       (head-frame-val (cdr (car frame)))
+       ((when
+         (and
+          (equal (frame-val->path head-frame-val)
+                 (butlast path 1))
+          (consp
+           (abs-assoc (car (last path))
+                      (frame-val->dir head-frame-val)))))
+        t))
+    (stat-abs-lookup (cdr frame) path)))
+
+(assert-event
+ (equal
+  (stat-abs-lookup
+   (list
+    (cons
+     0
+     (frame-val
+      nil
+      (list
+       (cons
+        "INITRD  IMG"
+        (abs-file (dir-ent-fix nil) ""))
+       (cons
+        "RUN        "
+        (abs-file
+         (dir-ent-fix nil)
+         (list
+          (cons
+           "RSYSLOGDPID"
+           (abs-file (dir-ent-fix nil) "")))))
+       (cons
+        "USR        "
+        (abs-file (dir-ent-fix nil)
+                  (list
+                   (cons
+                    "LOCAL      "
+                    (abs-file (dir-ent-fix nil) ()))
+                   (cons
+                    "LIB        "
+                    (abs-file (dir-ent-fix nil) ()))
+                   1))))
+      0))
+    (cons
+     1
+     (frame-val
+      (list "USR        ")
+      (list
+       (cons
+        "SHARE      "
+        (abs-file (dir-ent-fix nil) ()))
+       (cons
+        "BIN        "
+        (abs-file (dir-ent-fix nil)
+                  (list
+                   (cons
+                    "CAT        "
+                    (abs-file (dir-ent-fix nil) ""))
+                   2
+                   (cons
+                    "TAC        "
+                    (abs-file (dir-ent-fix nil) ""))))))
+      0))
+    (cons
+     2
+     (frame-val
+      (list "USR        " "BIN        ")
+      (list
+       (cons
+        "COL        "
+        (abs-file (dir-ent-fix nil) "")))
+      1)))
+   (list "INITRD  IMG"))
+  t))
+
+(assert-event
+ (equal
+  (stat-abs-lookup
+   (list
+    (cons
+     0
+     (frame-val
+      nil
+      (list
+       (cons
+        "INITRD  IMG"
+        (abs-file (dir-ent-fix nil) ""))
+       (cons
+        "RUN        "
+        (abs-file
+         (dir-ent-fix nil)
+         (list
+          (cons
+           "RSYSLOGDPID"
+           (abs-file (dir-ent-fix nil) "")))))
+       (cons
+        "USR        "
+        (abs-file (dir-ent-fix nil)
+                  (list
+                   (cons
+                    "LOCAL      "
+                    (abs-file (dir-ent-fix nil) ()))
+                   (cons
+                    "LIB        "
+                    (abs-file (dir-ent-fix nil) ()))
+                   1))))
+      0))
+    (cons
+     1
+     (frame-val
+      (list "USR        ")
+      (list
+       (cons
+        "SHARE      "
+        (abs-file (dir-ent-fix nil) ()))
+       (cons
+        "BIN        "
+        (abs-file (dir-ent-fix nil)
+                  (list
+                   (cons
+                    "CAT        "
+                    (abs-file (dir-ent-fix nil) ""))
+                   2
+                   (cons
+                    "TAC        "
+                    (abs-file (dir-ent-fix nil) ""))))))
+      0))
+    (cons
+     2
+     (frame-val
+      (list "USR        " "BIN        ")
+      (list
+       (cons
+        "COL        "
+        (abs-file (dir-ent-fix nil) "")))
+      1)))
+   (list "USR        " "BIN        " "COL        "))
+  t))
+
+(assert-event
+ (equal
+  (stat-abs-lookup
+   (list
+    (cons
+     0
+     (frame-val
+      nil
+      (list
+       (cons
+        "INITRD  IMG"
+        (abs-file (dir-ent-fix nil) ""))
+       (cons
+        "RUN        "
+        (abs-file
+         (dir-ent-fix nil)
+         (list
+          (cons
+           "RSYSLOGDPID"
+           (abs-file (dir-ent-fix nil) "")))))
+       (cons
+        "USR        "
+        (abs-file (dir-ent-fix nil)
+                  (list
+                   (cons
+                    "LOCAL      "
+                    (abs-file (dir-ent-fix nil) ()))
+                   (cons
+                    "LIB        "
+                    (abs-file (dir-ent-fix nil) ()))
+                   1))))
+      0))
+    (cons
+     1
+     (frame-val
+      (list "USR        ")
+      (list
+       (cons
+        "SHARE      "
+        (abs-file (dir-ent-fix nil) ()))
+       (cons
+        "BIN        "
+        (abs-file (dir-ent-fix nil)
+                  (list
+                   (cons
+                    "CAT        "
+                    (abs-file (dir-ent-fix nil) ""))
+                   2
+                   (cons
+                    "TAC        "
+                    (abs-file (dir-ent-fix nil) ""))))))
+      0))
+    (cons
+     2
+     (frame-val
+      (list "USR        " "BIN        ")
+      (list
+       (cons
+        "COL        "
+        (abs-file (dir-ent-fix nil) "")))
+      1)))
+   (list "USR        " "BIN        " "FIREFOX    "))
+  nil))
+
+;; We didn't include it in the guard, but... 0 should not be among the indices.
+(defund abs-find-first-complete (frame)
+  (declare (xargs :guard (frame-p frame)))
+  (b* (((when (atom frame)) 0)
+       (head-index (caar frame))
+       (head-frame-val (cdar frame)))
+    (if (abs-complete (frame-val->dir head-frame-val))
+        (mbe :exec head-index :logic (nfix head-index))
+        (abs-find-first-complete (cdr frame)))))
+
+(defthm abs-find-first-complete-correctness-1
+  (implies (not (zp (abs-find-first-complete frame)))
+           (consp (assoc-equal (abs-find-first-complete frame)
+                               frame)))
+  :hints (("goal" :in-theory (enable abs-find-first-complete)))
+  :rule-classes :type-prescription)
+
+(defthm natp-of-abs-find-first-complete
+  (natp (abs-find-first-complete frame))
+  :hints (("goal" :in-theory (enable abs-find-first-complete)))
+  :rule-classes :type-prescription)
+
+(defthm frame-val-p-of-cdr-of-assoc-equal-when-frame-p
+  (implies (frame-p x)
+           (iff (frame-val-p (cdr (assoc-equal k x)))
+                (or (consp (assoc-equal k x))
+                    (frame-val-p nil))))
+  :hints (("goal" :in-theory (enable frame-p))))
+
+(defthm frame-p-of-put-assoc-equal
+  (implies (frame-p alist)
+           (equal (frame-p (put-assoc-equal name val alist))
+                  (and (natp name) (frame-val-p val))))
+  :hints (("goal" :in-theory (enable frame-p))))
+
+(defthm frame-p-of-remove-assoc-equal
+  (implies (frame-p alist)
+           (frame-p (remove-assoc-equal x alist)))
+  :hints (("goal" :in-theory (enable frame-p))))
+
+;; This is problematic because it sometimes consumes those abstract variables
+;; whose subdirectories still contain pointers to other abstract
+;; variables...
+;;
+;; I'm not sure how this can be logically surmounted. Perhaps we can update
+;; (gulp) all the elements which pointed to this one, as their source, once it
+;; gets folded into something else. That would kinda make a mess of the intent
+;; of path promises, though.
+(defund abs-collapse (root frame)
+  (declare (xargs :guard (and (abs-file-alist-p root) (frame-p frame))
+                  :guard-debug t :measure (len frame)))
+  (b*
+      (((when (atom frame)) (mv root t))
+       (head-index (abs-find-first-complete frame))
+       ((when (zp head-index)) (mv root nil))
+       (head-frame-val (cdr (abs-assoc head-index frame)))
+       (frame (abs-remove-assoc head-index frame))
+       (src (frame-val->src head-frame-val)))
+    (if
+        (zp src)
+        (b*
+            ((root-after-context-apply
+              (abs-context-apply
+               root
+               (frame-val->dir head-frame-val)
+               head-index
+               (frame-val->path head-frame-val)))
+             ((when (equal root-after-context-apply root)) (mv root nil)))
+          (abs-collapse root-after-context-apply frame))
+      (b*
+          ((path (frame-val->path head-frame-val))
+           ((when (or (equal src head-index)
+                      (atom (abs-assoc src frame))))
+            (mv root nil))
+           (src-path (frame-val->path (cdr (abs-assoc src frame))))
+           ((when (not (prefixp src-path path)))
+            (mv root nil))
+           (src-dir (frame-val->dir (cdr (abs-assoc src frame))))
+           (src-dir-after-context-apply
+            (abs-context-apply
+             src-dir
+             (frame-val->dir head-frame-val)
+             head-index
+             (nthcdr (len src-path) path)))
+           ((when (equal src-dir-after-context-apply src-dir)) (mv root nil))
+           (frame (abs-put-assoc
+                   src
+                   (frame-val
+                    (frame-val->path (cdr (abs-assoc src frame)))
+                    src-dir-after-context-apply
+                    (frame-val->src (cdr (abs-assoc src frame))))
+                   frame)))
+        (abs-collapse root frame)))))
+
+;; Awful testing form
+
+;; (b*
+;;     (((mv & frame)
+;;       (mv
+;;        (list
+;;         (cons
+;;          "INITRD  IMG"
+;;          (abs-file (dir-ent-fix nil) ""))
+;;         (cons
+;;          "RUN        "
+;;          (abs-file
+;;           (dir-ent-fix nil)
+;;           (list
+;;            (cons
+;;             "RSYSLOGDPID"
+;;             (abs-file (dir-ent-fix nil) "")))))
+;;         (cons
+;;          "USR        "
+;;          (abs-file (dir-ent-fix nil)
+;;                    (list
+;;                     (cons
+;;                      "LOCAL      "
+;;                      (abs-file (dir-ent-fix nil) ()))
+;;                     (cons
+;;                      "LIB        "
+;;                      (abs-file (dir-ent-fix nil) ()))
+;;                     1))))
+;;        (list
+;;         (cons
+;;          1
+;;          (frame-val
+;;           (list "USR        ")
+;;           (list
+;;            (cons
+;;             "SHARE      "
+;;             (abs-file (dir-ent-fix nil) ()))
+;;            (cons
+;;             "BIN        "
+;;             (abs-file (dir-ent-fix nil)
+;;                       (list
+;;                        (cons
+;;                         "CAT        "
+;;                         (abs-file (dir-ent-fix nil) ""))
+;;                        2
+;;                        (cons
+;;                         "TAC        "
+;;                         (abs-file (dir-ent-fix nil) ""))))))
+;;           0))
+;;         (cons
+;;          2
+;;          (frame-val
+;;           (list "USR        " "BIN        ")
+;;           (list
+;;            (cons
+;;             "COL        "
+;;             (abs-file (dir-ent-fix nil) "")))
+;;           1)))))
+;;      ((when (atom frame))
+;;       (list :atom-frame t))
+;;      (head-index (abs-find-first-complete frame))
+;;      ((when (zp head-index))
+;;       (list :head-index head-index))
+;;      (head-frame-val (cdr (abs-assoc head-index frame)))
+;;      (frame (abs-remove-assoc head-index frame))
+;;      (src (frame-val->src head-frame-val)))
+;;   (if
+;;       (zp src)
+;;       (list :head-index head-index :head-frame-val head-frame-val :src src)
+;;     (b*
+;;         ((path (frame-val->path head-frame-val))
+;;          ((when (or (equal src head-index) (atom (abs-assoc src frame))))
+;;           (list :head-index head-index :head-frame-val head-frame-val :src src t))
+;;          (src-path (frame-val->path (cdr (abs-assoc src frame))))
+;;          ((when (not (prefixp src-path path)))
+;;           (list :head-index head-index :head-frame-val head-frame-val :src src :path path :src-path src-path))
+;;          (src-dir (frame-val->dir (cdr (abs-assoc src frame))))
+;;          (src-dir-after-context-apply
+;;           (abs-context-apply
+;;            src-dir
+;;            (frame-val->dir head-frame-val)
+;;            head-index
+;;            (nthcdr (len src-path) path)))
+;;          ((when (equal src-dir-after-context-apply src-dir))
+;;           (list :head-index head-index :head-frame-val head-frame-val :src src :path path :src-path src-path :src-dir src-dir :src-dir-after-context-apply src-dir-after-context-apply))
+;;          (frame (abs-put-assoc
+;;                  src
+;;                  (frame-val
+;;                   (frame-val->path (cdr (abs-assoc src frame)))
+;;                   src-dir-after-context-apply
+;;                   (frame-val->src (cdr (abs-assoc src frame))))
+;;                  frame)))
+;;       (list :head-index head-index :head-frame-val head-frame-val :src src :path path :src-path src-path :src-dir src-dir :src-dir-after-context-apply src-dir-after-context-apply :frame frame))))
+
+(assert-event
+ (b*
+     (((mv root result)
+       (abs-collapse
+        (list
+         (cons
+          "INITRD  IMG"
+          (abs-file (dir-ent-fix nil) ""))
+         (cons
+          "RUN        "
+          (abs-file
+           (dir-ent-fix nil)
+           (list
+            (cons
+             "RSYSLOGDPID"
+             (abs-file (dir-ent-fix nil) "")))))
+         (cons
+          "USR        "
+          (abs-file (dir-ent-fix nil)
+                    (list
+                     (cons
+                      "LOCAL      "
+                      (abs-file (dir-ent-fix nil) ()))
+                     (cons
+                      "LIB        "
+                      (abs-file (dir-ent-fix nil) ()))
+                     1))))
+        (list
+         (cons
+          1
+          (frame-val
+           (list "USR        ")
+           (list
+            (cons
+             "SHARE      "
+             (abs-file (dir-ent-fix nil) ()))
+            (cons
+             "BIN        "
+             (abs-file (dir-ent-fix nil)
+                       (list
+                        (cons
+                         "CAT        "
+                         (abs-file (dir-ent-fix nil) ""))
+                        2
+                        (cons
+                         "TAC        "
+                         (abs-file (dir-ent-fix nil) ""))))))
+           0))
+         (cons
+          2
+          (frame-val
+           (list "USR        " "BIN        ")
+           (list
+            (cons
+             "COL        "
+             (abs-file (dir-ent-fix nil) "")))
+           1))))))
+   (and
+    (equal
+     root
+     (list
+      (cons
+       "INITRD  IMG"
+       (abs-file (dir-ent-fix nil) ""))
+      (cons
+       "RUN        "
+       (abs-file (dir-ent-fix nil)
+                 (list
+                  (cons
+                   "RSYSLOGDPID"
+                   (abs-file (dir-ent-fix nil) "")))))
+      (cons
+       "USR        "
+       (abs-file (dir-ent-fix nil)
+                 (list
+                  (cons
+                   "LOCAL      "
+                   (abs-file (dir-ent-fix nil) nil))
+                  (cons
+                   "LIB        "
+                   (abs-file (dir-ent-fix nil) nil))
+                  (cons
+                   "SHARE      "
+                   (abs-file (dir-ent-fix nil) nil))
+                  (cons
+                   "BIN        "
+                   (abs-file (dir-ent-fix nil)
+                             (list
+                              (cons
+                               "CAT        "
+                               (abs-file (dir-ent-fix nil) ""))
+                              (cons
+                               "TAC        "
+                               (abs-file (dir-ent-fix nil) ""))
+                              (cons
+                               "COL        "
+                               (abs-file (dir-ent-fix nil) ""))))))))))
+    (equal result t))))

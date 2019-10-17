@@ -897,3 +897,23 @@
   (implies (nat-listp l)
            (<= 0 (car (last l))))
   :rule-classes :linear)
+
+(defthm len-of-put-assoc-equal
+  (implies (not (null name))
+           (equal (len (put-assoc-equal name val alist))
+                  (if (consp (assoc-equal name alist))
+                      (len alist)
+                      (+ 1 (len alist))))))
+
+(defthm len-of-remove-assoc-equal-2
+  (implies (and (not (null x))
+                (atom (assoc-equal x alist)))
+           (equal (remove-assoc-equal x alist)
+                  (true-list-fix alist))))
+
+(defthm len-of-remove-assoc-equal-1
+  (implies (and (not (null x))
+                (consp (assoc-equal x alist)))
+           (< (len (remove-assoc-equal x alist))
+              (len alist)))
+  :rule-classes :linear)
