@@ -379,7 +379,7 @@
     which should be distinct from all the other methods
     generated for the same class.")
   (str::cat "$addPackageDef_"
-            (implode (atj-chars-to-jchars-id (explode pkg) nil nil))))
+            (implode (atj-chars-to-jchars-id (explode pkg) nil :dash nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

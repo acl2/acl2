@@ -353,9 +353,9 @@
   (str::cat
    "$addFunctionDef_"
    (implode (atj-chars-to-jchars-id (explode
-                                     (symbol-package-name fn)) nil nil))
+                                     (symbol-package-name fn)) nil :dash nil))
    "$$$"
-   (implode (atj-chars-to-jchars-id (explode (symbol-name fn)) nil t))))
+   (implode (atj-chars-to-jchars-id (explode (symbol-name fn)) nil :dash t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

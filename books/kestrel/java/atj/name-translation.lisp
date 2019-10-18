@@ -35,7 +35,12 @@
      to corresponding Java names.
      The rules for what constitutes a valid Java name
      differ from the rules for what constitutes a valid ACL2 name,
-     necessitating a non-identity translation mapping."))
+     necessitating a non-identity translation mapping.")
+   (xdoc::p
+    "For certain purposes, we also need to translate ACL2 characters and strings
+     to (parts of) valid Java identifiers.
+     The issues here are similar to the ones arising
+     when converting ACL2 names to Java names."))
   :order-subtopics t
   :default-parent t)
 
@@ -43,6 +48,7 @@
 
 (define atj-char-to-jchars-id ((char characterp)
                                (startp booleanp)
+                               (uscore (member-eq uscore '(nil :dash :space)))
                                (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (characterp char))
   :short "Turn an ACL2 character into one or more Java characters
@@ -51,7 +57,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is used to translate ACL2 variable, function, and package names
-     to Java identifiers in the shallow embedding approach.")
+     to Java identifiers in the shallow embedding approach.
+     It is also used to map ACL2 characters and strings
+     to parts of Java identifiers.")
    (xdoc::p
     "ACL2 symbol names may consist of arbitrary sequences of 8-bit characters,
      while Java identifiers may only contain certain Unicode characters;
@@ -71,29 +79,41 @@
      more readable and idiomatic Java identifiers;
      and flipping lowercase letters to uppercase letters avoids conflicts
      with ACL2 symbols that already have lowercase letters.
-     If the ACL2 character is a digit, we keep it unchanged
+     On the other hand, since ACL2 package names cannot use lowercase letters,
+     the @('flip-case-p') is @('nil') when we translate package names.")
+   (xdoc::p
+    "If the ACL2 character is a digit, we keep it unchanged
      only if it is not at the start of the Java identifier:
      this is indicated by the @('startp') flag.
-     Otherwise, we turn it into an ``escape'' consisting of
-     @('$') followed by a short unambiguous description of the character
-     (with one exception, described below).")
+     If the digit is at the start of the Java identifier,
+     we turn it into an ``escape'' @('$<digit>$'):
+     see the @('*atj-char-to-jchars-id*') alist.")
    (xdoc::p
-    "For the printable ASCII characters that are not letters,
-     we use the descriptions in the @('*atj-char-to-jchars-id*') alist.
-     These include digits, used when @('startp') is @('t').
-     The exception alluded to above is the dash character,
-     which is very common in ACL2 symbol names and package names
-     as ``separator'':
-     we map that to an underscore in Java,
-     which fulfills a similar separation role.
-     Note that @('$') itself, even though it is valid in Java identifiers,
-     is escaped to avoid conflicts with the escapes.")
-   (xdoc::p
-    "For each of the other ISO 8859-1 characters
+    "If the ACL2 character is neither a letter or a digit,
+     by default we turn it into an ``escape'' of the form @('$...').
+     For the printable ASCII characters that are not letters,
+     we use the readable descriptions in the @('*atj-char-to-jchars-id*') alist,
+     e.g. @('HASH') for @('#').
+     For each of the other ISO 8859-1 characters
      (non-ASCII, or non-printable ASCII),
      we use a description that consists of @('x') (for `hexadecimal')
      followed by the two hex digits that form the code of the character.
      The hexadecimal digits greater than 9 are all uppercase.")
+   (xdoc::p
+    "However, if the @('uscore') parameter is non-@('nil'),
+     we turn the character indicated by @('uscore') into an underscore instead.
+     The possible non-@('nil') values of @('uscore')
+     are @(':dash') and @(':space').
+     The value @(':dash') is used when translating ACL2 names to Java names:
+     in ACL2 names, dash is a very common ``separator'';
+     thus, we map that to an underscore in Java,
+     which fulfills a similar separation role.
+     The value @(':space') is used when translating ACL2 strings
+     to parts of Java identifiers:
+     in strings, space is perhaps a common character
+     (at least for human-readable strings),
+     and so by mapping that to an underscore,
+     we retain some of the readability.")
    (xdoc::@def "*atj-char-to-jchars-id*"))
   (b* (((when (str::up-alpha-p char)) (if flip-case-p
                                           (list (str::downcase-char char))
@@ -104,6 +124,10 @@
        ((when (and (digit-char-p char)
                    (not startp)))
         (list char))
+       ((when (or (and (eq uscore :dash)
+                       (eql char #\-))
+                  (and (eq uscore :space)
+                       (eql char #\Space)))) (list #\_))
        (pair? (assoc char *atj-char-to-jchars-id*))
        ((when (consp pair?)) (explode (cdr pair?)))
        (code (char-code char))
@@ -125,7 +149,7 @@
        (#\* . "$STAR")
        (#\+ . "$PLUS")
        (#\, . "$COMMA")
-       (#\- . "_")
+       (#\- . "$DASH")
        (#\. . "$DOT")
        (#\/ . "$SLASH")
        (#\: . "$COLON")
@@ -160,6 +184,7 @@
 
 (define atj-chars-to-jchars-id ((chars character-listp)
                                 (startp booleanp)
+                                (uscore (member-eq uscore '(nil :dash :space)))
                                 (flip-case-p booleanp))
   :returns (jchars character-listp :hyp (character-listp chars))
   :short "Lift @(tsee atj-char-to-jchars-id) to lists."
@@ -171,8 +196,9 @@
     because after the first character
     we are no longer at the start of the Java identifier.")
   (cond ((endp chars) nil)
-        (t (append (atj-char-to-jchars-id (car chars) startp flip-case-p)
-                   (atj-chars-to-jchars-id (cdr chars) nil flip-case-p)))))
+        (t (append
+            (atj-char-to-jchars-id (car chars) startp uscore flip-case-p)
+            (atj-chars-to-jchars-id (cdr chars) nil uscore flip-case-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,11 +276,11 @@
                                (cdr (assoc-equal name vars-by-name))))))
        (pname$$-jchars (if omit-pname?
                            nil
-                         (append (atj-chars-to-jchars-id (explode pname) t t)
+                         (append (atj-chars-to-jchars-id
+                                  (explode pname) t :dash t)
                                  (list #\$ #\$))))
-       (name-jchars (atj-chars-to-jchars-id (explode name)
-                                            (endp pname$$-jchars)
-                                            t))
+       (name-jchars (atj-chars-to-jchars-id
+                     (explode name) (endp pname$$-jchars) :dash t))
        (jchars (append pname$$-jchars name-jchars))
        (new-name (implode jchars))
        ;; keep package below in sync with *ATJ-INIT-INDICES*:
@@ -376,7 +402,7 @@
      If the result of @(tsee atj-chars-to-jchars-id) is disallowed,
      we add a @('$') at the end,
      which makes it allowed."))
-  (b* ((jchars (atj-chars-to-jchars-id (explode pkg) t nil))
+  (b* ((jchars (atj-chars-to-jchars-id (explode pkg) t :dash nil))
        (jstring (implode jchars))
        (jstring (if (or (member-equal jstring *atj-disallowed-class-names*)
                         (equal jstring containing-class))
@@ -512,7 +538,7 @@
      see @(tsee atj-pkg-to-class)."))
   (b* ((predef? (assoc-eq fn *atj-predefined-method-names*))
        ((when (consp predef?)) (cdr predef?))
-       (jchars (atj-chars-to-jchars-id (explode (symbol-name fn)) t t))
+       (jchars (atj-chars-to-jchars-id (explode (symbol-name fn)) t :dash t))
        (jstring (implode jchars))
        (jstring (if (or (member-equal jstring *atj-disallowed-method-names*)
                         (member-equal jstring (strip-cdrs
