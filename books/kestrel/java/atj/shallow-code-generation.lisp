@@ -36,7 +36,7 @@
    (xdoc::p
     "In the shallow embedding approach,
      each quoted constant in the ACL2 code
-     is translated to a static final field
+     is translated to a Java static final field
      that is calculated once at class initialization time
      and then just referenced in the Java code.
      Since ACL2 values are objects,
@@ -50,9 +50,9 @@
      and we create a static final field for each.
      For now we only do this for quoted numbers,
      but we will cover the other quoted values soon.
-     The fields for quoted number are declared in the main class;
-     they are named in a way that describes their value:
-     see @(tsee atj-gen-shallow-integer-field-name) and similar functions.")))
+     The fields for quoted numbers are declared in the main class;
+     they are named in a way that describes their value,
+     e.g. see @(tsee atj-gen-shallow-number-field-name).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +65,7 @@
     "This is part of the names of the static final fields for quoted numbers.")
    (xdoc::p
     "We turn the integer into its (base 10) digits,
-     with @('minus') in front if negative."))
+     prepended by @('minus') if negative."))
   (if (>= integer 0)
       (str::natstr integer)
     (str::cat "minus" (str::natstr (- integer)))))
@@ -114,102 +114,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-integer-field-name ((integer integerp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 quoted integer."
-  :long
-  (xdoc::topstring-p
-   "We prepend @('$I_') (for `integer')
-    to the representation of the number.")
-  (str::cat "$I_" (atj-gen-shallow-integer-id-part integer)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-rational-field-name ((rational rationalp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 quoted rational."
-  :long
-  (xdoc::topstring-p
-   "If the rational is an integer,
-    we use @(tsee atj-gen-shallow-integer-field-name).
-    Otherwise, we prepend @('$R_') (for `rational')
-    to the representation of the number.")
-  (if (integerp rational)
-      (atj-gen-shallow-integer-field-name rational)
-    (str::cat "$R_" (atj-gen-shallow-rational-id-part rational))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-gen-shallow-number-field-name ((number acl2-numberp))
   :returns (name stringp)
   :short "Generate the name of the Java field for an ACL2 quoted number."
   :long
   (xdoc::topstring-p
-   "If the number is a rational,
-    we use @(tsee atj-gen-shallow-rational-field-name).
-    Otherwise, we prepend @('$N_') (for `number')
+   "We prepend @('$N_') (for `number')
     to the representation of the number.")
-  (if (rationalp number)
-      (atj-gen-shallow-rational-field-name number)
-    (str::cat "N_" (atj-gen-shallow-number-id-part number))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-integer-field ((integer integerp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted integer."
-  :long
-  (xdoc::topstring-p
-   "This is a private static final field with an initializer,
-    which constructs the integer value.")
-  (b* ((name (atj-gen-shallow-integer-field-name integer))
-       (init (atj-gen-integer integer)))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type *aij-type-int*
-                 :name name
-                 :init init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-integer-fields ((integers integer-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-integer-field) to lists."
-  (cond ((endp integers) nil)
-        (t (cons (atj-gen-shallow-integer-field (car integers))
-                 (atj-gen-shallow-integer-fields (cdr integers))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-rational-field ((rational rationalp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted rational."
-  :long
-  (xdoc::topstring-p
-   "This is a private static final field with an initializer,
-    which constructs the rational value.")
-  (b* ((name (atj-gen-shallow-rational-field-name rational))
-       (init (atj-gen-rational rational)))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type *aij-type-rational*
-                 :name name
-                 :init init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-rational-fields ((rationals rational-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-rational-field) to lists."
-  (cond ((endp rationals) nil)
-        (t (cons (atj-gen-shallow-rational-field (car rationals))
-                 (atj-gen-shallow-rational-fields (cdr rationals))))))
+  (str::cat "$N_" (atj-gen-shallow-number-id-part number)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,15 +131,21 @@
   :long
   (xdoc::topstring-p
    "This is a private static final field with an initializer,
-    which constructs the number value.")
+    which constructs the number value.
+    The type and the initializer are the most specific applicable.")
   (b* ((name (atj-gen-shallow-number-field-name number))
-       (init (atj-gen-number number)))
+       (init (cond ((integerp number) (atj-gen-integer number))
+                   ((rationalp number) (atj-gen-rational number))
+                   (t (atj-gen-number number))))
+       (type (cond ((integerp number) *aij-type-int*)
+                   ((rationalp number) *aij-type-rational*)
+                   (t *aij-type-number*))))
     (make-jfield :access (jaccess-private)
                  :static? t
                  :final? t
                  :transient? nil
                  :volatile? nil
-                 :type *aij-type-number*
+                 :type type
                  :name name
                  :init init)))
 
@@ -239,26 +157,6 @@
   (cond ((endp numbers) nil)
         (t (cons (atj-gen-shallow-number-field (car numbers))
                  (atj-gen-shallow-number-fields (cdr numbers))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-integer ((integer integerp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted integer."
-  :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted integer.")
-  (jexpr-name (atj-gen-shallow-integer-field-name integer)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-rational ((rational rationalp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted rational."
-  :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted rational.")
-  (jexpr-name (atj-gen-shallow-rational-field-name rational)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -376,12 +274,6 @@
           ((symbolp value) (mv nil
                                (atj-gen-shallow-symbol value)
                                jvar-value-index))
-          ((integerp value) (mv nil
-                                (atj-gen-shallow-integer value)
-                                jvar-value-index))
-          ((rationalp value) (mv nil
-                                 (atj-gen-shallow-rational value)
-                                 jvar-value-index))
           ((acl2-numberp value) (mv nil
                                     (atj-gen-shallow-number value)
                                     jvar-value-index))
@@ -2375,8 +2267,8 @@
                                      java-class$
                                      verbose$
                                      wrld))
-       (qint-fields (atj-gen-shallow-integer-fields qints))
-       (qrat-fields (atj-gen-shallow-rational-fields qrats))
+       (qint-fields (atj-gen-shallow-number-fields qints))
+       (qrat-fields (atj-gen-shallow-number-fields qrats))
        (qnum-fields (atj-gen-shallow-number-fields qnums))
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements (append qint-fields
