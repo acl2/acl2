@@ -2077,27 +2077,184 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-pkg-class ((fns-in-pkg symbol-listp)
-                                   (fns+natives symbol-listp)
-                                   (pkg stringp)
-                                   (pkg-class-names string-string-alistp)
-                                   (fn-method-names symbol-string-alistp)
-                                   (guards$ booleanp)
-                                   (verbose$ booleanp)
-                                   (wrld plist-worldp))
-  :guard (equal (symbol-package-name-lst fns-in-pkg)
-                (repeat (len fns-in-pkg) pkg))
-  :returns (mv (class jclassp)
+(define atj-gen-shallow-pkg-methods ((pkg stringp)
+                                     (fns-by-pkg string-symbollist-alistp)
+                                     (fns+natives symbol-listp)
+                                     (pkg-class-names string-string-alistp)
+                                     (fn-method-names symbol-string-alistp)
+                                     (guards$ booleanp)
+                                     (verbose$ booleanp)
+                                     (wrld plist-worldp))
+  :returns (mv (methods jmethod-listp)
                (quoted-integers integer-listp)
                (quoted-rationals rational-listp)
-               (quoted-constants acl2-number-listp)
+               (quoted-numbers acl2-number-listp)
                (quoted-chars character-listp)
                (quoted-strings string-listp)
                (quoted-symbols symbol-listp)
                (quoted-conses true-listp))
   :verify-guards nil
-  :short "Generate the shallowly embedded ACL2 functions
-          in an ACL2 package."
+  :short "Generate all the methods of the class for an ACL2 package."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate methods for the functions in @('fns-by-pkg')
+     (i.e. the functions to translate to Java, including natives,
+     organized by package)
+     that are associated to @('pkg').
+     We sort these functions,
+     so that the methods appear in that order in the class.")
+   (xdoc::p
+    "We also generate synonym methods for all the functions in @('fns+native')
+     (i.e. the functions to translate to Java, including natives)
+     that are in other ACL2 packages but that are imported by @('pkg');
+     see @(tsee atj-gen-shallow-synonym-method) for motivation.
+     We sort these functions,
+     so that the methods appear in that order in the class.")
+   (xdoc::p
+    "We put the latter functions before the former functions in the result,
+     so that the methods appear in that order in the class.")
+   (xdoc::p
+    "We also collect and return all the quoted constants
+     that occur in the functions in @('pkg') that are translated to Java."))
+  (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
+       (fns (sort-symbol-listp fns))
+       ((mv fn-methods
+            qintegers
+            qrationals
+            qnumbers
+            qchars
+            qstrings
+            qsymbols
+            qconses) (atj-gen-shallow-fn-methods fns
+                                                 pkg-class-names
+                                                 fn-method-names
+                                                 guards$
+                                                 verbose$
+                                                 wrld))
+       (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
+       (imported-fns (sort-symbol-listp imported-fns))
+       (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
+                                                         pkg-class-names
+                                                         fn-method-names
+                                                         guards$
+                                                         pkg
+                                                         wrld)))
+    (mv (append synonym-methods fn-methods)
+        qintegers
+        qrationals
+        qnumbers
+        qchars
+        qstrings
+        qsymbols
+        qconses))
+  :prepwork ((local (in-theory (disable sort-symbol-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defalist string-jmethodlist-alistp (x)
+  :short "Alists from package names (strings) to true lists of Java methods."
+  :key (stringp x)
+  :val (jmethod-listp x)
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-all-pkg-methods ((pkgs string-listp)
+                                         (fns-by-pkg string-symbollist-alistp)
+                                         (fns+natives symbol-listp)
+                                         (pkg-class-names string-string-alistp)
+                                         (fn-method-names symbol-string-alistp)
+                                         (guards$ booleanp)
+                                         (verbose$ booleanp)
+                                         (wrld plist-worldp))
+  :returns (mv (methods-by-pkg string-jmethodlist-alistp :hyp :guard)
+               (quoted-integers integer-listp)
+               (quoted-rationals rational-listp)
+               (quoted-numbers acl2-number-listp)
+               (quoted-chars character-listp)
+               (quoted-strings string-listp)
+               (quoted-symbols symbol-listp)
+               (quoted-conses true-listp))
+  :verify-guards nil
+  :short "Generate all the methods of the classes for all given ACL2 packages."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through all the packages in @('pkgs')
+     and construct an alist from the packages there
+     to the corresponding method lists
+     (i.e. the methods of the class that corresponds to the packge).
+     If there are no methods for a package,
+     we do not add an entry for the package in the alist."))
+  (b* (((when (endp pkgs)) (mv nil nil nil nil nil nil nil nil))
+       (pkg (car pkgs))
+       ((mv first-methods
+            first-qintegers
+            first-qrationals
+            first-qnumbers
+            first-qchars
+            first-qstrings
+            first-qsymbols
+            first-qconses) (atj-gen-shallow-pkg-methods pkg
+                                                        fns-by-pkg
+                                                        fns+natives
+                                                        pkg-class-names
+                                                        fn-method-names
+                                                        guards$
+                                                        verbose$
+                                                        wrld))
+       ((mv rest-methods
+            rest-qintegers
+            rest-qrationals
+            rest-qnumbers
+            rest-qchars
+            rest-qstrings
+            rest-qsymbols
+            rest-qconses) (atj-gen-shallow-all-pkg-methods (cdr pkgs)
+                                                           fns-by-pkg
+                                                           fns+natives
+                                                           pkg-class-names
+                                                           fn-method-names
+                                                           guards$
+                                                           verbose$
+                                                           wrld)))
+    (if (null first-methods)
+        (mv rest-methods
+            rest-qintegers
+            rest-qrationals
+            rest-qnumbers
+            rest-qchars
+            rest-qstrings
+            rest-qsymbols
+            rest-qconses)
+      (mv (acons pkg first-methods rest-methods)
+          (union$ first-qintegers rest-qintegers)
+          (union$ first-qrationals rest-qrationals)
+          (union$ first-qnumbers rest-qnumbers)
+          (union$ first-qchars rest-qchars)
+          (union-equal first-qstrings rest-qstrings)
+          (union-eq first-qsymbols rest-qsymbols)
+          (union-equal first-qconses rest-qconses))))
+  :prepwork
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
+   (local (include-book "std/typed-lists/rational-listp" :dir :system))
+   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system))
+   (local (include-book "std/typed-lists/character-listp" :dir :system))
+   (local (include-book "std/typed-lists/string-listp" :dir :system))
+   (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+   (local
+    (include-book "kestrel/utilities/lists/union-theorems" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-pkg-class ((pkg stringp)
+                                   (methods-by-pkg string-jmethodlist-alistp)
+                                   (pkg-class-names string-string-alistp))
+  :returns (class jclassp)
+  :short "Generate the class for an ACL2 package."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2108,196 +2265,47 @@
      This is a public static Java class,
      nested into the main Java class that ATJ generates.")
    (xdoc::p
-    "This function is called on the functions to translate to Java
-     that are all in the same package, namely @('pkg').")
-   (xdoc::p
-    "We also generate additional methods for
-     all the functions to translate and all the native functions
-     that are in other ACL2 packages but that are imported by @('pkg').
-     See @(tsee atj-gen-shallow-synonym-method) for motivation."))
+    "The methods are in the @('methods-by-pkg') alist,
+     which is calculated (elsewhere)
+     via @(tsee atj-gen-shallow-all-pkg-methods)."))
   (b* ((pair (assoc-equal pkg pkg-class-names))
        ((unless (consp pair))
         (raise "Internal error: no class name for package name ~x0." pkg)
         ;; irrelevant:
-        (mv (make-jclass :access (jaccess-public) :name "")
-            nil nil nil nil nil nil nil))
+        (make-jclass :access (jaccess-public) :name ""))
        (class-name (cdr pair))
-       ((mv fn-methods
-            qintegers
-            qrationals
-            qnumbers
-            qchars
-            qstrings
-            qsymbols
-            qconses) (atj-gen-shallow-fn-methods fns-in-pkg
-                                                 pkg-class-names
-                                                 fn-method-names
-                                                 guards$
-                                                 verbose$
-                                                 wrld))
-       (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
-       (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         guards$
-                                                         pkg
-                                                         wrld))
-       (all-methods (append fn-methods synonym-methods))
-       (class (make-jclass :access (jaccess-public)
-                           :abstract? nil
-                           :static? t
-                           :final? nil
-                           :strictfp? nil
-                           :name class-name
-                           :superclass? nil
-                           :superinterfaces nil
-                           :body (jmethods-to-jcbody-elements all-methods))))
-    (mv class
-        qintegers
-        qrationals
-        qnumbers
-        qchars
-        qstrings
-        qsymbols
-        qconses)))
+       (methods (cdr (assoc-equal pkg methods-by-pkg))))
+    (make-jclass :access (jaccess-public)
+                 :abstract? nil
+                 :static? t
+                 :final? nil
+                 :strictfp? nil
+                 :name class-name
+                 :superclass? nil
+                 :superinterfaces nil
+                 :body (jmethods-to-jcbody-elements methods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-pkg-classes ((fns+natives symbol-listp)
-                                     (fns-by-pkg string-symbollist-alistp)
-                                     (guards$ booleanp)
-                                     (java-class$ stringp)
-                                     (verbose$ booleanp)
-                                     (wrld plist-worldp))
-  :returns (mv (classes jclass-listp)
-               (pkg-class-names "A @(tsee string-string-alistp).")
-               (fn-method-names "A @(tsee symbol-string-alistp).")
-               (quoted-integers integer-listp)
-               (quoted-rationals rational-listp)
-               (quoted-constants acl2-number-listp)
-               (quoted-chars character-listp)
-               (quoted-strings string-listp)
-               (quoted-symbols symbol-listp)
-               (quoted-conses true-listp))
-  :verify-guards nil
-  :short "Generate shallowly embedded ACL2 functions, by ACL2 packages."
+(define atj-gen-shallow-pkg-classes ((pkgs string-listp)
+                                     (methods-by-pkg string-jmethodlist-alistp)
+                                     (pkg-class-names string-string-alistp))
+  :returns (classes jclass-listp)
+  :short "Lift @(tsee atj-gen-shallow-pkg-class) to lists."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go through each pair in the alist
-     from ACL2 package names to ACL2 functions,
-     and generate all the Java classes corresponding to the ACL2 packages.")
-   (xdoc::p
-    "We also return the alist from ACL2 package names to Java class names
-     and the alist from ACL2 function symbols to Java method names,
-     which must be eventually passed to the functions that generate
-     the Java test class.")
-   (xdoc::p
-    "We also return all the quoted constants
-     from the pre-translated function bodies."))
-  (b* ((pkgs (remove-duplicates-equal (strip-cars fns-by-pkg)))
-       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
-       (fn-method-names (atj-fns-to-methods
-                         (remove-duplicates-equal fns+natives)))
-       ((mv classes
-            qintegers
-            qrationals
-            qnumbers
-            qchars
-            qstrings
-            qsymbols
-            qconses) (atj-gen-shallow-pkg-classes-aux pkgs
-                                                      fns+natives
-                                                      fns-by-pkg
-                                                      pkg-class-names
-                                                      fn-method-names
-                                                      guards$
-                                                      java-class$
-                                                      verbose$
-                                                      wrld)))
-    (mv classes
-        pkg-class-names
-        fn-method-names
-        qintegers
-        qrationals
-        qnumbers
-        qchars
-        qstrings
-        qsymbols
-        qconses))
-
-  :prepwork
-
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
-   (local (include-book "std/typed-lists/rational-listp" :dir :system))
-   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system))
-   (local (include-book "std/typed-lists/character-listp" :dir :system))
-   (local (include-book "std/typed-lists/string-listp" :dir :system))
-   (local (include-book "std/typed-lists/symbol-listp" :dir :system))
-   (local
-    (include-book "kestrel/utilities/lists/union-theorems" :dir :system))
-
-   (define atj-gen-shallow-pkg-classes-aux
-     ((pkgs string-listp)
-      (fns+natives symbol-listp)
-      (fns-by-pkg string-symbollist-alistp)
-      (pkg-class-names string-string-alistp)
-      (fn-method-names symbol-string-alistp)
-      (guards$ booleanp)
-      (java-class$ stringp)
-      (verbose$ booleanp)
-      (wrld plist-worldp))
-     :returns (mv (classes jclass-listp)
-                  (quoted-integers integer-listp)
-                  (quoted-rationals rational-listp)
-                  (quoted-constants acl2-number-listp)
-                  (quoted-chars character-listp)
-                  (quoted-strings string-listp)
-                  (quoted-symbols symbol-listp)
-                  (quoted-conses true-listp))
-     :verify-guards nil
-     (b* (((when (endp pkgs)) (mv nil nil nil nil nil nil nil nil))
-          (pkg (car pkgs))
-          (fns-in-pkg (cdr (assoc-equal pkg fns-by-pkg)))
-          ((mv first-class
-               first-qintegers
-               first-qrationals
-               first-qnumbers
-               first-qchars
-               first-qstrings
-               first-qsymbols
-               first-qconses) (atj-gen-shallow-pkg-class fns-in-pkg
-                                                         fns+natives
-                                                         pkg
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         guards$
-                                                         verbose$
-                                                         wrld))
-          ((mv rest-classes
-               rest-qintegers
-               rest-qrationals
-               rest-qnumbers
-               rest-qchars
-               rest-qstrings
-               rest-qsymbols
-               rest-qconses) (atj-gen-shallow-pkg-classes-aux (cdr pkgs)
-                                                              fns+natives
-                                                              fns-by-pkg
-                                                              pkg-class-names
-                                                              fn-method-names
-                                                              guards$
-                                                              java-class$
-                                                              verbose$
-                                                              wrld)))
-       (mv (cons first-class rest-classes)
-           (union$ first-qintegers rest-qintegers)
-           (union$ first-qrationals rest-qrationals)
-           (union$ first-qnumbers rest-qnumbers)
-           (union$ first-qchars rest-qchars)
-           (union-equal first-qstrings rest-qstrings)
-           (union-eq first-qsymbols rest-qsymbols)
-           (union-equal first-qconses rest-qconses))))))
+  (xdoc::topstring-p
+   "If the class for a package has an empty body,
+    we skip it.")
+  (b* (((when (endp pkgs)) nil)
+       (class (atj-gen-shallow-pkg-class (car pkgs)
+                                         methods-by-pkg
+                                         pkg-class-names))
+       (classes (atj-gen-shallow-pkg-classes (cdr pkgs)
+                                             methods-by-pkg
+                                             pkg-class-names)))
+    (if (null (jclass->body class))
+        classes
+      (cons class classes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2420,13 +2428,17 @@
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
-       (fns+natives (remove-duplicates-eq
-                     (append fns-to-translate
-                             (strip-cars *primitive-formals-and-guards*))))
+       (fns+natives (append fns-to-translate
+                            (strip-cars *primitive-formals-and-guards*)))
+       ((unless (no-duplicatesp-eq fns+natives))
+        (raise "Internal error: ~
+                the list ~x0 of function names has duplicates." fns+natives)
+        ;; irrelevant:
+        (mv (make-jclass :access (jaccess-public) :name "") nil nil))
+       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
+       (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
-       ((mv fn-classes
-            pkg-class-names
-            fn-method-names
+       ((mv methods-by-pkg
             qintegers
             qrationals
             qnumbers
@@ -2434,12 +2446,17 @@
             qstrings
             &
             &)
-        (atj-gen-shallow-pkg-classes fns+natives
-                                     fns-by-pkg
-                                     guards$
-                                     java-class$
-                                     verbose$
-                                     wrld))
+        (atj-gen-shallow-all-pkg-methods pkgs
+                                         fns-by-pkg
+                                         fns+natives
+                                         pkg-class-names
+                                         fn-method-names
+                                         guards$
+                                         verbose$
+                                         wrld))
+       (classes (atj-gen-shallow-pkg-classes pkgs
+                                             methods-by-pkg
+                                             pkg-class-names))
        (qinteger-fields (atj-gen-shallow-number-fields qintegers))
        (qrational-fields (atj-gen-shallow-number-fields qrationals))
        (qnumber-fields (atj-gen-shallow-number-fields qnumbers))
@@ -2454,7 +2471,7 @@
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements all-fields)
                            (jmethods-to-jcbody-elements pkg-methods)
-                           (jclasses-to-jcbody-elements fn-classes)
+                           (jclasses-to-jcbody-elements classes)
                            (list (jcbody-element-member
                                   (jcmember-method init-method))))))
     (mv (make-jclass :access (jaccess-public)
