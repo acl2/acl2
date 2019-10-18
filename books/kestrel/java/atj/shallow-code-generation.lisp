@@ -202,6 +202,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-string-field-name ((string stringp))
+  :returns (name stringp)
+  :short "Generate the name of the Java field for an ACL2 quoted string."
+  :long
+  (xdoc::topstring-p
+   "We prepend @('$S_') (for `string')
+    to a representation of the string itself.")
+  (str::cat "$S_" (implode (atj-chars-to-jchars-id
+                            (explode string) nil :space nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-string-field ((string stringp))
+  :returns (field jfieldp)
+  :short "Generate a Java field for an ACL2 quoted string."
+  :long
+  (xdoc::topstring-p
+   "This is a private static final field with an initializer,
+    which constructs the string value.")
+  (b* ((name (atj-gen-shallow-string-field-name string))
+       (init (atj-gen-string string))
+       (type *aij-type-string*))
+    (make-jfield :access (jaccess-private)
+                 :static? t
+                 :final? t
+                 :transient? nil
+                 :volatile? nil
+                 :type type
+                 :name name
+                 :init init)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-string-fields ((strings string-listp))
+  :returns (fields jfield-listp)
+  :short "Lift @(tsee atj-gen-shallow-string-field) to lists."
+  (cond ((endp strings) nil)
+        (t (cons (atj-gen-shallow-string-field (car strings))
+                 (atj-gen-shallow-string-fields (cdr strings))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-number ((number acl2-numberp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 quoted number."
@@ -219,6 +261,16 @@
   (xdoc::topstring-p
    "This is just a reference to the field for the quoted character.")
   (jexpr-name (atj-gen-shallow-char-field-name char)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-string ((string stringp))
+  :returns (expr jexprp)
+  :short "Generate a shallowly embedded ACL2 quoted string."
+  :long
+  (xdoc::topstring-p
+   "This is just a reference to the field for the quoted string.")
+  (jexpr-name (atj-gen-shallow-string-field-name string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,91 +307,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-gen-shallow-value
+(define atj-gen-shallow-value (value
+                               (jvar-value-base stringp)
+                               (jvar-value-index posp))
+  :returns (mv (block jblockp)
+               (expr jexprp)
+               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
   :short "Generate a shallowly  embedded ACL2 value."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "Currently, this is structurally similar to @(tsee atj-gen-value),
-     which can be used in both deep and shallow embedding,
-     but it uses functions specialized to the shallow embedding.")
-   (xdoc::@def "atj-gen-shallow-value")
-   (xdoc::@def "atj-gen-shallow-cons"))
-
-  (define atj-gen-shallow-cons ((conspair consp)
-                                (jvar-value-base stringp)
-                                (jvar-value-index posp))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-    :parents nil
-    (b* (((unless (mbt (consp conspair)))
-          (mv nil (jexpr-name "irrelevant") jvar-value-index))
-         ((mv car-block
-              car-expr
-              jvar-value-index) (atj-gen-shallow-value (car conspair)
-                                                       jvar-value-base
-                                                       jvar-value-index))
-         ((mv car-locvar-block
-              car-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *aij-type-value*
-                                                         jvar-value-base
-                                                         jvar-value-index
-                                                         car-expr))
-         ((mv cdr-block
-              cdr-expr
-              jvar-value-index) (atj-gen-shallow-value (cdr conspair)
-                                                       jvar-value-base
-                                                       jvar-value-index))
-         ((mv cdr-locvar-block
-              cdr-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *aij-type-value*
-                                                         jvar-value-base
-                                                         jvar-value-index
-                                                         cdr-expr))
-         (block (append car-block
-                        car-locvar-block
-                        cdr-block
-                        cdr-locvar-block))
-         (expr (jexpr-smethod *aij-type-cons*
-                              "make"
-                              (list (jexpr-name car-jvar)
-                                    (jexpr-name cdr-jvar)))))
-      (mv block expr jvar-value-index))
-    :measure (two-nats-measure (acl2-count conspair) 0))
-
-  (define atj-gen-shallow-value (value
-                                 (jvar-value-base stringp)
-                                 (jvar-value-index posp))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-    :parents nil
-    (cond ((characterp value) (mv nil
-                                  (atj-gen-shallow-char value)
+  (xdoc::topstring-p
+   "For numbers, characters, strings, and symbols,
+    we use functions specialized to the shallow embedding.
+    For other values, we use @(tsee atj-gen-value).")
+  (cond ((acl2-numberp value) (mv nil
+                                  (atj-gen-shallow-number value)
                                   jvar-value-index))
-          ((stringp value) (mv nil
-                               (atj-gen-string value)
-                               jvar-value-index))
-          ((symbolp value) (mv nil
-                               (atj-gen-shallow-symbol value)
-                               jvar-value-index))
-          ((acl2-numberp value) (mv nil
-                                    (atj-gen-shallow-number value)
-                                    jvar-value-index))
-          ((consp value) (atj-gen-shallow-cons value
-                                               jvar-value-base
-                                               jvar-value-index))
-          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
-                            value)
-                     (mv nil (jexpr-name "irrelevant") jvar-value-index))))
-    ;; 2nd component is non-0
-    ;; so that the call of ATJ-GEN-SHALLOW-CONS decreases:
-    :measure (two-nats-measure (acl2-count value) 1))
-
-  :verify-guards nil ; done below
-  ///
-  (verify-guards atj-gen-shallow-value))
+        ((characterp value) (mv nil
+                                (atj-gen-shallow-char value)
+                                jvar-value-index))
+        ((stringp value) (mv nil
+                             (atj-gen-shallow-string value)
+                             jvar-value-index))
+        ((symbolp value) (mv nil
+                             (atj-gen-shallow-symbol value)
+                             jvar-value-index))
+        (t (atj-gen-value value jvar-value-base jvar-value-index))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2457,7 +2449,7 @@
             qrationals
             qnumbers
             qchars
-            &
+            qstrings
             &
             &)
         (atj-gen-shallow-pkg-classes fns+natives
@@ -2470,10 +2462,12 @@
        (qrational-fields (atj-gen-shallow-number-fields qrationals))
        (qnumber-fields (atj-gen-shallow-number-fields qnumbers))
        (qchar-fields (atj-gen-shallow-char-fields qchars))
+       (qstring-fields (atj-gen-shallow-string-fields qstrings))
        (all-fields (append qinteger-fields
                            qrational-fields
                            qnumber-fields
                            qchar-fields
+                           qstring-fields
                            (list init-field)))
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements all-fields)
