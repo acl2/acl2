@@ -2078,7 +2078,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-pkg-class ((fns-in-pkg symbol-listp)
-                                   (fns-to-translate symbol-listp)
+                                   (fns+natives symbol-listp)
                                    (pkg stringp)
                                    (pkg-class-names string-string-alistp)
                                    (fn-method-names symbol-string-alistp)
@@ -2111,7 +2111,8 @@
     "This function is called on the functions to translate to Java
      that are all in the same package, namely @('pkg').")
    (xdoc::p
-    "We also generate additional methods for all the functions to translate
+    "We also generate additional methods for
+     all the functions to translate and all the native functions
      that are in other ACL2 packages but that are imported by @('pkg').
      See @(tsee atj-gen-shallow-synonym-method) for motivation."))
   (b* ((pair (assoc-equal pkg pkg-class-names))
@@ -2134,7 +2135,7 @@
                                                  guards$
                                                  verbose$
                                                  wrld))
-       (imported-fns (intersection-eq fns-to-translate (pkg-imports pkg)))
+       (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
        (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
                                                          pkg-class-names
                                                          fn-method-names
@@ -2162,7 +2163,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-pkg-classes ((fns-to-translate symbol-listp)
+(define atj-gen-shallow-pkg-classes ((fns+natives symbol-listp)
                                      (fns-by-pkg string-symbollist-alistp)
                                      (guards$ booleanp)
                                      (java-class$ stringp)
@@ -2197,7 +2198,7 @@
   (b* ((pkgs (remove-duplicates-equal (strip-cars fns-by-pkg)))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods
-                         (remove-duplicates-equal fns-to-translate)))
+                         (remove-duplicates-equal fns+natives)))
        ((mv classes
             qintegers
             qrationals
@@ -2206,7 +2207,7 @@
             qstrings
             qsymbols
             qconses) (atj-gen-shallow-pkg-classes-aux pkgs
-                                                      fns-to-translate
+                                                      fns+natives
                                                       fns-by-pkg
                                                       pkg-class-names
                                                       fn-method-names
@@ -2238,7 +2239,7 @@
 
    (define atj-gen-shallow-pkg-classes-aux
      ((pkgs string-listp)
-      (fns-to-translate symbol-listp)
+      (fns+natives symbol-listp)
       (fns-by-pkg string-symbollist-alistp)
       (pkg-class-names string-string-alistp)
       (fn-method-names symbol-string-alistp)
@@ -2266,7 +2267,7 @@
                first-qstrings
                first-qsymbols
                first-qconses) (atj-gen-shallow-pkg-class fns-in-pkg
-                                                         fns-to-translate
+                                                         fns+natives
                                                          pkg
                                                          pkg-class-names
                                                          fn-method-names
@@ -2281,7 +2282,7 @@
                rest-qstrings
                rest-qsymbols
                rest-qconses) (atj-gen-shallow-pkg-classes-aux (cdr pkgs)
-                                                              fns-to-translate
+                                                              fns+natives
                                                               fns-by-pkg
                                                               pkg-class-names
                                                               fn-method-names
