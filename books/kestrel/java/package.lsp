@@ -27,6 +27,7 @@
                          alpha/digit/dash-charlist-p
                          alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
+                         arity+
                          bad-atom<=
                          body
                          bool
@@ -63,6 +64,8 @@
                          fmt-soft-right-margin
                          formals
                          fquotep
+                         function-namep
+                         implicate
                          implode
                          impossible
                          known-packages
@@ -77,6 +80,7 @@
                          no-stobjs-p
                          organize-symbols-by-name
                          organize-symbols-by-pkg
+                         packn
                          packn-pos
                          partition-rest-and-keyword-args
                          patbind-fun
@@ -84,6 +88,7 @@
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-termfn-listp
                          pseudo-termfnp
                          pure-raw-p
                          quote-listp
@@ -110,6 +115,7 @@
                          symbol-string-alistp
                          symbol-symbol-alistp
                          symbol-package-name-lst
+                         table-alist+
                          trans-eval
                          tuplep
                          typed-tuplep
