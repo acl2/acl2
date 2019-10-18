@@ -2457,11 +2457,16 @@
        (classes (atj-gen-shallow-pkg-classes pkgs
                                              methods-by-pkg
                                              pkg-class-names))
-       (qinteger-fields (atj-gen-shallow-number-fields qintegers))
-       (qrational-fields (atj-gen-shallow-number-fields qrationals))
-       (qnumber-fields (atj-gen-shallow-number-fields qnumbers))
-       (qchar-fields (atj-gen-shallow-char-fields qchars))
-       (qstring-fields (atj-gen-shallow-string-fields qstrings))
+       (qinteger-fields (atj-gen-shallow-number-fields (mergesort
+                                                        qintegers)))
+       (qrational-fields (atj-gen-shallow-number-fields (mergesort
+                                                         qrationals)))
+       (qnumber-fields (atj-gen-shallow-number-fields (mergesort
+                                                       qnumbers)))
+       (qchar-fields (atj-gen-shallow-char-fields (mergesort
+                                                   qchars)))
+       (qstring-fields (atj-gen-shallow-string-fields (mergesort
+                                                       qstrings)))
        (all-fields (append qinteger-fields
                            qrational-fields
                            qnumber-fields
