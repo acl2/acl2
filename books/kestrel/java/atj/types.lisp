@@ -14,6 +14,8 @@
 
 (include-book "../language/primitive-values")
 
+(include-book "kestrel/std/system/arity-plus" :dir :system)
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
@@ -342,7 +344,7 @@
 
   (define atj-type-predicate-gen-thm ((type1 atj-typep) (type2 atj-typep))
     (if (atj-type-subeqp type1 type2)
-        `((defthm ,(acl2::packn (list 'atj-type-predicate-thm- type1 '- type2))
+        `((defthm ,(packn (list 'atj-type-predicate-thm- type1 '- type2))
             (implies (,(atj-type-predicate type1) x)
                      (,(atj-type-predicate type2) x))
             :rule-classes nil))
@@ -383,7 +385,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-types-predicates ((types atj-type-listp))
-  :returns (preds acl2::pseudo-termfn-listp)
+  :returns (preds pseudo-termfn-listp)
   :short "Lift @(tsee atj-type-predicate) to lists."
   (cond ((endp types) nil)
         (t (cons (atj-type-predicate (car types))
@@ -477,31 +479,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
+(define atj-get-function-type-from-table ((fn (function-namep fn wrld))
+                                          (wrld plist-worldp))
   :returns (fn-type "An @(tsee atj-function-type-p).")
-  :verify-guards nil
   :short "Retrieve the ATJ type of the specified function from the table."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is retrieved from the "
     (xdoc::seetopic "atj-function-type-table"
-                  "@(tsee def-atj-function-type) table")
+                    "@(tsee def-atj-function-type) table")
     ". If the table has no entry for the function,
      a function type all consisting of @(':value') is returned."))
-  (b* ((table (table-alist *atj-function-type-table-name* wrld))
+  (b* ((table (table-alist+ *atj-function-type-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair) (cdr pair)))
-    (make-atj-function-type :inputs (repeat (arity fn wrld) :value)
-                            :output :value)))
+    (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
+                            :output :value))
+  :prepwork
+  ((defrulel consp-of-assoc-equal
+     (implies (alistp alist)
+              (iff (consp (assoc-equal key alist))
+                   (assoc-equal key alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type ((fn symbolp)
+(define atj-get-function-type ((fn (function-namep fn wrld))
                                (guards$ booleanp)
                                (wrld plist-worldp))
   :returns (fn-type "An @(tsee atj-function-type-p).")
-  :verify-guards nil
   :short "Obtain the ATJ type of the specified function."
   :long
   (xdoc::topstring
@@ -514,7 +520,7 @@
      because in this case types are ignored."))
   (if guards$
       (atj-get-function-type-from-table fn wrld)
-    (make-atj-function-type :inputs (repeat (arity fn wrld) :value)
+    (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
                             :output :value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -536,11 +542,11 @@
    (xdoc::p
     "The theorem has no rule classes because its only purpose is
      to make sure that its formula holds."))
-  (b* ((thm-name (acl2::packn-pos (list 'atj- fn '-input- formal '- type)
-                                  (pkg-witness (symbol-package-name fn))))
+  (b* ((thm-name (packn-pos (list 'atj- fn '-input- formal '- type)
+                            (pkg-witness (symbol-package-name fn))))
        (guard (guard fn nil wrld))
-       (thm-formula (acl2::implicate guard
-                                     `(,(atj-type-predicate type) ,formal))))
+       (thm-formula (implicate guard
+                               `(,(atj-type-predicate type) ,formal))))
     `(defthm ,thm-name
        ,(untranslate thm-formula t wrld)
        :rule-classes nil)))
@@ -585,13 +591,13 @@
    (xdoc::p
     "The theorem has no rule classes because its only purpose is
      to make sure that its formula holds."))
-  (b* ((thm-name (acl2::packn-pos (list 'atj- fn '-output- type)
-                                  (pkg-witness (symbol-package-name fn))))
+  (b* ((thm-name (packn-pos (list 'atj- fn '-output- type)
+                            (pkg-witness (symbol-package-name fn))))
        (formals (formals fn wrld))
        (guard (guard fn nil wrld))
-       (thm-formula (acl2::implicate guard
-                                     `(,(atj-type-predicate type)
-                                       (,fn ,@formals)))))
+       (thm-formula (implicate guard
+                               `(,(atj-type-predicate type)
+                                 (,fn ,@formals)))))
     `(defthm ,thm-name
        ,(untranslate thm-formula t wrld)
        :rule-classes nil)))
