@@ -38,11 +38,24 @@
 
 (defun fgl-thm-fn (args)
   (declare (xargs :mode :program))
-  `(thm
-     (implies ,(cadr (assoc-keyword :hyp args))
-              ,(cadr (assoc-keyword :concl args)))
-     :hints (("goal" :clause-processor expand-an-implies-cp)
-             '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))))
+  (let* ((concl (if (keywordp (car args))
+                    (cadr (assoc-keyword :concl args))
+                  (car args)))
+         (args (if (keywordp (car args))
+                   args
+                 (cdr args)))
+         (body (let ((look (assoc-keyword :hyp args)))
+                 (if look
+                     `(implies ,(cadr look) ,concl)
+                   concl)))
+         (rule-classes (let ((look (assoc-keyword :rule-classes args)))
+                         (and look
+                              `(:rule-classes ,(cadr look))))))
+    `(thm
+      ,body
+      :hints (("goal" :clause-processor expand-an-implies-cp)
+              '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
+      ,@rule-classes)))
 
 (defmacro fgl-thm (&rest args)
   (fgl-thm-fn args))
@@ -50,10 +63,7 @@
 (defun def-fgl-thm-fn (name args)
   (declare (xargs :mode :program))
   `(defthm ,name
-     ,@(cdr (fgl-thm-fn args))
-     . ,(let ((rc-look (assoc-keyword :rule-classes args)))
-          (and rc-look
-               (take 2 rc-look)))))
+     . ,(cdr (fgl-thm-fn args))))
 
 (defmacro def-fgl-thm (name &rest args)
   (def-fgl-thm-fn name args))
@@ -71,18 +81,31 @@
 
 (defun fgl-param-thm-fn (args)
   (declare (xargs :mode :program))
-  `(thm
-    (implies ,(cadr (assoc-keyword :hyp args))
-             ,(cadr (assoc-keyword :concl args)))
-    :hints ((fgl-casesplit :cases
-                           (fgl-param-thm-cases
-                            ,(cadr (assoc-keyword :param-bindings args))
-                            ',(cadr (assoc-keyword :param-hyp args)))
-                           :split-params ,(cadr (assoc-keyword :split-params args))
-                           :solve-params ,(cadr (assoc-keyword :solve-params args))
-                           :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
-                           :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
-            '(:clause-processor (fgl-interp-cp clause (default-fgl-config) interp-st state)))))
+  (let* ((concl (if (keywordp (car args))
+                    (cadr (assoc-keyword :concl args))
+                  (car args)))
+         (args (if (keywordp (car args))
+                   args
+                 (cdr args)))
+         (body (let ((look (assoc-keyword :hyp args)))
+                 (if look
+                     `(implies ,(cadr look) ,concl)
+                   concl)))
+         (rule-classes (let ((look (assoc-keyword :rule-classes args)))
+                         (and look
+                              `(:rule-classes ,(cadr look))))))
+    `(thm
+      ,body
+      :hints ((fgl-casesplit :cases
+                             (fgl-param-thm-cases
+                              ,(cadr (assoc-keyword :param-bindings args))
+                              ',(cadr (assoc-keyword :param-hyp args)))
+                             :split-params ,(cadr (assoc-keyword :split-params args))
+                             :solve-params ,(cadr (assoc-keyword :solve-params args))
+                             :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
+                             :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
+              '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
+      ,@rule-classes)))
 
 (defmacro fgl-param-thm (&rest args)
   (fgl-param-thm-fn args))
@@ -90,10 +113,7 @@
 (defun def-fgl-param-thm-fn (name args)
   (declare (xargs :mode :program))
   `(defthm ,name
-     ,@(cdr (fgl-param-thm-fn args))
-     . ,(let ((rc-look (assoc-keyword :rule-classes args)))
-          (and rc-look
-               (take 2 rc-look)))))
+     . ,(cdr (fgl-param-thm-fn args))))
 
 (defmacro def-fgl-param-thm (name &rest args)
   (def-fgl-param-thm-fn name args))
