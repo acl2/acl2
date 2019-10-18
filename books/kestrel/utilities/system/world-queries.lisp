@@ -43,6 +43,8 @@
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/std/system/macro-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/macro-symbolp" :dir :system)
+(include-book "kestrel/std/system/measure" :dir :system)
+(include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/no-stobjs-p" :dir :system)
 (include-book "kestrel/std/system/no-stobjs-p-plus" :dir :system)
 (include-book "kestrel/std/system/non-executablep" :dir :system)
@@ -111,54 +113,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define measure ((fn symbolp) (wrld plist-worldp))
-  :returns (measure "A @(tsee pseudo-termp).")
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Measure expression of a named logic-mode recursive function."
-  :long
-  "<p>
-   See @(see xargs) for a discussion of the @(':measure') keyword.
-   </p>
-   <p>
-   See @(tsee measure+) for a logic-friendly variant of this utility.
-   </p>"
-  (b* ((justification (getpropc fn 'justification nil wrld)))
-    (access justification justification :measure)))
-
-(define measure+ ((fn (and (logic-function-namep fn wrld)
-                           (recursivep fn nil wrld)))
-                  (wrld plist-worldp))
-  :returns (measure pseudo-termp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee measure)."
-  :long
-  "<p>
-   This returns the same result as @(tsee measure),
-   but it has a stronger guard,
-   is guard-verified,
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   This utility also includes a run-time check (which should always succeed)
-   on the form of the @('justification') property of the function
-   that allows us to verify the guards
-   without strengthening the guard of @('wrld').
-   </p>"
-  (b* ((justification (getpropc fn 'justification nil wrld))
-       ((unless (weak-justification-p justification))
-        (raise "Internal error: ~
-                the JUSTIFICATION property ~x0 of ~x1 is not well-formed."
-               justification fn))
-       (measure (access justification justification :measure))
-       ((unless (pseudo-termp measure))
-        (raise "Internal error: ~
-                the measure ~x0 of ~x1 is not a pseudo-term."
-               measure fn)))
-    measure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

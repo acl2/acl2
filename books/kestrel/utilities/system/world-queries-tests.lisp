@@ -15,32 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (measure 'len (w state)) '(acl2-count x))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (measure 'f (w state))
-               '(nfix (binary-+ '10 (unary-- x)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (measure+ 'len (w state)) '(acl2-count x))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (measure+ 'f (w state))
-               '(nfix (binary-+ '10 (unary-- x)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (measured-subset 'len (w state)) '(x))
 
 (assert-equal (measured-subset 'binary-append (w state)) '(x))
