@@ -1409,11 +1409,8 @@
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
                                          (guards$ booleanp)
-                                         (curr-pkg stringp)
                                          (wrld plist-worldp))
-  :guard (and (aij-nativep fn)
-              (equal (symbol-package-name fn) curr-pkg)
-              (not (equal curr-pkg "")))
+  :guard (aij-nativep fn)
   :verify-guards nil
   :returns (method jmethodp)
   :short "Generate a shallowly embedded ACL2 function
@@ -1455,7 +1452,8 @@
      only if the file @('types-for-natives.lisp') is included
      prior to calling ATJ;
      otherwise, @(':value') is the type of every input and output."))
-  (b* ((method-name (atj-gen-shallow-fnname fn
+  (b* ((curr-pkg (symbol-package-name fn))
+       (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
                                             fn-method-names
                                             curr-pkg))
@@ -1698,10 +1696,7 @@
                                       (fn-method-names symbol-string-alistp)
                                       (guards$ booleanp)
                                       (verbose$ booleanp)
-                                      (curr-pkg stringp)
                                       (wrld plist-worldp))
-  :guard (and (equal (symbol-package-name fn) curr-pkg)
-              (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
                (quoted-integers integer-listp)
                (quoted-rationals rational-listp)
@@ -1770,6 +1765,7 @@
     " for motivation."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
+       (curr-pkg (symbol-package-name fn))
        (formals (formals fn wrld))
        (body (ubody fn wrld))
        (fn-type (atj-get-function-type fn guards$ wrld))
@@ -1836,10 +1832,7 @@
                                    (fn-method-names symbol-string-alistp)
                                    (guards$ booleanp)
                                    (verbose$ booleanp)
-                                   (curr-pkg stringp)
                                    (wrld plist-worldp))
-  :guard (and (equal (symbol-package-name fn) curr-pkg)
-              (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
                (quoted-integers integer-listp)
                (quoted-rationals rational-listp)
@@ -1862,7 +1855,6 @@
                                            pkg-class-names
                                            fn-method-names
                                            guards$
-                                           curr-pkg
                                            wrld)
           nil nil nil nil nil nil nil)
     (atj-gen-shallow-fndef-method fn
@@ -1870,7 +1862,6 @@
                                   fn-method-names
                                   guards$
                                   verbose$
-                                  curr-pkg
                                   wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1880,11 +1871,7 @@
                                     (fn-method-names symbol-string-alistp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
-                                    (curr-pkg stringp)
                                     (wrld plist-worldp))
-  :guard (and (equal (symbol-package-name-lst fns)
-                     (repeat (len fns) curr-pkg))
-              (not (equal curr-pkg "")))
   :returns (mv (methods jmethod-listp)
                (quoted-integers integer-listp)
                (quoted-rationals rational-listp)
@@ -1897,9 +1884,6 @@
   :short "Lift @(tsee atj-gen-shallow-fn-method) to lists."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This function is called on the functions to translate to Java
-     that are all in the same package, namely @('curr-pkg').")
    (xdoc::p
     "The quoted constants for all the functions are all joined together,
      without duplicates."))
@@ -1916,7 +1900,6 @@
                                                       fn-method-names
                                                       guards$
                                                       verbose$
-                                                      curr-pkg
                                                       wrld))
        ((mv rest-methods
             rest-qintegers
@@ -1930,7 +1913,6 @@
                                                       fn-method-names
                                                       guards$
                                                       verbose$
-                                                      curr-pkg
                                                       wrld)))
     (mv (cons first-method rest-methods)
         (union$ first-qintegers rest-qintegers)
@@ -2151,7 +2133,6 @@
                                                  fn-method-names
                                                  guards$
                                                  verbose$
-                                                 pkg
                                                  wrld))
        (imported-fns (intersection-eq fns-to-translate (pkg-imports pkg)))
        (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
