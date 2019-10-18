@@ -17,7 +17,7 @@
 
 (define formals+ ((fn (or (function-namep fn wrld)
                           (pseudo-lambdap fn)))
-                  (wrld plist-worldp-with-formals))
+                  (wrld plist-worldp))
   :returns (formals symbol-listp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
