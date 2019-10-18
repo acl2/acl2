@@ -10,10 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/system/numbered-names" :dir :system)
 (include-book "kestrel/utilities/symbol-true-list-alists" :dir :system)
+(include-book "kestrel/utilities/system/numbered-names" :dir :system)
 (include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
 
 (include-book "def-error-checker")
 
@@ -91,6 +92,14 @@
   (((symbol-alistp x)
     "~@0 must be an alist with symbols as keys." description)))
 
+(def-error-checker ensure-symbol-truelist-alist
+  ((x "Value to check."))
+  "Cause an error if a value is not an alist from symbols to true lists."
+  (((symbol-truelist-alistp x)
+    "~@0 must be an alist from symbols to true lists."
+    description)))
+
+; obsolete (superseded by ensure-symbol-truelist-alist), remove eventually:
 (def-error-checker ensure-symbol-true-list-alist
   ((x "Value to check."))
   "Cause an error if a value is not an alist from symbols to true lists."
