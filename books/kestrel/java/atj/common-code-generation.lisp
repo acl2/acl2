@@ -368,6 +368,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines atj-gen-value-flat
+  :short "Generate flat Java code to build an ACL2 value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atj-gen-value),
+     except that we do not generate local variables
+     for the @(tsee car) and @(tsee cdr) sub-expressions of a @(tsee cons).
+     We generate a single expression, without blocks;
+     in this sense it is ``flat''.")
+   (xdoc::@def "atj-gen-value-flat")
+   (xdoc::@def "atj-gen-cons-flat"))
+
+  (define atj-gen-cons-flat ((conspair consp))
+    :returns (expr jexprp)
+    :parents nil
+    (b* (((unless (mbt (consp conspair))) (jexpr-name "irrelevant"))
+         (car-expr (atj-gen-value-flat (car conspair)))
+         (cdr-expr (atj-gen-value-flat (cdr conspair))))
+      (jexpr-smethod *aij-type-cons*
+                     "make"
+                     (list car-expr
+                           cdr-expr)))
+    :measure (two-nats-measure (acl2-count conspair) 0))
+
+  (define atj-gen-value-flat (value)
+    :returns (expr jexprp)
+    :parents nil
+    (cond ((characterp value) (atj-gen-char value))
+          ((stringp value) (atj-gen-string value))
+          ((symbolp value) (atj-gen-symbol value))
+          ((integerp value) (atj-gen-integer value))
+          ((rationalp value) (atj-gen-rational value))
+          ((acl2-numberp value) (atj-gen-number value))
+          ((consp value) (atj-gen-cons-flat value))
+          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
+                            value)
+                     (jexpr-name "irrelevant"))))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-CONS decreases:
+    :measure (two-nats-measure (acl2-count value) 1))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-gen-value-flat))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-pkg-method-name ((pkg stringp))
   :returns (method-name stringp)
   :short "Name of the Java method that adds an ACL2 package definition."
