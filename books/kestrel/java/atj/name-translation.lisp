@@ -322,11 +322,15 @@
      which otherwise consist of valid Java identifier characters.
      It also includes the empty sequence,
      because an ACL2 symbol may consist of no characters,
-     but a Java identifier cannot be empty."))
+     but a Java identifier cannot be empty.
+     It also includes the uppercase names of the @('t') and @('nil') symbols,
+     because those are generated as static final fields,
+     which would therefore conflict with homonymous variables."))
   (append *jkeywords*
           *boolean-literals*
           (list *null-literal*)
-          (list ""))
+          (list "")
+          (list "T" "NIL"))
   ///
   (assert-event (string-listp *atj-disallowed-jvar-names*))
   (assert-event (no-duplicatesp-equal *atj-disallowed-jvar-names*)))
