@@ -10,14 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "function-namep")
-(include-book "pseudo-lambdap")
+(include-book "pseudo-termfnp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define arity+ ((fn (or (function-namep fn wrld)
-                        (pseudo-lambdap fn)))
-                (wrld plist-worldp))
+(define arity+ ((fn (pseudo-termfnp fn)) (wrld plist-worldp))
   :returns (result natp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
@@ -28,7 +25,12 @@
    (xdoc::p
     "This returns the same result as @(tsee arity)
      on named functions and lambda expressions,
-     but it has a guard that is stronger on @('fn') but weaker on @('wrld').
+     but it causes an error on symbols that do not name functions
+     (while @(tsee arity) returns @('nil') in this case.")
+   (xdoc::p
+    "Compared to @(tsee arity),
+     @('arity+') has a slightly stronger guard on @('fn')
+     but a weaker guard on @('wrld').
      The reason for weakening the guard on @('wrld'),
      from @('plist-worldp-with-formals') to @(tsee plist-worldp)
      is a practical one:
@@ -42,8 +44,14 @@
      in order for @('arity+') to be guard-verified,
      it cannot call @(tsee arity).
      Thus, here we replicate the (simple) code of @(tsee arity),
-     with the only slight difference that we return 0
-     if @('fn') does not satisfy the guard."))
+     with the only slight difference that, logically,
+     we return 0 if @('fn') does not name a function
+     (but in this case an error actually occurs),
+     so that the return type theorem is simpler."))
   (cond ((flambdap fn) (len (lambda-formals fn)))
-        (t (len (getpropc fn 'formals t wrld))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
+        (t (len (b* ((formals (getpropc fn 'formals t wrld)))
+                  (if (eq formals t)
+                      (raise "The symbol ~x0 does not name a function." fn)
+                    formals)))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp
+                                           pseudo-lambdap))))
