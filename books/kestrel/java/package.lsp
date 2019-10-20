@@ -34,6 +34,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         cons-pos-alistp
                          define-sk
                          defxdoc+
                          doublets-to-alist

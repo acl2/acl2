@@ -18,6 +18,7 @@
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
+(include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,7 +58,113 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atj-quoted-constants-in-term
+(std::defaggregate atj-qconstants
+  :short "Recognize a structured collection of quoted constants."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As we collect quoted constants for the purposes described "
+    (xdoc::seetopic "atj-shallow-quoted-constants" "here")
+    ", we store their values (without quotes)
+     in a record where they are partitioned into:
+     (i) integers;
+     (ii) other (i.e. non-integer) rationals;
+     (iii) other (i.e. non-rational) numbers;
+     (iv) characters;
+     (v) strings;
+     (vi) symbols;
+     (vii) @(tsee cons) pairs.
+     The first six are duplicate-free lists of appropriate types.
+     The seventh is an alist from the pairs to positive integer indices:
+     the first collected pair gets index 1,
+     the second one gets index 2,
+     and so on;
+     we organize this as an alist instead of a list
+     so that the indices are explicit
+     and so that we can more easily optimize this with a fast alist
+     in the future.
+     The index for the next @(tsee cons) pair is stored in this record.
+     The use of the indices is explained in
+     @(tsee atj-gen-shallow-cons-field-name)."))
+  ((integers (and (integer-listp integers)
+                  (no-duplicatesp integers)))
+   (rationals (and (rational-listp rationals)
+                   (no-duplicatesp rationals)))
+   (numbers (and (acl2-number-listp numbers)
+                 (no-duplicatesp numbers)))
+   (chars (and (character-listp chars)
+               (no-duplicatesp chars)))
+   (strings (and (string-listp strings)
+                 (no-duplicatesp-equal strings)))
+   (symbols (and (symbol-listp symbols)
+                 (no-duplicatesp-eq symbols)))
+   (pairs cons-pos-alistp)
+   (next-index posp))
+  ///
+
+  (defrule posp-of-atj-qconstants->next-index
+    (implies (atj-qconstants-p record)
+             (posp (atj-qconstants->next-index record)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-add-qconstant (value (record atj-qconstants-p))
+  :returns (new-record atj-qconstants-p :hyp :guard)
+  :short "Add (the value of) a quoted constant to a structured collection."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add the value to the appropriate list, unless it is already present.
+     The process is slightly more complicated for @(tsee cons) pairs,
+     as it involves an alist;
+     if the pair is not already in the alist,
+     we add it, associated with the next index to use,
+     and we increment the next index to use in the record."))
+  (b* (((atj-qconstants record) record))
+    (cond ((integerp value)
+           (change-atj-qconstants
+            record
+            :integers (add-to-set value record.integers)))
+          ((rationalp value)
+           (change-atj-qconstants
+            record
+            :rationals (add-to-set value record.rationals)))
+          ((acl2-numberp value)
+           (change-atj-qconstants
+            record
+            :numbers (add-to-set value record.numbers)))
+          ((characterp value)
+           (change-atj-qconstants
+            record
+            :chars (add-to-set value record.chars)))
+          ((stringp value)
+           (change-atj-qconstants
+            record
+            :strings (add-to-set-equal value record.strings)))
+          ((symbolp value)
+           (change-atj-qconstants
+            record
+            :symbols (add-to-set-eq value record.symbols)))
+          ((consp value)
+           (b* ((value+index? (assoc-equal value record.pairs)))
+             (if (consp value+index?)
+                 record
+               (change-atj-qconstants
+                record
+                :pairs (acons value record.next-index record.pairs)
+                :next-index (1+ record.next-index)))))
+          (t (prog2$
+              (raise "Internal error: ~x0 is not a recognized value." value)
+              record))))
+  :guard-hints (("Goal" :in-theory (disable posp)))
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (posp x)
+              (posp (1+ x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-add-qconstants-in-term
   :short "Collect all the quoted constants in a term."
   :long
   (xdoc::topstring
@@ -69,112 +176,30 @@
      This excludes value that occur (only) inside other quoted values,
      e.g. @('(quote (<value> . ...))').")
    (xdoc::p
-    "We return the numbers partitioned into different lists:
-     (i) integers;
-     (ii) other (i.e. non-integer) rationals;
-     (iii) other (i.e. non-rational) numbers;
-     (iv) characters;
-     (v) strings;
-     (vi) symbols;
-     (vii) @(tsee cons) pairs.
-     These lists are pairwise disjoint.
-     Each list has no duplicates."))
+    "The record that stores the collected constants
+     is threaded through the recursive functions."))
 
-  (define atj-quoted-constants-in-term ((term pseudo-termp))
-    :returns (mv (integers integer-listp)
-                 (rationals rational-listp)
-                 (numbers acl2-number-listp)
-                 (chars character-listp)
-                 (strings string-listp)
-                 (symbols symbol-listp)
-                 (conses true-listp))
-    (b* (((when (variablep term)) (mv nil nil nil nil nil nil nil))
-         ((when (fquotep term))
-          (b* ((value (unquote-term term)))
-            (cond ((integerp value)
-                   (mv (list value) nil nil nil nil nil nil))
-                  ((rationalp value)
-                   (mv nil (list value) nil nil nil nil nil))
-                  ((acl2-numberp value)
-                   (mv nil nil (list value) nil nil nil nil))
-                  ((characterp value)
-                   (mv nil nil nil (list value) nil nil nil))
-                  ((stringp value)
-                   (mv nil nil nil nil (list value) nil nil))
-                  ((symbolp value)
-                   (mv nil nil nil nil nil (list value) nil))
-                  (t (mv nil nil nil nil nil nil (list value))))))
-         ((mv arg-integers
-              arg-rationals
-              arg-numbers
-              arg-chars
-              arg-strings
-              arg-symbols
-              arg-conses) (atj-quoted-constants-in-terms (fargs term)))
-         (fn (ffn-symb term)))
-      (if (flambdap fn)
-          (b* (((mv lambda-integers
-                    lambda-rationals
-                    lambda-numbers
-                    lambda-chars
-                    lambda-strings
-                    lambda-symbols
-                    lambda-conses) (atj-quoted-constants-in-term
-                                    (lambda-body fn))))
-            (mv (union$ arg-integers lambda-integers)
-                (union$ arg-rationals lambda-rationals)
-                (union$ arg-numbers lambda-numbers)
-                (union$ arg-chars lambda-chars)
-                (union-equal arg-strings lambda-strings)
-                (union-eq arg-symbols lambda-symbols)
-                (union-equal arg-conses lambda-conses)))
-        (mv arg-integers
-            arg-rationals
-            arg-numbers
-            arg-chars
-            arg-strings
-            arg-symbols
-            arg-conses))))
+  (define atj-add-qconstants-in-term ((term pseudo-termp)
+                                      (qconsts atj-qconstants-p))
+    :returns (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+    (b* (((when (variablep term)) qconsts)
+         ((when (fquotep term)) (atj-add-qconstant (unquote-term term) qconsts))
+         (fn (ffn-symb term))
+         (qconsts (if (flambdap fn)
+                      (atj-add-qconstants-in-term (lambda-body fn) qconsts)
+                    qconsts)))
+      (atj-add-qconstants-in-terms (fargs term) qconsts)))
 
-  (define atj-quoted-constants-in-terms ((terms pseudo-term-listp))
-    :returns (mv (integers integer-listp)
-                 (rationals rational-listp)
-                 (numbers acl2-number-listp)
-                 (chars character-listp)
-                 (strings string-listp)
-                 (symbols symbol-listp)
-                 (conses true-listp))
-    (b* (((when (endp terms)) (mv nil nil nil nil nil nil nil))
-         ((mv first-integers
-              first-rationals
-              first-numbers
-              first-chars
-              first-strings
-              first-symbols
-              first-conses) (atj-quoted-constants-in-term (car terms)))
-         ((mv rest-integers
-              rest-rationals
-              rest-numbers
-              rest-chars
-              rest-strings
-              rest-symbols
-              rest-conses) (atj-quoted-constants-in-terms (cdr terms))))
-      (mv (union$ first-integers rest-integers)
-          (union$ first-rationals rest-rationals)
-          (union$ first-numbers rest-numbers)
-          (union$ first-chars rest-chars)
-          (union-equal first-strings rest-strings)
-          (union-eq first-symbols rest-symbols)
-          (union-equal first-conses rest-conses))))
-
-  :prepwork
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
-   (local (include-book "std/typed-lists/rational-listp" :dir :system))
-   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system)))
+  (define atj-add-qconstants-in-terms ((terms pseudo-term-listp)
+                                       (qconsts atj-qconstants-p))
+    :returns (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+    (b* (((when (endp terms)) qconsts)
+         (qconsts (atj-add-qconstants-in-term (car terms) qconsts)))
+      (atj-add-qconstants-in-terms (cdr terms) qconsts)))
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atj-quoted-constants-in-term))
+  (verify-guards atj-add-qconstants-in-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1761,19 +1786,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fndef-method ((fn symbolp)
+                                      (qconsts atj-qconstants-p)
                                       (pkg-class-names string-string-alistp)
                                       (fn-method-names symbol-string-alistp)
                                       (guards$ booleanp)
                                       (verbose$ booleanp)
                                       (wrld plist-worldp))
   :returns (mv (method jmethodp)
-               (quoted-integers integer-listp)
-               (quoted-rationals rational-listp)
-               (quoted-numbers acl2-number-listp)
-               (quoted-chars character-listp)
-               (quoted-strings string-listp)
-               (quoted-symbols symbol-listp)
-               (quoted-conses true-listp))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
@@ -1826,12 +1846,9 @@
      The body of the Java method consists of those Java statements,
      followed by a @('return') statement with that Java expression.")
    (xdoc::p
-    "We also collect and return all the quoted constants
-     in the pre-translated function body.
-     These are used to generate (in other code generation functions)
-     the corresponding Java fields; see "
-    (xdoc::seetopic "atj-shallow-quoted-constants" "here")
-    " for motivation."))
+    "We also collect all the quoted constants
+     in the pre-translated function body,
+     and add it to the collection that it threaded through."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" fn))
        (curr-pkg (symbol-package-name fn))
@@ -1842,13 +1859,7 @@
        (out-type (atj-function-type->output fn-type))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
-       ((mv qintegers
-            qrationals
-            qnumbers
-            qchars
-            qstrings
-            qsymbols
-            qconses) (atj-quoted-constants-in-term body))
+       (qconsts (atj-add-qconstants-in-term body qconsts))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
                                             fn-method-names
@@ -1881,52 +1892,36 @@
                              :params method-params
                              :throws (list *aij-class-eval-exc*)
                              :body method-body)))
-    (mv method
-        qintegers
-        qrationals
-        qnumbers
-        qchars
-        qstrings
-        qsymbols
-        qconses))
-  :prepwork ((local (in-theory (disable integer-listp
-                                        rational-listp
-                                        acl2-number-listp
-                                        symbol-listp)))))
+    (mv method qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fn-method ((fn symbolp)
+                                   (qconsts atj-qconstants-p)
                                    (pkg-class-names string-string-alistp)
                                    (fn-method-names symbol-string-alistp)
                                    (guards$ booleanp)
                                    (verbose$ booleanp)
                                    (wrld plist-worldp))
   :returns (mv (method jmethodp)
-               (quoted-integers integer-listp)
-               (quoted-rationals rational-listp)
-               (quoted-numbers acl2-number-listp)
-               (quoted-chars character-listp)
-               (quoted-strings string-listp)
-               (quoted-symbols symbol-listp)
-               (quoted-conses true-listp))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
   :verify-guards nil
   :short "Generate a shallowly embedded
           ACL2 function natively implemented in AIJ
           or ACL2 function definition."
   :long
   (xdoc::topstring-p
-   "We also return the lists of quoted constants:
-    see @(tsee atj-gen-shallow-fndef-method).
-    This is @('nil') for native functions.")
+   "We also add all the quoted constants to the collection.
+    The collection does not change for native functions.")
   (if (aij-nativep fn)
       (mv (atj-gen-shallow-fnnative-method fn
                                            pkg-class-names
                                            fn-method-names
                                            guards$
                                            wrld)
-          nil nil nil nil nil nil nil)
+          qconsts)
     (atj-gen-shallow-fndef-method fn
+                                  qconsts
                                   pkg-class-names
                                   fn-method-names
                                   guards$
@@ -1936,70 +1931,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fn-methods ((fns symbol-listp)
+                                    (qconsts atj-qconstants-p)
                                     (pkg-class-names string-string-alistp)
                                     (fn-method-names symbol-string-alistp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :returns (mv (methods jmethod-listp)
-               (quoted-integers integer-listp)
-               (quoted-rationals rational-listp)
-               (quoted-numbers acl2-number-listp)
-               (quoted-chars character-listp)
-               (quoted-strings string-listp)
-               (quoted-symbols symbol-listp)
-               (quoted-conses true-listp))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
   :verify-guards nil
   :short "Lift @(tsee atj-gen-shallow-fn-method) to lists."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The quoted constants for all the functions are all joined together,
-     without duplicates."))
-  (b* (((when (endp fns)) (mv nil nil nil nil nil nil nil nil))
+  (b* (((when (endp fns)) (mv nil qconsts))
        ((mv first-method
-            first-qintegers
-            first-qrationals
-            first-qnumbers
-            first-qchars
-            first-qstrings
-            first-qsymbols
-            first-qconses) (atj-gen-shallow-fn-method (car fns)
-                                                      pkg-class-names
-                                                      fn-method-names
-                                                      guards$
-                                                      verbose$
-                                                      wrld))
+            qconsts) (atj-gen-shallow-fn-method (car fns)
+                                                qconsts
+                                                pkg-class-names
+                                                fn-method-names
+                                                guards$
+                                                verbose$
+                                                wrld))
        ((mv rest-methods
-            rest-qintegers
-            rest-qrationals
-            rest-qnumbers
-            rest-qchars
-            rest-qstrings
-            rest-qsymbols
-            rest-qconses) (atj-gen-shallow-fn-methods (cdr fns)
-                                                      pkg-class-names
-                                                      fn-method-names
-                                                      guards$
-                                                      verbose$
-                                                      wrld)))
-    (mv (cons first-method rest-methods)
-        (union$ first-qintegers rest-qintegers)
-        (union$ first-qrationals rest-qrationals)
-        (union$ first-qnumbers rest-qnumbers)
-        (union$ first-qchars rest-qchars)
-        (union-equal first-qstrings rest-qstrings)
-        (union-eq first-qsymbols rest-qsymbols)
-        (union-equal first-qconses rest-qconses)))
-  :prepwork
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
-   (local (include-book "std/typed-lists/rational-listp" :dir :system))
-   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system))
-   (local (include-book "std/typed-lists/character-listp" :dir :system))
-   (local (include-book "std/typed-lists/string-listp" :dir :system))
-   (local (include-book "std/typed-lists/symbol-listp" :dir :system))
-   (local
-    (include-book "kestrel/utilities/lists/union-theorems" :dir :system))))
+            qconsts) (atj-gen-shallow-fn-methods (cdr fns)
+                                                 qconsts
+                                                 pkg-class-names
+                                                 fn-method-names
+                                                 guards$
+                                                 verbose$
+                                                 wrld)))
+    (mv (cons first-method rest-methods) qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2149,19 +2108,14 @@
 (define atj-gen-shallow-pkg-methods ((pkg stringp)
                                      (fns-by-pkg string-symbollist-alistp)
                                      (fns+natives symbol-listp)
+                                     (qconsts atj-qconstants-p)
                                      (pkg-class-names string-string-alistp)
                                      (fn-method-names symbol-string-alistp)
                                      (guards$ booleanp)
                                      (verbose$ booleanp)
                                      (wrld plist-worldp))
   :returns (mv (methods jmethod-listp)
-               (quoted-integers integer-listp)
-               (quoted-rationals rational-listp)
-               (quoted-numbers acl2-number-listp)
-               (quoted-chars character-listp)
-               (quoted-strings string-listp)
-               (quoted-symbols symbol-listp)
-               (quoted-conses true-listp))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
   :verify-guards nil
   :short "Generate all the methods of the class for an ACL2 package."
   :long
@@ -2184,18 +2138,13 @@
     "We put the latter functions before the former functions in the result,
      so that the methods appear in that order in the class.")
    (xdoc::p
-    "We also collect and return all the quoted constants
+    "We also collect all the quoted constants
      that occur in the functions in @('pkg') that are translated to Java."))
   (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
        (fns (sort-symbol-listp fns))
        ((mv fn-methods
-            qintegers
-            qrationals
-            qnumbers
-            qchars
-            qstrings
-            qsymbols
-            qconses) (atj-gen-shallow-fn-methods fns
+            qconsts) (atj-gen-shallow-fn-methods fns
+                                                 qconsts
                                                  pkg-class-names
                                                  fn-method-names
                                                  guards$
@@ -2210,14 +2159,7 @@
                                                          pkg
                                                          wrld)))
     (mv (append synonym-methods fn-methods)
-        qintegers
-        qrationals
-        qnumbers
-        qchars
-        qstrings
-        qsymbols
-        qconses))
-  :prepwork ((local (in-theory (disable sort-symbol-listp)))))
+        qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2234,6 +2176,7 @@
 (define atj-gen-shallow-all-pkg-methods ((pkgs string-listp)
                                          (fns-by-pkg string-symbollist-alistp)
                                          (fns+natives symbol-listp)
+                                         (qconsts atj-qconstants-p)
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
                                          (guards$ booleanp)
@@ -2241,13 +2184,7 @@
                                          (wrld plist-worldp))
   :returns (mv (methods-by-pkg string-jmethodlist-alistp
                                :hyp (string-listp pkgs))
-               (quoted-integers integer-listp)
-               (quoted-rationals rational-listp)
-               (quoted-numbers acl2-number-listp)
-               (quoted-chars character-listp)
-               (quoted-strings string-listp)
-               (quoted-symbols symbol-listp)
-               (quoted-conses true-listp))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
   :verify-guards nil
   :short "Generate all the methods of the classes for all the ACL2 packages."
   :long
@@ -2259,64 +2196,32 @@
      (i.e. the methods of the class that corresponds to the package).
      If there are no methods for a package,
      we do not add an entry for the package in the alist."))
-  (b* (((when (endp pkgs)) (mv nil nil nil nil nil nil nil nil))
+  (b* (((when (endp pkgs)) (mv nil qconsts))
        (pkg (car pkgs))
        ((mv first-methods
-            first-qintegers
-            first-qrationals
-            first-qnumbers
-            first-qchars
-            first-qstrings
-            first-qsymbols
-            first-qconses) (atj-gen-shallow-pkg-methods pkg
-                                                        fns-by-pkg
-                                                        fns+natives
-                                                        pkg-class-names
-                                                        fn-method-names
-                                                        guards$
-                                                        verbose$
-                                                        wrld))
+            qconsts) (atj-gen-shallow-pkg-methods pkg
+                                                  fns-by-pkg
+                                                  fns+natives
+                                                  qconsts
+                                                  pkg-class-names
+                                                  fn-method-names
+                                                  guards$
+                                                  verbose$
+                                                  wrld))
        ((mv rest-methods
-            rest-qintegers
-            rest-qrationals
-            rest-qnumbers
-            rest-qchars
-            rest-qstrings
-            rest-qsymbols
-            rest-qconses) (atj-gen-shallow-all-pkg-methods (cdr pkgs)
-                                                           fns-by-pkg
-                                                           fns+natives
-                                                           pkg-class-names
-                                                           fn-method-names
-                                                           guards$
-                                                           verbose$
-                                                           wrld)))
+            qconsts) (atj-gen-shallow-all-pkg-methods (cdr pkgs)
+                                                      fns-by-pkg
+                                                      fns+natives
+                                                      qconsts
+                                                      pkg-class-names
+                                                      fn-method-names
+                                                      guards$
+                                                      verbose$
+                                                      wrld)))
     (if (null first-methods)
-        (mv rest-methods
-            rest-qintegers
-            rest-qrationals
-            rest-qnumbers
-            rest-qchars
-            rest-qstrings
-            rest-qsymbols
-            rest-qconses)
+        (mv rest-methods qconsts)
       (mv (acons pkg first-methods rest-methods)
-          (union$ first-qintegers rest-qintegers)
-          (union$ first-qrationals rest-qrationals)
-          (union$ first-qnumbers rest-qnumbers)
-          (union$ first-qchars rest-qchars)
-          (union-equal first-qstrings rest-qstrings)
-          (union-eq first-qsymbols rest-qsymbols)
-          (union-equal first-qconses rest-qconses))))
-  :prepwork
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
-   (local (include-book "std/typed-lists/rational-listp" :dir :system))
-   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system))
-   (local (include-book "std/typed-lists/character-listp" :dir :system))
-   (local (include-book "std/typed-lists/string-listp" :dir :system))
-   (local (include-book "std/typed-lists/symbol-listp" :dir :system))
-   (local
-    (include-book "kestrel/utilities/lists/union-theorems" :dir :system))))
+          qconsts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2587,22 +2492,26 @@
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
-       ((mv methods-by-pkg
-            qintegers
-            qrationals
-            qnumbers
-            qchars
-            qstrings
-            qsymbols
-            &) ; we do not generate fields for these yet
+       (qconsts (make-atj-qconstants :integers nil
+                                     :rationals nil
+                                     :numbers nil
+                                     :chars nil
+                                     :strings nil
+                                     :symbols nil
+                                     :pairs nil
+                                     :next-index 1))
+       ((mv methods-by-pkg qconsts)
         (atj-gen-shallow-all-pkg-methods pkgs
                                          fns-by-pkg
                                          fns+natives
+                                         qconsts
                                          pkg-class-names
                                          fn-method-names
                                          guards$
                                          verbose$
                                          wrld))
+       ((atj-qconstants qconsts) qconsts)
+       (qsymbols qconsts.symbols)
        (qsymbols-by-pkg (organize-symbols-by-pkg qsymbols))
        (fields-by-pkg (atj-gen-shallow-all-pkg-fields pkgs
                                                       qsymbols
@@ -2612,15 +2521,16 @@
                                              methods-by-pkg
                                              pkg-class-names))
        (qinteger-fields (atj-gen-shallow-number-fields (mergesort
-                                                        qintegers)))
+                                                        qconsts.integers)))
        (qrational-fields (atj-gen-shallow-number-fields (mergesort
-                                                         qrationals)))
+                                                         qconsts.rationals)))
        (qnumber-fields (atj-gen-shallow-number-fields (mergesort
-                                                       qnumbers)))
+                                                       qconsts.numbers)))
        (qchar-fields (atj-gen-shallow-char-fields (mergesort
-                                                   qchars)))
+                                                   qconsts.chars)))
        (qstring-fields (atj-gen-shallow-string-fields (mergesort
-                                                       qstrings)))
+                                                       qconsts.strings)))
+       ;; QCONSTS.PAIRS is ignored for now
        (all-fields (append qinteger-fields
                            qrational-fields
                            qnumber-fields
