@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "cons-pos-alistp")
 (include-book "string-string-alistp")
 (include-book "string-symbollist-alistp")
 (include-book "symbol-nat-alistp")
