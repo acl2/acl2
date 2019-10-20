@@ -58,7 +58,6 @@
 (include-book "skip-in-book")
 (include-book "strings/top")
 (include-book "sublis-expr-plus")
-(include-book "symbol-true-list-alists")
 (include-book "symbols")
 (include-book "system/top")
 (include-book "testing")
