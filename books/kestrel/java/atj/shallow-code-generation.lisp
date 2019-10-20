@@ -57,6 +57,127 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines atj-quoted-constants-in-term
+  :short "Collect all the quoted constants in a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return all the values of the quoted constants
+     that appear directly quoted in the term.
+     That is, for each sub-term of the form @('(quote <value>)'),
+     we return @('<value>').
+     This excludes value that occur (only) inside other quoted values,
+     e.g. @('(quote (<value> . ...))').")
+   (xdoc::p
+    "We return the numbers partitioned into different lists:
+     (i) integers;
+     (ii) other (i.e. non-integer) rationals;
+     (iii) other (i.e. non-rational) numbers;
+     (iv) characters;
+     (v) strings;
+     (vi) symbols;
+     (vii) @(tsee cons) pairs.
+     These lists are pairwise disjoint.
+     Each list has no duplicates."))
+
+  (define atj-quoted-constants-in-term ((term pseudo-termp))
+    :returns (mv (integers integer-listp)
+                 (rationals rational-listp)
+                 (numbers acl2-number-listp)
+                 (chars character-listp)
+                 (strings string-listp)
+                 (symbols symbol-listp)
+                 (conses true-listp))
+    (b* (((when (variablep term)) (mv nil nil nil nil nil nil nil))
+         ((when (fquotep term))
+          (b* ((value (unquote-term term)))
+            (cond ((integerp value)
+                   (mv (list value) nil nil nil nil nil nil))
+                  ((rationalp value)
+                   (mv nil (list value) nil nil nil nil nil))
+                  ((acl2-numberp value)
+                   (mv nil nil (list value) nil nil nil nil))
+                  ((characterp value)
+                   (mv nil nil nil (list value) nil nil nil))
+                  ((stringp value)
+                   (mv nil nil nil nil (list value) nil nil))
+                  ((symbolp value)
+                   (mv nil nil nil nil nil (list value) nil))
+                  (t (mv nil nil nil nil nil nil (list value))))))
+         ((mv arg-integers
+              arg-rationals
+              arg-numbers
+              arg-chars
+              arg-strings
+              arg-symbols
+              arg-conses) (atj-quoted-constants-in-terms (fargs term)))
+         (fn (ffn-symb term)))
+      (if (flambdap fn)
+          (b* (((mv lambda-integers
+                    lambda-rationals
+                    lambda-numbers
+                    lambda-chars
+                    lambda-strings
+                    lambda-symbols
+                    lambda-conses) (atj-quoted-constants-in-term
+                                    (lambda-body fn))))
+            (mv (union$ arg-integers lambda-integers)
+                (union$ arg-rationals lambda-rationals)
+                (union$ arg-numbers lambda-numbers)
+                (union$ arg-chars lambda-chars)
+                (union-equal arg-strings lambda-strings)
+                (union-eq arg-symbols lambda-symbols)
+                (union-equal arg-conses lambda-conses)))
+        (mv arg-integers
+            arg-rationals
+            arg-numbers
+            arg-chars
+            arg-strings
+            arg-symbols
+            arg-conses))))
+
+  (define atj-quoted-constants-in-terms ((terms pseudo-term-listp))
+    :returns (mv (integers integer-listp)
+                 (rationals rational-listp)
+                 (numbers acl2-number-listp)
+                 (chars character-listp)
+                 (strings string-listp)
+                 (symbols symbol-listp)
+                 (conses true-listp))
+    (b* (((when (endp terms)) (mv nil nil nil nil nil nil nil))
+         ((mv first-integers
+              first-rationals
+              first-numbers
+              first-chars
+              first-strings
+              first-symbols
+              first-conses) (atj-quoted-constants-in-term (car terms)))
+         ((mv rest-integers
+              rest-rationals
+              rest-numbers
+              rest-chars
+              rest-strings
+              rest-symbols
+              rest-conses) (atj-quoted-constants-in-terms (cdr terms))))
+      (mv (union$ first-integers rest-integers)
+          (union$ first-rationals rest-rationals)
+          (union$ first-numbers rest-numbers)
+          (union$ first-chars rest-chars)
+          (union-equal first-strings rest-strings)
+          (union-eq first-symbols rest-symbols)
+          (union-equal first-conses rest-conses))))
+
+  :prepwork
+  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
+   (local (include-book "std/typed-lists/rational-listp" :dir :system))
+   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-quoted-constants-in-term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-integer-id-part ((integer integerp))
   :returns (core stringp)
   :short "Turn an ACL2 integer into a Java identifier part."
@@ -1636,127 +1757,6 @@
                   :throws (list *aij-class-eval-exc*)
                   :body method-body))
   :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines atj-quoted-constants-in-term
-  :short "Collect all the quoted constants in a term."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return all the values of the quoted constants
-     that appear directly quoted in the term.
-     That is, for each sub-term of the form @('(quote <value>)'),
-     we return @('<value>').
-     This excludes value that occur (only) inside other quoted values,
-     e.g. @('(quote (<value> . ...))').")
-   (xdoc::p
-    "We return the numbers partitioned into different lists:
-     (i) integers;
-     (ii) other (i.e. non-integer) rationals;
-     (iii) other (i.e. non-rational) numbers;
-     (iv) characters;
-     (v) strings;
-     (vi) symbols;
-     (vii) @(tsee cons) pairs.
-     These lists are pairwise disjoint.
-     Each list has no duplicates."))
-
-  (define atj-quoted-constants-in-term ((term pseudo-termp))
-    :returns (mv (integers integer-listp)
-                 (rationals rational-listp)
-                 (numbers acl2-number-listp)
-                 (chars character-listp)
-                 (strings string-listp)
-                 (symbols symbol-listp)
-                 (conses true-listp))
-    (b* (((when (variablep term)) (mv nil nil nil nil nil nil nil))
-         ((when (fquotep term))
-          (b* ((value (unquote-term term)))
-            (cond ((integerp value)
-                   (mv (list value) nil nil nil nil nil nil))
-                  ((rationalp value)
-                   (mv nil (list value) nil nil nil nil nil))
-                  ((acl2-numberp value)
-                   (mv nil nil (list value) nil nil nil nil))
-                  ((characterp value)
-                   (mv nil nil nil (list value) nil nil nil))
-                  ((stringp value)
-                   (mv nil nil nil nil (list value) nil nil))
-                  ((symbolp value)
-                   (mv nil nil nil nil nil (list value) nil))
-                  (t (mv nil nil nil nil nil nil (list value))))))
-         ((mv arg-integers
-              arg-rationals
-              arg-numbers
-              arg-chars
-              arg-strings
-              arg-symbols
-              arg-conses) (atj-quoted-constants-in-terms (fargs term)))
-         (fn (ffn-symb term)))
-      (if (flambdap fn)
-          (b* (((mv lambda-integers
-                    lambda-rationals
-                    lambda-numbers
-                    lambda-chars
-                    lambda-strings
-                    lambda-symbols
-                    lambda-conses) (atj-quoted-constants-in-term
-                                    (lambda-body fn))))
-            (mv (union$ arg-integers lambda-integers)
-                (union$ arg-rationals lambda-rationals)
-                (union$ arg-numbers lambda-numbers)
-                (union$ arg-chars lambda-chars)
-                (union-equal arg-strings lambda-strings)
-                (union-eq arg-symbols lambda-symbols)
-                (union-equal arg-conses lambda-conses)))
-        (mv arg-integers
-            arg-rationals
-            arg-numbers
-            arg-chars
-            arg-strings
-            arg-symbols
-            arg-conses))))
-
-  (define atj-quoted-constants-in-terms ((terms pseudo-term-listp))
-    :returns (mv (integers integer-listp)
-                 (rationals rational-listp)
-                 (numbers acl2-number-listp)
-                 (chars character-listp)
-                 (strings string-listp)
-                 (symbols symbol-listp)
-                 (conses true-listp))
-    (b* (((when (endp terms)) (mv nil nil nil nil nil nil nil))
-         ((mv first-integers
-              first-rationals
-              first-numbers
-              first-chars
-              first-strings
-              first-symbols
-              first-conses) (atj-quoted-constants-in-term (car terms)))
-         ((mv rest-integers
-              rest-rationals
-              rest-numbers
-              rest-chars
-              rest-strings
-              rest-symbols
-              rest-conses) (atj-quoted-constants-in-terms (cdr terms))))
-      (mv (union$ first-integers rest-integers)
-          (union$ first-rationals rest-rationals)
-          (union$ first-numbers rest-numbers)
-          (union$ first-chars rest-chars)
-          (union-equal first-strings rest-strings)
-          (union-eq first-symbols rest-symbols)
-          (union-equal first-conses rest-conses))))
-
-  :prepwork
-  ((local (include-book "std/typed-lists/integer-listp" :dir :system))
-   (local (include-book "std/typed-lists/rational-listp" :dir :system))
-   (local (include-book "std/typed-lists/acl2-number-listp" :dir :system)))
-
-  :verify-guards nil ; done below
-  ///
-  (verify-guards atj-quoted-constants-in-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
