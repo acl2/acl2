@@ -2212,6 +2212,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (defunc-events (parse-defunc ',name ',args (current-package state) (w state)) nil state)))))))
 |#
 
+#|
 (defmacro defunc-core (name d? &rest args)
   (b* ((verbosep (let ((lst (member :verbose args)))
                    (and lst (cadr lst))))
@@ -2239,7 +2240,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            nil
            (with-output
             ,@(and (not verbosep) '(:off :all)) :on (error)
-            (set-ccg-time-limit ,timeout))
+            (table acl2::acl2-defaults-table :ccg-time-limit ,timeout))
            (with-output
             ,@(and (not verbosep) '(:off :all)) :on (error)
             (make-event
@@ -2255,39 +2256,58 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                ',d?
                state)))
            (with-output
-             ,@(and (not verbosep) '(:off :all)) :on (error)
-            (set-ccg-time-limit ,ccg-timeout1))))))))
+            ,@(and (not verbosep) '(:off :all)) :on (error)
+            (table acl2::acl2-defaults-table :ccg-time-limit ,ccg-timeout1))))))))
+|#
+
+(defmacro defunc-core (name d? &rest args)
+  (b* ((verbosep (let ((lst (member :verbose args)))
+                   (and lst (cadr lst))))
+       (verbosep (or verbosep
+                     (let ((lst (member :debug args)))
+                       (and lst (cadr lst)))))
+       (timeout-arg (let ((lst (member :timeout args)))
+                      (and lst (cadr lst)))))
+    `(with-output
+      ,@(and (not verbosep) '(:off :all))
+      :gag-mode ,(not verbosep)
+      :stack :push
+      (make-event
+       (b* ((name ',name)
+            (d? ',d?)
+            (args ',args)
+            (verbosep ',verbosep)
+            (timeout-arg ',timeout-arg)
+            (ccg-timeout1 (get-ccg-time-limit (w state)))
+            (ccg-timeout (or ccg-timeout1 10000))
+            (defunc-timeout (get-defunc-timeout))
+            (defunc-timeout (or timeout-arg (* 3/4 (or defunc-timeout 10000))))
+            (timeout (min ccg-timeout defunc-timeout))
+            (args (list* (car args)
+                         `(declare (xargs :time-limit ,timeout))
+                         (cdr args))))
+         `(encapsulate
+           nil
+           (with-output
+            ,@(and (not verbosep) '(:off :all)) :on (error)
+            (make-event
+             (make-undefined ',name ',args nil (current-package state) (w state))))
+           (make-event
+            (er-progn
+             ;; Test phase using trans-eval/make-event
+             (test?-phase
+              (parse-defunc ',name ',args (current-package state) (w state)) state)
+             ;; Generate events
+             (defunc-events
+               (parse-defunc ',name ',args (current-package state) (w state))
+               ',d?
+               state)))))))))
 
 (defmacro defunc (name &rest args)
   `(defunc-core ,name nil ,@args))
 
 (defmacro defundc (name &rest args)
   `(defunc-core ,name t ,@args))
-
-#|
-(defmacro defundc (name &rest args)
-  (b* ((verbosep (let ((lst (member :verbose args)))
-                   (and lst (cadr lst))))
-       (verbosep (or verbosep
-                     (let ((lst (member :debug args)))
-                       (and lst (cadr lst))))))
-    `(encapsulate
-      nil
-      (make-event (make-undefined ',name ',args t (current-package state) (w state)))
-      (with-output
-       ,@(and (not verbosep) '(:off :all))
-       :gag-mode ,(not verbosep)
-       :stack :push
-       ;; Generate undef
-       (make-event
-        (er-progn
-         ;; Test phase using trans-eval/make-event
-         (test?-phase
-          (parse-defunc ',name ',args (current-package state) (w state)) state)
-         ;; Generate events
-         (defunc-events
-           (parse-defunc ',name ',args (current-package state) (w state)) t state)))))))
-|#
 
 (include-book "xdoc/top" :dir :system)
 
