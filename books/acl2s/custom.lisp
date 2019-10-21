@@ -280,7 +280,7 @@
 
   ;;CCG events
   (set-termination-method :ccg)
-  (set-ccg-time-limit nil)
+  (set-ccg-time-limit 300)
 
   (dont-print-thanks-message-override-hint)
    
