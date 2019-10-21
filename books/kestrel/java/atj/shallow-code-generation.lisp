@@ -515,34 +515,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-value (value
-                               (jvar-value-base stringp)
-                               (jvar-value-index posp)
                                (pkg-class-names string-string-alistp)
                                (curr-pkg stringp))
-  :returns (mv (block jblockp)
-               (expr jexprp)
-               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+  :returns (expr jexprp)
   :short "Generate a shallowly  embedded ACL2 value."
   :long
   (xdoc::topstring-p
    "For numbers, characters, strings, and symbols,
     we use functions specialized to the shallow embedding.
-    For other values, we use @(tsee atj-gen-value).")
-  (cond ((acl2-numberp value) (mv nil
-                                  (atj-gen-shallow-number value)
-                                  jvar-value-index))
-        ((characterp value) (mv nil
-                                (atj-gen-shallow-char value)
-                                jvar-value-index))
-        ((stringp value) (mv nil
-                             (atj-gen-shallow-string value)
-                             jvar-value-index))
-        ((symbolp value) (mv nil
-                             (atj-gen-shallow-symbol value
-                                                     pkg-class-names
-                                                     curr-pkg)
-                             jvar-value-index))
-        (t (atj-gen-value value jvar-value-base jvar-value-index))))
+    For other values (i.e. @(tsee cons) pair),
+    for now we use @(tsee atj-gen-value-flat).")
+  (cond ((acl2-numberp value) (atj-gen-shallow-number value))
+        ((characterp value) (atj-gen-shallow-char value))
+        ((stringp value) (atj-gen-shallow-string value))
+        ((symbolp value) (atj-gen-shallow-symbol value
+                                                 pkg-class-names
+                                                 curr-pkg))
+        (t (atj-gen-value-flat value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -868,8 +857,6 @@
                                  (then pseudo-termp)
                                  (else pseudo-termp)
                                  (type atj-typep)
-                                 (jvar-value-base stringp)
-                                 (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
                                  (pkg-class-names string-string-alistp)
@@ -880,7 +867,6 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) application."
@@ -928,10 +914,7 @@
       "<a-expr> == NIL ? <c-expr> : <b-expr>"))
     (b* (((mv test-block
               test-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term test
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -941,10 +924,7 @@
                                                        wrld))
          ((mv else-block
               else-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term else
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -954,10 +934,7 @@
                                                        wrld))
          ((mv then-block
               then-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term then
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -976,7 +953,6 @@
                                  then-expr)))
             (mv block
                 expr
-                jvar-value-index
                 jvar-result-index)))
          (jtype (atj-type-to-jtype type))
          ((mv result-locvar-block jvar-result jvar-result-index)
@@ -998,7 +974,6 @@
          (expr (jexpr-name jvar-result)))
       (mv block
           expr
-          jvar-value-index
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -1011,8 +986,6 @@
   (define atj-gen-shallow-orapp ((first pseudo-termp)
                                  (second pseudo-termp)
                                  (type atj-typep)
-                                 (jvar-value-base stringp)
-                                 (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
                                  (pkg-class-names string-string-alistp)
@@ -1023,7 +996,6 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @('or') application."
@@ -1046,10 +1018,7 @@
       "and the Java expression @('<result>')."))
     (b* (((mv first-block
               first-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term first
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1059,10 +1028,7 @@
                                                        wrld))
          ((mv second-block
               second-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term second
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1088,7 +1054,6 @@
          (expr (jexpr-name jvar-result)))
       (mv block
           expr
-          jvar-value-index
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -1100,8 +1065,6 @@
   (define atj-gen-shallow-intvalapp ((arg pseudo-termp)
                                      (src-type atj-typep)
                                      (dst-type atj-typep)
-                                     (jvar-value-base stringp)
-                                     (jvar-value-index posp)
                                      (jvar-result-base stringp)
                                      (jvar-result-index posp)
                                      (pkg-class-names string-string-alistp)
@@ -1111,7 +1074,6 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 (@tsee int-val) application."
@@ -1144,7 +1106,7 @@
        to be examined."))
     (b* (((mv arg & &) (atj-type-unwrap-term arg))
          ((unless arg) ; for termination proof
-          (mv nil (jexpr-name "dummy") jvar-value-index jvar-result-index)))
+          (mv nil (jexpr-name "dummy") jvar-result-index)))
       (if (and (quotep arg)
                (integerp (unquote arg)))
           (b* ((int (unquote-term arg))
@@ -1156,14 +1118,10 @@
                (expr (atj-adapt-expr-to-type expr :jint dst-type)))
             (mv nil
                 (atj-adapt-expr-to-type expr src-type dst-type)
-                jvar-value-index
                 jvar-result-index))
         (b* (((mv arg-block
                   arg-expr
-                  jvar-value-index
                   jvar-result-index) (atj-gen-shallow-term arg
-                                                           jvar-value-base
-                                                           jvar-value-index
                                                            jvar-result-base
                                                            jvar-result-index
                                                            pkg-class-names
@@ -1174,7 +1132,6 @@
              (expr (atj-adapt-expr-to-type arg-expr :integer :jint)))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
-              jvar-value-index
               jvar-result-index))))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -1186,8 +1143,6 @@
                                      (right pseudo-termp)
                                      (src-type atj-typep)
                                      (dst-type atj-typep)
-                                     (jvar-value-base stringp)
-                                     (jvar-value-index posp)
                                      (jvar-result-base stringp)
                                      (jvar-result-index posp)
                                      (pkg-class-names string-string-alistp)
@@ -1197,7 +1152,6 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 application of a function
@@ -1229,10 +1183,7 @@
        (it may be better to handle this in the pretty-printer)."))
     (b* (((mv left-block
               left-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term left
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1242,10 +1193,7 @@
                                                        wrld))
          ((mv right-block
               right-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term right
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1263,7 +1211,6 @@
          (block (append left-block right-block)))
       (mv block
           (atj-adapt-expr-to-type expr src-type dst-type)
-          jvar-value-index
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -1276,8 +1223,6 @@
                                  (args pseudo-term-listp)
                                  (src-type atj-typep)
                                  (dst-type atj-typep)
-                                 (jvar-value-base stringp)
-                                 (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
                                  (pkg-class-names string-string-alistp)
@@ -1288,7 +1233,6 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 function application."
@@ -1338,8 +1282,6 @@
                 (atj-gen-shallow-orapp first
                                        athird
                                        dst-type ; = SRC-TYPE
-                                       jvar-value-base
-                                       jvar-value-index
                                        jvar-result-base
                                        jvar-result-index
                                        pkg-class-names
@@ -1351,8 +1293,6 @@
                                      second
                                      athird
                                      dst-type ; = SRC-TYPE
-                                     jvar-value-base
-                                     jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
                                      pkg-class-names
@@ -1366,8 +1306,6 @@
           (atj-gen-shallow-intvalapp (car args)
                                      src-type
                                      dst-type
-                                     jvar-value-base
-                                     jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
                                      pkg-class-names
@@ -1382,8 +1320,6 @@
                                      (second args)
                                      src-type
                                      dst-type
-                                     jvar-value-base
-                                     jvar-value-index
                                      jvar-result-base
                                      jvar-result-index
                                      pkg-class-names
@@ -1392,10 +1328,7 @@
                                      wrld))
          ((mv arg-blocks
               arg-exprs
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-terms args
-                                                        jvar-value-base
-                                                        jvar-value-index
                                                         jvar-result-base
                                                         jvar-result-index
                                                         pkg-class-names
@@ -1413,19 +1346,15 @@
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv (flatten arg-blocks)
                 expr
-                jvar-value-index
                 jvar-result-index)))
          ((mv lambda-block
               lambda-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-lambda (lambda-formals fn)
                                                          (lambda-body fn)
                                                          arg-blocks
                                                          arg-exprs
                                                          src-type
                                                          dst-type
-                                                         jvar-value-base
-                                                         jvar-value-index
                                                          jvar-result-base
                                                          jvar-result-index
                                                          pkg-class-names
@@ -1435,7 +1364,6 @@
                                                          wrld)))
       (mv lambda-block
           lambda-expr
-          jvar-value-index
           jvar-result-index))
     ;; 2nd component is greater than the one of ATJ-GEN-SHALLOW-LAMBDA
     ;; so that the call of ATJ-GEN-SHALLOW-LAMBDA decreases
@@ -1450,8 +1378,6 @@
                                   (arg-exprs jexpr-listp)
                                   (src-type atj-typep)
                                   (dst-type atj-typep)
-                                  (jvar-value-base stringp)
-                                  (jvar-value-index posp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -1464,7 +1390,6 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 lambda expression,
@@ -1479,10 +1404,7 @@
                                                   arg-exprs))
          ((mv body-block
               body-expr
-              jvar-value-index
               jvar-result-index) (atj-gen-shallow-term body
-                                                       jvar-value-base
-                                                       jvar-value-index
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1492,15 +1414,12 @@
                                                        wrld)))
       (mv (append let-block body-block)
           (atj-adapt-expr-to-type body-expr src-type dst-type)
-          jvar-value-index
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count body) 1))
 
   (define atj-gen-shallow-term ((term pseudo-termp)
-                                (jvar-value-base stringp)
-                                (jvar-value-index posp)
                                 (jvar-result-base stringp)
                                 (jvar-result-index posp)
                                 (pkg-class-names string-string-alistp)
@@ -1511,7 +1430,6 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 term."
@@ -1535,29 +1453,24 @@
        We wrap the resulting expression with a Java conversion, if needed."))
     (b* (((mv term src-type dst-type) (atj-type-unwrap-term term))
          ((unless term) ; for termination proof
-          (mv nil (jexpr-name "dummy") jvar-value-index jvar-result-index))
+          (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))
           (b* (((mv var &) (atj-unmark-var term))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-            (mv nil expr jvar-value-index jvar-result-index)))
+            (mv nil expr jvar-result-index)))
          ((when (fquotep term))
           (b* ((value (unquote-term term))
-               ((mv block expr jvar-value-index)
-                (atj-gen-shallow-value value
-                                       jvar-value-base
-                                       jvar-value-index
-                                       pkg-class-names
-                                       curr-pkg))
+               (expr (atj-gen-shallow-value value
+                                            pkg-class-names
+                                            curr-pkg))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-            (mv block expr jvar-value-index jvar-result-index))))
+            (mv nil expr jvar-result-index))))
       (atj-gen-shallow-fnapp (ffn-symb term)
                              (fargs term)
                              src-type
                              dst-type
-                             jvar-value-base
-                             jvar-value-index
                              jvar-result-base
                              jvar-result-index
                              pkg-class-names
@@ -1568,8 +1481,6 @@
     :measure (two-nats-measure (acl2-count term) 0))
 
   (define atj-gen-shallow-terms ((terms pseudo-term-listp)
-                                 (jvar-value-base stringp)
-                                 (jvar-value-index posp)
                                  (jvar-result-base stringp)
                                  (jvar-result-index posp)
                                  (pkg-class-names string-string-alistp)
@@ -1580,18 +1491,14 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (blocks jblock-listp)
                  (expr jexpr-listp)
-                 (new-jvar-value-index "A @(tsee posp).")
                  (new-jvar-result-index "A @(tsee posp)."))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
     (if (endp terms)
-        (mv nil nil jvar-value-index jvar-result-index)
+        (mv nil nil jvar-result-index)
       (b* (((mv first-block
                 first-expr
-                jvar-value-index
                 jvar-result-index) (atj-gen-shallow-term (car terms)
-                                                         jvar-value-base
-                                                         jvar-value-index
                                                          jvar-result-base
                                                          jvar-result-index
                                                          pkg-class-names
@@ -1601,10 +1508,7 @@
                                                          wrld))
            ((mv rest-blocks
                 rest-exprs
-                jvar-value-index
                 jvar-result-index) (atj-gen-shallow-terms (cdr terms)
-                                                          jvar-value-base
-                                                          jvar-value-index
                                                           jvar-result-base
                                                           jvar-result-index
                                                           pkg-class-names
@@ -1614,7 +1518,6 @@
                                                           wrld)))
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
-            jvar-value-index
             jvar-result-index)))
     :measure (two-nats-measure (acl2-count terms) 0)))
 
@@ -1868,9 +1771,8 @@
        ((mv formals &) (atj-type-unannotate-vars formals))
        (method-params (atj-gen-paramlist (symbol-name-lst formals)
                                          (atj-types-to-jtypes in-types)))
-       ((mv body-block body-expr & &)
+       ((mv body-block body-expr &)
         (atj-gen-shallow-term body
-                              "$value" 1
                               "$result" 1
                               pkg-class-names
                               fn-method-names
