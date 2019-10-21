@@ -72,6 +72,8 @@
                          known-packages
                          lambda-body
                          lambda-formals
+                         logext
+                         loghead
                          logic-fns-with-raw-code
                          lower-case-p
                          make-lambda
@@ -102,7 +104,9 @@
                          remove-unused-vars
                          sbyte16
                          sbyte32
+                         sbyte32p
                          sbyte64
+                         sbyte64p
                          sbyte8
                          sort-symbol-listp
                          str-fix
