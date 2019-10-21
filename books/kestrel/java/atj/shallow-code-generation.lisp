@@ -85,7 +85,8 @@
      in the future.
      The index for the next @(tsee cons) pair is stored in this record.
      The use of the indices is explained in
-     @(tsee atj-gen-shallow-cons-field-name)."))
+     @(tsee atj-gen-shallow-cons-field-name).
+     The alist has unique keys, by construction."))
   ((integers (and (integer-listp integers)
                   (no-duplicatesp integers)))
    (rationals (and (rational-listp rationals)
@@ -453,6 +454,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-cons-field-name ((cons consp) (qpairs cons-pos-alistp))
+  :returns (name stringp)
+  :short "Generate the name of the Java field
+          for an ACL2 quoted @(tsee cons) pair."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When this function is called,
+     the @(tsee cons) pair in question has already been collected
+     in an @(tsee atj-constants) record,
+     whose alist from @(tsee cons) pairs to indices
+     is passed to this function.
+     We prepend @('$P_') (for `pair')
+     to the index associated to the @(tsee cons) pair in the alist.")
+   (xdoc::p
+    "Since @(tsee cons) pairs may be potentially large (unlike atoms),
+     there is no easy way to generate a good field name based on the value,
+     unlike in @(tsee atj-gen-shallow-number-field-name) and others.
+     Thus, as we collect @(tsee cons) pairs from terms,
+     we assign unique indices to them, stored in the alist,
+     and we use the index as the name for the field
+     that contains the associated @(tsee cons) pair."))
+  (b* ((cons+index (assoc-equal cons qpairs))
+       ((unless (consp cons+index))
+        (raise "Internal error: no index for CONS pair ~x0." cons)
+        "")
+       (index (cdr cons+index)))
+    (str::cat "$P_" (str::natstr index))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-cons-field ((cons consp) (qpairs cons-pos-alistp))
+  :returns (field jfieldp)
+  :short "Generate a Java field for an ACL2 quoted @(tsee cons) pair."
+  :long
+  (xdoc::topstring-p
+   "This is a private static final field with an initializer,
+    which constructs the @(tsee cons) value.")
+  (b* ((name (atj-gen-shallow-cons-field-name cons qpairs))
+       (init (atj-gen-value-flat cons))
+       (type *aij-type-cons*))
+    (make-jfield :access (jaccess-private)
+                 :static? t
+                 :final? t
+                 :transient? nil
+                 :volatile? nil
+                 :type type
+                 :name name
+                 :init init)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-cons-fields ((conses alistp) (qpairs cons-pos-alistp))
+  :returns (fields jfield-listp)
+  :short "Lift @(tsee atj-gen-shallow-cons-field) to lists."
+  :long
+  (xdoc::topstring-p
+   "A true list of @(tsee consp) pairs is actually an @(tsee alistp),
+    so we use that as the type of the first argument.
+    However, it is treated as a list, not as an alist.")
+  (cond ((endp conses) nil)
+        (t (cons (atj-gen-shallow-cons-field (car conses) qpairs)
+                 (atj-gen-shallow-cons-fields (cdr conses) qpairs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-number ((number acl2-numberp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 quoted number."
@@ -514,7 +581,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-cons ((cons consp) (qpairs cons-pos-alistp))
+  :returns (expr jexprp)
+  :short "Generate a shallowly embedded ACL2 quoted @(tsee cons) pair."
+  :long
+  (xdoc::topstring-p
+   "This is just a reference to the field for the quoted @(tsee cons) pair.")
+  (jexpr-name (atj-gen-shallow-cons-field-name cons qpairs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-value (value
+                               (qpairs cons-pos-alistp)
                                (pkg-class-names string-string-alistp)
                                (curr-pkg stringp))
   :returns (expr jexprp)
@@ -531,7 +609,9 @@
         ((symbolp value) (atj-gen-shallow-symbol value
                                                  pkg-class-names
                                                  curr-pkg))
-        (t (atj-gen-value-flat value))))
+        ((consp value) (atj-gen-shallow-cons value qpairs))
+        (t (prog2$ (raise "Internal error: unrecognized value ~x0." value)
+                   (jexpr-name "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -862,6 +942,7 @@
                                  (pkg-class-names string-string-alistp)
                                  (fn-method-names symbol-string-alistp)
                                  (curr-pkg stringp)
+                                 (qpairs cons-pos-alistp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
@@ -920,6 +1001,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        guards$
                                                        wrld))
          ((mv else-block
@@ -930,6 +1012,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        guards$
                                                        wrld))
          ((mv then-block
@@ -940,6 +1023,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        guards$
                                                        wrld))
          ((when (and *atj-gen-cond-exprs*
@@ -991,6 +1075,7 @@
                                  (pkg-class-names string-string-alistp)
                                  (fn-method-names symbol-string-alistp)
                                  (curr-pkg stringp)
+                                 (qpairs cons-pos-alistp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
@@ -1024,6 +1109,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        guards$
                                                        wrld))
          ((mv second-block
@@ -1034,6 +1120,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        guards$
                                                        wrld))
          (jtype (atj-type-to-jtype type))
@@ -1070,6 +1157,7 @@
                                      (pkg-class-names string-string-alistp)
                                      (fn-method-names symbol-string-alistp)
                                      (curr-pkg stringp)
+                                     (qpairs cons-pos-alistp)
                                      (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
@@ -1127,6 +1215,7 @@
                                                            pkg-class-names
                                                            fn-method-names
                                                            curr-pkg
+                                                           qpairs
                                                            t ; GUARDS$
                                                            wrld))
              (expr (atj-adapt-expr-to-type arg-expr :integer :jint)))
@@ -1148,6 +1237,7 @@
                                      (pkg-class-names string-string-alistp)
                                      (fn-method-names symbol-string-alistp)
                                      (curr-pkg stringp)
+                                     (qpairs cons-pos-alistp)
                                      (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
@@ -1189,6 +1279,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        t ; GUARDS$
                                                        wrld))
          ((mv right-block
@@ -1199,6 +1290,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        t ; GUARDS$
                                                        wrld))
          (binop (case fn
@@ -1228,6 +1320,7 @@
                                  (pkg-class-names string-string-alistp)
                                  (fn-method-names symbol-string-alistp)
                                  (curr-pkg stringp)
+                                 (qpairs cons-pos-alistp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
@@ -1287,6 +1380,7 @@
                                        pkg-class-names
                                        fn-method-names
                                        curr-pkg
+                                       qpairs
                                        guards$
                                        wrld)
               (atj-gen-shallow-ifapp first
@@ -1298,6 +1392,7 @@
                                      pkg-class-names
                                      fn-method-names
                                      curr-pkg
+                                     qpairs
                                      guards$
                                      wrld))))
          ((when (and guards$
@@ -1311,6 +1406,7 @@
                                      pkg-class-names
                                      fn-method-names
                                      curr-pkg
+                                     qpairs
                                      wrld))
          ((when (and guards$
                      (member-eq fn *atj-primitive-binops*)
@@ -1325,6 +1421,7 @@
                                      pkg-class-names
                                      fn-method-names
                                      curr-pkg
+                                     qpairs
                                      wrld))
          ((mv arg-blocks
               arg-exprs
@@ -1334,6 +1431,7 @@
                                                         pkg-class-names
                                                         fn-method-names
                                                         curr-pkg
+                                                        qpairs
                                                         guards$
                                                         wrld))
          ((when (symbolp fn))
@@ -1360,6 +1458,7 @@
                                                          pkg-class-names
                                                          fn-method-names
                                                          curr-pkg
+                                                         qpairs
                                                          guards$
                                                          wrld)))
       (mv lambda-block
@@ -1383,6 +1482,7 @@
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :guard (and (int= (len arg-blocks) (len formals))
@@ -1410,6 +1510,7 @@
                                                        pkg-class-names
                                                        fn-method-names
                                                        curr-pkg
+                                                       qpairs
                                                        guards$
                                                        wrld)))
       (mv (append let-block body-block)
@@ -1425,6 +1526,7 @@
                                 (pkg-class-names string-string-alistp)
                                 (fn-method-names symbol-string-alistp)
                                 (curr-pkg stringp)
+                                (qpairs cons-pos-alistp)
                                 (guards$ booleanp)
                                 (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
@@ -1463,6 +1565,7 @@
          ((when (fquotep term))
           (b* ((value (unquote-term term))
                (expr (atj-gen-shallow-value value
+                                            qpairs
                                             pkg-class-names
                                             curr-pkg))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
@@ -1476,6 +1579,7 @@
                              pkg-class-names
                              fn-method-names
                              curr-pkg
+                             qpairs
                              guards$
                              wrld))
     :measure (two-nats-measure (acl2-count term) 0))
@@ -1486,6 +1590,7 @@
                                  (pkg-class-names string-string-alistp)
                                  (fn-method-names symbol-string-alistp)
                                  (curr-pkg stringp)
+                                 (qpairs cons-pos-alistp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
@@ -1504,6 +1609,7 @@
                                                          pkg-class-names
                                                          fn-method-names
                                                          curr-pkg
+                                                         qpairs
                                                          guards$
                                                          wrld))
            ((mv rest-blocks
@@ -1514,6 +1620,7 @@
                                                           pkg-class-names
                                                           fn-method-names
                                                           curr-pkg
+                                                          qpairs
                                                           guards$
                                                           wrld)))
         (mv (cons first-block rest-blocks)
@@ -1777,6 +1884,7 @@
                               pkg-class-names
                               fn-method-names
                               curr-pkg
+                              (atj-qconstants->pairs qconsts)
                               guards$
                               wrld))
        (method-body (append body-block
@@ -2432,12 +2540,14 @@
                                                    qconsts.chars)))
        (qstring-fields (atj-gen-shallow-string-fields (mergesort
                                                        qconsts.strings)))
-       ;; QCONSTS.PAIRS is ignored for now
+       (qcons-fields (atj-gen-shallow-cons-fields (strip-cars qconsts.pairs)
+                                                  qconsts.pairs))
        (all-fields (append qinteger-fields
                            qrational-fields
                            qnumber-fields
                            qchar-fields
                            qstring-fields
+                           qcons-fields
                            (list init-field)))
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements all-fields)
