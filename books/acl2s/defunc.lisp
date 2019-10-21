@@ -2217,7 +2217,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                    (and lst (cadr lst))))
        (verbosep (or verbosep
                      (let ((lst (member :debug args)))
-                       (and lst (cadr lst))))))
+                       (and lst (cadr lst)))))
+       (timeout-arg (let ((lst (member :timeout args)))
+                      (and lst (cadr lst)))))
     `(with-output
       ,@(and (not verbosep) '(:off :all))
       :gag-mode ,(not verbosep)
@@ -2227,10 +2229,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (d? ',d?)
             (args ',args)
             (verbosep ',verbosep)
+            (timeout-arg ',timeout-arg)
             (ccg-timeout1 (get-ccg-time-limit (w state)))
             (ccg-timeout (or ccg-timeout1 10000))
             (defunc-timeout (get-defunc-timeout))
-            (defunc-timeout (* 3/4 (or defunc-timeout 10000)))
+            (defunc-timeout (or timeout-arg (* 3/4 (or defunc-timeout 10000))))
             (timeout (min ccg-timeout defunc-timeout)))
          `(encapsulate
            nil
