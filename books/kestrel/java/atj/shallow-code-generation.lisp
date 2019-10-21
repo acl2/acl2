@@ -463,7 +463,7 @@
    (xdoc::p
     "When this function is called,
      the @(tsee cons) pair in question has already been collected
-     in an @(tsee atj-constants) record,
+     in an @(tsee atj-qconstants) record,
      whose alist from @(tsee cons) pairs to indices
      is passed to this function.
      We prepend @('$P_') (for `pair')
