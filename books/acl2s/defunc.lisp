@@ -1760,6 +1760,18 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (xargs-decl (acl2::collect-xargs-into-single-declare xargs-decls '())))
     (append (set-difference-equal decls xargs-decls) (list xargs-decl))))
 
+(defun fix-termination-xarg-decls (decl)
+  "remove :time-limit xargs if the :termination-method is :measure."
+  (b* ((xargs-decl (car decl))
+       (decls (cdadr xargs-decl))
+       ((unless decls) decl)
+       (time-limit (member :time-limit decls))
+       (termination-method (member :termination-method decls))
+       ((when (and time-limit
+                   (eql (second termination-method) :measure)))
+        `((declare (xargs ,@(acl2::remove-keyword :time-limit decls))))))
+    decl))
+
 (deffilter filter-strings (xs) stringp)
 
 (table defunc-defaults-table nil
@@ -1898,6 +1910,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (doc-strings (and (consp docs) (list (car docs))))
        (decls (set-difference-equal decls/docs docs))
        (decls (squeeze-multiple-xarg-decls decls))
+       (decls (fix-termination-xarg-decls decls))
        (decls (append doc-strings decls)) ;put doc-string at the front of decls
 
        (program-mode-p (program-mode-p name formals body decls wrld))
