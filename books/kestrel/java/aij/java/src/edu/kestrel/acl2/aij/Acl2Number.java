@@ -440,22 +440,6 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
-     * Returns a number with the given real and imaginary parts.
-     * If the imaginary part is 0, the result is a rational,
-     * according to the rule of complex canonicalization in Common Lisp.
-     *
-     * @param realPart      The real part of the number.
-     * @param imaginaryPart The imaginary part of the number.
-     * @return The number.
-     * @throws IllegalArgumentException If {@code realpart} or
-     *                                  {@code imaginaryPart} is {@code null}.
-     */
-    public static Acl2Number make(Acl2Integer realPart,
-                                  Acl2Integer imaginaryPart) {
-        return Acl2Number.make(realPart, imaginaryPart);
-    }
-
-    /**
      * Returns the real part of this number.
      * This is consistent with the {@code realpart} ACL2 function.
      *
