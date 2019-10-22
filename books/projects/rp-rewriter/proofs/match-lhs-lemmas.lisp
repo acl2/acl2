@@ -68,19 +68,15 @@
     ;; for guard of rp-rw-rule-aux and rp-rw
     (defthm return-val-of-rp-match-lhs-context
       (implies (and (context-syntaxp context)
-                    (pseudo-termp2 rule-lhs)
-                    (rp-syntaxp term)
-                    (all-falist-consistent term)
-                    (pseudo-termp2 term))
+                    (rp-termp rule-lhs)
+                    (rp-termp term))
                (context-syntaxp (mv-nth 0 (RP-MATCH-LHS term rule-lhs context
                                                         acc-bindings))))
       :flag rp-match-lhs)
     (defthm return-val-of-rp-match-lhs-context-subterms
       (implies (and (context-syntaxp context)
-                    (all-falist-consistent-lst subterms)
-                    (pseudo-term-listp2 sublhs)
-                    (rp-syntaxp-lst subterms)
-                    (pseudo-term-listp2 subterms))
+                    (rp-term-listp sublhs)
+                    (rp-term-listp subterms))
                (context-syntaxp (mv-nth 0 (rp-match-lhs-subterms subterms sublhs context
                                                                  acc-bindings))))
       :flag rp-match-lhs-subterms)))
@@ -88,15 +84,15 @@
 (defthm-rp-match-lhs
   (defthm bindings-alistp-rp-match-lhs
     (implies (and (bindings-alistp acc-bindings)
-                  (pseudo-termp2 rule-lhs)
-                  (pseudo-termp2 term))
+                  (rp-termp rule-lhs)
+                  (rp-termp term))
              (bindings-alistp (mv-nth 1 (rp-match-lhs term rule-lhs context
                                                       acc-bindings))))
     :flag rp-match-lhs)
   (defthm bindings-alistp-rp-match-lhs-subterms
     (implies (and (bindings-alistp acc-bindings)
-                  (pseudo-term-listp2 subterms)
-                  (pseudo-term-listp2 sublhs))
+                  (rp-term-listp subterms)
+                  (rp-term-listp sublhs))
              (bindings-alistp
               (mv-nth 1 (rp-match-lhs-subterms subterms
                                                sublhs context acc-bindings))))
@@ -171,8 +167,8 @@
    (defthm-rp-match-lhs
      (defthm rp-match-lhs-binds-all
        (implies
-        (and (pseudo-termp2 term)
-             (pseudo-termp2 rule-lhs)
+        (and (rp-termp term)
+             (rp-termp rule-lhs)
              (bindings-alistp acc-bindings)
              (equal
               res-bindings
@@ -185,8 +181,8 @@
 
      (defthm rp-match-lhs-subterms-binds-all
        (implies
-        (and (pseudo-term-listp2 subterms)
-             (pseudo-term-listp2 sublhs)
+        (and (rp-term-listp subterms)
+             (rp-term-listp sublhs)
              (bindings-alistp acc-bindings)
              (equal
               res-bindings
@@ -366,29 +362,106 @@
                            context
                            acc-bindings))
                 a))
-      :flag rp-match-lhs-subterms)))
+      :flag rp-match-lhs-subterms)
+    :hints (("Goal"
+             :in-theory (e/d ()
+                             ((:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                              (:DEFINITION ACL2::APPLY$-BADGEP)
+                              (:DEFINITION RP-TERMP)
+                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                              (:DEFINITION TRUE-LISTP)
+                              (:REWRITE VALID-SC-CONS)
+                              (:DEFINITION SUBSETP-EQUAL)
+                              (:DEFINITION MEMBER-EQUAL)
+                              (:DEFINITION FALIST-CONSISTENT)
+                              (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                              (:REWRITE NOT-INCLUDE-RP)
+                              (:DEFINITION FALIST-CONSISTENT-AUX)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:REWRITE
+                               ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)))))))
 
 (local
  (in-theory (disable context-syntaxp)))
 
 (defthm return-val-of-rp-rw-rule-aux-context
   (implies (and (context-syntaxp context)
-                (rp-syntaxp term)
                 (rule-list-syntaxp rules-for-term)
-                (all-falist-consistent term)
-                (pseudo-termp2 term))
+                (rp-termp term))
            (context-syntaxp (mv-nth 3 (rp-rw-rule-aux term rules-for-term
-                                                      context iff-flg state)))))
+                                                      context iff-flg state))))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ((:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION RP-TERMP)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION TRUE-LISTP)
+                            (:DEFINITION ALWAYS$)
+                            (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                            (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION TRUE-LIST-LISTP)
+                            (:REWRITE
+                             ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                            (:DEFINITION FALIST-CONSISTENT)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP))))))
+
+(defthm return-val-of-rp-rw-rule-aux-context-RP-TERM-LISTP
+  (implies (and (RP-TERM-LISTP context)
+                (rule-list-syntaxp rules-for-term)
+                (rp-termp term))
+           (RP-TERM-LISTP (mv-nth 3 (rp-rw-rule-aux term rules-for-term
+                                                    context iff-flg state))))
+  :hints (("Goal"
+           :use ((:instance return-val-of-rp-rw-rule-aux-context))
+           :in-theory '(context-syntaxp))))
 
 (defthm return-val-of-rp-rw-rule-aux-bindings
   (implies (and (rule-list-syntaxp rules-for-term)
-                (pseudo-termp2 term))
+                (rp-termp term))
            (bindings-alistp (mv-nth 2 (rp-rw-rule-aux term rules-for-term
-                                                      context iff-flg state)))))
+                                                      context iff-flg state))))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ((:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION RP-TERMP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:DEFINITION TRUE-LISTP)
+                            (:DEFINITION ALWAYS$)
+                            (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                            (:DEFINITION VALID-SC)
+                            (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                            (:REWRITE
+                             ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                            (:DEFINITION FALIST-CONSISTENT))))))
 
 (defthm return-val-of-rp-rw-rule-aux-bindings-alistp
   (alistp (mv-nth 2 (rp-rw-rule-aux term rules-for-term
-                                    context iff-flg state))))
+                                    context iff-flg state)))
+  :hints (("Goal"
+           :in-theory (e/d () ((:DEFINITION SUBSETP-EQUAL)
+                               (:DEFINITION VALID-RULEP)
+                               (:DEFINITION RP-TERMP)
+                               (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                               (:DEFINITION MEMBER-EQUAL)
+                               (:DEFINITION TRUE-LISTP)
+                               (:DEFINITION ALWAYS$)
+                               (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                               (:DEFINITION VALID-RULEP-SK)
+                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                               (:DEFINITION VALID-SC)
+                               (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                               (:REWRITE
+                                ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                               (:DEFINITION FALIST-CONSISTENT))))))
 
 (defthm return-val-of-rp-rw-rule-aux-valid-rule
   (implies (and (rule-list-syntaxp rules-for-term)
@@ -404,10 +477,10 @@
                                (:DEFINITION SYMBOL-LISTP)
                                (:TYPE-PRESCRIPTION INCLUDE-FNC)
                                (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA2)
-                               (:TYPE-PRESCRIPTION PSEUDO-TERMP2)
+                               (:TYPE-PRESCRIPTION RP-TERMP)
                                (:TYPE-PRESCRIPTION SUBSETP-EQUAL)
                                (:REWRITE
-                                PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                                RP-TERM-LISTP-IS-TRUE-LISTP)
                                (:DEFINITION RP-MATCH-LHS)
                                (:DEFINITION RP-DOES-LHS-MATCH)
                                (:META ACL2::MV-NTH-CONS-META)
@@ -420,7 +493,7 @@
                                VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP
                                (:DEFINITION MEMBER-EQUAL)
                                (:TYPE-PRESCRIPTION MEMBER-EQUAL)
-                               (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP2)
+                               (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                                (:TYPE-PRESCRIPTION SHOULD-TERM-BE-IN-CONS$INLINE)))))
 
 (defthm return-val-of-rp-rw-rule-aux-rest-rules
@@ -464,7 +537,13 @@
              :in-theory (e/d (RP-MATCH-LHS-RETURNS-VALID-SC-BINDINGS
                               rp-rw-rule-aux)
                              (VALID-SC-BINDINGS
-
+                              (:REWRITE
+                               VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                              (:DEFINITION VALID-RULESP)
+                              (:DEFINITION VALID-RULEP)
+                              (:DEFINITION VALID-RULEP-SK)
+                              (:DEFINITION VALID-RULEP-SK-BODY)
+                              (:DEFINITION VALID-SC)
                               RP-DOES-LHS-MATCH
                               rule-syntaxp))))))
 
@@ -479,7 +558,7 @@
             :in-theory (e/d (rule-syntaxp)
                             (rp-rw-rule-aux))))))
 
-(encapsulate
+#|(encapsulate
   nil
 
   (local
@@ -487,7 +566,7 @@
      (implies (falist-consistent term)
               (quotep (cadr term)))))
 
-  (local
+#|  (local
    (defthm lemma1
      (implies (and (all-falist-consistent term)
                    (not (equal (car term) 'quote)))
@@ -501,7 +580,7 @@
                                is-falist
                                all-falist-consistent)
                               (FALIST-CONSISTENT
-                               ))))))
+                               ))))))||#
 
   (defthm-rp-match-lhs
     (defthm valid-falist-rp-match-lhs
@@ -526,10 +605,10 @@
               (mv-nth 2 (rp-rw-rule-aux term rules-for-term
                                         context iff-flg state))))
     :hints (("Goal" :in-theory (e/d nil (ALL-FALIST-CONSISTENT-BINDINGS
-                                         all-falist-consistent))))))
+                                         all-falist-consistent))))))||#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate
+#|(encapsulate
   nil
 
   (defthm-rp-match-lhs
@@ -561,7 +640,7 @@
                                      rp-rw-rule-aux
                                      valid-rulesp)
                                     (rp-syntaxp-bindings
-                                     VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP))))))
+                                     VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP))))))||#
 
 (defthm rp-rw-rule-aux-does-not-return-rule-with-iff-flg-when-iff-flg=nil
   (implies
@@ -595,7 +674,17 @@
              :in-theory (e/d (is-rp
                               ex-from-rp
                               context-from-rp)
-                             (EX-FROM-RP-LEMMA1)))))
+                             (EX-FROM-RP-LEMMA1
+                              (:DEFINITION RP-TERMP)
+                              (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+                              (:REWRITE VALID-SC-CONS)
+                              (:DEFINITION INCLUDE-FNC)
+                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                              (:REWRITE VALID-SC-CADR)
+                              (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                              (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR))))))
 
   (local
    (defthm lemma1
@@ -609,7 +698,7 @@
                                is-rp) ())))))
   (local
    (defthm lemma2
-     (implies (rp-syntaxp term)
+     (implies (rp-termp term)
               (NOT (EQUAL (CAR (EX-FROM-RP TERM)) 'RP)))
      :hints (("Goal"
               :in-theory (e/d (is-rp ex-from-rp) ())))))
@@ -618,7 +707,7 @@
     (defthm valid-sc-rp-context-from-rp-match-lhs
       (implies
        (and (valid-sc term a)
-            (rp-syntaxp term)
+            (rp-termp term)
             (not (include-fnc rule-lhs 'if))
             (valid-sc-subterms context a))
        (valid-sc-subterms
@@ -629,7 +718,7 @@
     (defthm valid-sc-rp-context-from-rp-match-lhs-subterms
       (implies
        (and (valid-sc-subterms subterms a)
-            (rp-syntaxp-lst subterms)
+            (rp-term-listp subterms)
             (not (include-fnc-subterms sublhs 'if))
             (valid-sc-subterms context a))
        (valid-sc-subterms
@@ -645,14 +734,27 @@
     (implies (and (valid-sc term a)
                   (valid-sc-subterms context a)
                   (rule-list-syntaxp rules-for-term)
-                  (rp-syntaxp term))
+                  (rp-termp term))
              (valid-sc-subterms
               (mv-nth 3
                       (rp-rw-rule-aux term rules-for-term context iff-flg state))
               a))
     :hints (("Goal"
              :in-theory (e/d () (;RULE-SYNTAXP
-                                 VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP ))))))
+                                 VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP
+                                 (:DEFINITION SUBSETP-EQUAL)
+                                 (:DEFINITION NO-FREE-VARIABLEP)
+                                 (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                                 (:DEFINITION MEMBER-EQUAL)
+                                 (:DEFINITION TRUE-LISTP)
+                                 (:DEFINITION ALWAYS$)
+                                 (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                                 (:DEFINITION RP-TERMP)
+                                 (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                                 (:REWRITE
+                                  ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                                 (:DEFINITION TRUE-LIST-LISTP)
+                                 (:DEFINITION ACL2::APPLY$-BADGEP)))))))
 
 (encapsulate
   nil
@@ -668,14 +770,20 @@
 
   (defthm eval-and-all-context-from-rp
     (implies (and (valid-sc term a)
-                  (rp-syntaxp term)
+                  (rp-termp term)
                   (eval-and-all context a))
              (eval-and-all (context-from-rp term context) a))
     :hints (("Goal"
              :in-theory (e/d (eval-and-all
                               is-rp
                               context-from-rp)
-                             (ex-from-rp-lemma1)))))
+                             (ex-from-rp-lemma1
+
+                              (:DEFINITION ACL2::APPLY$-BADGEP)
+                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                              (:DEFINITION RP-TERMP))))))
 
   (local
    (defthm lemma3
@@ -690,7 +798,7 @@
 
   (local
    (defthm lemma4
-     (implies (rp-syntaxp term)
+     (implies (rp-termp term)
               (NOT (EQUAL (CAR (EX-FROM-RP TERM)) 'RP)))
      :hints (("Goal"
               :in-theory (e/d (is-rp ex-from-rp) ())))))
@@ -699,9 +807,8 @@
 
     (defthm rp-match-lhs-returns-valid-context
       (implies
-       (and (pseudo-termp2 term)
-            (rp-syntaxp term)
-            (pseudo-termp2 rule-lhs)
+       (and (rp-termp term)
+            (rp-termp rule-lhs)
             (eval-and-all context a)
             (valid-sc term a)
             (not (include-fnc rule-lhs 'if)))
@@ -712,20 +819,37 @@
 
     (defthm rp-match-lhs-subterms-returns-valid-context
       (implies
-       (and (pseudo-term-listp2 subterms)
-            (pseudo-term-listp2 sublhs)
-            (rp-syntaxp-lst subterms)
+       (and (rp-term-listp subterms)
+            (rp-term-listp sublhs)
+
             (eval-and-all context a)
             (valid-sc-subterms subterms a)
             (not (include-fnc-subterms sublhs 'if)))
        (eval-and-all (rp-context-from
                       (rp-match-lhs-subterms subterms sublhs context acc-bindings))
                      a))
-      :flag rp-match-lhs-subterms))
+      :flag rp-match-lhs-subterms)
+    :hints (("Goal"
+             :in-theory (e/d ()
+                             ((:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+
+                              (:DEFINITION ACL2::APPLY$-BADGEP)
+                              (:REWRITE LEMMA1)
+                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                              (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                              (:DEFINITION TRUE-LISTP)
+                              (:REWRITE VALID-SC-CONS)
+                              (:REWRITE NOT-INCLUDE-RP)
+                              (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:DEFINITION FALIST-CONSISTENT)
+                              (:DEFINITION FALIST-CONSISTENT-AUX)
+                              (:DEFINITION SUBSETP-EQUAL))))))
 
   (defthm rp-rw-rule-aux-returns-valid-context
-    (implies (and (pseudo-termp2 term)
-                  (rp-syntaxp term)
+    (implies (and (rp-termp term)
+
                   (rule-list-syntaxp rules-for-term)
                   (eval-and-all context a)
                   (valid-sc term a))
@@ -736,6 +860,23 @@
                                     (rp-iff-flag
                                      VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP
                                      rp-lhs
+                                     (:DEFINITION SUBSETP-EQUAL)
+                                     (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                                     (:DEFINITION TRUE-LISTP)
+                                     (:DEFINITION MEMBER-EQUAL)
+                                     (:DEFINITION ALWAYS$)
+                                     (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                                     (:DEFINITION RP-TERMP)
+                                     (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                                     (:REWRITE
+                                      ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                                     (:DEFINITION TRUE-LIST-LISTP)
+                                     (:DEFINITION ACL2::APPLY$-BADGEP)
+                                     (:DEFINITION FALIST-CONSISTENT)
+                                     (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
+                                     (:REWRITE ACL2::APPLY$-PRIMITIVE)
+                                     (:META ACL2::APPLY$-PRIM-META-FN-CORRECT)
+                                     (:DEFINITION FALIST-CONSISTENT-AUX)
                                      rp-does-lhs-match
                                      rp-match-lhs))))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -822,7 +963,15 @@
   nil
   (local
    (in-theory (e/d (bind-bindings-aux
-                    put-term-in-cons) ())))
+                    put-term-in-cons)
+                   ((:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
+                    (:REWRITE ACL2::O-P-O-INFP-CAR)
+                    (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                    (:DEFINITION ACL2::APPLY$-BADGEP)
+                    (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                    (:DEFINITION SUBSETP-EQUAL)
+                    (:DEFINITION MEMBER-EQUAL)
+                    (:REWRITE EX-FROM-SYNP-LEMMA1)))))
 
   (local
    (defthm lemma1
@@ -923,7 +1072,7 @@
          (append acc-bindings a))
          rp-evl-term1-a)||#
          (all-vars-bound term acc-bindings)
-         (pseudo-termp2 term)
+         (rp-termp term)
          (symbolp rule-lhs)
          rule-lhs)
         (equal
@@ -943,7 +1092,7 @@
          (append acc-bindings a))
          rp-evl-term1-a-subterms)||#
          (all-vars-bound-subterms subterms acc-bindings)
-         (pseudo-term-listp2 subterms)
+         (rp-term-listp subterms)
          (symbolp rule-lhs)
          rule-lhs)
         (equal
@@ -966,7 +1115,7 @@
                      (append acc-bindings a))
              rp-evl-term1-a)
       (all-vars-bound term acc-bindings)
-      (pseudo-termp2 term)
+      (rp-termp term)
       (symbolp rule-lhs)
       rule-lhs)
      (equal
@@ -977,32 +1126,6 @@
        rp-evl-term1-a)
       t)))
 
-  #|(skip-proofs
-  (local
-  (defthm lemma5-lemma1
-  (IMPLIES (AND
-  (NOT (CONSP (ASSOC-EQUAL RULE-LHS ACC-BINDINGS)))
-  (EQUAL
-  (RP-EVL term (APPEND (BIND-BINDINGS-AUX ACC-BINDINGS A)
-  A))
-  rp-evl-term1-a)
-  (ALL-VARS-BOUND TERM ACC-BINDINGS)
-  (PSEUDO-TERMP2 TERM)
-  (SYMBOLP RULE-LHS)
-  RULE-LHS)
-  (equal
-  (EQUAL
-  (RP-EVL TERM
-  (CONS (CONS RULE-LHS val)
-  (APPEND (BIND-BINDINGS-AUX ACC-BINDINGS A)
-  A)))
-  rp-evl-term1-a)
-  t))
-  :otf-flg t
-  :hints (("Goal"
-  ;;:cases ((equal rule-lhs1 rule-lhs))
-  :in-theory (e/d () ()))))))||#
-
   (local
    (defthm-rp-match-lhs
      (defthm lemma5-term
@@ -1010,9 +1133,9 @@
         (and (equal (rp-evl rule-lhs1 (bind-bindings acc-bindings a))
                     (rp-evl term1 a))
              (all-vars-bound rule-lhs1 acc-bindings)
-             (pseudo-termp2 rule-lhs1)
-             (pseudo-termp2 term)
-             (pseudo-termp2 rule-lhs)
+             (rp-termp rule-lhs1)
+             (rp-termp term)
+             (rp-termp rule-lhs)
              (bindings-alistp acc-bindings)
              (mv-nth 2 (rp-match-lhs term
                                      rule-lhs
@@ -1034,9 +1157,9 @@
         (and (equal (rp-evl rule-lhs1 (bind-bindings acc-bindings a))
                     (rp-evl term1 a))
              (bindings-alistp acc-bindings)
-             (pseudo-termp2 rule-lhs1)
-             (pseudo-term-listp2 subterms)
-             (pseudo-term-listp2 sublhs)
+             (rp-termp rule-lhs1)
+             (rp-term-listp subterms)
+             (rp-term-listp sublhs)
              (all-vars-bound rule-lhs1 acc-bindings)
              (mv-nth 2 (rp-match-lhs-subterms subterms
                                               sublhs
@@ -1064,8 +1187,8 @@
                       (not (include-fnc rule-lhs 'rp))
                       (alistp a)
                       (not (include-fnc rule-lhs 'synp))
-                      (pseudo-termp2 rule-lhs)
-                      (pseudo-termp2 term))
+                      (rp-termp rule-lhs)
+                      (rp-termp term))
                  (equal (rp-evl (rp-apply-bindings rule-lhs bindings) a)
                         (rp-evl term a))))
       :flag rp-match-lhs)
@@ -1079,8 +1202,8 @@
                       (not (include-fnc-subterms sublhs 'rp))
                       (not (include-fnc-subterms sublhs 'synp))
                       (bindings-alistp acc-bindings)
-                      (pseudo-term-listp2 sublhs)
-                      (pseudo-term-listp2 subterms))
+                      (rp-term-listp sublhs)
+                      (rp-term-listp subterms))
                  (equal (rp-evl-lst (rp-apply-bindings-subterms sublhs
                                                                 bindings)
                                     a)
@@ -1233,7 +1356,7 @@
  (local
   (defthm lemma6
     (implies (and (SYMBOLP TERM)
-                  (pseudo-termp2 term2)
+                  (rp-termp term2)
                   (RP-EQUAL TERM term2))
              (equal (EQUAL (CDR (ASSOC-EQUAL TERM A))
                            (RP-EVL term2 A))
@@ -1257,8 +1380,8 @@
                      (alistp a)
                      (not (include-fnc rule-lhs 'synp))
                      ;;(rp-does-lhs-match term rule-lhs)
-                     (pseudo-termp2 rule-lhs)
-                     (pseudo-termp2 term))
+                     (rp-termp rule-lhs)
+                     (rp-termp term))
                 (equal (rp-evl (rp-apply-bindings rule-lhs bindings) a)
                        (rp-evl term a))))
      :flag rp-induct-fnc)
@@ -1272,8 +1395,8 @@
                      (not (include-fnc-subterms sublhs 'rp))
                      (not (include-fnc-subterms sublhs 'synp))
                      (bindings-alistp acc-bindings)
-                     (pseudo-term-listp2 sublhs)
-                     (pseudo-term-listp2 subterms))
+                     (rp-term-listp sublhs)
+                     (rp-term-listp subterms))
                 (equal (rp-evl-lst (rp-apply-bindings-subterms sublhs bindings) a)
                        (rp-evl-lst subterms a))
                 #|(rp-equal2-subterms
@@ -1294,8 +1417,8 @@
                      (alistp a)
                      (not (include-fnc rule-lhs 'synp))
                      ;;(rp-does-lhs-match term rule-lhs)
-                     (pseudo-termp2 rule-lhs)
-                     (pseudo-termp2 term))
+                     (rp-termp rule-lhs)
+                     (rp-termp term))
                 (equal (rp-evl (rp-apply-bindings rule-lhs bindings) a)
                        (rp-evl term a))))
      :flag rp-match-lhs)
@@ -1309,8 +1432,8 @@
                      (not (include-fnc-subterms sublhs 'rp))
                      (not (include-fnc-subterms sublhs 'synp))
                      (bindings-alistp acc-bindings)
-                     (pseudo-term-listp2 sublhs)
-                     (pseudo-term-listp2 subterms))
+                     (rp-term-listp sublhs)
+                     (rp-term-listp subterms))
                 (equal (rp-evl-lst (rp-apply-bindings-subterms sublhs bindings) a)
                        (rp-evl-lst subterms a))
                 #|(rp-equal2-subterms
@@ -1334,7 +1457,7 @@
       (implies (and rule
                     (alistp a)
                     (rule-list-syntaxp rules-for-term)
-                    (pseudo-termp2 term))
+                    (rp-termp term))
                (equal (rp-evl (rp-apply-bindings (rp-lhs rule) bindings) a)
                       (rp-evl term a))
 ;(rp-equal2 (rp-apply-bindings (rp-lhs rule) bindings) term)

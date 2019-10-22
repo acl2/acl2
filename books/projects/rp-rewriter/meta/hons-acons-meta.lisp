@@ -81,7 +81,7 @@
 
 ;; special meta-like functions integrated into rp-rewriter.
 (defun hons-acons-meta (term)
-  (declare (xargs :guard t #|(pseudo-termp2 term)||#))
+  (declare (xargs :guard t #|(rp-termp term)||#))
   ;; behaviour when hons-cons is encountered in the term
   ;; as if "hons-acons-meta" is a meta function triggered by hons-acons
   ;; this funciton stores assoc-lists in a special way in order to access the
@@ -145,21 +145,11 @@
    (hons-acons-meta
     hons-acons)))
 
-(local
+#|(local
  (encapsulate
    nil
 
-   (local
-    (defthm lemma2
-      (implies (and (pseudo-termp2 term)
-                    (is-falist (ex-from-rp term)))
-               (pseudo-termp2
-                (caddr (ex-from-rp term))))))
-
-   (defthm pseudo-termp2-hons-acons-meta ;;;;;;;;;;;;;;;;;;;;;;
-     (implies (and (pseudo-termp2 term)
-                   (all-falist-consistent term))
-              (pseudo-termp2 (mv-nth 0 (hons-acons-meta term)))))))
+   ))||#
 
 (local
  (encapsulate
@@ -170,16 +160,16 @@
 
    (local
     (defthm lemma4
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (is-falist (ex-from-rp term)))
                (falist-consistent-aux (cadr (cadr (ex-from-rp term)))
                                       (caddr (ex-from-rp term))))))
 
    (local
     (defthm lemma5
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (is-falist (ex-from-rp term)))
-               (all-falist-consistent (caddr (ex-from-rp term))))))
+               (rp-termp (caddr (ex-from-rp term))))))
 
 
    (local
@@ -193,11 +183,42 @@
                     (consp (car (cadr term)))))
       :rule-classes :forward-chaining))
 
-   (defthm all-falist-consistent-hons-acons-meta
+   (local
+    (defthm lemma2
+      (implies (and (rp-termp term)
+                    (is-falist (ex-from-rp term)))
+               (rp-termp
+                (caddr (ex-from-rp term))))))
+
+   (local
+    (defthm lemma7
+      (IMPLIES
+       (AND (force (rp-termp term))
+            (CONSP term)
+            (NOT (EQUAL term
+                        ''NIL))
+            (EQUAL (CAR term)
+                   'QUOTE)
+            (CONSP (CDR term))
+            (NOT (CDDR term))
+            (ALISTP (CADR term)))
+       (FALIST-CONSISTENT-AUX (QUOTE-FALIST-VALS term)
+                              term))
+      :hints (("Goal"
+               :in-theory (e/d (QUOTE-FALIST-VALS
+                                FALIST-CONSISTENT-AUX) ())))))
+
+   (defthm rp-termp-hons-acons-meta ;;;;;;;;;;;;;;;;;;;;;;
+     (implies (and (rp-termp term))
+              (rp-termp (mv-nth 0 (hons-acons-meta term))))
+     :hints (("Goal"
+              :in-theory (e/d () ()))))
+
+   #|(defthm all-falist-consistent-hons-acons-meta
      (implies (and (all-falist-consistent term))
               (all-falist-consistent (mv-nth 0 (hons-acons-meta term))))
      :otf-flg t
-     :hints (("goal" :in-theory (enable hons-acons-meta))))))
+     :hints (("goal" :in-theory (enable hons-acons-meta))))||#))
 
 (local
  (defthmd rp-evl-of-ex-from-rp
@@ -259,7 +280,7 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp is-if hons-acons-meta) ()))))))
 
-(local
+#|(local
  (encapsulate
    nil
    (local
@@ -272,7 +293,7 @@
                :in-theory (e/d (is-if is-rp) (ex-from-rp))))))
    (defthm rp-syntaxp-hons-acons
      (implies (rp-syntaxp term)
-              (rp-syntaxp (mv-nth  0 (hons-acons-meta term)))))))
+              (rp-syntaxp (mv-nth  0 (hons-acons-meta term)))))))||#
 
 (local
  (defthm dont-rw-syntaxp-hons-acons-meta
@@ -294,10 +315,8 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (PSEUDO-TERMP2
+                           (RP-TERMP
                             hons-acons-meta
-                            PSEUDO-TERM-LISTP2
-                            RP-SYNTAXP
                             VALID-SC)))))
 
 (rp::add-meta-rules

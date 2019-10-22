@@ -139,7 +139,8 @@
                     (and (symbolp type)
                          (not (booleanp type))
                          (not (equal type 'quote))
-                         (not (equal type 'rp))))
+                         (not (equal type 'rp))
+                         (not (equal type 'falist))))
     (& nil))
   ///
   (defthmd is-rp-implies
@@ -147,6 +148,7 @@
              (case-match term
                (('rp ('quote type) &)
                 (and (symbolp type)
+                     (not (equal type 'falist))
                      (not (booleanp type))
                      (not (equal type 'quote))))
                (& nil)))))
@@ -259,6 +261,90 @@
      (and (lambda-exp-free-p (car subterms))
           (lambda-exp-free-listp (cdr subterms))))))
 
+
+(encapsulate
+  nil
+
+  (defun falist-consistent-aux (falist term)
+    ;; given an unquoted falist (a fast alist from (falist & &)), compares it
+    ;; with the term and makes sure that they're consistent.
+    (declare (xargs :guard t))
+    (if (atom falist)
+        (and (equal falist nil)
+             (equal term ''nil))
+      (b* ((cf (car falist))
+           (cf-key (if (consp cf) (car cf) nil))
+           (cf-val (if (consp cf) (cdr cf) nil)))
+        (and
+         (consp cf)
+         (case-match term
+           (('cons ('cons ('quote key1) val1) rest1)
+            (and (equal cf-key key1)
+                 (equal cf-val val1)
+                 (falist-consistent-aux (cdr falist)
+                                        rest1)))
+           (('cons ('quote (key1 . val1)) rest1)
+            (and #|(if (equal key1 nil)
+             (equal cf-key (list 'quote))
+             nil)||#
+             (equal cf-key key1)
+             (equal cf-val (list 'quote val1))
+             (falist-consistent-aux (cdr falist)
+                                    rest1)))
+           (('quote ((key1 . val1) . rest1))
+            (and (equal cf-key key1)
+                 (equal cf-val (list 'quote val1))
+                 (falist-consistent-aux (cdr falist)
+                                        `',rest1)))
+           (& nil))))))
+
+  (defun falist-consistent (falist-term)
+    ;; given a falist term (falist & &), checks the consistence.
+    (declare (xargs :guard t))
+    (case-match falist-term
+      (('falist ('quote falist) term)
+       (falist-consistent-aux falist term))
+      (('falist ''nil ''nil)
+       t)
+      (& nil)))
+
+  
+
+  (defun is-falist (term)
+    ;; checks if it is a falist statement?
+    (declare (xargs :guard t))
+    (case-match term (('falist & &) t) (& nil)))
+
+  #|(mutual-recursion
+   (defun all-falist-consistent (term)
+     ;; searches the term for (falist & &) and if found, checkes whether
+     ;; they're consistent.
+     (declare (xargs :guard t #|(rp-termp term)||#))
+     (cond
+      ((or (atom term)
+           (quotep term))
+       t)
+      ((is-falist term)
+       (and (falist-consistent term)
+            (all-falist-consistent (caddr term))))
+      (t (all-falist-consistent-lst (cdr term)))))
+
+   (defun all-falist-consistent-lst (lst)
+     (declare (xargs :guard t #|(rp-term-listp lst)||#))
+     (if (atom lst)
+         t
+       (and (all-falist-consistent (car lst))
+            (all-falist-consistent-lst (cdr lst))))))||#
+
+  #|(defun all-falist-consistent-bindings (bindings)
+    ;; input is var-bindings;
+    ;; checks if the values are falist-consistent
+    (if (atom bindings)
+        t
+      (and (consp (car bindings))
+           (all-falist-consistent (cdar bindings))
+           (all-falist-consistent-bindings (cdr bindings)))))||#)
+
 (encapsulate
   nil
 
@@ -280,75 +366,80 @@
                       is-rp-soft)))
 
   (mutual-recursion
-   (defun pseudo-termp2 (acl2::x)
+   (defun rp-termp (term)
      ;; same as pseudo-termp but does not allow nil as a symbol
      (declare (xargs :guard t :mode :logic))
-     (cond ((atom acl2::x) (and (symbolp acl2::x) acl2::x))
-           ((eq (car acl2::x) 'quote)
-            (and (consp (cdr acl2::x))
-                 (null (cdr (cdr acl2::x)))))
-           ((not (true-listp acl2::x)) nil)
-           #|((and (is-rp acl2::x)
-           (is-rp (caddr acl2::x)))
-           nil)||#
-           #|((eq (car acl2::x) 'rp)
-           (and (is-rp acl2::x)
-           (pseudo-termp2 (caddr acl2::x))))||#
-           ((not (pseudo-term-listp2 (cdr acl2::x)))
-            nil)
-           (t (and (symbolp (car acl2::x))
-                   (car acl2::x)
-                   #|(and
-                   (is-lambda-strict acl2::x)
-                   (pseudo-termp2 (caddr (car acl2::x))))||#))))
+     (cond ((atom term) (and (symbolp term) term))
+           ((eq (car term) 'quote)
+            (and (consp (cdr term))
+                 (null (cdr (cdr term)))))
+           ((eq (car term) 'rp)
+            (and (is-rp term)
+                 (rp-termp (caddr term))))
+           ((eq (car term) 'falist)
+            (and (falist-consistent term)
+                 (rp-termp (caddr term))))
+           (t (and (symbolp (car term))
+                   (car term)
+                   (rp-term-listp (cdr term))))))
 
-   (defun pseudo-term-listp2 ( acl2::lst)
+   (defun rp-term-listp (lst)
      (declare (xargs :guard t))
-     (cond ((atom acl2::lst) (equal acl2::lst nil))
-           (t (and (pseudo-termp2 (car acl2::lst))
-                   (pseudo-term-listp2 (cdr acl2::lst)))))))
+     (cond ((atom lst) (eq lst nil))
+           (t (and (rp-termp (car lst))
+                   (rp-term-listp (cdr lst)))))))
 
-  (defun pseudo-term-list-listp2 (lst)
+  (defun rp-term-list-listp (lst)
     (declare (xargs :guard t))
     (if (atom lst)
         (equal lst nil)
-      (and (pseudo-term-listp2 (car lst))
-           (pseudo-term-list-listp2 (cdr lst))))))
+      (and (rp-term-listp (car lst))
+           (rp-term-list-listp (cdr lst))))))
 
-(encapsulate
-  nil
-  (local
-   (in-theory (enable is-rp)))
-  (mutual-recursion
-   ;; checks if all the terms with a function symbol
-   ;; "rp" satisfies the is-rp condition.
-   (defun rp-syntaxp (term)
-     (declare (xargs :guard t))
-     (cond
-      ((atom term) t)
-      ((eq (car term) 'quote) t)
-      ((eq (car term) 'rp)
-       (and (is-rp term)
-            (rp-syntaxp (caddr term))))
-      (t (rp-syntaxp-lst (cdr term)))))
-   (defun rp-syntaxp-lst (lst)
-     (cond
-      ((atom lst) t)
-      (t (and (rp-syntaxp (car lst))
-              (rp-syntaxp-lst (cdr lst))))))))
 
-(defun rp-syntaxp-bindings (bindings)
-  (rp-syntaxp-lst (strip-cdrs bindings)))
 
-(defthm pseudo-termp2-implies-cdr-listp
+(defun falist-syntaxp (unquoted-falist)
+  ;; on the unquoted fast-alist (which is the first parameter of (falist & &)
+  ;; but unquoted), checks the syntacial correctness
+  (declare (xargs :guard t))
+  (and (alistp unquoted-falist)
+       (rp-term-listp
+        (strip-cdrs unquoted-falist))))
+
+;; (encapsulate
+;;   nil
+;;   (local
+;;    (in-theory (enable is-rp)))
+;;   (mutual-recursion
+;;    ;; checks if all the terms with a function symbol
+;;    ;; "rp" satisfies the is-rp condition.
+;;    (defun rp-syntaxp (term)
+;;      (declare (xargs :guard t))
+;;      (cond
+;;       ((atom term) t)
+;;       ((eq (car term) 'quote) t)
+;;       ((eq (car term) 'rp)
+;;        (and (is-rp term)
+;;             (rp-syntaxp (caddr term))))
+;;       (t (rp-syntaxp-lst (cdr term)))))
+;;    (defun rp-syntaxp-lst (lst)
+;;      (cond
+;;       ((atom lst) t)
+;;       (t (and (rp-syntaxp (car lst))
+;;               (rp-syntaxp-lst (cdr lst))))))))
+
+;; (defun rp-syntaxp-bindings (bindings)
+;;   (rp-syntaxp-lst (strip-cdrs bindings)))
+
+(defthm rp-termp-implies-cdr-listp
   (implies (and (consp term)
-                (pseudo-termp2 term)
+                (rp-termp term)
                 (not (equal (car term) 'quote)))
-           (pseudo-term-listp2 (cdr term)))
+           (rp-term-listp (cdr term)))
   :hints (("Goal"
-           :Expand ((PSEUDO-TERMP2 TERM)
-                    (PSEUDO-TERM-LISTP2 (CDR TERM))
-                    (PSEUDO-TERM-LISTP2 (CdDR TERM)))
+           :Expand ((RP-TERMP TERM)
+                    (RP-TERM-LISTP (CDR TERM))
+                    (RP-TERM-LISTP (CdDR TERM)))
            :in-theory (e/d (is-rp) ()))))
 
 (encapsulate
@@ -365,7 +456,7 @@
   (defmacro bindings-alistp (bindings)
     `(and (alistp ,bindings)
           (symbol-listp (strip-cars ,bindings))
-          (pseudo-term-listp2 (strip-cdrs ,bindings)))))
+          (rp-term-listp (strip-cdrs ,bindings)))))
 
 (defun cons-count (x)
   (cond ((atom x)
@@ -403,7 +494,7 @@
 
 (mutual-recursion
  (defun include-fnc (term fnc)
-   (declare (xargs :guard (and #|(pseudo-termp2 term)||#
+   (declare (xargs :guard (and #|(rp-termp term)||#
                            (symbolp fnc))))
    (if (or (atom term)
            (quotep term))
@@ -415,7 +506,7 @@
         (include-fnc-subterms (cdr term) fnc)))))
 
  (defun include-fnc-subterms (subterms fnc)
-   (declare (xargs :guard (and #|(pseudo-term-listp2 subterms)||#
+   (declare (xargs :guard (and #|(rp-term-listp subterms)||#
                            (symbolp fnc))))
    (if (atom subterms)
        nil
@@ -436,25 +527,18 @@
    (in-theory (enable is-rp)))
 
   (defun-inline is-synp (term)
-    (declare (xargs :guard t #|(and (pseudo-termp2 term))||#))
+    (declare (xargs :guard t #|(and (rp-termp term))||#))
     (case-match term (('synp & & &) t) (& nil)))
 
   (defund-inline is-rp-loose (term)
-    (declare (xargs :guard t #|(and (pseudo-termp2 term))||#))
+    (declare (xargs :guard t #|(and (rp-termp term))||#))
     (case-match term (('rp & &) t) (& nil)))
 
   (defun ex-from-rp (term)
     (declare (xargs :guard t))
-    (mbe :logic (if (is-rp term) (ex-from-rp (caddr term)) term)
-         :exec (if (case-match term
-                     (('rp ('quote type) &)
-                      (and (symbolp type)
-                           (not (booleanp type))
-                           (not (equal type 'quote))
-                           (not (equal type 'rp))))
-                     (& nil))
-                   (ex-from-rp (caddr term))
-                 term)))
+    (if (is-rp term)
+        (ex-from-rp (caddr term))
+      term))
 
   (local
    (in-theory (enable IS-RP-LOOSE)))
@@ -472,21 +556,16 @@
    (in-theory (enable ex-from-rp-loose)))
 
   (defun extract-from-rp-with-context (term context)
-    (declare (xargs :guard t #|(pseudo-termp2 term)||#))
-    (case-match term
-      (('rp ('quote type) x)
-       (if (and (symbolp type)
-                (not (booleanp type))
-                (not (equal type 'rp))
-                (not (equal type 'quote)))
-           (b* (((mv rcontext rterm)
-                 (extract-from-rp-with-context x context)))
-             (mv (cons `(,type ,(ex-from-rp x)) rcontext) rterm))
-         (mv context term)))
-      (& (mv context term))))
+    (declare (xargs :guard t #|(rp-termp term)||#))
+    (if (is-rp term)
+        (b* ((type (cadr (cadr term)))
+             ((mv rcontext rterm)
+              (extract-from-rp-with-context (caddr term) context)))
+          (mv (cons `(,type ,(ex-from-rp (caddr term))) rcontext) rterm))
+      (mv context term)))
 
   (defun extract-from-synp (term)
-    (declare (xargs :guard t #|(pseudo-termp2 term)||#))
+    (declare (xargs :guard t #|(rp-termp term)||#))
     (case-match term
       (('synp & & &) ''t)
       (& term)))
@@ -509,15 +588,15 @@
      (consp (unquote term))))
 
   (defun-inline should-term-be-in-cons (rule-lhs term)
-    (declare (xargs :guard t #|(and (pseudo-termp2 term)
-                    (pseudo-termp2 rule-lhs))||#))
+    (declare (xargs :guard t #|(and (rp-termp term)
+                    (rp-termp rule-lhs))||#))
     (and (is-quoted-pair term) ;(quotep term)
          ;;(consp (unquote term))
          (is-cons rule-lhs);;(case-match rule-lhs (('cons & &) t) (& nil))
          ))
 
   (defun-inline put-term-in-cons (term)
-    (declare (xargs :guard (and #|(pseudo-termp2 term)||#
+    (declare (xargs :guard (and #|(rp-termp term)||#
                             (should-term-be-in-cons '(cons x y) term))))
     `(cons ',(car (unquote term))
            ',(cdr (unquote term))))
@@ -532,7 +611,7 @@
       context)))
 
 (defun-inline dumb-negate-lit2 (term)
-  (declare (xargs :guard t #|(pseudo-termp2 term)||#))
+  (declare (xargs :guard t #|(rp-termp term)||#))
   (cond ((atom term)
          (acl2::fcons-term* 'not term))
         ((acl2::fquotep term)
@@ -558,7 +637,7 @@
   (mutual-recursion
    (defun get-vars1 (q acc)
      (declare (xargs :guard (and (true-listp acc)
-                                 #|(pseudo-termp2 q)||#)
+                                 #|(rp-termp q)||#)
                      :verify-guards nil))
      (if (quotep q)
          acc
@@ -568,7 +647,7 @@
 
    (defun get-vars-subterms (subterms acc)
      (declare (xargs :guard (and (true-listp acc)
-                                 #|(pseudo-term-listp2 subterms)||#)
+                                 #|(rp-term-listp subterms)||#)
                      :verify-guards nil))
      (if (atom subterms)
          acc
@@ -590,7 +669,7 @@
   (verify-guards get-vars1)
 
   (defun get-vars (term)
-    (declare (xargs :guard t #|(pseudo-termp2 term)||#))
+    (declare (xargs :guard t #|(rp-termp term)||#))
     (get-vars1 term nil)))
 
 (encapsulate
@@ -777,107 +856,20 @@
                           (list (cons #\0 dont-rw)))
               t))))
 
-(encapsulate
-  nil
 
-  (defun falist-consistent-aux (falist term)
-    ;; given an unquoted falist (a fast alist from (falist & &)), compares it
-    ;; with the term and makes sure that they're consistent.
-    (declare (xargs :guard t))
-    (if (atom falist)
-        (and (equal falist nil)
-             (equal term ''nil))
-      (b* ((cf (car falist))
-           (cf-key (if (consp cf) (car cf) nil))
-           (cf-val (if (consp cf) (cdr cf) nil)))
-        (and
-         (consp cf)
-         (case-match term
-           (('cons ('cons ('quote key1) val1) rest1)
-            (and (equal cf-key key1)
-                 (equal cf-val val1)
-                 (falist-consistent-aux (cdr falist)
-                                        rest1)))
-           (('cons ('quote (key1 . val1)) rest1)
-            (and #|(if (equal key1 nil)
-             (equal cf-key (list 'quote))
-             nil)||#
-             (equal cf-key key1)
-             (equal cf-val (list 'quote val1))
-             (falist-consistent-aux (cdr falist)
-                                    rest1)))
-           (('quote ((key1 . val1) . rest1))
-            (and (equal cf-key key1)
-                 (equal cf-val (list 'quote val1))
-                 (falist-consistent-aux (cdr falist)
-                                        `',rest1)))
-           (& nil))))))
-
-  (defun falist-consistent (falist-term)
-    ;; given a falist term (falist & &), checks the consistence.
-    (declare (xargs :guard t))
-    (case-match falist-term
-      (('falist ('quote falist) term)
-       (falist-consistent-aux falist term))
-      (('falist ''nil ''nil)
-       t)
-      (& nil)))
-
-  (defun falist-syntaxp (unquoted-falist)
-    ;; on the unquoted fast-alist (which is the first parameter of (falist & &)
-    ;; but unquoted), checks the syntacial correctness
-    (declare (xargs :guard t))
-    (and (alistp unquoted-falist)
-         (pseudo-term-listp2
-          (strip-cdrs unquoted-falist))))
-
-  (defun is-falist (term)
-    ;; checks if it is a falist statement?
-    (declare (xargs :guard t))
-    (case-match term (('falist & &) t) (& nil)))
-
-  (mutual-recursion
-   (defun all-falist-consistent (term)
-     ;; searches the term for (falist & &) and if found, checkes whether
-     ;; they're consistent.
-     (declare (xargs :guard t #|(pseudo-termp2 term)||#))
-     (cond
-      ((or (atom term)
-           (quotep term))
-       t)
-      ((is-falist term)
-       (and (falist-consistent term)
-            (all-falist-consistent (caddr term))))
-      (t (all-falist-consistent-lst (cdr term)))))
-
-   (defun all-falist-consistent-lst (lst)
-     (declare (xargs :guard t #|(pseudo-term-listp2 lst)||#))
-     (if (atom lst)
-         t
-       (and (all-falist-consistent (car lst))
-            (all-falist-consistent-lst (cdr lst))))))
-
-  (defun all-falist-consistent-bindings (bindings)
-    ;; input is var-bindings;
-    ;; checks if the values are falist-consistent
-    (if (atom bindings)
-        t
-      (and (consp (car bindings))
-           (all-falist-consistent (cdar bindings))
-           (all-falist-consistent-bindings (cdr bindings))))))
 
 (defun context-syntaxp (context)
   (declare (xargs :guard t))
   (and ;(cons-consp context) ;; may not be necessary anymore.
 ;(not (member nil context))
-   (pseudo-term-listp2 context)
-   (rp-syntaxp-lst context)
-   (all-falist-consistent-lst context)))
+   (rp-term-listp context)
+   #|(rp-syntaxp-lst context)||#
+   #|(all-falist-consistent-lst context)||#))
 
 (mutual-recursion
 
  (defun remove-return-last (term)
-   (declare (xargs :guard t #|(pseudo-termp2 term)||#))
+   (declare (xargs :guard t #|(rp-termp term)||#))
    (cond
     ((or (atom term)
          (quotep term)
@@ -889,7 +881,7 @@
              (remove-return-last-subterms (cdr term))))))
 
  (defun remove-return-last-subterms (subterms)
-   (declare (xargs :guard t #|(pseudo-term-listp2 subterms)||#))
+   (declare (xargs :guard t #|(rp-term-listp subterms)||#))
    (if (atom subterms)
        subterms
      (cons (remove-return-last (car subterms))
@@ -922,16 +914,16 @@
      (or (search-term (car subterms) seq)
          (search-subterms (cdr subterms) seq)))))
 
-(defmacro rp-valid-termp (term)
-  `(and (pseudo-termp2 ,term)
-        (rp-syntaxp ,term)
-        (all-falist-consistent ,term)))
+;; (defmacro rp-valid-termp (term)
+;;   `(and (rp-termp ,term)
+;;         (rp-syntaxp ,term)
+;;         (all-falist-consistent ,term)))
 
-(defun rp-valid-term-listp (terms)
-  (if (atom terms)
-      (equal terms nil)
-    (and (rp-valid-termp (car terms))
-         (rp-valid-term-listp (cdr terms)))))
+;; (defun rp-valid-term-listp (terms)
+;;   (if (atom terms)
+;;       (equal terms nil)
+;;     (and (rp-valid-termp (car terms))
+;;          (rp-valid-term-listp (cdr terms)))))
 
 (encapsulate
   nil
@@ -969,8 +961,8 @@
    (defun rp-equal (term1 term2)
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard t #|(and (pseudo-termp2 term1)
-                     (pseudo-termp2 term2))||#))
+                     :guard t #|(and (rp-termp term1)
+                     (rp-termp term2))||#))
      "Check syntactic equivalance of two terms by ignoring all the rp terms"
      (let* ((term1 (ex-from-rp term1))
             (term2 (ex-from-rp term2)))
@@ -986,8 +978,8 @@
    (defun rp-equal-subterms (subterm1 subterm2)
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard t #|(and (pseudo-term-listp2 subterm1)
-                     (pseudo-term-listp2 subterm2))||#))
+                     :guard t #|(and (rp-term-listp subterm1)
+                     (rp-term-listp subterm2))||#))
      (if (or (atom subterm1)
              (atom subterm2))
          (equal subterm1 subterm2)
@@ -1001,8 +993,8 @@
                      :verify-guards nil
 ;           :measure (+ (cons-count term1)
 ;                      (cons-count term2))
-                     :guard t #|(and (pseudo-termp2 term1)
-                     (pseudo-termp2 term2))||#))
+                     :guard t #|(and (rp-termp term1)
+                     (rp-termp term2))||#))
      "Check syntactic equivalance of two terms by ignoring all the rp terms"
      (let* ((term1 (ex-from-rp-loose term1))
             (term2 (ex-from-rp-loose term2)))
@@ -1016,8 +1008,8 @@
    (defun rp-equal-loose-subterms (subterm1 subterm2)
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard t #|(and (pseudo-term-listp2 subterm1)
-                     (pseudo-term-listp2 subterm2))||#))
+                     :guard t #|(and (rp-term-listp subterm1)
+                     (rp-term-listp subterm2))||#))
      (if (or (atom subterm1)
              (atom subterm2))
          (equal subterm1 subterm2)
@@ -1028,8 +1020,8 @@
   (declare (xargs :mode :logic
   :verify-guards t
   :measure (cons-count terms1)
-  :guard t #|(and (pseudo-term-listp2 subterm1)
-  (pseudo-term-listp2 subterm2))||#))
+  :guard t #|(and (rp-term-listp subterm1)
+  (rp-term-listp subterm2))||#))
   (if (or (atom terms1)
   (atom terms2))
   (equal terms1 terms2)
@@ -1051,8 +1043,8 @@
      (declare (xargs :mode :logic
                      :verify-guards nil
                      :guard (and (integerp cnt)
-                                 #|(pseudo-termp2 term1)||#
-                                 #|(pseudo-termp2 term2)||#)))
+                                 #|(rp-termp term1)||#
+                                 #|(rp-termp term2)||#)))
      "Same as rp-equal but also runs equal after counter goes below 0."
      (or (if (and (< cnt 0))
              (equal term1 term2)
@@ -1072,8 +1064,8 @@
      (declare (xargs :mode :logic
                      :verify-guards nil
                      :guard (and (integerp cnt)
-                                 #|(pseudo-term-listp2 subterm1)||#
-                                 #|(pseudo-term-listp2 subterm2)||#)))
+                                 #|(rp-term-listp subterm1)||#
+                                 #|(rp-term-listp subterm2)||#)))
      (if (or (atom subterm1)
              (atom subterm2))
          (equal subterm1 subterm2)
@@ -1115,9 +1107,9 @@
 
   (defun no-free-variablep (rule)
     (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
-                                (pseudo-termp2 (rp-hyp rule))
-                                (pseudo-termp2 (rp-lhs rule))
-                                (pseudo-termp2 (rp-rhs rule)))))
+                                (rp-termp (rp-hyp rule))
+                                (rp-termp (rp-lhs rule))
+                                (rp-termp (rp-rhs rule)))))
     (let ((vars (get-vars (rp-lhs rule))))
       (and (subsetp (get-vars (rp-hyp rule))
                     vars
@@ -1130,13 +1122,13 @@
     (declare (xargs :guard t))
     (and
      (weak-custom-rewrite-rule-p rule)
-     (pseudo-termp2 (rp-hyp rule))
-     (pseudo-termp2 (rp-lhs rule))
-     (pseudo-termp2 (rp-rhs rule))
+     (rp-termp (rp-hyp rule))
+     (rp-termp (rp-lhs rule))
+     (rp-termp (rp-rhs rule))
      ;;(rp-syntaxp (rp-lhs rule))
      (not (include-fnc (rp-lhs rule) 'rp))
      (not (include-fnc (rp-hyp rule) 'rp))
-     (rp-syntaxp (rp-rhs rule))
+     ;(rp-syntaxp (rp-rhs rule))
 
      (not (include-fnc (rp-rhs rule) 'falist))
      (not (include-fnc (rp-hyp rule) 'falist))
@@ -1166,11 +1158,11 @@
          (symbol-listp (strip-cars rules))
          (rule-list-list-syntaxp (strip-cdrs rules)))))
 
-(defun valid-term-syntaxp (term)
+(defun conjecture-syntaxp (term)
   (declare (xargs :guard t))
-  (and (pseudo-termp2 term)
-       (not (include-fnc term 'rp))
-       (not (include-fnc term 'falist))))
+  (and (not (include-fnc term 'rp))
+       (not (include-fnc term 'falist))
+       (rp-termp term)))
 
 (mutual-recursion
  (defun ex-from-rp-all (term)
@@ -1265,12 +1257,12 @@
                 (and
                  (dont-rw-syntaxp (mv-nth 1 res))
                  (if (rp-meta-syntax-verified meta-rule)
-                     (implies (rp-valid-termp term)
-                              (rp-valid-termp (mv-nth 0 res)))
+                     (implies (rp-termp term)
+                              (rp-termp (mv-nth 0 res)))
                    t))
               (and (if (rp-meta-syntax-verified meta-rule)
-                       (implies (rp-valid-termp term)
-                                (rp-valid-termp res))
+                       (implies (rp-termp term)
+                                (rp-termp res))
                      t)))))))
 
   (defun-sk rp-meta-valid-syntaxp-sk (meta-rule state-)

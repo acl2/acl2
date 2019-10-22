@@ -82,26 +82,16 @@
   :hints (("Goal"
            :in-theory (e/d (mv-nth) ()))))
 
-(defthm pseudo-termp2-of-mv-nth-meta
-  (implies (rp::pseudo-termp2 term)
-           (rp::pseudo-termp2 (mv-nth 0 (mv-nth-meta term))))
+(defthm rp-termp-of-mv-nth-meta
+  (implies (rp::rp-termp term)
+           (rp::rp-termp (mv-nth 0 (mv-nth-meta term))))
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (mv-nth) ()))))
 
-(defthm rp-syntaxp-of-mv-nth-meta
-  (implies (rp::rp-syntaxp term)
-           (rp::rp-syntaxp (mv-nth 0 (mv-nth-meta term))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (mv-nth) ()))))
 
-(defthm all-falist-consistent-of-mv-nth-meta
-  (implies (rp::all-falist-consistent term)
-           (rp::all-falist-consistent (mv-nth 0 (mv-nth-meta term))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (mv-nth) ()))))
+
+
 
 (defthm valid-sc-of-mv-nth-meta
   (implies (rp::valid-sc term a)
@@ -132,10 +122,8 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                           (rp::PSEUDO-TERMP2
+                           (rp::RP-TERMP
                             mv-nth-meta
-                            rp::PSEUDO-TERM-LISTP2
-                            rp::RP-SYNTAXP
                             rp::VALID-SC)))))
 
 (rp::add-meta-rules mv-nth-formula-checks

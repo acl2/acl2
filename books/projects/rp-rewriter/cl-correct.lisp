@@ -76,9 +76,10 @@
   (if (and (consp cl)
            (not (consp (cdr cl))))
       (b* ((car-cl (beta-search-reduce (car cl) *big-number*))
-           ((when (not (and (valid-term-syntaxp car-cl))))
+           ((when (not (and (rp-termp car-cl)
+                            (not (include-fnc car-cl 'rp)))))
             ;; we have to have it here because pseudo-termp allows nil to
-            ;; appear in the term but pseudo-termp2 does not.
+            ;; appear in the term but rp-termp does not.
             (mv nil (list cl) rp-state state))
            (runes (access rp-cl-hints hints :runes))
            (new-synps (access rp-cl-hints hints :new-synps))
@@ -140,7 +141,7 @@
                             rp-rw-aux-is-correct)
                            (get-rules
                             valid-rp-meta-rule-listp
-                            valid-term-syntaxp
+                            
                             valid-rp-meta-rulep
                             rp-meta-valid-syntaxp-sk
                             ex-from-synp-lemma1

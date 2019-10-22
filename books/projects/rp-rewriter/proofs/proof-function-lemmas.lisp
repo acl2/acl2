@@ -143,27 +143,27 @@
   nil
 
   (defthm extract-from-rp-pseudo-term-listp
-    (implies (pseudo-termp2 term)
-             (pseudo-termp2 (ex-from-rp TERM)))
+    (implies (rp-termp term)
+             (rp-termp (ex-from-rp TERM)))
     :hints (("Goal"
              :induct (ex-from-rp TERM)
              :in-theory (enable is-rp ex-from-rp))))
 
   (defthm extract-from-synp-pseudo-term-listp
-    (implies (pseudo-termp2 term)
-             (pseudo-termp2 (ex-from-synp TERM)))
+    (implies (rp-termp term)
+             (rp-termp (ex-from-synp TERM)))
     :hints (("Goal"
              :in-theory (enable is-synp extract-from-synp)))
     :rule-classes :forward-chaining)
 
   (local
    (defthmd pseudo-termp-lemma2
-     (implies (pseudo-termp2 term)
+     (implies (rp-termp term)
               (not (equal term nil)))))
 
   (local
    (defthm stupid-lemma1
-     (implies (and (pseudo-termp2 term)
+     (implies (and (rp-termp term)
                    (should-term-be-in-cons term term2))
               (and (ex-from-synp (ex-from-rp (cadr term)))))
      :instructions
@@ -186,7 +186,7 @@
 
   (local
    (defthm stupid-lemma2
-     (implies (and (pseudo-termp2 term)
+     (implies (and (rp-termp term)
                    (should-term-be-in-cons term term2))
               (and (ex-from-synp (ex-from-rp (caddr term)))))
      :instructions
@@ -208,7 +208,7 @@
       :top :s)))
 
   (defthm psuedo-termp2-and-ex-form-synp&rp
-    (implies (and (pseudo-termp2 term)
+    (implies (and (rp-termp term)
                   (should-term-be-in-cons term term2))
              (and (ex-from-synp (ex-from-rp (cadr term)))
                   (ex-from-synp (ex-from-rp (caddr term)))))
@@ -218,19 +218,19 @@
              :in-theory (e/d (stupid-lemma2 stupid-lemma1)
                              (ex-from-synp)))))
 
-  (defthm is-if-pseudo-termp2
-    (implies (and (pseudo-termp2 term)
+  (defthm is-if-rp-termp
+    (implies (and (rp-termp term)
                   (is-if term))
-             (and (pseudo-termp2 (cadr term))
-                  (pseudo-termp2 (caddr term))
-                  (pseudo-termp2 (cadddr term))))
+             (and (rp-termp (cadr term))
+                  (rp-termp (caddr term))
+                  (rp-termp (cadddr term))))
     :hints (("Goal" :in-theory (enable is-if)))))
 
-(defthm pseudo-termp2-implies-subterms
+(defthm rp-termp-implies-subterms
   (implies (and (consp term)
                 (not (quotep term))
-                (pseudo-termp2 term))
-           (pseudo-term-listp2 (cdr term))))
+                (rp-termp term))
+           (rp-term-listp (cdr term))))
 
 (defthm valid-sc-subterms-append
   (equal (valid-sc-subterms (append x y) a)
@@ -349,8 +349,8 @@
                                        is-rp
                                        ex-from-rp))))
 
-  (defthm PSEUDO-TERM-LISTP2-CDR-PUT-TERM-IN-CONS
-    (PSEUDO-TERM-LISTP2 (CDR (PUT-TERM-IN-CONS term)))
+  (defthm RP-TERM-LISTP-CDR-PUT-TERM-IN-CONS
+    (RP-TERM-LISTP (CDR (PUT-TERM-IN-CONS term)))
     :hints (("Goal" :in-theory (enable PUT-TERM-IN-CONS)))))
 
 #|(encapsulate
@@ -423,7 +423,11 @@
            (rule-list-syntaxp rules))
   :hints (("Goal"
            :in-theory (e/d (valid-rulesp
-                            rule-list-syntaxp) ()))))
+                            rule-list-syntaxp)
+                           ((:DEFINITION FALIST-CONSISTENT)
+                            (:DEFINITION RP-TERMP)
+                            (:DEFINITION RULE-SYNTAXP)
+                            (:DEFINITION SUBSETP-EQUAL))))))
 
 (defthm VALID-SC-and-is-if
   (implies (and (is-if term)
@@ -466,26 +470,26 @@
                                ))))))
 
   (defthm rp-evl-of-beta-reduce-lambda-expr
-    (implies (AND (pseudo-termp2 term)
+    (implies (AND (rp-termp term)
                   (is-lambda term))
              (equal (rp-evl (acl2::beta-reduce-lambda-expr term) a)
                     (rp-evl term a)))
     :hints (("Goal"
              :in-theory (e/d (is-lambda) ()))))
 
-  #|(defthm pseudo-termp2-of-beta-reduce-lambda-expr
-  (implies (and (pseudo-termp2 term)
+  #|(defthm rp-termp-of-beta-reduce-lambda-expr
+  (implies (and (rp-termp term)
   (is-lambda term))
-  (pseudo-termp2 (acl2::beta-reduce-lambda-expr term))))||#
+  (rp-termp (acl2::beta-reduce-lambda-expr term))))||#
 
   #|(defthm ALL-FALIST-CONSISTENT-of-beta-reduce-lambda-expr
-  (implies (and (pseudo-termp2 term)
+  (implies (and (rp-termp term)
   (all-falist-consistent term)
   (is-lambda term))
   (all-falist-consistent (acl2::beta-reduce-lambda-expr term))))||#
 
   #|(defthm rp-syntaxp-of-beta-reduce-lambda-expr
-  (implies (and (pseudo-termp2 term)
+  (implies (and (rp-termp term)
   (rp-syntaxp term)
   (is-lambda term))
   (rp-syntaxp (acl2::beta-reduce-lambda-expr term))))||#)

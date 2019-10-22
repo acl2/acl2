@@ -268,8 +268,8 @@
       rule
     (b* ((sc-formula (meta-extract-formula (car sc-rule-names) state))
 ;(sc-formula (beta-search-reduce sc-formula 1000)) ;; for psuedo-termp2
-         ((when (or (not (pseudo-termp2 sc-formula))
-                    (include-fnc sc-formula 'rp)))
+         ((when (or (include-fnc sc-formula 'rp)
+                    (not (rp-termp sc-formula))))
           (progn$
            (hard-error
             'side-cond-attaching
@@ -288,7 +288,7 @@
 (verify-guards update-rule-with-sc-aux
   :hints (("Goal"
            :in-theory (e/d () (rule-syntaxp
-                               pseudo-termp2)))))
+                               rp-termp)))))
 
 (defun symbol-symbol-alistp (alist)
   (declare (xargs :guard t))
@@ -356,7 +356,7 @@
            ;; that next test fails.  if rule-name exist on the rhs, then it is
            ;; a recursive function. We do not want to have that definition rule
            ;; in the rewriter becasue it would be opened up nonstop.
-           (if (pseudo-termp2 rhs);;for guard
+           (if (rp-termp rhs);;for guard
                (not (include-fnc rhs rule-name))
              nil))))
 

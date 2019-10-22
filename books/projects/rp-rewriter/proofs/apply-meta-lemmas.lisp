@@ -52,40 +52,38 @@
                     RP-RW-META-RULE)))
 
 (defthm rp-rw-meta-rule-returns-valid-termp
-  (implies (and (rp-valid-termp term)
+  (implies (and (rp-termp term)
                 (rp-meta-valid-syntaxp-sk meta-rule state))
-           (rp-valid-termp (mv-nth 1 (rp-rw-meta-rule term meta-rule rp-state state))))
+           (rp-termp (mv-nth 1 (rp-rw-meta-rule term meta-rule rp-state state))))
   :hints (("goal"
            :use ((:instance rp-meta-valid-syntaxp-sk-necc (state- state)))
            :in-theory (e/d (rp-meta-valid-syntax-listp
                             mv-nth
                             rp-meta-valid-syntaxp)
-                           (all-falist-consistent
-                            rp-meta-valid-syntaxp-sk
+                           (rp-meta-valid-syntaxp-sk
                             rp-meta-dont-rw
                             rp-meta-trig-fnc
                             rp-meta-syntax-verified
                             rp-meta-fnc
-                            rp-syntaxp
-                            pseudo-termp2)))))
+                            rp-termp)))))
 
 (defthm rp-rw-meta-rules-returns-valid-termp
-  (implies (and (rp-valid-termp term)
+  (implies (and (rp-termp term)
                 (rp-meta-valid-syntax-listp meta-rules state))
-           (rp-valid-termp (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state))))
+           (rp-termp (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state))))
   :hints (("goal"
            :in-theory (e/d (rp-meta-valid-syntax-listp
                             mv-nth
                             rp-meta-valid-syntaxp)
-                           (all-falist-consistent
+                           (
                             rp-rw-meta-rule
                             rp-meta-valid-syntaxp-sk-necc
                             rp-meta-dont-rw
                             rp-meta-trig-fnc
                             ;;magic-ev-fncall
                             rp-meta-fnc
-                            rp-syntaxp
-                            pseudo-termp2)))))
+                            
+                            rp-termp)))))
 
 (defthm rp-rw-meta-rule-returns-valid-dont-rw-syntaxp
   (implies (and (rp-meta-valid-syntaxp-sk meta-rule state))
@@ -97,15 +95,15 @@
            :in-theory (e/d (rp-meta-valid-syntax-listp
                             mv-nth
                             rp-meta-valid-syntaxp)
-                           (all-falist-consistent
+                           (
                             rp-meta-valid-syntaxp-sk-necc
                             rp-meta-valid-syntaxp-sk
                             RP-META-SYNTAX-VERIFIED
                             rp-meta-dont-rw
                             rp-meta-trig-fnc
                             rp-meta-fnc
-                            rp-syntaxp
-                            pseudo-termp2)))))
+                            
+                            rp-termp)))))
 
 (defthm rp-rw-meta-rules-returns-valid-dont-rw-syntaxp
   (implies (and (rp-meta-valid-syntax-listp meta-rules state))
@@ -114,7 +112,7 @@
            :in-theory (e/d (rp-meta-valid-syntax-listp
                             mv-nth
                             )
-                           (all-falist-consistent
+                           (
                             acl2::MV-NTH-CONS-META
                             RP-META-SYNTAX-VERIFIED
                             RP-META-VALID-SYNTAXP-SK
@@ -123,12 +121,12 @@
                             rp-meta-dont-rw
                             rp-meta-trig-fnc
                             rp-meta-fnc
-                            rp-syntaxp
-                            pseudo-termp2)))))
+                            
+                            rp-termp)))))
 
 (defthm rp-rw-meta-rule-returns-valid-sc
   (implies (and (valid-sc term a)
-                (rp-valid-termp term)
+                (rp-termp term)
                 (valid-rp-meta-rulep meta-rule state))
            (valid-sc (mv-nth 1 (rp-rw-meta-rule term meta-rule rp-state state)) a))
   :hints (("Goal"
@@ -152,7 +150,7 @@
 
 (defthm rp-rw-meta-rules-returns-valid-sc
   (implies (and (valid-sc term a)
-                (rp-valid-termp term)
+                (rp-termp term)
                 (valid-rp-meta-rule-listp meta-rules state))
            (valid-sc (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state)) a))
   :hints (("Goal"
@@ -171,7 +169,7 @@
 
 (defthm rp-rw-meta-rule-evals-correctly
   (implies (and (valid-rp-meta-rulep meta-rule state)
-                (rp-valid-termp term)
+                (rp-termp term)
                 (valid-sc term a))
            (equal (rp-evl (mv-nth 1 (rp-rw-meta-rule term meta-rule rp-state state))
                           a)
@@ -206,14 +204,14 @@
                             acl2::MV-NTH-CONS-META
                             EX-FROM-RP
                             VALID-SC
-                            ALL-FALIST-CONSISTENT
-                            pseudo-termp2
+                            
+                            rp-termp
                             RP-META-SYNTAX-VERIFIED
                             VALID-RP-META-RULEP)))))
 
 (defthm rp-rw-meta-rules-evals-correctly
   (implies (and (valid-rp-meta-rule-listp meta-rules state)
-                (rp-valid-termp term)
+                (rp-termp term)
                 (valid-sc term a))
            (equal (rp-evl (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state))
                           a)
@@ -231,8 +229,8 @@
                             valid-rp-meta-rulep-necc
                             EX-FROM-RP
                             VALID-SC
-                            ALL-FALIST-CONSISTENT
-                            pseudo-termp2
+                            
+                            rp-termp
                             RP-META-SYNTAX-VERIFIED
                             VALID-RP-META-RULEP)))))
 
