@@ -3980,128 +3980,121 @@
 
   :long
 
-  "<p>
-   If parsing succeeds,
-   the returned tree(s) match(es) the syntactic entities being parsed.
-   For instance, if @(tsee parse-alpha) succeeds,
-   the returned tree matches @('ALPHA').
-   </p>
+  (xdoc::topstring
 
-   <p>
-   The tree matching proof of each parsing function uses, as rewrite rules,
-   the tree matching theorems of the parsing functions called by
-   the parsing function whose theorem is being proved.
-   </p>
+   (xdoc::p
+    "If parsing succeeds,
+     the returned tree(s) match(es) the syntactic entities being parsed.
+     For instance, if @(tsee parse-alpha) succeeds,
+     the returned tree matches @('ALPHA').")
 
-   <p>
-   The tree matching theorems use hypotheses of the form
-   @('(equal element ...)') or @('(equal repetition ...)'),
-   where @('element') and @('repetition') are variables
-   that appear in the theorems' conclusions
-   as the second arguments of
-   @(tsee tree-match-element-p) and @(tsee tree-list-match-repetition-p),
-   and where @('...') are constant terms
-   that evaluate to certain elements and repetitions.
-   The reason for not substituting these hypotheses in the conclusions
-   is so that these theorems can be used as rewrite rules
-   when proving the tree matching theorems for the calling parsing functions.
-   Consider, for example,
-   how the tree matching theorem @(tsee tree-match-of-parse-alpha)
-   is used in the proof of @(tsee tree-match-of-parse-alpha/digit/dash):
-   the goal
-   </p>
+   (xdoc::p
+    "The tree matching proof of each parsing function uses, as rewrite rules,
+     the tree matching theorems of the parsing functions called by
+     the parsing function whose theorem is being proved.")
 
-   @({
-     (tree-match-element-p
-        ... (!_ (/_ *alpha*) (/_ *digit*) (/_ \"-\")) ...)
-   })
+   (xdoc::p
+    "The tree matching theorems use hypotheses of the form
+     @('(equal element ...)') or @('(equal repetition ...)'),
+     where @('element') and @('repetition') are variables
+     that appear in the theorems' conclusions
+     as the second arguments of
+     @(tsee tree-match-element-p) and @(tsee tree-list-match-repetition-p),
+     and where @('...') are constant terms
+     that evaluate to certain elements and repetitions.
+     The reason for not substituting these hypotheses in the conclusions
+     is so that these theorems can be used as rewrite rules
+     when proving the tree matching theorems for the calling parsing functions.
+     Consider, for example,
+     how the tree matching theorem @(tsee tree-match-of-parse-alpha)
+     is used in the proof of @(tsee tree-match-of-parse-alpha/digit/dash):
+     the goal")
 
-   <p>
-   simplifies (via the executable counterpart rules) to
-   </p>
+   (xdoc::codeblock
+    "(tree-match-element-p"
+    "   ... (!_ (/_ *alpha*) (/_ *digit*) (/_ \"-\")) ...)")
 
-   @({
-     (tree-match-element-p
-        ... '(:group (((:repetition (:repeat 1 (:finite 1))
-                       (:rulename (:rulename \"alpha\"))))
-                      ((:repetition (:repeat 1 (:finite 1))
-                       (:rulename (:rulename \"digit\"))))
-                      ((:repetition (:repeat 1 (:finite 1))
-                       (:char-val (:insensitive \"-\")))))) ...)
-   })
+   (xdoc::p
+    "simplifies (via the executable counterpart rules) to")
 
-   <p>
-   and then reduces to, among others, the subgoal
-   </p>
+   (xdoc::codeblock
+    "(tree-match-element-p"
+    "   ... '(:group (((:repetition (:repeat 1 (:finite 1))"
+    "                  (:rulename (:rulename \"alpha\"))))"
+    "                ((:repetition (:repeat 1 (:finite 1))"
+    "                  (:rulename (:rulename \"digit\"))))"
+    "                 ((:repetition (:repeat 1 (:finite 1))"
+    "                  (:char-val (:insensitive \"-\")))))) ...)")
 
-   @({
-     (tree-match-element-p
-        ... '(:rulename (:rulename \"alpha\")) ...)
-   })
+   (xdoc::p
+    "and then reduces to, among others, the subgoal")
 
-   <p>
-   which would not match
-   @('(tree-match-element-p ... (element-rulename *alpha*) ...)')
-   if that were the conclusion of @(tsee tree-match-of-parse-alpha).
-   We could substitute the fully evaluated quoted constants
-   into the conclusions of the tree matching theorems
-   (e.g. @(''(:rulename (:rulename \"alpha\"))')
-   in @(tsee tree-match-of-parse-alpha)),
-   but this would be slightly more inconvenient and less readable,
-   especially when the elements are not simple rule elements.
-   </p>
+   (xdoc::codeblock
+    "(tree-match-element-p"
+    "   ... '(:rulename (:rulename \"alpha\")) ...)")
 
-   <p>
-   In the tree matching theorems for the mutually recursive parsing functions
-   (i.e. @(tsee parse-alternation), @(tsee parse-concatenation), etc.),
-   the extra variables @('element') and @('repetition')
-   in the @('(equal element ...)') and @('(equal repetition ...)') hypotheses
-   would lead to an unprovable induction structure
-   because the variables @('element') and @('repetition')
-   are the same in the induction hypotheses and conclusions,
-   but are equated to different constant terms.
-   Thus, we first prove by induction versions of the theorems
-   with the equalities substituted in the conclusions
-   (i.e., the @('tree-match-...-lemma') and @('tree-list-match-...-lemma')
-   theorems),
-   and then we prove the desired theorems, with the equality hypotheses.
-   The latter are used as rewrite rules in the tree matching proofs
-   for the parsing functions that call the mutually recursive parsing functions.
-   </p>
+   (xdoc::p
+    "which would not match
+     @('(tree-match-element-p ... (element-rulename *alpha*) ...)')
+     if that were the conclusion of @(tsee tree-match-of-parse-alpha).
+     We could substitute the fully evaluated quoted constants
+     into the conclusions of the tree matching theorems
+     (e.g. @(''(:rulename (:rulename \"alpha\"))')
+     in @(tsee tree-match-of-parse-alpha)),
+     but this would be slightly more inconvenient and less readable,
+     especially when the elements are not simple rule elements.")
 
-   <p>
-   The tree matching proofs also use the definitions of
-   @(tsee tree->string),
-   @(tsee tree-match-element-p),
-   @(tsee tree-list-match-repetition-p),
-   @(tsee tree-list-match-element-p),
-   and @(tsee numrep-match-repeat-range-p).
-   We enable these definitions just before the tree matching theorems
-   and we disable them just after.
-   Since in some theorems
-   @(tsee tree-match-element-p) does not get expanded in places where it should
-   (presumably due to ACL2's heuristics for expanding recursive functions),
-   we use explicit @(':expand') hints in those theorems;
-   the potential looping due to the mutually recursive grammar rules
-   (for @('alternation'), @('concatenation'), etc.) does not happen,
-   presumably thanks to the firing of the tree matching rewrite rules
-   as soon as they apply.
-   There is no direct use of the definitions of
-   @(tsee tree-list-list-match-alternation-p) and
-   @(tsee tree-list-list-match-concatenation-p)
-   because the alternations and concatenations in these theorems
-   always have an explicit list structure and thus rewrite rules like
-   @(tsee tree-list-list-match-alternation-p-of-cons-alternation) suffice.
-   </p>
+   (xdoc::p
+    "In the tree matching theorems for the mutually recursive parsing functions
+     (i.e. @(tsee parse-alternation), @(tsee parse-concatenation), etc.),
+     the extra variables @('element') and @('repetition')
+     in the @('(equal element ...)') and @('(equal repetition ...)') hypotheses
+     would lead to an unprovable induction structure
+     because the variables @('element') and @('repetition')
+     are the same in the induction hypotheses and conclusions,
+     but are equated to different constant terms.
+     Thus, we first prove by induction versions of the theorems
+     with the equalities substituted in the conclusions
+     (i.e., the @('tree-match-...-lemma') and @('tree-list-match-...-lemma')
+     theorems),
+     and then we prove the desired theorems, with the equality hypotheses.
+     The latter are used as rewrite rules in the tree matching proofs
+     for the parsing functions that call
+     the mutually recursive parsing functions.")
 
-   <p>
-   For some parsing functions that parse repetitions,
-   the tree matching theorems say that the returned trees match
-   not only the repetitions (via @(tsee tree-list-match-repetition-p)),
-   but also the repeated elements (via @(tsee tree-list-match-element-p)).
-   This is because subgoals involving @(tsee tree-list-match-element-p)
-   arise in the tree matching theorems of the callers of such parsing functions.
-   </p>"
+   (xdoc::p
+    "The tree matching proofs also use the definitions of
+     @(tsee tree->string),
+     @(tsee tree-match-element-p),
+     @(tsee tree-list-match-repetition-p),
+     @(tsee tree-list-match-element-p),
+     and @(tsee numrep-match-repeat-range-p).
+     We enable these definitions just before the tree matching theorems
+     and we disable them just after.
+     Since in some theorems
+     @(tsee tree-match-element-p) does not get expanded
+     in places where it should
+     (presumably due to ACL2's heuristics for expanding recursive functions),
+     we use explicit @(':expand') hints in those theorems;
+     the potential looping due to the mutually recursive grammar rules
+     (for @('alternation'), @('concatenation'), etc.) does not happen,
+     presumably thanks to the firing of the tree matching rewrite rules
+     as soon as they apply.
+     There is no direct use of the definitions of
+     @(tsee tree-list-list-match-alternation-p) and
+     @(tsee tree-list-list-match-concatenation-p)
+     because the alternations and concatenations in these theorems
+     always have an explicit list structure and thus rewrite rules like
+     @(tsee tree-list-list-match-alternation-p-of-cons-alternation) suffice.")
+
+   (xdoc::p
+    "For some parsing functions that parse repetitions,
+     the tree matching theorems say that the returned trees match
+     not only the repetitions (via @(tsee tree-list-match-repetition-p)),
+     but also the repeated elements (via @(tsee tree-list-match-element-p)).
+     This is because subgoals involving @(tsee tree-list-match-element-p)
+     arise in the tree matching theorems
+     of the callers of such parsing functions."))
 
   :order-subtopics t)
 
@@ -5130,17 +5123,17 @@
   :parents (grammar-parser-soundness)
   :short "Top-level soundness theorem of the parser of ABNF grammars."
   :long
-  "<p>
-   If @(tsee parse-grammar) succeeds,
-   it returns a parse tree for the input rooted at @('rulelist').
-   This is proved from
-   the input decomposition theorem and tree matching theorem for @('rulelist'),
-   and the fact that @(tsee parse-grammar) fails if there is extra input.
-   </p>
-   <p>
-   An alternative formulation is to avoid @(tsee nat-list-fix)
-   but include the hypothesis that the input satisfies @(tsee nat-listp).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee parse-grammar) succeeds,
+     it returns a parse tree for the input rooted at @('rulelist').
+     This is proved from
+     the input decomposition theorem
+     and tree matching theorem for @('rulelist'),
+     and the fact that @(tsee parse-grammar) fails if there is extra input.")
+   (xdoc::p
+    "An alternative formulation is to avoid @(tsee nat-list-fix)
+     but include the hypothesis that the input satisfies @(tsee nat-listp)."))
   (let ((tree? (parse-grammar nats)))
     (implies tree?
              (parse-treep tree?
