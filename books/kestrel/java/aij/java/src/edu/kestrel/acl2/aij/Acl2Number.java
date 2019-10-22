@@ -6,6 +6,8 @@
 
 package edu.kestrel.acl2.aij;
 
+import java.math.BigInteger;
+
 /**
  * Representation of ACL2 numbers.
  * These are the values that satisfy {@code acl2-numberp}.
@@ -386,7 +388,55 @@ public abstract class Acl2Number extends Acl2Value {
         if (imaginaryPart.equals(Acl2Integer.ZERO))
             return realPart;
         else
-            return Acl2ComplexRational.make(realPart, imaginaryPart);
+            return Acl2ComplexRational.makeInternal(realPart, imaginaryPart);
+    }
+
+    /**
+     * Returns a number with the given real and imaginary parts.
+     * If the imaginary part is 0, the result is a rational,
+     * according to the rule of complex canonicalization in Common Lisp.
+     *
+     * @param realPart      The real part of the number.
+     * @param imaginaryPart The imaginary part of the number.
+     * @return The number.
+     */
+    public static Acl2Number make(int realPart, int imaginaryPart) {
+        return Acl2Number.make
+                (Acl2Integer.make(realPart),
+                        Acl2Integer.make(imaginaryPart));
+    }
+
+    /**
+     * Returns a number with the given real and imaginary parts.
+     * If the imaginary part is 0, the result is a rational,
+     * according to the rule of complex canonicalization in Common Lisp.
+     *
+     * @param realPart      The real part of the number.
+     * @param imaginaryPart The imaginary part of the number.
+     * @return The number.
+     */
+    public static Acl2Number make(long realPart, long imaginaryPart) {
+        return Acl2Number.make
+                (Acl2Integer.make(realPart),
+                        Acl2Integer.make(imaginaryPart));
+    }
+
+    /**
+     * Returns a number with the given real and imaginary parts.
+     * If the imaginary part is 0, the result is a rational,
+     * according to the rule of complex canonicalization in Common Lisp.
+     *
+     * @param realPart      The real part of the number.
+     * @param imaginaryPart The imaginary part of the number.
+     * @return The number.
+     * @throws IllegalArgumentException If {@code realpart} or
+     *                                  {@code imaginaryPart} is {@code null}.
+     */
+    public static Acl2Number make(BigInteger realPart,
+                                  BigInteger imaginaryPart) {
+        return Acl2Number.make
+                (Acl2Integer.make(realPart),
+                        Acl2Integer.make(imaginaryPart));
     }
 
     /**

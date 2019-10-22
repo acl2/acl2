@@ -13,13 +13,13 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)
 (include-book "kestrel/utilities/system/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

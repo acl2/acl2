@@ -148,6 +148,15 @@
       that has been added for this purpose;
       this class also contains the information about the package witness name.")
     (xdoc::li
+     "The package witness name,
+      i.e. the content of the @('*pkg-witness-name*') constant,
+      is now stored in a final static field,
+      which therefore no longer needs to be initialized
+      by code external to AIJ.
+      The consistency of this Java value with the actual ACL2 value
+      is checked via an assertion in a newly added file
+      @('[books]/kestrel/java/aij/assumptions.lisp').")
+    (xdoc::li
      "The return types of some of the native Java implementation methods
       of the ACL2 primitive functions in AIJ
       have been made more precise than the general type @('Acl2Value'),

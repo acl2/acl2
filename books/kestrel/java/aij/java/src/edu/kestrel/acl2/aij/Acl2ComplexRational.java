@@ -60,6 +60,23 @@ final class Acl2ComplexRational extends Acl2Number {
         return Acl2Symbol.T;
     }
 
+    /**
+     * Returns a complex rational with the given real and imaginary parts.
+     * This name of this method is not {@code make}
+     * because otherwise it would have to be public,
+     * due to the public {@link Acl2Number#make(Acl2Rational, Acl2Rational)}.
+     *
+     * @param realPart      The real part of the complex rational.
+     *                      It is never {@code null}.
+     * @param imaginaryPart The imaginary part of the complex rational.
+     *                      It is never {@code null} and never 0.
+     * @return The complex rational.
+     */
+    public static Acl2ComplexRational makeInternal(Acl2Rational realPart,
+                                                   Acl2Rational imaginaryPart) {
+        return new Acl2ComplexRational(realPart, imaginaryPart);
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -104,24 +121,6 @@ final class Acl2ComplexRational extends Acl2Number {
     @Override
     public String toString() {
         return "#\\c(" + this.realPart + " " + this.imaginaryPart + ")";
-    }
-
-    /**
-     * Returns a complex rational with the given real and imaginary parts.
-     * This method must be public because
-     * the corresponding method in {@link Acl2Number} is public.
-     * However, this method cannot be called from outside this package
-     * because the {@link Acl2ComplexRational} class is not public.
-     *
-     * @param realPart      The real part of the complex rational.
-     *                      It is never {@code null}.
-     * @param imaginaryPart The imaginary part of the complex rational.
-     *                      It is never {@code null} and never 0.
-     * @return The complex rational.
-     */
-    public static Acl2ComplexRational make(Acl2Rational realPart,
-                                           Acl2Rational imaginaryPart) {
-        return new Acl2ComplexRational(realPart, imaginaryPart);
     }
 
     /**

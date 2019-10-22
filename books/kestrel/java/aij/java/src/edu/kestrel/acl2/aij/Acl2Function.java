@@ -53,6 +53,9 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
 
     /**
      * Checks if this function is the {@code if} ACL2 primitive function.
+     *
+     * @return {@code true} if this function is {@code if},
+     * otherwise {@code false}.
      */
     abstract boolean isIf();
 
@@ -60,6 +63,9 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Checks if this function is the {@code or} ACL2 "pseudo-function".
      * This is not an ACL2 notion; it is an AIJ notion.
      * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
+     *
+     * @return {@code true} if this function is {@code or},
+     * otherwise {@code false}.
      */
     abstract boolean isOr();
 

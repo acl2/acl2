@@ -1493,14 +1493,8 @@
 ; returned here "assumes" that this further dive has already been done.)
 
   (case-match term
-    (('if *t* x2 *nil*) ; see untranslate-and
-     (addr-recur 2
-                 (and-addr n x2 iff-flg)))
     (('if x1 x2 *nil*)
-     (cond ((and iff-flg (equal x2 *t*)) ; see untranslate-and
-            (addr-recur 1
-                        (and-addr n x1 t)))
-           ((int= n 1)
+     (cond ((int= n 1)
             (mv '(1) x1 t nil))
            (t
             (addr-recur 2
@@ -1686,14 +1680,6 @@
          (mv t (er hard 'expand-address
                    "Surprise!  Found an unexpected raw-term atom, ~x0."
                    raw-term)))
-        ((and (ffn-symb-p term 'if)
-              (equal (fargn term 1) *t*))
-         (expand-address-recurse
-          :ans (cons 2 rest-addr)
-          :new-addr addr
-          :new-raw-term raw-term
-          :new-term (fargn term 2)
-          :new-iff-flg iff-flg))
         (t
          (let ((dive-fn
                 (cdr (assoc-eq (car raw-term)

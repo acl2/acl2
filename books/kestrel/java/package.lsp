@@ -17,24 +17,29 @@
 (defpkg "JAVA" (append *std-pkg-symbols*
                        '(*pkg-witness-name*
                          *primitive-formals-and-guards*
-                         access-event-tuple-namex
-                         access-event-tuple-type
-                         add-suffix-to-fn
+                         add-const-to-untranslate-preprocess
+                         add-suffix
                          all-ffn-symbs
                          all-free/bound-vars
-                         all-pkgs-in-world
+                         all-vars-open
+                         all-vars-open-lst
                          alpha/digit-chars
                          alpha/digit/dash-charlist-p
                          alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
+                         arity+
                          bad-atom<=
                          body
                          bool
                          char-downcase
                          char-upcase
                          chars=>nats
+                         cons-pos-alistp
+                         define-sk
                          defxdoc+
                          doublets-to-alist
+                         dumb-occur-var-open
+                         dumb-occur-var-open-lst
                          ensure-boolean$
                          ensure-doublet-list$
                          ensure-function-name$
@@ -55,15 +60,20 @@
                          ffn-symb
                          flambda-applicationp
                          flambdap
+                         flatten
                          fmt-hard-right-margin
                          fmt-soft-right-margin
                          formals
                          fquotep
+                         function-namep
+                         implicate
                          implode
                          impossible
                          known-packages
                          lambda-body
                          lambda-formals
+                         logext
+                         loghead
                          logic-fns-with-raw-code
                          lower-case-p
                          make-lambda
@@ -71,36 +81,46 @@
                          msg-listp
                          nats=>string
                          no-stobjs-p
+                         organize-symbols-by-name
+                         organize-symbols-by-pkg
+                         packn
                          packn-pos
                          partition-rest-and-keyword-args
+                         patbind-fun
                          patbind-run-when
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-termfn-listp
                          pseudo-termfnp
                          pure-raw-p
                          quote-listp
                          rawp
-                         remove-mbe-exec-from-term
-                         remove-mbe-logic-from-term
-                         remove-progn-from-term
-                         remove-trivial-lambda-vars
-                         remove-unused-vars-from-term
+                         remove-assocs-eq
+                         remove-mbe-exec
+                         remove-mbe-logic
+                         remove-progn
+                         remove-trivial-vars
+                         remove-unused-vars
                          sbyte16
                          sbyte32
+                         sbyte32p
                          sbyte64
+                         sbyte64p
                          sbyte8
                          sort-symbol-listp
                          str-fix
                          string-downcase
+                         string-string-alistp
                          string-symbollist-alistp
                          string-upcase
                          string=>nats
                          symbol-name-lst
-                         symbol-nat-alistp
+                         symbol-pos-alistp
                          symbol-string-alistp
                          symbol-symbol-alistp
                          symbol-package-name-lst
+                         table-alist+
                          trans-eval
                          tuplep
                          typed-tuplep
@@ -115,6 +135,4 @@
                          upper-case-p
                          variablep
                          str::chars-in-charset-p
-                         str::natchars16
-                         str::natstr
-                         str::strtok)))
+                         str::natstr)))

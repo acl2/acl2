@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-;  hifat-to-lofat-inversion.lisp                        Mihir Mehta
+;  lofat-to-string-inversion.lisp                       Mihir Mehta
 
 ; This is a proof of the invertibility of the lofat-to-string transformation.
 

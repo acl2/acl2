@@ -23,6 +23,9 @@ public final class Acl2String extends Acl2Value {
      * is a valid representation of an ACL2 string.
      * This is the case when every Java character of the string
      * is below 256, i.e. it is a valid representation of an ACL2 character.
+     *
+     * @param jstring The Java string to check for validity.
+     * @return {@code true} if the string is valid, otherwise {@code false}.
      */
     private static boolean isValidString(String jstring) {
         int len = jstring.length();
@@ -148,7 +151,6 @@ public final class Acl2String extends Acl2Value {
      * @return The witness.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
-     * @throws IllegalStateException   If the package witness is not set yet.
      */
     @Override
     Acl2Symbol pkgWitness() throws Acl2EvaluationException {
@@ -159,9 +161,7 @@ public final class Acl2String extends Acl2Value {
         } catch (IllegalArgumentException e) {
             throw new Acl2EvaluationException(null, e);
         }
-        String witnessName = Acl2Package.getWitnessName();
-        if (witnessName == null)
-            throw new IllegalStateException("Witness not defined yet.");
+        String witnessName = Acl2Package.WITNESS_NAME;
         Acl2Symbol result;
         try {
             result = Acl2Symbol.make(packageName, witnessName);

@@ -17,22 +17,23 @@
 
 
 ;;; Keep the following defconst synced with all the acl2s parameters
-(defconst *acl2s-parameters* '(:num-trials
+(defconst *acl2s-parameters* '(:testing-enabled
+                               :num-trials
                                :verbosity-level
                                :num-counterexamples
+                               :num-print-counterexamples
                                :num-witnesses
+                               :num-print-witnesses
                                ;show-top-level-counterexample
+                               :search-strategy
                                :sampling-method
                                :backtrack-limit
-                               :search-strategy
-                               :testing-enabled
                                :cgen-timeout
                                :cgen-local-timeout
                                :print-cgen-summary
+                               :backtrack-bad-generalizations
                                :use-fixers
                                :recursively-fix
-                               :num-print-counterexamples
-                               :num-print-witnesses
                                ))
 
 ;All user-defined parameters are stored here
@@ -120,8 +121,31 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 </p>
 ")
 
+(defconst *testing-enabled-values* '(T NIL :naive))
+
 (add-acl2s-parameter 
- num-trials 4000
+ testing-enabled :naive
+ :short "Testing enable/disable flag"
+ :long
+" <p>Testing can be enabled or disabled using this parameter.
+  The default value is  <tt>:naive</tt> (unless you are in
+  the usual ACL2 Sedan session modes, where default is @('t')).
+  Setting this parameter to @('nil') amounts to disabling
+  the testing mechanism. Setting this parameter
+  to <tt>:naive</tt> leads to top-level testing without any
+  theorem prover support.</p>
+  <code>
+   Usage:
+   (acl2s-defaults :set testing-enabled :naive)
+   (acl2s-defaults :get testing-enabled)
+   :doc testing-enabled
+  </code>
+   "
+ :guard (member-eq value *testing-enabled-values*)
+ :setter set-acl2s-random-testing-enabled)
+
+(add-acl2s-parameter 
+ num-trials 1000
  :short "Max number of tries to find counterexamples"
  :long
 " Maximum number of tries (attempts) to construct 
@@ -254,30 +278,6 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    "
  :guard (member-eq value *search-strategy-values*))
 
-(add-acl2s-parameter 
- use-fixers nil
- :short "Specify whether fixers are to be used."
- :long "
-  By default this parameter is set to <tt>nil</tt>.
-   <code>
-    Usage:
-    (acl2s-defaults :set use-fixers t)
-    (acl2s-defaults :get use-fixers)
-    :doc use-fixers
-   </code>
-   "
- :guard (booleanp value))
-
-(add-acl2s-parameter 
- recursively-fix t
- :short "Specify whether unsatisfied but fixable constraints are to be recursively fixed."
- :long "Specify whether unsatisfied but fixable constraints are to be
-  recursively fixed. The resulting solution substitutions are stacked in the
-  reverse order. 
-  By default this parameter is set to <tt>t</tt>.
-   "
- :guard (booleanp value))
-
 ;; Use natural seeds or random tree of natural numbers 
 
 (defconst *sampling-method-values* '(:random :uniform-random :be :mixed))
@@ -299,7 +299,6 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    "
  :guard (member-eq value *sampling-method-values*))
 
-
 (add-acl2s-parameter 
  backtrack-limit 3
  :short "Maximum number of backtracks allowed (per variable)"
@@ -317,7 +316,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
  :guard (natp value))
 
 (add-acl2s-parameter 
- cgen-timeout 3600 ;bad name -- TODO: change it in a latter version.
+ cgen-timeout 60 ;bad name -- TODO: change it in a latter version.
  :short "test?/prover timeout (in seconds)"
  :long
   "Maximum allowed time (in seconds) to be spent
@@ -326,11 +325,11 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   with-timeout macro around the call to 
   prove/cgen.
 
-  The default timeout limit is set to 3600 sec.
+  The default timeout limit is set to 60 sec.
   Guard : Timeout should be a non-negative rational.
    <code>
     Usage:
-    (acl2s-defaults :set cgen-timeout 3600)
+    (acl2s-defaults :set cgen-timeout 60)
     (acl2s-defaults :get cgen-timeout)
     :doc cgen-timeout
    </code>
@@ -356,28 +355,59 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    "
  :guard (and (rationalp value) (<= 0 value)))
 
-(defconst *testing-enabled-values* '(T NIL :naive))
+(add-acl2s-parameter 
+ print-cgen-summary T
+ :short "Print summary for Cgen"
+ :long " <p>Print summary of cgen/testing done in course of test? form (and
+  other forms). The default is set to @('T'). Setting this parameter to
+  @('NIL'), means that no summary is printed.</p>
+
+   <code>
+    Usage:
+    (acl2s-defaults :set print-cgen-summary t)
+    (acl2s-defaults :get print-cgen-summary)
+    :doc print-cgen-summary
+   </code>
+   "
+ :guard (booleanp value))
 
 (add-acl2s-parameter 
- testing-enabled :naive
- :short "Testing enable/disable flag"
- :long
-" <p>Testing can be enabled or disabled using this parameter.
-  The default value is  <tt>:naive</tt> (unless you are in
-  the usual ACL2 Sedan session modes, where default is @('t')).
-  Setting this parameter to @('nil') amounts to disabling
-  the testing mechanism. Setting this parameter
-  to <tt>:naive</tt> leads to top-level testing without any
-  theorem prover support.</p>
-  <code>
-   Usage:
-   (acl2s-defaults :set testing-enabled :naive)
-   (acl2s-defaults :get testing-enabled)
-   :doc testing-enabled
-  </code>
+ backtrack-bad-generalizations t
+ :short "Specify whether to check for and then backtrack from bad generalizations."
+ :long "
+  By default this parameter is set to <tt>t</tt>.
+   <code>
+    Usage:
+    (acl2s-defaults :set backtrack-bad-generalizations t)
+    (acl2s-defaults :get backtrack-bad-generalizations)
+    :doc backtrack-bad-generalizations
+   </code>
    "
- :guard (member-eq value *testing-enabled-values*)
- :setter set-acl2s-random-testing-enabled)
+ :guard (booleanp value))
+
+(add-acl2s-parameter 
+ use-fixers nil
+ :short "Specify whether fixers are to be used."
+ :long "
+  By default this parameter is set to <tt>nil</tt>.
+   <code>
+    Usage:
+    (acl2s-defaults :set use-fixers t)
+    (acl2s-defaults :get use-fixers)
+    :doc use-fixers
+   </code>
+   "
+ :guard (booleanp value))
+
+(add-acl2s-parameter 
+ recursively-fix t
+ :short "Specify whether unsatisfied but fixable constraints are to be recursively fixed."
+ :long "Specify whether unsatisfied but fixable constraints are to be
+  recursively fixed. The resulting solution substitutions are stacked in the
+  reverse order. 
+  By default this parameter is set to <tt>t</tt>.
+   "
+ :guard (booleanp value))
 
 
 
@@ -516,21 +546,6 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 
 
-(add-acl2s-parameter 
- print-cgen-summary T
- :short "Print summary for Cgen"
- :long " <p>Print summary of cgen/testing done in course of test? form (and
-  other forms). The default is set to @('T'). Setting this parameter to
-  @('NIL'), means that no summary is printed.</p>
-
-   <code>
-    Usage:
-    (acl2s-defaults :set print-cgen-summary t)
-    (acl2s-defaults :get print-cgen-summary)
-    :doc print-cgen-summary
-   </code>
-   "
- :guard (booleanp value))
 
 
 (defun assoc-eq/pkg-agnostic (s al)

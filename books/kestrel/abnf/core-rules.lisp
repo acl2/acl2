@@ -26,31 +26,31 @@
   :parents (abnf)
   :short "Core rules of ABNF."
   :long
-  "<p>
-   These rules are specified in [RFC:B].
-   They are a set of rules commonly used
-   as part of the definition of the concrete syntax of languages in ABNF.
-   In particular, they are used
-   as part of the definition of the concrete syntax of ABNF itself in [RFC:4].
-   </p>
-   <p>
-   Since the concrete syntax of ABNF is specified, in [RFC:4],
-   using ABNF concrete syntax,
-   and since that definition of the concrete syntax of ABNF
-   uses the core rules,
-   we break the circularity by formalizing the core rules
-   using the abstract syntax of ABNF.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "These rules are specified in [RFC:B].
+     They are a set of rules commonly used
+     as part of the definition of the concrete syntax of languages in ABNF.
+     In particular, they are used
+     as part of the definition of the concrete syntax of ABNF itself
+     in [RFC:4].")
+   (xdoc::p
+    "Since the concrete syntax of ABNF is specified, in [RFC:4],
+     using ABNF concrete syntax,
+     and since that definition of the concrete syntax of ABNF
+     uses the core rules,
+     we break the circularity by formalizing the core rules
+     using the abstract syntax of ABNF."))
   :order-subtopics t)
 
 (defsection core-rule-names
   :parents (core-rules)
   :short "Names of the core rules."
   :long
-  "<p>
-   The names are lowercase,
-   according to the normalized representation required by @(tsee rulename-wfp).
-   </p>"
+  (xdoc::topstring-p
+   "The names are lowercase,
+    according to the normalized representation
+    required by @(tsee rulename-wfp).")
 
   (local (xdoc::set-default-parents core-rule-names))
 
@@ -75,11 +75,10 @@
   :parents (core-rules)
   :short "Definition of the core rules."
   :long
-  "<p>
-   These definitions use the
-   <see topic='@(url convenience-constructors)'>convenience constructors</see>
-   for the abstract syntax.
-   </p>"
+  (xdoc::topstring-p
+   "These definitions use the "
+   (xdoc::seetopic "convenience-constructors" "convenience constructors")
+   " for the abstract syntax.")
 
   (local (xdoc::set-default-parents core-rule-definitions))
 
@@ -146,18 +145,16 @@
   :parents (core-rules)
   :short "All the core rules."
   :long
-  "<p>
-   The core rules are well-formed and closed.
-   </p>
-   <p>
-   They generate only strings of octets.
-   Without the @('OCTET') rule,
-   they generate only strings of ASCII codes.
-   </p>
-   <p>
-   We use @(tsee add-const-to-untranslate-preprocess)
-   to keep this constant unexpanded in output.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The core rules are well-formed and closed.")
+   (xdoc::p
+    "They generate only strings of octets.
+     Without the @('OCTET') rule,
+     they generate only strings of ASCII codes.")
+   (xdoc::p
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
   (list *rule_alpha*
         *rule_bit*
         *rule_char*

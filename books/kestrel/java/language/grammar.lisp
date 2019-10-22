@@ -141,7 +141,7 @@
      "Considering the lexical grammar as a whole would imply that
       terminal symbols like the three forming the keyword @('for')
       have to be exactly those ASCII characters.
-      However, [JLS:3.1] distinguishes three lexical translation steps,
+      However, [JLS:3.2] distinguishes three lexical translation steps,
       where the first one turns Unicode escapes into Unicode characters,
       which in particular turns Unicode escapes for ASCII characters
       into the corresponding ASCII characters.
@@ -155,13 +155,42 @@
     (xdoc::seetopic "abnf::well-formedness" "well-formed")
     " and "
     (xdoc::seetopic "abnf::closure" "closed")
-    "."))
+    ".")
+   (xdoc::p
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
   (append *lexical-grammar*
           *syntactic-grammar*)
   ///
+
+  (add-const-to-untranslate-preprocess *grammar*)
 
   (defruled rulelist-wfp-of-*grammar*
     (abnf::rulelist-wfp *grammar*))
 
   (defruled rulelist-closedp-of-*grammar*
     (abnf::rulelist-closedp *grammar*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ttree-with-root-p (tree (rulename stringp))
+  :returns (yes/no booleanp)
+  :short "Recognize terminated ABNF trees whose root is the given rule name,
+          for the Java grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a useful abbreviation for
+     a more verbose conjunction of ABNF predicates
+     with more verbose arguments.")
+   (xdoc::p
+    "The @('t') in @('ttree') stands for `terminated'.
+     That is, the tree has Unicode characters at its leaves,
+     not rule names."))
+  (and
+   (abnf::treep tree)
+   (abnf::tree-terminatedp tree)
+   (abnf::tree-match-element-p tree
+                               (abnf::element-rulename
+                                (abnf::rulename rulename))
+                               *grammar*)))

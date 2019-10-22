@@ -1277,3 +1277,18 @@
                   (fat32-update-lower-28 (nth n fa-table)
                                          val)))
   :hints (("goal" :in-theory (enable set-indices-in-fa-table))))
+
+(defthm
+  fat32-build-index-list-correctness-2
+  (implies
+   (equal (mv-nth 1
+                  (fat32-build-index-list fa-table masked-current-cluster
+                                          length cluster-size))
+          0)
+   (member-equal
+    masked-current-cluster
+    (mv-nth 0
+            (fat32-build-index-list fa-table masked-current-cluster
+                                    length cluster-size))))
+  :hints
+  (("goal" :in-theory (enable fat32-build-index-list))))

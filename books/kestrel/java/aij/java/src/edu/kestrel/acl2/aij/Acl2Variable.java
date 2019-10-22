@@ -10,21 +10,22 @@ import java.util.Map;
 
 /**
  * Representation of ACL2 variables.
- * These are translated terms that are ACL2 symbols.
+ * These are translated terms that are symbols.
  */
 public final class Acl2Variable extends Acl2Term {
 
     //////////////////////////////////////// private members:
 
     /**
-     * Symbol that the variable consists of.
+     * Name of the variable.
      * This is never {@code null}.
      */
     private final Acl2Symbol name;
 
     /**
-     * Constructs an ACL2 variable from
-     * the ACL2 symbol that the variable consists of.
+     * Constructs a variable with the given name.
+     *
+     * @param name The symbol of the variable.
      */
     private Acl2Variable(Acl2Symbol name) {
         this.name = name;
@@ -35,7 +36,7 @@ public final class Acl2Variable extends Acl2Term {
      * This is set, once, to a non-negative integer
      * by {@link #setVariableIndices(Map)}.
      * The purpose of this index is just to optimize the evaluation of terms,
-     * so that bindings of values to variables can be represented as
+     * so that bindings of variables to values can be represented as
      * arrays instead of maps, for faster access:
      * see {@link Acl2Term#eval(Acl2Value[])}.
      * Since variables with the same name may have different indices
@@ -58,11 +59,12 @@ public final class Acl2Variable extends Acl2Term {
      * Sets the index of this variable,
      * according to the supplied map from variable symbols to indices.
      *
-     * @throws IllegalArgumentException if this variable
+     * @param indices Map from variable symbols to indices.
+     * @throws IllegalArgumentException If this variable
      *                                  is not a key of the map,
      *                                  or if the value associated with it
-     *                                  is negative
-     * @throws IllegalStateException    if this variable index is already set
+     *                                  is negative.
+     * @throws IllegalStateException    If this variable index is already set.
      */
     @Override
     void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
@@ -82,10 +84,13 @@ public final class Acl2Variable extends Acl2Term {
     }
 
     /**
-     * Evaluates this ACL2 variable to an ACL2 value,
-     * with respect to the given binding of values to variable symbols.
+     * Evaluates this variable to a value,
+     * with respect to the given binding of variable indices to values.
      * The result is the value bound to the symbol of the variable.
      * This evaluation never fails.
+     *
+     * @param binding The binding of variable indices to values.
+     * @return The value that results from the evaluation.
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) {
@@ -95,7 +100,9 @@ public final class Acl2Variable extends Acl2Term {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 variable is equal to the argument object.
+     * Compares this variable with the argument object for equality.
+     *
+     * @param o The object to compare this variable with.
      */
     @Override
     public boolean equals(Object o) {
@@ -106,7 +113,9 @@ public final class Acl2Variable extends Acl2Term {
     }
 
     /**
-     * Returns a hash code for this ACL2 variable.
+     * Returns a hash code for this variable.
+     *
+     * @return The hash code for this variable.
      */
     @Override
     public int hashCode() {
@@ -114,7 +123,7 @@ public final class Acl2Variable extends Acl2Term {
     }
 
     /**
-     * Compares this ACL2 variable with the argument ACL2 term for order.
+     * Compares this variable with the argument term for order.
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
@@ -122,9 +131,10 @@ public final class Acl2Variable extends Acl2Term {
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *
-     * @return a negative integer, zero, or a positive integer as
-     * this term is less than, equal to, or greater than the argument
-     * @throws NullPointerException if the argument is null
+     * @param o The term to compare this variable with.
+     * @return A negative integer, zero, or a positive integer as
+     * this term is less than, equal to, or greater than the argument.
+     * @throws NullPointerException If the argument is {@code null}.
      */
     @Override
     public int compareTo(Acl2Term o) {
@@ -139,7 +149,9 @@ public final class Acl2Variable extends Acl2Term {
     }
 
     /**
-     * Returns a printable representation of this ACL2 variable.
+     * Returns a printable representation of this variable.
+     *
+     * @return A printable representation of this variable.
      */
     @Override
     public String toString() {
@@ -147,9 +159,11 @@ public final class Acl2Variable extends Acl2Term {
     }
 
     /**
-     * Returns an ACL2 variable with the given ACL2 name.
+     * Returns a variable with the given name.
      *
-     * @throws IllegalArgumentException if name is null
+     * @param name The name of the variable.
+     * @return The variable.
+     * @throws IllegalArgumentException If {@code name} is {@code null}.
      */
     public static Acl2Variable make(Acl2Symbol name) {
         if (name == null)

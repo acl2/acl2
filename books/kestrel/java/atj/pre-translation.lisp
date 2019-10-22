@@ -10,19 +10,21 @@
 
 (in-package "JAVA")
 
+(include-book "name-translation")
 (include-book "types")
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
+(include-book "kestrel/std/system/all-vars-open" :dir :system)
+(include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
-(include-book "kestrel/std/system/remove-trivial-lambda-vars" :dir :system)
+(include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
-(include-book "kestrel/std/typed-alists/symbol-symbol-alistp" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "kestrel/utilities/strings/hexchars" :dir :system)
-(include-book "std/strings/decimal" :dir :system)
-(include-book "std/util/defval" :dir :system)
+(include-book "std/alists/remove-assocs" :dir :system)
+(include-book "std/strings/symbols" :dir :system)
+(include-book "std/typed-alists/symbol-pos-alistp" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,16 +58,23 @@
      (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
      ".")
     (xdoc::li
-     "We rename all the variables
-      so that their names are valid Java variable names
-      and so that different variables with the same name are renamed apart.
-      See "
-     (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
-     ".")
-    (xdoc::li
      "We annotate terms with ATJ type information.
       See "
      (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
+     ".")
+    (xdoc::li
+     "We mark the lambda-bound variables
+      that can be reused and destructively updated in Java.
+      See "
+     (xdoc::seetopic "atj-pre-translation-var-reuse" "here")
+     ".")
+    (xdoc::li
+     "We rename variables
+      so that their names are valid Java variable names
+      and so that different variables with the same name are renamed apart,
+      unless they have been marked for reuse in the previous step.
+      See "
+     (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
      ".")))
   :order-subtopics t)
 
@@ -100,9 +109,9 @@
   :returns (new-term pseudo-termp :hyp (pseudo-termp term))
   :short "Remove all the @(tsee return-last)s from a term."
   (b* ((term (if guards$
-                 (remove-mbe-logic-from-term term)
-               (remove-mbe-exec-from-term term)))
-       (term (remove-progn-from-term term)))
+                 (remove-mbe-logic term)
+               (remove-mbe-exec term)))
+       (term (remove-progn term)))
     term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,7 +135,7 @@
      thus, this removal is safe and semantics-preserving.")
    (xdoc::p
     "This is accomplished
-     via the @(tsee remove-unused-vars-from-term) system utility.
+     via the @(tsee remove-unused-vars) system utility.
      No other code is needed to do this in ATJ.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,7 +152,7 @@
     "We remove all the lambda-bound variables,
      and corresponding actual arguments,
      that are identical to the corresponding actual arguments.
-     See the discussion in @(tsee remove-trivial-lambda-vars),
+     See the discussion in @(tsee remove-trivial-vars),
      which is the utility that we use
      to accomplish this pre-translation step.")
    (xdoc::p
@@ -154,534 +163,6 @@
      avoiding the ``artificial'' ones to close the lambda expressions.
      Indeed, @(tsee let) terms are generally not closed in other languages,
      or even in ACL2's untranslated terms.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ atj-pre-translation-var-renaming
-  :parents (atj-pre-translation)
-  :short "Pre-translation step performed by ATJ:
-          renaming of all the ACL2 variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is done only in the shallow embedding.")
-   (xdoc::p
-    "We systematically rename all the ACL2 variables
-     so that their new names (without package prefixes)
-     are valid Java variable names,
-     and so that different ACL2 variables with the same name are renamed apart.
-     This simplifies the subsequent ACL2-to-Java translation,
-     which can just turn each ACL2 variable
-     into a Java variable with the same name."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-char-to-jchars-id ((char characterp)
-                               (startp booleanp)
-                               (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (characterp char))
-  :short "Turn an ACL2 character into one or more Java characters
-          of an ASCII Java identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in the variable renaming step of the ATJ pre-translation,
-     but also to turn ACL2 function and pacakge names into Java identifiers.")
-   (xdoc::p
-    "ACL2 symbols may consist of arbitrary sequences of 8-bit characters,
-     while Java identifiers may only contain certain Unicode characters;
-     when Unicode is restricted to ASCII,
-     Java identifiers are much more restricted than ACL2 symbols.
-     They are also more restricted than ACL2 package names,
-     although ACL2 package names have restrictions of their own
-     compared to Java identifiers, notably the uppercase restriction.")
-   (xdoc::p
-    "If an ACL2 character (part of an ACL2 symbol or package name) is a letter,
-     we keep it unchanged in forming the Java identifier,
-     but we flip it from uppercase to lowercase or from lowercase to uppercase
-     if the @('flip-case-p') flag is @('t'):
-     since ACL2 symbols often have uppercase letters,
-     by flipping them to lowercase we generate
-     more readable and idiomatic Java identifiers;
-     and flipping lowercase letters to uppercase letters avoids conflicts.
-     If the ACL2 character is a digit, we keep it unchanged
-     only if it is not at the start of the Java identifier:
-     this is indicated by the @('startp') flag.
-     Otherwise, we turn it into an ``escape'' consisting of
-     @('$') followed by two hexadecimal digits for the ASCII code of the digit.
-     We use the same mapping for all the ACL2 characters
-     that are neither letters nor digits,
-     except for dash, which is very common in ACL2 symbols and package names,
-     and which we map into an underscore in Java,
-     which is allowed in Java identifiers.
-     The hexadecimal digits greater than 9 are uppercase.
-     Note that @('$') itself, which is valid in Java identifiers,
-     is mapped to itself followed by its hex code (not just to itself)
-     when it appears in the ACL2 symbol or package name."))
-  (cond ((str::up-alpha-p char) (if flip-case-p
-                                    (list (str::downcase-char char))
-                                  (list char)))
-        ((str::down-alpha-p char) (if flip-case-p
-                                      (list (str::upcase-char char))
-                                    (list char)))
-        ((and (digit-char-p char)
-              (not startp)) (list char))
-        ((eql char #\-) (list #\_))
-        (t (b* ((acode (char-code char))
-                ((mv hi-char lo-char) (ubyte8=>hexchars acode)))
-             (list #\$ hi-char lo-char)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-chars-to-jchars-id ((chars character-listp)
-                                (startp booleanp)
-                                (flip-case-p booleanp))
-  :returns (jchars character-listp :hyp (character-listp chars))
-  :short "Lift @(tsee atj-char-to-jchars-id) to lists."
-  :long
-  (xdoc::topstring-p
-   "This is used on the sequence of characters
-    that form an ACL2 symbol or package name;
-    see the callers of this function for details.
-    The @('startp') flag becomes @('nil') at the first recursive call,
-    because after the first character
-    we are no longer at the start of the Java identifier.")
-  (cond ((endp chars) nil)
-        (t (append (atj-char-to-jchars-id (car chars) startp flip-case-p)
-                   (atj-chars-to-jchars-id (cdr chars) nil flip-case-p)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atj-disallowed-jvar-names*
-  :short "Disallowed Java variable names
-          for the shallowly embedded ACL2 variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The function @(tsee atj-chars-to-jchars-id) turns
-     an ACL2 symbol into one whose name is a valid Java variable name,
-     but this is not sufficient:
-     a Java variable name cannot be a keyword,
-     a boolean literal, or the null literal.")
-   (xdoc::p
-    "This constant collects these disallowed sequences of characters,
-     which otherwise consist of valid Java identifier characters.
-     It also includes the empty sequence,
-     because an ACL2 symbol may consist of no characters,
-     but a Java identifier cannot be empty."))
-  (append *keywords*
-          *boolean-literals*
-          (list *null-literal*)
-          (list ""))
-  ///
-  (assert-event (string-listp *atj-disallowed-jvar-names*))
-  (assert-event (no-duplicatesp-equal *atj-disallowed-jvar-names*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-rename-var ((var symbolp)
-                        (index natp)
-                        (curr-pkg stringp)
-                        (vars-by-name string-symbollist-alistp))
-  :guard (not (equal curr-pkg ""))
-  :returns (new-var symbolp)
-  :short "Rename an ACL2 variable to its Java name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     each ACL2 variable is turned into a Java variable:
-     either a local variable or a method parameter.
-     This function renames an ACL2 variable
-     so that its name (without the package prefix)
-     can be directly used as the name of the Java variable.")
-   (xdoc::p
-    "Each ACL2 function is turned into a Java method,
-     whose body is a shallowly embedded representation
-     of the ACL2 function body.
-     The ACL2 function body may reference the ACL2 function's parameter,
-     as well as @(tsee let)-bound variables (via lambda expressions).
-     Thus, the same variable symbol may in fact denote different variables
-     in different parts of an ACL2 function body.
-     Java does not allow different local variables with the same name
-     in (nested scopes in) the same method,
-     and so we need to map homonymous but different ACL2 variables
-     in the same ACL2 function
-     to differently named Java variables
-     in the same Java method.
-     We use numeric indices, one for each variable name,
-     which is appended (as explained below) to the Java variable name
-     to make it unique within the Java mehtod.")
-   (xdoc::p
-    "Another need for disambiguation arises because of package prefixes.
-     An ACL2 variable is a symbol,
-     which consists of a name and also a package name:
-     two distinct variables may have the same name
-     but different package names.
-     However, when we append the package name and the name of the symbol,
-     we have unique Java variable names.")
-   (xdoc::p
-    "Systematically prefixing, in the generated Java variables,
-     every symbol name with the package prefix affects readability.
-     In ACL2, package prefixes are normally omitted
-     for symbols in the current ACL2 package.
-     Here we do something similar for the Java variable names,
-     where the notion of current package is as follows.
-     As mentioned above, each ACL2 function is turned into a Java method:
-     this method is inside a Java class whose name is derived from
-     the ACL2 package name of the function name:
-     thus, the ``current package'' in this context is
-     the one of the function name.
-     This is the @('curr-pkg') parameter of this code generation function.")
-   (xdoc::p
-    "Given an ACL2 variable (i.e. symbol)
-     with name @('name') and package name @('pname'),
-     in general the generated Java variable name is
-     @('<pname>$$$<name>$$<index>'),
-     where @('<pname>') and @('<name>') are representations of the ACL2 names
-     that are valid for Java identifiers,
-     and @('<index>') is a decimal representation of the numeric index.")
-   (xdoc::p
-    "If @('<pname>') is the same as the current package,
-     we omit @('<pname>$$$').
-     We omit @('<pname>$$$') also when the variable
-     is the only one with name @('<name>')
-     within the ``current'' ACL2 function:
-     since the scope of Java method parameters and local variables
-     is limited to the method where they occur,
-     no naming conflict may arise in this case.
-     The parameter @('vars-by-name') consists of
-     all the variables in the current ACL2 function,
-     organized by symbol name for easy lookup.
-     We retrieve the variables with the same name of the variable,
-     we remove the variable being processed from them,
-     and we check if the result is empty:
-     in this case, this is the only variable with that name.
-     (The alist may have duplicate symbols in its values.)")
-   (xdoc::p
-    "If the index is 0, we omit @('$$<index>'),
-     so that if there is just one variable with a certain name,
-     since we start with index 0, no index is added to the name.")
-   (xdoc::p
-    "Thus there are a few combinations possible with these three parts;
-     the use of triple and double @('$') characters guarantees
-     that there is no confusion with the @('$hh') escapes
-     where @('hh') is the hex code of an ACL2 character
-     that is not valid for a Java identifier.
-     Furthermore, if the resulting variable name is just @('<name>')
-     and happens to be a Java keyword or Java literal or empty,
-     we add a single @('$') at the end, which again is unambiguous.")
-   (xdoc::p
-    "This is a relatively simple and uniform scheme to keep names unique,
-     but we may improve it to generate more readable names.")
-   (xdoc::p
-    "We call @(tsee atj-chars-to-jchars-id) to create
-     @('<pname') and @('<name>') from @('pname') and @('name').
-     If there is a package prefix, the @('startp') flag is @('t')
-     only for @('pname'), but not for @('name'),
-     because @('<name>') is not the start of the Java identifier.
-     Otherwise, @('startp') is @('t') for @('name')
-     if there is no package prefix.")
-   (xdoc::p
-    "We put the renamed variable in the current package (i.e. @('curr-pkg')).
-     The choice of package is irrelevant, because the variables in a function
-     are renamed in a way that their names are all distinct
-     regardless of package prefixes.
-     However, using the current package makes things uniform."))
-  (b* ((pkg (symbol-package-name var))
-       (name (symbol-name var))
-       (omit-pname? (or (equal pkg curr-pkg)
-                        (null (remove-eq
-                               var
-                               (cdr (assoc-equal name vars-by-name))))))
-       (pname$$$-jchars (if omit-pname?
-                            nil
-                          (append (atj-chars-to-jchars-id (explode pkg) t t)
-                                  (list #\$ #\$ #\$))))
-       (name-jchars (atj-chars-to-jchars-id (explode name)
-                                            (endp pname$$$-jchars)
-                                            t))
-       ($$index-jchars (if (= index 0)
-                           nil
-                         (append (list #\$ #\$)
-                                 (str::natchars index))))
-       (jchars (append pname$$$-jchars name-jchars $$index-jchars))
-       (new-name (implode jchars))
-       (new-name (if (member-equal new-name *atj-disallowed-jvar-names*)
-                     (str::cat new-name "$")
-                   new-name)))
-    (intern$ new-name curr-pkg)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-rename-vars ((vars symbol-listp)
-                         (indices symbol-nat-alistp)
-                         (curr-pkg stringp)
-                         (vars-by-name string-symbollist-alistp))
-  :guard (not (equal curr-pkg ""))
-  :returns (mv (renaming symbol-symbol-alistp :hyp (symbol-listp vars))
-               (new-indices
-                symbol-nat-alistp
-                :hyp (and (symbol-listp vars)
-                          (symbol-nat-alistp indices))))
-  :short "Rename a sequence of ACL2 variables to their Java names."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As explained in @(tsee atj-rename-var),
-     the shallowly embedded ACL2 variables are made unique via indices.
-     There is an independent index for each ACL2 variable,
-     so we use an alist from symbols to natural numbers
-     to keep track of these indices.
-     This alist is threaded through the functions
-     that rename all the variables in ACL2 terms.")
-   (xdoc::p
-    "In ACL2, a variable is ``introduced''
-     as a formal parameter of a function or lambda expression,
-     and then referenced in the body of the function or lambda expression.
-     The choice and use of the index must be done at this introduction time,
-     and not at every reference to the variable after its introduction.
-     Thus, in the shallow embedding approach,
-     when we encounter the formals of a function or lambda expression,
-     we generate the Java variable names for these ACL2 variables,
-     using the current indices, and update and return the indices.
-     This function does that,
-     and returns the renamed ACL2 variables as an alist
-     from the old ACL2 variables to the new ACL2 variables,
-     i.e. the renaming map.")
-   (xdoc::p
-    "Each ACL2 variable in the input list is processed as follows.
-     If it has no index in the alist of indices,
-     it has index 0,
-     and the alist is extended to associate 1 (the next index) to the symbol.
-     Otherwise, the index in the alist is used,
-     and the alist is updated with the next index."))
-  (b* (((when (endp vars)) (mv nil indices))
-       (var (car vars))
-       (var+index (assoc-eq var indices))
-       (index (if (consp var+index) (cdr var+index) 0))
-       (indices (acons var (1+ index) indices))
-       ((mv renaming indices) (atj-rename-vars (cdr vars)
-                                               indices
-                                               curr-pkg
-                                               vars-by-name)))
-    (mv (acons var
-               (atj-rename-var var index curr-pkg vars-by-name)
-               renaming)
-        indices))
-  :verify-guards :after-returns
-
-  :prepwork
-
-  ((defrulel verify-guards-lemma
-     (implies (natp x)
-              (acl2-numberp x)))
-
-   (defrulel returns-lemma
-     (implies (natp x)
-              (natp (1+ x))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-rename-formals ((formals symbol-listp)
-                            (renaming symbol-symbol-alistp))
-  :returns (new-formals symbol-listp :hyp :guard)
-  :short "Rename the formal parameters of
-          a defined function or lambda expression
-          according to a supplied renaming."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used after calling @(tsee atj-rename-vars),
-     which introduces the new names for the formal parameters.
-     This function just looks up the names in the renaming alist
-     and replaces them, returning a list of renamed parameters.")
-   (xdoc::p
-    "The reason for having this separate function,
-     instead of having @(tsee atj-rename-var)
-     also return the new list of variables,
-     is motivated by the way lambda expression are treated:
-     see @(tsee atj-rename-term).
-     As explained there, the formal parameters of a lambda expression
-     that are the same as the correspoding actual parameters
-     are excluded from the call of @(tsee atj-rename-vars),
-     so that the old variable names can be re-used.
-     Thus, we must use the combined renaming
-     not only on the body of the lambda expression,
-     but also on its formal parameters:
-     this function does that for the formal parameters.
-     For uniformity, this function is also used when processing
-     a function definition, in order to rename the formal parameters
-     in a way that is consistent with the renamings in the body."))
-  (cond ((endp formals) nil)
-        (t (cons (cdr (assoc-eq (car formals) renaming))
-                 (atj-rename-formals (cdr formals) renaming))))
-  ///
-
-  (defrule len-of-atj-rename-formals
-    (equal (len (atj-rename-formals formals renaming))
-           (len formals))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines atj-rename-term
-  :short "Rename all the ACL2 variables in an ACL2 term to their Java names."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The alist from variables to indices
-     is threaded through this function and its mutually recursive companion.
-     On the other hand, the renaming alist is just passed down.")
-   (xdoc::p
-    "If the term is a variable, it is looked up in the renaming alist,
-     and replaced with the renamed variable.
-     Recall that new variable names are generated
-     via @(tsee atj-rename-var) and @(tsee atj-rename-vars),
-     when variables are introduced,
-     i.e. from formal parameters of defined functions and lambda expressions.
-     When instead a variable occurrence is encountered in a term,
-     it refers to the variable introduced in its surrounding scope,
-     and thus the occurrence must be just replaced with the renamed variable.")
-   (xdoc::p
-    "If the term is a quoted constant, it is left unchanged.")
-   (xdoc::p
-    "If the term is a function application,
-     its actual arguments are recursively processed,
-     renaming all their variables.
-     If the function is a named one, it is left unchanged.
-     If instead it is a lambda expression,
-     we introduce new variables renamings from its formal parameters,
-     and then recursively process the body of the lambda expression.
-     Lambda expressions may not be closed here,
-     due to the pre-translation step
-     that removes the trivial lambda-bound variables:
-     we append the newly generated renaming to the existing one,
-     achieving the desired ``shadowing'' of some of the old mappings
-     but maintaining access to the rest of the old mappings."))
-
-  (define atj-rename-term ((term pseudo-termp)
-                           (renaming symbol-symbol-alistp)
-                           (indices symbol-nat-alistp)
-                           (curr-pkg stringp)
-                           (vars-by-name string-symbollist-alistp))
-    :guard (not (equal curr-pkg ""))
-    :returns (mv (new-term pseudo-termp
-                           :hyp (and (pseudo-termp term)
-                                     (symbol-symbol-alistp renaming)))
-                 (new-indices symbol-nat-alistp
-                              :hyp (and (pseudo-termp term)
-                                        (symbol-nat-alistp indices))))
-    (cond ((variablep term) (mv (cdr (assoc-eq term renaming)) indices))
-          ((fquotep term) (mv term indices))
-          (t (b* ((fn (ffn-symb term))
-                  (args (fargs term))
-                  ((mv new-args
-                       indices) (atj-rename-terms args
-                                                  renaming
-                                                  indices
-                                                  curr-pkg
-                                                  vars-by-name))
-                  ((when (symbolp fn)) (mv (fcons-term fn new-args)
-                                           indices))
-                  (formals (lambda-formals fn))
-                  (body (lambda-body fn))
-                  ((mv new-renaming
-                       indices) (atj-rename-vars formals
-                                                 indices
-                                                 curr-pkg
-                                                 vars-by-name))
-                  (renaming (append new-renaming renaming))
-                  (new-formals (atj-rename-formals formals renaming))
-                  ((mv new-body
-                       indices) (atj-rename-term body
-                                                 renaming
-                                                 indices
-                                                 curr-pkg
-                                                 vars-by-name)))
-               (mv (fcons-term (make-lambda new-formals new-body)
-                               new-args)
-                   indices)))))
-
-  (define atj-rename-terms ((terms pseudo-term-listp)
-                            (renaming symbol-symbol-alistp)
-                            (indices symbol-nat-alistp)
-                            (curr-pkg stringp)
-                            (vars-by-name string-symbollist-alistp))
-    :guard (not (equal curr-pkg ""))
-    :returns (mv (new-terms (and (pseudo-term-listp new-terms)
-                                 (equal (len new-terms) (len terms)))
-                            :hyp (and (pseudo-term-listp terms)
-                                      (symbol-symbol-alistp renaming)))
-                 (new-indices symbol-nat-alistp
-                              :hyp (and (pseudo-term-listp terms)
-                                        (symbol-nat-alistp indices))))
-    (cond ((endp terms) (mv nil indices))
-          (t (b* (((mv new-term
-                       indices) (atj-rename-term (car terms)
-                                                 renaming
-                                                 indices
-                                                 curr-pkg
-                                                 vars-by-name))
-                  ((mv new-terms
-                       indices) (atj-rename-terms (cdr terms)
-                                                  renaming
-                                                  indices
-                                                  curr-pkg
-                                                  vars-by-name)))
-               (mv (cons new-term new-terms)
-                   indices)))))
-
-  :prepwork
-
-  ((defrulel consp-of-assoc-equal
-     (implies (alistp x)
-              (iff (consp (assoc-equal k x))
-                   (assoc-equal k x))))
-
-   (defrulel alistp-when-symbol-symbol-alistp
-     (implies (symbol-symbol-alistp x)
-              (alistp x)))
-
-   (defrulel pseudo-termp-when-symbolp
-     (implies (symbolp x)
-              (pseudo-termp x)))
-
-   (defrulel true-listp-when-alistp
-     (implies (alistp x)
-              (true-listp x))))
-
-  :verify-guards nil ; done below
-  ///
-  (verify-guards atj-rename-term))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-rename-formals+body ((formals symbol-listp)
-                                 (body pseudo-termp)
-                                 (curr-pkg stringp))
-  :guard (not (equal curr-pkg ""))
-  :returns (mv (new-formals symbol-listp :hyp (symbol-listp formals))
-               (new-body pseudo-termp :hyp (and (pseudo-termp body)
-                                                (symbol-listp formals))))
-  :verify-guards nil
-  :short "Rename all the ACL2 variables to their Java names,
-          in the formal parameters and body of an ACL2 function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Starting with the empty alist of indices,
-     we introduce renamed variables for the formal parameters.
-     We use the renaming as the starting one to process the body."))
-  (b* ((vars (union-eq formals (all-free/bound-vars body)))
-       (vars-by-name (organize-symbols-by-name vars))
-       ((mv renaming indices)
-        (atj-rename-vars formals nil curr-pkg vars-by-name))
-       (new-formals (atj-rename-formals formals renaming))
-       ((mv new-body &)
-        (atj-rename-term body renaming indices curr-pkg vars-by-name)))
-    (mv new-formals new-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -805,7 +286,6 @@
 (define atj-types-of-conv ((conv symbolp))
   :returns (mv (src-type atj-typep)
                (dst-type atj-typep))
-  :verify-guards nil
   :short "Source and destination ATJ types of a conversion function."
   :long
   (xdoc::topstring-p
@@ -856,7 +336,6 @@
   :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
                (src-type atj-typep)
                (dst-type atj-typep))
-  :verify-guards nil
   :short "Unwrap an ACL2 term wrapped by @(tsee atj-type-wrap-term)."
   :long
   (xdoc::topstring
@@ -926,7 +405,6 @@
 (define atj-type-unannotate-var ((var symbolp))
   :returns (mv (unannotated-var symbolp)
                (type atj-typep))
-  :verify-guards nil
   :short "Decompose an annotated ACL2 variable into
           its unannotated counterpart and its type."
   :long
@@ -965,7 +443,6 @@
 (define atj-type-unannotate-vars ((vars symbol-listp))
   :returns (mv (unannotated-vars symbol-listp)
                (types atj-type-listp))
-  :verify-guards nil
   :short "Lift @(tsee atj-type-unannotate-var) to lists."
   (b* (((when (endp vars)) (mv nil nil))
        ((mv var type) (atj-type-unannotate-var (car vars)))
@@ -1245,6 +722,1031 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ atj-pre-translation-var-reuse
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          marking of reusable lambda-bound variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Consider a function body of the form")
+   (xdoc::codeblock
+    "(let ((x ...))"
+    "  (let ((x ...))"
+    "    (f x)))")
+   (xdoc::p
+    "The second @('x') bound by @(tsee let)
+     ``overwrites'' the first one completely,
+     because in the rest of the term (namely, @('(f x)'))
+     only the second one is referenced, not the first one.")
+   (xdoc::p
+    "In contrast, consider a function body of the form")
+   (xdoc::codeblock
+    "(let ((x ...))"
+    "  (f (let ((x ...)) (f x)) (g x)))")
+   (xdoc::p
+    "Here, the second @('x') bound by @(tsee let)
+     ``overwrites'' the second one only partially, namely in @('(f x)'),
+     but other parts of the rest of the term, namely @('(g x)'),
+     reference the first one.")
+   (xdoc::p
+    "When we translate ACL2 to Java,
+     @(tsee let)-bound variables become Java local variables.
+     In the first example above,
+     provided that the two @('x') variables have the same type,
+     the Java code can use the same local variable for both:
+     for the first binding, the Java code declares and initializes the variable;
+     for the second binding, the Java code assigns to the variable,
+     destructively updating it,
+     which is safe because the old value is no longer needed.
+     However, in the second example above,
+     there have to be two distinct Java local variables,
+     say @('x1') and @('x2'),
+     corresponding to the two bound variables:
+     both are declared and initialized,
+     none can be safely destructively updated.")
+   (xdoc::p
+    "This pre-translation step analyzes terms
+     to find out which lambda-bound (i.e. @(tsee let)-bound) variables
+     can be reused and destructively updated.
+     The lambda-bound variables are marked as either `new' or `old':
+     the first marking means that
+     the variable must be a new Java local variable
+     that is declared and initilized;
+     the second marking means that
+     the variable can be an old Java local variable
+     that is destructively assigned.
+     These markings provide ``instructions'' to the ACL2-to-Java translation.")
+   (xdoc::p
+    "In the first example above the markings would be")
+   (xdoc::codeblock
+    "(let (([n]x ...))"
+    "  (let (([o]x ...))"
+    "    (f [o]x)))")
+   (xdoc::p
+    "while in the second example above the markings would be")
+   (xdoc::codeblock
+    "(let (([n]x ...))"
+    "  (f (let (([n]x ...)) (f [n]x)) (g [n]x)))")
+   (xdoc::p
+    "Note that, as we mark the lambda-bound variables,
+     we must mark in the same way the occurrences in the lambda bodies,
+     to maintain the well-formedness of the ACL2 terms.")
+   (xdoc::p
+    "This pre-translation step must be performed after the "
+    (xdoc::seetopic "atj-pre-translation-type-annotation"
+                    "type annotation step")
+    ", so that types are kept into account:
+      a variable can be reused only if
+      it has the same type in both lambda formal parameters.
+      Since the type annotation step adds types to variable names,
+      by comparing names for equality we also compare their types for equality.
+      If two variables have different types,
+      they also have different names (since the name includes the type).")
+   (xdoc::p
+    "After this translation step, the "
+    (xdoc::seetopic "atj-pre-translation-var-renaming"
+                    "variable renaming step")
+    " takes care of renaming apart ACL2 variables with the same name
+      that are both marked as `new'."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-mark-var-new ((var symbolp))
+  :returns (marked-var symbolp)
+  :short "Mark a variable as `new'."
+  (packn-pos (list "[N]" var) var))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-mark-vars-new ((vars symbol-listp))
+  :returns (marked-vars symbol-listp)
+  :short "Lift @(tsee atj-mark-var-new) to lists."
+  (cond ((endp vars) nil)
+        (t (cons (atj-mark-var-new (car vars))
+                 (atj-mark-vars-new (cdr vars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-mark-var-old ((var symbolp))
+  :returns (marked-var symbolp)
+  :short "Mark a variable as `old'."
+  (packn-pos (list "[O]" var) var))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-unmark-var ((var symbolp))
+  :returns (mv (unmarked-var symbolp) (new? booleanp))
+  :short "Decompose a marked variable into its marking and its unmarked name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The marking is a boolean: @('t') for `new', @('nil') for `old'."))
+  (b* ((string (symbol-name var))
+       ((unless (and (>= (length string) 5)
+                     (member-equal (subseq string 0 3) '("[N]" "[O]"))))
+        (raise "Internal error: ~x0 has the wrong format." var)
+        (mv nil nil)) ; irrelevant
+       (new? (eql (char string 1) #\N))
+       (unmarked-string (subseq string 3 (length string)))
+       (unmarked-var (intern-in-package-of-symbol unmarked-string var)))
+    (mv unmarked-var new?)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-unmark-vars ((vars symbol-listp))
+  :returns (mv (unmarked-vars symbol-listp)
+               (new?s boolean-listp))
+  :short "Lift @(tsee atj-unmark-var) to lists."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv var new?) (atj-unmark-var (car vars)))
+       ((mv vars new?s) (atj-unmark-vars (cdr vars))))
+    (mv (cons var vars) (cons new? new?s))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-mark-term
+  :short "Mark the variables in a term as `new' or `old'."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Marking a variable as `new' is always ``safe'',
+     because it is always safe to introduce a new Java local variable.
+     On the other hand, marking a variable as `old' requires care,
+     to prevent a Java local variable may be erroneously reused.
+     To understand this marking algorithm,
+     one has to keep in mind how ACL2 terms are translated to Java:
+     see @(tsee atj-gen-shallow-term) and companions.
+     This is a delicate algorithm:
+     a proof of correctness would be very beneficial.")
+   (xdoc::p
+    "Two conditions are necessary for reusing a variable:
+     (i) the variable must be in scope (i.e. exists and be accessible); and
+     (ii) the previous value of the variable must not be used afterwards.
+     The parameters @('vars-in-scope') and @('vars-used-after')
+     support the checking of these conditions.")
+   (xdoc::p
+    "The parameter @('vars-in-scope') consists of the variables in scope
+     at the point where the term under consideration occurs.
+     At the top level (see @(tsee atj-mark-formals+body)),
+     it is intialized with the (unmarked) formal parameters
+     of the ACL2 function whose formal parameters and body are being marked:
+     indeed, the formal parameters of a function are in scope for the body.
+     As we descend into subterms, when we encounter a lambda expression,
+     we extend @('vars-in-scope') with its (unmarked) formal parameters;
+     only the ones that are marked as `new' actually extend the scope,
+     while the ones marked as `old' were already in @('vars-in-scope').
+     The generated Java code evaluates functions' actual arguments
+     left-to-right:
+     thus, local variables introduced (for lambda expressions in) an argument
+     are generally (see exception shortly) in scope for successive arguments.
+     Therefore, @('vars-in-scope') is threaded through the marking functions
+     (i.e. passed as argument and returned, possibly updated, as result).
+     When processing a lambda expression applied to arguments,
+     @('vars-in-scope') is threaded first through the arguments,
+     and then through the body (which is evaluated after the argument),
+     after augmenting it with the formal parameters.
+     The exception mentioned above is for @(tsee if),
+     which is turned into a Java @('if')
+     whose branches are Java blocks:
+     Java variables declared inside these blocks
+     have a more limited scope (namely, the respective block),
+     and therefore should not be added to the @('vars-in-scope')
+     that is passed to mark terms after the @(tsee if).
+     The variables introduced in the test of the @(tsee if)
+     are declared outside the branches' blocks,
+     and so they are threaded through.
+     The @('vars-in-scope') resulting from marking the test of the @(tsee if)
+     is passed to mark both branches,
+     but their returned @('vars-in-scope') is ignored.
+     The code for @(tsee if) is a bit more complicated
+     because of the special treatment of @('(if a a b)') terms,
+     which are treated as @('(or a b)'):
+     the Java code generated for this case is a little different
+     (see @(tsee atj-gen-shallow-orapp)),
+     but the treatment of @('vars-in-scope')
+     is essentially the same as just explained
+     (there is no `then' branch to mark, because it is the same as the test,
+     which has already been marked).")
+   (xdoc::p
+    "The parameter @('vars-used-after') consists of the variables
+     that occur free (i.e. whose current value is used)
+     ``after'' the term under consideration.
+     At the top level (see @(tsee atj-mark-formals+body)),
+     it is initialized with @('nil'),
+     because no variables are used after evaluating the body of the function.
+     As we descend into subterms,
+     @('vars-used-after') is extended as needed,
+     based on the ``neighboring'' subterms
+     that will be evaluated (in the generated Java code)
+     after the subterm under consideration.
+     In particular, when marking an actual argument of a function call,
+     @('vars-used-after') is extended with all the free variables
+     of the actual arguments of the same function call
+     that occur after the one being marked;
+     recall that arguments are evaluated left-to-right
+     in the generated Java code.
+     The function @('atj-mark-terms'),
+     which is used to mark the actual arguments of a function call,
+     augments @('vars-used-after') with the free variables
+     in the @(tsee cdr) of the current list of arguments;
+     this is somewhat inefficient,
+     as the same free variables are collected repeatedly
+     as the argument terms are processed,
+     but terms are not expected to be too large in the short term;
+     this will be optimized when needed.
+     Calls of @(tsee if) are treated a little differently,
+     because the arguments are not evaluated left-to-right
+     in the generated Java code:
+     when marking the test, we augment @('vars-used-after')
+     with all the free variables in the branches;
+     when marking either branch, we use the same @('vars-used-after')
+     that was passed for the @(tsee if),
+     because the two branches are independent.
+     The @(tsee or) form of @(tsee if) is treated slightly differently as usual,
+     but the essence is the same.
+     Unlike @('vars-in-scope'), @('var-used-after') is not threaded through;
+     it is simply passed down, and augmented as needed.
+     The body of a lambda expression is evaluated after its actual arguments:
+     thus, when marking the actual arguments of a lambda expression
+     we must augment @('vars-used-after')
+     with the free variables of the lambda expression,
+     i.e. the free variables in the body minus the formal parameters.")
+   (xdoc::p
+    "As we mark the formal parameters of a lambda expression,
+     we need to mark in the same way
+     all the references to these variables in the body of the lambda expression.
+     For this purpose, we pass around a mapping
+     from (unmarked) variables to markings:
+     this could be an alist from symbols to booleans,
+     but we isomorphically use lists (treated as sets) of symbols instead,
+     which are the variable marked as `new',
+     while the variables not in the list are marked as `old'.
+     When the term to be marked is a variable,
+     we look it up in this list, and mark it accordingly.")
+   (xdoc::p
+    "When the term to be marked is a quoted constant,
+     it is obviously left unchanged.")
+   (xdoc::p
+    "When the term to be marked is a function application,
+     we first treat the @(tsee if) (and @(tsee or)) case separately.
+     We mark the test, and after that the two branches.
+     The handling of @('vars-in-scope') and @('vars-used-after') for this case
+     has been explained above.")
+   (xdoc::p
+    "For all other function applications, which are strict,
+     we first mark the actual arguments,
+     treating @('vars-in-scope') and @('vars-used-after')
+     as explained above.
+     For calls of named functions, we are done at this point:
+     we put the named function in front of the marked arguments and return.
+     For calls of lambda expression,
+     we use the auxiliary function @('atj-mark-lambda-formals')
+     to decide which formal parameters should be marked as `new' or `old'.
+     We mark the parameter as `old' (indicating that the variable can be reused)
+     iff the following three conditions hold.
+     The first condition is that the variable must be in scope;
+     note that variables have already been annotated with types at this point,
+     and so by testing variable names we also test their types,
+     which is needed for Java
+     (i.e. we could not reuse a Java variable of type @('Acl2Symbol')
+     to store a value of type @('Acl2String')).
+     The second condition is that the variable is not used
+     after the lambda application term, i.e. it is not in @('vars-used-after'):
+     otherwise, we would overwrite something that was supposed to be used later,
+     with incorrect results in general.
+     The third condition is that the variable is not free
+     in any of the actual arguments that correspond to
+     the formal parameters of the lambda expression
+     that come just after the one being marked:
+     this is because, in the generated Java code,
+     the lambda variables are assigned one after the other,
+     and therefore we should not overwrite a variable
+     that may be needed afterwards.
+     For instance, consider a swap @('(let ((x y) (y x)) ...)'):
+     @('x') cannot be reused
+     (even if it is in scope and not used after the @(tsee let))
+     because it must be assigned to @('y') after @('y') is assigned to @('x')
+     (Java does not support parallel assignment);
+     on the other hand, @('y') could be reused,
+     if it is in scope and not used after the @(tsee let),
+     because at the time of assigning to @('y')
+     its (previous) value has already been assigned to @('x')."))
+
+  (define atj-mark-term ((term pseudo-termp)
+                         (vars-in-scope symbol-listp)
+                         (vars-used-after symbol-listp)
+                         (vars-to-mark-new symbol-listp))
+    :returns (mv (marked-term pseudo-termp :hyp :guard)
+                 (new-vars-in-scope symbol-listp :hyp :guard))
+    (b* (((when (variablep term))
+          (if (member-eq term vars-to-mark-new)
+              (mv (atj-mark-var-new term) vars-in-scope)
+            (mv (atj-mark-var-old term) vars-in-scope)))
+         ((when (fquotep term)) (mv term vars-in-scope))
+         (fn (ffn-symb term))
+         ((when (eq fn 'if))
+          (b* ((test (fargn term 1))
+               (then (fargn term 2))
+               (else (fargn term 3)))
+            (if (equal test then)
+                (b* ((vars-used-after-test (union-eq vars-used-after
+                                                     (all-vars-open else)))
+                     ((mv test
+                          vars-in-scope) (atj-mark-term test
+                                                        vars-in-scope
+                                                        vars-used-after-test
+                                                        vars-to-mark-new))
+                     ((mv else &) (atj-mark-term else
+                                                 vars-in-scope
+                                                 vars-used-after
+                                                 vars-to-mark-new)))
+                  (mv `(if ,test ,test ,else)
+                      vars-in-scope))
+              (b* ((vars-used-after-test (union-eq vars-used-after
+                                                   (all-vars-open-lst
+                                                    (list then else))))
+                   ((mv test
+                        vars-in-scope) (atj-mark-term test
+                                                      vars-in-scope
+                                                      vars-used-after-test
+                                                      vars-to-mark-new))
+                   ((mv then &) (atj-mark-term then
+                                               vars-in-scope
+                                               vars-used-after
+                                               vars-to-mark-new))
+                   ((mv else &) (atj-mark-term else
+                                               vars-in-scope
+                                               vars-used-after
+                                               vars-to-mark-new)))
+                (mv `(if ,test ,then ,else)
+                    vars-in-scope)))))
+         (args (fargs term))
+         (vars-used-after
+          (if (symbolp fn)
+              vars-used-after
+            (union-eq vars-used-after
+                      (set-difference-eq (all-vars-open (lambda-body fn))
+                                         (lambda-formals fn)))))
+         ((mv marked-args vars-in-scope) (atj-mark-terms args
+                                                         vars-in-scope
+                                                         vars-used-after
+                                                         vars-to-mark-new))
+         ((when (symbolp fn)) (mv (fcons-term fn marked-args)
+                                  vars-in-scope))
+         (formals (lambda-formals fn))
+         ((mv marked-formals
+              vars-to-mark-new) (atj-mark-lambda-formals formals
+                                                         args
+                                                         vars-in-scope
+                                                         vars-used-after
+                                                         vars-to-mark-new))
+         (vars-in-scope (union-eq formals vars-in-scope))
+         ((mv marked-body
+              vars-in-scope) (atj-mark-term (lambda-body fn)
+                                            vars-in-scope
+                                            vars-used-after
+                                            vars-to-mark-new)))
+      (mv (fcons-term (make-lambda marked-formals marked-body)
+                      marked-args)
+          vars-in-scope)))
+
+  (define atj-mark-terms ((terms pseudo-term-listp)
+                          (vars-in-scope symbol-listp)
+                          (vars-used-after symbol-listp)
+                          (vars-to-mark-new symbol-listp))
+    :returns (mv (marked-terms (and (pseudo-term-listp marked-terms)
+                                    (equal (len marked-terms)
+                                           (len terms)))
+                               :hyp :guard)
+                 (new-vars-in-scope symbol-listp :hyp :guard))
+    (b* (((when (endp terms)) (mv nil vars-in-scope))
+         (first-term (car terms))
+         (rest-terms (cdr terms))
+         (vars-used-after-first-term (union-eq vars-used-after
+                                               (all-vars-open-lst rest-terms)))
+         ((mv marked-first-term
+              vars-in-scope) (atj-mark-term first-term
+                                            vars-in-scope
+                                            vars-used-after-first-term
+                                            vars-to-mark-new))
+         ((mv marked-rest-terms
+              vars-in-scope) (atj-mark-terms rest-terms
+                                             vars-in-scope
+                                             vars-used-after
+                                             vars-to-mark-new)))
+      (mv (cons marked-first-term marked-rest-terms)
+          vars-in-scope)))
+
+  :prepwork
+
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
+   ;; (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+   (define atj-mark-lambda-formals ((formals symbol-listp)
+                                    (actuals pseudo-term-listp)
+                                    (vars-in-scope symbol-listp)
+                                    (vars-used-after symbol-listp)
+                                    (vars-to-mark-new symbol-listp))
+     :guard (= (len formals) (len actuals))
+     :returns (mv (marked-formals (and (symbol-listp marked-formals)
+                                       (equal (len marked-formals)
+                                              (len formals))))
+                  (new-vars-to-mark-new
+                   symbol-listp
+                   :hyp (and (symbol-listp formals)
+                             (symbol-listp vars-to-mark-new))))
+     (b* (((when (endp formals)) (mv nil vars-to-mark-new))
+          (formal (car formals))
+          (new? (or (not (member-eq formal vars-in-scope))
+                    (member-eq formal vars-used-after)
+                    (dumb-occur-var-open-lst formal (cdr actuals))))
+          (marked-formal (if new?
+                             (atj-mark-var-new formal)
+                           (atj-mark-var-old formal)))
+          (vars-to-mark-new (if new?
+                                (cons formal vars-to-mark-new)
+                              (remove-eq formal vars-to-mark-new)))
+          ((mv marked-formals
+               vars-to-mark-new) (atj-mark-lambda-formals (cdr formals)
+                                                          (cdr actuals)
+                                                          vars-in-scope
+                                                          vars-used-after
+                                                          vars-to-mark-new)))
+       (mv (cons marked-formal marked-formals)
+           vars-to-mark-new))
+     ///
+
+     (more-returns
+      (marked-formals true-listp
+                      :name true-listp-of-atj-mark-lambda-formals.marked-formals
+                      :rule-classes :type-prescription)
+      (marked-formals (equal (len marked-formals)
+                             (len formals))
+                      :name len-of-atj-mark-lambda-formals.marked-formals)
+
+      (new-vars-to-mark-new
+       true-listp
+       :hyp (true-listp vars-to-mark-new)
+       :name true-listp-of-atj-mark-lambda-formals.new-vars-to-nark-new
+       :rule-classes :type-prescription))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (defrulel true-listp-when-symbol-listp
+    (implies (symbol-listp x)
+             (true-listp x)))
+
+  (verify-guards atj-mark-term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-mark-formals+body ((formals symbol-listp) (body pseudo-termp))
+  :returns (mv (new-formals symbol-listp)
+               (new-body pseudo-termp :hyp :guard))
+  :short "Mark all the variables
+          in the formal parameters and body of an ACL2 function definition
+          as `new' or `old'"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top level of the marking algorithm;
+     this top level is discussed in @(tsee atj-mark-term)."))
+  (b* ((marked-formals (atj-mark-vars-new formals))
+       ((mv marked-body &) (atj-mark-term body formals nil formals)))
+    (mv marked-formals marked-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-var-renaming
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          renaming of the ACL2 variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "We systematically rename all the ACL2 variables
+     so that their new names are valid Java variable names
+     and so that different ACL2 variables with the same name are renamed apart,
+     unless the variables have been marked for reuse
+     by the previous pre-translation step.
+     This simplifies the ACL2-to-Java translation,
+     which can just turn each ACL2 variable
+     into a Java variable with the same name."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-init-indices*
+  :short "Initial variable index alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When we rename ACL2 variables to Java variables,
+     we must avoid the names in @(tsee *atj-disallowed-jvar-names*).
+     We do that by initializing the alist from variables to indices
+     to associate index 1 to all the disallowed names.
+     That is, we pretend that
+     variables with the disallowed names have already been used,
+     so that an index 1 (or greater) will be appended to any variable
+     that would otherwise happen to be a disallowed name.
+     Appending an index to a disallowed name always yields an allowed name.")
+   (xdoc::p
+    "Note that @(tsee *atj-disallowed-jvar-names*) is a list of strings,
+     but the keys of the index map must be symbols.
+     We use @(tsee str::intern-list) to convert them.
+     It is critical to use the same package (currently @('\"JAVA\"'))
+     used by @(tsee atj-var-to-jvar)."))
+  (pairlis$ (str::intern-list *atj-disallowed-jvar-names* (pkg-witness "JAVA"))
+            (repeat (len *atj-disallowed-jvar-names*) 1))
+  ///
+  (assert-event (symbol-pos-alistp *atj-init-indices*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-rename-formal ((var symbolp)
+                           (indices symbol-pos-alistp)
+                           (curr-pkg stringp)
+                           (vars-by-name string-symbollist-alistp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (new-var symbolp)
+               (new-indices symbol-pos-alistp
+                            :hyp (and (symbol-pos-alistp indices)
+                                      (symbolp var))))
+  :short "Rename a formal parameters of
+          a defined function or lambda expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-rename-formals),
+     the renaming of a variable is established
+     when the variable is encountered as a formal parameter.
+     This motivates the name of this function.")
+   (xdoc::p
+    "This function is called only on formal parameters marked as `new'.
+     Formal parameters marked as `old' are just renamed
+     according to the existing renaming map @('renaming-old').")
+   (xdoc::p
+    "Each ACL2 function is turned into a Java method,
+     whose body is a shallowly embedded representation
+     of the ACL2 function body.
+     The ACL2 function body may reference the ACL2 function's parameter,
+     as well as @(tsee let)-bound variables (via lambda expressions).
+     Thus, the same variable symbol may in fact denote different variables
+     in different parts of an ACL2 function body.
+     Java does not allow different local variables with the same name
+     in (nested scopes in) the same method,
+     and so we need to map homonymous but different ACL2 variables
+     in the same ACL2 function
+     to differently named Java variables
+     in the same Java method.
+     We use numeric indices, one for each variable name,
+     which is appended (as explained below) to the Java variable name
+     to make it unique within the Java mehtod.")
+   (xdoc::p
+    "Another need for disambiguation arises because of package prefixes.
+     An ACL2 variable is a symbol,
+     which consists of a name and also a package name:
+     two distinct variables may have the same name
+     but different package names.
+     However, when we append the package name and the name of the symbol,
+     we have unique Java variable names.")
+   (xdoc::p
+    "We use @(tsee atj-var-to-jvar) to turn @('var')
+     into a new symbol whose name is a valid Java variable name.
+     Then we ensure its uniqueness by retrieving and using the next index,
+     from the parameter @('indices'); more on this below.
+     In general, as mentioned in @(tsee atj-var-to-jvar),
+     we append the index after the result of @(tsee atj-var-to-jvar);
+     but if the index is 0, we do not append it, to improve readability;
+     in particular, if there is just one variable with a certain name,
+     since we start with index 0, no index is ever added to the name.
+     When this function is called,
+     the indices alist always associates non-0 indices to
+     the symbols whose names are in @(tsee *atj-disallowed-jvar-names*):
+     see @(tsee *atj-init-indices*).")
+   (xdoc::p
+    "The name obtained by optionally appending the index
+     may not be a valid Java identifier:
+     this happens if it is a Java keyword or literal, or if it is empty.
+     (This may actually happen only if no index is appended.)
+     If this is the case, we add a single @('$') at the end,
+     which makes the name valid and unambiguous.")
+   (xdoc::p
+    "The index to use for this variable
+     is retrieved from the @('indices') parameter,
+     which is an alist that associates each variable to its next index to use.
+     If a variable is not in the alist, it is as if it had index 0,
+     and in that case no index is added, as explained above.
+     The alist is updated
+     by incrementing the next index to use for the variable,
+     and returned along with the new variable.")
+   (xdoc::p
+    "The keys of the alist are not the original ACL2 variables,
+     but the renamed variables resulting from @(tsee atj-var-to-jvar).
+     This gives us more flexibility,
+     by obviating the requirement that @(tsee atj-var-to-jvar) be injective:
+     if this function is not injective,
+     then different ACL2 variables may become the same Java variable,
+     and the next index must be the same for all of these variables,
+     so that they can be properly disambiguated.")
+   (xdoc::p
+    "This pre-translation step is performed
+     after the type annotation and new/old marking steps,
+     but the caller of this function decomposes the marked annotated variable
+     into its unmarked unannotated name, type, and marking,
+     and only passes the unannotated name @('var') to this function.
+     The @('vars-by-name') parameter of this function
+     consists of variable names without annotations and markings."))
+  (b* ((jvar (atj-var-to-jvar var curr-pkg vars-by-name))
+       (jvar+index? (assoc-eq jvar indices))
+       (index (if jvar+index? (cdr jvar+index?) 0))
+       (indices (acons jvar (1+ index) indices))
+       (jvar (atj-var-add-index jvar index)))
+    (mv jvar indices))
+
+  :prepwork
+  ((defrulel returns-lemma
+     (implies (posp x)
+              (posp (1+ x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-rename-formals ((formals symbol-listp)
+                            (renaming-new symbol-symbol-alistp)
+                            (renaming-old symbol-symbol-alistp)
+                            (indices symbol-pos-alistp)
+                            (curr-pkg stringp)
+                            (vars-by-name string-symbollist-alistp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (new-formals symbol-listp
+                            :hyp (and (symbol-listp formals)
+                                      (symbol-symbol-alistp renaming-new)))
+               (new-renaming-new symbol-symbol-alistp
+                                 :hyp (and (symbol-listp formals)
+                                           (symbol-symbol-alistp renaming-new)))
+               (new-renaming-old symbol-symbol-alistp
+                                 :hyp (and (symbol-listp formals)
+                                           (symbol-symbol-alistp renaming-old)))
+               (new-indices symbol-pos-alistp
+                            :hyp (and (symbol-listp formals)
+                                      (symbol-pos-alistp indices))))
+  :short "Rename the formal parameters of
+          a defined function or lambda expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-rename-formal),
+     the shallowly embedded ACL2 variables are made unique via indices.
+     There is an independent index for each ACL2 variable,
+     so we use an alist from symbols to natural numbers
+     to keep track of these indices.
+     This alist is threaded through the functions
+     that rename all the variables in ACL2 terms.
+     This pre-translation step happens
+     after the type annotation and new/old marking step,
+     but the variables in this alist are without annotations and markings,
+     because annotations and markings are discarded
+     when generating Java variables,
+     and thus two ACL2 variables that only differ in annotations or markings
+     must be renamed apart and must share the same index in the alist.")
+   (xdoc::p
+    "In ACL2, a variable is ``introduced''
+     as a formal parameter of a function or lambda expression,
+     and then referenced in the body of the function or lambda expression.
+     The choice and use of the index must be done at this introduction time,
+     and not at every reference to the variable after its introduction.
+     Thus, when we encounter the formals of a function or lambda expression,
+     we generate the Java variable names for these ACL2 variables,
+     using the current indices, and update and return the indices.
+     This is the case only if the formal parameter is marked as `new';
+     if instead it is marked as `old',
+     we look it up in a renaming map,
+     which is an alist from the old variable names to the new variable names,
+     i.e. it expresses the current renaming of variables.
+     There are actually two renaming alists:
+     one for the variables marked as `new',
+     and one for the variables marked as `old':
+     see @(tsee atj-rename-term) for more information.
+     This function takes both renaming maps,
+     and augments both of them with the renamings for the formal parameters
+     that are marked as `new'.
+     The variables in the renaming maps are all type-annotated,
+     for faster lookup when renaming variables in terms.
+     The variables in the renaming maps are not marked as `new' or `old';
+     as mentioned above, we have two separate maps for new and old variables.")
+   (xdoc::p
+    "Each ACL2 formal parameter in the input list
+     is processed differently based on whether it is marked `new' or `old'.
+     If it is marked `old',
+     it is simply renamed according to the @('renaming-old') alist,
+     which must include an entry for the variable.
+     When it is marked as `new',
+     it is unmarked and unannotated and passed to @(tsee atj-rename-formal),
+     which uses and updates the index associated to the variable.")
+   (xdoc::p
+    "The formals @('formals') being renamed are annotated,
+     because this pre-translation step happens after the type annotation step.
+     Thus, the type annotations are removed prior to the renaming
+     and added back after the renaming."))
+  (b* (((when (endp formals)) (mv nil renaming-new renaming-old indices))
+       (formal (car formals))
+       ((mv uformal new?) (atj-unmark-var formal))
+       ((when (not new?)) ; i.e. old
+        (b* ((renaming-pair (assoc-eq uformal renaming-old))
+             ((unless (consp renaming-pair))
+              (raise "Internal error: ~x0 has no renaming." formal)
+              ;; irrelevant:
+              (mv (true-list-fix formals)
+                  renaming-new
+                  renaming-old
+                  indices))
+             (new-uformal (cdr renaming-pair))
+             (new-formal (atj-mark-var-old new-uformal))
+             ((mv new-formals
+                  renaming-new
+                  renaming-old
+                  indices) (atj-rename-formals (cdr formals)
+                                               renaming-new
+                                               renaming-old
+                                               indices
+                                               curr-pkg
+                                               vars-by-name)))
+          (mv (cons new-formal new-formals) renaming-new renaming-old indices)))
+       ((mv uuformal type) (atj-type-unannotate-var uformal))
+       ((mv new-uuformal indices)
+        (atj-rename-formal uuformal indices curr-pkg vars-by-name))
+       (new-uformal (atj-type-annotate-var new-uuformal type))
+       (renaming-new (acons uformal new-uformal renaming-new))
+       (renaming-old (acons uformal new-uformal renaming-old))
+       (new-formal (atj-mark-var-new new-uformal))
+       ((mv new-formals
+            renaming-new
+            renaming-old
+            indices) (atj-rename-formals (cdr formals)
+                                         renaming-new
+                                         renaming-old
+                                         indices
+                                         curr-pkg
+                                         vars-by-name)))
+    (mv (cons new-formal new-formals) renaming-new renaming-old indices))
+
+  ///
+
+  (more-returns
+   (new-formals (equal (len new-formals)
+                       (len formals))
+                :name len-of-new-formals-of-atj-rename-formals)
+   (new-formals true-listp
+                :name true-listp-of-new-formals-of-atj-rename-formals
+                :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-rename-term
+  :short "Rename all the ACL2 variables in an ACL2 term to their Java names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The alist from variables to indices
+     is threaded through this function and its mutually recursive companion,
+     in the same way as the renaming alist for the `old' variables;
+     thus different variables in different Java scopes may have the same index.
+     This alist contains variables without annotations or markings;
+     see @(tsee atj-rename-formals) for motivation.")
+   (xdoc::p
+    "The renaming alist for variables marked as `new'
+     is not threaded through:
+     it is just passed down, according to ACL2's scoping.
+     This alist contains variables with type annotations
+     but without markings for `old' or `new';
+     see @(tsee atj-rename-formals) for motivation.")
+   (xdoc::p
+    "The renaming alist for variables marked as `old'
+     is threaded through instead,
+     in the same way as the set of variables in scope in @(tsee atj-mark-term)
+     (see that function for details).
+     This is because variables are marked for reuse
+     based (also) on that threading of the variables in scope:
+     when we encounter a variable to rename that is marked for reuse,
+     we must have its name available in the renaming alist.
+     This alist contains variables with type annotations
+     but without markings for `old' or `new';
+     see @(tsee atj-rename-formals) for motivation.")
+   (xdoc::p
+    "If the term is a variable,
+     it is unmarked,
+     looked up in the appropriate renaming alist based on the marking,
+     and replaced with the renamed variable, which is re-marked.
+     Recall that variable names are generated
+     via @(tsee atj-rename-formals) when variables are introduced,
+     i.e. from formal parameters of defined functions and lambda expressions.")
+   (xdoc::p
+    "If the term is a quoted constant, it is obviously left unchanged.")
+   (xdoc::p
+    "If the term is a function application,
+     its actual arguments are recursively processed,
+     renaming all their variables.
+     If the function is a named one, it is of course left unchanged.
+     If instead it is a lambda expression,
+     we process the renaming of its formal parameters,
+     which in general augments the two renaming alists,
+     and then recursively process the body of the lambda expression."))
+
+  (define atj-rename-term ((term pseudo-termp)
+                           (renaming-new symbol-symbol-alistp)
+                           (renaming-old symbol-symbol-alistp)
+                           (indices symbol-pos-alistp)
+                           (curr-pkg stringp)
+                           (vars-by-name string-symbollist-alistp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (new-term pseudo-termp :hyp :guard)
+                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
+                 (new-indices symbol-pos-alistp :hyp :guard))
+    (b* (((when (variablep term))
+          (b* (((mv var new?) (atj-unmark-var term))
+               (renaming-pair (assoc-eq var (if new?
+                                                renaming-new
+                                              renaming-old)))
+               ((unless (consp renaming-pair))
+                (raise "Internal error: no renaming found for variable ~x0."
+                       term)
+                (mv nil nil nil)) ; irrelevant
+               (new-var (cdr renaming-pair))
+               (new-term (if new?
+                             (atj-mark-var-new new-var)
+                           (atj-mark-var-old new-var))))
+            (mv new-term renaming-old indices)))
+         ((when (fquotep term)) (mv term renaming-old indices))
+         (fn (ffn-symb term))
+         ((when (eq fn 'if))
+          (b* ((test (fargn term 1))
+               (then (fargn term 2))
+               (else (fargn term 3)))
+            (if (equal test then)
+                (b* (((mv new-test
+                          renaming-old
+                          indices) (atj-rename-term test
+                                                    renaming-new
+                                                    renaming-old
+                                                    indices
+                                                    curr-pkg
+                                                    vars-by-name))
+                     ((mv new-else
+                          &
+                          &) (atj-rename-term else
+                                              renaming-new
+                                              renaming-old
+                                              indices
+                                              curr-pkg
+                                              vars-by-name)))
+                  (mv `(if ,new-test ,new-test ,new-else)
+                      renaming-old
+                      indices))
+              (b* (((mv new-test
+                        renaming-old
+                        indices) (atj-rename-term test
+                                                  renaming-new
+                                                  renaming-old
+                                                  indices
+                                                  curr-pkg
+                                                  vars-by-name))
+                   ((mv new-then
+                        &
+                        &) (atj-rename-term then
+                                            renaming-new
+                                            renaming-old
+                                            indices
+                                            curr-pkg
+                                            vars-by-name))
+                   ((mv new-else
+                        &
+                        &) (atj-rename-term else
+                                            renaming-new
+                                            renaming-old
+                                            indices
+                                            curr-pkg
+                                            vars-by-name)))
+                (mv `(if ,new-test ,new-then ,new-else)
+                    renaming-old
+                    indices)))))
+         (args (fargs term))
+         ((mv new-args
+              renaming-old
+              indices) (atj-rename-terms args
+                                         renaming-new
+                                         renaming-old
+                                         indices
+                                         curr-pkg
+                                         vars-by-name))
+         ((when (symbolp fn)) (mv (fcons-term fn new-args)
+                                  renaming-old
+                                  indices))
+         (formals (lambda-formals fn))
+         (body (lambda-body fn))
+         ((mv new-formals
+              renaming-new
+              renaming-old
+              indices) (atj-rename-formals formals
+                                           renaming-new
+                                           renaming-old
+                                           indices
+                                           curr-pkg
+                                           vars-by-name))
+         ((mv new-body
+              renaming-old
+              indices) (atj-rename-term body
+                                        renaming-new
+                                        renaming-old
+                                        indices
+                                        curr-pkg
+                                        vars-by-name)))
+      (mv (fcons-term (make-lambda new-formals new-body)
+                      new-args)
+          renaming-old
+          indices)))
+
+  (define atj-rename-terms ((terms pseudo-term-listp)
+                            (renaming-new symbol-symbol-alistp)
+                            (renaming-old symbol-symbol-alistp)
+                            (indices symbol-pos-alistp)
+                            (curr-pkg stringp)
+                            (vars-by-name string-symbollist-alistp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (new-terms (and (pseudo-term-listp new-terms)
+                                 (equal (len new-terms) (len terms)))
+                            :hyp :guard)
+                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
+                 (new-indices symbol-pos-alistp :hyp :guard))
+    (cond ((endp terms) (mv nil renaming-old indices))
+          (t (b* (((mv new-term
+                       renaming-old
+                       indices) (atj-rename-term (car terms)
+                                                 renaming-new
+                                                 renaming-old
+                                                 indices
+                                                 curr-pkg
+                                                 vars-by-name))
+                  ((mv new-terms
+                       renaming-old
+                       indices) (atj-rename-terms (cdr terms)
+                                                  renaming-new
+                                                  renaming-old
+                                                  indices
+                                                  curr-pkg
+                                                  vars-by-name)))
+               (mv (cons new-term new-terms)
+                   renaming-old
+                   indices)))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-rename-term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-rename-formals+body ((formals symbol-listp)
+                                 (body pseudo-termp)
+                                 (curr-pkg stringp))
+  :guard (not (equal curr-pkg ""))
+  :returns (mv (new-formals "A @(tsee symbol-listp).")
+               (new-body "A @(tsee pseudo-termp)."))
+  :short "Rename all the ACL2 variables to their Java names,
+          in the formal parameters and body of an ACL2 function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We collect all the variables in the formals and body,
+     remove their markings and annotations
+     (recall that the type annotation and new/old marking pre-translation steps
+     take place before this renaming step),
+     and organize them by symbol name:
+     the resulting alist is passed to the renaming functions.")
+   (xdoc::p
+    "Starting with the empty alist of indices and the empty renaming alists,
+     we introduce renamed variables for the formal parameters,
+     and we use the resulting renaming alists to process the body."))
+  (b* ((vars (union-eq formals (all-free/bound-vars body)))
+       ((mv vars &) (atj-unmark-vars vars))
+       ((mv vars &) (atj-type-unannotate-vars vars))
+       (vars-by-name (organize-symbols-by-name vars))
+       ((mv new-formals renaming-new renaming-old indices)
+        (atj-rename-formals
+         formals nil nil *atj-init-indices* curr-pkg vars-by-name))
+       ((mv new-body & &)
+        (atj-rename-term
+         body renaming-new renaming-old indices curr-pkg vars-by-name)))
+    (mv new-formals new-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-pre-translate ((fn symbolp)
                            (formals symbol-listp)
                            (body pseudo-termp)
@@ -1267,11 +1769,12 @@
     (xdoc::seetopic "atj-pre-translation" "here")
     "."))
   (b* ((body (atj-remove-return-last body guards$))
-       (body (remove-unused-vars-from-term body))
+       (body (remove-unused-vars body))
        ((when deep$) (mv formals body))
-       (body (remove-trivial-lambda-vars body))
-       ((mv formals body) (atj-rename-formals+body
-                           formals body (symbol-package-name fn)))
+       (body (remove-trivial-vars body))
        ((mv formals body) (atj-type-annotate-formals+body
-                           formals body in-types out-type guards$ wrld)))
+                           formals body in-types out-type guards$ wrld))
+       ((mv formals body) (atj-mark-formals+body formals body))
+       ((mv formals body) (atj-rename-formals+body
+                           formals body (symbol-package-name fn))))
     (mv formals body)))

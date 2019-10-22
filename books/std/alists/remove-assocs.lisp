@@ -123,7 +123,11 @@
 
   (defthm alistp-of-remove-assocs-equal
     (implies (alistp alist)
-             (alistp (remove-assocs-equal keys alist)))))
+             (alistp (remove-assocs-equal keys alist))))
+
+  (defthm symbol-alistp-of-remove-assocs-equal
+    (implies (symbol-alistp alist)
+             (symbol-alistp (remove-assocs-equal keys alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

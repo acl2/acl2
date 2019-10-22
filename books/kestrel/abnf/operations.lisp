@@ -35,14 +35,13 @@
   :parents (operations)
   :short "Well-formed ABNF grammars."
   :long
-  "<p>
-   Certain ABNF @(see grammar)s are valid according to the
-   <see topic='@(url abstract-syntax)'>formalized abstract syntax</see>,
-   but (include parts that) violate certain conditions that are
+  (xdoc::topstring-p
+   "Certain ABNF @(see grammar)s are valid according to the "
+   (xdoc::seetopic "abstract-syntax" "formalized abstract syntax")
+   ", but (include parts that) violate certain conditions that are
    either required by the concrete syntax defined in [RFC:4]
    or otherwise reasonably justifiable.
-   These additional conditions are captured by the notion of well-formedness.
-   </p>"
+   These additional conditions are captured by the notion of well-formedness.")
   :order-subtopics t)
 
 (define rulename-wfp ((rulename rulenamep))
@@ -51,13 +50,12 @@
   :short "A rule name must start with a lowercase letter (and thus not be empty)
           and contain only lowercase letters, numbers, and dashes."
   :long
-  "<p>
-   Aside from all letters being lowercase,
-   these constraints are required by the rule @('rulename') in [RFC:4].
-   The constraint that all letters be lowercase
-   provides a normalized representation of rule names,
-   which are case-insensitive [RFC:2.1].
-   </p>"
+  (xdoc::topstring-p
+   "Aside from all letters being lowercase,
+    these constraints are required by the rule @('rulename') in [RFC:4].
+    The constraint that all letters be lowercase
+    provides a normalized representation of rule names,
+    which are case-insensitive [RFC:2.1].")
   (b* ((charstring (rulename->get rulename))
        (chars (explode charstring)))
     (and (consp chars)
@@ -75,13 +73,12 @@
           a range numeric value notation is well-formed iff
           the minimum does not exceed the maximum."
   :long
-  "<p>
-   The condition on direct numeric value notations is required
-   by the rules @('bin-val'), @('dec-val'), and @('hex-val') in [RFC:4].
-   The condition on range numeric value notations is reasonably justifiable
-   because no number exists in a range whose minimum exceeds the maximum;
-   formally, no tree matches a malformed range numeric value notation.
-   </p>"
+  (xdoc::topstring-p
+   "The condition on direct numeric value notations is required
+    by the rules @('bin-val'), @('dec-val'), and @('hex-val') in [RFC:4].
+    The condition on range numeric value notations is reasonably justifiable
+    because no number exists in a range whose minimum exceeds the maximum;
+    formally, no tree matches a malformed range numeric value notation.")
   (num-val-case num-val
                 :direct (consp num-val.get)
                 :range (<= num-val.min num-val.max))
@@ -102,16 +99,15 @@
           it consists of only non-control ASCII characters,
           except for the double quote character."
   :long
-  "<p>
-   These allowed characters are consistent with
-   the rule @('quoted-string') in [RFC:4].
-   That rule allows empty strings,
-   so the rule @('char-val') in [RFC:4] also allows empty strings.
-   An empty character value notation
-   may play the role of the empty sequence of symbols
-   (often denoted by @($\\epsilon$) in textbooks)
-   even though ABNF includes constructs like @('[...]').
-   </p>"
+  (xdoc::topstring-p
+   "These allowed characters are consistent with
+    the rule @('quoted-string') in [RFC:4].
+    That rule allows empty strings,
+    so the rule @('char-val') in [RFC:4] also allows empty strings.
+    An empty character value notation
+    may play the role of the empty sequence of symbols
+    (often denoted by @($\\epsilon$) in textbooks)
+    even though ABNF includes constructs like @('[...]').")
   (b* ((allowed-chars (nats=>chars (append (integers-from-to #x20 #x21)
                                            (integers-from-to #x23 #x7e)))))
     (char-val-case char-val
@@ -128,14 +124,13 @@
           it consists of only non-control ASCII characters,
           except for the right angle bracket character."
   :long
-  "<p>
-   These allowed characters are consistent with
-   the rule @('prose-val') in [RFC:4].
-   That rule allows empty bracketed strings.
-   Normally prose should be non-empty (so it provides some description),
-   but in the formal semantics any tree matches prose,
-   so the emptiness of prose makes no difference in the formal semantics.
-   </p>"
+  (xdoc::topstring-p
+   "These allowed characters are consistent with
+    the rule @('prose-val') in [RFC:4].
+    That rule allows empty bracketed strings.
+    Normally prose should be non-empty (so it provides some description),
+    but in the formal semantics any tree matches prose,
+    so the emptiness of prose makes no difference in the formal semantics.")
   (b* ((allowed-chars (nats=>chars (append (integers-from-to #x20 #x3d)
                                            (integers-from-to #x3f #x7e)))))
     (subsetp (explode (prose-val->get prose-val))
@@ -148,11 +143,10 @@
   :short "A repetition range is well-formed iff
           the minimum does not exceed the maximum."
   :long
-  "<p>
-   This condition is reasonably justifiable because
-   no number of repetitions exists in a range
-   whose minimum exceeds the maximum.
-   </p>"
+  (xdoc::topstring-p
+   "This condition is reasonably justifiable because
+    no number of repetitions exists in a range
+    whose minimum exceeds the maximum.")
   (b* ((min (repeat-range->min range))
        (max (repeat-range->max range)))
     (or (nati-case max :infinity)
@@ -175,12 +169,12 @@
     :short "An alternation is well-formed iff
             it is not empty and all its concatenations are well-formed."
     :long
-    "<p>
-     This non-emptiness condition
-     is required by the rule @('alternation') in [RFC:4].
-     The well-formedness condition on the concatenations is structural.
-     </p>
-     @(def alternation-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This non-emptiness condition
+       is required by the rule @('alternation') in [RFC:4].
+       The well-formedness condition on the concatenations is structural.")
+     (xdoc::@def "alternation-wfp"))
     (and (consp alternation)
          (concatenation-list-wfp alternation))
     :measure (two-nats-measure (alternation-count alternation) 1)
@@ -191,7 +185,7 @@
     :parents (well-formedness)
     :short "Check if all the concatenations in a list of concatenations
             are well-formed."
-    :long "@(def concatenation-list-wfp)"
+    :long (xdoc::topstring-@def "concatenation-list-wfp")
     (or (endp concatenations)
         (and (concatenation-wfp (car concatenations))
              (concatenation-list-wfp (cdr concatenations))))
@@ -204,12 +198,12 @@
     :short "A concatenation is well-formed iff
             it is not empty and all its repetitions are well-formed."
     :long
-    "<p>
-     This non-emptiness condition
-     is required by the rule @('concatenation') in [RFC:4].
-     The well-formedness condition on the repetitions is structural.
-     </p>
-     @(def concatenation-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This non-emptiness condition
+       is required by the rule @('concatenation') in [RFC:4].
+       The well-formedness condition on the repetitions is structural.")
+     (xdoc::@def "concatenation-wfp"))
     (and (consp concatenation)
          (repetition-list-wfp concatenation))
     :measure (two-nats-measure (concatenation-count concatenation) 1)
@@ -220,7 +214,7 @@
     :parents (well-formedness)
     :short "Check if all the repetitions in a list of repetitions
             are well-formed."
-    :long "@(def repetition-list-wfp)"
+    :long (xdoc::topstring-@def "repetition-list-wfp")
     (or (endp repetitions)
         (and (repetition-wfp (car repetitions))
              (repetition-list-wfp (cdr repetitions))))
@@ -233,10 +227,10 @@
     :short "A repetition is well-formed iff
             its repetition range and its element are well-formed."
     :long
-    "<p>
-     This condition is structural.
-     </p>
-     @(def repetition-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This condition is structural.")
+     (xdoc::@def "repetition-wfp"))
     (and (repeat-range-wfp (repetition->range repetition))
          (element-wfp (repetition->element repetition)))
     :measure (two-nats-measure (repetition-count repetition) 1)
@@ -247,10 +241,10 @@
     :parents (well-formedness)
     :short "An element is well-formed iff its constituents are well-formed."
     :long
-    "<p>
-     This condition is structural.
-     </p>
-     @(def element-wfp)"
+    (xdoc::topstring
+     (xdoc::p
+      "This condition is structural.")
+     (xdoc::@def "element-wfp"))
     (element-case element
                   :rulename (rulename-wfp element.get)
                   :group (alternation-wfp element.get)
@@ -278,9 +272,8 @@
   :parents (well-formedness)
   :short "A rule is well-formed iff its name and definiens are well-formed."
   :long
-  "<p>
-   This condition is structural.
-   </p>"
+  (xdoc::topstring-p
+   "This condition is structural.")
   (and (rulename-wfp (rule->name rule))
        (alternation-wfp (rule->definiens rule)))
   :no-function t)
@@ -298,12 +291,11 @@
   :short "Check if incremental rules appear after
           non-incremental rules with the same names."
   :long
-  "<p>
-   An incremental rule may appear
-   only if there is a preceding rule with the same name.
-   A non-incremental rule may appear
-   only if there is no preceding rule with the same name.
-   </p>"
+  (xdoc::topstring-p
+   "An incremental rule may appear
+    only if there is a preceding rule with the same name.
+    A non-incremental rule may appear
+    only if there is no preceding rule with the same name.")
   (rulelist-incremental-ok-p-aux nil rules)
   :no-function t
 
@@ -314,11 +306,10 @@
      :parents (rulelist-incremental-ok-p)
      :short "Auxiliary function to define @(tsee rulelist-incremental-ok-p)."
      :long
-     "<p>
-      The rules in @('next-rules') are examined one after the other,
-      and checked against the rules already examined,
-      which are accumulated in @('previous-rules').
-      </p>"
+     (xdoc::topstring-p
+      "The rules in @('next-rules') are examined one after the other,
+       and checked against the rules already examined,
+       which are accumulated in @('previous-rules').")
      (or (endp next-rules)
          (and (iff (rule->incremental (car next-rules))
                    (lookup-rulename (rule->name (car next-rules))
@@ -337,16 +328,15 @@
           there are no duplicate rules,
           and incremental rules follow non-incremental rules."
   :long
-  "<p>
-   The first condition is structural.
-   The second condition is justifiable
-   because duplicate rules are redundant.
-   The third condition is reasonably implied by [RFC:3.3].
-   </p>
-   <p>
-   Non-emptiness is not required by the rule @('rulelist') in [RFC:4],
-   which allows just @('(*c-wsp c-nl)') groups without @('rule')s.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The first condition is structural.
+     The second condition is justifiable
+     because duplicate rules are redundant.
+     The third condition is reasonably implied by [RFC:3.3].")
+   (xdoc::p
+    "Non-emptiness is not required by the rule @('rulelist') in [RFC:4],
+     which allows just @('(*c-wsp c-nl)') groups without @('rule')s."))
   (and (rule-list-wfp rules)
        (no-duplicatesp-equal rules)
        (rulelist-incremental-ok-p rules))
@@ -358,19 +348,18 @@
   :parents (operations)
   :short "Closure in ABNF grammars."
   :long
-  "<p>
-   A rule's definiens may reference (i.e. ``call'') other rules.
-   Those rules may in turn call further rules,
-   and so on until a ``closed'' set of rules is reached.
-   </p>
-   <p>
-   When grammars are modularly defined, a grammar may not be closed,
-   but after the modules are composed into one grammar for parsing,
-   the resulting grammar should be closed.
-   When composing grammars, sometimes only a portion of a grammar is selected,
-   consisting of a subset of its rules (perhaps called by other grammars)
-   along with their closure.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A rule's definiens may reference (i.e. ``call'') other rules.
+     Those rules may in turn call further rules,
+     and so on until a ``closed'' set of rules is reached.")
+   (xdoc::p
+    "When grammars are modularly defined, a grammar may not be closed,
+     but after the modules are composed into one grammar for parsing,
+     the resulting grammar should be closed.
+     When composing grammars, sometimes only a portion of a grammar is selected,
+     consisting of a subset of its rules (perhaps called by other grammars)
+     along with their closure."))
   :order-subtopics t)
 
 (defines alt/conc/rep/elem-called-rules
@@ -380,7 +369,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in an alternation."
-    :long "@(def alternation-called-rules)"
+    :long (xdoc::topstring-@def "alternation-called-rules")
     (cond ((endp alternation) nil)
           (t (union (concatenation-called-rules (car alternation))
                     (alternation-called-rules (cdr alternation)))))
@@ -391,7 +380,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in a concatenation."
-    :long "@(def concatenation-called-rules)"
+    :long (xdoc::topstring-@def "concatenation-called-rules")
     (cond ((endp concatenation) nil)
           (t (union (repetition-called-rules (car concatenation))
                     (concatenation-called-rules (cdr concatenation)))))
@@ -402,7 +391,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in a repetition."
-    :long "@(def repetition-called-rules)"
+    :long (xdoc::topstring-@def "repetition-called-rules")
     (element-called-rules (repetition->element repetition))
     :measure (repetition-count repetition)
     :no-function t)
@@ -411,7 +400,7 @@
     :returns (rulenames rulename-setp)
     :parents (closure)
     :short "Rule names that occur in an element."
-    :long "@(def element-called-rules)"
+    :long (xdoc::topstring-@def "element-called-rules")
     (element-case element
                   :rulename (insert element.get nil)
                   :group (alternation-called-rules element.get)
@@ -465,13 +454,12 @@
   :parents (closure)
   :short "Separate from some rules the ones that define a rule name."
   :long
-  "<p>
-   We scan @('rules'), taking out the rules that define @('rulename').
-   The first result contains the rules that have been taken out,
-   in the same order in which they appear in @('rules').
-   The second result contains the remaining rules in @('rules'),
-   after the ones in the first result have been taken out.
-   </p>"
+  (xdoc::topstring-p
+   "We scan @('rules'), taking out the rules that define @('rulename').
+    The first result contains the rules that have been taken out,
+    in the same order in which they appear in @('rules').
+    The second result contains the remaining rules in @('rules'),
+    after the ones in the first result have been taken out.")
   (b* (((when (endp rules)) (mv nil nil))
        (rule (rule-fix (car rules)))
        ((mv rulename-rules other-rules) (rules-of-name rulename (cdr rules))))
@@ -487,7 +475,7 @@
        (equal (len other-rules)
               (- (len rules) (len rulename-rules))))))
 
-  (defrule len-of-other-rules-of-ruls-of-name-<
+  (defrule len-of-other-rules-of-rules-of-name-<
     (b* (((mv rulename-rules other-rules) (rules-of-name rulename rules)))
       (implies rulename-rules
                (< (len other-rules) (len rules))))
@@ -502,26 +490,25 @@
           that transitively define names in a list of rule names,
           collecting them into an accumulator (list of rules)."
   :long
-  "<p>
-   This is a work set algorithm.
-   When the work set is empty,
-   we are done and we return the rules collected so far.
-   Otherwise, we remove one rule name from the work set
-   and take out of @('rules') the rules that define it.
-   If no rules in @('rules') define the rule name,
-   we make a recursive call to examine the next rule name in the work set.
-   Otherwise, we add these rules to the current result,
-   extend the work set with the rule names referenced by these rules,
-   and make a recursive call to re-examine the work set.
-   </p>
-   <p>
-   The algorithm makes progress
-   either by reducing the length of @('rules')
-   (if rules are taken out of @('rules')),
-   or by reducing the size of the work set
-   (if no rules are taken out of @('rules')),
-   in which case the length of @('rules') stays the same.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is a work set algorithm.
+     When the work set is empty,
+     we are done and we return the rules collected so far.
+     Otherwise, we remove one rule name from the work set
+     and take out of @('rules') the rules that define it.
+     If no rules in @('rules') define the rule name,
+     we make a recursive call to examine the next rule name in the work set.
+     Otherwise, we add these rules to the current result,
+     extend the work set with the rule names referenced by these rules,
+     and make a recursive call to re-examine the work set.")
+   (xdoc::p
+    "The algorithm makes progress
+     either by reducing the length of @('rules')
+     (if rules are taken out of @('rules')),
+     or by reducing the size of the work set
+     (if no rules are taken out of @('rules')),
+     in which case the length of @('rules') stays the same."))
   (b* (((when (empty workset)) (rulelist-fix accumulator))
        (rulename (head workset))
        (workset (tail workset))
@@ -548,20 +535,19 @@
   :parents (operations)
   :short "ABNF grammars that generate only terminals in given sets."
   :long
-  "<p>
-   If all the terminal value notations used in a rule list denote values
-   that belong to a certain set of terminals (natural numbers),
-   then the terminal strings of that rule list
-   consist of only terminals that belong to that set.
-   This is proved below.
-   </p>
-   <p>
-   For example, if all the terminal value notations are octets,
-   the terminal strings consist of octets
-   and can be parsed starting from character strings
-   (since @(see acl2::characters) are isomorphic to octets)
-   instead of natural numbers.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "If all the terminal value notations used in a rule list denote values
+     that belong to a certain set of terminals (natural numbers),
+     then the terminal strings of that rule list
+     consist of only terminals that belong to that set.
+     This is proved below.")
+   (xdoc::p
+    "For example, if all the terminal value notations are octets,
+     the terminal strings consist of octets
+     and can be parsed starting from character strings
+     (since @(see acl2::characters) are isomorphic to octets)
+     instead of natural numbers."))
   :order-subtopics t)
 
 (define num-val-in-termset-p ((num-val num-val-p) (termset nat-setp))
@@ -637,7 +623,7 @@
     :parents (in-terminal-set)
     :short "Check if all the terminal value notations in an alternation
             denote values in a set."
-    :long "@(def alternation-in-termset-p)"
+    :long (xdoc::topstring-@def "alternation-in-termset-p")
     (or (endp alternation)
         (and (concatenation-in-termset-p (car alternation) termset)
              (alternation-in-termset-p (cdr alternation) termset)))
@@ -650,7 +636,7 @@
     :parents (in-terminal-set)
     :short "Check if all the terminal value notations in a concatenation
             denote values in a set."
-    :long "@(def concatenation-in-termset-p)"
+    :long (xdoc::topstring-@def "concatenation-in-termset-p")
     (or (endp concatenation)
         (and (repetition-in-termset-p (car concatenation) termset)
              (concatenation-in-termset-p (cdr concatenation) termset)))
@@ -664,7 +650,7 @@
     :short "Check if all the terminal value notations in a repetition
             denote values in a set,
             or the repetition consists of zero instances."
-    :long "@(def repetition-in-termset-p)"
+    :long (xdoc::topstring-@def "repetition-in-termset-p")
     (or (element-in-termset-p (repetition->element repetition) termset)
         (equal (repetition->range repetition)
                (repeat-range 0 (nati-finite 0))))
@@ -677,7 +663,7 @@
     :parents (in-terminal-set)
     :short "Check if all the terminal value notations in an element
             denote values in a set."
-    :long "@(def element-in-termset-p)"
+    :long (xdoc::topstring-@def "element-in-termset-p")
     (element-case element
                   :rulename t
                   :group (alternation-in-termset-p element.get termset)
@@ -730,16 +716,16 @@
   :parents (in-terminal-set)
   :short "Check if a symbol is either a rule name or a natural number in a set."
   :long
-  "<p>
-   To prove that the terminal strings generated by a rule list
-   consist of only terminals in a set,
-   it is convenient to work with trees whose rule names may not all be expanded,
-   to avoid dealing with this additional constraint.
-   For these trees,
-   we need to weaken the notion that @(tsee tree->string)
-   only consists of terminals in the set,
-   by allowing non-terminal symbols as well.
-   </p>"
+  (xdoc::topstring-p
+   "To prove that the terminal strings generated by a rule list
+    consist of only terminals in a set,
+    it is convenient to work with trees
+    whose rule names may not all be expanded,
+    to avoid dealing with this additional constraint.
+    For these trees,
+    we need to weaken the notion that @(tsee tree->string)
+    only consists of terminals in the set,
+    by allowing non-terminal symbols as well.")
   (symbol-case symbol
                :terminal (in symbol.get termset)
                :nonterminal t)
@@ -790,10 +776,9 @@
   :short "Lemma to prove
           @(tsee nats-in-termset-when-match-sensitive-chars-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nat-match-sensitive-char-p nat char)
                 (char-sensitive-in-termset-p char termset))
            (in nat termset))
@@ -805,10 +790,9 @@
   :short "Lemma to prove
           @(tsee leaves-in-termset-when-match-char-val-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nats-match-sensitive-chars-p nats chars)
                 (chars-sensitive-in-termset-p chars termset))
            (list-in nats termset))
@@ -821,10 +805,9 @@
   :short "Lemma to prove
           @(tsee nats-in-termset-when-match-insensitive-chars-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nat-match-insensitive-char-p nat char)
                 (char-insensitive-in-termset-p char termset))
            (in nat termset))
@@ -836,10 +819,9 @@
   :short "Lemma to prove
           @(tsee leaves-in-termset-when-match-char-val-in-termset)."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (nats-match-insensitive-chars-p nats chars)
                 (chars-insensitive-in-termset-p chars termset))
            (list-in nats termset))
@@ -867,11 +849,10 @@
           can be matched only by (lists of (lists of)) trees
           whose terminal leaves are in the set."
   :long
-  "<p>
-   The proof uses
-   @(tsee leaves-in-termset-when-match-num-val-in-termset) and
-   @(tsee leaves-in-termset-when-match-char-val-in-termset).
-   </p>"
+  (xdoc::topstring-p
+   "The proof uses
+    @(tsee leaves-in-termset-when-match-num-val-in-termset) and
+    @(tsee leaves-in-termset-when-match-char-val-in-termset).")
 
   (defthm-tree-match-alt/conc/rep/elem-p-flag
 
@@ -936,10 +917,9 @@
   :short "Rules whose terminal value notations all denote values in a set,
           generate terminal strings consisting of terminals in the set."
   :long
-  "<p>
-   This is disabled by default because its conclusion is fairly general,
-   not specific to terminal sets.
-   </p>"
+  (xdoc::topstring-p
+   "This is disabled by default because its conclusion is fairly general,
+    not specific to terminal sets.")
   (implies (and (terminal-string-for-rules-p nats rules)
                 (rulelist-in-termset-p rules termset))
            (list-in nats termset))
@@ -961,10 +941,9 @@
   :parents (operations)
   :short "Ambiguity (and unambiguity) in ABNF grammars."
   :long
-  "<p>
-   This part of the ABNF formalization is work in progress.
-   More definitions and theorems should be added.
-   </p>"
+  (xdoc::topstring-p
+   "This part of the ABNF formalization is work in progress.
+    More definitions and theorems should be added.")
   :order-subtopics t)
 
 (define-sk rules-ambiguousp ((rules rulelistp))
@@ -972,14 +951,13 @@
   :parents (ambiguity)
   :short "Notion of ambiguous lists of rules."
   :long
-  "<p>
-   A list of rules is ambiguous iff it includes some ambiguous string.
-   Note that the condition that
-   the existentially quantified @('rulename') be defined by @('rules')
-   would be superfluous,
-   because if @('rulename') is not defined
-   then no parse trees can originate from it.
-   </p>"
+  (xdoc::topstring-p
+   "A list of rules is ambiguous iff it includes some ambiguous string.
+    Note that the condition that
+    the existentially quantified @('rulename') be defined by @('rules')
+    would be superfluous,
+    because if @('rulename') is not defined
+    then no parse trees can originate from it.")
   (exists (string rulename)
           (and (stringp string)
                (rulenamep rulename)
@@ -989,11 +967,10 @@
   :parents (ambiguity)
   :short "Numeric value notations are never ambiguous."
   :long
-  "<p>
-   Any two trees that match a numeric value notation
-   and that have the same string at the leaves
-   are the same tree.
-   </p>"
+  (xdoc::topstring-p
+   "Any two trees that match a numeric value notation
+    and that have the same string at the leaves
+    are the same tree.")
   (implies (and (tree-match-num-val-p tree1 num-val)
                 (tree-match-num-val-p tree2 num-val))
            (equal (equal (tree->string tree1)
@@ -1005,11 +982,10 @@
   :parents (ambiguity)
   :short "Character value notations are never ambiguous."
   :long
-  "<p>
-   Any two trees that match a character value notation
-   and that have the same string at the leaves
-   are the same tree.
-   </p>"
+  (xdoc::topstring-p
+   "Any two trees that match a character value notation
+    and that have the same string at the leaves
+    are the same tree.")
   (implies (and (tree-match-char-val-p tree1 char-val)
                 (tree-match-char-val-p tree2 char-val))
            (equal (equal (tree->string tree1)
@@ -1021,12 +997,11 @@
   :parents (ambiguity)
   :short "Prose value notations are always ambiguous."
   :long
-  "<p>
-   We can always construct two different trees
-   with the same string at the leaves
-   that match any prose value notation.
-   Recall that a prose value notation is matched by any tree.
-   </p>"
+  (xdoc::topstring-p
+   "We can always construct two different trees
+    with the same string at the leaves
+    that match any prose value notation.
+    Recall that a prose value notation is matched by any tree.")
   (implies (and (equal tree1 (make-tree-nonleaf
                               :rulename? nil
                               :branches (list (list (tree-leafterm '(1))
@@ -1047,11 +1022,10 @@
   :parents (ambiguity)
   :short "Notion of unambiguous elements."
   :long
-  "<p>
-   An element is unambiguous iff
-   any two trees that match the element and have the same string at the leaves
-   are the same tree.
-   </p>"
+  (xdoc::topstring-p
+   "An element is unambiguous iff
+    any two trees that match the element and have the same string at the leaves
+    are the same tree.")
   (forall (tree1 tree2)
           (implies (and (treep tree1)
                         (treep tree2)
@@ -1065,9 +1039,8 @@
   :parents (ambiguity)
   :short "Numeric value elements are never ambiguous."
   :long
-  "<p>
-   This is a simple consequnce of @(tsee num-val-unambiguous).
-   </p>"
+  (xdoc::topstring-p
+   "This is a simple consequnce of @(tsee num-val-unambiguous).")
   (implies (element-case element :num-val)
            (element-unambiguousp element rules))
   :enable (element-unambiguousp tree-match-element-p))
@@ -1076,9 +1049,8 @@
   :parents (ambiguity)
   :short "Character value elements are never ambiguous."
   :long
-  "<p>
-   This is a simple consequnce of @(tsee char-val-unambiguous).
-   </p>"
+  (xdoc::topstring
+   "This is a simple consequnce of @(tsee char-val-unambiguous).")
   (implies (element-case element :char-val)
            (element-unambiguousp element rules))
   :enable (element-unambiguousp tree-match-element-p))
@@ -1087,9 +1059,8 @@
   :parents (ambiguity)
   :short "Prose value elements are always ambiguous."
   :long
-  "<p>
-   This is a simple consequence of @(tsee prose-val-ambiguous).
-   </p>"
+  (xdoc::topstring-p
+   "This is a simple consequence of @(tsee prose-val-ambiguous).")
   (implies (element-case element :prose-val)
            (not (element-unambiguousp element rules)))
   :enable tree-match-element-p
@@ -1107,15 +1078,14 @@
   :parents (ambiguity)
   :short "Notion of unambiguous repetitions."
   :long
-  "<p>
-   A repetition is unambiguous iff
-   any two lists of trees that match the repetition
-   and have the same string at the leaves
-   are the same list of trees.
-   </p>
-   <p>
-   A repetition of 0 elements is always unambiguous.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A repetition is unambiguous iff
+     any two lists of trees that match the repetition
+     and have the same string at the leaves
+     are the same list of trees.")
+   (xdoc::p
+    "A repetition of 0 elements is always unambiguous."))
   (forall (trees1 trees2)
           (implies (and (tree-listp trees1)
                         (tree-listp trees2)
@@ -1138,15 +1108,14 @@
   :parents (ambiguity)
   :short "Notion of unambiguous concatenations."
   :long
-  "<p>
-   A concatenation is unambiguous iff
-   any two lists of lists of trees that match the concatenation
-   and have the same string at the leaves
-   are the same list of lists of trees.
-   </p>
-   <p>
-   An empty concatenation is always unambiguous.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A concatenation is unambiguous iff
+     any two lists of lists of trees that match the concatenation
+     and have the same string at the leaves
+     are the same list of lists of trees.")
+   (xdoc::p
+    "An empty concatenation is always unambiguous."))
   (forall (treess1 treess2)
           (implies (and (tree-list-listp treess1)
                         (tree-list-listp treess2)
@@ -1169,15 +1138,14 @@
   :parents (ambiguity)
   :short "Notion of unambiguous alternations."
   :long
-  "<p>
-   An alternation is unambiguous iff
-   any two lists of lists of trees that match the alternation
-   and have the same string at the leaves
-   are the same list of lists of trees.
-   </p>
-   <p>
-   An empty alternation is always unambiguous.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "An alternation is unambiguous iff
+     any two lists of lists of trees that match the alternation
+     and have the same string at the leaves
+     are the same list of lists of trees.")
+   (xdoc::p
+    "An empty alternation is always unambiguous."))
   (forall (treess1 treess2)
           (implies (and (tree-list-listp treess1)
                         (tree-list-listp treess2)
@@ -1201,16 +1169,15 @@
   :parents (ambiguity)
   :short "Notion of disjoint concatenation-alternation pairs."
   :long
-  "<p>
-   A concatenation is disjoint from an alternation iff
-   the concatenation and the alternation are matched
-   by disjoint sets of lists of lists of trees.
-   That is, there is no list of lists of trees that matches
-   both the concatenation and the alternation.
-   </p>
-   <p>
-   The empty alternation is disjoint from the empty concatenation.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "A concatenation is disjoint from an alternation iff
+     the concatenation and the alternation are matched
+     by disjoint sets of lists of lists of trees.
+     That is, there is no list of lists of trees that matches
+     both the concatenation and the alternation.")
+   (xdoc::p
+    "The empty alternation is disjoint from the empty concatenation."))
   (forall (treess1 treess2)
           (implies (and (tree-list-listp treess1)
                         (tree-list-listp treess2)
@@ -1244,15 +1211,15 @@
           is disjoint from an unambiguous alternation,
           then adding the concatenation maintains the alternation unambiguous."
   :long
-  "<p>
-   This theorem can be used to show that an alternation is unambiguous,
-   one constituting concatenation at a time,
-   starting with
-   <see topic='@(url concatenation-alternation-disjointp)'
-   >@('concatenation-alternation-disjointp-of-nil')</see>.
-   In other words, it must be showed that the alternatives of the alternation
-   are all disjoint, i.e. they have no lists of lists of trees in common.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem can be used to show that an alternation is unambiguous,
+     one constituting concatenation at a time,
+     starting with "
+    (xdoc::seetopic "concatenation-alternation-disjointp"
+                    "@('concatenation-alternation-disjointp-of-nil')")
+    ". In other words, it must be showed that the alternatives of the alternation
+     are all disjoint, i.e. they have no lists of lists of trees in common."))
   (implies (and (concatenation-unambiguousp concatenation rules)
                 (alternation-unambiguousp alternation rules)
                 (concatenation-alternation-disjointp
@@ -1270,38 +1237,37 @@
   :parents (operations)
   :short "Composition of ABNF grammars."
   :long
-  "<p>
-   Certain ABNF grammars are defined modularly.
-   A ``module'' may not be <see topic='@(url closure)'>closed</see>,
-   but when it is combined with other modules,
-   the resulting grammar may be closed.
-   </p>
-   <p>
-   For example, the
-   <see topic='@(url concrete-syntax-rules)'>concrete syntax rules</see>
-   are not closed.
-   But when they are combined with
-   the <see topic='@(url core-rules)'>core rules</see>,
-   the <see topic='@(url *all-concrete-syntax-rules*)'>resulting rule list</see>
-   is closed.
-   </p>
-   <p>
-   As another example,
-   the HTTP grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc7230\">RFC 7230</a>
-   includes rules defined by prose value notations
-   that refer to the URI grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc3986\">RFC 3968</a>.
-   The intended way to compose the two grammars is
-   to replace the prose HTTP rules with the corresponding URI rules.
-   </p>
-   <p>
-   Here we define an operation to accomplish the kind of composition
-   exemplified above.
-   The operation ``plugs'' a rule list into another rule list,
-   e.g. it plugs the core rules into the concrete syntax rules,
-   and it plugs the URI rules into the HTTP rules.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Certain ABNF grammars are defined modularly.
+     A ``module'' may not be "
+    (xdoc::seetopic "closure" "closed")
+    ", but when it is combined with other modules,
+     the resulting grammar may be closed.")
+   (xdoc::p
+    "For example, the "
+    (xdoc::seetopic "concrete-syntax-rules" "concrete syntax rules")
+    " are not closed.
+     But when they are combined with the "
+    (xdoc::seetopic "core-rules" "core rules")
+    ", the "
+    (xdoc::seetopic "*all-concrete-syntax-rules*" "resulting rule list")
+    " is closed.")
+   (xdoc::p
+    "As another example,
+     the HTTP grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
+    " includes rules defined by prose value notations
+     that refer to the URI grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+    ". The intended way to compose the two grammars is
+     to replace the prose HTTP rules with the corresponding URI rules.")
+   (xdoc::p
+    "Here we define an operation to accomplish the kind of composition
+    exemplified above.
+    The operation ``plugs'' a rule list into another rule list,
+    e.g. it plugs the core rules into the concrete syntax rules,
+    and it plugs the URI rules into the HTTP rules."))
   :order-subtopics t)
 
 (define rule-prosep ((rule rulep))
@@ -1327,12 +1293,11 @@
   :short "Remove from a list of rules all the prose rules
           whose names have definitions in another list of rules."
   :long
-  "<p>
-   This is the first step of the
-   <see topic='@(url plug-rules)'>plugging operation</see>.
-   This step removes from @('rules1') all the prose rules
-   whose names have definitions in @('rules2').
-   </p>"
+  (xdoc::topstring-p
+   "This is the first step of the "
+   (xdoc::seetopic "plug-rules" "plugging operation")
+   ". This step removes from @('rules1') all the prose rules
+    whose names have definitions in @('rules2').")
   (cond ((endp rules1) nil)
         (t (b* ((rule (car rules1)))
              (and (mbt (rulep rule))
@@ -1347,41 +1312,40 @@
   :parents (plugging)
   :short "Plug a list of rules into another list of rules."
   :long
-  "<p>
-   This plugs @('rules2') into @('rules1'), not vice versa.
-   This choice is motivated by the fact that grammar rules
-   are usually presented in a top-down manner,
-   and so it seems more natural to have
-   the ``plugged'' rules (e.g. HTTP)
-   appear before the ``plugging'' rules (e.g. URI).
-   </p>
-   <p>
-   After removing from @('rules1') the prose rules
-   whose names have definitions in @('rules2'),
-   we find the rules in @('rules2') that transitively define
-   rule names referenced but not defined in the remaining rules of @('rules1').
-   We append the rules found after the remaining rules of @('rules1').
-   </p>
-   <p>
-   Thus, prose rules in @('rules1') are effectively replaced
-   by corresponding rules in @('rules')
-   (assuming that each prose rule removed from @('rules1')
-   is the only rule in @('rules1') that defines its rule name).
-   Besides replacing @('prose-rules') like this,
-   the plugging operation may also provide definitions
-   for rule names that are only referenced in @('rules1').
-   </p>
-   <p>
-   Prose rules in @('rules1') whose names do not have definitions in @('rules2')
-   are not removed from @('rules1') and thus appear in the resulting rules.
-   Similarly, rules referenced in @('rules1')
-   but defined neither in @('rules1') nor in @('rules2')
-   remain referenced but not defined in the resulting rules.
-   These features allow multi-step plugging,
-   i.e. @('rules2') is plugged into @('rules1'),
-   then @('rules3') is plugged into the result of the previous operation,
-   and so on.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This plugs @('rules2') into @('rules1'), not vice versa.
+     This choice is motivated by the fact that grammar rules
+     are usually presented in a top-down manner,
+     and so it seems more natural to have
+     the ``plugged'' rules (e.g. HTTP)
+     appear before the ``plugging'' rules (e.g. URI).")
+   (xdoc::p
+    "After removing from @('rules1') the prose rules
+     whose names have definitions in @('rules2'),
+     we find the rules in @('rules2') that transitively define
+     rule names referenced but not defined
+     in the remaining rules of @('rules1').
+     We append the rules found after the remaining rules of @('rules1').")
+   (xdoc::p
+    "Thus, prose rules in @('rules1') are effectively replaced
+     by corresponding rules in @('rules')
+     (assuming that each prose rule removed from @('rules1')
+     is the only rule in @('rules1') that defines its rule name).
+     Besides replacing @('prose-rules') like this,
+     the plugging operation may also provide definitions
+     for rule names that are only referenced in @('rules1').")
+   (xdoc::p
+    "Prose rules in @('rules1')
+     whose names do not have definitions in @('rules2')
+     are not removed from @('rules1') and thus appear in the resulting rules.
+     Similarly, rules referenced in @('rules1')
+     but defined neither in @('rules1') nor in @('rules2')
+     remain referenced but not defined in the resulting rules.
+     These features allow multi-step plugging,
+     i.e. @('rules2') is plugged into @('rules1'),
+     then @('rules3') is plugged into the result of the previous operation,
+     and so on."))
   (b* ((rules1 (remove-prose-rules rules1 rules2))
        (rules2 (trans-rules-of-names (difference
                                       (rulelist-called-rules rules1)
@@ -1396,19 +1360,19 @@
   :parents (operations)
   :short "Renaming of rules in ABNF grammars."
   :long
-  "<p>
-   It is sometimes useful to systematically rename a rule in a grammar.
-   </p>
-   <p>
-   For example, the HTTP grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc7230\">RFC 7230</a>
-   includes a rule @('uri-host') defined by a prose value notation
-   that references the rule @('host') from the URI grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc3986\">RFC 3968</a>.
-   Prior to @(see plugging) the URI grammar rules into the HTTP grammar rules,
-   the rule @('host') in the URI grammar rules
-   should be renamed to @('uri-host').
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "It is sometimes useful to systematically rename a rule in a grammar.")
+   (xdoc::p
+    "For example, the HTTP grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
+    " includes a rule @('uri-host') defined by a prose value notation
+     that references the rule @('host') from the URI grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+    ". Prior to @(see plugging) the URI grammar rules
+     into the HTTP grammar rules,
+     the rule @('host') in the URI grammar rules
+     should be renamed to @('uri-host')."))
   :order-subtopics t)
 
 (defines alt/conc/rep/elem-rename-rule
@@ -1421,7 +1385,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in an alternation
             to a new rule name."
-    :long "@(def alternation-rename-rule)"
+    :long (xdoc::topstring-@def "alternation-rename-rule")
     (cond ((endp alternation) nil)
           (t (cons (concatenation-rename-rule (car alternation)
                                               oldname newname)
@@ -1437,7 +1401,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in a conatenation
             to a new rule name."
-    :long "@(def concatenation-rename-rule)"
+    :long (xdoc::topstring-@def "concatenation-rename-rule")
     (cond ((endp concatenation) nil)
           (t (cons (repetition-rename-rule (car concatenation)
                                            oldname newname)
@@ -1453,7 +1417,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in a repetition
             to a new rule name."
-    :long "@(def repetition-rename-rule)"
+    :long (xdoc::topstring-@def "repetition-rename-rule")
     (make-repetition :range (repetition->range repetition)
                      :element (element-rename-rule
                                (repetition->element repetition)
@@ -1468,7 +1432,7 @@
     :parents (renaming)
     :short "Rename all the occurrences of a rule name in an element
             to a new rule name."
-    :long "@(def element-rename-rule)"
+    :long (xdoc::topstring-@def "element-rename-rule")
     (element-case element
                   :rulename (if (equal element.get oldname)
                                 (element-rulename newname)
@@ -1521,22 +1485,21 @@
   :parents (operations)
   :short "Removal of rules in ABNF grammars."
   :long
-  "<p>
-   It is sometimes useful to remove from a grammar
-   all the rules that define certain rule names.
-   </p>
-   <p>
-   For example, the SMTP grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc5321\">RFC 5321</a>
-   references rules defined in the IMF grammar specified in
-   <a href=\"https://www.rfc-editor.org/info/rfc5322\">RFC 5322</a>.
-   The IMF rules depend on a rule @('atom'),
-   but the SMTP rules provide their own definition of @('Atom')
-   (recall that rule names are case-insensitive).
-   Thus, before @(see plugging) the IMF rules into the SMTP rules,
-   the removal operation can be used to remove, from the IMF rules,
-   @('atom') and possibly any other rule already defined by SMTP.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "It is sometimes useful to remove from a grammar
+     all the rules that define certain rule names.")
+   (xdoc::p
+    "For example, the SMTP grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5321" "RFC 5321")
+    " references rules defined in the IMF grammar specified in "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5322" "RFC 5322")
+    ". The IMF rules depend on a rule @('atom'),
+     but the SMTP rules provide their own definition of @('Atom')
+     (recall that rule names are case-insensitive).
+     Thus, before @(see plugging) the IMF rules into the SMTP rules,
+     the removal operation can be used to remove, from the IMF rules,
+     @('atom') and possibly any other rule already defined by SMTP."))
   :order-subtopics t)
 
 (define remove-rules-that-define ((rulenames rulename-setp) (rules rulelistp))

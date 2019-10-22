@@ -57,15 +57,6 @@ public final class Acl2Package {
     private static final Map<Acl2PackageName, Acl2Package> packages =
             new HashMap<>();
 
-    /**
-     * Content of the {@code *pkg-witness-name*} ACL2 constant.
-     * This constant describes
-     * the exact semantics of the ACL2 function {@code pkg-witness}.
-     * The value of this constant is an ACL2 string,
-     * but we use the corresponding Java string here.
-     */
-    private static String witnessName;
-
     //////////////////////////////////////// package-private members:
 
     /**
@@ -93,13 +84,13 @@ public final class Acl2Package {
     }
 
     /**
-     * Returns the content of the {@code *pkg-witness-name*} ACL2 constant.
-     *
-     * @return The content of {@code *pkg-witness-name*}, as a Java string.
+     * Content of the {@code *pkg-witness-name*} ACL2 constant.
+     * This constant describes
+     * the exact semantics of the ACL2 function {@code pkg-witness}.
+     * The value of this constant is an ACL2 string,
+     * but we use the corresponding Java string here.
      */
-    static String getWitnessName() {
-        return witnessName;
-    }
+    static final String WITNESS_NAME = "ACL2-PKG-WITNESS";
 
     //////////////////////////////////////// public members:
 
@@ -142,26 +133,6 @@ public final class Acl2Package {
         packages.put(name, newPackage);
         Acl2Symbol.addPackageImports(name, importsCopy);
         return newPackage;
-    }
-
-    /**
-     * Sets the content of the {@code *pkg-witness-name*} ACL2 constant.
-     *
-     * @param content The content to set {@code *pkg-witness-name*},
-     *                as a Java string.
-     * @throws IllegalArgumentException If {@code content} is {@code null}.
-     * @throws IllegalStateException    If the content is already set.
-     */
-    public static void setWitnessName(String content) {
-        if (content == null)
-            throw new IllegalArgumentException("Null witness.");
-        if (witnessName == null)
-            witnessName = content;
-        else
-            throw new IllegalStateException
-                    ("Witness already defined: \""
-                            + witnessName
-                            + "\".");
     }
 
 }

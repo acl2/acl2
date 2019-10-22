@@ -374,7 +374,21 @@ functions over natural numbers.
       (and (true-listp l)
            (all-tlps (car l))
            (all-tlps (cdr l)))))
-                     
+
+(defun eqlable-2-alistp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (consp (car x))
+         (eqlablep (caar x))
+         (eqlable-alistp (cdar x))
+         (eqlable-2-alistp (cdr x)))))
+
+(defthm eqlable-2-alistp-eqlable-alistp
+  (implies (eqlable-2-alistp a)
+           (eqlable-alistp a)))
+
+; Document this
 (mutual-recursion
  (defun subst-var (new old form)
    (declare (xargs :guard (and (atom old) (all-tlps form))))

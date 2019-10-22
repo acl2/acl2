@@ -202,6 +202,8 @@
 
     SYMBOL-NAME-LST
     MAYBE-FLUSH-AND-COMPRESS1
+    DUMB-OCCUR
+    DUMB-OCCUR-VAR
   ))
 
 (defconst *special-ops*

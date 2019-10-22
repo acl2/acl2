@@ -14,8 +14,8 @@
 (include-book "event-form-lists")
 (include-book "fresh-names")
 (include-book "../prove-interface")
-(include-book "../symbol-symbol-alists")
-(include-book "../symbol-true-list-alists")
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
+(include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
 
 (local (set-default-parents named-formulas))
 
@@ -85,9 +85,9 @@
 (define prove-named-formulas
   ((named-formulas symbol-alistp "Named formulas to prove
                                   (an alist from names to untranslated terms).")
-   (named-hints symbol-true-list-alistp "Alist from names of formulas
-                                         to proof hints
-                                         to prove the corresponding formulas.")
+   (named-hints symbol-truelist-alistp "Alist from names of formulas
+                                        to proof hints
+                                        to prove the corresponding formulas.")
    (verbose booleanp "Print progress messages or not.")
    state)
   :returns (mv (success "A @(tsee booleanp).")
@@ -125,8 +125,8 @@
 (define ensure-named-formulas
   ((named-formulas symbol-alistp "Named formulas to prove
                                   (an alist from names to untranslated terms).")
-   (named-hints symbol-true-list-alistp "Alist from names of formulas
-                                         to proof hints to prove the formulas.")
+   (named-hints symbol-truelist-alistp "Alist from names of formulas
+                                        to proof hints to prove the formulas.")
    (verbose booleanp "Print progress messages or not.")
    (error-erp "Flag to return in case of error.")
    (error-val "Value to return in case of error.")
@@ -190,7 +190,7 @@
 (define named-formulas-to-thm-events
   ((named-formulas symbol-alistp "Named formulas to turn into theorems
                                   (an alist from names to untranslated terms).")
-   (named-hints symbol-true-list-alistp
+   (named-hints symbol-truelist-alistp
                 "Alist from names of formulas to
                  proof hints for the corresponding theorem events.")
    (named-rule-classes symbol-alistp

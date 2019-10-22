@@ -50,7 +50,7 @@
 
 (def-atj-function-type coerce (:value :symbol) :value)
 
-(def-atj-function-type cons (:value :value) :value)
+(def-atj-function-type cons (:value :value) :cons)
 
 (def-atj-function-type consp (:value) :symbol)
 

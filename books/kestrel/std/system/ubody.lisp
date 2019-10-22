@@ -16,7 +16,7 @@
 
 (define ubody ((fn pseudo-termfnp) (wrld plist-worldp))
   :returns (body "A @(tsee pseudo-termp).")
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short "Unnormalized body of a named function,
           or body of a lambda expression."
   :long
@@ -35,7 +35,7 @@
     "The unnormalized body of a named function
      is its @('unnormalized-body') property.
      If a function is not defined, this property is @('nil').
-     Note that some program-mode functions may be defined
+     Some program-mode functions may be defined
      but not have an @('unnormalized-body') property.")
    (xdoc::p
     "See @(tsee ubody+) for a logic-friendly variant of this utility."))

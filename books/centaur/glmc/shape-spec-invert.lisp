@@ -79,7 +79,8 @@
                 (nat-listp vars))
            (equal (bfr-list->s (numlist-to-vars vars) (bfr-set-var v val env))
                   (bfr-list->s (numlist-to-vars vars) env)))
-  :hints(("Goal" :in-theory (enable bfr-list->s s-endp scdr numlist-to-vars))))
+  :hints(("Goal" :in-theory (enable bfr-list->s s-endp scdr numlist-to-vars)
+          :expand ((:free (a b env) (bfr-list->s (cons a b) env))))))
 
 (defthm bfr-list->u-of-numlist-to-vars-set-non-member
   (implies (and (not (member (bfr-varname-fix v) vars))

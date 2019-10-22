@@ -129,21 +129,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-symbol-true-list-alist nil "This" t nil 'test state)))
+ (b* (((er x) (ensure-symbol-truelist-alist nil "This" t nil 'test state)))
    (value (equal x nil))))
 
 (must-eval-to-t
  (b* (((er x)
-       (ensure-symbol-true-list-alist
+       (ensure-symbol-truelist-alist
         '((x . nil) (y 5 6)) "This" t nil 'test state)))
    (value (equal x nil))))
 
 (must-fail
- (ensure-symbol-true-list-alist 88 "This" t nil 'test state)
+ (ensure-symbol-truelist-alist 88 "This" t nil 'test state)
  :with-output-off nil)
 
 (must-fail
- (ensure-symbol-true-list-alist '((x . 8) (y . (1 2))) "This" t nil 'test state)
+ (ensure-symbol-truelist-alist '((x . 8) (y . (1 2))) "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

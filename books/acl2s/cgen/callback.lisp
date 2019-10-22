@@ -227,7 +227,7 @@
 ;   in 
     cgen-state))
 
-(defconst *check-bad-generalizations-and-backtrack* nil)
+;Turned into an acl2s parameter
 ;(defconst *check-bad-generalizations-and-backtrack* t)
         
 ;; The following function implements a callback function (computed hint)
@@ -267,6 +267,7 @@ then it returns (value '(:do-not '(acl2::generalize)
    (b* (
 ;TODObug: test? defaults should be the one to be used
        (vl (acl2s-defaults :get verbosity-level))
+       (backtrack? (acl2s-defaults :get backtrack-bad-generalizations))
        
        ((unless (and (f-boundp-global 'cgen-state state)
                      (cgen-state-p (@ cgen-state)))) 
@@ -382,7 +383,7 @@ Nested testing not allowed! Skipping testing of new goal...~%"
 
 ; Check for false generalizations. TODO also do the same for
 ; cross-fertilization and eliminate-irrelevance if its worth the trouble
-     (if (and *check-bad-generalizations-and-backtrack*
+     (if (and backtrack?
               (equal processor 'acl2::generalize-clause))
          ;NOTE: this pspv (and hist) is for the cl not for cl-list, so there
          ;might be some inconsistency or wierdness here

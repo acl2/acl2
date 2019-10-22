@@ -6,6 +6,8 @@
 
 package edu.kestrel.acl2.aij;
 
+import java.math.BigInteger;
+
 /**
  * Representation of ACL2 rationals.
  * These are the values that satisfy {@code rationalp}.
@@ -304,7 +306,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * @param denominator The denominator of the rational.
      * @return The rational.
      * @throws IllegalArgumentException If {@code numerator} or
-     *                                  {@code denominator} is {@codee null},
+     *                                  {@code denominator} is {@code null},
      *                                  or {@code denominator} is 0.
      */
     public static Acl2Rational make(Acl2Integer numerator,
@@ -329,7 +331,61 @@ public abstract class Acl2Rational extends Acl2Number {
         if (denominator.equals(Acl2Integer.ONE))
             return numerator;
         else
-            return Acl2Ratio.make(numerator, denominator);
+            return Acl2Ratio.makeInternal(numerator, denominator);
+    }
+
+    /**
+     * Returns a rational whose numeric value is
+     * the fraction of the given numerator and denominator.
+     * If the fraction is actually an integer, the result is an integer,
+     * according to the rule of rational canonicalization in Common Lisp.
+     *
+     * @param numerator   The numerator of the rational.
+     * @param denominator The denominator of the rational.
+     * @return The rational.
+     * @throws IllegalArgumentException If {@code denominator} is 0.
+     */
+    public static Acl2Rational make(int numerator, int denominator) {
+        return Acl2Rational.make
+                (Acl2Integer.make(numerator),
+                        Acl2Integer.make(denominator));
+    }
+
+    /**
+     * Returns a rational whose numeric value is
+     * the fraction of the given numerator and denominator.
+     * If the fraction is actually an integer, the result is an integer,
+     * according to the rule of rational canonicalization in Common Lisp.
+     *
+     * @param numerator   The numerator of the rational.
+     * @param denominator The denominator of the rational.
+     * @return The rational.
+     * @throws IllegalArgumentException If {@code denominator} is 0.
+     */
+    public static Acl2Rational make(long numerator, long denominator) {
+        return Acl2Rational.make
+                (Acl2Integer.make(numerator),
+                        Acl2Integer.make(denominator));
+    }
+
+    /**
+     * Returns a rational whose numeric value is
+     * the fraction of the given numerator and denominator.
+     * If the fraction is actually an integer, the result is an integer,
+     * according to the rule of rational canonicalization in Common Lisp.
+     *
+     * @param numerator   The numerator of the rational.
+     * @param denominator The denominator of the rational.
+     * @return The rational.
+     * @throws IllegalArgumentException If {@code numerator} or
+     *                                  {@code denominator} is {@code null},
+     *                                  or {@code denominator} is 0.
+     */
+    public static Acl2Rational make(BigInteger numerator,
+                                    BigInteger denominator) {
+        return Acl2Rational.make
+                (Acl2Integer.make(numerator),
+                        Acl2Integer.make(denominator));
     }
 
     /**

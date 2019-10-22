@@ -15,9 +15,14 @@
 (include-book "grammar")
 (include-book "unicode")
 (include-book "null-literal")
+(include-book "null-literal-validation")
 (include-book "boolean-literals")
+(include-book "boolean-literals-validation")
 (include-book "keywords")
+(include-book "keywords-validation")
 (include-book "identifiers")
+(include-book "primitive-operations")
+(include-book "primitive-types")
 (include-book "primitive-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

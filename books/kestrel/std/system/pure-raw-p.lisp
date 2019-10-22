@@ -17,7 +17,7 @@
 
 (define pure-raw-p ((fn symbolp))
   :returns (yes/no booleanp)
-  :parents (std/system)
+  :parents (std/system/function-queries)
   :short "Check if a function has raw Lisp code and is pure,
           i.e. it has no side effects."
   :long

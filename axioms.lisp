@@ -3669,6 +3669,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *inline-suffix* "$INLINE") ; also see above defun-inline-form
 
 #-acl2-loop-only
+(declaim
+
+; This declaim form avoids warnings that would otherwise be generated during
+; the boot-strap (in CCL, at least) by ec-call.
+
+ (ftype function
+        acl2_*1*_acl2::apply$
+        acl2_*1*_acl2::rewrite-rule-term-exec
+        acl2_*1*_acl2::conjoin
+        acl2_*1*_acl2::pairlis$
+        acl2_*1*_acl2::close-input-channel))
+
+#-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
   (declare (ignore ign))
   (cond

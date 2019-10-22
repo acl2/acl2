@@ -16,11 +16,12 @@
 
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-aij-notions
+(defxdoc+ aij-notions
   :parents (atj-implementation)
   :short "AIJ notions used by ATJ."
   :long
@@ -34,102 +35,151 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-aij-jpackage*
+(defval *aij-package*
   :short "Name of the Java package of AIJ."
   "edu.kestrel.acl2.aij"
   ///
-  (assert-event (atj-string-ascii-java-package-name-p *atj-aij-jpackage*)))
+  (assert-event (atj-string-ascii-java-package-name-p *aij-package*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atj-aij-class-names
+(defsection aij-class-names
   :short "ACL2 named constants for the AIJ class names."
-  (defconst *atj-jclass-char*      "Acl2Character")
-  (defconst *atj-jclass-complex*   "Acl2ComplexRational")
-  (defconst *atj-jclass-cons*      "Acl2ConsPair")
-  (defconst *atj-jclass-def-fn*    "Acl2DefinedFunction")
-  (defconst *atj-jclass-eval-exc*  "Acl2EvaluationException")
-  (defconst *atj-jclass-fn*        "Acl2Function")
-  (defconst *atj-jclass-fn-app*    "Acl2FunctionApplication")
-  (defconst *atj-jclass-int*       "Acl2Integer")
-  (defconst *atj-jclass-lambda*    "Acl2LambdaExpression")
-  (defconst *atj-jclass-named-fn*  "Acl2NamedFunction")
-  (defconst *atj-jclass-native-fn* "Acl2NativeFunction")
-  (defconst *atj-jclass-number*    "Acl2Number")
-  (defconst *atj-jclass-pkg*       "Acl2Package")
-  (defconst *atj-jclass-pkg-name*  "Acl2PackageName")
-  (defconst *atj-jclass-qconst*    "Acl2QuotedConstant")
-  (defconst *atj-jclass-ratio*     "Acl2Ratio")
-  (defconst *atj-jclass-rational*  "Acl2Rational")
-  (defconst *atj-jclass-string*    "Acl2String")
-  (defconst *atj-jclass-symbol*    "Acl2Symbol")
-  (defconst *atj-jclass-term*      "Acl2Term")
-  (defconst *atj-jclass-value*     "Acl2Value")
-  (defconst *atj-jclass-var*       "Acl2Variable"))
+  (defconst *aij-class-char*      "Acl2Character")
+  (defconst *aij-class-complex*   "Acl2ComplexRational")
+  (defconst *aij-class-cons*      "Acl2ConsPair")
+  (defconst *aij-class-def-fn*    "Acl2DefinedFunction")
+  (defconst *aij-class-eval-exc*  "Acl2EvaluationException")
+  (defconst *aij-class-fn*        "Acl2Function")
+  (defconst *aij-class-fn-app*    "Acl2FunctionApplication")
+  (defconst *aij-class-int*       "Acl2Integer")
+  (defconst *aij-class-lambda*    "Acl2LambdaExpression")
+  (defconst *aij-class-named-fn*  "Acl2NamedFunction")
+  (defconst *aij-class-native-fn* "Acl2NativeFunction")
+  (defconst *aij-class-number*    "Acl2Number")
+  (defconst *aij-class-pkg*       "Acl2Package")
+  (defconst *aij-class-pkg-name*  "Acl2PackageName")
+  (defconst *aij-class-qconst*    "Acl2QuotedConstant")
+  (defconst *aij-class-ratio*     "Acl2Ratio")
+  (defconst *aij-class-rational*  "Acl2Rational")
+  (defconst *aij-class-string*    "Acl2String")
+  (defconst *aij-class-symbol*    "Acl2Symbol")
+  (defconst *aij-class-term*      "Acl2Term")
+  (defconst *aij-class-value*     "Acl2Value")
+  (defconst *aij-class-var*       "Acl2Variable"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-aij-class-names*
+(defval *aij-class-names*
   :short "Names of the Java classes that form AIJ."
-  (list *atj-jclass-char*
-        *atj-jclass-complex*
-        *atj-jclass-cons*
-        *atj-jclass-def-fn*
-        *atj-jclass-eval-exc*
-        *atj-jclass-fn*
-        *atj-jclass-fn-app*
-        *atj-jclass-int*
-        *atj-jclass-lambda*
-        *atj-jclass-named-fn*
-        *atj-jclass-native-fn*
-        *atj-jclass-number*
-        *atj-jclass-pkg*
-        *atj-jclass-pkg-name*
-        *atj-jclass-qconst*
-        *atj-jclass-ratio*
-        *atj-jclass-rational*
-        *atj-jclass-string*
-        *atj-jclass-symbol*
-        *atj-jclass-term*
-        *atj-jclass-value*
-        *atj-jclass-var*)
+  (list *aij-class-char*
+        *aij-class-complex*
+        *aij-class-cons*
+        *aij-class-def-fn*
+        *aij-class-eval-exc*
+        *aij-class-fn*
+        *aij-class-fn-app*
+        *aij-class-int*
+        *aij-class-lambda*
+        *aij-class-named-fn*
+        *aij-class-native-fn*
+        *aij-class-number*
+        *aij-class-pkg*
+        *aij-class-pkg-name*
+        *aij-class-qconst*
+        *aij-class-ratio*
+        *aij-class-rational*
+        *aij-class-string*
+        *aij-class-symbol*
+        *aij-class-term*
+        *aij-class-value*
+        *aij-class-var*)
   ///
-  (assert-event (string-listp *atj-aij-class-names*))
-  (assert-event (no-duplicatesp-equal *atj-aij-class-names*)))
+  (assert-event (string-listp *aij-class-names*))
+  (assert-event (no-duplicatesp-equal *aij-class-names*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atj-aij-class-types
+(defsection aij-class-types
   :short "ACL2 named constants for the AIJ class types."
-  (defconst *atj-jtype-char*      (jtype-class *atj-jclass-char*))
-  (defconst *atj-jtype-complex*   (jtype-class *atj-jclass-complex*))
-  (defconst *atj-jtype-cons*      (jtype-class *atj-jclass-cons*))
-  (defconst *atj-jtype-def-fn*    (jtype-class *atj-jclass-def-fn*))
-  (defconst *atj-jtype-eval-exc*  (jtype-class *atj-jclass-eval-exc*))
-  (defconst *atj-jtype-fn*        (jtype-class *atj-jclass-fn*))
-  (defconst *atj-jtype-fn-app*    (jtype-class *atj-jclass-fn-app*))
-  (defconst *atj-jtype-int*       (jtype-class *atj-jclass-int*))
-  (defconst *atj-jtype-lambda*    (jtype-class *atj-jclass-lambda*))
-  (defconst *atj-jtype-named-fn*  (jtype-class *atj-jclass-named-fn*))
-  (defconst *atj-jtype-native-fn* (jtype-class *atj-jclass-native-fn*))
-  (defconst *atj-jtype-number*    (jtype-class *atj-jclass-number*))
-  (defconst *atj-jtype-pkg*       (jtype-class *atj-jclass-pkg*))
-  (defconst *atj-jtype-pkg-name*  (jtype-class *atj-jclass-pkg-name*))
-  (defconst *atj-jtype-qconst*    (jtype-class *atj-jclass-qconst*))
-  (defconst *atj-jtype-ratio*     (jtype-class *atj-jclass-ratio*))
-  (defconst *atj-jtype-rational*  (jtype-class *atj-jclass-rational*))
-  (defconst *atj-jtype-string*    (jtype-class *atj-jclass-string*))
-  (defconst *atj-jtype-symbol*    (jtype-class *atj-jclass-symbol*))
-  (defconst *atj-jtype-term*      (jtype-class *atj-jclass-term*))
-  (defconst *atj-jtype-value*     (jtype-class *atj-jclass-value*))
-  (defconst *atj-jtype-var*       (jtype-class *atj-jclass-var*)))
+  (defconst *aij-type-char*      (jtype-class *aij-class-char*))
+  (defconst *aij-type-complex*   (jtype-class *aij-class-complex*))
+  (defconst *aij-type-cons*      (jtype-class *aij-class-cons*))
+  (defconst *aij-type-def-fn*    (jtype-class *aij-class-def-fn*))
+  (defconst *aij-type-eval-exc*  (jtype-class *aij-class-eval-exc*))
+  (defconst *aij-type-fn*        (jtype-class *aij-class-fn*))
+  (defconst *aij-type-fn-app*    (jtype-class *aij-class-fn-app*))
+  (defconst *aij-type-int*       (jtype-class *aij-class-int*))
+  (defconst *aij-type-lambda*    (jtype-class *aij-class-lambda*))
+  (defconst *aij-type-named-fn*  (jtype-class *aij-class-named-fn*))
+  (defconst *aij-type-native-fn* (jtype-class *aij-class-native-fn*))
+  (defconst *aij-type-number*    (jtype-class *aij-class-number*))
+  (defconst *aij-type-pkg*       (jtype-class *aij-class-pkg*))
+  (defconst *aij-type-pkg-name*  (jtype-class *aij-class-pkg-name*))
+  (defconst *aij-type-qconst*    (jtype-class *aij-class-qconst*))
+  (defconst *aij-type-ratio*     (jtype-class *aij-class-ratio*))
+  (defconst *aij-type-rational*  (jtype-class *aij-class-rational*))
+  (defconst *aij-type-string*    (jtype-class *aij-class-string*))
+  (defconst *aij-type-symbol*    (jtype-class *aij-class-symbol*))
+  (defconst *aij-type-term*      (jtype-class *aij-class-term*))
+  (defconst *aij-type-value*     (jtype-class *aij-class-value*))
+  (defconst *aij-type-var*       (jtype-class *aij-class-var*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-aij-nativep ((fn symbolp))
+(define aij-nativep ((fn symbolp))
   :returns (yes/no booleanp)
   :short "ACL2 built-in functions natively implemented in AIJ."
   :long
   (xdoc::topstring-p
    "Currently these are exactly the ACL2 primitive functions.")
   (primitivep fn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *aij-symbol-constants*
+  :short "AIJ's constants (i.e. static final fields)
+          for certain ACL2 symbols."
+  :long
+  (xdoc::topstring-p
+   "This is an alist from the ACL2 symbols
+    to the names of the corresponding fields.")
+  '((t . "T")
+    (nil . "NIL")
+    (list . "LIST")
+    (if . "IF")
+    (characterp . "CHARACTERP")
+    (stringp . "STRINGP")
+    (symbolp . "SYMBOLP")
+    (integerp . "INTEGERP")
+    (rationalp . "RATIONALP")
+    (complex-rationalp . "COMPLEX_RATIONALP")
+    (acl2-numberp . "ACL2_NUMBERP")
+    (consp . "CONSP")
+    (char-code . "CHAR_CODE")
+    (code-char . "CODE_CHAR")
+    (coerce . "COERCE")
+    (intern-in-package-of-symbol . "INTERN_IN_PACKAGE_OF_SYMBOL")
+    (symbol-package-name . "SYMBOL_PACKAGE_NAME")
+    (symbol-name . "SYMBOL_NAME")
+    (pkg-imports . "PKG_IMPORTS")
+    (pkg-witness . "PKG_WITNESS")
+    (unary-- . "UNARY_MINUS")
+    (unary-/ . "UNARY_SLASH")
+    (binary-+ . "BINARY_PLUS")
+    (binary-* . "BINARY_STAR")
+    (< . "LESS_THAN")
+    (complex . "COMPLEX")
+    (realpart . "REALPART")
+    (imagpart . "IMAGPART")
+    (numerator . "NUMERATOR")
+    (denominator . "DENOMINATOR")
+    (cons . "CONS")
+    (car . "CAR")
+    (cdr . "CDR")
+    (equal . "EQUAL")
+    (bad-atom<= . "BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
+    (or . "OR"))
+  ///
+  (assert-event (symbol-string-alistp *aij-symbol-constants*))
+  (assert-event (no-duplicatesp-equal (strip-cdrs *aij-symbol-constants*))))

@@ -20,6 +20,7 @@
 ; Pete 9/27/2018: Include utilities book
 (include-book "utilities")
 (include-book "definec" :ttags :all)
+(include-book "cons-size")
 (include-book "properties")
 (include-book "check-equal")
 
@@ -494,19 +495,24 @@ Useful for testing defunc/definec errors
 (definec tail (x :ne-tl) :tl 
   (cdr x))
 
+(definec lcons (x :all y :tl) :ne-tl 
+  (cons x y))
+
 ; a strict version of nth requiring that the list have at least n+1
 ; elements (since we use 0 indexing)
-(defunc snth (n l)
-  :pre  (and (natp n) (tlp l) (< (len l) n))
-  :post t
+(definec lnth (n :nat l :tl) :all
+  :pre (< n (len l))
   (nth n l))
+
+(check= (lnth 2 '(0 1 2 3)) 2)
 
 ; a strict version of nthcdr, requiring that we have at least n
 ; elements ((nthcdr 0 l) is the identity)
-(defunc snthcdr (n l)
-  :pre (and (natp n) (tlp l) (<= (len l) n))
-  :post :tl
+(definec lnthcdr (n :nat l :tl) :tl
+  :pre (<= n (len l))
   (nthcdr n l))
+
+(check= (lnthcdr 2 '(0 1 2 3)) '(2 3))
 
 ; The definitions below are used to define gen-car-cdr-macros.
 (defdata str-all (list string all))
@@ -564,10 +570,9 @@ Useful for testing defunc/definec errors
           ("ht" `(head (tail ,x)))
           ("tt" `(tail (tail ,x)))))
 
-(defunc gen-car-cdr-defs-fn (l prefix suffix pkg)
-  :pre (and (l-str-allp l) (stringp prefix) (stringp suffix)
-            (stringp pkg) (!= pkg ""))
-  :post :all
+(definec gen-car-cdr-defs-fn
+  (l :l-str-all prefix :string suffix :string pkg :string) :all
+  :pre (!= pkg "")
   (if (endp l)
       l
     (b* ((mname (defdata::s+ (str::cat prefix (caar l) suffix) :pkg pkg))
@@ -577,12 +582,10 @@ Useful for testing defunc/definec errors
           ,(cadar l))
        (gen-car-cdr-defs-fn (cdr l) prefix suffix pkg)))))
 
-(defunc gen-car-cdr-macros-fn
-  (car cdr carstr cdrstr prefix suffix depth pkg)
-  :pre (and (varp car) (varp cdr) (stringp carstr)
-            (stringp cdrstr) (stringp prefix) (stringp suffix)
-            (natp depth) (stringp pkg) (!= pkg ""))
-  :post :all
+(definec gen-car-cdr-macros-fn
+  (car :var cdr :var carstr :string cdrstr :string prefix :string
+       suffix :string depth :nat pkg :string) :all
+  :pre (!= pkg "")
   :skip-tests t
   (let ((l (gen-car-cdr-aux car cdr carstr cdrstr depth nil)))
     `(encapsulate
@@ -590,15 +593,15 @@ Useful for testing defunc/definec errors
       ,@(gen-car-cdr-defs-fn l prefix suffix pkg))))
 
 (check=
- (gen-car-cdr-macros-fn 'head 'tail "A" "D" "SC" "R" 2 "ACL2S")
+ (gen-car-cdr-macros-fn 'head 'tail "A" "D" "LC" "R" 2 "ACL2S")
  `(encapsulate
    nil
-   (defmacro scar (x) `(head ,x))
-   (defmacro scdr (x) `(tail ,x))
-   (defmacro scaar (x) `(head (head ,x)))
-   (defmacro scdar (x) `(tail (head ,x)))
-   (defmacro scadr (x) `(head (tail ,x)))
-   (defmacro scddr (x) `(tail (tail ,x)))))
+   (defmacro lcar (x) `(head ,x))
+   (defmacro lcdr (x) `(tail ,x))
+   (defmacro lcaar (x) `(head (head ,x)))
+   (defmacro lcdar (x) `(tail (head ,x)))
+   (defmacro lcadr (x) `(head (tail ,x)))
+   (defmacro lcddr (x) `(tail (tail ,x)))))
 
 (defmacro gen-car-cdr-macros
   (car cdr carstr cdrstr prefix suffix depth)
@@ -607,74 +610,74 @@ Useful for testing defunc/definec errors
      ',car ',cdr ,carstr ,cdrstr ,prefix ,suffix ,depth
      (current-package state))))
 
-(gen-car-cdr-macros left right "A" "D" "SC" "R" 4)
+(gen-car-cdr-macros head tail "A" "D" "LC" "R" 4)
 
 ; Generates the following redundant events, where "s" means "strict":
 
 
-(defmacro scar (x) `(left ,x))
-(defmacro scdr (x) `(right ,x))
+(defmacro lcar (x) `(head ,x))
+(defmacro lcdr (x) `(tail ,x))
 
-(defmacro scaar (x) `(left (left ,x)))
-(defmacro scadr (x) `(left (right ,x)))
-(defmacro scdar (x) `(right (left ,x)))
-(defmacro scddr (x) `(right (right ,x)))
+(defmacro lcaar (x) `(head (head ,x)))
+(defmacro lcadr (x) `(head (tail ,x)))
+(defmacro lcdar (x) `(tail (head ,x)))
+(defmacro lcddr (x) `(tail (tail ,x)))
 
-(defmacro scaaar (x) `(left (left (left ,x))))
-(defmacro scaadr (x) `(left (left (right ,x))))
-(defmacro scadar (x) `(left (right (left ,x))))
-(defmacro scaddr (x) `(left (right (right ,x))))
-(defmacro scdaar (x) `(right (left (left ,x))))
-(defmacro scdadr (x) `(right (left (right ,x))))
-(defmacro scddar (x) `(right (right (left ,x))))
-(defmacro scdddr (x) `(right (right (right ,x))))
+(defmacro lcaaar (x) `(head (head (head ,x))))
+(defmacro lcaadr (x) `(head (head (tail ,x))))
+(defmacro lcadar (x) `(head (tail (head ,x))))
+(defmacro lcaddr (x) `(head (tail (tail ,x))))
+(defmacro lcdaar (x) `(tail (head (head ,x))))
+(defmacro lcdadr (x) `(tail (head (tail ,x))))
+(defmacro lcddar (x) `(tail (tail (head ,x))))
+(defmacro lcdddr (x) `(tail (tail (tail ,x))))
 
-(defmacro scaaaar (x) `(left (left (left (left ,x)))))
-(defmacro scaaadr (x) `(left (left (left (right ,x)))))
-(defmacro scaadar (x) `(left (left (right (left ,x)))))
-(defmacro scaaddr (x) `(left (left (right (right ,x)))))
-(defmacro scadaar (x) `(left (right (left (left ,x)))))
-(defmacro scadadr (x) `(left (right (left (right ,x)))))
-(defmacro scaddar (x) `(left (right (right (left ,x)))))
-(defmacro scadddr (x) `(left (right (right (right ,x)))))
-(defmacro scdaaar (x) `(right (left (left (left ,x)))))
-(defmacro scdaadr (x) `(right (left (left (right ,x)))))
-(defmacro scdadar (x) `(right (left (right (left ,x)))))
-(defmacro scdaddr (x) `(right (left (right (right ,x)))))
-(defmacro scddaar (x) `(right (right (left (left ,x)))))
-(defmacro scddadr (x) `(right (right (left (right ,x)))))
-(defmacro scdddar (x) `(right (right (right (left ,x)))))
-(defmacro scddddr (x) `(right (right (right (right ,x)))))
+(defmacro lcaaaar (x) `(head (head (head (head ,x)))))
+(defmacro lcaaadr (x) `(head (head (head (tail ,x)))))
+(defmacro lcaadar (x) `(head (head (tail (head ,x)))))
+(defmacro lcaaddr (x) `(head (head (tail (tail ,x)))))
+(defmacro lcadaar (x) `(head (tail (head (head ,x)))))
+(defmacro lcadadr (x) `(head (tail (head (tail ,x)))))
+(defmacro lcaddar (x) `(head (tail (tail (head ,x)))))
+(defmacro lcadddr (x) `(head (tail (tail (tail ,x)))))
+(defmacro lcdaaar (x) `(tail (head (head (head ,x)))))
+(defmacro lcdaadr (x) `(tail (head (head (tail ,x)))))
+(defmacro lcdadar (x) `(tail (head (tail (head ,x)))))
+(defmacro lcdaddr (x) `(tail (head (tail (tail ,x)))))
+(defmacro lcddaar (x) `(tail (tail (head (head ,x)))))
+(defmacro lcddadr (x) `(tail (tail (head (tail ,x)))))
+(defmacro lcdddar (x) `(tail (tail (tail (head ,x)))))
+(defmacro lcddddr (x) `(tail (tail (tail (tail ,x)))))
 
-(gen-car-cdr-macros head tail "A" "D" "SLC" "R" 4)
+(gen-car-cdr-macros head tail "A" "D" "LC" "R" 4)
 
 #|
 
- Generates the following macros, where "sl" means strict list:
+ Generates the following macros, where "l" means true-list :
 
- slcar:  (head x)
- slcdr:  (tail x)
- slcaar: (head (head x))
- slcadr: (head (tail x))
+ lcar:  (head x)
+ lcdr:  (tail x)
+ lcaar: (head (head x))
+ lcadr: (head (tail x))
 
  ...
 
- slcddddr: (tail (tail (tail (tail x))))
+ lcddddr: (tail (tail (tail (tail x))))
 
 |#
 
 ; strict versions of first, ..., tenth: we require that x is a tl
 ; with enough elements
-(defmacro sfirst   (x) `(slcar ,x))
-(defmacro ssecond  (x) `(slcadr ,x))
-(defmacro sthird   (x) `(slcaddr ,x))
-(defmacro sfourth  (x) `(slcadddr ,x))
-(defmacro sfifth   (x) `(slcar (slcddddr ,x)))
-(defmacro ssixth   (x) `(slcadr (slcddddr ,x)))
-(defmacro sseventh (x) `(slcaddr (slcddddr ,x)))
-(defmacro seighth  (x) `(slcadddr (slcddddr ,x)))
-(defmacro sninth   (x) `(slcar (slcddddr (slcddddr ,x))))
-(defmacro stenth   (x) `(slcadr (slcddddr (slcddddr ,x))))
+(defmacro lfirst   (x) `(lcar ,x))
+(defmacro lsecond  (x) `(lcadr ,x))
+(defmacro lthird   (x) `(lcaddr ,x))
+(defmacro lfourth  (x) `(lcadddr ,x))
+(defmacro lfifth   (x) `(lcar (lcddddr ,x)))
+(defmacro lsixth   (x) `(lcadr (lcddddr ,x)))
+(defmacro lseventh (x) `(lcaddr (lcddddr ,x)))
+(defmacro leighth  (x) `(lcadddr (lcddddr ,x)))
+(defmacro lninth   (x) `(lcar (lcddddr (lcddddr ,x))))
+(defmacro ltenth   (x) `(lcadr (lcddddr (lcddddr ,x))))
 
 ; A forward-chaining rule to deal with the relationship
 ; between len and cdr.
@@ -816,6 +819,9 @@ Useful for testing defunc/definec errors
 (definec snoc (l :tl e :all) :ne-tl
   (append l (list e)))
 
+(defmacro lsnoc (l e)
+  `(snoc ,l ,e))
+
 (definec snocl (l :ne-tl) :tl
   (butlast l 1))
 
@@ -828,4 +834,12 @@ Useful for testing defunc/definec errors
  :rule-classes nil
  :proper nil)
 
+(definec lapp (x :tl y :tl) :tl
+  (app x y))
+
+(definec lrev (x :tl) :tl
+  (rev x))
+
+(definec lendp (x :tl) :bool
+  (atom x))
 

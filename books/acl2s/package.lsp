@@ -15,6 +15,8 @@
    '(pkgp
      fix-sym
      gen-sym-pkg
+     eqlable-2-alistp
+     make-symbl
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -23,6 +25,10 @@
 (defconst *acl2s-shared-exports* 
   (append
    '(pkgp
+     fix-sym
+     gen-sym-pkg
+     eqlable-2-alistp
+     make-symbl
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -50,6 +56,16 @@
      => ;sig
      _ ;range
 
+
+     fix-pkg
+     fix-sym
+     fix-intern$
+     fix-intern-in-pkg-of-sym
+     pack-to-string
+     gen-sym-sym-fn
+     gen-sym-sym
+     packn1
+     
      defdata-subtype defdata-disjoint defdata-equal
      defdatas-subtype defdatas-disjoint defdatas-equal
 
@@ -172,6 +188,24 @@
       xdoc
       get-tau-runes
       arglist
+      bash
+      simp
+      bash-term-to-dnf
+      ?
+      simp-pairs
+      term
+      dumb-negate-lit
+      dumb-negate-lit-lst
+      untranslate-lst
+      all-vars-in-untranslated-term
+      *nil*
+      *t*
+      variablep
+      fcons-term*
+      fquotep
+      ffn-symb
+      fargn
+      fcons-term*
       
       => ;sig
       _  ;range
@@ -219,8 +253,8 @@
       pack-to-string
       gen-sym-sym-fn
       gen-sym-sym
-
       packn1
+
       flg
       sort
       guard-checking-on

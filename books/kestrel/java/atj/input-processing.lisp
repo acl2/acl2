@@ -190,18 +190,18 @@
                    NIL or a valid Java package name ~
                    consisting of only ASCII characters."
                   java-package))
-       ((when (equal java-package *atj-aij-jpackage*))
+       ((when (equal java-package *aij-package*))
         (er-soft+ ctx t nil
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
-                  java-package *atj-aij-jpackage*)))
+                  java-package *aij-package*)))
     (value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-default-java-class*
   :short "Default Java class name to use if @(':java-class') is @('nil')."
-  "ACL2Code"
+  "Acl2Code"
   ///
   (assert-event (stringp *atj-default-java-class*)))
 
@@ -579,7 +579,7 @@
                                                         collected-chk
                                                         deep$
                                                         guards$))
-         ((when (atj-aij-nativep fn)) (mv worklist-gen worklist-chk nil))
+         ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
                      (member-eq fn *atj-primitive-fns*)))
@@ -643,7 +643,7 @@
                               ctx
                               state)
   :returns (mv erp
-               (fns "A @(tsee symbolp).")
+               (fns "A @(tsee symbol-listp).")
                state)
   :mode :program
   :short "Worklist algorithm iteration."
@@ -771,7 +771,7 @@
                               ctx
                               state)
   :returns (mv erp
-               (fns "A @(tsee symbol-listp).")
+               (fns-to-translate "A @(tsee symbol-listp).")
                state)
   :mode :program
   :short "Collect the names of all the ACL2 functions to be translated to Java,
@@ -861,7 +861,7 @@
 
 (define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
-               (result "A tuple @('(fns
+               (result "A tuple @('(fns-to-translate
                                     pkgs
                                     deep$
                                     guards$
@@ -883,7 +883,7 @@
                                          atj-test-listp
                                          booleanp
                                          result)'),
-                        where @('fns') are the functions
+                        where @('fns-to-translate') are the functions
                         to be translated to Java,
                         @('pkgs') are the packages
                         whose representation must be built in Java,
@@ -939,9 +939,10 @@
                   output-file-test$)) (atj-process-output-dir
                                        output-dir java-class$ tests$ ctx state))
        ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
-       ((er fns) (atj-fns-to-translate targets deep guards verbose ctx state))
+       ((er fns-to-translate) (atj-fns-to-translate
+                               targets deep guards verbose ctx state))
        (pkgs (atj-pkgs-to-translate verbose state)))
-    (value (list fns
+    (value (list fns-to-translate
                  pkgs
                  deep
                  guards

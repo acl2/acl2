@@ -667,12 +667,6 @@
          (nthcdr (+ (nfix a) (nfix b)) x))
   :hints(("goal" :induct (nthcdr b x))))
 
-(defthm last-of-member-equal
-  (equal (last (member-equal x lst))
-         (if (member-equal x lst)
-             (last lst)
-           nil)))
-
 (defthm acl2-count-of-member-equal
   (<= (acl2-count (member-equal x lst))
       (acl2-count lst))
@@ -755,10 +749,23 @@
 
 (defthm
   put-assoc-equal-without-change
-  (implies (consp (assoc-equal x alist))
-           (equal (put-assoc-equal x (cdr (assoc-equal x alist))
-                                   alist)
-                  alist)))
+  (implies (consp (assoc-equal name alist))
+           (iff (equal (put-assoc-equal name val alist)
+                       alist)
+                (equal (cdr (assoc-equal name alist))
+                       val)))
+  :rule-classes
+  ((:rewrite
+    :corollary (implies (and (consp (assoc-equal name alist))
+                             (not (equal (cdr (assoc-equal name alist))
+                                         val)))
+                        (not (equal (put-assoc-equal name val alist)
+                                    alist))))
+   (:rewrite :corollary (implies (and (consp (assoc-equal name alist))
+                                      (equal (cdr (assoc-equal name alist))
+                                             val))
+                                 (equal (put-assoc-equal name val alist)
+                                        alist)))))
 
 ;; Contributed to books/std/lists/remove1-equal.lisp
 (defthm member-equal-of-remove1-equal
@@ -875,3 +882,38 @@
              (equal key name)
              (remove-assoc key alist)
            (put-assoc name val (remove-assoc key alist)))))
+
+(defthm last-of-member-equal
+  (equal (last (member-equal x lst))
+         (if (member-equal x lst)
+             (last lst)
+           nil)))
+
+(defthm integerp-of-car-of-last-when-integer-listp
+  (implies (and (integer-listp l) (consp l))
+           (integerp (car (last l)))))
+
+(defthm non-negativity-of-car-of-last-when-nat-listp
+  (implies (nat-listp l)
+           (<= 0 (car (last l))))
+  :rule-classes :linear)
+
+(defthm len-of-put-assoc-equal
+  (implies (not (null name))
+           (equal (len (put-assoc-equal name val alist))
+                  (if (consp (assoc-equal name alist))
+                      (len alist)
+                      (+ 1 (len alist))))))
+
+(defthm len-of-remove-assoc-equal-2
+  (implies (and (not (null x))
+                (atom (assoc-equal x alist)))
+           (equal (remove-assoc-equal x alist)
+                  (true-list-fix alist))))
+
+(defthm len-of-remove-assoc-equal-1
+  (implies (and (not (null x))
+                (consp (assoc-equal x alist)))
+           (< (len (remove-assoc-equal x alist))
+              (len alist)))
+  :rule-classes :linear)

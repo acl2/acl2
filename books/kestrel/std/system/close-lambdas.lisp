@@ -37,12 +37,12 @@
      making the lambda expression closed.")
    (xdoc::p
     "Terms with non-closed lambda expressions,
-     e.g. produced by @(tsee remove-trivial-lambda-vars),
+     e.g. produced by @(tsee remove-trivial-vars),
      still satisfy @(tsee pseudo-termp), but not @(tsee termp).
      The @('close-lambdas') utility
      closes any non-closed lambda expression in a term,
      so that it also satisfies @(tsee lambdap).
-     It is essentially the inverse of @(tsee remove-trivial-lambda-vars)."))
+     It is essentially the inverse of @(tsee remove-trivial-vars)."))
 
   (define close-lambdas ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))

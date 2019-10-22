@@ -51,9 +51,9 @@
 
 (defun dumb-occur (x y)
 
-; This function determines if term x occurs in term y, but does not
-; look for x inside of quotes.  It is thus equivalent to occur if you
-; know that x is not a quotep.
+; This function determines if term x occurs free in term y, but does not look
+; for x inside of quotes.  It is thus equivalent to occur if you know that x is
+; not a quotep.
 
   (cond ((equal x y) t)
         ((variablep y) nil)

@@ -56,7 +56,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
 
     /**
      * Evaluates this quoted constant to a value,
-     * with respect to the given binding of values to variable indices.
+     * with respect to the given binding of variable indices to values.
      * The result is the value of the quoted constant,
      * which is actually independent from the bindings.
      * This evaluation never fails.

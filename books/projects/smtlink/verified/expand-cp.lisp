@@ -366,7 +366,7 @@
     (set-well-founded-relation l<)
     (local (in-theory (e/d
                        ()
-                       (ACL2::PSEUDO-LAMBDAP-WHEN-PSEUDO-TERMP
+                       (ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-TERMP
                         ACL2::SUBSETP-CONS-2
                         CONSP-OF-SYM-NAT-ALIST-FIX
                         DEFAULT-CDR
@@ -667,7 +667,7 @@
                           CONSP-OF-SYM-NAT-ALIST-FIX
                           ACL2::SYMBOL-LISTP-WHEN-NOT-CONSP
                           ACL2::PSEUDO-LAMBDA-LISTP-WHEN-NOT-CONSP
-                          ACL2::PSEUDO-LAMBDAP-WHEN-PSEUDO-TERMP
+                          ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-TERMP
                           CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
                           SYM-NAT-ALISTP-OF-CDR-WHEN-SYM-NAT-ALISTP
                           ACL2::PSEUDO-LAMBDAP-OF-NTH-WHEN-PSEUDO-LAMBDA-LISTP

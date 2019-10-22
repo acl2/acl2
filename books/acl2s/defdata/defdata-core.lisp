@@ -126,13 +126,16 @@ B is the builtin combinator table."
 (defloop funcalls-append (fs args wrld)
   (for ((f in fs)) (append (funcall-w f args 'defdata-events wrld))))
 
+#|
+Does not seem to be used.
+
 (defun satisfies-terms (xvar kwd-alist)
   (b* ((satisfies-exprs (get-all :satisfies kwd-alist))
        (satisfies-exprs (filter-terms-with-vars satisfies-exprs (list 'acl2s::x)))
        (satisfies-exprs (acl2::subst xvar 'acl2s::x satisfies-exprs))
        (satisfies-exprs (flatten-ANDs satisfies-exprs)))
     satisfies-exprs))
-
+|#
 
 ;Generate predicate events
 
@@ -398,13 +401,6 @@ B is the builtin combinator table."
        ,@(collect-events :post-events D kwd-alist)))))
 
 (logic)
-
-(defun eqlable-2-alistp (A)
-  (declare (xargs :guard t))
-  (and (eqlable-alistp A)
-       (or (endp A)
-           (and (eqlable-alistp (cdar A))
-                (eqlable-2-alistp (cdr A))))))
 
 (defun match-alist (name key val A)
   (declare (xargs :guard (and (symbolp name) (eqlable-2-alistp A))))

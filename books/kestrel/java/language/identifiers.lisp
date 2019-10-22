@@ -28,10 +28,11 @@
     (xdoc::seetopic "keywords" "here")
     ", there are non-restricted and restricted Java keywords,
      correspondingly there are two kinds of Java identifiers.
-     One kind is the one that excludes only non-restricted keywords:
+     One kind excludes only non-restricted keywords:
      these identifiers are usable in most contexts.
-     The other kind is the one that excludes restricted keywords as well:
-     these identifiers are usable in certain the module-related contexts."))
+     The other kind excludes restricted keywords as well
+     (with a slight exception; see @(tsee midentifierp)):
+     these identifiers are usable in certain module-related contexts."))
   :order-subtopics t
   :default-parent t)
 
@@ -45,7 +46,7 @@
    (xdoc::p
     "[JLS:3.8] introduces the notion of `ignorable' character in identifiers:
      two identifiers are considered `equal' when,
-     after ignoring (i.e. remove) the ignorable characters,
+     after ignoring (i.e. removing) the ignorable characters,
      the two identifiers are the same (i.e. same characters in the same order).
      [JLS:3.8] defines this notion in terms of
      the API method @('Character.isIdentifierIgnorable(int)').
@@ -218,7 +219,9 @@
      as a character that can be used in an identifier, not at the start.
      [JLS:3.8] defines this notion in terms of
      the API method @('Character.isJavaIdentifierPart(int)').
-     [JCAPIS] specifies this method in terms of Unicode notions.
+     [JCAPIS] specifies this method in terms of Unicode notions,
+     and mentions that it includes ignorable characters
+     (see @(tsee ascii-identifier-ignore-p)).
      [JLS:3.8] says that a `Java digit' includes the ASCII decimal digits;
      this, together with the statement made by [JLS:3.8] about `Java letters'
      (see @(tsee ascii-identifier-start-p)),
@@ -240,7 +243,8 @@
      127,
      and no others;
      these are exactly the ASCII characters mentioned by [JLS:3.8],
-     plus the ignorable ASCII characters (see @(tsee ascii-identifier-ignore-p).
+     plus the ignorable ASCII characters
+     (see @(tsee ascii-identifier-ignore-p)).
      Ideally, this should be confirmed with the Unicode standard."))
   (b* ((char (mbe :logic (ascii-fix char) :exec char)))
     (or (and (<= 0 char) (<= char 8))
@@ -384,7 +388,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are Java identifiers that exclude all the keywords
-     (non-restricted and restricted),
+     (non-restricted and restricted, with one exception discussed below),
      as discussed "
     (xdoc::seetopic "identifiers" "here")
     ". Since these are used in module-related contexts,
@@ -396,15 +400,30 @@
      that are not empty,
      that start with a character satisfying @(tsee identifier-start-p),
      that continue with characters satisfying @(tsee identifier-part-p),
-     that differ from all non-restricted and restricted keywords,
+     that differ from all non-restricted and restricted keywords
+     (with one exception discussed below),
      and that differ from boolean and null literals.
-     See [JLS:3.8]."))
+     See [JLS:3.8].")
+   (xdoc::p
+    "The exception mentioned above is that
+     we allow @('transitive') to be an identifier
+     even though it is also a restricted keyword.
+     The reason is that, as noted in [JLS:3.8],
+     @('transitive') is sometimes tokenized as a keyword,
+     other times as an identifier,
+     based on some surrounding context.
+     Thus, is can be an identifier in a module context.
+     Here we are defining a recognizer
+     that has no information about the surrounding context.
+     Additional predicates can be used to impose restrictions
+     based on the surrounding context."))
   (and (unicode-listp x)
        (consp x)
        (identifier-start-p (car x))
        (identifier-part-listp (cdr x))
        (not (jkeywordp x))
-       (not (restricted-keyword-p x))
+       (or (not (restricted-jkeywordp x))
+           (equal x (string=>unicode "transitive")))
        (not (boolean-literal-p x))
        (not (null-literal-p x))))
 

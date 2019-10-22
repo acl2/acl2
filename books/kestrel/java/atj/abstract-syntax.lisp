@@ -532,6 +532,110 @@
   :short "Bulid a block consisting of a single Java @('for') statement."
   (list (jstatem-for init test update body)))
 
+(fty::deflist jblock-list
+  :short "True lists of Java blocks."
+  :elt-type jblock
+  :true-listp t
+  :elementp-of-nil t
+  :pred jblock-listp
+  ///
+
+  (defrule jblockp-of-flatten-when-jblock-listp
+    (implies (jblock-listp blocks)
+             (jblockp (flatten blocks)))
+    :enable flatten))
+
+(defines jstatems+jblocks-count-ifs
+  :short "Number of @('if')s in a statement or block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is useful as a measure for certain recursive functions.")
+   (xdoc::p
+    "We prove some theorems about the results of these counting functions.
+     Additional similar theorems could be added as needed."))
+
+  (define jstatem-count-ifs ((statem jstatemp))
+    :returns (count natp)
+    (jstatem-case statem
+                  :locvar 0
+                  :expr 0
+                  :return 0
+                  :throw 0
+                  :if (1+ (jblock-count-ifs statem.then))
+                  :ifelse (1+ (+ (jblock-count-ifs statem.then)
+                                 (jblock-count-ifs statem.else)))
+                  :do (jblock-count statem.body)
+                  :for (jblock-count statem.body))
+    :measure (jstatem-count statem))
+
+  (define jblock-count-ifs ((block jblockp))
+    :returns (count natp)
+    (cond ((endp block) 0)
+          (t (+ (jstatem-count-ifs (car block))
+                (jblock-count-ifs (cdr block)))))
+    :measure (jblock-count block))
+
+  ///
+
+  (defrule jblock-count-ifs-of-cons
+    (equal (jblock-count-ifs (cons statem block))
+           (+ (jstatem-count-ifs statem)
+              (jblock-count-ifs block))))
+
+  (defrule jblock-count-ifs-of-append
+    (equal (jblock-count-ifs (append block1 block2))
+           (+ (jblock-count-ifs block1)
+              (jblock-count-ifs block2)))
+    :enable append)
+
+  (defrule jstatem-count-ifs-of-return
+    (equal (jstatem-count-ifs (jstatem-return expr?))
+           0))
+
+  (defrule jblock-count-ifs-of-jstatem-ifelse->then-decreases
+    (implies (jstatem-case statem :ifelse)
+             (< (jblock-count-ifs (jstatem-ifelse->then statem))
+                (jstatem-count-ifs statem)))
+    :rule-classes :linear
+    :expand ((jstatem-count-ifs statem)))
+
+  (defrule jblock-count-ifs-of-jstatem-ifelse->else-decreases
+    (implies (jstatem-case statem :ifelse)
+             (< (jblock-count-ifs (jstatem-ifelse->else statem))
+                (jstatem-count-ifs statem)))
+    :rule-classes :linear
+    :expand ((jstatem-count-ifs statem)))
+
+  (defrule jblock-count-ifs-of-take-not-increases
+    (<= (jblock-count-ifs (take n block))
+        (jblock-count-ifs block))
+    :rule-classes :linear
+    :enable take)
+
+  (defrule jblock-count-ifs-of-nthcdr-not-increases
+    (<= (jblock-count-ifs (nthcdr n block))
+        (jblock-count-ifs block))
+    :rule-classes :linear
+    :enable nthcdr)
+
+  (defrule jstatem-count-ifs-of-car-not-increases
+    (<= (jstatem-count-ifs (car block))
+        (jblock-count-ifs block))
+    :rule-classes :linear)
+
+  (defrule jblock-count-ifs-of-cdr-not-increases
+    (<= (jblock-count-ifs (cdr block))
+        (jblock-count-ifs block))
+    :rule-classes :linear)
+
+  (defrule jblock-count-ifs-positive-when-nth-ifelse
+    (implies (jstatem-case (nth i block) :ifelse) ; free I
+             (> (jblock-count-ifs block) 0))
+    :rule-classes :linear
+    :expand ((jblock-count-ifs block)
+             (jstatem-count-ifs (car block)))))
+
 (fty::deftagsum jaccess
   :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
   (:public ())
@@ -558,6 +662,13 @@
    (name string)
    (init jexpr))
   :pred jfieldp)
+
+(fty::deflist jfield-list
+  :short "True lists of Java field declarations."
+  :elt-type jfield
+  :true-listp t
+  :elementp-of-nil nil
+  :pred jfield-listp)
 
 (fty::deftagsum jresult
   :short "Result of a Java method [JLS:8.4.5]."
@@ -618,6 +729,15 @@
   :elementp-of-nil nil
   :pred jmethod-listp)
 
+(fty::defprod jcinitializer
+  :short "Java class initializer [JLS:8.6] [JLS:8.7]."
+  :long
+  (xdoc::topstring-p
+   "This captures both static and instance intializers.")
+  ((static? bool)
+   (code jblock))
+  :pred jcinitializerp)
+
 (fty::deftypes jclasses+jcmembers
 
   (fty::deftagsum jcmember
@@ -632,12 +752,22 @@
     :pred jcmemberp
     :measure (two-nats-measure (acl2-count x) 0))
 
-  (fty::deflist jcmember-list
-    :short "True lists of Java class member declarations."
-    :elt-type jcmember
+  (fty::deftagsum jcbody-element
+    :short "Java class body declarations [JLS:8.1.6]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We do not capture constructor declarations."))
+    (:member ((get jcmember)))
+    (:init ((get jcinitializer)))
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist jcbody-element-list
+    :short "True lists of Java class body declarations."
+    :elt-type jcbody-element
     :true-listp t
     :elementp-of-nil nil
-    :pred jcmember-listp
+    :pred jcbody-element-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::defprod jclass
@@ -658,8 +788,10 @@
      (name string)
      (superclass? maybe-string)
      (superinterfaces string-list)
-     (body jcmember-list))
+     (body jcbody-element-list))
     :pred jclassp
+    ;; 2nd component of measure is non-0 so that field BODY,
+    ;; whose measure's 2nd component is 0, always decreases:
     :measure (two-nats-measure (acl2-count x) 1)))
 
 (fty::deflist jclass-list
@@ -669,19 +801,50 @@
   :elementp-of-nil nil
   :pred jclass-listp)
 
-(define jmethods-to-jcmembers ((jmethods jmethod-listp))
-  :returns (jcmembers jcmember-listp)
-  :short "Lift @(tsee jcmember-method) to lists."
-  (cond ((endp jmethods) nil)
-        (t (cons (jcmember-method (car jmethods))
-                 (jmethods-to-jcmembers (cdr jmethods))))))
+(define jfields-to-jcbody-elements ((fields jfield-listp))
+  :returns (cbody-elements jcbody-element-listp)
+  :short "Lift the composition of @(tsee jcmember-field)
+          followed by @(tsee jcbody-element-member) to lists."
+  (cond ((endp fields) nil)
+        (t (cons (jcbody-element-member (jcmember-field (car fields)))
+                 (jfields-to-jcbody-elements (cdr fields))))))
 
-(define jclasses-to-jcmembers ((jclasses jclass-listp))
-  :returns (jcmembers jcmember-listp)
-  :short "Lift @(tsee jcmember-class) to lists."
-  (cond ((endp jclasses) nil)
-        (t (cons (jcmember-class (car jclasses))
-                 (jclasses-to-jcmembers (cdr jclasses))))))
+(define jmethods-to-jcbody-elements ((methods jmethod-listp))
+  :returns (cbody-elements jcbody-element-listp)
+  :short "Lift the composition of @(tsee jcmember-method)
+          followed by @(tsee jcbody-element-member) to lists."
+  (cond ((endp methods) nil)
+        (t (cons (jcbody-element-member (jcmember-method (car methods)))
+                 (jmethods-to-jcbody-elements (cdr methods))))))
+
+(define jclasses-to-jcbody-elements ((classes jclass-listp))
+  :returns (cbody-elements jcbody-element-listp)
+  :short "Lift the composition of @(tsee jcmember-class)
+          followed by @(tsee jcbody-element-member) to lists."
+  (cond ((endp classes) nil)
+        (t (cons (jcbody-element-member (jcmember-class (car classes)))
+                 (jclasses-to-jcbody-elements (cdr classes))))))
+
+(fty::defprod jimport
+  :short "Java import declarations [JLS:7.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We capture import declarations via
+     a flag saying whether the import is static or not
+     and a string for the name of the imported entity.
+     The string may end with a dot and a star,
+     in which case it captures an on-demand import."))
+  ((static? bool)
+   (target stringp))
+  :pred jimportp)
+
+(fty::deflist jimport-list
+  :short "True lists of Java import declarations."
+  :elt-type jimport
+  :true-listp t
+  :elementp-of-nil nil
+  :pred jimport-listp)
 
 (fty::defprod jcunit
   :short "Java compilation units [JLS:7.3]."
@@ -695,15 +858,9 @@
      as an ACL2 string for the name.
      This declaration is optional.")
    (xdoc::p
-    "We capture the import declarations [JLS:7.5]
-     as a list of ACL2 strings for the names of the imported entities,
-     possibly including the on-demand notation
-     (in the latter case, the string ends with dot and star).
-     We do not capture static import declarations.")
-   (xdoc::p
     "We do not capture interfaces, so a type declaration [JLS:7.6]
      is always a class declaration."))
   ((package? maybe-string)
-   (imports string-list)
+   (imports jimport-list)
    (types jclass-list))
   :pred jcunitp)

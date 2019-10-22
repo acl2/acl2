@@ -117,10 +117,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ACL2 characters are ISO-8859-1: "
+    "The ACL2 characters are ISO-8859-1: see "
     (xdoc::seetopic "acl2::characters" "this topic")
-    " mentions ISO-8859,
-     and the @('acl2.lisp') system souce file mentions ISO-8859-1.")
+    ", and the @('acl2.lisp') system souce file.")
    (xdoc::p
     "Since the ISO-8859-1 characters are the first 256 Unicode characters,
      and since we model Java Unicode characters as unsigned 16-bit integers,
@@ -177,4 +176,24 @@
     ((defrule lemma
        (implies (ascii-listp x)
                 (unsigned-byte-listp 8 x))
-       :enable unsigned-byte-listp-8-when-7))))
+       :enable unsigned-byte-listp-8-when-7)))
+
+  (defruled equal-of-ascii=>string-to-equal-of-string=>unicode
+    (implies (and (ascii-listp x)
+                  (stringp y))
+             (equal (equal (ascii=>string x) y)
+                    (equal (string=>unicode y) x)))
+    :disable ascii=>string)
+
+  (defruled equal-of-string=>unicode-to-equal-of-ascii=>string
+    (implies (and (ascii-listp x)
+                  (stringp y))
+             (equal (equal (string=>unicode x) y)
+                    (equal (ascii=>string y) x)))
+    :disable ascii=>string)
+
+  (theory-invariant
+   (incompatible (:rewrite
+                  equal-of-ascii=>string-to-equal-of-string=>unicode)
+                 (:rewrite
+                  equal-of-string=>unicode-to-equal-of-ascii=>string))))

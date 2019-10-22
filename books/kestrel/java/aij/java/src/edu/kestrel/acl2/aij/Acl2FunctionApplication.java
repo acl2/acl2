@@ -93,7 +93,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
 
     /**
      * Evaluates this function application to a value,
-     * with respect to the given binding of values to variable indices.
+     * with respect to the given binding of variable indices to values.
      * Unless the function is the function {@code if},
      * first the argument terms are evaluated,
      * and then the function is applied to them.

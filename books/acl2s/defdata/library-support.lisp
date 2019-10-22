@@ -16,46 +16,39 @@
 
 (defthm records-lemma-acl2-count
   (implies (and (ifmp v)
-                (acl2::well-formed-map v))
-           (< (acl2-count (acl2::mget-wf x v))
+                (well-formed-map v))
+           (< (acl2-count (mget-wf x v))
               (acl2-count v)))
-  :hints (("goal" :in-theory (enable acl2::mset acl2::mget acl2::mset-wf acl2::mget-wf acl2::acl2->map)))
-  :rule-classes (:linear :rewrite))
+  :hints (("goal" :in-theory (enable mget-wf)))
+  :rule-classes :linear)
 
 (defun non-empty-good-map (x)
   (declare (xargs :guard t))
   (and (consp x)
        (good-map x)))
 
-
 (defthm records-acl2-count-linear-arith-<=
-  (<= (ACL2-COUNT (acl2::MGET k V))
-      (ACL2-COUNT V))
-  :hints (("goal" :in-theory (enable acl2::mset acl2::mget acl2::mset-wf acl2::mget-wf acl2::acl2->map)))
-  :rule-classes (:linear :rewrite))
+  (<= (acl2-count (mget k v))
+      (acl2-count v))
+  :hints (("goal" :in-theory (enable mget acl2->map)))
+  :rule-classes :linear)
 
 (defthm records-acl2-count-linear-arith-<
   (implies (and (not (equal k (acl2::ill-formed-key)))
-                (acl2::MGET k V))
-           (< (ACL2-COUNT (acl2::MGET k V))
-              (ACL2-COUNT V)))
-  :hints (("goal" :in-theory (enable acl2::mset acl2::mget acl2::mset-wf acl2::mget-wf acl2::acl2->map)))
-  :rule-classes (:linear :rewrite))
+                (mget k v))
+           (< (acl2-count (mget k v))
+              (acl2-count v)))
+  :hints (("goal" :in-theory (enable mget acl2->map)))
+  :rule-classes :linear)
 
-
- (defthm records-acl2-count
+(defthm records-acl2-count
   (implies (and (consp v)
                 (not (equal x (ill-formed-key))))
            (< (acl2-count (mget x v))
               (acl2-count v)))
   :hints (("goal" :induct (mget-wf x v)
-                  :in-theory (enable mset mget mset-wf mget-wf acl2->map)))
-  :rule-classes ((:linear) (:rewrite)))
-
-
-
-
-
+           :in-theory (enable mget acl2->map)))
+  :rule-classes :linear)
 
 
 ;shifted from base.lisp to here.
