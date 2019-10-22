@@ -331,7 +331,7 @@ public abstract class Acl2Rational extends Acl2Number {
         if (denominator.equals(Acl2Integer.ONE))
             return numerator;
         else
-            return Acl2Ratio.make(numerator, denominator);
+            return Acl2Ratio.makeInternal(numerator, denominator);
     }
 
     /**

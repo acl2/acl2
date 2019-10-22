@@ -27,13 +27,13 @@
       (pseudo-lambdap x))
   ///
 
-  (defrule pseudo-termfnp-when-pseudo-termp
+  (defrule pseudo-termfnp-of-car-when-pseudo-termp
     (implies (and (pseudo-termp term)
                   (consp term))
              (pseudo-termfnp (car term)))
     :enable pseudo-lambdap)
 
-  (defrule pseudo-termp-when-pseudo-termfnp
+  (defrule pseudo-termp-of-cons-when-pseudo-termfnp
     (implies (and (pseudo-termfnp fn)
                   (pseudo-term-listp terms)
                   (or (atom fn)

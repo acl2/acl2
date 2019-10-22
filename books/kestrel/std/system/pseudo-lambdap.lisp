@@ -36,13 +36,13 @@
        (pseudo-termp (third x)))
   ///
 
-  (defrule pseudo-lambdap-when-pseudo-termp
+  (defrule pseudo-lambdap-of-car-when-pseudo-termp
     (implies (and (pseudo-termp term)
                   (consp term)
                   (consp (car term)))
              (pseudo-lambdap (car term))))
 
-  (defrule pseudo-termp-when-pseudo-lambdap
+  (defrule pseudo-termp-of-cons-when-pseudo-lambdap
     (implies (and (pseudo-lambdap lambd)
                   (pseudo-term-listp terms)
                   (equal (len terms) (len (lambda-formals lambd))))
