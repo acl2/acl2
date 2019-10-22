@@ -81,6 +81,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-jint ((integer (signed-byte-p 32 integer)))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('int')
+          from a 32-bit signed ACL2 integer."
+  (if (< integer 0)
+      (jexpr-unary (junop-uminus)
+                   (jexpr-literal-integer-decimal (- integer)))
+    (jexpr-literal-integer-decimal integer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jlong ((integer (signed-byte-p 64 integer)))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('long')
+          from a 64-bit signed ACL2 integer."
+  (if (< integer 0)
+      (jexpr-unary (junop-uminus)
+                   (jexpr-literal-integer-long-decimal (- integer)))
+    (jexpr-literal-integer-long-decimal integer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jbigint ((integer integerp))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('BigInteger')
+          from an ACL2 integer."
+  (b* ((string (if (< integer 0)
+                   (str::cat "-" (str::natstr (- integer)))
+                 (str::natstr integer))))
+    (jexpr-newclass (jtype-class "BigInteger")
+                    (list
+                     (jexpr-literal-string string)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-paramlist ((names string-listp) (types jtype-listp))
   :guard (= (len names) (len types))
   :returns (params jparam-listp)
@@ -202,23 +237,10 @@
   (b* (((when (= integer 0)) (jexpr-name "Acl2Integer.ZERO"))
        ((when (= integer 1)) (jexpr-name "Acl2Integer.ONE"))
        (arg (cond ((signed-byte-p 32 integer)
-                   (if (< integer 0)
-                       (jexpr-unary (junop-uminus)
-                                    (jexpr-literal-integer-decimal
-                                     (- integer)))
-                     (jexpr-literal-integer-decimal integer)))
+                   (atj-gen-jint integer))
                   ((signed-byte-p 64 integer)
-                   (if (< integer 0)
-                       (jexpr-unary (junop-uminus)
-                                    (jexpr-literal-integer-long-decimal
-                                     (- integer)))
-                     (jexpr-literal-integer-long-decimal integer)))
-                  (t (b* ((string (if (< integer 0)
-                                      (str::cat "-" (str::natstr (- integer)))
-                                    (str::natstr integer))))
-                       (jexpr-newclass (jtype-class "BigInteger")
-                                       (list
-                                        (jexpr-literal-string string))))))))
+                   (atj-gen-jlong integer))
+                  (t (atj-gen-jbigint integer)))))
     (jexpr-smethod *aij-type-int*
                    "make"
                    (list arg))))
