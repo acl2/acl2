@@ -962,12 +962,12 @@
      (xdoc::codeblock
       "<a-block>"
       "<type> <result> = null;"
-      "if (<a-expr> == NIL) {"
-      "    <c-blocks>"
-      "    <result> = <c-expr>;"
-      "} else {"
+      "if (<a-expr> != NIL) {"
       "    <b-blocks>"
       "    <result> = <b-expr>;"
+      "} else {"
+      "    <c-blocks>"
+      "    <result> = <c-expr>;"
       "}")
      (xdoc::p
       "and the Java expression @('<result>'),
@@ -1004,9 +1004,9 @@
                                                        qpairs
                                                        guards$
                                                        wrld))
-         ((mv else-block
-              else-expr
-              jvar-result-index) (atj-gen-shallow-term else
+         ((mv then-block
+              then-expr
+              jvar-result-index) (atj-gen-shallow-term then
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1015,9 +1015,9 @@
                                                        qpairs
                                                        guards$
                                                        wrld))
-         ((mv then-block
-              then-expr
-              jvar-result-index) (atj-gen-shallow-term then
+         ((mv else-block
+              else-expr
+              jvar-result-index) (atj-gen-shallow-term else
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1030,11 +1030,11 @@
                      (null then-block)
                      (null else-block)))
           (b* ((block test-block)
-               (expr (jexpr-cond (jexpr-binary (jbinop-eq)
+               (expr (jexpr-cond (jexpr-binary (jbinop-ne)
                                                test-expr
                                                (jexpr-name "NIL"))
-                                 else-expr
-                                 then-expr)))
+                                 then-expr
+                                 else-expr)))
             (mv block
                 expr
                 jvar-result-index)))
@@ -1045,13 +1045,13 @@
                                    jvar-result-index
                                    (jexpr-literal-null)))
          (if-block (jblock-ifelse
-                    (jexpr-binary (jbinop-eq)
+                    (jexpr-binary (jbinop-ne)
                                   test-expr
                                   (jexpr-name "NIL"))
-                    (append else-block
-                            (jblock-asg-name jvar-result else-expr))
                     (append then-block
-                            (jblock-asg-name jvar-result then-expr))))
+                            (jblock-asg-name jvar-result then-expr))
+                    (append else-block
+                            (jblock-asg-name jvar-result else-expr))))
          (block (append test-block
                         result-locvar-block
                         if-block))
@@ -1098,7 +1098,8 @@
       "<type> <result> = <a-expr>;"
       "if (<result> == NIL) {"
       "    <b-blocks>"
-      "    <result> = <b-expr>;")
+      "    <result> = <b-expr>;"
+      "}")
      (xdoc::p
       "and the Java expression @('<result>')."))
     (b* (((mv first-block
