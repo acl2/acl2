@@ -421,9 +421,6 @@
      class declarations,
      the empty statement,
      labeled statements,
-     @('break'),
-     @('continue'),
-     @('while'),
      @('synchronized'), and
      @('try').")
    (xdoc::p
@@ -437,16 +434,22 @@
      (The latter is not a significant limitation.)")
    (xdoc::p
     "We only capture @('do') statements whose bodies are block.
-     (This is not a significant limitation.)"))
+     (This is not a significant limitation.)")
+   (xdoc::p
+    "We only capture @('continue') and @('break') statements
+     without labels."))
 
   (fty::deftagsum jstatem
     (:locvar ((get jlocvar)))
     (:expr ((get jexpr)))
     (:return ((expr? maybe-jexpr)))
     (:throw ((expr jexpr)))
+    (:break ())
+    (:continue ())
     (:if ((test jexpr) (then jblock)))
     (:ifelse ((test jexpr) (then jblock) (else jblock)))
-    (:do ((body jblock) (test jexprp)))
+    (:while ((test jexpr) (body jblock)))
+    (:do ((body jblock) (test jexpr)))
     (:for ((init jexpr) (test jexpr) (update jexpr) (body jblock)))
     :pred jstatemp)
 
@@ -504,13 +507,23 @@
 
 (define jblock-return ((expr? maybe-jexprp))
   :returns (block jblockp)
-  :short "Build a block consistingg of a single Java @('return') statement."
+  :short "Build a block consisting of a single Java @('return') statement."
   (list (jstatem-return expr?)))
 
 (define jblock-throw ((expr jexprp))
   :returns (block jblockp)
-  :short "Build a block consistingg of a single Java @('throw') statement."
+  :short "Build a block consisting of a single Java @('throw') statement."
   (list (jstatem-throw expr)))
+
+(define jblock-break ()
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('break') statement."
+  (list (jstatem-break)))
+
+(define jblock-continue ()
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('continue') statement."
+  (list (jstatem-continue)))
 
 (define jblock-if ((test jexprp) (then jblockp))
   :returns (block jblockp)
@@ -521,6 +534,11 @@
   :returns (block jblockp)
   :short "Build a block consisting of a single Java @('if-else') statement."
   (list (jstatem-ifelse test then else)))
+
+(define jblock-while ((test jexprp) (body jblockp))
+  :returns (block jblockp)
+  :short "Build a block consisting of a single Java @('while') statement."
+  (list (jstatem-while test body)))
 
 (define jblock-do ((body jblockp) (test jexprp))
   :returns (block jblockp)
@@ -562,11 +580,14 @@
                   :expr 0
                   :return 0
                   :throw 0
+                  :break 0
+                  :continue 0
                   :if (1+ (jblock-count-ifs statem.then))
                   :ifelse (1+ (+ (jblock-count-ifs statem.then)
                                  (jblock-count-ifs statem.else)))
-                  :do (jblock-count statem.body)
-                  :for (jblock-count statem.body))
+                  :while (jblock-count-ifs statem.body)
+                  :do (jblock-count-ifs statem.body)
+                  :for (jblock-count-ifs statem.body))
     :measure (jstatem-count statem))
 
   (define jblock-count-ifs ((block jblockp))
