@@ -47,6 +47,28 @@ final class Acl2Ratio extends Acl2Rational {
         this.denominator = denominator;
     }
 
+    //////////////////////////////////////// package-private members:
+
+    /**
+     * Returns a ratio with the given numerator and denominator.
+     * This name of this method is not {@code make}
+     * because otherwise it would have to be public,
+     * due to the public {@link Acl2Rational#make(Acl2Integer, Acl2Integer)}.
+     *
+     * @param numerator   The numerator of the ratio.
+     *                    It is never {@code null}
+     *                    and always coprime with {@code denominator}.
+     * @param denominator The denominator of the ratio.
+     *                    It is never {@code null},
+     *                    always greater than 1,
+     *                    and always coprime with {@code numerator}.
+     * @return The ratio.
+     */
+    static Acl2Ratio makeInternal(Acl2Integer numerator,
+                                  Acl2Integer denominator) {
+        return new Acl2Ratio(numerator, denominator);
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -90,27 +112,6 @@ final class Acl2Ratio extends Acl2Rational {
     @Override
     public String toString() {
         return this.numerator + "/" + this.denominator;
-    }
-
-    /**
-     * Returns a ratio with the given numerator and denominator.
-     * This method must be public because
-     * the corresponding method in {@link Acl2Rational} is public,
-     * but it cannot be called form outside the package
-     * because the {@link Acl2Ratio} class is not public.
-     *
-     * @param numerator   The numerator of the ratio.
-     *                    It is never {@code null}
-     *                    and always coprime with {@code denominator}.
-     * @param denominator The denominator of the ratio.
-     *                    It is never {@code null},
-     *                    always greater than 1,
-     *                    and always coprime with {@code numerator}.
-     * @return The ratio.
-     */
-    public static Acl2Ratio make(Acl2Integer numerator,
-                                 Acl2Integer denominator) {
-        return new Acl2Ratio(numerator, denominator);
     }
 
     /**

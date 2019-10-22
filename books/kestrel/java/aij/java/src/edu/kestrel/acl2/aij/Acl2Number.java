@@ -388,7 +388,7 @@ public abstract class Acl2Number extends Acl2Value {
         if (imaginaryPart.equals(Acl2Integer.ZERO))
             return realPart;
         else
-            return Acl2ComplexRational.make(realPart, imaginaryPart);
+            return Acl2ComplexRational.makeInternal(realPart, imaginaryPart);
     }
 
     /**
