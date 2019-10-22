@@ -341,6 +341,8 @@ public final class Acl2Integer extends Acl2Rational {
      * @return The integer.
      */
     public static Acl2Integer make(int numericValue) {
+        if (numericValue == 0) return ZERO;
+        if (numericValue == 1) return ONE;
         return new Acl2Integer(BigInteger.valueOf(numericValue));
     }
 
@@ -371,12 +373,14 @@ public final class Acl2Integer extends Acl2Rational {
     /**
      * The integer 0.
      */
-    public static final Acl2Integer ZERO = Acl2Integer.make(0);
+    public static final Acl2Integer ZERO =
+            new Acl2Integer(BigInteger.valueOf(0));
 
     /**
      * The integer 1.
      */
-    public static final Acl2Integer ONE = Acl2Integer.make(1);
+    public static final Acl2Integer ONE =
+            new Acl2Integer(BigInteger.valueOf(1));
 
     /**
      * Returns the numeric value of this integer as a Java integer,
