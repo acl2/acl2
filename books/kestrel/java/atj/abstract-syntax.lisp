@@ -718,6 +718,30 @@
   :elementp-of-nil nil
   :pred jparam-listp)
 
+(define jparam-list->names ((params jparam-listp))
+  :returns (names string-listp)
+  :short "Lift @(tsee jparam->name) to lists."
+  (cond ((endp params) nil)
+        (t (cons (jparam->name (car params))
+                 (jparam-list->names (cdr params)))))
+  ///
+  (defrule len-of-jparam-list->names
+    (equal (len (jparam-list->names params))
+           (len params))
+    :rule-classes :linear))
+
+(define jparam-list->types ((params jparam-listp))
+  :returns (types jtype-listp)
+  :short "Lift @(tsee jparam->type) to lists."
+  (cond ((endp params) nil)
+        (t (cons (jparam->type (car params))
+                 (jparam-list->types (cdr params)))))
+  ///
+  (defrule len-of-jparam-list->types
+    (equal (len (jparam-list->types params))
+           (len params))
+    :rule-classes :linear))
+
 (fty::defprod jmethod
   :short "Java method declarations [JLS:8.4]."
   :long
