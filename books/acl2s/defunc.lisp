@@ -1467,18 +1467,21 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (xargs-decl (acl2::collect-xargs-into-single-declare xargs-decls '())))
     (append (set-difference-equal decls xargs-decls) (list xargs-decl))))
 
-(defun fix-termination-xarg-decls (termination-method decl)
+(defun fix-termination-xarg-decls (termination-method decls)
   "remove :time-limit xargs if the :termination-method is :measure."
-  (b* ((xargs-decl (car decl))
-       (decls (cdadr xargs-decl))
-       ((unless decls) decl)
-       (time-limit (member :time-limit decls))
-       (termination-decl (member :termination-method decls))
+  (b* ((xargs-decls (filter-xargs-decls decls))
+       (xargs-decl (car xargs-decls))
+       (xarg-decls (cdadr xargs-decl))
+       ((unless xarg-decls) decls)
+       (time-limit (member :time-limit xarg-decls))
+       (termination-decl (member :termination-method xarg-decls))
        ((when (and time-limit
                    (or (eql (second termination-decl) :measure)
                        (eql termination-method :measure))))
-        `((declare (xargs ,@(acl2::remove-keyword :time-limit decls))))))
-    decl))
+        (append
+         (set-difference-equal decls xargs-decls)
+         `((declare (xargs ,@(acl2::remove-keyword :time-limit xarg-decls)))))))
+    decls))
 
 (deffilter filter-strings (xs) stringp)
 
