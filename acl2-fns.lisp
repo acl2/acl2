@@ -532,7 +532,9 @@
    ((assoc (car form) flet-alist :test 'eq)
     (cdr (assoc (car form) flet-alist :test 'eq)))
    ((member (car form) '(values
-                         #+acl2-mv-as-values mv)
+                         #+acl2-mv-as-values mv
+; Note: for swap-stobjs, cadr and caddr have the same type.
+                         #+acl2-mv-as-values swap-stobjs)
             :test 'eq)
     (cond ((null (cdr form))
            (setq *acl2-output-type-abort* '*))
@@ -559,7 +561,9 @@
                                 tmp)
                                (t t))))))))
    #-acl2-mv-as-values
-   ((eq (car form) 'mv)
+   ((member (car form) '(mv swap-stobjs)
+            :test 'eq)
+; Note: for swap-stobjs, cadr and caddr have the same type.
     (output-type-for-declare-form-rec (cadr form) flet-alist))
    #-acl2-mv-as-values
    ((eq (car form) 'values)
@@ -699,7 +703,9 @@
   #+acl2-mv-as-values
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil))
-         (stobjs-out (and ; check that (w *the-live-state*) is bound
+         (stobjs-out (and
+                      (not (eq fn 'return-last)) ; *stobjs-out-invalid* check
+; check that (w *the-live-state*) is bound
                       (boundp 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
                       (fboundp 'get-stobjs-out-for-declare-form)
                       (qfuncall get-stobjs-out-for-declare-form fn))))

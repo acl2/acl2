@@ -4843,7 +4843,7 @@
 (defun raw-arity (form wrld state)
   (cond
    ((atom form) 1)
-   ((eq (car form) 'mv)
+   ((member-eq (car form) '(mv swap-stobjs))
     (length (cdr form)))
    ((eq (car form) 'if)
     (let ((arity1 (raw-arity (caddr form) wrld state)))

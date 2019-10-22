@@ -236,18 +236,17 @@
                  (car stobjs-out)
                  (strip-cars latches)
                  (if latches 0 1)))
-            #-acl2-loop-only
-            ((eq (cdr temp) (car vals))
+            ((equal (cdr temp) (car vals))
+
+; Two live stobjs are the same iff they are eq, so we can use equal instead of
+; equalp.  Indeed, we could perhaps use eq above when #-acl2-loop-only, but we
+; use equal rather than think hard about the possibility of non-live stobjs
+; here.
+
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             latches))
             (t
-             #-acl2-loop-only
-             (er hard! 'latch-stobjs1
-                 "We had thought that the values in user-stobj-alist match up ~
-                  with the values of corresponding stobjs.  Please contact ~
-                  the ACL2 implementors.")
-             #+acl2-loop-only
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             (put-assoc-eq (car stobjs-out)
@@ -611,14 +610,13 @@
 ; be *the-live-state*, as it is at the top of LP.
 
 ; Now here is a way to run ev from within the loop on a state other
-; than the live state: Ev a call of ev.  Here is a concrete form.
-; First, go outside the loop and call (build-state) to obtain a dummy
-; state.  I will write that '(NIL ... NIL).  At present, it has 15
-; components, most of which are nil, but some, like the initial global
-; table, are non-trivial.  Then inside the loop execute:
+; than the live state: Ev a call of ev.  Here is what to execute inside the
+; loop.
 
+; (defttag t)
+; (remove-untouchable ev t)
 ; (let ((st (build-state)))
-;    (ev `(ev 'a '((a . 1)) ',st 'nil 'nil 't) nil state nil nil t))
+;      (ev `(ev 'a '((a . 1)) ',st 'nil 'nil 't) nil state nil nil t))
 
 ; The outermost state above is indeed the live one, but the inner ev is
 ; executed on a dummy state.  The computation above produces the result
@@ -10584,6 +10582,7 @@
               (not (and (member-eq (car x) '(pand por pargs plet))
                         (eq (access state-vars state-vars :parallel-execution-enabled)
                             t)))
+              (not (eq (car x) 'swap-stobjs))
               (not (untouchable-fn-p (car x)
                                      wrld
                                      (access state-vars state-vars
@@ -14008,6 +14007,44 @@
                          "It is illegal for a LOOP$ expression to occurr in a ~
                           slot of ilk ~x0."
                          ilk))))
+   ((and (not (eq stobjs-out t))
+         (eq (car x) 'swap-stobjs)
+
+; If the number of arguments is not 2, we'll get an error when we translate
+; this call in the normal way (by macroexpansion).
+
+         (= (length (cdr x)) 2))
+    (let ((s1 (cadr x))
+          (s2 (caddr x)))
+      (cond
+       ((eq stobjs-out :stobjs-out)
+        (trans-er ctx
+                  "The macro ~x0 must not be called directly in the ACL2 ~
+                   top-level loop, as opposed to being made inside a function ~
+                   definition.  The call ~x1 is thus illegal."
+                  'swap-stobjs
+                  x))
+       ((and (stobjp s1 known-stobjs wrld)
+             (stobjp s2 known-stobjs wrld)
+             (not (eq s1 s2))
+             (congruent-stobjsp s1 s2 wrld))
+        (mv-let (erp val bindings)
+          (translate11 (list 'mv s1 s2)
+                       ilk stobjs-out bindings known-stobjs flet-alist
+                       cform ctx wrld state-vars)
+          (cond (erp (trans-er+? cform x
+                                 ctx
+                                 "The form ~x0 failed to translate because ~
+                                  translation of the corresponding form, ~x1, ~
+                                  failed with the following error ~
+                                  message:~|~@2"
+                                 x
+                                 (list 'mv s1 s2)
+                                 val))
+                (t (trans-value (listify (list s2 s1)))))))
+       (t (trans-er ctx
+                    "Illegal swap-stobjs call: ~x0.  See :DOC swap-stobjs."
+                    x)))))
    ((and (not (eq stobjs-out t)) (eq (car x) 'mv))
 
 ; If stobjs-out is t we let normal macroexpansion handle mv.

@@ -84,31 +84,34 @@ both expand into
         (t (find-bad-d-arg-types (cdr d-arg-types)
                                  (cdr d-arg-preds)))))
 
-(defmacro definec (name &rest args)
+(defmacro definec-core (name d? &rest args)
   `(with-output
     :stack :push :off :all :on (error)
     (make-event
      (b* ((tbl (table-alist 'type-metadata-table (w state)))
           (atbl (table-alist 'type-alias-table (w state)))
           (pkg (current-package state))
-          (f-args ',(car args))
-          (f-type (map-intern-type ',(second args) pkg))
+          (name ',name)
+          (d? ',d?)
+          (args ',args)
+          (f-args (car args))
+          (f-type (map-intern-type (second args) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
           (d-arg-preds (map-preds d-arg-types tbl atbl 'definec))
           (pred (pred-of-type f-type tbl atbl 'definec))
           (ic (make-input-contract d-args d-arg-preds))
-          (oc (make-contract ',name d-args pred))
-          (defunc `(defunc ,',name ,d-args
+          (oc (make-contract name d-args pred))
+          (defunc `(defunc-core ,name ,d? ,d-args
                      :input-contract ,ic
                      :output-contract ,oc
-                     ,@(cddr ',args)))
+                     ,@(cddr args)))
           ((when (oddp (len f-args)))
            (er hard 'definec
                "~%The argumets to ~x0 should alternate between variables and types,
 but ~x0 has an odd number of arguments: ~x1"
-               ',name f-args))
+               name f-args))
           (bad-type
            (find-bad-d-arg-types d-arg-types d-arg-preds))
           ((when bad-type)
@@ -117,38 +120,11 @@ but ~x0 has an odd number of arguments: ~x1"
            (er hard 'definec "~%The given return type, ~x0, is not a known type." f-type)))
        `(with-output :stack :pop ,defunc)))))
 
+(defmacro definec (name &rest args)
+  `(definec-core ,name nil ,@args))
+
 (defmacro definedc (name &rest args)
-  `(with-output
-    :stack :push :off :all :on (error)
-    (make-event
-     (b* ((tbl (table-alist 'type-metadata-table (w state)))
-          (atbl (table-alist 'type-alias-table (w state)))
-          (pkg (current-package state))
-          (f-args ',(car args))
-          (f-type (map-intern-type ',(second args) pkg))
-          (d-args (evens f-args))
-          (d-arg-types (odds f-args))
-          (d-arg-types (map-intern-types d-arg-types pkg))
-          (d-arg-preds (map-preds d-arg-types tbl atbl 'definedc))
-          (pred (pred-of-type f-type tbl atbl 'definedc))
-          (ic (make-input-contract d-args d-arg-preds))
-          (oc (make-contract ',name d-args pred))
-          (defundc `(defundc ,',name ,d-args
-                      :input-contract ,ic
-                      :output-contract ,oc
-                      ,@(cddr ',args)))
-          ((when (oddp (len f-args)))
-           (er hard 'definedc
-               "~%The argumets to ~x0 should alternate between variables and types,
-but ~x0 has an odd number of arguments: ~x1"
-               ',name f-args))
-          (bad-type
-           (find-bad-d-arg-types d-arg-types d-arg-preds))
-          ((when bad-type)
-           (er hard 'definedc "~%One of the argument types, ~x0, is not a type." bad-type))
-          ((unless pred)
-           (er hard 'definedc "~%The given return type, ~x0, is not a known type." f-type)))
-       `(with-output :stack :pop ,defundc)))))
+  `(definec-core ,name t ,@args))
 
 #|
 

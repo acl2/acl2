@@ -15,6 +15,7 @@
 (include-book "../language/primitive-values")
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
+(include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
@@ -496,6 +497,7 @@
        ((when pair) (cdr pair)))
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
                             :output :value))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp)))
   :prepwork
   ((defrulel consp-of-assoc-equal
      (implies (alistp alist)
@@ -521,7 +523,8 @@
   (if guards$
       (atj-get-function-type-from-table fn wrld)
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value)))
+                            :output :value))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
