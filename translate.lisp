@@ -10087,22 +10087,6 @@
 
                        ,form))))))
 
-(defun the-live-var-bindings (stobj-names)
-  (cond ((endp stobj-names) nil)
-        (t (cons (let ((stobj (car stobj-names)))
-                   `(,(the-live-var stobj) ,stobj))
-                 (the-live-var-bindings (cdr stobj-names))))))
-
-(defun the-maybe-live-var-bindings (stobj-names)
-  (cond ((endp stobj-names) nil)
-        (t (cons (let* ((stobj (car stobj-names))
-                        (live-var (the-live-var stobj)))
-                   `(,live-var
-                     (if (live-stobjp ,stobj)
-                         ,stobj
-                       ,live-var)))
-                 (the-maybe-live-var-bindings (cdr stobj-names))))))
-
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
   (assert name)
@@ -10174,19 +10158,14 @@
 ;
 ;   (assert-event (equal (f2 top1) nil))
 
-; Thus, in the code below, we bind the live var for each bound stobj so that we
-; will get the error "It is illegal to run ACL2 evaluators...." when attempting
-; to call trans-eval (as trans-eval calls ev-for-trans-eval, which calls
-; user-stobj-alist-safe, which calls chk-user-stobj-alist, which checks the
-; global *user-stobj-alist* against the live stobj values).
-
-; Another reason to bind the-live-stobj is in case we need to print the stobj
-; during guard violations or tracing, in which case we can distinguish it from
-; the global stobj with the same name.  See for example stobj-print-symbol,
-; which is used during tracing.
+; Thus, in the code below, we bind *local-user-stobj-lst* so that we will get
+; the error "It is illegal to run ACL2 evaluators...." when attempting to call
+; trans-eval (as trans-eval calls ev-for-trans-eval, which calls
+; user-stobj-alist-safe, which calls chk-user-stobj-alist).
 
           `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil))
-                  ,@(the-live-var-bindings bound-vars))
+                  (*local-user-stobj-lst*
+                   (append ',bound-vars *local-user-stobj-lst*)))
              (declare (ignorable ,@bound-vars))
              ,(let* ((modified-bound-vars (intersection-eq producer-vars
                                                            bound-vars))
@@ -10199,12 +10178,12 @@
                 (cond
                  ((cdr producer-vars)
                   `(mv-let ,producer-vars
-                           ,producer
-                           ,@(and modified-bound-vars
-                                  `((declare (ignore ,@modified-bound-vars))))
-                           ,(if flush-form
-                                `(progn ,flush-form ,consumer)
-                              consumer)))
+                     ,producer
+                     ,@(and modified-bound-vars
+                            `((declare (ignore ,@modified-bound-vars))))
+                     ,(if flush-form
+                          `(progn ,flush-form ,consumer)
+                        consumer)))
                  (t `(let ((,(car producer-vars) ,producer))
                        ,@(and modified-bound-vars
                               `((declare (ignore ,@modified-bound-vars))))
@@ -15729,36 +15708,21 @@
                              (cdr alist2)))))
 
 #-acl2-loop-only
-(defun-one-output chk-user-stobj-alist (stobjs alist acc ctx)
-  (if (endp alist)
-      (if acc
-
-; We use interface-er rather than (er hard ...) because we do not expect to be
-; in the context of a (catch 'raw-ev-fncall ...).
-
-          (interface-er
-           "It is illegal to run ACL2 evaluators trans-eval and ~
-            simple-translate-and-eval on any term that mentions a stobj that ~
-            has been bound by with-local-stobj or stobj-let.  The reason is ~
-            that those evaluators expect each stobj to match perfectly the ~
-            corresponding global stobj that is stored in the ACL2 state.  The ~
-            offending stobj name~#0~[ is~/s are~]:  ~&0."
-           acc)
-        t)
-    (if (and (member-eq (caar alist) stobjs)
-             (not (eq (symbol-value (the-live-var (caar alist)))
-                      (cdar alist))))
-        (chk-user-stobj-alist stobjs
-                              (cdr alist)
-                              (cons (caar alist) acc)
-                              ctx)
-      (chk-user-stobj-alist stobjs (cdr alist) acc ctx))))
+(defun-one-output chk-user-stobj-alist (stobjs ctx)
+  (let ((int (intersection-eq stobjs *local-user-stobj-lst*)))
+    (when int
+      (er hard! ctx
+          "It is illegal to run ACL2 evaluators trans-eval and ~
+           simple-translate-and-eval on any term that mentions a stobj that ~
+           has been bound by with-local-stobj or stobj-let.  The reason is ~
+           that those evaluators expect each stobj to match perfectly the ~
+           corresponding global stobj that is stored in the ACL2 state.  The ~
+           offending stobj name~#0~[ is~/s are~]:  ~&0."
+          int))))
 
 (defun user-stobj-alist-safe (ctx stobjs state)
   #-acl2-loop-only
-  (if stobjs ; optimization
-      (chk-user-stobj-alist stobjs (user-stobj-alist state) nil ctx)
-    (user-stobj-alist state))
+  (chk-user-stobj-alist stobjs ctx)
   #+acl2-loop-only
   (declare (ignore ctx stobjs))
   (user-stobj-alist state))
@@ -15827,7 +15791,7 @@
                  (warning$ ctx "User-stobjs-modified"
                            "A call of the ACL2 evaluator on the term ~x0 has ~
                             modified the user stobj~#1~[~/s~] ~&1.  See :DOC ~
-                            user-stobjs-modified-warning."
+                            user-stobjs-modified-warnings."
                            trans
                            user-stobjs))
                 (t state))))

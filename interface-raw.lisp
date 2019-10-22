@@ -1526,8 +1526,12 @@
 ; Warning: Keep these cases in sync with stobj-let-fn.
 
         (('let bindings . rest)
-         `(let* ,(append bindings
-                         (the-maybe-live-var-bindings (strip-cars bindings)))
+         `(let* ((*local-user-stobj-lst*
+                  (append (loop for pair in ',bindings
+                                when (live-stobjp (car pair))
+                                collect (car pair))
+                          *local-user-stobj-lst*))
+                 ,@bindings)
             ,@rest))
         (('progn conjoined-no-dups-exprs
                  ('let bindings . rest))
@@ -1537,9 +1541,12 @@
 ; form by oneify.
 
          `(progn ,conjoined-no-dups-exprs
-                 (let* ,(append bindings
-                                (the-maybe-live-var-bindings
-                                 (strip-cars bindings)))
+                 (let* ((*local-user-stobj-lst*
+                         (append (loop for pair in ',bindings
+                                       when (live-stobjp (car pair))
+                                       collect (car pair))
+                                 *local-user-stobj-lst*))
+                        ,@bindings)
                    ,@rest)))
         (& (interface-er "Implementation error: unexpected form of stobj-let ~
                           encountered by ~
@@ -1697,14 +1704,11 @@
             (t `(and ,tst ,rst))))))
 
 (defun labels-form-for-*1* (fn *1*fn formals *1*body
-                               declare-stobj-special
                                ignore-vars ignorable-vars
                                super-stobjs-in super-stobjs-chk
                                guard wrld)
   (let ((*1*fn-binding `(,*1*fn
                          ,formals
-                         ,@(and declare-stobj-special
-                                (list declare-stobj-special))
                          ,@(and ignore-vars
                                 `((declare (ignore ,@ignore-vars))))
                          ,@(and ignorable-vars
@@ -2052,21 +2056,6 @@
                      `(live-stobjp ,first-non-nil))
                  `(live-state-p
                    ,(select-stobj 'state super-stobjs-in formals))))
-              (declare-stobj-special
-
-; Without a special declaration for the live stobj, a defstobj or defabsstobj
-; event will introduce *1* functions in add-trip, via a defuns trip, before the
-; defstobj or defabsstobj trip introduces the live stobj variable as special.
-; This might not be a big deal unless we compile, by which time (at the end of
-; processing the defstobj or defabsstobj trip) the live stobj variable has been
-; introduced with defparameter, thus globally declaring it special.  However,
-; CCL complains because compilation is done when the *1* function is first
-; introduced.  It seems appropriate to declare the live stobj variable special
-; as soon as it is referenced, in such *1* functions, even though CCL might be
-; the only Lisp that could need this done.
-
-               (and stobj-flag
-                    `(declare (special ,(the-live-var stobj-flag)))))
               (guarded-primitive-p
 
 ; We want to check guards on the "leaves" of a computation in safe-mode, for
@@ -2493,7 +2482,6 @@
                                            fn *1*fn formals
                                            (oneify body nil wrld
                                                    'invariant-risk)
-                                           declare-stobj-special
                                            ignore-vars ignorable-vars
                                            super-stobjs-in super-stobjs-chk
                                            guard wrld)))
@@ -2512,15 +2500,11 @@
                        (list
                         (labels-form-for-*1*
                          fn *1*fn formals *1*body
-                         declare-stobj-special
                          ignore-vars ignorable-vars
                          super-stobjs-in super-stobjs-chk
                          guard wrld)))))))
-         (let ((*1*dcls (and declare-stobj-special
-                             (list declare-stobj-special))))
-           `(,*1*fn
-             ,formals
-             ,@*1*dcls
+         `(,*1*fn
+           ,formals
 
 ; At one time we attempted to do some code-sharing using a macro call, by using
 ; *1*body-call in place of *1*body in the code above, where *1*body-call was
@@ -2560,7 +2544,7 @@
 ;                     ,@*1*-body-forms))
 ;               *1*-body-forms)
 
-             ,@*1*-body-forms))))))))
+           ,@*1*-body-forms)))))))
 
 
 ;          PROMPTS
@@ -4295,21 +4279,6 @@
 ; :load-compiled-file, where by "effective value" we mean the value after
 ; accounting for state global 'compiler-enabled.
 
-; A stobj may be defined during evaluation of the raw Lisp definition of
-; include-book.  In that case, the-live-name for that stobj is an add-trip
-; symbol, and hence its value is stored in *hcomp-const-ht*.  However, the raw
-; Lisp definition of defstobj or defabsstobj also assigns to
-; *user-stobj-alist*, which we expect will associate the-live-name of a stobj
-; with its Lisp relevant value.  Now imagine subsequent processing of events by
-; the same include-book.  When defstobj or defabsstobj is encountered, add-trip
-; obtains the value of the-live-name of that stobj from *hcomp-const-ht*, and
-; uses that value to update *user-stobj-alist* just as it would if it were
-; updating without benefit of *hcomp-const-ht*.  The only tricky bit here is
-; that we need to ensure that add-trip, along with undo-trip and flush-trip,
-; are the only functions that update *user-stobj-alist*.  Therefore, we bind
-; *user-stobj-alist* to itself when doing an early load of the compiled file or
-; expansion file; see include-book-raw.
-
 ; If the compiled file or certificate is missing, or else if the compiled file
 ; is older than the certificate, we may print a warning and go on, assigning
 ; 'incomplete status to that book in *hcomp-book-ht* -- but there are a couple
@@ -5365,8 +5334,7 @@
 ; Our intention is that the call of load-compiled-book below has no effect on
 ; the state other than to define some packages and populate *hcomp-xxx-ht* hash
 ; tables.  We therefore protect the one global managed by add-trip that is not
-; managed by those hash tables: *user-stobj-alist*.  See the Essay on Hash
-; Table Support for Compilation.
+; managed by those hash tables: *user-stobj-alist*.
 
                       *user-stobj-alist*))
                  (handle-hcomp-loop$-alist
@@ -5824,14 +5792,9 @@
                                          wrld t nil)))
           ((defstobj defabsstobj)
             (let ((name (nth 1 cltl-cmd))
-                  (the-live-name (nth 2 cltl-cmd))
-                  (init (nth 3 cltl-cmd))
                   (raw-defs (nth 4 cltl-cmd))
                   (ax-defs (nth 6 cltl-cmd))
                   (new-defs nil))
-              (install-for-add-trip `(defparameter ,the-live-name ,init)
-                                    nil
-                                    nil)
               (dolist
                 (def raw-defs)
                 (push (cond ((eq (car cltl-cmd) 'defabsstobj)
@@ -6202,15 +6165,7 @@
 ; in the previous case.
 
                  nil))
-            (maybe-push-undo-stack 'defconst the-live-name)
             (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
-
-; See the comment below, just above where we formerly set the symbol-value of
-; name.  If we re-install that code, then the next line of code also needs to
-; be re-installed.
-
-;           (maybe-push-undo-stack 'defconst name)
-            (install-for-add-trip `(defparameter ,the-live-name ,init) nil t)
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.  We take care
 ; of that directly here.  We see no need to involve install-for-add-trip or the
@@ -6243,13 +6198,6 @@
                                   (access defstobj-template template-or-event
                                           :non-memoizable)))))
 
-; At one point we executed the following form.  But now we see that this is not
-; necessary, since trans-eval binds stobj names anyhow using *user-stobj-alist*
-; and even acl2-raw-eval uses *user-stobj-alist* to bind stobj names.  If the
-; following code is re-installed (uncommented), then also re-install the code
-; (maybe-push-undo-stack 'defconst name) above.
-;           (setf (symbol-value name) (symbol-value the-live-name))
-
 ; The following assignment to *user-stobj-alist* is structured to keep
 ; new ones at the front, so we can more often exploit the optimization
 ; in put-assoc-eq-alist.
@@ -6260,9 +6208,9 @@
 ; This is a redefinition!  We'll just replace the old entry.
 
                          (put-assoc-eq name
-                                       (symbol-value the-live-name)
+                                       (eval init)
                                        *user-stobj-alist*))
-                        (t (cons (cons name (symbol-value the-live-name))
+                        (t (cons (cons name (eval init))
                                  *user-stobj-alist*))))
 
 ; We eval and compile the raw lisp definitions first, some of which may be
@@ -6560,11 +6508,9 @@
             (dolist (tuple (cdddr (cddr trip)))
                     (maybe-pop-undo-stack (car tuple))))
           ((defstobj defabsstobj)
-            (let ((name (nth 1 (cddr trip)))
-                  (the-live-name (nth 2 (cddr trip))))
+            (let ((name (nth 1 (cddr trip))))
               (maybe-pop-undo-stack name)
-              (maybe-pop-undo-stack '*user-stobj-alist*)
-              (maybe-pop-undo-stack the-live-name)))
+              (maybe-pop-undo-stack '*user-stobj-alist*)))
           (defpkg nil)
           ((defconst defmacro #+hons memoize #+hons unmemoize)
             (maybe-pop-undo-stack (cadr (cddr trip))))
@@ -6590,11 +6536,9 @@
             (dolist (tuple (cdddr (cddr trip)))
                     (flush-undo-stack (car tuple))))
           ((defstobj defabsstobj)
-            (let ((name (nth 1 (cddr trip)))
-                  (the-live-name (nth 2 (cddr trip))))
+            (let ((name (nth 1 (cddr trip))))
               (flush-undo-stack name)
-              (flush-undo-stack '*user-stobj-alist*)
-              (flush-undo-stack the-live-name)))
+              (flush-undo-stack '*user-stobj-alist*)))
           (defpkg nil)
           ((defconst defmacro #+hons memoize #+hons unmemoize)
             (flush-undo-stack (cadr (cddr trip))))
@@ -9870,21 +9814,15 @@
             x)))
 
 (defun-one-output stobj-print-symbol (x user-stobj-alist-tail)
-
-; Finds the (first) name of a pair (name . val) in user-stobj-alist-tail such
-; that x is the symbol-value of that name's live var, and returns the symbol to
-; print when encountering x during tracing.
-
-  (and user-stobj-alist-tail
-       (let ((pair (car user-stobj-alist-tail)))
-         (if (eq x (symbol-value (the-live-var (car pair))))
-             (let ((name (stobj-print-name (car pair))))
-               (intern-in-package-of-symbol
-                (cond ((eq x (cdr pair)) name)
-                      (t (concatenate 'string name
-                                      "{instance}")))
-                (car pair)))
-           (stobj-print-symbol x (cdr user-stobj-alist-tail))))))
+  (and (live-stobjp x)
+       (loop for pair in user-stobj-alist-tail
+             when (eq x (cdr pair))
+             do (return (intern-in-package-of-symbol
+                         (stobj-print-name (car pair))
+                         (car pair)))
+             finally (return (intern "<some-stobj>"
+                                     (find-package-fast
+                                      (current-package *the-live-state*)))))))
 
 (defun-one-output trace-hide-world-and-state (l)
 

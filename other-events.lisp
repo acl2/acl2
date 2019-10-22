@@ -19319,31 +19319,27 @@
 
                         creator exports)))
     (mv-let
-     (erp methods)
+      (erp methods)
 
 ; Each method has only the :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in
 ; (the others are nil).  But that suffices for the present purposes.
 
-     (simple-translate-absstobj-fields
-      name st$c
+      (simple-translate-absstobj-fields
+       name st$c
 
 ; See the comment above about the first two fields of the computed methods
 ; being for the recognizer and creator.
 
-      fields
-      '(:RECOGNIZER :CREATOR) ; other types are nil
-      protect-default
-      nil ; safe value, probably irrelevant in raw Lisp
-      )
-     (cond
-      (erp (interface-er "~@0" methods))
-      (t
-       `(progn
-
-; We place the defvar above the subsequent let*, in order to avoid
-; warnings in Lisps such as CCL that compile on-the-fly.
-
-          (defvar ,the-live-name)
+       fields
+       '(:RECOGNIZER :CREATOR) ; other types are nil
+       protect-default
+       nil ; safe value, probably irrelevant in raw Lisp
+       )
+      (cond
+       (erp (interface-er "~@0" methods))
+       (t
+        (let ((init-form (defabsstobj-raw-init creator-name methods)))
+          `(progn
 
 ; For defstobj, we lay down a defg form for the variable (st-lst name).  Here,
 ; we do not do so, because memoize-fn collects st-lst values based on
@@ -19356,48 +19352,42 @@
 ; discussion of abstract stobjs in comments in memoize-fn.  So there is no defg
 ; form to lay down here.
 
-          ,@(mapcar (function (lambda (def)
-                                (cons 'DEFMACRO def)))
+             ,@(mapcar (function (lambda (def)
+                                   (cons 'DEFMACRO def)))
 
 ; See the comment above in the binding of fields, about a guarantee that the
 ; first two methods must be for the recognizer and creator, respectively.
 
-                    (defabsstobj-raw-defs name methods))
-          (let* ((boundp (boundp ',the-live-name))
-                 (d (and boundp
-                         (get ',the-live-name
-                              'redundant-raw-lisp-discriminator)))
-                 (ok-p (and boundp
-                            (equal d ',event-form))))
-            (cond
-             (ok-p ',name)
-             ((and boundp (not (raw-mode-p *the-live-state*)))
-              (interface-er
-               "Illegal attempt to redeclare the (abstract) single-threaded ~
-                object ~s0."
-               ',name))
-             (t
-              (setf ,the-live-name
-                ,(defabsstobj-raw-init creator-name methods))
-              (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
-                    ',event-form)
-              (let ((old (and boundp ; optimization (as for defstobj)
-                              (assoc-eq ',name *user-stobj-alist*))))
-                (cond
-                 (old ; hence raw-mode
-                  (fms "Note:  Redefining and reinitializing (abstract) stobj ~
-                        ~x0 in raw mode.~%"
-                       (list (cons #\0 ',name))
-                       (standard-co *the-live-state*) *the-live-state* nil)
-                  (setf (cdr old)
-                        (symbol-value ',the-live-name)))
-                 (t
-                  (assert$
-                   (not (assoc-eq ',name *user-stobj-alist*))
-                   (setq *user-stobj-alist*
-                         (cons (cons ',name (symbol-value ',the-live-name))
-                               *user-stobj-alist*))))))
-              ',name)))))))))
+                       (defabsstobj-raw-defs name methods))
+             (let* ((old-pair (assoc-eq ',name *user-stobj-alist*))
+                    (d (and old-pair
+                            (get ',the-live-name
+                                 'redundant-raw-lisp-discriminator)))
+                    (ok-p (and old-pair
+                               (equal d ',event-form))))
+               (cond
+                (ok-p ',name)
+                ((and old-pair (not (raw-mode-p *the-live-state*)))
+                 (interface-er
+                  "Illegal attempt to redeclare the (abstract) ~
+                   single-threaded object ~s0."
+                  ',name))
+                (t
+                 (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
+                       ',event-form)
+                 (cond (old-pair ; hence raw-mode
+                        (fms "Note:  Redefining and reinitializing (abstract) ~
+                              stobj ~x0 in raw mode.~%"
+                             (list (cons #\0 ',name))
+                             (standard-co *the-live-state*)
+                             *the-live-state*
+                             nil)
+                        (setf (cdr old-pair) ,init-form))
+                       (t
+                        (setq *user-stobj-alist*
+                              (cons (cons ',name ,init-form)
+                                    *user-stobj-alist*))))
+                 ',name))))))))))
 
 #+acl2-loop-only
 (defmacro defabsstobj (&whole event-form

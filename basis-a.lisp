@@ -6318,11 +6318,9 @@
 
 (defmacro live-stobjp (name)
 
-; Through Version_4.3, this macro was called the-live-stobj, and its body was
-; `(eq ,name ,(the-live-var name)).  However, we need a more permissive
-; definition in support of congruent stobjs (and perhaps local stobjs and stobj
-; fields of nested stobjs).  Note that no ACL2 object is a simple-vector; in
-; particular, a string is a vector but not a simple-vector.
+; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
+; object is a simple-vector.  in particular, a string is a vector but not a
+; simple-vector.
 
   `(typep ,name 'simple-vector))
 
@@ -6972,12 +6970,12 @@
 
 (defun the-live-var (name)
 
-; If the user declares a single-threaded object named $S then we will
-; use *the-live-$s* as the Lisp parameter holding the live object
-; itself.  One might wonder why we don't choose to name this object
-; $s?  Perhaps we could, since starting with Version  2.6 we no longer
-; get the symbol-value of *the-live-$s* except at the top level,
-; because of local stobjs.  Below we explain our earlier thinking.
+; Through Version_8.2, for a stobj named st, (the-live-var st) was a special
+; variable.  At that time we thought that one might wonder why we didn't choose
+; to name this object $s.  Below we explain our earlier thinking.  Now that we
+; use only (the-live-var name) only to store properties, perhaps we could
+; instead store those properties on name; but when we eliminated the special
+; variable in October 2019, that didn't seem worthwhile to explore.
 
 ; Historical Plaque for Why the Live Var for $S Is Not $S
 
@@ -7021,14 +7019,9 @@
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
          (non-memoizable (access defstobj-template template :non-memoizable))
-         (init (defstobj-raw-init template))
+         (init-form (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
-
-; We place the defvar above the subsequent let*, in order to avoid
-; warnings in Lisps such as CCL that compile on-the-fly.
-
-       (defvar ,the-live-name)
        #+hons ,@(and (null congruent-to)
 
 ; It has occurred to us that this defg form might be avoidable when
@@ -7058,15 +7051,15 @@
        (let* ((template ',template)
               (congruent-stobj-rep ',congruent-stobj-rep)
               (non-memoizable ',non-memoizable)
-              (boundp (boundp ',the-live-name))
-              (d (and boundp
+              (old-pair (assoc-eq ',name *user-stobj-alist*))
+              (d (and old-pair
                       (get ',the-live-name
                            'redundant-raw-lisp-discriminator)))
 
 ; d is expected to be of the form (DEFSTOBJ namep creator field-templates
 ; . congruent-stobj-rep).
 
-              (ok-p (and boundp
+              (ok-p (and old-pair
                          (consp d)
                          (eq (car d) 'defstobj)
                          (consp (cdr d))
@@ -7080,18 +7073,6 @@
                          (eq (car (cddddr d)) congruent-stobj-rep)
                          (eq (cdr (cddddr d)) non-memoizable)
 
-; We also formerly required:
-
-;                        (stobj-initial-statep (symbol-value ',the-live-name)
-;                                              (access defstobj-template template
-;                                                      :field-templates))
-
-; However, the stobj need not have its initial value; consider a redundant
-; defstobj in a book whose certification world has already modified the stobj,
-; or a defstobj in a book whose value is modified in a make-event later in that
-; book.  Either way, ok-p would be false when this code is executed by loading
-; the compiled file.
-
 ; We do not check the :inline :congruent-to fields, because these incur no
 ; proof obligations.  If a second pass of encapsulate, or inclusion of a book,
 ; exposes a later non-local defstobj that is redundant with an earlier local
@@ -7100,15 +7081,11 @@
                          )))
          (cond
           (ok-p ',name)
-          ((and boundp (not (raw-mode-p *the-live-state*)))
+          ((and old-pair (not (raw-mode-p *the-live-state*)))
            (interface-er
             "Illegal attempt to redeclare the single-threaded object ~s0."
             ',name))
           (t
-
-; Memoize-flush expects the variable (st-lst name) to be bound.
-
-           (setf ,the-live-name ,init)
            (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
                  (list* 'defstobj
                         (access defstobj-template template
@@ -7120,27 +7097,15 @@
                         congruent-stobj-rep
                         (access defstobj-template template
                                 :non-memoizable)))
-           (let ((old (and boundp
-
-; Since boundp, then by a test made above, we also know (raw-mode-p state).
-; This boundp test could be omitted, since otherwise we know that the assoc-eq
-; call below will return nil; the boundp check is just an optimization.
-
-                           (assoc-eq ',name *user-stobj-alist*))))
-             (cond
-              (old ; hence raw-mode
-               (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
-                     mode.~%"
-                    (list (cons #\0 ',name))
-                    (standard-co *the-live-state*) *the-live-state* nil)
-               (setf (cdr old)
-                     (symbol-value ',the-live-name)))
-              (t
-               (assert$
-                (not (assoc-eq ',name *user-stobj-alist*))
-                (setq *user-stobj-alist*
-                      (cons (cons ',name (symbol-value ',the-live-name))
-                            *user-stobj-alist*))))))
+           (cond (old-pair ; hence raw-mode
+                  (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
+                        mode.~%"
+                       (list (cons #\0 ',name))
+                       (standard-co *the-live-state*) *the-live-state* nil)
+                  (setf (cdr old-pair) ,init-form))
+                 (t
+                  (update-user-stobj-alist (cons (cons ',name ,init-form)
+                                                 *user-stobj-alist*))))
            ',name))))))
 
 ; End of stobj support in raw lisp
@@ -7353,7 +7318,8 @@
                                (*32-bit-integer-stack* *32-bit-integer-stack*)
                                (*32-bit-integer-stack-length*
                                 *32-bit-integer-stack-length*)))
-                            (t `((,(the-live-var st) ,st)))))
+                            (t `((*local-user-stobj-lst*
+                                  (cons ',st *local-user-stobj-lst*))))))
                ,(let ((p (if w
                              (oneify producer flet-fns w program-p)
                            producer)))
@@ -7374,229 +7340,7 @@
 #-acl2-loop-only ; see the comment in mv-let-for-with-local-stobj
 (defmacro with-local-stobj (&rest args)
 
-; Below are some tests of local stobjs.
-
-;  (defstobj foo bar xxx)
-;
-;  (thm (equal (create-foo) '(nil nil))) ; succeeds
-;
-;  (defun up1 (x foo)
-;    (declare (xargs :stobjs foo))
-;    (update-bar x foo))
-;
-;  (bar foo) ; nil
-;
-;  (up1 3 foo) ; <foo>
-;
-;  (bar foo) ; 3
-;
-;  (defun test (x) ; should fail; must use with-local-stobj explicitly
-;    (mv-let (a b foo)
-;            (let ((foo (create-foo)))
-;              (let ((foo (up1 (1+ x) foo)))
-;                (mv (bar foo) (xxx foo) foo)))
-;            (declare (ignore foo))
-;            (mv a b x)))
-;
-;  (defun test (x)
-;    (declare (xargs :guard (acl2-numberp x) :verify-guards nil))
-;    (with-local-stobj
-;     foo
-;     (mv-let (a b foo)
-;             (let ((foo (up1 (1+ x) foo)))
-;               (mv (bar foo) (xxx foo) foo))
-;             (mv a b x))))
-;
-;  (test 17) ; (18 NIL 17)
-;
-;  (bar foo) ; 3
-;
-;  (thm (equal (test x) (list (1+ x) nil x))) ; succeeds
-;
-;  (thm (equal (test x) (list (1+ x) nil x)) ; succeeds
-;       :hints (("Goal"
-;                :in-theory
-;                (enable
-;                 (:executable-counterpart create-foo)))))
-;
-;  (thm (equal (test x) (list (1+ x) nil x)) ; fails, creating (NOT (NTH 1 (HIDE (CREATE-FOO))))
-;       :hints (("Goal"
-;                :in-theory
-;                (set-difference-theories
-;                 (enable
-;                  (:executable-counterpart create-foo))
-;                 '(create-foo)))))
-;
-;  (verify-guards test)
-;
-;  (test 17) ; (18 nil 17)
-;
-;  (bar foo) ; 3
-;
-;  (defun test2 (x)
-;    (with-local-stobj
-;     foo
-;     (mv-let (a foo)
-;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;             (mv a x))))
-;
-;  (test2 12) ; (13 12)
-;
-;  (bar foo) ; 3
-;
-;  (thm (equal (test x) (mv-let (x y) (test2 x) (mv x nil y)))) ; succeeds
-;
-;  (create-foo) ; should get graceful error
-;
-;  (defun test3 (x) ; Should be OK.
-;    (with-local-stobj
-;     foo
-;     (mv-let (a foo)
-;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;             a)))
-;
-;  (test3 11) ; 12
-;
-;  (bar foo) ; 3
-;
-;  (defun test4 (x foo) ; Should be OK.
-;    (declare (xargs :stobjs foo
-;                    :verify-guards nil))
-;    (let* ((x+1
-;           (with-local-stobj
-;            foo
-;            (mv-let (a foo)
-;                    (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;                    a)))
-;           (foo (up1 92 foo)))
-;      (mv x+1 foo)))
-;
-;  (test4 19 foo) ; (20 <foo>)
-;
-;  (bar foo) ; 92
-;
-;  (defun test5 (x foo) ; Should be OK.
-;    (declare (xargs :stobjs foo
-;                    :verify-guards nil))
-;    (let* ((foo (up1 23 foo))
-;           (x+1
-;            (with-local-stobj
-;             foo
-;             (mv-let (a foo)
-;                     (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
-;                     a))))
-;      (mv x+1 foo)))
-;
-;  (test5 35 foo) ; (36 <foo>)
-;
-;  (bar foo) ; 23
-;
-;  (with-local-stobj ; should get macroexpansion error or the equivalent
-;   foo
-;   (mv foo 3))
-;
-;  (defun trans-eval-test (x foo state) ; this part is ok
-;    (declare (xargs :stobjs (foo state)
-;                    :mode :program))
-;    (mv-let (erp val state)
-;            (trans-eval '(update-bar (cons 3 (bar foo)) foo) 'top state t)
-;            (declare (ignore erp val))
-;            (mv x foo state)))
-;
-;  (with-local-stobj ; should fail; cannot use with-local-stobj in top level loop
-;   foo
-;   (mv-let (x foo state)
-;           (trans-eval-test 3 foo state t)
-;           (mv x state)))
-;
-;  (pprogn
-;   (with-local-stobj ; should fail with create-foo error
-;    foo
-;    (mv-let (x foo state)
-;            (trans-eval-test 3 foo state t)
-;            (declare (ignore x))
-;            state))
-;   (mv 3 state))
-;
-;  (defun test6 (a state)
-;    (declare (xargs :mode :program :stobjs state))
-;    (with-local-stobj
-;     foo
-;     (mv-let (x foo state)
-;             (trans-eval-test a foo state t)
-;             (mv x state))))
-;
-;  (test6 100 state) ; should get trans-eval error:  user-stobj-alist mismatch
-;
-;  (bar foo) ; 23, still -- trans-eval did not affect global state
-
-; Below are some more tests, contributed by Rob Sumners.
-
-;  (defstobj foo foo-fld)
-;  (defstobj bar bar-fld)
-;
-;  (defun test-wls1 (x)
-;    (with-local-stobj
-;     foo
-;     (mv-let (result foo)
-;             (let ((foo (update-foo-fld 2 foo)))
-;               (mv (with-local-stobj
-;                    bar
-;                    (mv-let (result bar)
-;                            (let ((bar (update-bar-fld 3 bar)))
-;                              (mv x bar))
-;                            result))
-;                   foo))
-;             result)))
-;
-;  (test-wls1 129) ; 129
-;
-;  :comp t
-;
-;  (test-wls1 '(adjka 202)) ; '(ADJKA 202)
-;
-;  (thm (equal (test-wls1 x) x))
-;
-;  (defun test-wls2 (x)
-;    (with-local-stobj
-;     foo
-;     (mv-let (result foo)
-;             (let ((foo (update-foo-fld 2 foo)))
-;               (mv (with-local-stobj
-;                    foo
-;                    (mv-let (result foo)
-;                            (let ((foo (update-foo-fld 3 foo)))
-;                              (mv x foo))
-;                            result))
-;                   foo))
-;             result)))
-;
-;  (test-wls2 129) ; 129
-;
-;  :comp t
-;
-;  (test-wls2 '(adjka 202)) ; (ADJKA 202)
-;
-;  (thm (equal (test-wls2 x) x))
-;
-;  (defun test-wls3 (x)
-;    (if (atom x) x
-;      (with-local-stobj
-;       foo
-;       (mv-let (result foo)
-;               (mv (cons (car x)
-;                         (test-wls3 (cdr x)))
-;                   foo)
-;               (let ((x result))
-;                 (if (atom x) x (cons (car x) (cdr x))))))))
-;
-;  (test-wls3 129) ; 129
-;
-;  :comp t
-;
-;  (test-wls3 '(adjka 202)) ; (ADJKA 202)
-;
-;  (thm (equal (test-wls3 x) x))
+; See books/system/tests/local-stobj.lisp for some tests.
 
   (mv-let (erp st mv-let-form creator)
           (parse-with-local-stobj args)

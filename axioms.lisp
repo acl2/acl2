@@ -1042,11 +1042,28 @@
 #-acl2-loop-only
 (progn
 
-(defvar *user-stobj-alist* nil)
+(defvar *user-stobj-alist*
 
-; The value of the above variable is an alist that pairs user-defined
-; single-threaded object names with their live ones.  It does NOT
-; contain an entry for STATE, which is not user-defined.
+; The value of this variable is an alist that pairs user-defined
+; single-threaded object names with their live ones.  It does NOT contain an
+; entry for STATE, which is not user-defined.
+
+  nil)
+
+(defvar *local-user-stobj-lst*
+
+; This variable contains a list of user-defined stobjs that are locally bound
+; by stobj-let or with-local-stobj.  It may contain duplicates, because of
+; nested bindings.  We could eliminate duplicates by extending it using
+; add-to-set-eq and union-eq instead of cons and append, but repeated binding
+; may be relatively rare, so the cost of repeated linear searches probably
+; would dwarf the cost of the consing.  Of course, there is a linear search
+; every time trans-eval is called; see the intersection-eq call in
+; chk-user-stobj-alist, which is called by user-stobj-alist-safe, which is
+; called by ev-for-trans-eval.  But trans-eval calls should be relatively rare,
+; too.
+
+  nil)
 
 ; The following SPECIAL VARIABLE, *wormholep*, when non-nil, means that we
 ; are within a wormhole and are obliged to undo every change visited upon
