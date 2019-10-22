@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define arity+ ((fn (pseudo-termfnp fn)) (wrld plist-worldp))
-  :returns (result natp)
+  :returns (arity natp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
@@ -53,5 +53,4 @@
                   (if (eq formals t)
                       (raise "The symbol ~x0 does not name a function." fn)
                     formals)))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp
-                                           pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
