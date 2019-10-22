@@ -234,9 +234,7 @@
      However, if the integer is 0 or 1,
      we simply generate a reference to the respective Java static final fields
      in the @('Acl2Integer') class."))
-  (b* (((when (= integer 0)) (jexpr-name "Acl2Integer.ZERO"))
-       ((when (= integer 1)) (jexpr-name "Acl2Integer.ONE"))
-       (arg (cond ((signed-byte-p 32 integer)
+  (b* ((arg (cond ((signed-byte-p 32 integer)
                    (atj-gen-jint integer))
                   ((signed-byte-p 64 integer)
                    (atj-gen-jlong integer))
@@ -250,20 +248,50 @@
 (define atj-gen-rational ((rational rationalp))
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 rational."
-  (jexpr-smethod *aij-type-rational*
-                 "make"
-                 (list (atj-gen-integer (numerator rational))
-                       (atj-gen-integer (denominator rational)))))
+  (b* ((numerator (numerator rational))
+       (denominator (denominator rational))
+       ((mv numerator-arg denominator-arg)
+        (cond ((and (signed-byte-p 32 numerator)
+                    (signed-byte-p 32 denominator))
+               (mv (atj-gen-jint numerator)
+                   (atj-gen-jint denominator)))
+              ((and (signed-byte-p 64 numerator)
+                    (signed-byte-p 64 denominator))
+               (mv (atj-gen-jlong numerator)
+                   (atj-gen-jlong denominator)))
+              (t (mv (atj-gen-jbigint numerator)
+                     (atj-gen-jbigint denominator))))))
+    (jexpr-smethod *aij-type-rational*
+                   "make"
+                   (list numerator-arg
+                         denominator-arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-number ((number acl2-numberp))
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 number."
-  (jexpr-smethod *aij-type-number*
-                 "make"
-                 (list (atj-gen-rational (realpart number))
-                       (atj-gen-rational (imagpart number)))))
+  (b* ((realpart (realpart number))
+       (imagpart (imagpart number))
+       ((mv realpart-arg imagpart-arg)
+        (cond ((and (signed-byte-p 32 realpart)
+                    (signed-byte-p 32 imagpart))
+               (mv (atj-gen-jint realpart)
+                   (atj-gen-jint imagpart)))
+              ((and (signed-byte-p 64 realpart)
+                    (signed-byte-p 64 imagpart))
+               (mv (atj-gen-jlong realpart)
+                   (atj-gen-jlong imagpart)))
+              ((and (integerp realpart)
+                    (integerp imagpart))
+               (mv (atj-gen-jbigint realpart)
+                   (atj-gen-jbigint imagpart)))
+              (t (mv (atj-gen-rational realpart)
+                     (atj-gen-rational imagpart))))))
+    (jexpr-smethod *aij-type-number*
+                   "make"
+                   (list realpart-arg
+                         imagpart-arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
