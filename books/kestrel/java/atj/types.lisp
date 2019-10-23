@@ -480,9 +480,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type-from-table ((fn (function-namep fn wrld))
-                                          (wrld plist-worldp))
-  :returns (fn-type "An @(tsee atj-function-type-p).")
+(define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-type atj-function-type-p)
   :short "Retrieve the ATJ type of the specified function from the table."
   :long
   (xdoc::topstring
@@ -494,7 +493,15 @@
      a function type all consisting of @(':value') is returned."))
   (b* ((table (table-alist+ *atj-function-type-table-name* wrld))
        (pair (assoc-eq fn table))
-       ((when pair) (cdr pair)))
+       ((when pair)
+        (b* ((fn-type (cdr pair)))
+          (if (atj-function-type-p fn-type)
+              fn-type
+            (prog2$
+             (raise "Internal error: ~
+                     malformed function type ~x0 for function ~x1."
+                    fn-type fn)
+             (atj-function-type nil :value)))))) ; unreachable
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
                             :output :value))
   :guard-hints (("Goal" :in-theory (enable pseudo-termfnp)))
@@ -506,10 +513,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type ((fn (function-namep fn wrld))
+(define atj-get-function-type ((fn symbolp)
                                (guards$ booleanp)
                                (wrld plist-worldp))
-  :returns (fn-type "An @(tsee atj-function-type-p).")
+  :returns (fn-type atj-function-type-p)
   :short "Obtain the ATJ type of the specified function."
   :long
   (xdoc::topstring
