@@ -40,7 +40,7 @@
    (xdoc::ul
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se12/html"
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se13/html"
        "Java language specification")
      ", referenced as `[JLS]' in the documentation of this library.
       Chapters and sections are referenced
@@ -49,7 +49,7 @@
       `[JLS:4.2]' references Section 4.2 of [JLS].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se12/html"
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se13/html"
        "Java Virtual Machine specification")
      ", referenced as `[JVMS]' in the documentation of this library.
       Chapters and sections are referenced
@@ -58,7 +58,7 @@
       `[JVMS:5.5]' references Section 5.5 of [JVMS].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/en/java/javase/12/docs/api"
+     (xdoc::a :href "https://docs.oracle.com/en/java/javase/13/docs/api"
        "Java API specification")
      ", referenced as `[JAPIS]' in the documentation of this library."))
    (xdoc::p

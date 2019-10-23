@@ -54,7 +54,7 @@
      with codes 0 to 8, 14 to 27, and 127 to 159,
      as well as the ones with the @('FORMAT') general category value.")
    (xdoc::p
-    "Running OpenJDK 12's implementation of this API method
+    "Running OpenJDK 13's implementation of this API method
      on all the ASCII codes (i.e. the integers from 0 to 127),
      reveals that the ignorable ASCII characters are the ones with the codes
      0 to 8, 14 to 27, and 127, and no others.
@@ -136,7 +136,7 @@
    (xdoc::p
     "[JLS:3.8] says that this notion includes the ASCII
      uppercase and lowercase Latin letters, as well as dollar and underscore.
-     Running OpenJDK 12's
+     Running OpenJDK 13's
      implementation of @('Character.isJavaIdentifierStart(int)')
      on all the ASCII codes (i.e. the integers from 0 to 127)
      returns true for the characters with the codes
@@ -229,7 +229,7 @@
      uppercase and lowercase Latin letters,
      decimal digits, dollar, and underscore.")
    (xdoc::p
-    "Running OpenJDK 12's
+    "Running OpenJDK 13's
      implementation of @('Character.isJavaIdentifierPart(int)')
      on all the ASCII codes (i.e. the integers from 0 to 127)
      returns true for the characters with the codes

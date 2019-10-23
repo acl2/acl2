@@ -26,7 +26,7 @@
 # This file does not assume cert.pl and clean.pl to be in the path:
 # it references them via a relative path from this directory.
 
-# This file assumes that OpenJDK Java 12 is in the path,
+# This file assumes that OpenJDK Java 13 is in the path,
 # but it may well work with other Java versions or implementations.
 
 ################################################################################
