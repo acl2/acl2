@@ -69,12 +69,14 @@
                          implicate
                          implode
                          impossible
+                         irecursivep
                          known-packages
                          lambda-body
                          lambda-formals
                          logext
                          loghead
                          logic-fns-with-raw-code
+                         logicp
                          lower-case-p
                          make-lambda
                          maybe-stringp
@@ -121,6 +123,7 @@
                          symbol-symbol-alistp
                          symbol-package-name-lst
                          table-alist+
+                         tail-recursivep
                          trans-eval
                          tuplep
                          typed-tuplep

@@ -17,6 +17,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/tail-recursivep" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
@@ -1815,47 +1816,9 @@
      This is a public static method
      with the same number of parameters as the ACL2 function.")
    (xdoc::p
-    "If the @(':guards') input is @('nil'),
-     all the method's parameters and the method's result
-     have type @('Acl2Value').
-     If instead @(':guards') is @('t'),
-     the parameter and result types are determined from
-     the ACL2 function's input and output types,
-     retrieved from the @(tsee def-atj-function-type) table.
-     If the type of the body of the ACL2 function is wider than
-     the output type of the function,
-     a cast is inserted in the @('return') statement.")
-   (xdoc::p
-    "If the @(':guards') input is @('t'),
-     we remove all the @(':logic') parts of @(tsee mbe)s;
-     if the @(':guards') input is @('nil'),
-     we remove all the @(':exec') parts of @(tsee mbe)s.
-     We also remove all the non-last arguments
-     of @(tsee prog2$)s and @(tsee progn$)s.
-     This should remove any occurrences of @(tsee return-last).
-     See " (xdoc::seetopic "atj-input-processing" "this discussion")
-     " for background.")
-   (xdoc::p
-    "After that, we rename all the ACL2 variables
-     in the formal parameters and body of the ACL2 function
-     so that their names are valid Java variable names.
-     This simplifies the subsequent translation to Java,
-     which can just use the names of the ACL2 variables
-     as names for the corresponding Java variables.")
-   (xdoc::p
-    "Finally, we turn the body of the ACL2 function
-     into Java statements and a Java expression,
-     which constitute the shallow embedding of the ACL2 function body;
-     the indices for the Java local variables
-     for constructing values and results are initialized to 1,
-     since we are at the top level here.
-     We use @('$value') and @('$result') as the base names
-     for the Java local variables to build values and results,
-     so that they do not conflict with each other
-     or with the Java local variables generated from the ACL2 variables,
-     none of which starts with a @('$') not followed by two hexadecimal digits.
-     The body of the Java method consists of those Java statements,
-     followed by a @('return') statement with that Java expression.")
+    "First, we pre-translate the function.
+     Then, we translate the pre-translated function to a Java method.
+     Finally, we post-translate the Java method.")
    (xdoc::p
     "We also collect all the quoted constants
      in the pre-translated function body,
@@ -1890,7 +1853,13 @@
                               wrld))
        (method-body (append body-block
                             (jblock-return body-expr)))
-       (method-body (atj-post-translate method-body))
+       (tailrecp (and (logicp fn wrld)
+                      (= 1 (len (irecursivep fn wrld)))
+                      (tail-recursivep fn wrld)))
+       (method-body (atj-post-translate method-name
+                                        method-params
+                                        method-body
+                                        tailrecp))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
                              :static? t
