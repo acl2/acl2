@@ -233,7 +233,7 @@
   ((local
     (in-theory (disable rp::rules-alistp
                         RP::RP-STATEP
-                        RP::RP-SYNTAXP
+                        
                         STATE-P
                         TABLE-ALIST)))
    (local

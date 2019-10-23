@@ -607,45 +607,45 @@
               :in-theory (e/d (rp-evl-of-fncall-args) ())))))
 
   (local
-   (defthm pseudo-termp2-of-concat-of-meta-fn-lemma1
+   (defthm rp-termp-of-concat-of-meta-fn-lemma1
      (IMPLIES (AND (NOT (ZP LIMIT))
                    (NOT (IS-CONCAT-OF-CONCAT$ TERM))
                    (NOT (IS-CONCAT$-OF-CONCAT$ TERM))
                    (IS-CONCAT TERM)
                    (EQUAL (CADR (CADR TERM)) 0)
-                   (TRUE-LISTP TERM)
-                   (RP::PSEUDO-TERM-LISTP2 (CDDR TERM)))
-              (RP::PSEUDO-TERMP2 (CADDDR TERM)))
+                   (force (TRUE-LISTP TERM))
+                   (RP::RP-TERM-LISTP (CDDR TERM)))
+              (RP::RP-TERMP (CADDDR TERM)))
      :hints (("Goal"
               :in-theory (e/d () ())))))
 
   (local
-   (defthm pseudo-termp2-of-concat-of-meta-fn-lemma2
+   (defthm rp-termp-of-concat-of-meta-fn-lemma2
      (IMPLIES (AND (NOT (ZP LIMIT))
                    (NOT (IS-CONCAT-OF-CONCAT$ TERM))
                    (NOT (IS-CONCAT$-OF-CONCAT$ TERM))
                    (IS-CONCAT TERM)
                    (not (EQUAL (CADR (CADR TERM)) 0))
-                   (TRUE-LISTP TERM)
-                   (RP::PSEUDO-TERM-LISTP2 (CDDR TERM)))
-              (RP::PSEUDO-TERMP2 (CADDDR TERM)))
+                   (force (TRUE-LISTP TERM))
+                   (RP::RP-TERM-LISTP (CDDR TERM)))
+              (RP::RP-TERMP (CADDDR TERM)))
      :hints (("Goal"
               :in-theory (e/d () ())))))
 
   (local
-   (defthm pseudo-termp2-of-concat-of-meta-fn-lemma3
-     (IMPLIES (and (or (RP::PSEUDO-TERMP2 term))
+   (defthm rp-termp-of-concat-of-meta-fn-lemma3
+     (IMPLIES (and (or (RP::RP-TERMP term))
                    (or (IS-CONCAT-OF-CONCAT$ TERM)
                        (IS-CONCAT$-OF-CONCAT$ TERM)))
-              (and (RP::PSEUDO-TERMP2 (CADDDR (CADDR TERM)))))
+              (and (RP::RP-TERMP (CADDDR (CADDR TERM)))))
      :hints (("Goal"
               :in-theory (e/d (IS-CONCAT-OF-CONCAT$
                                IS-CONCAT$-OF-CONCAT$) ())))))
 
   (local
-   (defthm pseudo-termp2-of-concat-of-meta-fn
-     (implies (rp::pseudo-termp2 term)
-              (rp::pseudo-termp2 (mv-nth 0 (concat-of-meta-fn term limit))))
+   (defthm rp-termp-of-concat-of-meta-fn
+     (implies (rp::rp-termp term)
+              (rp::rp-termp (mv-nth 0 (concat-of-meta-fn term limit))))
      :otf-flg t
      :hints (("goal"
               :induct (concat-of-meta-fn term limit)
@@ -658,7 +658,7 @@
                                (:definition natp)
                                (:definition true-listp)))))))
 
-  (local
+  #|(local
    (defthm rp-syntaxp-of-concat-of-meta-fn-lemma1
      (implies (and (or (IS-CONCAT-OF-CONCAT$ TERM)
                        (IS-CONCAT$-OF-CONCAT$ TERM))
@@ -666,18 +666,18 @@
               (RP::RP-SYNTAXP (CADDDR (CADDR TERM))))
      :hints (("Goal"
               :in-theory (e/d (IS-CONCAT-OF-CONCAT$
-                               IS-CONCAT$-OF-CONCAT$) ())))))
+                               IS-CONCAT$-OF-CONCAT$) ())))))||#
 
-  (local
+  #|(local
    (defthm rp-syntaxp-of-concat-of-meta-fn
      (implies (rp::rp-syntaxp term)
               (rp::rp-syntaxp (mv-nth 0 (concat-of-meta-fn term limit))))
      :hints (("Goal"
               :do-not-induct t
               :induct (concat-of-meta-fn term limit)
-              :in-theory (e/d () ())))))
+              :in-theory (e/d () ())))))||#
 
-  (local
+  #|(local
    (defthm all-falist-consistent-concat-of-meta-fn-lemma1
      (implies (and (or (IS-CONCAT-OF-CONCAT$ TERM)
                        (IS-CONCAT$-OF-CONCAT$ TERM))
@@ -685,9 +685,9 @@
               (RP::ALL-FALIST-CONSISTENT (CADDDR (CADDR TERM))))
      :hints (("Goal"
               :in-theory (e/d (IS-CONCAT-OF-CONCAT$
-                               IS-CONCAT$-OF-CONCAT$) ())))))
+                               IS-CONCAT$-OF-CONCAT$) ())))))||#
 
-  (local
+  #|(local
    (defthm all-falist-consistent-concat-of-meta-fn
      (implies (and (rp::all-falist-consistent term))
               (rp::all-falist-consistent
@@ -695,7 +695,7 @@
      :hints (("Goal"
               :do-not-induct t
               :induct (concat-of-meta-fn term limit)
-              :in-theory (e/d () ())))))
+              :in-theory (e/d () ())))))||#
 
   (local
    (defthm valid-sc-concat-of-meta-fn-lemma1
@@ -723,10 +723,10 @@
    (defthm dont-rw-syntaxp-concat-of-meta-fn
      (rp::dont-rw-syntaxp  (mv-nth 1 (concat-of-meta-fn term limit)))))
 
-  (local
+  #|(local
    (defthm rp-valid-termp-concat-of-meta-fn
      (implies (rp::rp-valid-termp term)
-              (rp::rp-valid-termp (mv-nth 0 (concat-of-meta-fn term limit))))))
+              (rp::rp-valid-termp (mv-nth 0 (concat-of-meta-fn term limit))))))||#
 
   (defthm  valid-rp-meta-rulep-concat-of-meta-fn-main
     (implies (and
@@ -743,12 +743,11 @@
     :otf-flg t
     :hints (("Goal"
              :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                             (rp::PSEUDO-TERMP2
-                              rp::PSEUDO-TERM-LISTP2
+                             (rp::RP-TERMP
+                              RP::RP-TERM-LISTP
                               concat-of-meta-fn
 ;(:type-prescription acl2::logicp)
 ;w
-                              rp::RP-SYNTAXP
                               rp::VALID-SC)))))
 
   (defthm  valid-rp-meta-rulep-concat$-of-meta-fn-main
@@ -766,10 +765,9 @@
     :otf-flg t
     :hints (("Goal"
              :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                             (rp::PSEUDO-TERMP2
-                              rp::PSEUDO-TERM-LISTP2
+                             (rp::RP-TERMP
+                              RP::RP-TERM-LISTP
                               concat-of-meta-fn
-                              rp::RP-SYNTAXP
                               rp::VALID-SC))))))
 
 ;(bits-of-meta-fn '(bits '3 '4 (sbits '4 '5 n o)))
@@ -950,7 +948,7 @@
                                acl2::distributivity-of-minus-over-+
                                (:elim car-cdr-elim)))))))
 
-  (local
+  #|(local
    (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma1
      (implies (syntaxp (equal term 'term))
               (equal (rp::rp-syntaxp term)
@@ -958,9 +956,9 @@
      :rule-classes :rewrite
      :hints (("Goal"
               :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp) ())))))
+                               rp::is-rp) ())))))||#
 
-  (local
+  #|(local
    (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma2
      (implies (syntaxp (equal term 'term))
               (equal (rp::rp-syntaxp (cadr term))
@@ -970,9 +968,9 @@
               :use ((:instance rp-syntaxp-when-is-bits-of-sbits-lemma1
                                (term (cadr term))))
               :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp) ())))))
+                               rp::is-rp) ())))))||#
 
-  (local
+  #|(local
    (defthm rp-syntaxp-when-is-bits-of-sbits
      (implies (and (is-bits-of-sbits term)
                    (rp::rp-syntaxp term))
@@ -988,9 +986,9 @@
                        (RP::RP-SYNTAXP-LST (CDR (RP::EX-FROM-RP (CADR TERM))))
                        (RP::RP-SYNTAXP (RP::EX-FROM-RP (CADR TERM))))
               :in-theory (e/d (is-bits-of-sbits
-                               rp-syntaxp-when-is-bits-of-sbits-lemma2) ())))))
+                               rp-syntaxp-when-is-bits-of-sbits-lemma2) ())))))||#
 
-  (local
+  #|(local
    (defthm rp-syntaxp-bits-of-meta-fn
      (implies (rp::rp-syntaxp term)
               (rp::rp-syntaxp (mv-nth 0 (bits-of-meta-fn term))))
@@ -1002,43 +1000,43 @@
                                (:REWRITE ASSOCIATIVITY-OF-+)
                                (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
                                (:REWRITE COMMUTATIVITY-OF-+)
-                               (:DEFINITION NATP)))))))
+                               (:DEFINITION NATP)))))))||#
 
   (local
-   (defthm pseudo-termp2-bits-of-meta-fn-lemma1
+   (defthm rp-termp-bits-of-meta-fn-lemma1
      (implies (and (IS-BITS-OF-CONCAT TERM)
-                   (rp::pseudo-termp2 term))
-              (RP::PSEUDO-TERMP2 (CADDDR (CADR TERM))))
+                   (rp::rp-termp term))
+              (RP::RP-TERMP (CADDDR (CADR TERM))))
      :hints (("Goal"
               :in-theory (e/d (IS-BITS-OF-CONCAT) ())))))
 
   (local
-   (defthmd pseudo-termp2-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma1
-     (implies (rp::pseudo-termp2 term)
-              (rp::pseudo-termp2 (rp::ex-from-rp term)))
+   (defthmd rp-termp-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma1
+     (implies (rp::rp-termp term)
+              (rp::rp-termp (rp::ex-from-rp term)))
      :hints (("Goal"
               :in-theory (e/d (rp::ex-from-rp
                                rp::is-rp) ())))))
 
   (local
-   (defthm pseudo-termp2-bits-of-meta-fn-when-IS-BITS-OF-SBITS
+   (defthm rp-termp-bits-of-meta-fn-when-IS-BITS-OF-SBITS
      (implies (and (IS-BITS-OF-SBITS TERM)
-                   (rp::pseudo-termp2 term))
-              (and (RP::PSEUDO-TERMP2 (CAR (CDDDDR (RP::EX-FROM-RP (CADR
+                   (rp::rp-termp term))
+              (and (RP::RP-TERMP (CAR (CDDDDR (RP::EX-FROM-RP (CADR
                                                                     TERM)))))
-                   (RP::PSEUDO-TERMP2 (CADDDR (RP::EX-FROM-RP (CADR TERM))))))
+                   (RP::RP-TERMP (CADDDR (RP::EX-FROM-RP (CADR TERM))))))
      :hints (("Goal"
               :use ((:instance
-                     pseudo-termp2-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma1
+                     rp-termp-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma1
                      (term (cadr term))))
-; :expand ((rp::pseudo-termp2 (rp::ex-from-rp (cadddr term))))
+; :expand ((rp::rp-termp (rp::ex-from-rp (cadddr term))))
               :in-theory (e/d (IS-BITS-OF-SBITS
                                rp::ex-from-rp) ())))))
 
   (local
-   (defthm pseudo-termp2-bits-of-meta-fn
-     (implies (rp::pseudo-termp2 term)
-              (rp::pseudo-termp2 (mv-nth 0 (bits-of-meta-fn term))))
+   (defthm rp-termp-bits-of-meta-fn
+     (implies (rp::rp-termp term)
+              (rp::rp-termp (mv-nth 0 (bits-of-meta-fn term))))
      :hints (("Goal"
               :induct (bits-of-meta-fn term)
               :do-not-induct t
@@ -1073,15 +1071,15 @@
                                (:REWRITE DEFAULT-+-2)
                                (:REWRITE DEFAULT-+-1)))))))
 
-  (local
+  #|(local
    (defthmd all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
      (implies (rp::all-falist-consistent term)
               (rp::all-falist-consistent (rp::ex-from-rp term)))
      :hints (("Goal"
               :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp) ())))))
+                               rp::is-rp) ())))))||#
 
-  (local
+  #|(local
    (defthm all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS
      (implies (and (IS-BITS-OF-SBITS TERM)
                    (rp::all-falist-consistent term))
@@ -1093,9 +1091,9 @@
               :use ((:instance
                      all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
                      (term (cadr term))))
-              :in-theory (e/d (IS-BITS-OF-SBITS) ())))))
+              :in-theory (e/d (IS-BITS-OF-SBITS) ())))))||#
 
-  (local
+  #|(local
    (defthm all-falist-consistent-bits-of-meta-fn
      (implies (rp::all-falist-consistent term)
               (rp::all-falist-consistent (mv-nth 0 (bits-of-meta-fn term))))
@@ -1108,18 +1106,17 @@
                                (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
                                (:REWRITE COMMUTATIVITY-OF-+)
                                (:DEFINITION NATP)
-                               (:DEFINITION TRUE-LISTP)))))))
+                               (:DEFINITION TRUE-LISTP)))))))||#
 
   (defthm rp-valid-termp-bits-of-meta-fn
-    (implies (rp::rp-valid-termp term)
-             (rp::rp-valid-termp (mv-nth 0 (bits-of-meta-fn term))))
+    (implies (rp::rp-termp term)
+             (rp::rp-termp (mv-nth 0 (bits-of-meta-fn term))))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d ()
-                             (rp::all-falist-consistent
+                             (
                               bits-of-meta-fn
-                              rp::pseudo-termp2
-                              rp::rp-syntaxp)))))
+                              rp::rp-termp)))))
      
 
   (defthm valid-sc-resolve-bits-of-meta-fn
@@ -1163,10 +1160,8 @@
     :otf-flg t
     :hints (("Goal"
              :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                             (rp::PSEUDO-TERMP2
-                              rp::PSEUDO-TERM-LISTP2
+                             (rp::RP-TERMP
                               bits-of-meta-fn
-                              rp::RP-SYNTAXP
                               rp::VALID-SC))))))
 
 (in-theory

@@ -493,7 +493,7 @@
 
    (local
     (defthm all-falist-consistent-lemma
-      (implies (and (rp::all-falist-consistent term)
+      (implies (and (rp::rp-termp term)
                     (equal (car (rp::ex-from-rp term)) 'falist)
                     (consp (rp::ex-from-rp term))
                     (consp (cdr (rp::ex-from-rp term)))
@@ -507,7 +507,7 @@
 
    (defthm rp-evl-of-svex-eval2-meta-main
      (implies (and (rp-evl-meta-extract-global-facts)
-                   (rp::all-falist-consistent term)
+                   (rp::rp-termp term)
                    (svex-eval2-formula-checks state))
               (equal (rp-evl (mv-nth 0 (svex-eval2-meta-main term)) a)
                      (rp-evl term a)))
@@ -524,11 +524,11 @@
                                falist-eval2
                                svex-eval2-eval) ()))))))
 
-(local
+#|(local
  (encapsulate
    nil
 
-   (defthm all-falist-consistent-svex-apply2-meta
+   #|(defthm all-falist-consistent-svex-apply2-meta
      (implies (rp::all-falist-consistent-lst args)
               (rp::all-falist-consistent
                (mv-nth 0 (svex-apply2-meta call args args-dontrw))))
@@ -544,9 +544,9 @@
                                (:REWRITE DEFAULT-CAR)
                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:TYPE-PRESCRIPTION IS-4VEC-FIX-NECESSARY)
-                               (:REWRITE ACL2::O-P-DEF-O-FINP-1))))))
+                               (:REWRITE ACL2::O-P-DEF-O-FINP-1))))))||#
 
-   (local
+   #|(local
     (defthm lemma1
       (implies (and (RP::ALL-FALIST-CONSISTENT X)
                     (consp x)
@@ -554,15 +554,15 @@
                (RP::ALL-FALIST-CONSISTENT-LST (CDR X)))
       :hints (("Goal"
                :expand ((RP::ALL-FALIST-CONSISTENT X))
-               :in-theory (e/d () ())))))
+               :in-theory (e/d () ())))))||#
 
-   (local
+   #|(local
     (defthm lemma2
       (implies (and (rp::falist-consistent-aux env-falist term)
                     (rp::all-falist-consistent term)
                     (HONS-ASSOC-EQUAL X ENV-FALIST))
                (RP::ALL-FALIST-CONSISTENT (CDR (HONS-ASSOC-EQUAL X
-                                                                 ENV-FALIST))))))
+                                                                 ENV-FALIST))))))||#
 
    #|(local
    (defthm lemma3
@@ -572,7 +572,7 @@
    a)
    (cdr (hons-assoc-equal x (rp-evl term a)))))))||#
 
-   (defthm-svex-eval2-meta
+   #|(defthm-svex-eval2-meta
      (defthmd all-falist-consistent-svex-eval2-meta
        (implies (and ;(rp::all-falist-consistent x)
                  (rp::falist-consistent-aux env-falist term)
@@ -593,26 +593,26 @@
                                SVEX-EVAL2-META
                                SVEX-EVAL2-META-LST
                                rp::is-falist)
-                              ()))))
+                              ()))))||#
 
-   (defthm ALL-FALIST-CONSISTENT-lemma3
+   #|(defthm ALL-FALIST-CONSISTENT-lemma3
      (implies (and (RP::ALL-FALIST-CONSISTENT term)
                    (rp::is-falist term))
               (and (RP::FALIST-CONSISTENT-AUX (CADR (CADR term))
                                               (CADDR term))
                    (RP::ALL-FALIST-CONSISTENT (CADDR term))))
      :hints (("Goal"
-              :in-theory (e/d (rp::ex-from-rp) ()))))
+              :in-theory (e/d (rp::ex-from-rp) ()))))||#
 
-   (defthm ALL-FALIST-CONSISTENT-lemma4
+   #|(defthm ALL-FALIST-CONSISTENT-lemma4
      (implies (and (RP::ALL-FALIST-CONSISTENT term))
               (RP::ALL-FALIST-CONSISTENT (rp::ex-from-rp term)))
      :hints (("Goal"
               :in-theory (e/d (rp::ex-from-rp
                                rp::is-rp
-                               rp::is-falist) ()))))
+                               rp::is-falist) ()))))||#
 
-   (defthm all-falist-consistent-svex-eval2-meta-main
+   #|(defthm all-falist-consistent-svex-eval2-meta-main
      (implies (and (rp::all-falist-consistent term))
               (rp::all-falist-consistent (mv-nth 0 (svex-eval2-meta-main term))))
      :hints (("Goal"
@@ -624,15 +624,15 @@
                      (x (cadr (cadr term)))
                      (term (caddr (rp::ex-from-rp (caddr term))))))
               :in-theory (e/d (svex-eval2-meta-main
-                               rp::is-falist) ()))))))
+                               rp::is-falist) ()))))||#))||#
 
 (local
  (encapsulate
    nil
 
-   (defthm pseudo-termp2-svex-apply2-meta
-     (implies (rp::pseudo-term-listp2 args)
-              (rp::pseudo-termp2
+   (defthm rp-termp-svex-apply2-meta
+     (implies (rp::rp-TERM-LISTP args)
+              (rp::rp-termp
                (mv-nth 0 (svex-apply2-meta call args args-dontrw))))
      :hints (("Goal"
               :do-not-induct t
@@ -647,7 +647,7 @@
                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:TYPE-PRESCRIPTION IS-4VEC-FIX-NECESSARY)
                                (:REWRITE ACL2::O-P-DEF-O-FINP-1)
-                               (:REWRITE RP::PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
+                               (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP)
                                (:DEFINITION ACL2::APPLY$-BADGEP)
                                (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
                                (:DEFINITION TRUE-LISTP)
@@ -655,30 +655,30 @@
                                (:DEFINITION MEMBER-EQUAL)
                                (:REWRITE
                                 ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                               (:TYPE-PRESCRIPTION RP::PSEUDO-TERMP2))))))
+                               (:TYPE-PRESCRIPTION RP::RP-TERMP))))))
 
    (local
     (defthm lemma1
       (implies (and (rp::falist-consistent-aux env-falist term)
-                    (rp::pseudo-termp2 term)
+                    (rp::rp-termp term)
                     (HONS-ASSOC-EQUAL X ENV-FALIST))
-               (rp::pseudo-termp2 (CDR (HONS-ASSOC-EQUAL X
+               (rp::rp-termp (CDR (HONS-ASSOC-EQUAL X
                                                          ENV-FALIST))))))
 
    (defthm-svex-eval2-meta
-     (defthmd pseudo-termp2-svex-eval2-meta
+     (defthmd rp-termp-svex-eval2-meta
        (implies (and ;(rp::all-falist-consistent x)
                  (rp::falist-consistent-aux env-falist term)
-                 (rp::pseudo-termp2 term))
-                (rp::pseudo-termp2
+                 (rp::rp-termp term))
+                (rp::rp-termp
                  (mv-nth 0 (svex-eval2-meta x env-falist))))
        :flag expr)
 
-     (defthmd rp::pseudo-termp2-svex-eval2-meta-lst
+     (defthmd rp::rp-termp-svex-eval2-meta-lst
        (implies (and ;(rp::all-falist-consistent-lst lst)
                  (rp::falist-consistent-aux env-falist term)
-                 (rp::pseudo-termp2 term))
-                (rp::pseudo-term-listp2
+                 (rp::rp-termp term))
+                (rp::rp-TERM-LISTP
                  (mv-nth 0 (svex-eval2-meta-lst lst env-falist))))
        :flag list)
      :hints (("Goal"
@@ -690,36 +690,55 @@
 
    (local
     (defthm lemma2
-      (implies (and (rp::pseudo-termp2 term))
-               (and (rp::pseudo-termp2 (rp::ex-from-rp term))))
+      (implies (and (rp::rp-termp term))
+               (and (rp::rp-termp (rp::ex-from-rp term))))
       :hints (("Goal"
                :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
 
    (local
     (defthm lemma3
-      (implies (and (rp::pseudo-termp2 term)
+      (implies (and (rp::rp-termp term)
                     (consp term)
                     (not (equal (car term) 'quote))
                     (consp (cdr term))
                     (consp (cddr term)))
-               (RP::PSEUDO-TERMP2 (CADDR term)))))
+               (RP::RP-TERMP (CADDR term)))))
 
-   (defthm pseudo-termp2-svex-eval2-meta-main
-     (implies (and (rp::pseudo-termp2 term)
-                   (rp::all-falist-consistent term))
-              (rp::pseudo-termp2 (mv-nth 0 (svex-eval2-meta-main term))))
+   (local
+    (defthm rp-termp-implies-ex-from-rp
+      (implies (rp::rp-termp x)
+               (rp::rp-termp (rp::ex-from-rp x)))
+      :rule-classes :forward-chaining))
+
+   (local
+    (defthm rp-termp-and-FALIST-CONSISTENT-AUX
+      (implies (and (rp::rp-termp term)
+                    (equal (car term) 'falist)
+                    (consp (cdr term))
+                    (consp (cddr term))
+                    (not (cdddr term))
+                    (quotep (cadr term)))
+               (rp::falist-consistent-aux (cadr (cadr term))
+                                          (caddr term)))))
+
+   (defthm rp-termp-svex-eval2-meta-main
+     (implies (and (rp::rp-termp term))
+              (rp::rp-termp (mv-nth 0 (svex-eval2-meta-main term))))
      :hints (("Goal"
               :do-not-induct t
               :use ((:instance
-                     pseudo-termp2-svex-eval2-meta
+                     rp-termp-svex-eval2-meta
                      (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                               term)))))
                      (x (cadr (cadr term)))
                      (term (caddr (rp::ex-from-rp (caddr term))))))
               :in-theory (e/d (svex-eval2-meta-main
-                               rp::is-falist) ()))))))
+                               rp::is-falist)
+                              ((:DEFINITION RP::FALIST-CONSISTENT)
+                               (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT)
+                               #|rp-termp-svex-eval2-meta||#)))))))
 
-(local
+#|(local
  (encapsulate
    nil
 
@@ -809,7 +828,7 @@
                      (x (cadr (cadr term)))
                      (term (caddr (rp::ex-from-rp (caddr term))))))
               :in-theory (e/d (svex-eval2-meta-main
-                               rp::is-falist) ()))))))
+                               rp::is-falist) ()))))))||#
 
 (local
  (encapsulate
@@ -894,9 +913,21 @@
                     (consp (cddr term)))
                (RP::VALID-SC (CADDR term) a))))
 
+
+   (local
+    (defthm rp-termp-and-FALIST-CONSISTENT-AUX
+      (implies (and (rp::rp-termp term)
+                    (equal (car term) 'falist)
+                    (consp (cdr term))
+                    (consp (cddr term))
+                    (not (cdddr term))
+                    (quotep (cadr term)))
+               (rp::falist-consistent-aux (cadr (cadr term))
+                                          (caddr term)))))
+   
    (defthm valid-sc-svex-eval2-meta-main
      (implies (and (rp::valid-sc term a)
-                   (rp::all-falist-consistent term))
+                   (rp::rp-termp term))
               (rp::valid-sc (mv-nth 0 (svex-eval2-meta-main term))
                             a))
      :hints (("Goal"
@@ -923,9 +954,9 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                           (rp::PSEUDO-TERMP2
+                           (rp::RP-TERMP
                             svex-eval2-meta-main
-                            rp::PSEUDO-TERM-LISTP2
+                            rp::rp-TERM-LISTP
                             rp::VALID-SC
                             rp::VALID-SC)))))
 

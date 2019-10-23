@@ -181,7 +181,7 @@
 
 (defthm rp-evl-of-save-wires-to-env-wires-meta
   (implies (and (rp-evl-meta-extract-global-facts)
-                (rp::all-falist-consistent term)
+                (rp::rp-termp term)
                 (save-wires-to-env-wires-formula-checks state))
            (equal (rp-evl (mv-nth 0 (save-wires-to-env-wires-meta term)) a)
                   (rp-evl term a)))
