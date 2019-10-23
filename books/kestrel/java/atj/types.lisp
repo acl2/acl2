@@ -198,7 +198,13 @@
   (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
     (implies (symbol-atjtype-alistp alist)
              (iff (atj-typep (cdr (assoc-equal key alist)))
-                  (assoc-equal key alist)))))
+                  (assoc-equal key alist))))
+
+  (defrule symbol-atjtype-listp-of-pairlis$
+    (implies (and (symbol-listp keys)
+                  (atj-type-listp vals)
+                  (equal (len keys) (len vals)))
+             (symbol-atjtype-alistp (pairlis$ keys vals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
