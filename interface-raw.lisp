@@ -1512,12 +1512,7 @@
    ((eq (car x) 'stobj-let)
 
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
-; code for that macro.  However, bindings of live stobjs vars may be necessary
-; so that when we call a traced function on a live stobj that was stobj-let
-; bound, then stobj-print-symbol can print the "{instance}" suffix, as it
-; should.  The easiest way to code that seems to be to go ahead and use the
-; logical macroexpansion of stobj-let, and then fix it up with suitable
-; bindings.
+; code for that macro.
 
     (let ((temp (oneify (stobj-let-fn x)
                         fns w program-p)))
@@ -1526,7 +1521,7 @@
 ; Warning: Keep these cases in sync with stobj-let-fn.
 
         (('let bindings . rest)
-         `(let* ((*local-user-stobj-lst*
+         `(let* ((*local-user-stobj-lst* ; binding might not be needed
                   (append (loop for pair in ',bindings
                                 when (live-stobjp (car pair))
                                 collect (car pair))
@@ -1541,7 +1536,7 @@
 ; form by oneify.
 
          `(progn ,conjoined-no-dups-exprs
-                 (let* ((*local-user-stobj-lst*
+                 (let* ((*local-user-stobj-lst* ; binding might not be needed
                          (append (loop for pair in ',bindings
                                        when (live-stobjp (car pair))
                                        collect (car pair))

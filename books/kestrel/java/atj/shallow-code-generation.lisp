@@ -17,6 +17,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
@@ -572,11 +573,7 @@
        ((when (or (equal sym-pkg curr-pkg)
                   (member-eq symbol (pkg-imports curr-pkg))))
         (jexpr-name simple-name))
-       (pair (assoc-equal sym-pkg pkg-class-names))
-       ((unless (consp pair))
-        (raise "Internal error: no class name for package ~x0." sym-pkg)
-        (jexpr-name "")) ; irrelevant
-       (class-name (cdr pair)))
+       (class-name (atj-get-pkg-class-name sym-pkg pkg-class-names)))
     (jexpr-name (str::cat class-name "." simple-name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -610,7 +607,7 @@
                                                  pkg-class-names
                                                  curr-pkg))
         ((consp value) (atj-gen-shallow-cons value qpairs))
-        (t (prog2$ (raise "Internal error: unrecognized value ~x0." value)
+        (t (prog2$ (raise "Internal error: ~x0 is not a recognized value" value)
                    (jexpr-name "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -655,18 +652,9 @@
        (class? (if (or (equal pkg curr-pkg)
                        (member-eq fn (pkg-imports curr-pkg)))
                    ""
-                 (b* ((pair (assoc-equal pkg pkg-class-names))
-                      ((unless (consp pair))
-                       (raise "Internal error: ~
-                                no class name for package name ~x0." pkg)
-                       "")
-                      (class (cdr pair)))
+                 (b* ((class (atj-get-pkg-class-name pkg pkg-class-names)))
                    (str::cat class "."))))
-       (pair (assoc-eq fn fn-method-names))
-       ((unless (consp pair))
-        (raise "Internal error: no method name for function ~x0." fn)
-        "")
-       (method (cdr pair)))
+       (method (atj-get-fn-method-name fn fn-method-names)))
     (str::cat class? method)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -962,12 +950,12 @@
      (xdoc::codeblock
       "<a-block>"
       "<type> <result> = null;"
-      "if (<a-expr> == NIL) {"
-      "    <c-blocks>"
-      "    <result> = <c-expr>;"
-      "} else {"
+      "if (<a-expr> != NIL) {"
       "    <b-blocks>"
       "    <result> = <b-expr>;"
+      "} else {"
+      "    <c-blocks>"
+      "    <result> = <c-expr>;"
       "}")
      (xdoc::p
       "and the Java expression @('<result>'),
@@ -1004,9 +992,9 @@
                                                        qpairs
                                                        guards$
                                                        wrld))
-         ((mv else-block
-              else-expr
-              jvar-result-index) (atj-gen-shallow-term else
+         ((mv then-block
+              then-expr
+              jvar-result-index) (atj-gen-shallow-term then
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1015,9 +1003,9 @@
                                                        qpairs
                                                        guards$
                                                        wrld))
-         ((mv then-block
-              then-expr
-              jvar-result-index) (atj-gen-shallow-term then
+         ((mv else-block
+              else-expr
+              jvar-result-index) (atj-gen-shallow-term else
                                                        jvar-result-base
                                                        jvar-result-index
                                                        pkg-class-names
@@ -1030,11 +1018,11 @@
                      (null then-block)
                      (null else-block)))
           (b* ((block test-block)
-               (expr (jexpr-cond (jexpr-binary (jbinop-eq)
+               (expr (jexpr-cond (jexpr-binary (jbinop-ne)
                                                test-expr
                                                (jexpr-name "NIL"))
-                                 else-expr
-                                 then-expr)))
+                                 then-expr
+                                 else-expr)))
             (mv block
                 expr
                 jvar-result-index)))
@@ -1045,13 +1033,13 @@
                                    jvar-result-index
                                    (jexpr-literal-null)))
          (if-block (jblock-ifelse
-                    (jexpr-binary (jbinop-eq)
+                    (jexpr-binary (jbinop-ne)
                                   test-expr
                                   (jexpr-name "NIL"))
-                    (append else-block
-                            (jblock-asg-name jvar-result else-expr))
                     (append then-block
-                            (jblock-asg-name jvar-result then-expr))))
+                            (jblock-asg-name jvar-result then-expr))
+                    (append else-block
+                            (jblock-asg-name jvar-result else-expr))))
          (block (append test-block
                         result-locvar-block
                         if-block))
@@ -1098,7 +1086,8 @@
       "<type> <result> = <a-expr>;"
       "if (<result> == NIL) {"
       "    <b-blocks>"
-      "    <result> = <b-expr>;")
+      "    <result> = <b-expr>;"
+      "}")
      (xdoc::p
       "and the Java expression @('<result>')."))
     (b* (((mv first-block
@@ -1814,47 +1803,9 @@
      This is a public static method
      with the same number of parameters as the ACL2 function.")
    (xdoc::p
-    "If the @(':guards') input is @('nil'),
-     all the method's parameters and the method's result
-     have type @('Acl2Value').
-     If instead @(':guards') is @('t'),
-     the parameter and result types are determined from
-     the ACL2 function's input and output types,
-     retrieved from the @(tsee def-atj-function-type) table.
-     If the type of the body of the ACL2 function is wider than
-     the output type of the function,
-     a cast is inserted in the @('return') statement.")
-   (xdoc::p
-    "If the @(':guards') input is @('t'),
-     we remove all the @(':logic') parts of @(tsee mbe)s;
-     if the @(':guards') input is @('nil'),
-     we remove all the @(':exec') parts of @(tsee mbe)s.
-     We also remove all the non-last arguments
-     of @(tsee prog2$)s and @(tsee progn$)s.
-     This should remove any occurrences of @(tsee return-last).
-     See " (xdoc::seetopic "atj-input-processing" "this discussion")
-     " for background.")
-   (xdoc::p
-    "After that, we rename all the ACL2 variables
-     in the formal parameters and body of the ACL2 function
-     so that their names are valid Java variable names.
-     This simplifies the subsequent translation to Java,
-     which can just use the names of the ACL2 variables
-     as names for the corresponding Java variables.")
-   (xdoc::p
-    "Finally, we turn the body of the ACL2 function
-     into Java statements and a Java expression,
-     which constitute the shallow embedding of the ACL2 function body;
-     the indices for the Java local variables
-     for constructing values and results are initialized to 1,
-     since we are at the top level here.
-     We use @('$value') and @('$result') as the base names
-     for the Java local variables to build values and results,
-     so that they do not conflict with each other
-     or with the Java local variables generated from the ACL2 variables,
-     none of which starts with a @('$') not followed by two hexadecimal digits.
-     The body of the Java method consists of those Java statements,
-     followed by a @('return') statement with that Java expression.")
+    "First, we pre-translate the function.
+     Then, we translate the pre-translated function to a Java method.
+     Finally, we post-translate the Java method.")
    (xdoc::p
     "We also collect all the quoted constants
      in the pre-translated function body,
@@ -1889,7 +1840,13 @@
                               wrld))
        (method-body (append body-block
                             (jblock-return body-expr)))
-       (method-body (atj-post-translate method-body))
+       (tailrecp (and (logicp fn wrld)
+                      (= 1 (len (irecursivep fn wrld)))
+                      (tail-recursive-p fn wrld)))
+       (method-body (atj-post-translate method-name
+                                        method-params
+                                        method-body
+                                        tailrecp))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
                              :static? t
@@ -2003,6 +1960,7 @@
                                         (curr-pkg stringp)
                                         (wrld plist-worldp))
   :guard (member-eq fn (pkg-imports curr-pkg))
+  (declare (ignore curr-pkg)) ; only used in the guard
   :returns (method jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function synonym."
@@ -2061,15 +2019,7 @@
        (method-param-names (atj-gen-shallow-synonym-method-params (arity fn wrld)))
        (method-params (atj-gen-paramlist method-param-names
                                          (atj-types-to-jtypes in-types)))
-       (pkg+class (assoc-equal fn-pkg pkg-class-names))
-       ((unless (consp pkg+class))
-        (raise "Internal error: no class name for package name ~x0." curr-pkg)
-        ;; irrelevant:
-        (make-jmethod :access (jaccess-public)
-                      :result (jresult-type (atj-type-to-jtype :value))
-                      :name ""
-                      :body (jblock-return nil)))
-       (class (cdr pkg+class))
+       (class (atj-get-pkg-class-name fn-pkg pkg-class-names))
        (method-body (jblock-return
                      (jexpr-smethod (jtype-class class)
                                     method-name
@@ -2328,12 +2278,7 @@
     "The methods are in the @('methods-by-pkg') alist,
      which is calculated (elsewhere)
      via @(tsee atj-gen-shallow-all-pkg-methods)."))
-  (b* ((pair (assoc-equal pkg pkg-class-names))
-       ((unless (consp pair))
-        (raise "Internal error: no class name for package name ~x0." pkg)
-        ;; irrelevant:
-        (make-jclass :access (jaccess-public) :name ""))
-       (class-name (cdr pair))
+  (b* ((class-name (atj-get-pkg-class-name pkg pkg-class-names))
        (fields (cdr (assoc-equal pkg fields-by-pkg)))
        (methods (cdr (assoc-equal pkg methods-by-pkg))))
     (make-jclass :access (jaccess-public)

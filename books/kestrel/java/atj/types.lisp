@@ -186,6 +186,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defalist symbol-atjtype-alistp (x)
+  :short "Alists from symbols to ATJ types."
+  :key (symbolp x)
+  :val (atj-typep x)
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  ///
+
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
+    (implies (symbol-atjtype-alistp alist)
+             (iff (atj-typep (cdr (assoc-equal key alist)))
+                  (assoc-equal key alist)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
   :short "Partial order over the ATJ types."
@@ -480,9 +496,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type-from-table ((fn (function-namep fn wrld))
-                                          (wrld plist-worldp))
-  :returns (fn-type "An @(tsee atj-function-type-p).")
+(define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-type atj-function-type-p)
   :short "Retrieve the ATJ type of the specified function from the table."
   :long
   (xdoc::topstring
@@ -494,10 +509,17 @@
      a function type all consisting of @(':value') is returned."))
   (b* ((table (table-alist+ *atj-function-type-table-name* wrld))
        (pair (assoc-eq fn table))
-       ((when pair) (cdr pair)))
+       ((when pair)
+        (b* ((fn-type (cdr pair)))
+          (if (atj-function-type-p fn-type)
+              fn-type
+            (prog2$
+             (raise "Internal error: ~
+                     malformed function type ~x0 for function ~x1."
+                    fn-type fn)
+             (atj-function-type nil :value)))))) ; unreachable
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
                             :output :value))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp)))
   :prepwork
   ((defrulel consp-of-assoc-equal
      (implies (alistp alist)
@@ -506,10 +528,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type ((fn (function-namep fn wrld))
+(define atj-get-function-type ((fn symbolp)
                                (guards$ booleanp)
                                (wrld plist-worldp))
-  :returns (fn-type "An @(tsee atj-function-type-p).")
+  :returns (fn-type atj-function-type-p)
   :short "Obtain the ATJ type of the specified function."
   :long
   (xdoc::topstring
@@ -523,8 +545,7 @@
   (if guards$
       (atj-get-function-type-from-table fn wrld)
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp))))
+                            :output :value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,19 +687,3 @@
    (xdoc::@def "def-atj-function-type"))
   (defmacro def-atj-function-type (fn in-tys out-ty)
     `(make-event (def-atj-function-type-fn ',fn ',in-tys ',out-ty (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defalist symbol-atjtype-alistp (x)
-  :short "Alists from symbols to ATJ types."
-  :key (symbolp x)
-  :val (atj-typep x)
-  :true-listp t
-  :keyp-of-nil t
-  :valp-of-nil nil
-  ///
-
-  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
-    (implies (symbol-atjtype-alistp alist)
-             (iff (atj-typep (cdr (assoc-equal key alist)))
-                  (assoc-equal key alist)))))
