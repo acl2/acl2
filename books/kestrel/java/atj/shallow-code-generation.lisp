@@ -2084,24 +2084,18 @@
     "We generate methods for the functions in @('fns-by-pkg')
      (i.e. the functions to translate to Java, including natives,
      organized by package)
-     that are associated to @('pkg').
-     We sort these functions,
-     so that the methods appear in that order in the class.")
+     that are associated to @('pkg').")
    (xdoc::p
     "We also generate synonym methods for all the functions in @('fns+native')
      (i.e. the functions to translate to Java, including natives)
      that are in other ACL2 packages but that are imported by @('pkg');
-     see @(tsee atj-gen-shallow-synonym-method) for motivation.
-     We sort these functions,
-     so that the methods appear in that order in the class.")
+     see @(tsee atj-gen-shallow-synonym-method) for motivation.")
    (xdoc::p
-    "We put the latter functions before the former functions in the result,
-     so that the methods appear in that order in the class.")
+    "We sort all the methods.")
    (xdoc::p
     "We also collect all the quoted constants
      that occur in the functions in @('pkg') that are translated to Java."))
   (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
-       (fns (sort-symbol-listp fns))
        ((mv fn-methods
             qconsts) (atj-gen-shallow-fn-methods fns
                                                  qconsts
@@ -2117,8 +2111,9 @@
                                                          fn-method-names
                                                          guards$
                                                          pkg
-                                                         wrld)))
-    (mv (append synonym-methods fn-methods)
+                                                         wrld))
+       (all-methods (append synonym-methods fn-methods)))
+    (mv (mergesort-jmethods all-methods)
         qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2208,12 +2203,12 @@
      This enables the unqualified reference to them in the lass for @('pkg');
      see @(tsee atj-gen-shallow-symbol).")
    (xdoc::p
-    "We sort all the symbols, so that the fields are in that order."))
+    "We sort all the fields, so that they appear in that order."))
   (b* ((syms (cdr (assoc-equal pkg quoted-symbols-by-pkg)))
        (imported-syms (intersection-eq quoted-symbols (pkg-imports pkg)))
        (all-syms (append syms imported-syms))
-       (all-syms (sort-symbol-listp all-syms)))
-    (atj-gen-shallow-symbol-fields all-syms)))
+       (all-fields (atj-gen-shallow-symbol-fields all-syms)))
+    (mergesort-jfields all-fields)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2435,6 +2430,7 @@
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
+       (pkg-methods (mergesort-jmethods pkg-methods))
        ((run-when verbose$)
         (cw "~%Generating Java code for the ACL2 functions:~%"))
        (fns+natives (append fns-to-translate
@@ -2475,24 +2471,21 @@
                                              fields-by-pkg
                                              methods-by-pkg
                                              pkg-class-names))
-       (qinteger-fields (atj-gen-shallow-number-fields (mergesort
-                                                        qconsts.integers)))
-       (qrational-fields (atj-gen-shallow-number-fields (mergesort
-                                                         qconsts.rationals)))
-       (qnumber-fields (atj-gen-shallow-number-fields (mergesort
-                                                       qconsts.numbers)))
-       (qchar-fields (atj-gen-shallow-char-fields (mergesort
-                                                   qconsts.chars)))
-       (qstring-fields (atj-gen-shallow-string-fields (mergesort
-                                                       qconsts.strings)))
+       (qinteger-fields (atj-gen-shallow-number-fields qconsts.integers))
+       (qrational-fields (atj-gen-shallow-number-fields qconsts.rationals))
+       (qnumber-fields (atj-gen-shallow-number-fields qconsts.numbers))
+       (qchar-fields (atj-gen-shallow-char-fields qconsts.chars))
+       (qstring-fields (atj-gen-shallow-string-fields qconsts.strings))
        (qcons-fields (atj-gen-shallow-cons-fields (strip-cars qconsts.pairs)
                                                   qconsts.pairs))
-       (all-fields (append qinteger-fields
-                           qrational-fields
-                           qnumber-fields
-                           qchar-fields
-                           qstring-fields
-                           qcons-fields
+       (all-qconst-fields (append qinteger-fields
+                                  qrational-fields
+                                  qnumber-fields
+                                  qchar-fields
+                                  qstring-fields
+                                  qcons-fields))
+       (all-qconst-fields (mergesort-jfields all-qconst-fields))
+       (all-fields (append all-qconst-fields
                            (list init-field)))
        (body-class (append (list (jcbody-element-init static-init))
                            (jfields-to-jcbody-elements all-fields)
