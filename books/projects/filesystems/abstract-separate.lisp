@@ -2098,8 +2098,7 @@
 (defund
   names-at-relpath (fs relpath)
   (declare (xargs :guard (and (abs-file-alist-p fs)
-                              (fat32-filename-list-p relpath))
-                  :guard-debug t))
+                              (fat32-filename-list-p relpath))))
   (b*
       (((when (atom relpath))
         (abs-top-names fs))
@@ -2160,17 +2159,17 @@
 ;; as its abstract variable. This is one of a few compromises in elegance
 ;; required for distinguishing the root, which is necessary to properly define
 ;; the collapse relation.
-(defund pseudo-frame (root frame)
+(defund frame-with-root (root frame)
   (declare (xargs :guard (and (abs-file-alist-p root)
                               (frame-p frame))))
   (list* (cons 0 (frame-val nil root 0))
          frame))
 
 ;; This is because of fixing.
-(defthm frame-p-of-pseudo-frame
-  (equal (frame-p (pseudo-frame root frame))
+(defthm frame-p-of-frame-with-root
+  (equal (frame-p (frame-with-root root frame))
          (frame-p frame))
-  :hints (("goal" :in-theory (enable pseudo-frame))))
+  :hints (("goal" :in-theory (enable frame-with-root))))
 
 (defund frame-addrs-root (frame)
   (declare (xargs :guard (frame-p frame)))
@@ -2212,9 +2211,9 @@
 (defthm abs-separate-correctness-1-lemma-1
   (implies (and (abs-file-alist-p root)
                 (not (consp (abs-addrs root)))
-                (abs-separate (pseudo-frame root frame)))
+                (abs-separate (frame-with-root root frame)))
            (hifat-no-dups-p root))
-  :hints (("goal" :in-theory (enable pseudo-frame abs-separate))))
+  :hints (("goal" :in-theory (enable frame-with-root abs-separate))))
 
 (defthm
   abs-separate-correctness-1-lemma-2
@@ -2407,9 +2406,9 @@
 ;; This has a free variable... which merits examination later.
 (defthm abs-separate-correctness-1-lemma-8
   (implies (and (abs-file-alist-p root)
-                (abs-separate (pseudo-frame root frame)))
+                (abs-separate (frame-with-root root frame)))
            (abs-no-dups-p root))
-  :hints (("goal" :in-theory (enable abs-separate pseudo-frame))))
+  :hints (("goal" :in-theory (enable abs-separate frame-with-root))))
 
 (defthm distinguish-names-of-remove-assoc
   (implies (distinguish-names dir relpath frame)
@@ -2830,9 +2829,9 @@
   (implies
    (and (< 0 (abs-find-first-complete frame))
         (abs-file-alist-p root)
-        (abs-separate (pseudo-frame root frame)))
+        (abs-separate (frame-with-root root frame)))
    (abs-separate
-    (pseudo-frame
+    (frame-with-root
      (context-apply
       root
       (frame-val->dir (cdr (assoc-equal (abs-find-first-complete frame)
@@ -2843,7 +2842,7 @@
      (remove-assoc-equal (abs-find-first-complete frame)
                          frame))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable pseudo-frame abs-separate))))
+           :in-theory (enable frame-with-root abs-separate))))
 
 (defthm
   abs-separate-correctness-1-lemma-28
@@ -3652,9 +3651,9 @@
                                            frame)))
          frame)))))
     (frame-p frame)
-    (abs-separate (pseudo-frame root frame)))
+    (abs-separate (frame-with-root root frame)))
    (abs-separate
-    (pseudo-frame
+    (frame-with-root
      root
      (put-assoc-equal
       (frame-val->src (cdr (assoc-equal (abs-find-first-complete frame)
@@ -3695,7 +3694,7 @@
       (remove-assoc-equal (abs-find-first-complete frame)
                           frame)))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable pseudo-frame abs-separate))))
+           :in-theory (enable frame-with-root abs-separate))))
 
 (defthm
   abs-separate-correctness-1-lemma-47
@@ -3733,11 +3732,36 @@
                 (no-duplicatesp-equal (abs-addrs root))
                 (subsetp (abs-addrs root)
                          (frame-addrs-root frame))
-                (abs-separate (pseudo-frame root frame)))
-           (mv-let (m1-file-alist result)
+                (abs-separate (frame-with-root root frame)))
+           (mv-let (fs result)
              (collapse root frame)
              (implies (equal result t)
-                      (and (m1-file-alist-p m1-file-alist)
-                           (hifat-no-dups-p m1-file-alist)))))
+                      (and (m1-file-alist-p fs)
+                           (hifat-no-dups-p fs)))))
   :hints (("goal" :in-theory (enable collapse)
            :expand (:free (y) (intersectp-equal nil y)))))
+
+(defthm distinguish-names-of-append
+  (equal (distinguish-names dir relpath (append frame1 frame2))
+         (and (distinguish-names dir relpath frame1)
+              (distinguish-names dir relpath frame2)))
+  :hints (("goal" :in-theory (enable distinguish-names))))
+
+(defund
+  mutual-distinguish-names (frame1 frame2)
+  (declare (xargs :guard (and (frame-p frame1)
+                              (frame-p frame2))))
+  (or (atom frame1)
+      (and (distinguish-names (frame-val->dir (cdar frame1))
+                              (frame-val->path (cdar frame1))
+                              frame2)
+           (mutual-distinguish-names (cdr frame1)
+                                     frame2))))
+
+(defthm abs-separate-of-append
+  (equal (abs-separate (append frame1 frame2))
+         (and (abs-separate frame1)
+              (abs-separate frame2)
+              (mutual-distinguish-names frame1 frame2)))
+  :hints (("goal" :in-theory (enable abs-separate
+                                     mutual-distinguish-names))))
