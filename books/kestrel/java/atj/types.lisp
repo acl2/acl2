@@ -186,6 +186,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defalist symbol-atjtype-alistp (x)
+  :short "Alists from symbols to ATJ types."
+  :key (symbolp x)
+  :val (atj-typep x)
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  ///
+
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
+    (implies (symbol-atjtype-alistp alist)
+             (iff (atj-typep (cdr (assoc-equal key alist)))
+                  (assoc-equal key alist)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
   :short "Partial order over the ATJ types."
@@ -504,7 +520,6 @@
              (atj-function-type nil :value)))))) ; unreachable
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
                             :output :value))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp)))
   :prepwork
   ((defrulel consp-of-assoc-equal
      (implies (alistp alist)
@@ -530,8 +545,7 @@
   (if guards$
       (atj-get-function-type-from-table fn wrld)
     (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp))))
+                            :output :value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,19 +687,3 @@
    (xdoc::@def "def-atj-function-type"))
   (defmacro def-atj-function-type (fn in-tys out-ty)
     `(make-event (def-atj-function-type-fn ',fn ',in-tys ',out-ty (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defalist symbol-atjtype-alistp (x)
-  :short "Alists from symbols to ATJ types."
-  :key (symbolp x)
-  :val (atj-typep x)
-  :true-listp t
-  :keyp-of-nil t
-  :valp-of-nil nil
-  ///
-
-  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
-    (implies (symbol-atjtype-alistp alist)
-             (iff (atj-typep (cdr (assoc-equal key alist)))
-                  (assoc-equal key alist)))))
