@@ -573,11 +573,7 @@
        ((when (or (equal sym-pkg curr-pkg)
                   (member-eq symbol (pkg-imports curr-pkg))))
         (jexpr-name simple-name))
-       (pair (assoc-equal sym-pkg pkg-class-names))
-       ((unless (consp pair))
-        (raise "Internal error: no class name for package ~x0." sym-pkg)
-        (jexpr-name "")) ; irrelevant
-       (class-name (cdr pair)))
+       (class-name (atj-get-pkg-class-name sym-pkg pkg-class-names)))
     (jexpr-name (str::cat class-name "." simple-name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -611,7 +607,7 @@
                                                  pkg-class-names
                                                  curr-pkg))
         ((consp value) (atj-gen-shallow-cons value qpairs))
-        (t (prog2$ (raise "Internal error: unrecognized value ~x0." value)
+        (t (prog2$ (raise "Internal error: ~x0 is not a recognized value" value)
                    (jexpr-name "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -656,18 +652,9 @@
        (class? (if (or (equal pkg curr-pkg)
                        (member-eq fn (pkg-imports curr-pkg)))
                    ""
-                 (b* ((pair (assoc-equal pkg pkg-class-names))
-                      ((unless (consp pair))
-                       (raise "Internal error: ~
-                                no class name for package name ~x0." pkg)
-                       "")
-                      (class (cdr pair)))
+                 (b* ((class (atj-get-pkg-class-name pkg pkg-class-names)))
                    (str::cat class "."))))
-       (pair (assoc-eq fn fn-method-names))
-       ((unless (consp pair))
-        (raise "Internal error: no method name for function ~x0." fn)
-        "")
-       (method (cdr pair)))
+       (method (atj-get-fn-method-name fn fn-method-names)))
     (str::cat class? method)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1973,6 +1960,7 @@
                                         (curr-pkg stringp)
                                         (wrld plist-worldp))
   :guard (member-eq fn (pkg-imports curr-pkg))
+  (declare (ignore curr-pkg)) ; only used in the guard
   :returns (method jmethodp)
   :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function synonym."
@@ -2031,15 +2019,7 @@
        (method-param-names (atj-gen-shallow-synonym-method-params (arity fn wrld)))
        (method-params (atj-gen-paramlist method-param-names
                                          (atj-types-to-jtypes in-types)))
-       (pkg+class (assoc-equal fn-pkg pkg-class-names))
-       ((unless (consp pkg+class))
-        (raise "Internal error: no class name for package name ~x0." curr-pkg)
-        ;; irrelevant:
-        (make-jmethod :access (jaccess-public)
-                      :result (jresult-type (atj-type-to-jtype :value))
-                      :name ""
-                      :body (jblock-return nil)))
-       (class (cdr pkg+class))
+       (class (atj-get-pkg-class-name fn-pkg pkg-class-names))
        (method-body (jblock-return
                      (jexpr-smethod (jtype-class class)
                                     method-name
@@ -2298,12 +2278,7 @@
     "The methods are in the @('methods-by-pkg') alist,
      which is calculated (elsewhere)
      via @(tsee atj-gen-shallow-all-pkg-methods)."))
-  (b* ((pair (assoc-equal pkg pkg-class-names))
-       ((unless (consp pair))
-        (raise "Internal error: no class name for package name ~x0." pkg)
-        ;; irrelevant:
-        (make-jclass :access (jaccess-public) :name ""))
-       (class-name (cdr pair))
+  (b* ((class-name (atj-get-pkg-class-name pkg pkg-class-names))
        (fields (cdr (assoc-equal pkg fields-by-pkg)))
        (methods (cdr (assoc-equal pkg methods-by-pkg))))
     (make-jclass :access (jaccess-public)
