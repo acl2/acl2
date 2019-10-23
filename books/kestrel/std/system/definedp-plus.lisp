@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definedp+ ((fn (logic-function-namep fn wrld)) (wrld plist-worldp))
+(define definedp+ ((fn symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
@@ -25,8 +25,23 @@
   (xdoc::topstring
    (xdoc::p
     "This returns the same result as @(tsee definedp),
-     but it has a stronger guard.")
-   (xdoc::p
-    "Some program-mode functions may be defined
-     but not have an @('unnormalized-body') property."))
-  (definedp fn wrld))
+     but it causes an error if called on a symbol
+     that is not a logic-mode function.
+     The reason is that this utility
+     checks whether the function has an @('unnormalized body') property,
+     but some program-mode functions may be defined
+     without having an @('unnormalized-body') property."))
+  (cond ((not (function-symbolp fn wrld))
+         (raise "The symbol ~x0 does not name a function." fn))
+        ((not (logicp fn wrld))
+         (raise "The function ~x0 is not in logic mode." fn))
+        (t (definedp fn wrld)))
+  ///
+
+  (defthmd function-symbolp-when-definedp+
+    (implies (definedp+ fn wrld)
+             (function-symbolp fn wrld)))
+
+  (defthmd logicp-when-definedp+
+    (implies (definedp+ fn wrld)
+             (logicp fn wrld))))
