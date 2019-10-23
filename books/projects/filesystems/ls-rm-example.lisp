@@ -1,6 +1,7 @@
 (in-package "ACL2")
 
 (include-book "test-stuff")
+(include-book "abstract-separate")
 
 (defun
     rm-list-extra-hypothesis
@@ -216,3 +217,76 @@
           0
           (string-to-lofat fat32-in-memory disk-image-string))
          rm-pathnames 0))))))))
+
+;; This guard conjecture takes 12 seconds...
+(defund
+  absfat-find-file-helper (fs relpath)
+  (declare
+   (xargs
+    :guard (and (abs-file-alist-p fs)
+                (fat32-filename-list-p relpath))
+    :guard-hints
+    (("goal" :in-theory (enable abs-file-alist-p
+                                abs-file-p abs-file-fix)))))
+  (b*
+      (((when (atom relpath))
+        (mv (make-abs-file) *enoent*))
+       (head (car relpath))
+       ((unless (consp (abs-assoc head fs)))
+        (mv (make-abs-file) *enoent*))
+       ((when (atom (cdr relpath)))
+        (mv (mbe :exec (cdr (abs-assoc head fs))
+                 :logic (abs-file-fix (cdr (abs-assoc head fs))))
+            0))
+       ((unless (abs-directory-file-p (cdr (abs-assoc head fs))))
+        (mv (make-abs-file) *enotdir*)))
+    (absfat-find-file-helper
+     (abs-file->contents (cdr (abs-assoc head fs)))
+     (cdr relpath))))
+
+(defthm absfat-find-file-helper-correctness-1
+  (mv-let
+    (file retval)
+    (absfat-find-file-helper fs relpath)
+    (and (abs-file-p file) (natp retval)))
+  :hints (("Goal" :in-theory (enable absfat-find-file-helper)) ))
+
+(defund absfat-find-file (frame path)
+  (declare (xargs :guard (and (fat32-filename-list-p path)
+                              (frame-p frame))))
+  (b*
+      (((when (atom frame)) (mv (make-abs-file) *enoent*))
+       (head-frame-val (cdar frame))
+       ((mv file retval)
+        (absfat-find-file-helper
+         (frame-val->dir head-frame-val)
+         (nthcdr (len (frame-val->path head-frame-val)) path)))
+       ((unless (equal retval *enoent*)) (mv file retval)))
+    (absfat-find-file (cdr frame) path)))
+
+;; This theorem is important, but not yet proved...
+#|
+(defthm
+  hifat-find-file-of-abs-collapse-1
+  (implies
+   (and (frame-p frame)
+        (no-duplicatesp-equal (strip-cars frame))
+        (abs-file-alist-p root)
+        (no-duplicatesp-equal (abs-addrs root))
+        (subsetp (abs-addrs root)
+                 (frame-addrs-root frame))
+        (abs-separate (frame-with-root root frame)))
+   (b*
+       (((mv fs result) (collapse root frame))
+        ((mv file error-code)
+         (absfat-find-file (frame-with-root root frame)
+                           path)))
+     (implies
+      (equal result t)
+      (and
+       (equal error-code
+              (mv-nth 1 (hifat-find-file fs path)))
+       (equal (abs-directory-file-p file)
+              (m1-directory-file-p
+               (mv-nth 1 (hifat-find-file fs path)))))))))
+|#
