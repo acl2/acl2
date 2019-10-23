@@ -17,7 +17,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
-(include-book "kestrel/std/system/tail-recursivep" :dir :system)
+(include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
@@ -1842,7 +1842,7 @@
                             (jblock-return body-expr)))
        (tailrecp (and (logicp fn wrld)
                       (= 1 (len (irecursivep fn wrld)))
-                      (tail-recursivep fn wrld)))
+                      (tail-recursive-p fn wrld)))
        (method-body (atj-post-translate method-name
                                         method-params
                                         method-body

@@ -123,7 +123,7 @@
                          symbol-symbol-alistp
                          symbol-package-name-lst
                          table-alist+
-                         tail-recursivep
+                         tail-recursive-p
                          trans-eval
                          tuplep
                          typed-tuplep

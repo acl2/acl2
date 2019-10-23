@@ -15,9 +15,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tail-recursivep ((fn (and (symbolp fn)
-                                  (= 1 (len (irecursivep fn wrld)))))
-                         (wrld plist-worldp))
+(define tail-recursive-p ((fn (and (symbolp fn)
+                                   (= 1 (len (irecursivep fn wrld)))))
+                          (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
   :parents (std/system/function-queries)
@@ -53,18 +53,18 @@
      and the body of the lambda expression passes the check.
      The body of the lambda expression is the last thing
      to be evaluated in the call."))
-  (tail-recursivep-aux fn (ubody fn wrld))
+  (tail-recursive-p-aux fn (ubody fn wrld))
 
   :prepwork
-  ((define tail-recursivep-aux ((fn symbolp) (term pseudo-termp))
+  ((define tail-recursive-p-aux ((fn symbolp) (term pseudo-termp))
      :returns (yes/no booleanp)
      :verify-guards nil
      (b* (((when (variablep term)) t)
           ((when (fquotep term)) t)
           ((when (eq (ffn-symb term) 'if))
            (and (not (ffnnamep fn (fargn term 1)))
-                (tail-recursivep-aux fn (fargn term 2))
-                (tail-recursivep-aux fn (fargn term 3))))
+                (tail-recursive-p-aux fn (fargn term 2))
+                (tail-recursive-p-aux fn (fargn term 3))))
           ((when (ffnnamep-lst fn (fargs term))) nil)
           ((when (symbolp (ffn-symb term))) t))
-       (tail-recursivep-aux fn (lambda-body (ffn-symb term)))))))
+       (tail-recursive-p-aux fn (lambda-body (ffn-symb term)))))))
