@@ -140,5 +140,6 @@
                          unsigned-byte-listp
                          upper-case-p
                          variablep
+                         std::defret-mutual
                          str::chars-in-charset-p
                          str::natstr)))

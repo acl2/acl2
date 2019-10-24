@@ -436,7 +436,13 @@
   :short "Lift @(tsee atj-type-annotate-var) to lists."
   (cond ((endp vars) nil)
         (t (cons (atj-type-annotate-var (car vars) (car types))
-                 (atj-type-annotate-vars (cdr vars) (cdr types))))))
+                 (atj-type-annotate-vars (cdr vars) (cdr types)))))
+  ///
+
+  (more-returns
+   (new-vars (equal (len new-vars)
+                    (len vars))
+             :name len-of-atj-type-annotate-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,14 +561,13 @@
    (xdoc::p
     "An annotated term is still a regular term,
      but it has a certain structure."))
-  :verify-guards nil
 
   (define atj-type-annotate-term ((term pseudo-termp)
                                   (required-type? maybe-atj-typep)
                                   (var-types symbol-atjtype-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :returns (mv (annotated-term "A @(tsee pseudo-termp).")
+    :returns (mv (annotated-term pseudo-termp :hyp :guard)
                  (resulting-type atj-typep :hyp :guard))
     (b* (((when (variablep term))
           (b* ((var term)
@@ -644,7 +649,14 @@
           (b* ((fn-type (atj-get-function-type fn guards$ wrld))
                (in-types (atj-function-type->inputs fn-type))
                (out-type (atj-function-type->output fn-type))
-               ((mv args &) (atj-type-annotate-terms (fargs term)
+               (args (fargs term))
+               ((unless (= (len in-types) (len args)))
+                (raise "Internal error: ~
+                        the function ~x0 has ~x1 arguments ~
+                        but a different number of input types ~x2."
+                       fn (len args) (len in-types))
+                (mv nil :value)) ; irrelevant
+               ((mv args &) (atj-type-annotate-terms args
                                                      in-types
                                                      var-types
                                                      guards$
@@ -676,7 +688,10 @@
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (int= (len terms) (len required-types?))
-    :returns (mv (annotated-terms "A @(tsee pseudo-term-listp).")
+    :returns (mv (annotated-terms (and (pseudo-term-listp annotated-terms)
+                                       (equal (len annotated-terms)
+                                              (len terms)))
+                                  :hyp :guard)
                  (resulting-types (and (atj-type-listp resulting-types)
                                        (equal (len resulting-types)
                                               (len terms)))
@@ -692,7 +707,37 @@
                                                     var-types
                                                     guards$
                                                     wrld)))
-      (mv (cons term terms) (cons type types)))))
+      (mv (cons term terms) (cons type types))))
+
+  :verify-guards nil ; done below
+  ///
+
+  (defret-mutual atj-type-annotate-term
+    (defret true-listp-of-atj-type-annotate-term.annotated-terms-aux
+      t
+      :rule-classes nil
+      :fn atj-type-annotate-term)
+    (defret true-listp-of-atj-type-annotate-term.annotated-terms
+      (true-listp annotated-terms)
+      :rule-classes :type-prescription
+      :fn atj-type-annotate-terms)
+    :hints ('(:expand ((atj-type-annotate-terms
+                        terms required-types? var-types guards$ wrld)))))
+
+  (defret-mutual atj-type-annotate-term
+    (defret true-listp-of-atj-type-annotate-term.resulting-types-aux
+      t
+      :rule-classes nil
+      :fn atj-type-annotate-term)
+    (defret true-listp-of-atj-type-annotate-term.resulting-types
+      (true-listp resulting-types)
+      :rule-classes :type-prescription
+      :fn atj-type-annotate-terms)
+    :hints ('(:expand ((atj-type-annotate-terms
+                        terms required-types? var-types guards$ wrld)))))
+
+  (verify-guards atj-type-annotate-term
+    :hints (("Goal" :expand ((pseudo-termp term))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
