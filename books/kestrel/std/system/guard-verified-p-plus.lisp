@@ -11,14 +11,11 @@
 (in-package "ACL2")
 
 (include-book "guard-verified-p")
-(include-book "function-namep")
-(include-book "theorem-namep")
+(include-book "theorem-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define guard-verified-p+ ((fn/thm (or (function-namep fn/thm wrld)
-                                       (theorem-namep fn/thm wrld)))
-                           (wrld plist-worldp))
+(define guard-verified-p+ ((fn/thm symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
@@ -27,5 +24,15 @@
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee guard-verified-p),
-    but it has a stronger guard.")
-  (guard-verified-p fn/thm wrld))
+    but it causes an error if called on a symbol
+    that does not name a function or theorem.")
+  (if (and (not (function-symbolp fn/thm wrld))
+           (not (theorem-symbolp fn/thm wrld)))
+      (raise "The symbol ~x0 does not name a function or theorem." fn/thm)
+    (guard-verified-p fn/thm wrld))
+  ///
+
+  (defthmd function/theorem-symbolp-when-guard-verified-p+
+    (implies (guard-verified-p+ fn/thm wrld)
+             (or (function-symbolp fn/thm wrld)
+                 (theorem-symbolp fn/thm wrld)))))
