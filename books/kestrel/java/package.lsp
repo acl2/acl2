@@ -69,6 +69,7 @@
                          implicate
                          implode
                          impossible
+                         index-of
                          irecursivep
                          known-packages
                          lambda-body
