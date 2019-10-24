@@ -416,6 +416,9 @@
       whose translation is @('(fn qc1 qc2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
       and each @('qc1'), @('qc2'), etc. is a quoted constant.
+      If @(':guards') is @('t'),
+      then the values of @('qc1'), @('qc2'), etc.
+      must satisfy the guard of @('fn').
       All the @('namej') strings must be distinct.")
     (xdoc::p
      "Each doublet @('(namej termj)') specifies a test,
