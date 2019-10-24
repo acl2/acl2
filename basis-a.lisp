@@ -7104,8 +7104,9 @@
                        (standard-co *the-live-state*) *the-live-state* nil)
                   (setf (cdr old-pair) ,init-form))
                  (t
-                  (update-user-stobj-alist (cons (cons ',name ,init-form)
-                                                 *user-stobj-alist*))))
+                  (setq *user-stobj-alist* ; update-user-stobj-alist
+                        (cons (cons ',name ,init-form)
+                              *user-stobj-alist*))))
            ',name))))))
 
 ; End of stobj support in raw lisp

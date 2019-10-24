@@ -72,6 +72,7 @@
 (include-book "true-listp")
 (include-book "update-nth")
 (include-book "list-defuns")
+(include-book "union")
 
 ; BOZO it might be best to move these disables into the corresponding
 ; books, to make things more consistent when you load the individual
