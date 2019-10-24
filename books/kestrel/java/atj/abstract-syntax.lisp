@@ -323,6 +323,56 @@
     :elementp-of-nil nil
     :pred jexpr-listp))
 
+(defines jexpr-vars
+  :short "Variables in a Java expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return all the names in name expressions.
+     The list is without duplicates but in no particular order."))
+
+  (define jexpr-vars ((expr jexprp))
+    :returns (vars string-listp)
+    (jexpr-case expr
+                :literal nil
+                :name (list expr.get)
+                :newarray (jexpr-vars expr.size)
+                :newarray-init (jexpr-list-vars expr.init)
+                :array (union-equal (jexpr-vars expr.array)
+                                    (jexpr-vars expr.index))
+                :newclass (jexpr-list-vars expr.args)
+                :field (jexpr-vars expr.target)
+                :method (jexpr-list-vars expr.args)
+                :smethod (jexpr-list-vars expr.args)
+                :imethod (union-equal (jexpr-vars expr.target)
+                                      (jexpr-list-vars expr.args))
+                :postinc (jexpr-vars expr.arg)
+                :postdec (jexpr-vars expr.arg)
+                :cast (jexpr-vars expr.arg)
+                :unary (jexpr-vars expr.arg)
+                :binary (union-equal (jexpr-vars expr.left)
+                                     (jexpr-vars expr.right))
+                :cond (union-equal (jexpr-vars expr.test)
+                                   (union-equal (jexpr-vars expr.then)
+                                                (jexpr-vars expr.else)))
+                :paren (jexpr-vars expr.get))
+    :measure (jexpr-count expr))
+
+  (define jexpr-list-vars ((exprs jexpr-listp))
+    :returns (vars string-listp)
+    (cond ((endp exprs) nil)
+          (t (union-equal (jexpr-vars (car exprs))
+                          (jexpr-list-vars (cdr exprs)))))
+    :measure (jexpr-list-count exprs))
+
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (local (include-book "std/lists/union" :dir :system))
+  (verify-guards jexpr-vars))
+
 (define jexpr-name-list ((names string-listp))
   :returns (exprs jexpr-listp)
   :short "Lift @(tsee jexpr-name) to lists."
