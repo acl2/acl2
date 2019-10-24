@@ -1043,10 +1043,11 @@
    :returns (mv (wires wire-list-p
                        :hyp (sv::svex-p svex))
                 (delayed sv::svarlist-p
-                         :hyp (sv::svex-p svex)))
+                         :hyp (sv::svex-p svex))
+                (success booleanp))
    (b* ((kind (sv::svex-kind svex)))
      (cond ((eq kind ':quote)
-            (mv nil nil))
+            (mv nil nil t))
            ((eq kind ':var)
             (progn$ (cw
                      "Reached a var that was not in a partsel ~p0 ~%"
@@ -1056,7 +1057,8 @@
                     (list (cons #\0 svex)))||#
                     (b* ((delayed (eql (sv::svar->delay svex) 1)))
                       (mv (if delayed nil (list `(,svex)))
-                          (if delayed (list svex) nil)))))
+                          (if delayed (list svex) nil)
+                          nil))))
            ((case-match svex (('sv::partsel start size sub-svex)
                               (and (sv::svar-p sub-svex)
                                    (natp start)
@@ -1067,7 +1069,8 @@
                  (svar (cadddr svex))
                  (delayed (eql (sv::svar->delay svar) 1)))
               (mv (if delayed nil (list `(,svar ,size . ,start)))
-                  (if delayed (list svar) nil))))
+                  (if delayed (list svar) nil)
+                  t)))
            (t
             (assign-to-occ-get-inputs-lst (cdr svex))))))
 
@@ -1075,16 +1078,18 @@
    :returns (mv (wires wire-list-p
                        :hyp (sv::svexlist-p lst))
                 (delayed sv::svarlist-p
-                         :hyp (sv::svexlist-p lst)))
+                         :hyp (sv::svexlist-p lst))
+                (success booleanp))
    (if (atom lst)
-       (mv nil nil)
-     (b* (((mv rest rest-delayed)
+       (mv nil nil t)
+     (b* (((mv rest rest-delayed success1)
            (assign-to-occ-get-inputs (car lst)))
-          ((mv rest2 rest-delayed2)
+          ((mv rest2 rest-delayed2 success2)
            (assign-to-occ-get-inputs-lst (cdr lst))))
        (mv (append rest rest2)
            (append rest-delayed
-                   rest-delayed2)))))
+                   rest-delayed2)
+           (and success1 success2)))))
 
  ///
 
@@ -1209,8 +1214,12 @@
 (define assign-to-occ ((lhs sv::lhs-p)
                        (rhs-svex sv::svex-p))
   (b* ((outs (lhs-to-svl-wirelist lhs))
-       ((mv ins prev-ins)
+       ((mv ins prev-ins success)
         (assign-to-occ-get-inputs rhs-svex))
+       (- (or success
+              (cw "Warning issued for this svex: ~p0 ~
+it may help to add a rewrite rule for this. ~%" rhs-svex)))
+
        (ins (assign-occ-unify-ins ins))
        (- (fast-alist-free ins)))
     (make-occ-assign
@@ -1604,8 +1613,11 @@
             (svex-simplify alias-svex
                            :svex-simplify-preloaded svex-simplify-preloaded
                            :runes nil))
-           ((mv ins prev-ins)
+           ((mv ins prev-ins success)
             (assign-to-occ-get-inputs alias-svex))
+           (- (or success
+              (cw "Warning issued for this svex when processing aliases: ~p0 ~
+it may help to add a rewrite rule for this. ~%" alias-svex)))
            (occ (make-occ-assign :inputs ins
                                  :delayed-inputs prev-ins
                                  :outputs `(,cur)
@@ -1617,7 +1629,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Create listeners...
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 ;; signals to occ listeners.
@@ -1828,7 +1839,7 @@
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -2301,13 +2312,16 @@
                           (state 'state))
   (declare (xargs :mode :program))
   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
-  (b* (((mv input-wires output-wires)
+  (b* ((- (cw "Now working on mod: ~p0 ~%" modname))
+       ((mv input-wires output-wires)
         (mv (cadr (assoc-equal modname vl-insouts))
             (cddr (assoc-equal modname vl-insouts))))
 
+       (- (cw "Processing alias-pairs... "))
        ;; Create aliasdb
        (aliasdb (mod-aliaspairs->aliasdb modname modalist mods-to-skip))
 
+       (- (cw "Creating occs... "))
        ;; Create occs
        ((mv occs rp::rp-state) (sv-mod->svl2-occs modname
                                                   modalist
@@ -2332,6 +2346,7 @@
                                                      svex-simplify-preloaded))
        (occs (append init-occs-for-aliased-inputs occs-for-outputs occs))
 
+       (- (cw "Sorting occs... "))
        ;; Create Listeners.
        (occs (make-fast-alist occs)) ;; necessary for occ-to-occ listeners.
        (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners occs 'sig-to-occ-listeners)))
@@ -2351,7 +2366,7 @@
        (- (fast-alist-free occs))
        (- (fast-alist-free sig-to-occ-listeners))
        (- (fast-alist-free occ-to-occ-listeners))
-
+       (- (cw "Done! ~% ~%"))
        (?module (cons modname
                       (make-svl2-module :inputs input-wires
                                         :delayed-inputs
@@ -2480,37 +2495,97 @@
               (get-string-modnames (cdr modnames)))
       (get-string-modnames (cdr modnames)))))
 
-(define svl2-flatten-design ((modnames sv::modnamelist-p)
-                             (sv-design sv::design-p)
+;; (str::strprefixp (concatenate 'string name "$") sv-module-name)
+
+(progn
+  (define fix-dont-aflatten-aux ((base stringp)
+                                 (sv-module-names string-listp))
+    :returns (res string-listp
+                  :hyp (string-listp sv-module-names))
+    (if (atom sv-module-names)
+        nil
+      (b* ((sv-module-name (car sv-module-names))
+           (rest (fix-dont-aflatten-aux base
+                                        (cdr sv-module-names))))
+        (if (str::strprefixp (concatenate 'string base "$") sv-module-name)
+            (cons sv-module-name
+                  rest)
+          rest))))
+
+  (local
+   (defthm string-listp-of-append
+     (implies (and (string-listp x)
+                   (string-listp y))
+              (string-listp (append x y)))))
+
+  (define fix-dont-flatten ((dont-flatten string-listp)
+                            (sv-module-names string-listp))
+    :returns (res string-listp :hyp (and (string-listp dont-flatten)
+                                         (string-listp sv-module-names)))
+    (if (atom dont-flatten)
+        nil
+      (b* ((extra-mod-names (fix-dont-aflatten-aux (car dont-flatten)
+                                                   sv-module-names)))
+        (append
+         extra-mod-names
+         (cons (car dont-flatten)
+               (fix-dont-flatten (cdr dont-flatten)
+                                 sv-module-names)))))))
+
+(define clean-dont-flatten ((dont-flatten string-listp)
+                            (all-modnames string-listp))
+  :returns (res string-listp
+                :hyp (string-listp dont-flatten))
+  (if (atom dont-flatten)
+      nil
+    (b* ((rest (clean-dont-flatten (cdr dont-flatten) all-modnames)))
+      (if (member-equal (car dont-flatten) all-modnames)
+          (cons (car dont-flatten)
+                rest)
+        rest))))
+
+(define svl2-flatten-design ((sv-design sv::design-p)
                              (vl-design)
                              &key
-                             (all-mods 'nil) ;; when t, no modules with a string
-                             ;; name is flattened.
                              (rp::rp-state 'rp::rp-state)
-                             (flatten 'nil)
+                             (dont-flatten 'nil) ;; names of modules that
+                             ;; should not be flattened. It should be the
+                             ;; original name of the module from Verilog
+                             ;; designs. (but not from SV designs)
                              (state 'state))
   (declare (xargs :mode :program))
   (b* (((sv::design sv-design) sv-design)
-       (modnames (if all-mods
-                     (get-string-modnames (strip-cars sv-design.modalist))
-                   (union-equal (list sv-design.top)
-                                modnames)))
-       (modnames (set-difference-equal modnames
-                                       flatten))
        (sv-design.modalist (make-fast-alist sv-design.modalist))
 
-       (vl-insouts (vl-design-to-insouts vl-design sv-design :skip-list flatten))
+       (all-modnames (get-string-modnames (strip-cars sv-design.modalist)))
+       (dont-flatten-all (equal dont-flatten ':all))
+       (dont-flatten (if dont-flatten-all
+                         all-modnames
+                       (fix-dont-flatten
+                        (union-equal (list sv-design.top) dont-flatten)
+                        all-modnames)))
+
+       (vl-insouts (vl-design-to-insouts vl-design
+                                         sv-design
+                                         (if dont-flatten-all nil dont-flatten)))
+
+       (dont-flatten
+        (if dont-flatten-all
+            all-modnames
+          (clean-dont-flatten dont-flatten all-modnames)))
+
        (vl-insouts (vl-insouts-insert-wire-sizes vl-insouts sv-design
-                                                 modnames))
+                                                 dont-flatten))
+
        (svex-simplify-preloaded (svex-simplify-preload
                                  :runes *svl2-flatten-simplify-lemmas*
                                  ))
-       (- (cw "Starting to flatten modules and create SVL2 design... ~%")) 
+       (- (cw "Starting to flatten modules and create SVL2 design... ~%"))
        ((mv modules rp::rp-state)
-        (svl2-flatten-mods modnames sv-design.modalist
-                           modnames vl-insouts
+        (svl2-flatten-mods dont-flatten sv-design.modalist
+                           dont-flatten vl-insouts
                            svex-simplify-preloaded))
-       (- (cw "Inserting ranks for unflattened modules to prove SVL2-run-cycle termination ~%"))
+       (- (cw "Inserting ranks to unflattened modules... ~%"))
        (ranks (svl2-mod-calculate-ranks sv-design.top
                                         modules
                                         nil
@@ -2518,7 +2593,7 @@
                                         (expt 2 30)))
        (modules (update-modules-with-ranks ranks
                                            modules))
-
+       (- (cw "All done! ~%"))
        (- (fast-alist-free sv-design.modalist))
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
     (mv modules rp::rp-state)))

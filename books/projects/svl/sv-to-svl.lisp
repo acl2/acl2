@@ -96,7 +96,7 @@
     :enabled t
     (and (consp wire)
          (stringp (car wire))
-         ;(sv::lhs-p (cdr wire))
+;(sv::lhs-p (cdr wire))
          ))
 
   (define module-occ-wire-fix (wire)
@@ -141,20 +141,19 @@
 (encapsulate
   nil
 
-
   (define stringlist*-p (list*)
     :enabled t
     (if (atom list*)
         (stringp list*)
       (and (stringp (car list*))
            (stringlist*-p (cdr list*)))))
-  
+
   (define occ-name-p (x)
     (declare (ignorable x))
     t; (not (booleanp x))
     #|(or (and (symbolp x)
-             (not (booleanp x)))
-        (stringlist*-p x))||#
+    (not (booleanp x)))
+    (stringlist*-p x))||#
     :returns (res booleanp))
 
   (define occ-name-fix (x)
@@ -347,7 +346,7 @@
             (and (not (equal porttype ':VL-INOUT))
                  success)))))
 
-  (defun vl-module-to-insouts (vl-module skip-list)
+  (defun vl-module-to-insouts (vl-module mod-names)
     (and
      (consp vl-module)
      (equal (car vl-module) ':VL-MODULE)
@@ -356,11 +355,12 @@
      (consp (caaadr vl-module))
      (b* ((smodule (caadr vl-module))
           (module-name (caaar smodule))
-          ((when (member-equal module-name
-                               skip-list))
+          ((when (and (not (member-equal module-name
+                                         mod-names))
+                      mod-names))
            nil)
           ((mv ins outs success1)
-           (vl-smodule-to-insouts (caadr smodule) ))
+           (vl-smodule-to-insouts (caadr smodule)))
           ((mv ins2 outs2 success2)
            (vl-ansi-ports-to-insouts
             (cdr (assoc-equal 'vl::ansi-ports
@@ -372,11 +372,11 @@
            be useful. ~%" module-name))))
        (list* module-name (append ins ins2) (append outs outs2)))))
 
-  (defun vl-modules-to-insouts (vl-modules skip-list)
+  (defun vl-modules-to-insouts (vl-modules mod-names)
     (if (atom vl-modules)
         nil
-      (b* ((cur (vl-module-to-insouts (car vl-modules) skip-list))
-           (rest (vl-modules-to-insouts (cdr vl-modules) skip-list)))
+      (b* ((cur (vl-module-to-insouts (car vl-modules) mod-names))
+           (rest (vl-modules-to-insouts (cdr vl-modules) mod-names)))
         (if cur
             (cons cur rest)
           rest))))
@@ -412,7 +412,7 @@
           (insouts-add-missing-modules insouts
                                        (cdr sv-modules))))))
 
-  (define vl-design-to-insouts (vl-design sv-design &key (skip-list 'nil))
+  (define vl-design-to-insouts (vl-design sv-design mod-names)
     :verify-guards nil
     (and (consp vl-design)
          (equal (car vl-design) ':VL-DESIGN)
@@ -423,7 +423,7 @@
          (or (equal (car (caaadr vl-design)) "VL Syntax 2016-08-26")
              (hard-error "VL Syntax version is different exiting just in case ~
   ~%" nil nil))
-         (b* ((insouts (vl-modules-to-insouts (cdr (caaadr vl-design)) skip-list))
+         (b* ((insouts (vl-modules-to-insouts (cdr (caaadr vl-design)) mod-names))
               (insouts (insouts-add-missing-modules insouts
                                                     (cdr (assoc-equal
                                                           'SV::MODALIST sv-design)))))
@@ -480,16 +480,18 @@
         nil
       (b* ((cur (car module-names))
            (this-vl-insouts (assoc-equal cur vl-insouts))
+           (rest (vl-insouts-insert-wire-sizes vl-insouts
+                                               sv-design
+                                               (cdr module-names)))
            ((unless this-vl-insouts)
-            (hard-error 'vl-insouts-insert-wire-sizes
-                        "Module name cannot be found in vl-insouts ~p0 ~%"
-                        (list (cons #\0 cur))))
+            rest)
            (modalist (sv::design->modalist sv-design))
            (sv-module (assoc-equal cur modalist))
+           (rest (vl-insouts-insert-wire-sizes vl-insouts
+                                               sv-design
+                                               (cdr module-names)))
            ((unless sv-module)
-            (hard-error 'vl-insouts-insert-wire-sizes
-                        "Module name cannot be found in modalist ~p0 ~%"
-                        (list (cons #\0 cur))))
+            rest)
            (sv-module (cdr sv-module))
            (wires (sv::module->wires sv-module))
            (ins (cadr this-vl-insouts))
@@ -500,8 +502,7 @@
               (vl-insouts-insert-wire-sizes vl-insouts
                                             sv-design
                                             (cdr module-names)))))))
-  
-  
+
 
 (defun svl-assoc (key alist is-fast-alist)
   (declare (xargs :guard (alistp alist)))
@@ -1639,7 +1640,7 @@
 
 (defun sv->svl (sv-design vl-design)
   (declare (xargs :mode :program))
-  (b* ((vl-insouts (vl-design-to-insouts vl-design sv-design))
+  (b* ((vl-insouts (vl-design-to-insouts vl-design sv-design nil))
        (sv-modules (cdr (assoc-equal 'sv::modalist sv-design)))
        (svl-modules (sv->svl-per-module sv-modules vl-insouts))
        (top-module-name (cdr (assoc-equal 'sv::TOP sv-design)))
