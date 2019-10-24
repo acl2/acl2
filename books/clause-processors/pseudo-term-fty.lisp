@@ -1591,6 +1591,16 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
     (def-ev-pseudo-term-fty-support-fn ',ev ',ev-list (w state))))
 
 
+;; Alternative to kwote-lst that produces (pseudo-term-quote elt) instead of (list 'quote elt).
+(defthmd kwote-lst-redef
+  (equal (kwote-lst x)
+         (if (atom x)
+             nil
+           (cons (pseudo-term-quote (car x))
+                 (kwote-lst (cdr x)))))
+  :hints(("Goal" :in-theory (enable pseudo-term-quote)))
+  :rule-classes :definition)
+
 
 (local
  (progn
