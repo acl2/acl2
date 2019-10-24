@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FGL")
-(include-book "rules")
+(include-book "binder-rules")
 
 ;; We want to add/remove runes from the fgl-rewrite-rules and
 ;; fgl-branch-merge-rules tables.  To do this properly, we need to know which
@@ -133,6 +133,25 @@
                "The name of a rewrite rule must either be a bare symbol or a ~
                 :rewrite, :definition, or :formula FGL rune -- ~x0 is not." name))))
 
+(defun fgl-binder-rune-lhses (rune world)
+  (declare (xargs :mode :program))
+  (cond ((eq (car rune) :bformula)
+         (b* ((rewrites (collect-cmr-rewrites-for-formula-name (cadr rune) world)))
+           (cmr::rewritelist->lhses rewrites)))
+        (t
+         (b* ((lemmas (collect-lemmas-for-rune `(:rewrite . ,(cdr rune)) world)))
+           (collect-lemma-lhses lemmas)))))
+
+(defun fgl-name-to-brewrite-rune (name)
+  (cond ((symbolp name) `(:bformula ,name))
+        ((and (consp name) (eq (car name) :rewrite))
+         `(:brewrite . ,(cdr name)))
+        ((and (consp name) (eq (car name) :formula))
+         `(:bformula . ,(cdr name)))
+        (t (er hard? 'fgl-name-to-rewrite-rune
+               "The name of a rewrite rule must either be a bare symbol or a ~
+                :rewrite, :definition, or :formula FGL rune -- ~x0 is not." name))))
+
 (define lhses->leading-function-syms ((lhses pseudo-term-listp))
   (b* (((when (atom lhses)) nil)
        (lhs (car lhses)))
@@ -160,6 +179,13 @@
                           (add-to-set-equal rune (fgl-branch-merge-rules-lookup (car fns) alist))
                           alist)))
     (branch-merge-alist-add-rune-entries (cdr fns) rune alist)))
+
+(defun binder-alist-add-rune-entries (fns rune alist)
+  (b* (((when (atom fns)) alist)
+       (alist (hons-acons (car fns)
+                          (add-to-set-equal rune (fgl-binder-rules-lookup (car fns) alist))
+                          alist)))
+    (binder-alist-add-rune-entries (cdr fns) rune alist)))
 
 ;; Need a separate version of this because we want to use fgl-rewrite-rules-lookup.
 (defun rewrite-alist-add-rune-entries (fns rune alist world)
@@ -218,6 +244,27 @@
     (alist-remove-rune-entries fns rune alist)))
 
 
+(defun add-fgl-brewrite-fn (name alist world)
+  (declare (xargs :mode :program))
+  (b* ((rune (fgl-name-to-brewrite-rune name))
+       (lhses (fgl-binder-rune-lhses rune world))
+       (fns (lhses->leading-function-syms lhses))
+       ((when (atom fns))
+        (er hard? 'add-fgl-rewrite-fn
+            "No valid rewrite rules found for ~x0" name)))
+    (binder-alist-add-rune-entries fns rune alist)))
+
+(defun remove-fgl-brewrite-fn (name alist world)
+  (declare (xargs :mode :program))
+  (b* ((rune (fgl-name-to-brewrite-rune name))
+       (lhses (fgl-binder-rune-lhses rune world))
+       (fns (lhses->leading-function-syms lhses))
+       ((when (atom fns))
+        (er hard? 'remove-fgl-rewrite-fn
+            "No valid rewrite rules found for ~x0" name)))
+    (alist-remove-rune-entries fns rune alist)))
+
+
 (defun add-fgl-rewrites-fn (names alist world)
   (declare (xargs :mode :program))
   (if (atom names)
@@ -250,6 +297,22 @@
                                 (remove-fgl-branch-merge-fn (car names) alist world)
                                 world)))
 
+(defun add-fgl-brewrites-fn (names alist world)
+  (declare (xargs :mode :program))
+  (if (atom names)
+      alist
+    (add-fgl-brewrites-fn (cdr names)
+                        (add-fgl-brewrite-fn (car names) alist world)
+                        world)))
+
+(defun remove-fgl-brewrites-fn (names alist world)
+  (declare (xargs :mode :program))
+  (if (atom names)
+      alist
+    (remove-fgl-brewrites-fn (cdr names)
+                           (remove-fgl-brewrite-fn (car names) alist world)
+                           world)))
+
 
 
 (defmacro add-fgl-rewrite (name)
@@ -274,6 +337,18 @@
   `(table fgl-branch-merge-rules
           nil
           (remove-fgl-branch-merge-fn ',name (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
+          :clear))
+
+(defmacro add-fgl-brewrite (name)
+  `(table fgl-binder-rules
+          nil
+          (add-fgl-brewrite-fn ',name (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
+          :clear))
+
+(defmacro remove-fgl-brewrite (name)
+  `(table fgl-binder-rules
+          nil
+          (remove-fgl-brewrite-fn ',name (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
           :clear))
 
 
@@ -301,6 +376,18 @@
           (remove-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
           :clear))
 
+(defmacro add-fgl-brewrites (&rest names)
+  `(table fgl-binder-rules
+          nil
+          (add-fgl-brewrites-fn ',names (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
+          :clear))
+
+(defmacro remove-fgl-brewrites (&rest names)
+  `(table fgl-binder-rules
+          nil
+          (remove-fgl-brewrites-fn ',names (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
+          :clear))
+
 (defmacro clean-fgl-rewrite-table ()
   `(table fgl-rewrite-rules
           nil
@@ -311,6 +398,12 @@
   `(table fgl-branch-merge-rules
           nil
           (fast-alist-clean (make-fast-alist (table-alist 'fgl-branch-merge-rules world)))
+          :clear))
+
+(defmacro clean-fgl-binder-table ()
+  `(table fgl-binder-rules
+          nil
+          (fast-alist-clean (make-fast-alist (table-alist 'fgl-binder-rules world)))
           :clear))
 
 
@@ -346,6 +439,23 @@
           (alist-remove-rune-entries '(,trigger-fn)
                                      ',(fgl-rune-meta meta-fn)
                                      (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
+          :clear))
+
+
+(defmacro add-fgl-binder-meta (trigger-fn meta-fn)
+  `(table fgl-binder-rules
+          nil
+          (binder-alist-add-rune-entries '(,trigger-fn)
+                                         ',(fgl-binder-rune-bmeta meta-fn)
+                                         (make-fast-alist (table-alist 'fgl-binder-rules world)))
+          :clear))
+
+(defmacro remove-fgl-binder-meta (trigger-fn meta-fn)
+  `(table fgl-binder-rules
+          nil
+          (alist-remove-rune-entries '(,trigger-fn)
+                                     ',(fgl-binder-rune-bmeta meta-fn)
+                                     (make-fast-alist (table-alist 'fgl-binder-rules world)))
           :clear))
 
 

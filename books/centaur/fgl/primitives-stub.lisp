@@ -489,16 +489,18 @@
                                             (interp-st->logicman interp-st))
                     (fgl-ev-context-equiv-forall-extensions
                      rhs-contexts
-                     var-val
-                     rhs (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st))))
+                     rhs-val
+                     rhs eval-alist)
+                    (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
+                    (pseudo-fnsym-p origfn))
                (equal (fgl-ev-context-fix contexts (fgl-ev (cons origfn
-                                                                 (cons (list 'quote var-val)
+                                                                 (cons (pseudo-term-quote rhs-val)
                                                                        (kwote-lst
                                                                         (fgl-objectlist-eval
                                                                          args env
                                                                          (interp-st->logicman interp-st)))))
                                                            nil))
-                      (fgl-ev-context-fix contexts var-val))))
+                      (fgl-ev-context-fix contexts rhs-val))))
 
     (deffixequiv fgl-binder-fncall-stub)))
 

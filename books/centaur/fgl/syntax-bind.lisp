@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-(include-book "centaur/meta/unify" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 (define bind-var (dummy-var val)
   :parents (fgl-rewrite-rules)
@@ -47,14 +47,14 @@ must be a variable that hasn't yet been bound during the application of the
 current rewrite rule.</p>"
   dummy-var)
 
-(define binder (dummy-var val)
+(define binder (val)
   :parents (fgl-rewrite-rules)
   :ignore-ok t
   :irrelevant-formals-ok t
   :enabled t
   :short "Form that can bind a free variable to the result of some (possibly
 nondeterministic) computation."
-  :long "<p>Logically, @('(binder var val)') just returns @('val').  However,
+  :long "<p>Logically, @('(binder val)') just returns @('val').  However,
 in FGL, the intended use is to bind a free variable in a rewrite rule to the
 result of some computation with some particular properties.  The @('val')
 argument must be a function @('bindingfn') whose first argument is @('var') and
@@ -67,7 +67,7 @@ which has either a binder rule of the following form:
 or else a binder metafunction associated.  In the first case (and assuming we
 are in an @('equiv1') equiv context),
 @({
- (binder var (bindingfn var val1 ... valn))
+ (binder (bindingfn var val1 ... valn))
  })
 results in @('var') being bound to the result of symbolically interpreting
 @('(binding-impl-term ...)') under the substitution binding @('argi') to

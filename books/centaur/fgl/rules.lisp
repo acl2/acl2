@@ -34,9 +34,24 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "centaur/meta/pseudo-rewrite-rule" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
+(include-book "arith-base") ;; for unequiv
 (local (include-book "std/lists/append" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 ;; (include-book "def-fgl-rewrite")
+
+
+(local (in-theory (disable pseudo-termp
+                           pseudo-term-listp
+                           acl2::pseudo-termp-opener)))
+
+(defevaluator rules-ev rules-ev-list
+  ((equal x y) (iff x y) (if x y z) (implies x y) (not x) (typespec-check ts x)
+   (unequiv x y))
+  :namedp t)
+
+(acl2::def-meta-extract rules-ev rules-ev-list)
+(acl2::def-ev-pseudo-term-fty-support rules-ev rules-ev-list)
+
 
 (fty::deftagsum fgl-rune
   (:rewrite (name))
@@ -89,6 +104,7 @@
 
 (define fgl-rule-term ((x fgl-rule-p))
   :returns (term pseudo-termp)
+  :prepwork ((local (in-theory (enable pseudo-termp))))
   (fgl-rule-case x
     :rewrite `(implies ,(conjoin x.hyps)
                        (,x.equiv ,x.lhs ,x.rhs))
@@ -101,52 +117,100 @@
     (cons (fgl-rule-term (car x))
           (fgl-rulelist-terms (cdr x)))))
 
-(define mextract-good-fgl-rule-p ((x fgl-rule-p))
-  (acl2::mextract-ev-theoremp (fgl-rule-term x)))
+(define rules-ev-good-fgl-rule-p ((x fgl-rule-p))
+  (rules-ev-theoremp (fgl-rule-term x)))
 
 (local
- (defthmd mextract-ev-when-theoremp
-   (implies (acl2::mextract-ev-theoremp x)
-            (acl2::mextract-ev x a))
-   :hints (("goal" :use acl2::mextract-ev-falsify))))
+ (defthmd rules-ev-ev-when-theoremp
+   (implies (rules-ev-theoremp x)
+            (rules-ev x a))
+   :hints (("goal" :use rules-ev-falsify))))
 
-(define mextract-good-fgl-rules-p ((x fgl-rulelist-p))
+(define rules-ev-good-fgl-rules-p ((x fgl-rulelist-p))
   (if (atom x)
       t
-    (and (mextract-good-fgl-rule-p (car x))
-         (mextract-good-fgl-rules-p (cdr x))))
+    (and (rules-ev-good-fgl-rule-p (car x))
+         (rules-ev-good-fgl-rules-p (cdr x))))
   ///
-  (defthm mextract-good-fgl-rules-p-implies-conjoin-fgl-rulelist-terms
-    (implies (mextract-good-fgl-rules-p x)
-             (acl2::mextract-ev (conjoin (fgl-rulelist-terms x)) env))
+  (defthm rules-ev-good-fgl-rules-p-implies-conjoin-fgl-rulelist-terms
+    (implies (rules-ev-good-fgl-rules-p x)
+             (rules-ev (conjoin (fgl-rulelist-terms x)) env))
     :hints(("Goal" :in-theory (enable fgl-rulelist-terms
-                                      mextract-good-fgl-rule-p
-                                      mextract-ev-when-theoremp))))
+                                      rules-ev-good-fgl-rule-p
+                                      rules-ev-ev-when-theoremp))))
 
-  (defthm mextract-good-fgl-rules-p-when-theoremp-conjoin
-    (implies (acl2::mextract-ev-theoremp (conjoin (fgl-rulelist-terms x)))
-             (mextract-good-fgl-rules-p x))
+  (defthm rules-ev-good-fgl-rules-p-when-theoremp-conjoin
+    (implies (rules-ev-theoremp (conjoin (fgl-rulelist-terms x)))
+             (rules-ev-good-fgl-rules-p x))
     :hints(("Goal" :in-theory (enable fgl-rulelist-terms
-                                      mextract-good-fgl-rule-p
-                                      mextract-ev-when-theoremp))))
+                                      rules-ev-good-fgl-rule-p
+                                      rules-ev-ev-when-theoremp))))
 
-  (defthm mextract-good-fgl-rules-p-of-append
-    (implies (and (mextract-good-fgl-rules-p x)
-                  (mextract-good-fgl-rules-p y))
-             (mextract-good-fgl-rules-p (append x y)))))
+  (defthm rules-ev-good-fgl-rules-p-of-append
+    (implies (and (rules-ev-good-fgl-rules-p x)
+                  (rules-ev-good-fgl-rules-p y))
+             (rules-ev-good-fgl-rules-p (append x y)))))
 
 (local (in-theory (disable acl2::rewrite-rule-term)))
 
-(define mextract-good-rewrite-rule-alistp (x)
+(define rules-ev-good-rewrite-rulesp (rules)
+  (if (atom rules)
+      t
+    (and (rules-ev-theoremp (acl2::rewrite-rule-term (car rules)))
+         (rules-ev-good-rewrite-rulesp (cdr rules))))
+  ///
+  (defthm rules-ev-good-rewrite-rulesp-of-cons
+    (equal (rules-ev-good-rewrite-rulesp (cons a b))
+           (and (rules-ev-theoremp (acl2::rewrite-rule-term a))
+                (rules-ev-good-rewrite-rulesp b))))
+
+  (defthm rules-ev-good-rewrite-rulesp-of-cdr
+    (implies (rules-ev-good-rewrite-rulesp x)
+             (rules-ev-good-rewrite-rulesp (cdr x))))
+
+  (defthm rules-ev-of-car-when-good-rewrite-rulesp
+    (implies (and (rules-ev-good-rewrite-rulesp x) (consp x))
+             (rules-ev (acl2::rewrite-rule-term (car x)) a))
+    :hints(("Goal" :in-theory (disable acl2::rewrite-rule-term)
+            :expand ((rules-ev-good-rewrite-rulesp x))
+            :use ((:instance rules-ev-falsify
+                   (x (acl2::rewrite-rule-term (car x))) (a a))))))
+
+  (local (defun rules-ev-good-rewrite-rulesp-badguy (rules)
+           (if (atom rules)
+               nil
+             (if (rules-ev-theoremp (acl2::rewrite-rule-term (car rules)))
+                 (rules-ev-good-rewrite-rulesp-badguy (cdr rules))
+               (car rules)))))
+
+  (local (defthmd rules-ev-good-rewrite-rulesp-by-badguy
+           (iff (rules-ev-good-rewrite-rulesp rules)
+                (b* ((badguy (rules-ev-good-rewrite-rulesp-badguy rules)))
+                  (or (not (member badguy rules))
+                      (rules-ev-theoremp (acl2::rewrite-rule-term badguy)))))))
+
+
+  (defthm rules-ev-good-rewrite-rulesp-of-lemmas
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (equal wrld (w state)))
+             (rules-ev-good-rewrite-rulesp (fgetprop fn 'acl2::lemmas nil wrld)))
+    :hints(("Goal" :in-theory (e/d (rules-ev-good-rewrite-rulesp-by-badguy)
+                                   (rules-ev-good-rewrite-rulesp
+                                    rules-ev-good-rewrite-rulesp-badguy
+                                    acl2::rewrite-rule-term
+                                    w))
+            :do-not-induct t))))
+
+(define rules-ev-good-rewrite-rule-alistp (x)
   (if (atom x)
       t
     (and (or (atom (car x))
-             (mextract-good-rewrite-rulesp (cdar x)))
-         (mextract-good-rewrite-rule-alistp (cdr x))))
+             (rules-ev-good-rewrite-rulesp (cdar x)))
+         (rules-ev-good-rewrite-rule-alistp (cdr x))))
   ///
-  (defthm lookup-when-mextract-good-rewrite-rule-alistp
-    (implies (mextract-good-rewrite-rule-alistp x)
-             (mextract-good-rewrite-rulesp (cdr (hons-assoc-equal k x))))))
+  (defthm lookup-when-rules-ev-good-rewrite-rule-alistp
+    (implies (rules-ev-good-rewrite-rule-alistp x)
+             (rules-ev-good-rewrite-rulesp (cdr (hons-assoc-equal k x))))))
 
 (define map-rewrite-rules (lemmas map-acc)
   (b* (((when (atom lemmas)) map-acc)
@@ -158,11 +222,11 @@
        (map-acc (hons-acons (cadr lemma) (cons lemma rest) map-acc)))
     (map-rewrite-rules (cdr lemmas) map-acc))
   ///
-  (defthm mextract-good-rewrite-rulesp-of-map-rewrite-rules
-    (implies (and (mextract-good-rewrite-rulesp lemmas)
-                  (mextract-good-rewrite-rule-alistp map-acc))
-             (mextract-good-rewrite-rule-alistp (map-rewrite-rules lemmas map-acc)))
-    :hints(("Goal" :in-theory (enable mextract-good-rewrite-rulesp mextract-good-rewrite-rule-alistp)))))
+  (defthm rules-ev-good-rewrite-rulesp-of-map-rewrite-rules
+    (implies (and (rules-ev-good-rewrite-rulesp lemmas)
+                  (rules-ev-good-rewrite-rule-alistp map-acc))
+             (rules-ev-good-rewrite-rule-alistp (map-rewrite-rules lemmas map-acc)))
+    :hints(("Goal" :in-theory (enable rules-ev-good-rewrite-rulesp rules-ev-good-rewrite-rule-alistp)))))
 
 (local (defthm pseudo-fnsym-p-by-symbolp
          (implies (and (symbolp x)
@@ -184,10 +248,10 @@
                                           :lhs x.lhs
                                           :rhs x.rhs))))
   ///
-  (defret mextract-good-fgl-rule-p-of-<fn>
+  (defret rules-ev-good-fgl-rule-p-of-<fn>
     (implies (not errmsg)
-             (equal (acl2::mextract-ev (fgl-rule-term rule) env)
-                    (acl2::mextract-ev (acl2::rewrite-rule-term x) env)))
+             (equal (rules-ev (fgl-rule-term rule) env)
+                    (rules-ev (acl2::rewrite-rule-term x) env)))
     :hints(("Goal" :in-theory (enable fgl-rule-term
                                       cmr::rewrite-rule-term-alt-def)))))
 
@@ -200,12 +264,12 @@
     (mv (or err err2)
         (if err rest (cons rule rest))))
   ///
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (mextract-good-rewrite-rulesp lemmas)
-             (mextract-good-fgl-rules-p rules))
-    :hints(("Goal" :in-theory (enable mextract-good-fgl-rules-p
-                                      mextract-good-fgl-rule-p
-                                      mextract-good-rewrite-rulesp)))))
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (rules-ev-good-rewrite-rulesp lemmas)
+             (rules-ev-good-fgl-rules-p rules))
+    :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p
+                                      rules-ev-good-fgl-rule-p
+                                      rules-ev-good-rewrite-rulesp)))))
 
 (define fgl-rules-from-rewrite (rune (fgl-rune fgl-rune-p) fn-lemma-map)
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
@@ -214,18 +278,18 @@
   (b* ((rw (cdr (hons-get rune fn-lemma-map))))
     (fgl-rules-from-lemmas fgl-rune rw))
   ///
-  (defret mextract-good-fgl-rule-p-of-<fn>
-    (implies (mextract-good-rewrite-rule-alistp fn-lemma-map)
-             (mextract-good-fgl-rules-p rules))))
+  (defret rules-ev-good-fgl-rule-p-of-<fn>
+    (implies (rules-ev-good-rewrite-rule-alistp fn-lemma-map)
+             (rules-ev-good-fgl-rules-p rules))))
 
 #!cmr
-(defret mextract-ev-of-parse-rewrites-from-term
-  (implies (acl2::mextract-ev x env)
-           (acl2::mextract-ev (conjoin (cmr::rewritelist-terms rewrites)) env))
+(defret rules-ev-of-parse-rewrites-from-term
+  (implies (fgl::rules-ev x env)
+           (fgl::rules-ev (conjoin (cmr::rewritelist-terms rewrites)) env))
   :hints (("goal" :use ((:functional-instance parse-rw-ev-of-parse-rewrites-from-term
-                         (parse-rw-ev acl2::mextract-ev)
-                         (parse-rw-ev-list acl2::mextract-ev-lst)))
-           :in-theory (enable acl2::mextract-ev-of-fncall-args)))
+                         (parse-rw-ev fgl::rules-ev)
+                         (parse-rw-ev-list fgl::rules-ev-list)))
+           :in-theory (enable fgl::rules-ev-of-fncall-args)))
   :fn parse-rewrites-from-term)
 
 
@@ -239,9 +303,9 @@
                                                     :equiv x.equiv)
                            :rune rune))
   ///
-  (defret mextract-ev-of-<fn>
-    (equal (acl2::mextract-ev (fgl-rule-term rule) env)
-           (acl2::mextract-ev (cmr::rewrite-term x) env))
+  (defret rules-ev-ev-of-<fn>
+    (equal (rules-ev (fgl-rule-term rule) env)
+           (rules-ev (cmr::rewrite-term x) env))
     :hints(("Goal" :in-theory (enable fgl-rule-term cmr::rewrite-term)))))
 
 (define fgl-rules-from-cmr-rewrites ((rune fgl-rune-p) (x cmr::rewritelist-p))
@@ -251,10 +315,16 @@
     (cons (fgl-rule-from-cmr-rewrite rune (car x))
           (fgl-rules-from-cmr-rewrites rune (cdr x))))
   ///
-  (defret mextract-ev-of-<fn>
-    (iff (acl2::mextract-ev (conjoin (fgl-rulelist-terms rules)) env)
-         (acl2::mextract-ev (conjoin (cmr::rewritelist-terms x)) env))
+  (defret rules-ev-ev-of-<fn>
+    (iff (rules-ev (conjoin (fgl-rulelist-terms rules)) env)
+         (rules-ev (conjoin (cmr::rewritelist-terms x)) env))
     :hints(("Goal" :in-theory (enable cmr::rewritelist-terms fgl-rulelist-terms)))))
+
+(local
+ (defthmd rules-ev-when-theoremp
+   (implies (rules-ev-theoremp x)
+            (rules-ev x a))
+   :hints (("goal" :use rules-ev-falsify))))
 
 (define fgl-rules-from-formula ((form pseudo-termp)
                                 (fgl-rune fgl-rune-p)
@@ -264,15 +334,11 @@
   (b* (((mv err rewrites) (cmr::parse-rewrites-from-term form world)))
     (mv err (fgl-rules-from-cmr-rewrites fgl-rune rewrites)))
   ///
-  (local (defthm mextract-ev-falsify-rw
-           #!acl2
-           (implies (mextract-ev x (mextract-ev-falsify x))
-                    (mextract-ev x a))
-           :hints (("goal" :use acl2::mextract-ev-falsify))))
 
-  (defret mextract-good-fgl-rule-p-of-<fn>
-    (implies (acl2::mextract-ev-theoremp form)
-             (mextract-good-fgl-rules-p rules))))
+  (defret rules-ev-good-fgl-rule-p-of-<fn>
+    (implies (rules-ev-theoremp form)
+             (rules-ev-good-fgl-rules-p rules))
+    :hints(("Goal" :in-theory (enable rules-ev-when-theoremp)))))
 
 
 (local (in-theory (disable w)))
@@ -313,15 +379,15 @@
            :hints(("Goal" :use ((:instance fgl-rule-p-of-rune (x (fgl-rune-fix x))))
                    :in-theory (disable fgl-rule-p-of-rune)))))
 
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (and (mextract-good-rewrite-rule-alistp fn-lemma-map)
-                  (acl2::mextract-ev-global-facts)
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (and (rules-ev-good-rewrite-rule-alistp fn-lemma-map)
+                  (rules-ev-meta-extract-global-facts)
                   (equal world (w state)))
-             (mextract-good-fgl-rules-p rules))
+             (rules-ev-good-fgl-rules-p rules))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable mextract-good-fgl-rules-p)))
+                 '(:in-theory (enable rules-ev-good-fgl-rules-p)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable mextract-good-fgl-rule-p))))))
+                 '(:in-theory (enable rules-ev-good-fgl-rule-p))))))
 
 (define fgl-rules-from-runes ((runes fgl-runelist-p) (fn-lemma-map) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
@@ -331,12 +397,12 @@
        ((mv errmsg2 rest) (fgl-rules-from-runes (cdr runes) fn-lemma-map world)))
     (mv (or errmsg1 errmsg2) (append rules1 rest)))
   ///
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (and (mextract-good-rewrite-rule-alistp fn-lemma-map)
-                  (acl2::mextract-ev-global-facts)
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (and (rules-ev-good-rewrite-rule-alistp fn-lemma-map)
+                  (rules-ev-meta-extract-global-facts)
                   (equal world (w state)))
-             (mextract-good-fgl-rules-p rules))
-    :hints(("Goal" :in-theory (enable mextract-good-fgl-rules-p)))))
+             (rules-ev-good-fgl-rules-p rules))
+    :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
 (define fgl-rules-filter-leading-fnsym ((fn pseudo-fnsym-p) (x fgl-rulelist-p))
   :returns (new-x fgl-rulelist-p)
@@ -354,10 +420,10 @@
               (fgl-rules-filter-leading-fnsym fn (cdr x)))))
     (fgl-rules-filter-leading-fnsym fn (cdr x)))
   ///
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (mextract-good-fgl-rules-p x)
-             (mextract-good-fgl-rules-p new-x))
-    :hints(("Goal" :in-theory (enable mextract-good-fgl-rules-p)))))
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (rules-ev-good-fgl-rules-p x)
+             (rules-ev-good-fgl-rules-p new-x))
+    :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
 (define fgl-rewrite-rules-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
   (b* ((look (hons-get (pseudo-fnsym-fix fn) alist)))
@@ -385,10 +451,10 @@
         (fgl-rules-from-runes runes map world)))
     (mv err (fgl-rules-filter-leading-fnsym fn rules1)))
   ///
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (and (acl2::mextract-ev-global-facts)
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (and (rules-ev-meta-extract-global-facts)
                   (equal world (w state)))
-             (mextract-good-fgl-rules-p rules)))
+             (rules-ev-good-fgl-rules-p rules)))
 
   (memoize 'fgl-function-rules))
 
@@ -420,10 +486,10 @@
          (cons (fgl-rule-fix (car x)) (fgl-rules-filter-branch-fnsym fn (cdr x))))
         (t (fgl-rules-filter-branch-fnsym fn (cdr x))))
   ///
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (mextract-good-fgl-rules-p x)
-             (mextract-good-fgl-rules-p new-x))
-    :hints(("Goal" :in-theory (enable mextract-good-fgl-rules-p)))))
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (rules-ev-good-fgl-rules-p x)
+             (rules-ev-good-fgl-rules-p new-x))
+    :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
 (define fgl-branch-merge-rules-lookup ((fn pseudo-fnsym-p) (alist))
   (cdr (hons-get (pseudo-fnsym-fix fn) alist)))
@@ -444,10 +510,10 @@
        ((mv errmsg rules1) (fgl-rules-from-runes runes map world)))
     (mv errmsg (fgl-rules-filter-branch-fnsym fn rules1)))
   ///
-  (defret mextract-good-fgl-rules-p-of-<fn>
-    (implies (and (acl2::mextract-ev-global-facts)
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (and (rules-ev-meta-extract-global-facts)
                   (equal world (w state)))
-             (mextract-good-fgl-rules-p rules)))
+             (rules-ev-good-fgl-rules-p rules)))
 
   (memoize 'fgl-branch-merge-rules))
 

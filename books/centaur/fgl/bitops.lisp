@@ -37,6 +37,7 @@
 (include-book "syntax-bind")
 (include-book "fgl-object")
 (include-book "centaur/misc/starlogic" :dir :system)
+(include-book "checks")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (disable-definition intcons)
@@ -80,23 +81,22 @@
   (equal (intcdr (intcons x y))
          (ifix y)))
 
-(define check-int-endp (x xsyn)
-  :verify-guards nil
-  (and (fgl-int-endp xsyn)
-       (int-endp x))
-  ///
-  (defthm check-int-endp-open
-    (iff (check-int-endp x xsyn)
-         (and* (fgl-int-endp xsyn)
-               (int-endp x)))))
+;; (define check-int-endp (x xsyn)
+;;   :verify-guards nil
+;;   (and (fgl-int-endp xsyn)
+;;        (int-endp x))
+;;   ///
+;;   (defthm check-int-endp-open
+;;     (iff (check-int-endp! x xsyn)
+;;          (and* (fgl-int-endp xsyn)
+;;                (int-endp x)))))
 
 (disable-definition lognot)
 
 (def-fgl-rewrite fgl-lognot
   (equal (lognot x)
          (b* ((x (int x))
-              (xsyn (syntax-bind xsyn (g-concrete x)))
-              ((when (check-int-endp x xsyn)) (endint (not (intcar x)))))
+              ((when (check-int-endp! x-endp x)) (endint (not (intcar x)))))
            (intcons (not (intcar x))
                     (lognot (intcdr x)))))
   :hints(("Goal" :in-theory (enable bitops::lognot** int-endp))))
@@ -108,10 +108,8 @@
   (equal (logand x y)
          (b* ((x (int x))
               (y (int y))
-              (xsyn (syntax-bind xsyn (g-concrete x)))
-              (ysyn (syntax-bind ysyn (g-concrete y)))
-              ((when (check-int-endp x xsyn)) (if (intcar x) y 0))
-              ((when (check-int-endp y ysyn)) (if (intcar y) x 0)))
+              ((when (check-int-endp! x-endp x)) (if (intcar x) y 0))
+              ((when (check-int-endp! y-endp y)) (if (intcar y) x 0)))
            (intcons (and (intcar x)
                          (intcar y)
                          t)
@@ -124,10 +122,8 @@
   (equal (logior x y)
          (b* ((x (int x))
               (y (int y))
-              (xsyn (syntax-bind xsyn (g-concrete x)))
-              (ysyn (syntax-bind ysyn (g-concrete y)))
-              ((when (check-int-endp x xsyn)) (if (intcar x) -1 y))
-              ((when (check-int-endp y ysyn)) (if (intcar y) -1 x)))
+              ((when (check-int-endp! x-endp x)) (if (intcar x) -1 y))
+              ((when (check-int-endp! y-endp y)) (if (intcar y) -1 x)))
            (intcons (or (intcar x)
                         (intcar y)
                         nil)
@@ -140,10 +136,8 @@
   (equal (logxor x y)
          (b* ((x (int x))
               (y (int y))
-              (xsyn (syntax-bind xsyn (g-concrete x)))
-              (ysyn (syntax-bind ysyn (g-concrete y)))
-              ((when (check-int-endp x xsyn)) (if (intcar x) (lognot y) y))
-              ((when (check-int-endp y ysyn)) (if (intcar y) (lognot x) x)))
+              ((when (check-int-endp! x-endp x)) (if (intcar x) (lognot y) y))
+              ((when (check-int-endp! y-endp y)) (if (intcar y) (lognot x) x)))
            (intcons (xor (intcar x)
                          (intcar y))
                     (logxor (intcdr x) (intcdr y)))))
@@ -156,10 +150,8 @@
   (equal (logeqv x y)
          (b* ((x (int x))
               (y (int y))
-              (xsyn (syntax-bind xsyn (g-concrete x)))
-              (ysyn (syntax-bind ysyn (g-concrete y)))
-              ((when (check-int-endp x xsyn)) (if (intcar x) y (lognot y)))
-              ((when (check-int-endp y ysyn)) (if (intcar y) x (lognot x))))
+              ((when (check-int-endp! x-endp x)) (if (intcar x) y (lognot y)))
+              ((when (check-int-endp! y-endp y)) (if (intcar y) x (lognot x))))
            (intcons (iff (intcar x)
                          (intcar y))
                     (logeqv (intcdr x) (intcdr y)))))
@@ -183,57 +175,57 @@
   (implies (and (syntaxp (fgl-object-case x :g-integer))
                 (integerp x))
            (equal (< x 0)
-                  (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+                  (b* ((x-endp (check-int-endp! x-endp x))
                        ((when x-endp)
                         (intcar x)))
                     (< (intcdr x) 0))))
   :hints(("Goal" :in-theory (enable int-endp))))
 
-(define check-signed-byte-p (n x)
-  (signed-byte-p n x))
+;; (define check-signed-byte-p (n x)
+;;   (signed-byte-p n x))
 
-(disable-definition check-signed-byte-p)
+;; (disable-definition check-signed-byte-p)
 
-(def-fgl-rewrite check-signed-byte-p-by-syntax-when-const-width
-  (implies (and (syntaxp (and (fgl-object-case x :g-integer)
-                              (fgl-object-case n :g-concrete)))
-                (integerp x)
-                (posp n))
-           (equal (check-signed-byte-p n x)
-                  (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
-                       ((when x-endp) t)
-                       (rest (check-signed-byte-p (1- n) (intcdr x)))
-                       ((when (and (syntax-bind rest-t (eq rest t))
-                                   (eq rest t)))
-                        t))
-                    (abort-rewrite (check-signed-byte-p n x)))))
-  :hints(("Goal" :in-theory (e/d (check-signed-byte-p
-                                  bitops::signed-byte-p**
-                                  int-endp)
-                                 (signed-byte-p)))))
+;; (def-fgl-rewrite check-signed-byte-p-by-syntax-when-const-width
+;;   (implies (and (syntaxp (and (fgl-object-case x :g-integer)
+;;                               (fgl-object-case n :g-concrete)))
+;;                 (integerp x)
+;;                 (posp n))
+;;            (equal (check-signed-byte-p! n x)
+;;                   (b* ((x-endp (check-int-endp! x-endp x))
+;;                        ((when x-endp) t)
+;;                        (rest (check-signed-byte-p! (1- n) (intcdr x)))
+;;                        ((when (and (syntax-bind rest-t (eq rest t))
+;;                                    (eq rest t)))
+;;                         t))
+;;                     (abort-rewrite (check-signed-byte-p! n x)))))
+;;   :hints(("Goal" :in-theory (e/d (check-signed-byte-p!
+;;                                   bitops::signed-byte-p**
+;;                                   int-endp)
+;;                                  (signed-byte-p)))))
 
-(define check-unsigned-byte-p (n x)
-  (unsigned-byte-p n x))
+;; (define check-unsigned-byte-p (n x)
+;;   (unsigned-byte-p n x))
 
-(disable-definition check-unsigned-byte-p)
+;; (disable-definition check-unsigned-byte-p)
 
-(def-fgl-rewrite check-unsigned-byte-p-by-syntax-when-const-width
-  (implies (and (syntaxp (and (fgl-object-case x :g-integer)
-                              (fgl-object-case n :g-concrete)))
-                (integerp x)
-                (natp n))
-           (equal (check-unsigned-byte-p n x)
-                  (b* ((x-endp (check-int-endp x (syntax-bind xsyn (g-concrete x))))
-                       ((when x-endp) (not (intcar x)))
-                       (rest (check-unsigned-byte-p (1- n) (intcdr x)))
-                       ((when (and (syntax-bind rest-t (eq rest t))
-                                   (eq rest t)))
-                        t))
-                    (abort-rewrite (check-unsigned-byte-p n x)))))
-  :hints(("Goal" :in-theory (e/d (check-unsigned-byte-p
-                                  bitops::unsigned-byte-p**
-                                  int-endp)
-                                 (unsigned-byte-p)))))
+;; (def-fgl-rewrite check-unsigned-byte-p-by-syntax-when-const-width
+;;   (implies (and (syntaxp (and (fgl-object-case x :g-integer)
+;;                               (fgl-object-case n :g-concrete)))
+;;                 (integerp x)
+;;                 (natp n))
+;;            (equal (check-unsigned-byte-p! n x)
+;;                   (b* ((x-endp (check-int-endp! x-endp x))
+;;                        ((when x-endp) (not (intcar x)))
+;;                        (rest (check-unsigned-byte-p! (1- n) (intcdr x)))
+;;                        ((when (and (syntax-bind rest-t (eq rest t))
+;;                                    (eq rest t)))
+;;                         t))
+;;                     (abort-rewrite (check-unsigned-byte-p! n x)))))
+;;   :hints(("Goal" :in-theory (e/d (check-unsigned-byte-p!
+;;                                   bitops::unsigned-byte-p**
+;;                                   int-endp)
+;;                                  (unsigned-byte-p)))))
 
 (disable-definition acl2::loghead$inline)
 
@@ -241,7 +233,7 @@
   (implies (syntaxp (integerp n))
            (equal (loghead n x)
                   (if (or (zp n)
-                          (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                          (and (check-int-endp! x-endp x)
                                (not (intcar x))))
                       0
                     (intcons (and (intcar x) t)
@@ -256,7 +248,7 @@
            (equal (logext n x)
                   (cond ((or (zp n)
                              (eql n 1)
-                             (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+                             (check-int-endp! x-endp x))
                          (endint (and (intcar x) t)))
                         (t (intcons (and (intcar x) t)
                                     (logext (1- n) (intcdr x)))))))
@@ -269,7 +261,7 @@
   (implies (syntaxp (integerp n))
            (equal (logtail n x)
                   (if (or (zp n)
-                          (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+                          (check-int-endp! x-endp x))
                       (int x)
                     (logtail (1- n) (intcdr x)))))
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
@@ -428,7 +420,7 @@
                   (natp shift-width)
                   (integerp shift-rev))
              (equal (logtail-helper shift-rev shift-width x)
-                    (b*  (((when (or (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                    (b*  (((when (or (check-int-endp! x-endp x)
                                      (eql 0 shift-width)))
                            (int x)))
                       (if (intcar shift-rev)
@@ -446,6 +438,14 @@
                 '(:in-theory (enable logapp
                                      bitops::expt-2-is-ash)))))
 
+  (local (defthm loghead-when-gte-integer-length
+           (implies (and (natp x)
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (loghead n x) x))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
   (def-fgl-rewrite logtail-to-logtail-helper
     (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logtail n x)
@@ -453,11 +453,8 @@
                          (n (nfix (int n)))
                          ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logtail n x))
-                         (n-width (syntax-bind n-width (fgl-object-case n
-                                                         :g-integer (max 0 (1- (len n.bits)))
-                                                         :otherwise nil)))
-                         ((unless (and n-width
-                                       (check-unsigned-byte-p n-width n)))
+                         (n-width (integer-length-bound! n-width n))
+                         ((unless n-width)
                           (abort-rewrite (logtail n x)))
                          (n-rev (int-revapp n-width n 0)))
                       (logtail-helper n-rev n-width x))))
@@ -467,29 +464,30 @@
 
 
 
-(define gobj-both-endp-and-same ((x fgl-object-p) (y fgl-object-p))
-  (b* (((mv xok xfix) (gobj-syntactic-integer-fix x))
-       ((unless xok) nil)
-       (xbits (gobj-syntactic-integer->bits xfix))
-       ((unless (atom (cdr xbits))) nil)
-       ((mv yok yfix) (gobj-syntactic-integer-fix y))
-       ((unless yok) nil)
-       (ybits (gobj-syntactic-integer->bits yfix)))
-    (and (atom (cdr ybits))
-         (equal (car xbits) (car ybits))))
-  ///
-  ;; (local (include-book "primitive-lemmas"))
-  ;; (defthm both-0-or-neg1-when-gobj-both-endp-and-same
-  ;;   (implies (gobj-both-endp-and-same x y)
-  ;;            (or (and (equal (ifix (fgl-object-eval x env)) -1)
-  ;;                     (equal (ifix (fgl-object-eval y env)) -1))
-  ;;                (and (equal (ifix (fgl-object-eval x env)) 0)
-  ;;                     (equal (ifix (fgl-object-eval y env)) 0))))
-  ;;   :hints (("goal" :use ((:instance fgl-object-eval-of-gobj-syntactic-integer-fix)
-  ;;                         (:instance fgl-object-eval-of-gobj-syntactic-integer-fix (x y)))
-  ;;            :in-theory (e/d (bools->int gobj-bfr-list-eval)
-  ;;                            (fgl-object-eval-of-gobj-syntactic-integer-fix)))))
-  )
+;; (define gobj-both-endp-and-same ((x fgl-object-p) (y fgl-object-p))
+;;   (b* (((mv xok xfix) (gobj-syntactic-integer-fix x))
+;;        ((unless xok) nil)
+;;        (xbits (gobj-syntactic-integer->bits xfix))
+;;        ((unless (atom (cdr xbits))) nil)
+;;        ((mv yok yfix) (gobj-syntactic-integer-fix y))
+;;        ((unless yok) nil)
+;;        (ybits (gobj-syntactic-integer->bits yfix)))
+;;     (and (atom (cdr ybits))
+;;          (equal (car xbits) (car ybits))))
+;;   ///
+;;   ;; (local (include-book "primitive-lemmas"))
+;;   ;; (defthm both-0-or-neg1-when-gobj-both-endp-and-same
+;;   ;;   (implies (gobj-both-endp-and-same x y)
+;;   ;;            (or (and (equal (ifix (fgl-object-eval x env)) -1)
+;;   ;;                     (equal (ifix (fgl-object-eval y env)) -1))
+;;   ;;                (and (equal (ifix (fgl-object-eval x env)) 0)
+;;   ;;                     (equal (ifix (fgl-object-eval y env)) 0))))
+;;   ;;   :hints (("goal" :use ((:instance fgl-object-eval-of-gobj-syntactic-integer-fix)
+;;   ;;                         (:instance fgl-object-eval-of-gobj-syntactic-integer-fix (x y)))
+;;   ;;            :in-theory (e/d (bools->int gobj-bfr-list-eval)
+;;   ;;                            (fgl-object-eval-of-gobj-syntactic-integer-fix)))))
+;;   )
+
 
 (define logapp-helper ((shift-rev integerp)
                         (shift-width natp)
@@ -522,23 +520,14 @@
                   (natp shift-width)
                   (integerp shift-rev))
              (equal (logapp-helper shift-rev shift-width x y)
-                    (b*  (((when (eql 0 shift-width))
-                           (int y))
-                          ((when (and (syntax-bind x-y-equal-endp
-                                                   (b* (((mv xok xfix) (gobj-syntactic-integer-fix x))
-                                                        ((unless xok) nil)
-                                                        (xbits (gobj-syntactic-integer->bits xfix))
-                                                        ((unless (atom (cdr xbits))) nil)
-                                                        ((mv yok yfix) (gobj-syntactic-integer-fix y))
-                                                        ((unless yok) nil)
-                                                        (ybits (gobj-syntactic-integer->bits yfix)))
-                                                     (and (atom (cdr ybits))
-                                                          (equal (car xbits) (car ybits))))
-                                                   ;; (gobj-both-endp-and-same x y)
-                                                   )
-                                      (int-endp x) (equal (int x) (int y))))
-                           (int x))
-                          )
+                    (b*  ((y (ifix y))
+                          ((when (eql 0 shift-width))
+                           y)
+                          (x (ifix x))
+                          ((when (and (check-int-endp! x-endp x)
+                                      (check-int-endp! y-endp y)
+                                      (check-equal! x-equal-y x y)))
+                           x))
                       (if (intcar shift-rev)
                           (b* ((width (ash 1 (1- shift-width))))
                             (logapp width x
@@ -546,8 +535,9 @@
                                                     (logtail (ash 1 (1- shift-width)) x)
                                                     y)))
                         (logapp-helper (intcdr shift-rev) (1- shift-width) x y)))))
-    :hints(("Goal" :in-theory (enable bitops::logapp**
-                                      int-endp)
+    :hints(("Goal" :in-theory (enable* bitops::logapp**
+                                       acl2::arith-equiv-forwarding
+                                       int-endp)
             
             :expand ((int-revapp shift-width shift-rev 0)
                      (int-revapp 0 shift-rev 0)
@@ -561,6 +551,16 @@
                                                              0)
                                                  1)))))))
 
+  
+
+  (local (defthm loghead-when-gte-integer-length
+           (implies (and (natp x)
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (loghead n x) x))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
   (def-fgl-rewrite logapp-to-logapp-helper
     (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logapp n x y)
@@ -569,11 +569,8 @@
                          (n (nfix (int n)))
                          ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logapp n x y))
-                         (n-width (syntax-bind n-width (fgl-object-case n
-                                                         :g-integer (max 0 (1- (len n.bits)))
-                                                         :otherwise nil)))
-                         ((unless (and n-width
-                                       (check-unsigned-byte-p n-width n)))
+                         (n-width (integer-length-bound! n-width n))
+                         ((unless n-width)
                           (abort-rewrite (logapp n x y)))
                          (n-rev (int-revapp n-width n 0)))
                       (logapp-helper n-rev n-width x y))))
@@ -632,7 +629,7 @@
                   (natp digit-width)
                   (integerp digit-rev))
              (equal (logbitp-helper digit-rev digit-width x)
-                    (b* (((when (or (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                    (b* (((when (or (check-int-endp! x-endp x)
                                     (eql 0 digit-width)))
                           (intcar x)))
                       (if (intcar digit-rev)
@@ -648,6 +645,14 @@
                 '(:in-theory (enable logapp
                                      bitops::expt-2-is-ash)))))
 
+
+  (local (defthm loghead-when-gte-integer-length
+           (implies (and (natp x)
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (loghead n x) x))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
   (def-fgl-rewrite logbitp-to-logbitp-helper
     (implies (syntaxp (not (fgl-object-case n :g-concrete)))
              (equal (logbitp n x)
@@ -655,11 +660,8 @@
                          (n (nfix (int n)))
                          ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logbitp n x))
-                         (n-width (syntax-bind n-width (fgl-object-case n
-                                                         :g-integer (max 0 (1- (len n.bits)))
-                                                         :otherwise nil)))
-                         ((unless (and n-width
-                                       (check-unsigned-byte-p n-width n)))
+                         (n-width (integer-length-bound! n-width n))
+                         ((unless n-width)
                           (abort-rewrite (logbitp n x)))
                          (n-rev (int-revapp n-width n 0)))
                       (logbitp-helper n-rev n-width x))))
@@ -722,8 +724,8 @@
   (def-fgl-rewrite fgl-+carry
     (equal (+carry c x y)
            (intcons (xor c (xor (intcar x) (intcar y)))
-                    (if (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
-                             (check-int-endp y (syntax-bind ysyn (g-concrete y))))
+                    (if (and (check-int-endp! x-endp x)
+                             (check-int-endp! y-endp y))
                         (endint (if* c
                                      (and (intcar x) (intcar y))
                                      (or (intcar x) (intcar y))))
@@ -760,7 +762,7 @@
   (def-fgl-rewrite fgl-*
     (implies (and (integerp x) (integerp y))
              (equal (* x y)
-                    (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                    (if (check-int-endp! x-endp x)
                         (if (intcar x) (- y) 0)
                       (+ (if (intcar x) y 0)
                          (intcons nil
@@ -787,8 +789,8 @@
     (equal (</= x y)
            (b* ((x (int x))
                 (y (int y))
-                ((when (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
-                            (check-int-endp y (syntax-bind ysyn (g-concrete y)))))
+                ((when (and (check-int-endp! x-endp x)
+                            (check-int-endp! y-endp y)))
                  (b* ((less (and (intcar x) (not (intcar y)))))
                    (mv less
                        (and (not less) (or (intcar x) (not (intcar y)))))))
@@ -822,132 +824,42 @@
              (equal (< x y)
                     (if (and (syntax-bind y-0 (eql y 0))
                              (equal y 0))
-                        (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                        (if (check-int-endp! x-endp x)
                             (intcar x)
                           (< (intcdr x) 0))
                       (mv-nth 0 (</= x y)))))
     :hints(("Goal" :in-theory (enable int-endp)))))
 
-(define check-integerp (x xsyn)
-  :verify-guards nil
-  (and (gobj-syntactic-integerp xsyn)
-       (integerp x))
-  ///
-  (defthm check-integerp-open
-    (iff (check-integerp x xsyn)
-         (and* (gobj-syntactic-integerp xsyn)
-               (integerp x)))))
 
-
-
-(define gobj-non-integerp ((x fgl-object-p))
-  (fgl-object-case x
-    :g-boolean t
-    :g-concrete (not (integerp x.val))
-    :g-cons t
-    :otherwise nil))
-
-(define check-non-integerp (x xsyn)
-  :verify-guards nil
-  (and (gobj-non-integerp xsyn)
-       (not (integerp x)))
-  ///
-  (defthm check-non-integerp-open
-    (iff (check-non-integerp x xsyn)
-         (and* (gobj-non-integerp xsyn)
-               (not (integerp x))))))
-
-(define check-consp (x xsyn)
-  :verify-guards nil
-  (and (gobj-syntactic-consp xsyn)
-       (consp x))
-  ///
-  (defthm check-consp-open
-    (iff (check-consp x xsyn)
-         (and* (gobj-syntactic-consp xsyn)
-               (consp x)))))
-
-
-
-(define check-booleanp (x xsyn)
-  :verify-guards nil
-  (and (gobj-syntactic-booleanp xsyn)
-       (booleanp x))
-  ///
-  (defthm check-booleanp-open
-    (iff (check-booleanp x xsyn)
-         (and* (gobj-syntactic-booleanp xsyn)
-               (booleanp x)))))
-
-
-
-
-
-
-(define gobj-non-booleanp ((x fgl-object-p))
-  (fgl-object-case x
-    :g-integer t
-    :g-concrete (not (booleanp x.val))
-    :g-cons t
-    :otherwise nil))
-
-(define check-non-booleanp (x xsyn)
-  :verify-guards nil
-  (and (gobj-non-booleanp xsyn)
-       (not (booleanp x)))
-  ///
-  (defthm check-non-booleanp-open
-    (iff (check-non-booleanp x xsyn)
-         (and* (gobj-non-booleanp xsyn)
-               (not (booleanp x))))))
-
-(define gobj-non-consp ((x fgl-object-p))
-  (fgl-object-case x
-    :g-integer t
-    :g-concrete (not (consp x.val))
-    :g-boolean t
-    :otherwise nil))
-
-(define check-non-consp (x xsyn)
-  :verify-guards nil
-  (and (gobj-non-consp xsyn)
-       (not (consp x)))
-  ///
-  (defthm check-non-consp-open
-    (iff (check-non-consp x xsyn)
-         (and* (gobj-non-consp xsyn)
-               (not (consp x))))))
 
 (def-fgl-rewrite fgl-equal
   (equal (equal x y)
-         (let ((xsyn (syntax-bind xsyn (g-concrete x)))
-               (ysyn (syntax-bind ysyn (g-concrete y))))
-           (cond ((check-integerp x xsyn)
-                  (cond ((check-integerp y ysyn)
-                         (and (iff (intcar x) (intcar y))
-                              (or (and (check-int-endp x xsyn)
-                                       (check-int-endp y ysyn))
-                                  (equal (intcdr x) (intcdr y)))))
-                        ((check-non-integerp y ysyn) nil)
-                        (t (abort-rewrite (equal x y)))))
-                 ((check-booleanp x xsyn)
-                  (cond ((check-booleanp y ysyn)
-                         (iff x y))
-                        ((check-non-booleanp y ysyn) nil)
-                        (t (abort-rewrite (equal x y)))))
-                 ((check-consp x xsyn)
-                  (cond ((check-consp y ysyn)
-                         (and (equal (car x) (car y))
-                              (equal (cdr x) (cdr y))))
-                        ((check-non-consp y ysyn) nil)
-                        (t (abort-rewrite (equal x y)))))
-                 ((and (check-integerp y ysyn)
-                       (check-non-integerp x xsyn)) nil)
-                 ((and (check-booleanp y ysyn)
-                       (check-non-booleanp x xsyn)) nil)
-                 ((and (check-consp y ysyn)
-                       (check-non-consp x xsyn)) nil)
-                 (t (abort-rewrite (equal x y))))))
+         (cond ((check-integerp! x-intp x)
+                (cond ((check-integerp! y-intp y)
+                       (and (iff (intcar x) (intcar y))
+                            (or (and (check-int-endp! x-endp x)
+                                     (check-int-endp! y-endp y))
+                                (equal (intcdr x) (intcdr y)))))
+                      ((check-non-integerp! y-non-intp y) nil)
+                      (t (abort-rewrite (equal x y)))))
+               ((check-booleanp! x-boolp x)
+                (cond ((check-booleanp! y-boolp y)
+                       (iff x y))
+                      ((check-non-booleanp! y-non-boolp y) nil)
+                      (t (abort-rewrite (equal x y)))))
+               ((check-consp! x-consp x)
+                (cond ((check-consp! y-consp y)
+                       (and (equal (car x) (car y))
+                            (equal (cdr x) (cdr y))))
+                      ((check-non-consp! y-non-consp y) nil)
+                      (t (abort-rewrite (equal x y)))))
+               ((and (check-integerp! y-intp y)
+                     (check-non-integerp! x-non-intp x)) nil)
+               ((and (check-booleanp! y-boolp y)
+                     (check-non-booleanp! x-non-boolp x)) nil)
+               ((and (check-consp! y-consp y)
+                     (check-non-consp! x-non-consp x)) nil)
+               (t (abort-rewrite (equal x y)))))
   :hints(("Goal" :in-theory (enable int-endp))))
 
 
@@ -979,8 +891,8 @@
                     (b* ((bit0 (xor c (xor (intcar x) (intcar y))))
                          ((when (or (zp width) (eql width 1)))
                           (endint bit0))
-                         ((when (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
-                                     (check-int-endp y (syntax-bind ysyn (g-concrete y)))))
+                         ((when (and (check-int-endp! x-endp x)
+                                     (check-int-endp! y-endp y)))
                           (intcons bit0
                                    (endint (if* c
                                                 (and (intcar x) (intcar y))
@@ -1109,16 +1021,20 @@
                   (logcount x))
            :hints (("goal" :in-theory (enable logcount)))))
 
+  (local (defthm loghead-when-gte-integer-length
+           (implies (and (natp x)
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (loghead n x) x))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
   (def-fgl-rewrite logcount-impl
     (equal (logcount x)
            (b* ((x (int x))
                 ((when (syntax-bind x-concrete (fgl-object-case x :g-concrete)))
                  (logcount x))
-                (xwidth (syntax-bind xwidth (fgl-object-case x
-                                              :g-integer (len x.bits)
-                                              :otherwise nil)))
-                ((unless (and xwidth
-                              (check-signed-byte-p xwidth x)))
+                (xwidth (integer-length-bound! xwidth x))
+                ((unless xwidth)
                  (abort-rewrite (logcount x)))
                 (x-neg (< x 0)))
              (logcount-helper xwidth x-neg x)))
@@ -1187,7 +1103,7 @@
                   (posp bound))
              (equal (integer-length-helper bound x)
                     (b* (((when (or (eql bound 1)
-                                    (check-int-endp x (syntax-bind xsyn (g-concrete x)))))
+                                    (check-int-endp! x-endp x)))
                           (mv 0 t (intcar x)))
                          ((mv rest-len rest-endp rest-negp)
                           (integer-length-helper (1- bound) (intcdr x)))
@@ -1207,17 +1123,22 @@
 
   (disable-definition integer-length)
 
+  (local (defthm logext-when-gte-integer-length
+           (implies (and (integerp n)
+                         (< (integer-length x) n))
+                    (equal (logext n x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
   (def-fgl-rewrite integer-length-impl
     (equal (integer-length x)
            (b* ((x (int x))
                 ((when (syntax-bind x-concrete (fgl-object-case x :g-concrete)))
                  (integer-length x))
-                (bound (syntax-bind x-bound
-                                    (fgl-object-case x :g-integer (len x.bits) :otherwise nil)))
-                ((unless (and bound
-                              (check-signed-byte-p x-bound x)))
+                (xwidth (integer-length-bound xwidth x))
+                ((unless xwidth)
                  (abort-rewrite (integer-length x))))
-             (mv-nth 0 (integer-length-helper bound x))))
+             (mv-nth 0 (integer-length-helper (+ 1 xwidth) x))))
     :hints(("Goal" :in-theory (e/d (check-signed-byte-p)
                                    (signed-byte-p))))))
 
@@ -1240,3 +1161,5 @@
          (let ((x (int x)))
            (if (< 0 x) x 1)))
   :hints(("Goal" :in-theory (enable pos-fix))))
+
+

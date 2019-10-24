@@ -204,6 +204,69 @@
     (def-fgl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',updates-state ',prepwork)))
 
 
+(defun def-fgl-binder-meta-fn (name body formula-check-fn prepwork)
+  (declare (Xargs :mode :program))
+  (acl2::template-subst
+   '(define <metafn> ((fn pseudo-fnsym-p)
+                      (args fgl-objectlist-p)
+                      (interp-st interp-st-bfrs-ok)
+                      state)
+      :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+      :returns (mv successp
+                   rhs
+                   bindings
+                   rhs-contexts
+                   new-interp-st
+                   new-state)
+      :prepwork <prepwork>
+      <body>
+      ///
+      <thms>
+
+      (defret eval-of-<metafn>
+        (implies (and successp
+                      (equal contexts (interp-st->equiv-contexts interp-st))
+                      (fgl-ev-meta-extract-global-facts :state st)
+                      <formula-check>
+                      (equal (w st) (w state))
+                      (interp-st-bfrs-ok interp-st)
+                      (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                              (interp-st->constraint interp-st)
+                                              (interp-st->logicman interp-st))
+                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                              (interp-st->pathcond interp-st)
+                                              (interp-st->logicman interp-st))
+                      (fgl-ev-context-equiv-forall-extensions
+                       rhs-contexts
+                       rhs-val
+                       rhs eval-alist)
+                      (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
+                      (pseudo-fnsym-p fn))
+                 (equal (fgl-ev-context-fix contexts (fgl-ev (cons fn
+                                                                   (cons (pseudo-term-quote rhs-val)
+                                                                         (kwote-lst
+                                                                          (fgl-objectlist-eval
+                                                                           args env
+                                                                           (interp-st->logicman interp-st)))))
+                                                             nil))
+                        (fgl-ev-context-fix contexts rhs-val))))
+
+      (table fgl-binderfns '<metafn> t))
+   :splice-alist `((<thms> . ,*fgl-binder-rule-thms*)
+                   (<formula-check> . 
+                                    ,(and formula-check-fn
+                                          `((,formula-check-fn st)))))
+   :atom-alist `((<metafn> . ,name)
+                 (<body> . ,body)
+                 (<prepwork> . ,prepwork))
+   :str-alist `(("<METAFN>" . ,(symbol-name name)))))
+
+
+(defmacro def-fgl-binder-meta (name body &key (formula-check) (prepwork))
+  (def-fgl-binder-meta-fn name body formula-check prepwork))
+
+
 
 
 
@@ -367,16 +430,18 @@
                                                   (interp-st->logicman interp-st))
                           (fgl-ev-context-equiv-forall-extensions
                            rhs-contexts
-                           var-val
-                           rhs (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st))))
+                           rhs-val
+                           rhs eval-alist)
+                          (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
+                          (pseudo-fnsym-p origfn))
                      (equal (fgl-ev-context-fix contexts (fgl-ev (cons origfn
-                                                                       (cons (list 'quote var-val)
+                                                                       (cons (pseudo-term-quote rhs-val)
                                                                              (kwote-lst
                                                                               (fgl-objectlist-eval
                                                                                args env
                                                                                (interp-st->logicman interp-st)))))
                                                            nil))
-                      (fgl-ev-context-fix contexts var-val))))
+                            (fgl-ev-context-fix contexts rhs-val))))
           (fty::deffixequiv <prefix>-binder-fncall))
 
         ;; bozo, dumb theorem needed to prove fixequiv hook
@@ -384,6 +449,8 @@
                  (implies (equal (pseudo-fnsym-fix x) (pseudo-fnsym-fix y))
                           (pseudo-fnsym-equiv x y))
                  :rule-classes :forward-chaining))
+
+        (local (in-theory (disable fgl-ev-context-equiv-forall-extensions)))
 
         (defattach
           ;; BOZO add all these back in as well as substitutions for -concretize functions

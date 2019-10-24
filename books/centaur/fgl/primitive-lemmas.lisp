@@ -295,3 +295,6 @@
                   (hons-assoc-equal key x))))
 
 (in-theory (enable fgl-apply))
+
+(in-theory (e/d (acl2::kwote-lst-redef)
+                (kwote-lst)))
