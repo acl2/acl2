@@ -250,7 +250,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-process-tests (tests (targets$ symbol-listp) ctx state)
+(define atj-process-tests (tests
+                           (targets$ symbol-listp)
+                           (guards$ booleanp)
+                           ctx
+                           state)
   :returns (mv erp
                (tests$ "An @(tsee atj-test-listp).")
                state)
@@ -285,11 +289,12 @@
                      "The list ~x0 of names of the tests in the :TESTS input"
                      names))
        ((er &) (ensure-list-no-duplicates$ names description t nil)))
-    (atj-process-tests-aux alist targets$ ctx state))
+    (atj-process-tests-aux alist targets$ guards$ ctx state))
 
   :prepwork
   ((define atj-process-tests-aux ((tests-alist alistp)
                                   (targets$ symbol-listp)
+                                  (guards$ booleanp)
                                   ctx
                                   state)
      :returns (mv erp
@@ -332,9 +337,24 @@
           (qcs (fargs term$))
           ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
           (args (unquote-term-list qcs))
+          ((er &) (if guards$
+                      (b* ((guard (subcor-var (formals fn (w state))
+                                              qcs
+                                              (uguard fn (w state))))
+                           ((er (cons & guard-satisfied))
+                            (trans-eval guard ctx state nil)))
+                        (if (not guard-satisfied)
+                            (er-soft+ ctx t nil
+                                      "The test term ~x0 in the :TESTS input ~
+                                       must translate to a function call ~
+                                       where the guards are satisfied, ~
+                                       because the :GUARDS input is T." term)
+                          (value nil)))
+                    (value nil)))
           ((er (cons & res)) (trans-eval term$ ctx state nil))
           (agg (atj-test name fn args res))
-          ((er aggs) (atj-process-tests-aux tests-alist targets$ ctx state)))
+          ((er aggs)
+           (atj-process-tests-aux tests-alist targets$ guards$ ctx state)))
        (value (cons agg aggs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -934,7 +954,7 @@
        ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
-       ((er tests$) (atj-process-tests tests targets ctx state))
+       ((er tests$) (atj-process-tests tests targets guards ctx state))
        ((er (list output-file$
                   output-file-test$)) (atj-process-output-dir
                                        output-dir java-class$ tests$ ctx state))

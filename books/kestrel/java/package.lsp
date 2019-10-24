@@ -69,6 +69,7 @@
                          implicate
                          implode
                          impossible
+                         index-of
                          irecursivep
                          known-packages
                          lambda-body
@@ -116,6 +117,7 @@
                          string-string-alistp
                          string-symbollist-alistp
                          string-upcase
+                         subcor-var
                          string=>nats
                          symbol-name-lst
                          symbol-pos-alistp
@@ -131,6 +133,7 @@
                          ubyte16
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
+                         uguard
                          unnormalized-body
                          unquote-term
                          unquote-term-list

@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/lists/union
-  :parents (std/lists)
+  :parents (std/lists union$)
   :short "Theorems about @(tsee union$) in the @(see std/lists) library."
 
   (defthm true-listp-of-union-equal
