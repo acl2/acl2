@@ -2487,6 +2487,7 @@
                              (all-mods 'nil) ;; when t, no modules with a string
                              ;; name is flattened.
                              (rp::rp-state 'rp::rp-state)
+                             (flatten 'nil)
                              (state 'state))
   (declare (xargs :mode :program))
   (b* (((sv::design sv-design) sv-design)
@@ -2494,19 +2495,22 @@
                      (get-string-modnames (strip-cars sv-design.modalist))
                    (union-equal (list sv-design.top)
                                 modnames)))
+       (modnames (set-difference-equal modnames
+                                       flatten))
        (sv-design.modalist (make-fast-alist sv-design.modalist))
 
-       (vl-insouts (vl-design-to-insouts vl-design sv-design))
+       (vl-insouts (vl-design-to-insouts vl-design sv-design :skip-list flatten))
        (vl-insouts (vl-insouts-insert-wire-sizes vl-insouts sv-design
                                                  modnames))
        (svex-simplify-preloaded (svex-simplify-preload
                                  :runes *svl2-flatten-simplify-lemmas*
                                  ))
-
+       (- (cw "Starting to flatten modules and create SVL2 design... ~%")) 
        ((mv modules rp::rp-state)
         (svl2-flatten-mods modnames sv-design.modalist
                            modnames vl-insouts
                            svex-simplify-preloaded))
+       (- (cw "Inserting ranks for unflattened modules to prove SVL2-run-cycle termination ~%"))
        (ranks (svl2-mod-calculate-ranks sv-design.top
                                         modules
                                         nil

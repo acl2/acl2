@@ -282,62 +282,72 @@
 
   (defun vl-smodule-to-insouts (smodule )
     (if (atom smodule)
-        (mv nil nil)
+        (mv nil nil t)
       (b* ((c (car smodule))
            (type (car c))
-           ((mv inrest outrest)
+           ((mv inrest outrest success)
             (vl-smodule-to-insouts (cdr smodule) ))
            ((when (not (equal type ':VL-PORTDECL)))
-            (mv inrest outrest))
+            (mv inrest outrest success))
            (porttype (cddr (cadr c)))
            (portname (caadr c))
-           (& (cw "porttype ~p0 ~p1 ~%" porttype portname))
+           (- (and (equal porttype ':VL-INOUT)
+                   (cw "Warning! a module has port-type of ':vl-inout ~%")))
            ((when (and (not (equal porttype ':VL-INPUT))
-                       (not (equal porttype ':VL-OUTPUT))))
-            (mv (hard-error "Unknown porttype. we only support input and output ~
-    port types ~%" nil nil) nil))
+                       (not (equal porttype ':VL-OUTPUT))
+                       (not (equal porttype ':VL-INOUT))))
+            (mv (cw "Unknown porttype. ~p0 ~%" porttype)
+                nil
+                nil))
            #|((mv & range) (vl-insouts-get-range (cadar (caddr c))))||#
            #|(wire (vl-insouts-getwire portname wires))||#
-           (ins (if (equal porttype ':VL-INPUT)
+           (ins (if (or (equal porttype ':VL-INPUT)
+                        (equal porttype ':VL-INOUT))
                     (cons portname inrest)
                   inrest))
-           (outs (if (equal porttype ':VL-OUTPUT)
+           (outs (if (or (equal porttype ':VL-OUTPUT)
+                         (equal porttype ':VL-INOUT))
                      (cons portname outrest)
                    outrest)))
-        (mv ins outs))))
+        (mv ins outs (and (not (equal porttype ':VL-INOUT))
+                          success)))))
 
   (defun vl-ansi-ports-to-insouts (ports  most-recent-type )
     ;; For modules whose port types are declared right in the port list are
     ;; scanned here.
     (if (atom ports)
-        (mv nil nil)
+        (mv nil nil t)
       (b* ((port (car ports))
            ((unless (equal (car port) ':VL-ANSI-PORTDECL))
-            (progn$ (HARD-ERROR 'vl-ansi-ports-to-insouts
-                                "Unexpected happened!!~%"
-                                NIL)
-                    (mv nil nil)))
+            (progn$ (cw  "Unexpected happened!! car of port is ~p0 ~%" (car port))
+                    (mv nil nil nil)))
            (port (cdr port))
            (portname (cdr (assoc-equal 'vl::NAME port)))
            (porttype (cdr (assoc-equal 'vl::dir port)))
            (porttype (if porttype porttype
                        most-recent-type))
+           (- (and (equal porttype ':VL-INOUT)
+                   (cw "Warning! a module has port-type of ':vl-inout ~%")))
            ((unless (or (equal porttype ':VL-INPUT)
-                        (equal porttype ':VL-OUTPUT)))
+                        (equal porttype ':VL-OUTPUT)
+                        (equal porttype ':VL-INOUT)))
             (progn$
-             (hard-error 'vl-ansi-ports-to-insouts
-                         "Unknown port type! ~%" nil)
-             (mv nil nil)))
-           ((mv rest-ins rest-outs)
+             (cw "Unknown port type! port-type is: ~p0~%" porttype)
+             (mv nil nil nil)))
+           ((mv rest-ins rest-outs success)
             (vl-ansi-ports-to-insouts (cdr ports)  porttype)))
-        (mv (if (equal porttype ':VL-INPUT)
+        (mv (if (or (equal porttype ':VL-INPUT)
+                    (equal porttype ':VL-INOUT))
                 (cons portname rest-ins)
               rest-ins)
-            (if (equal porttype ':VL-OUTPUT)
+            (if (or (equal porttype ':VL-OUTPUT)
+                    (equal porttype ':VL-INOUT))
                 (cons portname rest-outs)
-              rest-outs)))))
+              rest-outs)
+            (and (not (equal porttype ':VL-INOUT))
+                 success)))))
 
-  (defun vl-module-to-insouts (vl-module )
+  (defun vl-module-to-insouts (vl-module skip-list)
     (and
      (consp vl-module)
      (equal (car vl-module) ':VL-MODULE)
@@ -346,25 +356,30 @@
      (consp (caaadr vl-module))
      (b* ((smodule (caadr vl-module))
           (module-name (caaar smodule))
-          ((mv ins outs)
+          ((when (member-equal module-name
+                               skip-list))
+           nil)
+          ((mv ins outs success1)
            (vl-smodule-to-insouts (caadr smodule) ))
-          ((mv ins2 outs2)
+          ((mv ins2 outs2 success2)
            (vl-ansi-ports-to-insouts
-            (cdr (assoc-equal 'vl::ANSI-PORTS
+            (cdr (assoc-equal 'vl::ansi-ports
                               (cadddr (cdddr vl-module))))
-
-            nil)))
+            nil))
+          (- (or (and success1
+                      success2)
+                 (cw "Warning issued for module ~p0. Flattening this module may
+           be useful. ~%" module-name))))
        (list* module-name (append ins ins2) (append outs outs2)))))
 
-  (defun vl-modules-to-insouts (vl-modules )
+  (defun vl-modules-to-insouts (vl-modules skip-list)
     (if (atom vl-modules)
         nil
-      (cons
-       (b* (#|(module-name (caaar (caadar vl-modules)))||#
-            #|(sv-module (cdr (assoc-equal module-name sv-modules)))||#
-            #|(wires (cdr (assoc-equal 'sv::wires sv-module)))||#)
-         (vl-module-to-insouts (car vl-modules)))
-       (vl-modules-to-insouts (cdr vl-modules) ))))
+      (b* ((cur (vl-module-to-insouts (car vl-modules) skip-list))
+           (rest (vl-modules-to-insouts (cdr vl-modules) skip-list)))
+        (if cur
+            (cons cur rest)
+          rest))))
 
   (defun insouts-add-missing-modules-aux (sv-module-name insouts)
     (if (atom insouts)
@@ -397,7 +412,8 @@
           (insouts-add-missing-modules insouts
                                        (cdr sv-modules))))))
 
-  (defun vl-design-to-insouts (vl-design sv-design)
+  (define vl-design-to-insouts (vl-design sv-design &key (skip-list 'nil))
+    :verify-guards nil
     (and (consp vl-design)
          (equal (car vl-design) ':VL-DESIGN)
          (consp (cadr vl-design))
@@ -407,7 +423,7 @@
          (or (equal (car (caaadr vl-design)) "VL Syntax 2016-08-26")
              (hard-error "VL Syntax version is different exiting just in case ~
   ~%" nil nil))
-         (b* ((insouts (vl-modules-to-insouts (cdr (caaadr vl-design))))
+         (b* ((insouts (vl-modules-to-insouts (cdr (caaadr vl-design)) skip-list))
               (insouts (insouts-add-missing-modules insouts
                                                     (cdr (assoc-equal
                                                           'SV::MODALIST sv-design)))))
