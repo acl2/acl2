@@ -487,9 +487,6 @@
             rest)
            (modalist (sv::design->modalist sv-design))
            (sv-module (assoc-equal cur modalist))
-           (rest (vl-insouts-insert-wire-sizes vl-insouts
-                                               sv-design
-                                               (cdr module-names)))
            ((unless sv-module)
             rest)
            (sv-module (cdr sv-module))
@@ -499,9 +496,7 @@
            (outs (cddr this-vl-insouts))
            (outs (vl-insouts-insert-wire-sizes-aux outs wires)))
         (cons `(,cur ,ins . ,outs)
-              (vl-insouts-insert-wire-sizes vl-insouts
-                                            sv-design
-                                            (cdr module-names)))))))
+              rest)))))
 
 
 (defun svl-assoc (key alist is-fast-alist)
