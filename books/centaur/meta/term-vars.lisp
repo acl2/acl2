@@ -335,3 +335,32 @@
 
   (deffixequiv-mutual term-free-vars :omit (bound-vars)))
 
+
+(local (defthm consp-of-member-is-member
+         (equal (consp (member k x))
+                (and (member k x) t))))
+         
+
+(defines member-term-vars
+  :flag nil
+  (define member-term-vars ((v pseudo-var-p) (x pseudo-termp))
+    :measure (pseudo-term-count x)
+    :enabled t
+    :guard-hints (("goal" :expand ((term-vars x)
+                                   (termlist-vars x))))
+    (mbe :logic (consp (member (pseudo-var-fix v)
+                               (term-vars x)))
+         :exec (pseudo-term-case x
+                 :const nil
+                 :var (eq v x.name)
+                 :call (member-termlist-vars v x.args))))
+  
+  (define member-termlist-vars ((v pseudo-var-p) (x pseudo-term-listp))
+    :measure (pseudo-term-list-count x)
+    :enabled t
+    (mbe :logic (consp (member (pseudo-var-fix v) (termlist-vars x)))
+         :exec (if (atom x)
+                   nil
+                 (or (member-term-vars v (car x))
+                     (member-termlist-vars v (cdr x)))))))
+

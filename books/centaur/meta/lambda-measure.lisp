@@ -31,6 +31,7 @@
 (in-package "CMR")
 
 (include-book "term-vars")
+(include-book "substitute")
 (include-book "centaur/fty/basetypes" :dir :system)
 
 (local (std::add-default-post-define-hook :fix))
@@ -443,9 +444,6 @@
       :hints ('(:expand ((:free (a) (lambda-measure-list x a)))))
       :fn lambda-measure-list)))
 
-
-(include-book "term-vars")
-
 (local (defthm pseudo-termp-of-lookup-in-pseudo-term-subst
          (implies (pseudo-term-subst-p x)
                   (pseudo-termp (cdr (assoc k x))))))
@@ -456,31 +454,9 @@
                        (nat-listp y))
                   (var-counts-alist-p (pairlis$ x y)))))
 
-(defines term-subst
-  (define term-subst ((x pseudo-termp)
-                      (a pseudo-term-subst-p))
-    :returns (new-x pseudo-termp)
-    :measure (pseudo-term-count x)
-    :verify-guards nil
-    (pseudo-term-case x
-      :const (pseudo-term-fix x)
-      :var (let ((look (assoc-eq x.name (pseudo-term-subst-fix a))))
-             (if look (cdr look) (pseudo-term-fix x)))
-      :call (pseudo-term-call x.fn (termlist-subst x.args a))))
-  (define termlist-subst ((x pseudo-term-listp)
-                          (a pseudo-term-subst-p))
-    :returns (new-x pseudo-term-listp)
-    :measure (pseudo-term-list-count x)
-    (if (Atom x)
-        nil
-      (cons (term-subst (car x) a)
-            (termlist-subst (cdr x) a))))
-  ///
-  (defthm len-of-termlist-subst
-    (equal (len (termlist-subst x a))
-           (len x)))
 
-  (verify-guards term-subst)
+(defsection term-subst
+  
   (local (defthm symbol-listp-when-pseudo-var-listp
            (implies (pseudo-var-list-p x)
                     (symbol-listp x))))
@@ -529,62 +505,12 @@
       :hints ('(:expand ((termlist-subst x a)
                          (:free (alist) (lambda-measure-list x alist)))
                 :in-theory (enable lambda-measure-list)))
-      :fn termlist-subst)))
+      :fn termlist-subst)
+    :mutual-recursion term-subst))
 
-(define base-ev-alist ((x pseudo-term-subst-p) a)
-  :verify-guards nil
-  (if (atom x)
-      nil
-    (if (mbt (and (consp (car x))
-                  (pseudo-var-p (caar x))))
-        (cons (cons (caar x) (base-ev (cdar x) a))
-              (base-ev-alist (cdr x) a))
-      (base-ev-alist (cdr x) a)))
-  ///
+(defsection term-subst-strict
 
-  (defthm lookup-in-base-ev-alist-split
-    (equal (assoc k (base-ev-alist x a))
-           (and (pseudo-var-p k)
-                (let ((look (assoc k x)))
-                  (and look
-                       (cons k (base-ev (cdr look) a)))))))
-
-  (local (in-theory (enable pseudo-term-subst-fix))))
-
-(defthm assoc-of-pseudo-term-subst-fix
-  (equal (assoc k (pseudo-term-subst-fix x))
-         (and (pseudo-var-p k)
-              (let ((look (assoc k x)))
-                (and look
-                     (cons k (pseudo-term-fix (cdr look)))))))
-  :hints(("Goal" :in-theory (enable pseudo-term-subst-fix))))
-             
-
-
-(defines term-subst-strict
-  (define term-subst-strict ((x pseudo-termp)
-                             (a pseudo-term-subst-p))
-    :returns (new-x pseudo-termp)
-    :measure (pseudo-term-count x)
-    :verify-guards nil
-    (pseudo-term-case x
-      :const (pseudo-term-fix x)
-      :var (cdr (assoc-eq x.name (pseudo-term-subst-fix a)))
-      :call (pseudo-term-call x.fn (termlist-subst-strict x.args a))))
-  (define termlist-subst-strict ((x pseudo-term-listp)
-                          (a pseudo-term-subst-p))
-    :returns (new-x pseudo-term-listp)
-    :measure (pseudo-term-list-count x)
-    (if (Atom x)
-        nil
-      (cons (term-subst-strict (car x) a)
-            (termlist-subst-strict (cdr x) a))))
-  ///
-  (defthm len-of-termlist-subst-strict
-    (equal (len (termlist-subst-strict x a))
-           (len x)))
-
-  (verify-guards term-subst-strict)
+  
   (local (defthm symbol-listp-when-pseudo-var-listp
            (implies (pseudo-var-list-p x)
                     (symbol-listp x))))
@@ -599,7 +525,7 @@
            (implies k
                     (equal (ASSOC k (PAIRLIS$ (STRIP-CARS x)
                                               (LAMBDA-MEASURE-LIST (STRIP-CDRS x)
-                                                                 ALIST)))
+                                                                   ALIST)))
                            (and (assoc k x)
                                 (cons k (lambda-measure (cdr (assoc k x)) alist)))))
            :hints(("Goal" :in-theory (enable lambda-measure-list)))))
@@ -616,7 +542,7 @@
     (defret  lambda-measure-of-term-subst-strict
       (equal (lambda-measure (term-subst-strict x a) alist)
              (lambda-measure x (pairlis$ (strip-cars (pseudo-term-subst-fix a))
-                                       (lambda-measure-list (strip-cdrs (pseudo-term-subst-fix a)) alist))))
+                                         (lambda-measure-list (strip-cdrs (pseudo-term-subst-fix a)) alist))))
       :hints ('(:expand ((term-subst-strict x a)
                          (:free (alist) (lambda-measure x alist))
                          (:free (formals body args) (lambda-measure (pseudo-term-lambda formals body args) alist))
@@ -627,27 +553,12 @@
     (defret  lambda-measure-list-of-termlist-subst-strict
       (equal (lambda-measure-list (termlist-subst-strict x a) alist)
              (lambda-measure-list x (pairlis$ (strip-cars (pseudo-term-subst-fix a))
-                                            (lambda-measure-list (strip-cdrs (pseudo-term-subst-fix a)) alist))))
+                                              (lambda-measure-list (strip-cdrs (pseudo-term-subst-fix a)) alist))))
       :hints ('(:expand ((termlist-subst-strict x a)
                          (:free (alist) (lambda-measure-list x alist)))
                 :in-theory (enable lambda-measure-list)))
-      :fn termlist-subst-strict))
-
-
-  (defret-mutual base-ev-of-term-subst-strict
-    (defret base-ev-of-term-subst-strict
-      (equal (base-ev (term-subst-strict x a) env)
-             (base-ev x (base-ev-alist a env)))
-      :hints ('(:expand (<call>)
-                :in-theory (enable acl2::base-ev-when-pseudo-term-call
-                                   acl2::base-ev-of-pseudo-term-call)))
-      :fn term-subst-strict)
-    (defret base-ev-list-of-termlist-subst-strict
-      (equal (base-ev-list (termlist-subst-strict x a) env)
-             (base-ev-list x (base-ev-alist a env)))
-      :hints ('(:expand (<call>)))
-      :fn termlist-subst-strict)))
-
+      :fn termlist-subst-strict)
+    :mutual-recursion term-subst-strict))
 ;; (local (defthm pseudo-term-subst-p-of-pair-vars
 ;;          (implies (And (equal (len x) (len y))
 ;;                        (pseudo-term-listp y))

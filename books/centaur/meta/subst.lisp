@@ -53,4 +53,36 @@
            (pseudo-term-listp x))
   :hints(("Goal" :in-theory (enable pseudo-var-list-p))))
            
-  
+
+(defthm pseudo-termp-of-lookup-in-pseudo-term-subst
+         (implies (pseudo-term-subst-p x)
+                  (pseudo-termp (cdr (assoc k x)))))
+
+(defthm assoc-of-pseudo-term-subst-fix
+  (equal (assoc k (pseudo-term-subst-fix x))
+         (and (pseudo-var-p k)
+              (let ((look (assoc k x)))
+                (and look
+                     (cons k (pseudo-term-fix (cdr look)))))))
+  :hints(("Goal" :in-theory (enable pseudo-term-subst-fix))))
+
+
+(define base-ev-alist ((x pseudo-term-subst-p) a)
+  :verify-guards nil
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (pseudo-var-p (caar x))))
+        (cons (cons (caar x) (base-ev (cdar x) a))
+              (base-ev-alist (cdr x) a))
+      (base-ev-alist (cdr x) a)))
+  ///
+
+  (defthm lookup-in-base-ev-alist-split
+    (equal (assoc k (base-ev-alist x a))
+           (and (pseudo-var-p k)
+                (let ((look (assoc k x)))
+                  (and look
+                       (cons k (base-ev (cdr look) a)))))))
+
+  (local (in-theory (enable pseudo-term-subst-fix))))  
