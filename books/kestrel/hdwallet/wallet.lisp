@@ -11,6 +11,9 @@
 
 (in-package "HDWALLET")
 
+; Avoid failure for sign in ACL2(r):
+; cert_param: non-acl2r
+
 (include-book "kestrel/bitcoin/bip39" :dir :system)
 (include-book "kestrel/bitcoin/bip44" :dir :system)
 (include-book "kestrel/ethereum/addresses" :dir :system)
