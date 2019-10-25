@@ -611,14 +611,16 @@
      the methods to build the ACL2 packages,
      the methods to build the ACL2 functions,
      and the method to call ACL2 code from external code."))
-  (b* ((init-field (atj-gen-init-field))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 packages:~%"))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 functions:~%"))
+        (cw "~%Generate the Java methods to build the ACL2 functions:~%"))
        (fn-methods (atj-gen-deep-fndef-methods
                     fns-to-translate guards$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java class.~%"))
+       (init-field (atj-gen-init-field))
        (init-method (atj-gen-deep-init-method pkgs fns-to-translate))
        (call-method (atj-gen-deep-call-method))
        (body-class (append (list (jcbody-element-member
@@ -653,7 +655,9 @@
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
   (b* ((class (atj-gen-deep-main-class
-               pkgs fns-to-translate guards$ java-class$ verbose$ wrld)))
+               pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java compilation unit.~%")))
     (make-jcunit :package? java-package$
                  :imports (list (jimport nil (str::cat *aij-package* ".*"))
                                 (jimport nil "java.math.BigInteger")

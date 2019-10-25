@@ -1789,7 +1789,6 @@
                                       (pkg-class-names string-string-alistp)
                                       (fn-method-names symbol-string-alistp)
                                       (guards$ booleanp)
-                                      (verbose$ booleanp)
                                       (wrld plist-worldp))
   :returns (mv (method jmethodp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
@@ -1810,9 +1809,7 @@
     "We also collect all the quoted constants
      in the pre-translated function body,
      and add it to the collection that it threaded through."))
-  (b* (((run-when verbose$)
-        (cw "  ~s0~%" fn))
-       (curr-pkg (symbol-package-name fn))
+  (b* ((curr-pkg (symbol-package-name fn))
        (formals (formals fn wrld))
        (body (ubody fn wrld))
        (fn-type (atj-get-function-type fn guards$ wrld))
@@ -1880,20 +1877,21 @@
   (xdoc::topstring-p
    "We also add all the quoted constants to the collection.
     The collection does not change for native functions.")
-  (if (aij-nativep fn)
-      (mv (atj-gen-shallow-fnnative-method fn
-                                           pkg-class-names
-                                           fn-method-names
-                                           guards$
-                                           wrld)
-          qconsts)
-    (atj-gen-shallow-fndef-method fn
-                                  qconsts
-                                  pkg-class-names
-                                  fn-method-names
-                                  guards$
-                                  verbose$
-                                  wrld)))
+  (b* (((run-when verbose$)
+        (cw "  ~s0~%" fn)))
+    (if (aij-nativep fn)
+        (mv (atj-gen-shallow-fnnative-method fn
+                                             pkg-class-names
+                                             fn-method-names
+                                             guards$
+                                             wrld)
+            qconsts)
+      (atj-gen-shallow-fndef-method fn
+                                    qconsts
+                                    pkg-class-names
+                                    fn-method-names
+                                    guards$
+                                    wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2095,7 +2093,10 @@
    (xdoc::p
     "We also collect all the quoted constants
      that occur in the functions in @('pkg') that are translated to Java."))
-  (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods ~
+               for the ACL2 functions in package ~s0:~%" pkg))
+       (fns (cdr (assoc-equal pkg fns-by-pkg)))
        ((mv fn-methods
             qconsts) (atj-gen-shallow-fn-methods fns
                                                  qconsts
@@ -2255,7 +2256,8 @@
 (define atj-gen-shallow-pkg-class ((pkg stringp)
                                    (fields-by-pkg string-jfieldlist-alistp)
                                    (methods-by-pkg string-jmethodlist-alistp)
-                                   (pkg-class-names string-string-alistp))
+                                   (pkg-class-names string-string-alistp)
+                                   (verbose$ booleanp))
   :returns (class jclassp)
   :short "Generate the class for an ACL2 package."
   :long
@@ -2273,7 +2275,9 @@
     "The methods are in the @('methods-by-pkg') alist,
      which is calculated (elsewhere)
      via @(tsee atj-gen-shallow-all-pkg-methods)."))
-  (b* ((class-name (atj-get-pkg-class-name pkg pkg-class-names))
+  (b* (((run-when verbose$)
+        (cw "  ~s0~%" pkg))
+       (class-name (atj-get-pkg-class-name pkg pkg-class-names))
        (fields (cdr (assoc-equal pkg fields-by-pkg)))
        (methods (cdr (assoc-equal pkg methods-by-pkg))))
     (make-jclass :access (jaccess-public)
@@ -2292,7 +2296,8 @@
 (define atj-gen-shallow-pkg-classes ((pkgs string-listp)
                                      (fields-by-pkg string-jfieldlist-alistp)
                                      (methods-by-pkg string-jmethodlist-alistp)
-                                     (pkg-class-names string-string-alistp))
+                                     (pkg-class-names string-string-alistp)
+                                     (verbose$ booleanp))
   :returns (classes jclass-listp)
   :short "Lift @(tsee atj-gen-shallow-pkg-class) to lists."
   :long
@@ -2302,11 +2307,13 @@
        (class (atj-gen-shallow-pkg-class (car pkgs)
                                          fields-by-pkg
                                          methods-by-pkg
-                                         pkg-class-names))
+                                         pkg-class-names
+                                         verbose$))
        (classes (atj-gen-shallow-pkg-classes (cdr pkgs)
                                              fields-by-pkg
                                              methods-by-pkg
-                                             pkg-class-names)))
+                                             pkg-class-names
+                                             verbose$)))
     (if (null (jclass->body class))
         classes
       (cons class classes))))
@@ -2424,15 +2431,10 @@
      and the alist from ACL2 function symbols to Java method names,
      which must be eventually passed to the functions that generate
      the Java test class."))
-  (b* ((static-init (atj-gen-shallow-static-initializer pkgs))
-       (init-field (atj-gen-init-field))
-       (init-method (atj-gen-shallow-init-method))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 packages:~%"))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        (pkg-methods (mergesort-jmethods pkg-methods))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 functions:~%"))
        (fns+natives (append fns-to-translate
                             (strip-cars *primitive-formals-and-guards*)))
        ((unless (no-duplicatesp-eq fns+natives))
@@ -2467,10 +2469,15 @@
        (fields-by-pkg (atj-gen-shallow-all-pkg-fields pkgs
                                                       qsymbols
                                                       qsymbols-by-pkg))
+       ((run-when verbose$)
+        (cw "~%Generate the Java classes for the ACL2 packages:~%"))
        (classes (atj-gen-shallow-pkg-classes pkgs
                                              fields-by-pkg
                                              methods-by-pkg
-                                             pkg-class-names))
+                                             pkg-class-names
+                                             verbose$))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java class.~%"))
        (qinteger-fields (atj-gen-shallow-number-fields qconsts.integers))
        (qrational-fields (atj-gen-shallow-number-fields qconsts.rationals))
        (qnumber-fields (atj-gen-shallow-number-fields qconsts.numbers))
@@ -2485,6 +2492,9 @@
                                   qstring-fields
                                   qcons-fields))
        (all-qconst-fields (mergesort-jfields all-qconst-fields))
+       (static-init (atj-gen-shallow-static-initializer pkgs))
+       (init-field (atj-gen-init-field))
+       (init-method (atj-gen-shallow-init-method))
        (all-fields (append all-qconst-fields
                            (list init-field)))
        (body-class (append (list (jcbody-element-init static-init))
@@ -2534,6 +2544,8 @@
   (b* (((mv class pkg-class-names fn-method-names)
         (atj-gen-shallow-main-class
          pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java compilation unit.~%"))
        (cunit
         (make-jcunit
          :package? java-package$

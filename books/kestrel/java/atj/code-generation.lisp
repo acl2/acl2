@@ -455,8 +455,7 @@
     public classes to be in files with the same names (plus extension).
     The code that we generate satisfies this requirement."))
   (b* (((run-when verbose$)
-        (cw "~%Generating Java code for the tests:~%"))
-       (failures-field (atj-gen-test-failures-field))
+        (cw "~%Generate the Java methods to run the tests:~%"))
        (test-methods (atj-gen-test-methods tests$
                                            deep$
                                            guards$
@@ -465,6 +464,9 @@
                                            pkg-class-names
                                            fn-method-names
                                            wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the test Java class.~%"))
+       (failures-field (atj-gen-test-failures-field))
        (main-method (atj-gen-test-main-method tests$ java-class$))
        (body-class (append (list (jcbody-element-member
                                   (jcmember-field failures-field)))
@@ -495,17 +497,20 @@
   :returns (cunit jcunitp)
   :verify-guards nil
   :short "Generate the test Java compilation unit."
-  (make-jcunit :package? java-package$
-               :imports (list (jimport nil (str::cat *aij-package* ".*"))
-                              (jimport nil "java.math.BigInteger"))
-               :types (list (atj-gen-test-class tests$
-                                                deep$
-                                                guards$
-                                                java-class$
-                                                verbose$
-                                                pkg-class-names
-                                                fn-method-names
-                                                wrld))))
+  (b* ((class (atj-gen-test-class tests$
+                                  deep$
+                                  guards$
+                                  java-class$
+                                  verbose$
+                                  pkg-class-names
+                                  fn-method-names
+                                  wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the test Java compilation unit.~%")))
+    (make-jcunit :package? java-package$
+                 :imports (list (jimport nil (str::cat *aij-package* ".*"))
+                                (jimport nil "java.math.BigInteger"))
+                 :types (list class))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,6 +560,8 @@
        ((unless (jcunitp cunit))
         (raise "Internal error: generated an invalid compilation unit.")
         (mv nil nil state))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java file.~%"))
        (state (print-to-jfile (print-jcunit cunit)
                               output-file$
                               state)))
@@ -586,7 +593,9 @@
                                   (w state)))
        ((unless (jcunitp cunit))
         (raise "Internal error: generated an invalid compilation unit.")
-        state))
+        state)
+       ((run-when verbose$)
+        (cw "~%Generate the test Java file.~%")))
     (print-to-jfile (print-jcunit cunit)
                     output-file-test$
                     state)))
