@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "definedp")
-(include-book "logic-function-namep")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
