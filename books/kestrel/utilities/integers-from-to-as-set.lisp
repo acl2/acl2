@@ -41,7 +41,7 @@
       being an integer in the range.")
     (xdoc::li
      "Membership of all the elements in an @(tsee integers-from-to) list
-      in an @(tsee integer-from-to) set is equivalent to
+      in an @(tsee integers-from-to) set is equivalent to
       the first range being contained in the second one.")))
 
   (defrule setp-of-integers-from-to
