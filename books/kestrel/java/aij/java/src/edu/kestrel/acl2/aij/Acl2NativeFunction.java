@@ -35,13 +35,14 @@ import java.util.Map;
  * code external to AIJ.
  * These methods operate on ACL2 values
  * in the same way as the corresponding ACL2 functions.
- * The methods without {@code UnderGuard} in their names
+ * The methods that take {@link Acl2Value} arguments
  * operate on all the ACL2 values, regardless of guards:
  * in other words, they run as if guard checking were off,
  * i.e. they run "in the logic" as the ACL2 documentation says sometimes.
- * The methods with {@code UnderGuard} in their names, in contrast,
- * operate on values of narrower types that include all the values in the guard:
- * they assume that guards are satisfied, without checking them.
+ * Some of these methods have overloaded variants that operate
+ * on narrower types that are contained in the guards:
+ * these can be used when guards are satisfied,
+ * and may be more efficient.
  * <p>
  * Each native function is represented by
  * a singleton instance of a direct subclass of this class.
@@ -1471,7 +1472,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code char-code} ACL2 primitive function.
+     * the {@code char-code} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1483,19 +1485,20 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code char-code} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a character value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Integer execCharCodeUnderGuard(Acl2Character x) {
+    public static Acl2Integer execCharCode(Acl2Character x) {
         // it is not clear how this compares to x.charCode() in speed:
         return Acl2Integer.make(x.getJavaChar());
     }
 
     /**
      * Executes the native implementation of
-     * the {@code code-char} ACL2 primitive function.
+     * the {@code code-char} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1507,12 +1510,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code code-char} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on an integer value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Character execCodeCharUnderGuard(Acl2Integer x) {
+    public static Acl2Character execCodeChar(Acl2Integer x) {
         // this should be faster than x.codeChar()
         // because we can avoid checking that the integer is in range:
         return Acl2Character.make((char) x.getJavaInt());
@@ -1520,7 +1523,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code coerce} ACL2 primitive function.
+     * the {@code coerce} ACL2 primitive function,
+     * on any values.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
@@ -1536,13 +1540,13 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code coerce} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on any value as first argument and on a symbol as second argument.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
      * @return The result of the function on the given arguments.
      */
-    public static Acl2Value execCoerceUnderGuard(Acl2Value x, Acl2Symbol y) {
+    public static Acl2Value execCoerce(Acl2Value x, Acl2Symbol y) {
         if (y.equals(Acl2Symbol.LIST)) {
             // it is not clear if this can be made faster
             // by knowing that x is an ACL2 string:
@@ -1567,7 +1571,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code intern-in-package-of-symbol} ACL2 primitive function.
+     * the {@code intern-in-package-of-symbol} ACL2 primitive function,
+     * on any values.
      *
      * @param str The first actual argument to pass to the function.
      * @param sym The second actual argument to pass to the function.
@@ -1581,14 +1586,14 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code intern-in-package-of-symbol} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a string as first argument and on a symbol as second argument.
      *
      * @param str The first actual argument to pass to the function.
      * @param sym The second actual argument to pass to the function.
      * @return The result of the function on the given arguments.
      */
-    public static Acl2Symbol execInternInPackageOfSymbolUnderGuard
-    (Acl2String str, Acl2Symbol sym) {
+    public static Acl2Symbol execInternInPackageOfSymbol(Acl2String str,
+                                                         Acl2Symbol sym) {
         // this may be faster than str.internThisInPackageOf(sym),
         // followed by sym.internInPackageOfThis(str):
         return Acl2Symbol.make(sym.getPackageName(), str);
@@ -1596,7 +1601,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code symbol-package-name} ACL2 primitive function.
+     * the {@code symbol-package-name} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1608,12 +1614,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code symbol-package-name} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a symbol value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2String execSymbolPackageNameUnderGuard(Acl2Symbol x) {
+    public static Acl2String execSymbolPackageName(Acl2Symbol x) {
         // it is not clear if this can be made faster
         // by knowing that x is an ACL2 symbol:
         return x.symbolPackageName();
@@ -1621,7 +1627,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code symbol-name} ACL2 primitive function.
+     * the {@code symbol-name} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1633,19 +1640,20 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code symbol-name} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a symbol value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2String execSymbolNameUnderGuard(Acl2Symbol x) {
+    public static Acl2String execSymbolName(Acl2Symbol x) {
         // it is not clear how this compares to x.symbolName() in speed:
         return x.getName();
     }
 
     /**
      * Executes the native implementation of
-     * the {@code pkg-imports} ACL2 primitive function.
+     * the {@code pkg-imports} ACL2 primitive function,
+     * on any value.
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1660,14 +1668,14 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code pkg-imports} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a string value.
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
      */
-    public static Acl2Value execPkgImportsUnderGuard(Acl2String pkg)
+    public static Acl2Value execPkgImports(Acl2String pkg)
             throws Acl2EvaluationException {
         // it is not clear if this can be made faster
         // by knowing that pkg is an ACL2 string:
@@ -1676,7 +1684,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code pkg-witness} ACL2 primitive function.
+     * the {@code pkg-witness} ACL2 primitive function,
+     * on any value.
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1691,14 +1700,14 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code pkg-witness} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a string value.
      *
      * @param pkg The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
      */
-    public static Acl2Symbol execPkgWitnessUnderGuard(Acl2String pkg)
+    public static Acl2Symbol execPkgWitness(Acl2String pkg)
             throws Acl2EvaluationException {
         // it is not clear if this can be made faster
         // by knowing that pkg is an ACL2 string:
@@ -1707,7 +1716,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code unary--} ACL2 primitive function.
+     * the {@code unary--} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1719,12 +1729,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code unary--} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a number.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Number execUnaryMinusUnderGuard(Acl2Number x) {
+    public static Acl2Number execUnaryMinus(Acl2Number x) {
         // it is not clear if this can be made faster
         // by knowing that pkg is an ACL2 number:
         return x.negate();
@@ -1732,7 +1742,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code unary-/} ACL2 primitive function.
+     * the {@code unary-/} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1744,12 +1755,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code unary-/} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a number.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Number execUnarySlashUnderGuard(Acl2Number x) {
+    public static Acl2Number execUnarySlash(Acl2Number x) {
         // it is not clear if this can be made faster
         // by knowing that pkg is an ACL2 number:
         return x.reciprocate();
@@ -1757,7 +1768,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code binary-+} ACL2 primitive function.
+     * the {@code binary-+} ACL2 primitive function,
+     * on any values.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
@@ -1770,14 +1782,13 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code binary-+} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on numbers.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
      * @return The result of the function on the given arguments.
      */
-    public static Acl2Number execBinaryPlusUnderGuard(Acl2Number x,
-                                                      Acl2Number y) {
+    public static Acl2Number execBinaryPlus(Acl2Number x, Acl2Number y) {
         // this should be slightly faster than x.addValue(y),
         // which in turn calls y.addNumber(x):
         return x.addNumber(y);
@@ -1785,7 +1796,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code binary-*} ACL2 primitive function.
+     * the {@code binary-*} ACL2 primitive function,
+     * on any values.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
@@ -1798,14 +1810,13 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code binary-*} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on numbers.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
      * @return The result of the function on the given arguments.
      */
-    public static Acl2Number execBinaryStarUnderGuard(Acl2Number x,
-                                                      Acl2Number y) {
+    public static Acl2Number execBinaryStar(Acl2Number x, Acl2Number y) {
         // this should be slightly faster than x.multiplyValue(y),
         // which in turn calls y.multiplyNumber(x):
         return x.multiplyNumber(y);
@@ -1813,7 +1824,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code <} ACL2 primitive function.
+     * the {@code <} ACL2 primitive function,
+     * on any values.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
@@ -1831,14 +1843,13 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code <} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on rationals.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
      * @return The result of the function on the given arguments.
      */
-    public static Acl2Symbol execLessThanUnderGuard(Acl2Rational x,
-                                                    Acl2Rational y) {
+    public static Acl2Symbol execLessThan(Acl2Rational x, Acl2Rational y) {
         // this should be generally faster than the code in execLessThan():
         if (x.compareToRational(y) < 0)
             return Acl2Symbol.T;
@@ -1848,7 +1859,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
-     * the {@code complex} ACL2 primitive function.
+     * the {@code complex} ACL2 primitive function,
+     * on any values.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
@@ -1861,21 +1873,21 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code complex} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on rationals.
      *
      * @param x The first actual argument to pass to the function.
      * @param y The second actual argument to pass to the function.
      * @return The result of the function on the given arguments.
      */
-    public static Acl2Number execComplexUnderGuard(Acl2Rational x,
-                                                   Acl2Rational y) {
+    public static Acl2Number execComplex(Acl2Rational x, Acl2Rational y) {
         // this avoids calling rfix():
         return Acl2Number.make(x, y);
     }
 
     /**
      * Executes the native implementation of
-     * the {@code realpart} ACL2 primitive function.
+     * the {@code realpart} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1887,19 +1899,20 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code realpart} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a number.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Rational execRealPartUnderGuard(Acl2Number x) {
+    public static Acl2Rational execRealPart(Acl2Number x) {
         // it is not clear how this compares to x.realpart() in speed:
         return x.getRealPart();
     }
 
     /**
      * Executes the native implementation of
-     * the {@code imagpart} ACL2 primitive function.
+     * the {@code imagpart} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1911,19 +1924,20 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code imagpart} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a number.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Rational execImagPartUnderGuard(Acl2Number x) {
+    public static Acl2Rational execImagPart(Acl2Number x) {
         // it is not clear how this compares to x.imagpart() in speed:
         return x.getImaginaryPart();
     }
 
     /**
      * Executes the native implementation of
-     * the {@code numerator} ACL2 primitive function.
+     * the {@code numerator} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1935,19 +1949,20 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code numerator} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a rational.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Integer execNumeratorUnderGuard(Acl2Rational x) {
+    public static Acl2Integer execNumerator(Acl2Rational x) {
         // it is not clear how this compares to x.numerator() in speed:
         return x.getNumerator();
     }
 
     /**
      * Executes the native implementation of
-     * the {@code denominator} ACL2 primitive function.
+     * the {@code denominator} ACL2 primitive function,
+     * on any value.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
@@ -1959,12 +1974,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code denominator} ACL2 primitive function,
-     * assuming that its guard is satisfied.
+     * on a rational.
      *
      * @param x The actual argument to pass to the function.
      * @return The result of the function on the given argument.
      */
-    public static Acl2Integer execDenominatorUnderGuard(Acl2Rational x) {
+    public static Acl2Integer execDenominator(Acl2Rational x) {
         // it is not clear how this compares to x.denominator() in speed:
         return x.getDenominator();
     }

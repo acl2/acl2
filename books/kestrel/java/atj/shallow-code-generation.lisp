@@ -1650,23 +1650,18 @@
      @('Acl2NativeFunction') has a corresponding Java method
      that takes @('Acl2Value') objects as arguments.
      For some of these functions,
-     @('Acl2NativeFunction') also has a variant Java method implementation
+     @('Acl2NativeFunction') also has an overloaded Java method
      that takes argument objects of narrower types,
-     based on the guards of the functions:
-     these Java methods have @('UnderGuard') in their names.
+     based on the guards of the functions.
      For each of the latter functions,
      the generated wrapper Java methods
      call one or the other variant implementation
      based on the ATJ input and output types
      retrieved from the @(tsee def-atj-function-type) table.
-     If the @(':guards') input is @('nil'),
-     the table is not consulted,
-     and @(':value') is the type of every input and output.
-     If instead the @(':guards') is @('t'),
-     then the narrower types are used
-     only if the file @('types-for-natives.lisp') is included
-     prior to calling ATJ;
-     otherwise, @(':value') is the type of every input and output."))
+     This choice happens automatically in Java:
+     depending on the ATJ input types,
+     the generated Java code will use
+     either @('Acl2Value') or the narrower types."))
   (b* ((curr-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
@@ -1704,61 +1699,24 @@
           (complex-rationalp "execComplexRationalp")
           (acl2-numberp "execAcl2Numberp")
           (consp "execConsp")
-          (char-code (if (equal fn-in-types '(:character))
-                         "execCharCodeUnderGuard"
-                       "execCharCode"))
-          (code-char (if (equal fn-in-types '(:integer))
-                         "execCodeCharUnderGuard"
-                       "execCodeChar"))
-          (coerce (if (equal fn-in-types '(:value :symbol))
-                      "execCoerceUnderGuard"
-                    "execCoerce"))
-          (intern-in-package-of-symbol
-           (if (equal fn-in-types '(:string :symbol))
-               "execInternInPackageOfSymbolUnderGuard"
-             "execInternInPackageOfSymbol"))
-          (symbol-package-name (if (equal fn-in-types '(:symbol))
-                                   "execSymbolPackageNameUnderGuard"
-                                 "execSymbolPackageName"))
-          (symbol-name (if (equal fn-in-types '(:symbol))
-                           "execSymbolNameUnderGuard"
-                         "execSymbolName"))
-          (pkg-imports (if (equal fn-in-types '(:string))
-                           "execPkgImportsUnderGuard"
-                         "execPkgImports"))
-          (pkg-witness (if (equal fn-in-types '(:string))
-                           "execPkgWitnessUnderGuard"
-                         "execPkgWitness"))
-          (unary-- (if (equal fn-in-types '(:number))
-                       "execUnaryMinusUnderGuard"
-                     "execUnaryMinus"))
-          (unary-/ (if (equal fn-in-types '(:number))
-                       "execUnarySlashUnderGuard"
-                     "execUnarySlash"))
-          (binary-+ (if (equal fn-in-types '(:number :number))
-                        "execBinaryPlusUnderGuard"
-                      "execBinaryPlus"))
-          (binary-* (if (equal fn-in-types '(:number :number))
-                        "execBinaryStarUnderGuard"
-                      "execBinaryStar"))
-          (< (if (equal fn-in-types '(:rational :rational))
-                 "execLessThanUnderGuard"
-               "execLessThan"))
-          (complex (if (equal fn-in-types '(:rational :rational))
-                       "execComplexUnderGuard"
-                     "execComplex"))
-          (realpart (if (equal fn-in-types '(:number))
-                        "execRealPartUnderGuard"
-                      "execRealPart"))
-          (imagpart (if (equal fn-in-types '(:number))
-                        "execImagPartUnderGuard"
-                      "execImagPart"))
-          (numerator (if (equal fn-in-types '(:rational))
-                         "execNumeratorUnderGuard"
-                       "execNumerator"))
-          (denominator (if (equal fn-in-types '(:rational))
-                           "execDenominatorUnderGuard"
-                         "execDenominator"))
+          (char-code "execCharCode")
+          (code-char "execCodeChar")
+          (coerce "execCoerce")
+          (intern-in-package-of-symbol "execInternInPackageOfSymbol")
+          (symbol-package-name "execSymbolPackageName")
+          (symbol-name "execSymbolName")
+          (pkg-imports "execPkgImports")
+          (pkg-witness "execPkgWitness")
+          (unary-- "execUnaryMinus")
+          (unary-/ "execUnarySlash")
+          (binary-+ "execBinaryPlus")
+          (binary-* "execBinaryStar")
+          (< "execLessThan")
+          (complex "execComplex")
+          (realpart "execRealPart")
+          (imagpart "execImagPart")
+          (numerator "execNumerator")
+          (denominator "execDenominator")
           (cons "execCons")
           (car "execCar")
           (cdr "execCdr")
