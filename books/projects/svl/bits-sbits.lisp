@@ -1185,18 +1185,51 @@
              :use ((:instance bits-of-sbits-5-no-syntaxp))
              :in-theory (e/d () ())))))
 
-(defthm bits-of-0
-  (implies (and (natp start)
-                (natp size))
-           (equal (bits 0 start size)
-                  0))
-  :hints (("Goal"
-           :in-theory (e/d (bits
-                            4vec-part-select
-                            SV::4VEC->UPPER
-                            4VEC-CONCAT$
-                            sv::4vec->lower)
-                           (convert-4vec-concat-to-4vec-concat$)))))
+(encapsulate
+  nil
+
+  ;; other bits-of lemmas
+
+  (defthm bits-0-1-of-4vec-reduction-and
+    (implies
+     (and (integerp amount)
+          (> amount 1))
+     (equal (bits (sv::4vec-reduction-and
+                   (SV::4VEC-SIGN-EXT amount
+                                      term))
+                  0 1)
+            (sv::4vec-bitand
+             (bits term 0 1)
+             (bits (sv::4vec-reduction-and
+                    (SV::4VEC-SIGN-EXT (1- amount)
+                                       (4vec-rsh 1 term)))
+                   0 1))))
+    :hints (("Goal"
+             :use ((:instance 4vec-part-select-of-4vec-reduction-and))
+             :in-theory (e/d () (4vec-part-select-of-4vec-reduction-and)))))
+
+  (defthm bits-0-1-of-4vec-reduction-and-when-amount=1
+    (implies t
+             (equal (bits (sv::4vec-reduction-and
+                           (SV::4VEC-SIGN-EXT 1 term))
+                          0 1)
+                    (sv::3vec-fix (bits term 0 1))))
+    :hints (("Goal"
+             :use ((:instance 4vec-part-select-of-4vec-reduction-and-when-amount=1))
+             :in-theory (e/d () (4vec-part-select-of-4vec-reduction-and-when-amount=1)))))
+
+  (defthm bits-of-0
+    (implies (and (natp start)
+                  (natp size))
+             (equal (bits 0 start size)
+                    0))
+    :hints (("Goal"
+             :in-theory (e/d (bits
+                              4vec-part-select
+                              SV::4VEC->UPPER
+                              4VEC-CONCAT$
+                              sv::4vec->lower)
+                             (convert-4vec-concat-to-4vec-concat$))))))
 
 (encapsulate
   nil
@@ -1613,3 +1646,5 @@
 4VEC-RSH
 4VEC-BITNOT$)
 (4vec-part-select-is-bits)))))||#
+
+

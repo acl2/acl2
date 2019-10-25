@@ -139,4 +139,7 @@
     
     SVEX-EVAL-IS-SVEX-EVAL2
     4VEC-FIX2-IS-4VEC-FIX
+    bits-0-1-of-4vec-reduction-and-when-amount=1
+    bits-0-1-of-4vec-reduction-and
+    4vec-bitand-of-3vec-fix
     4vec-zero-ext-is-bits)) 

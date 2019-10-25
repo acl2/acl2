@@ -3317,10 +3317,11 @@
               :induct (4vec-plus++ x y carry-in
                                    size)
               :do-not-induct t
-              :in-theory (e/d* (bitops::ihsext-inductions
+              :in-theory (e/d* (
                                 4vec-plus++
                                 4VEC-PLUS
                                 2vec
+                                bitops::ihsext-inductions
                                 bitops::ihsext-recursive-redefs)
                                ((:DEFINITION NOT)
                                 (:REWRITE ACL2::LOGHEAD-IDENTITY)
@@ -3373,5 +3374,155 @@
                               4vec-concat) ())))))
 
 
+(local
+ (use-ihs-logops-lemmas t))
+(local
+ (use-ihs-extensions t))
 
 
+
+(local
+ (defthm when-ifix-are-equal-logcdrs-also
+   (implies (equal (ifix x) (ifix y))
+            (equal (equal (acl2::logcdr x)
+                          (acl2::logcdr y))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-inductions
+                              acl2::logcdr
+                              bitops::ihsext-recursive-redefs)
+                             ())))))
+
+(local
+ (defthm when-ifix-are-equal-logcdrs-also-fc
+   (implies (equal (ifix x) (ifix y))
+            (equal (acl2::logcdr x)
+                   (acl2::logcdr y)))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-inductions
+                              acl2::logcdr
+                              bitops::ihsext-recursive-redefs)
+                             ())))))
+
+(local
+ (defthm when-ifix-are-equal-logcars-also
+   (implies (equal (ifix x) (ifix y))
+            (equal (equal (acl2::logcar x)
+                          (acl2::logcar y))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-inductions
+                              acl2::logcar
+                              bitops::ihsext-recursive-redefs)
+                             ())))))
+
+(local
+ (defthm when-ifix-are-equal-logcars-also-2
+   (implies (equal (ifix x) (ifix y))
+            (equal (acl2::logcar x)
+                   (acl2::logcar y)))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-inductions
+                              acl2::logcar
+                              bitops::ihsext-recursive-redefs)
+                             ())))))
+
+
+(encapsulate
+  nil
+  (local
+   (defthm dummy-lemma1
+     (implies (and (or (NOT (EQUAL (LOGAPP amount num -1) -1))
+                       (NOT (EQUAL (LOGAPP amount num2 -1) -1)))
+                   (integerp num)
+                   (integerp num2))
+              (NOT (EQUAL
+                    (LOGAPP amount (LOGAND num num2) -1) -1)))
+     :hints (("Goal"
+              :in-theory (e/d* (bitops::ihsext-inductions
+                                bitops::ihsext-recursive-redefs)
+                               ())))))
+
+  (defthm 4vec-part-select-of-4vec-reduction-and
+    (implies
+     (and (integerp amount)
+          (> amount 1))
+
+     (equal (4vec-part-select 0 1 (sv::4vec-reduction-and
+                                   (SV::4VEC-SIGN-EXT amount
+                                                      term)))
+            (sv::4vec-bitand
+             (sv::4vec-part-select 0 1 term)
+             (4vec-part-select 0 1 (sv::4vec-reduction-and
+                                    (SV::4VEC-SIGN-EXT (1- amount)
+                                                       (4vec-rsh 1 term)))))))
+    :hints (("Goal"
+             :in-theory (e/d* (bitops::ihsext-inductions
+                               bitops::ihsext-recursive-redefs
+                               sv::4vec-sign-ext
+                               acl2::logext
+                               4vec-rsh
+                               4VEC-SHIFT-CORE
+                               sv::4vec-reduction-and
+                               sv::4vec-part-select
+                               sv::4vec-bitand
+                               sv::3vec-fix
+                               SV::4VEC-SIGN-EXT
+                               4VEC-CONCAT
+                               sv::3VEC-REDUCTION-AND
+                               3VEC-BITAND
+                               SV::BOOL->VEC
+                               SV::4VEC->LOWER)
+                              ((:e tau-system)
+                               (:TYPE-PRESCRIPTION ACL2::LOGCAR-TYPE)
+                               (:REWRITE ACL2::LOGHEAD-IDENTITY)
+                               (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP)
+                               (:DEFINITION ACL2::UNSIGNED-BYTE-P**)
+                               (:DEFINITION UNSIGNED-BYTE-P)
+                               (:REWRITE ACL2::UNSIGNED-BYTE-P-PLUS)
+                               (:DEFINITION INTEGER-RANGE-P)
+                               (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
+                               (:DEFINITION BITOPS::LOGNOT$)
+                               (:TYPE-PRESCRIPTION BITP)
+                               (:TYPE-PRESCRIPTION IFIX)
+                               (:TYPE-PRESCRIPTION O<)
+                               (:TYPE-PRESCRIPTION ACL2::LOGCDR-TYPE)
+                               (:TYPE-PRESCRIPTION ACL2::LOGCAR$INLINE)
+                               (:FORWARD-CHAINING
+                                ACL2::|a <= b & ~(a = b)  =>  a < b|)
+                               (:REWRITE DEFAULT-<-1)
+                               (:REWRITE DEFAULT-<-2)
+                               (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK)))))))
+
+(defthm 4vec-part-select-of-4vec-reduction-and-when-amount=1
+    (implies t
+     (equal (4vec-part-select 0 1 (sv::4vec-reduction-and
+                                   (SV::4VEC-SIGN-EXT 1 term)))
+            (sv::3vec-fix (sv::4vec-part-select 0 1 term))))
+    :hints (("Goal"
+             :in-theory (e/d* (bitops::ihsext-inductions
+                               bitops::ihsext-recursive-redefs
+                               sv::4vec-sign-ext
+                               acl2::logext
+                               4vec-rsh
+                               4VEC-SHIFT-CORE
+                               sv::4vec-reduction-and
+                               sv::4vec-part-select
+                               sv::4vec-bitand
+                               sv::3vec-fix
+                               SV::4VEC-SIGN-EXT
+                               4VEC-CONCAT
+                               sv::3VEC-REDUCTION-AND
+                               3VEC-BITAND
+                               SV::BOOL->VEC
+                               SV::4VEC->LOWER)
+                              ((:e tau-system))))))
+
+
+(defthm 4vec-bitand-of-3vec-fix
+  (and (equal (sv::4vec-bitand (sv::3vec-fix x) y)
+              (sv::4vec-bitand x y))
+       (equal (sv::4vec-bitand x (sv::3vec-fix y))
+              (sv::4vec-bitand x y))))

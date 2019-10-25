@@ -891,8 +891,11 @@
  (define update-svex-with-aliasdb-and-trace ((svex sv::svex-p)
                                              (aliasdb aliasdb-p)
                                              (trace trace-p))
+   (declare (xargs :mode :program))
    (let ((kind (sv::svex-kind svex)))
-     (cond ((eq kind ':quote)
+     (cond ((equal aliasdb `(,(make-aliasdb)))
+            svex)
+           ((eq kind ':quote)
             svex)
            ((eq kind ':var)
             (b* ((var-name (sv::svar->name svex))
@@ -1022,7 +1025,7 @@
 ||#
 
 (acl2::defines
- assign-to-occ-get-inputs
+ get-inputs-for-svex
  :prepwork
  ((local
    (in-theory (enable SV::SVARLIST-P
@@ -1038,27 +1041,26 @@
      (implies (sv::SVarLIST-P wires)
               (true-listp wires)))))
 
- (define assign-to-occ-get-inputs ((svex sv::svex-p))
+ (define get-inputs-for-svex ((svex sv::svex-p)
+                              (modname sv::modname-p)
+                              (modalist sv::modalist-p))
    :verify-guards nil
    :returns (mv (wires wire-list-p
                        :hyp (sv::svex-p svex))
                 (delayed sv::svarlist-p
                          :hyp (sv::svex-p svex))
                 (success booleanp))
+   (declare (ignorable modname modalist)) ;; will use these when var is not in
+   ;; partsel. If so, will see if the wire is of size 1. Then it's all good..
    (b* ((kind (sv::svex-kind svex)))
      (cond ((eq kind ':quote)
             (mv nil nil t))
            ((eq kind ':var)
-            (progn$ (cw
-                     "Reached a var that was not in a partsel ~p0 ~%"
-                     svex)
-                    #|             (hard-error 'assign-to-occ-get-inputs
-                    "Reached a var that was not in a partsel ~p0 ~%" ;
-                    (list (cons #\0 svex)))||#
-                    (b* ((delayed (eql (sv::svar->delay svex) 1)))
-                      (mv (if delayed nil (list `(,svex)))
-                          (if delayed (list svex) nil)
-                          nil))))
+            (b* ((delayed (eql (sv::svar->delay svex) 1)))
+              (mv (if delayed nil (list `(,svex)))
+                  (if delayed (list svex) nil)
+                  (if delayed t
+                    (cw "~% Reached a var that was not in a partsel ~p0 ~%" svex)))))
            ((case-match svex (('sv::partsel start size sub-svex)
                               (and (sv::svar-p sub-svex)
                                    (natp start)
@@ -1072,9 +1074,11 @@
                   (if delayed (list svar) nil)
                   t)))
            (t
-            (assign-to-occ-get-inputs-lst (cdr svex))))))
+            (get-inputs-for-svex-lst (cdr svex) modname modalist)))))
 
- (define assign-to-occ-get-inputs-lst ((lst sv::svexlist-p))
+ (define get-inputs-for-svex-lst ((lst sv::svexlist-p)
+                                  (modname sv::modname-p)
+                                  (modalist sv::modalist-p))
    :returns (mv (wires wire-list-p
                        :hyp (sv::svexlist-p lst))
                 (delayed sv::svarlist-p
@@ -1083,9 +1087,9 @@
    (if (atom lst)
        (mv nil nil t)
      (b* (((mv rest rest-delayed success1)
-           (assign-to-occ-get-inputs (car lst)))
+           (get-inputs-for-svex (car lst) modname modalist))
           ((mv rest2 rest-delayed2 success2)
-           (assign-to-occ-get-inputs-lst (cdr lst))))
+           (get-inputs-for-svex-lst (cdr lst) modname modalist)))
        (mv (append rest rest2)
            (append rest-delayed
                    rest-delayed2)
@@ -1093,7 +1097,7 @@
 
  ///
 
- (verify-guards assign-to-occ-get-inputs))
+ (verify-guards get-inputs-for-svex))
 
 (define assign-occ-merge-ins ((ins wire-list-p))
   :verify-guards nil
@@ -1212,12 +1216,14 @@
   (fast-alist-clean (assign-occ-merge-ins ins)))
 
 (define assign-to-occ ((lhs sv::lhs-p)
-                       (rhs-svex sv::svex-p))
+                       (rhs-svex sv::svex-p)
+                       (modname sv::modname-p)
+                       (modalist sv::modalist-p))
   (b* ((outs (lhs-to-svl-wirelist lhs))
        ((mv ins prev-ins success)
-        (assign-to-occ-get-inputs rhs-svex))
+        (get-inputs-for-svex rhs-svex modname modalist))
        (- (or success
-              (cw "Warning issued for this svex: ~p0 ~
+              (cw "Warning issued (assign-to-occ) for this svex: ~p0 ~
 it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
        (ins (assign-occ-unify-ins ins))
@@ -1228,11 +1234,21 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
      :outputs outs
      :svex rhs-svex)))
 
+(define create-assign-occ-names ((trace trace-p)
+                                 (prefix)
+                                 (cnt natp))
+  :inline t
+  (if (car trace)
+      (cons (car trace) (sa prefix cnt))
+    (sa prefix cnt)))
+
 (define sv-mod->svl2-occs-assigns ((assigns sv::assigns-p)
                                    (trace trace-p)
                                    (aliasdb aliasdb-p)
                                    (cnt natp)
                                    (svex-simplify-preloaded)
+                                   (modname sv::modname-p)
+                                   (modalist sv::modalist-p)
                                    &key
                                    (rp::rp-state 'rp::rp-state)
                                    (state 'state))
@@ -1240,54 +1256,75 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
   ;; aliases and adding the trace for flattening.
   ;; Also call svex-simplify for both lhs and rhs of assignments.
   (declare (xargs :stobjs (state rp::rp-state)
+                  :mode :program
                   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
                   :verify-guards nil))
   (cond
    ((atom assigns)
     (mv nil cnt rp::rp-state))
    (t
-    (b* ((cur (car assigns))
+    (b* (;;(- (cw "Starting sv-mod->svl2-occs-assigns ~%"))
+         (cur (car assigns))
          ((sv::driver driver) (cdr cur))
-         (- (if (not (equal driver.strength 6))
+         #|(- (if (not (equal driver.strength 6))
                 (cw "Driver strength is not 6. For this assignment ~p0 ~%" cur)
-              nil))
+              nil))||#
          (lhs-w (get-lhs-w (car cur)))
 
          ;; Prepare lhs-svex
          (lhs-svex (sv::lhs->svex (car cur)))
 
+         ;;(- (cw "Calling update-svex-with-aliasdb-and-trace ~%"))
          (lhs-svex (update-svex-with-aliasdb-and-trace lhs-svex
                                                        aliasdb
                                                        trace))
+
+         ;;(- (cw "Calling svex-simplify ~%"))
          (lhs-svex `(sv::partsel 0 ,lhs-w ,lhs-svex))
          ((mv lhs-svex rp::rp-state) (svex-simplify lhs-svex
-                                                    :svex-simplify-preloaded svex-simplify-preloaded
-                                                    :runes nil))
-         ;; prepare rhs svex
-         (rhs-svex driver.value)
-         (rhs-svex (update-svex-with-aliasdb-and-trace rhs-svex
-                                                       aliasdb
-                                                       trace))
-         (rhs-svex `(sv::partsel 0 ,lhs-w ,rhs-svex))
-         ((mv rhs-svex rp::rp-state) (svex-simplify rhs-svex
                                                     :svex-simplify-preloaded svex-simplify-preloaded
                                                     :runes nil))
 
          ;; lhs svex to lhs
          (lhs (svex->lhs lhs-svex))
 
+         ;; prepare rhs svex
+         (rhs-svex driver.value)
+
+         ;;(- (cw "hons-copy of rhs-svex... ~%"))
+         (rhs-svex (hons-copy rhs-svex))
+         ;;(- (cw "calculating the size of rhs-svex... ~%"))
+         ;;(- (cw "rhs-svex size: ~p0 ~%" (rp::cons-count rhs-svex)))
+         
+         ;;(- (cw "Calling update-svex-with-aliasdb-and-trace ~%"))
+         (rhs-svex (update-svex-with-aliasdb-and-trace rhs-svex
+                                                       aliasdb
+                                                       trace))
+
+         ;;(- (cw "Calling svex-simplify ~%"))
+         (rhs-svex `(sv::partsel 0 ,lhs-w ,rhs-svex))
+         ((mv rhs-svex rp::rp-state) (svex-simplify rhs-svex
+                                                    :svex-simplify-preloaded svex-simplify-preloaded
+                                                    :runes nil))
+
+         ;;(- (cw "Calling svex->lhs ~%"))
+      
+
+         ;;(- (cw "Calling assign-to-occ ~%"))
          ;; convert lhs and rhs-svex to svl style occ object
-         (occ (assign-to-occ lhs rhs-svex))
+         (occ (assign-to-occ lhs rhs-svex modname modalist))
+
+         ;;(- (cw "Done: sv-mod->svl2-occs-assigns ~%"))
          ((mv rest cnt-new rp::rp-state) (sv-mod->svl2-occs-assigns (cdr assigns)
                                                                     trace
                                                                     aliasdb
                                                                     (1+ cnt)
-                                                                    svex-simplify-preloaded)))
+                                                                    svex-simplify-preloaded
+                                                                    modname
+                                                                    modalist))
+         #|(- (cw "Even more done: sv-mod->svl2-occs-assigns ~%"))||#)
       ;; save and return the object.
-      (mv (acons (if (car trace)
-                     (cons (car trace) (sa 'assign cnt))
-                   (sa 'assign cnt))
-                 occ rest)
+      (mv (acons (create-assign-occ-names trace 'assign cnt) occ rest)
           cnt-new rp::rp-state)))))
 
 (define sv-mod->svl2-occs-module-aux ((sigs wire-list-p)
@@ -1420,8 +1457,9 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                ((sv::module module) module)
                ((mv assign-occs ?cnt rp::rp-state)
                 (sv-mod->svl2-occs-assigns module.assigns trace aliasdb
-                                           0;cnt
-                                           svex-simplify-preloaded))
+                                           0
+                                           svex-simplify-preloaded
+                                           modname modalist))
                ((mv insts-occs  rp::rp-state)
                 (sv-mod->svl2-occs-insts module.insts
                                          modalist
@@ -1589,6 +1627,8 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                                        (outputs wire-list-p)
                                                        (cnt natp)
                                                        (svex-simplify-preloaded)
+                                                       (modname sv::modname-p)
+                                                       (modalist sv::modalist-p)
                                                        &key
                                                        (rp::rp-state 'rp::rp-state)
                                                        (state 'state))
@@ -1600,7 +1640,9 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
             (svl2-flatten-mod-insert-assigns-for-outputs this-aliases
                                                          (cdr outputs)
                                                          cnt
-                                                         svex-simplify-preloaded))
+                                                         svex-simplify-preloaded
+                                                         modname
+                                                         modalist))
            (cur (car outputs))
 
            (alias (hons-get (wire-name cur) this-aliases))
@@ -1614,9 +1656,9 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                            :svex-simplify-preloaded svex-simplify-preloaded
                            :runes nil))
            ((mv ins prev-ins success)
-            (assign-to-occ-get-inputs alias-svex))
+            (get-inputs-for-svex alias-svex modname modalist))
            (- (or success
-              (cw "Warning issued for this svex when processing aliases: ~p0 ~
+              (cw "Warning issued (in alias-pairs) for this svex  ~p0 ~
 it may help to add a rewrite rule for this. ~%" alias-svex)))
            (occ (make-occ-assign :inputs ins
                                  :delayed-inputs prev-ins
@@ -2036,6 +2078,9 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
   (define create-occ-in-nodes-count ((listeners)
                                      (acc))
+    ;; create an alist
+    ;; keys are occ-names
+    ;; and values are total number of other occs that need to be evaluated before.
     :verify-guards nil
     (if (atom listeners)
         (fast-alist-clean acc)
@@ -2059,7 +2104,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
        (mv (cons occ rest)
            occ-in-nodes-count)))
 
-   (define svl2-sort-occs-lst ((candidates occ-name-list-p)
+   (define svl2-sort-occs-lst ((candidates occ-name-list-p
+                                           "Occs that might be ready to add")
                                (all-occs occ-alist-p)
                                (occ-to-occ-listeners)
                                (occ-in-nodes-count))
@@ -2093,6 +2139,26 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
            0)
          (count-not-added-occs (cdr occ-in-nodes-count)))))
 
+
+  (define get-not-added-module-occs ((all-occs occ-alist-p)
+                                     (occ-in-nodes-count))
+    (declare (xargs :mode :program))
+    (if (atom occ-in-nodes-count)
+        nil
+      (b* ((rest (get-not-added-module-occs all-occs (cdr occ-in-nodes-count)))
+           (not-added (not (equal (cdar occ-in-nodes-count) 0)))
+           (is-module (equal (svl::occ-kind (cdr (hons-get (caar occ-in-nodes-count)
+                                                           all-occs)))
+                             ':module))
+           (module-name (if is-module (svl::occ-module->name (cdr (hons-get (caar occ-in-nodes-count)
+                                                                            all-occs)))
+                          nil)))
+        (if (and not-added
+                 is-module
+                 (not (member-equal module-name rest)))
+            (cons module-name rest)
+          rest)))) 
+  
   (define svl2-sort-occs-main ((all-occs occ-alist-p)
                                (occ-to-occ-listeners))
     (declare (xargs :mode :program))
@@ -2105,11 +2171,14 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                               occ-in-nodes-count))
          (occ-in-nodes-count (fast-alist-clean occ-in-nodes-count))
          (not-added-occs-count (count-not-added-occs occ-in-nodes-count))
-         (- (if (not (equal not-added-occs-count 0))
-                (hard-error 'svl2-sort-occs-main
-                            "~% ~% ~p0 many occs are not added! ~% ~%"
-                            (list (cons #\0 not-added-occs-count)))
-              nil))
+         (- (and (not (equal not-added-occs-count 0))
+                 (progn$
+                  (cw "~% ~% Not added modules: ~p0 ~%"
+                      (get-not-added-module-occs all-occs occ-in-nodes-count))
+                  (hard-error 'svl2-sort-occs-main
+                              "~p0 occs are not added! Possibly a combinational
+                               loop~% ~%"
+                              (list (cons #\0 not-added-occs-count))))))
          (- (fast-alist-free occ-in-nodes-count)))
       sorted-occs)))
 
@@ -2343,7 +2412,9 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
         (svl2-flatten-mod-insert-assigns-for-outputs (aliasdb->this aliasdb)
                                                      output-wires
                                                      0
-                                                     svex-simplify-preloaded))
+                                                     svex-simplify-preloaded
+                                                     modname
+                                                     modalist))
        (occs (append init-occs-for-aliased-inputs occs-for-outputs occs))
 
        (- (cw "Sorting occs... "))
@@ -2552,6 +2623,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                              ;; should not be flattened. It should be the
                              ;; original name of the module from Verilog
                              ;; designs. (but not from SV designs)
+                             (top 'nil) ;; can override the top module.
                              (state 'state))
   (declare (xargs :mode :program))
   (b* (((sv::design sv-design) sv-design)
@@ -2562,7 +2634,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
        (dont-flatten (if dont-flatten-all
                          all-modnames
                        (fix-dont-flatten
-                        (union-equal (list sv-design.top) dont-flatten)
+                        (union-equal dont-flatten
+                                     (if top (list top) (list sv-design.top)))
                         all-modnames)))
 
        (vl-insouts (vl-design-to-insouts vl-design
