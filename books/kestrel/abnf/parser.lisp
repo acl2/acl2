@@ -5303,23 +5303,22 @@
   :short "Parsing failure propagation theorems
           for the parser of ABNF grammars."
   :long
-  "<p>
-   If certain parsing functions fail,
-   other parsing functions fail as well,
-   because the former parse prefixes of the latter.
-   In other words, parsing failures ``propagate''.
-   </p>
-   <p>
-   The parsing failure propagation theorems below state this kind of facts.
-   These theorems are used as rewrite rules in the
-   <see topic='@(url grammar-parser-completeness)'>completeness theorems</see>
-   and in the
-   <see topic='@(url grammar-parser-disambiguation)'>disambiguation
-   theorems</see>.
-   The parsing failure propagation theorems are disabled by default;
-   they are enabled in the completeness and disambiguation theorems
-   that use them.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "If certain parsing functions fail,
+     other parsing functions fail as well,
+     because the former parse prefixes of the latter.
+     In other words, parsing failures ``propagate''.")
+   (xdoc::p
+    "The parsing failure propagation theorems below state this kind of facts.
+     These theorems are used as rewrite rules in the "
+    (xdoc::seetopic "grammar-parser-completeness" "completeness theorems")
+    " and in the "
+    (xdoc::seetopic "grammar-parser-disambiguation"
+                    "disambiguation theorems")
+    ". The parsing failure propagation theorems are disabled by default;
+     they are enabled in the completeness and disambiguation theorems
+     that use them."))
   :order-subtopics t)
 
 (defruled fail-dot-1*bit-when-fail-dot
@@ -5422,105 +5421,102 @@
   :parents (grammar-parser-completeness grammar-parser-disambiguation)
 
   :short "Parsing constraint theorems for the parser of ABNF grammars."
+
   :long
 
-  "<p>
-   If a parsing function succeeds,
-   the parsed input must satisfy certain constraints.
-   For example, if @(tsee parse-alpha) succeeds,
-   the input must be non-empty and start with (the ASCII code of) a letter.
-   As another example, if @(tsee parse-comment) succeeds,
-   the input must be non-empty and start with (the ASCII code of) a semicolon.
-   </p>
+  (xdoc::topstring
 
-   <p>
-   The parsing constraint theorems below capture constraints of this kind.
-   </p>
+   (xdoc::p
+    "If a parsing function succeeds,
+     the parsed input must satisfy certain constraints.
+     For example, if @(tsee parse-alpha) succeeds,
+     the input must be non-empty and start with (the ASCII code of) a letter.
+     As another example, if @(tsee parse-comment) succeeds,
+     the input must be non-empty
+     and start with (the ASCII code of) a semicolon.")
 
-   <h3>Usage</h3>
+   (xdoc::p
+    "The parsing constraint theorems below capture constraints of this kind.")
 
-   <p>
-   These theorems are used, together with the
-   <see topic='@(url grammar-parser-constraints-from-tree-matching)'>tree
-   matching constraint theorems</see>,
-   to prove the
-   <see topic='@(url grammar-parser-disambiguation)'>disambiguation
-   theorems</see>,
-   which in turn are used to prove the
-   <see topic='@(url grammar-parser-completeness)'>completeness
-   theorems</see>.
-   </p>
+   (xdoc::h3 "Usage")
 
-   <p>
-   The parsing constraint theorems have no rule classes.
-   They are used in the proofs of the disambiguation theorems
-   via @(':use') hints.
-   </p>
+   (xdoc::p
+    "These theorems are used, together with the "
+    (xdoc::seetopic "grammar-parser-constraints-from-tree-matching"
+                    "tree matching constraint theorems")
+    ", to prove the "
+    (xdoc::seetopic "grammar-parser-disambiguation"
+                    "disambiguation theorems")
+    ",  which in turn are used to prove the "
+    (xdoc::seetopic "grammar-parser-completeness"
+                    "completeness theorems")
+    ".")
 
-   <h3>Scope</h3>
+   (xdoc::p
+    "The parsing constraint theorems have no rule classes.
+     They are used in the proofs of the disambiguation theorems
+     via @(':use') hints.")
 
-   <p>
-   There are parsing constraint theorems only for some of the parsing functions:
-   just the ones used to prove the disambiguation theorems.
-   Furthermore, each parsing constraint theorem only states necessary,
-   but generally not sufficient,
-   conditions for the success of the corresponding parsing function:
-   it states only the constraints used to prove the disambiguation theorems.
-   </p>
+   (xdoc::h3 "Scope")
 
-   <p>
-   Most parsing constraint theorems state constraints
-   just on the first natural number of the input (the @(tsee car)),
-   because most of the grammar is LL(1);
-   these constraints correspond to `first sets'
-   in LL(1) parsing theory.
-   A few parsing constraint theorems state additional constraints
-   on the second natural number of the input (the @(tsee cadr)),
-   as needed for the LL(2) portions of the grammar.
-   </p>
+   (xdoc::p
+    "There are parsing constraint theorems
+     only for some of the parsing functions:
+     just the ones used to prove the disambiguation theorems.
+     Furthermore, each parsing constraint theorem only states necessary,
+     but generally not sufficient,
+     conditions for the success of the corresponding parsing function:
+     it states only the constraints used to prove the disambiguation theorems.")
 
-   <h3>Proof Methods</h3>
+   (xdoc::p
+    "Most parsing constraint theorems state constraints
+     just on the first natural number of the input (the @(tsee car)),
+     because most of the grammar is LL(1);
+     these constraints correspond to `first sets'
+     in LL(1) parsing theory.
+     A few parsing constraint theorems state additional constraints
+     on the second natural number of the input (the @(tsee cadr)),
+     as needed for the LL(2) portions of the grammar.")
 
-   <p>
-   The proof of each parsing constraint theorem
-   uses the definition of the corresponding parsing function,
-   e.g. @(tsee constraints-from-parse-alpha) uses
-   the definition of @(tsee parse-alpha).
-   In @(tsee constraints-from-parse-repetition),
-   @(tsee parse-repetition) does not get expanded even if it is enabled
-   (presumably due to ACL2's heuristics for expanding recursive functions);
-   thus, we use an explcit @(':expand') hint in that theorem.
-   </p>
+   (xdoc::h3 "Proof Methods")
 
-   <p>
-   When a parsing function calls another parsing function
-   that has a parsing constraint theorem,
-   this theorem is used (via a @(':use') hint)
-   in the proof of the caller's parsing constraint theorem,
-   e.g. @(tsee constraints-from-parse-in-range) is used
-   in the proof of @(tsee constraints-from-parse-alpha)
-   twice, once for each call of @(tsee parse-in-range) in @(tsee parse-alpha).
-   If instead the called parsing function
-   does not have a parsing constraint theorem,
-   the definition of the called parsing function is enabled
-   in the proof of the parsing constraint theorem of the caller,
-   e.g. the proof of @(tsee constraints-from-parse-wsp/vchar)
-   enables the definition of @(tsee parse-vchar).
-   </p>
+   (xdoc::p
+    "The proof of each parsing constraint theorem
+     uses the definition of the corresponding parsing function,
+     e.g. @(tsee constraints-from-parse-alpha) uses
+     the definition of @(tsee parse-alpha).
+     In @(tsee constraints-from-parse-repetition),
+     @(tsee parse-repetition) does not get expanded even if it is enabled
+     (presumably due to ACL2's heuristics for expanding recursive functions);
+     thus, we use an explcit @(':expand') hint in that theorem.")
 
-   <p>
-   Since @(tsee constraints-from-parse-ichar)
-   and @(tsee constraints-from-parse-ichars)
-   state constraints with @(tsee nat-match-insensitive-char-p),
-   and since those two theorems are used in the proofs
-   of many other parsing constraint theorems,
-   the proofs of the latter theorems
-   use the definition @(tsee nat-match-insensitive-char-p).
-   To avoid enabling it explicitly in many theorems,
-   we enable @(tsee nat-match-insensitive-char-p)
-   just before the parsing constraint theorems
-   and we disable it just after.
-   </p>"
+   (xdoc::p
+    "When a parsing function calls another parsing function
+     that has a parsing constraint theorem,
+     this theorem is used (via a @(':use') hint)
+     in the proof of the caller's parsing constraint theorem,
+     e.g. @(tsee constraints-from-parse-in-range) is used
+     in the proof of @(tsee constraints-from-parse-alpha)
+     twice, once for each call of @(tsee parse-in-range) in @(tsee parse-alpha).
+     If instead the called parsing function
+     does not have a parsing constraint theorem,
+     the definition of the called parsing function is enabled
+     in the proof of the parsing constraint theorem of the caller,
+     e.g. the proof of @(tsee constraints-from-parse-wsp/vchar)
+     enables the definition of @(tsee parse-vchar).")
+
+   (xdoc::p
+    "Since @(tsee constraints-from-parse-ichar)
+     and @(tsee constraints-from-parse-ichars)
+     state constraints with @(tsee nat-match-insensitive-char-p),
+     and since those two theorems are used in the proofs
+     of many other parsing constraint theorems,
+     the proofs of the latter theorems
+     use the definition @(tsee nat-match-insensitive-char-p).
+     To avoid enabling it explicitly in many theorems,
+     we enable @(tsee nat-match-insensitive-char-p)
+     just before the parsing constraint theorems
+     and we disable it just after."))
 
   :order-subtopics t)
 
