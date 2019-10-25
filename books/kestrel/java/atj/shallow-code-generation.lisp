@@ -2093,10 +2093,11 @@
    (xdoc::p
     "We also collect all the quoted constants
      that occur in the functions in @('pkg') that are translated to Java."))
-  (b* (((run-when verbose$)
+  (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
+       ((run-when (and verbose$
+                       (consp fns)))
         (cw "~%Generate the Java methods ~
-               for the ACL2 functions in package ~s0:~%" pkg))
-       (fns (cdr (assoc-equal pkg fns-by-pkg)))
+               for the ACL2 functions in package ~x0:~%" pkg))
        ((mv fn-methods
             qconsts) (atj-gen-shallow-fn-methods fns
                                                  qconsts
