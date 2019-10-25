@@ -1897,21 +1897,16 @@
                  new-interp-st new-state)
     (b* ((flags (interp-st->flags interp-st))
          (trace (interp-flags->trace-rewrites flags))
-         ((unless (fgl-object-case call :g-apply))
-          (fgl-interp-value nil nil))
-         ((g-apply call))
-         (interp-st (fgl-rewrite-try-rule-trace-wrapper
+         (interp-st (fgl-rewrite-try-rule-trace-call-wrapper
                      trace :start
-                     (fgl-rule-fix rule)
-                     call.fn call.args interp-st state))
+                     (fgl-rule-fix rule) call interp-st state))
          (interp-st (interp-st-prof-push (fgl-rule->rune rule) interp-st))
          ((fgl-interp-value successp ans)
           (fgl-primitive-fncall-stub (fgl-rule-primitive->name rule) call interp-st state))
          (interp-st (interp-st-prof-pop-increment successp interp-st))
-         (interp-st (fgl-rewrite-try-rule-trace-wrapper
+         (interp-st (fgl-rewrite-try-rule-trace-call-wrapper
                      trace `(:finish ,successp . ,ans)
-                     (fgl-rule-fix rule)
-                     call.fn call.args interp-st state)))
+                     (fgl-rule-fix rule) call interp-st state)))
       (fgl-interp-value successp ans))
     ///
     (local (acl2::use-trivial-ancestors-check))
@@ -2419,9 +2414,6 @@
                      (ans fgl-object-p)
                      new-interp-st new-state)
         (b* (((fgl-rule-rewrite rule))
-             ((unless (fgl-object-case call :g-apply))
-              (fgl-interp-value nil nil))
-             ((g-apply call))
              ;; ((unless (and** (mbt (and* (symbolp rule.equiv)
              ;;                            (not (eq rule.equiv 'quote))
              ;;                            ;; (ensure-equiv-relationp rule.equiv (w state))
@@ -2451,7 +2443,7 @@
               (fgl-interp-value nil nil))
              (flags (interp-st->flags interp-st))
              (trace (interp-flags->trace-rewrites flags))
-             (interp-st (fgl-rewrite-try-rule-trace-wrapper trace :start rule call.fn call.args interp-st state))
+             (interp-st (fgl-rewrite-try-rule-trace-call-wrapper trace :start rule call interp-st state))
              (hyps-flags  (!interp-flags->intro-bvars nil flags))
              (interp-st (interp-st-push-frame bindings interp-st))
              (interp-st (interp-st-set-debug rule interp-st))
@@ -2464,8 +2456,8 @@
               ((fgl-interp-recursive-call failed-hyp)
                (fgl-rewrite-relieve-hyps rule.hyps rule 0 interp-st state)))
 
-             (interp-st (fgl-rewrite-try-rule-trace-wrapper
-                         trace `(:hyps . ,failed-hyp) rule call.fn call.args interp-st state))
+             (interp-st (fgl-rewrite-try-rule-trace-call-wrapper
+                         trace `(:hyps . ,failed-hyp) rule call interp-st state))
 
              ((when (or** failed-hyp (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
@@ -2478,8 +2470,8 @@
               ;; Note: Was interp-term-equivs
               (fgl-interp-term rule.rhs interp-st state))
 
-             (interp-st (fgl-rewrite-try-rule-trace-wrapper
-                         trace `(:finish t . ,val) rule call.fn call.args interp-st state))
+             (interp-st (fgl-rewrite-try-rule-trace-call-wrapper
+                         trace `(:finish t . ,val) rule call interp-st state))
 
              (interp-st (interp-st-pop-frame interp-st))
              ((when (interp-st->errmsg interp-st))
@@ -2503,25 +2495,22 @@
                      new-interp-st new-state)
         (b* ((flags (interp-st->flags interp-st))
              (trace (interp-flags->trace-rewrites flags))
-             ((unless (fgl-object-case call :g-apply))
-              (fgl-interp-value nil nil))
-             ((g-apply call))
-             (interp-st (fgl-rewrite-try-rule-trace-wrapper trace :start rule call.fn call.args interp-st state))
+             (interp-st (fgl-rewrite-try-rule-trace-call-wrapper trace :start rule call interp-st state))
              (interp-st (interp-st-prof-push (fgl-rule->rune rule) interp-st))
              ((fgl-interp-value successp rhs bindings)
               (fgl-meta-fncall-stub (fgl-rule-meta->name rule) call interp-st state))
              ((when (or** (not successp) (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
-                   (interp-st (fgl-rewrite-try-rule-trace-wrapper
-                               trace `(:finish nil) rule call.fn call.args interp-st state)))
+                   (interp-st (fgl-rewrite-try-rule-trace-call-wrapper
+                               trace `(:finish nil) rule call interp-st state)))
                 (fgl-interp-value nil nil)))
 
              (interp-st (interp-st-push-frame bindings interp-st))
              (interp-st (interp-st-set-debug `(rule ,rhs) interp-st))
              ((fgl-interp-value val) (fgl-interp-term rhs interp-st state))
              
-             (interp-st (fgl-rewrite-try-rule-trace-wrapper
-                         trace `(:finish t . ,val) rule call.fn call.args interp-st state))
+             (interp-st (fgl-rewrite-try-rule-trace-call-wrapper
+                         trace `(:finish t . ,val) rule call interp-st state))
              (interp-st (interp-st-pop-frame interp-st))
              ((when (interp-st->errmsg interp-st))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
@@ -7530,7 +7519,6 @@
    (defthm apply-fgl-rewrite-rule-when-iff-forall-extensions
     (implies (and (fgl-ev-theoremp (fgl-rule-term rule))
                   (fgl-rule-case rule :rewrite)
-                  (fgl-object-case call :g-apply)
                   (iff-forall-extensions
                    t (conjoin (cmr::rewrite->hyps (fgl-rule-rewrite->rule rule)))
                    major-bindings1)
@@ -7550,10 +7538,7 @@
                     env))
                   (eval-alist-extension-p major-bindings2 major-bindings1))
              (equal (fgl-ev-context-fix contexts
-                                        (fgl-ev (cons (g-apply->fn call)
-                                                      (kwote-lst
-                                                       (fgl-objectlist-eval (g-apply->args call) env)))
-                                                nil))
+                                        (fgl-object-eval call env))
                     (fgl-ev-context-fix contexts rhs-obj)))
   :hints (("Goal" :in-theory (e/d (fgl-rule-term
                                    fgl-interp-equiv-refinementp

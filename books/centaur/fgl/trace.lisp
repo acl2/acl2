@@ -33,27 +33,25 @@
 (include-book "interp-st")
 (include-book "binder-rules")
 
-
+(local (std::add-default-post-define-hook :fix))
 
 (encapsulate
-  (((fgl-rewrite-try-rule-trace * * * * interp-st state) => interp-st
-    :formals (status rule fn args interp-st state)
+  (((fgl-rewrite-try-rule-trace * * * interp-st state) => interp-st
+    :formals (status rule call interp-st state)
     :guard (and (fgl-generic-rule-p rule)
-                (pseudo-fnsym-p fn)
-                (fgl-objectlist-p args))))
+                (fgl-object-p call))))
 
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
-  (local (defun fgl-rewrite-try-rule-trace (status rule fn args interp-st state)
+  (local (defun fgl-rewrite-try-rule-trace (status rule call interp-st state)
            (declare (xargs :stobjs (interp-st state)
                            :guard (and (fgl-generic-rule-p rule)
-                                       (pseudo-fnsym-p fn)
-                                       (fgl-objectlist-p args))))
+                                       (fgl-object-p call))))
            interp-st))
 
   (defthm interp-st-get-of-fgl-rewrite-try-rule-trace
     (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key (fgl-rewrite-try-rule-trace status rule fn args interp-st state))
+             (equal (interp-st-get key (fgl-rewrite-try-rule-trace status rule call interp-st state))
                     (interp-st-get key interp-st)))))
 
 (define fgl-rewrite-try-rule-trace-wrapper (trace
@@ -65,7 +63,7 @@
                                             state)
   :inline t
   (if trace
-      (fgl-rewrite-try-rule-trace status rule fn args interp-st state)
+      (fgl-rewrite-try-rule-trace status (fgl-generic-rule-fix rule) (g-apply fn args) interp-st state)
     interp-st)
   ///
   (defthm interp-st-get-of-fgl-rewrite-try-rule-trace-wrapper
@@ -74,11 +72,30 @@
                                         trace status rule fn args interp-st state))
                     (interp-st-get key interp-st)))))
 
+(define fgl-rewrite-try-rule-trace-call-wrapper (trace
+                                                 status
+                                                 (rule fgl-generic-rule-p)
+                                                 (call fgl-object-p)
+                                                 interp-st
+                                                 state)
+  :inline t
+  (if trace
+      (fgl-rewrite-try-rule-trace status
+                                  (fgl-generic-rule-fix rule)
+                                  (fgl-object-fix call)
+                                  interp-st state)
+    interp-st)
+  ///
+  (defthm interp-st-get-of-fgl-rewrite-try-rule-trace-call-wrapper
+    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
+             (equal (interp-st-get key (fgl-rewrite-try-rule-trace-call-wrapper
+                                        trace status rule call interp-st state))
+                    (interp-st-get key interp-st)))))
+
 
 (define fgl-rewrite-rule-try-trace-default (status
                                            (rule fgl-generic-rule-p)
-                                           (fn pseudo-fnsym-p)
-                                           (args fgl-objectlist-p)
+                                           (call fgl-object-p)
                                            interp-st state)
   :returns new-interp-st
   (b* ((rule-alist (and (boundp-global :fgl-trace-rule-alist state)
@@ -97,7 +114,7 @@
       (':start
        (prog2$ (fmt-to-comment-window
                 "~t0~x1> ~x2 ~x3~%"
-                (pairlis2 acl2::*base-10-chars* (list depth depth rune (g-apply fn args)))
+                (pairlis2 acl2::*base-10-chars* (list depth depth rune (fgl-object-fix call)))
                 0 evisc-tuple nil)
                (update-interp-st->trace-scratch (1+ depth) interp-st)))
       ((':hyps . failed-hyp)
@@ -200,9 +217,7 @@ following inputs:</p>
 <li>@('rule'), the rewrite rule structure of the rule being attempted, with
 guard @('(pseudo-rewrite-rule-p rule)')</li>
 
-<li>@('fn'), the function of the call being rewritten</li>
-
-<li>@('args'), the arguments of the call being rewritten</li>
+<li>@('call'), the symbolic object being rewritten</li>
 
 <li>@('interp-st'), the FGL interpreter state</li>
 
