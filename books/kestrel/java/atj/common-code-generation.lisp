@@ -610,23 +610,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-init-field ()
-  :returns (field jfieldp)
-  :short "Generate the Java field for the initialization flag."
+(define atj-gen-init-method ()
+  :returns (method jmethodp)
+  :short "Generate the Java public method to initialize the ACL2 environment."
   :long
-  (xdoc::topstring-p
-   "This is a private static field that is initially cleared,
-    indicating that the ACL2 environment has not been initialized yet.
-    The flag is set when the ACL2 environment is initialized,
-    and checked to avoid re-initializing the ACL2 environment again.")
-  (make-jfield :access (jaccess-private)
-               :static? t
-               :final? nil
-               :transient? nil
-               :volatile? nil
-               :type (jtype-boolean)
-               :name "initialized"
-               :init (jexpr-literal-false)))
+  (xdoc::topstring
+   (xdoc::p
+    "This method is actually empty,
+     but its invocation ensures that the class initializer,
+     which actually initializes the environment,
+     has been executed."))
+  (make-jmethod :access (jaccess-public)
+                :abstract? nil
+                :static? t
+                :final? nil
+                :synchronized? nil
+                :native? nil
+                :strictfp? nil
+                :result (jresult-void)
+                :name "initialize"
+                :params nil
+                :throws nil
+                :body nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

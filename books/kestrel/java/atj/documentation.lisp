@@ -483,7 +483,11 @@
      a Java exception is thrown if this protocol is not observed.
      This @('initialize') method should be also called
      before calling any of the public methods provided by AIJ,
-     because AIJ itself relies on this initialization to work properly.")
+     because AIJ itself relies on this initialization to work properly.
+     This method is actually empty,
+     but calling it ensures that the class is initialized:
+     it is the class's static initializer
+     that performs the actual initialization.")
 
    (xdoc::p
     "In the deep embedding approach,
