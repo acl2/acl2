@@ -124,6 +124,20 @@
     "We put together lexical and syntactic grammar.
      The resulting grammar is well-formed and closed.")
    (xdoc::p
+    "The combined grammar has two prose rules,
+     one for @('java-letter') and one for @('java-letter-or-digit').
+     Assuming that these can only produce
+     terminal strings that consist of only Java Unicode characters,
+     then the combined grammar can only produce
+     terminal strings that consist of only Java Unicode characters.
+     We prove this by showing that, after removing the two prose rules,
+     the grammar only produces terminal strings of Java Unicode characters.
+     Proving this rule by execution would be slow
+     due to the relatively large range of Java Unicode characters;
+     thus, we disable the executable counterpart of @(tsee integers-from-to)
+     and use library theorems that relate @(tsee integers-from-to)
+     to @(tsee in) and @(tsee list-in).")
+   (xdoc::p
     "The goal symbol of the Java syntactic grammar is
      @('CompilationUnit') [JLS:2.3] [JLS:7.3].
      One might expect that the set of all strings derived from this goal symbol
@@ -169,7 +183,26 @@
     (abnf::rulelist-wfp *grammar*))
 
   (defruled rulelist-closedp-of-*grammar*
-    (abnf::rulelist-closedp *grammar*)))
+    (abnf::rulelist-closedp *grammar*))
+
+  (defruled unicode-only-*grammar*
+    (abnf::rulelist-in-termset-p (abnf::remove-rules-that-define
+                                  (list (abnf::rulename "java-letter")
+                                        (abnf::rulename "java-letter-or-digit"))
+                                  *grammar*)
+                                 (integers-from-to 0 #xffff))
+    :enable (abnf::rule-in-termset-p
+             abnf::repetition-in-termset-p
+             abnf::element-in-termset-p
+             abnf::num-val-in-termset-p
+             abnf::char-val-in-termset-p
+             abnf::char-insensitive-in-termset-p
+             abnf::char-sensitive-in-termset-p)
+    :disable ((:e acl2::integers-from-to))
+    :prep-books
+    ((local
+      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

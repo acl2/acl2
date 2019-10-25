@@ -70,6 +70,7 @@
                          implode
                          impossible
                          index-of
+                         integers-from-to
                          irecursivep
                          known-packages
                          lambda-body
@@ -141,5 +142,6 @@
                          upper-case-p
                          variablep
                          std::defret-mutual
+                         set::list-in
                          str::chars-in-charset-p
                          str::natstr)))
