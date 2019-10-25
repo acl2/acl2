@@ -27,9 +27,13 @@
      but it includes a run-time check (which should always succeed)
      on the result
      that allows us to prove the return type theorem
-     without strengthening the guard on @('wrld').
-     Furthermore, this utility causes an error if called on a symbol
-     that does not name a function.")
+     without strengthening the guard on @('wrld').")
+   (xdoc::p
+    "Similarly to @(tsee formals),
+     this utility causes an error if called on a symbol
+     that does not name a function.
+     But the error message is slightly different
+     from the one of @(tsee formals).")
    (xdoc::p
     "This utility also operates on lambda expressions,
      unlike @(tsee formals)."))
