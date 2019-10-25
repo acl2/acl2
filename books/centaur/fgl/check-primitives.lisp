@@ -54,6 +54,7 @@
    check-non-consp
    check-booleanp
    check-non-booleanp
+   check-equal
    integer-length-bound
    ifix))
 
@@ -418,3 +419,20 @@
                       :rule-classes ((:linear :trigger-terms ((integer-length (bools->int x)))))))))
 
 (add-fgl-binder-meta integer-length-bound integer-length-bound-binder)
+
+
+
+
+(def-fgl-binder-meta check-equal-binder
+  (if (and (eq (pseudo-fnsym-fix fn) 'check-equal)
+           (eql (len args) 2))
+      (mv t 'ans (if (equal (fgl-object-fix (car args))
+                            (fgl-object-fix (cadr args)))
+                     '((ans . t))
+                   '((ans . nil)))
+          nil interp-st state)
+    (mv nil nil nil nil interp-st state))
+  :formula-check checks-formula-checks
+  :prepwork ((local (in-theory (enable check-equal)))))
+
+(add-fgl-binder-meta check-equal check-equal-binder)

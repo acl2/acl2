@@ -239,6 +239,23 @@ be a string or message identifying the particular SAT check.</p>"
 (define major-stack->debugframes ((x major-stack-p))
   (major-stack->debugframes-aux 0 x))
 
+(define minor-stack->debug ((x minor-stack-p))
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (minor-frame->debug (car x))
+        (and (consp (cdr x))
+             (minor-stack->debug (cdr x)))))
+
+(define minor-stack->debugframes-aux ((n natp) (x minor-stack-p))
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (cons (lnfix n) (minor-frame->debug (car x)))
+        (and (consp (cdr x))
+             (minor-stack->debugframes-aux (1+ (lnfix n)) (cdr x)))))
+
+(define minor-stack->debugframes ((x minor-stack-p))
+  (minor-stack->debugframes-aux 0 x))
+
 (define interp-st-extract-bvar-db (interp-st)
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
              (db)
