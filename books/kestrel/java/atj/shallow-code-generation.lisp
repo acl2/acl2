@@ -1623,6 +1623,7 @@
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
                                          (guards$ booleanp)
+                                         (verbose$ booleanp)
                                          (wrld plist-worldp))
   :guard (aij-nativep fn)
   :verify-guards nil
@@ -1671,6 +1672,8 @@
                                             pkg-class-names
                                             fn-method-names
                                             curr-pkg))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~x1~%" method-name fn))
        (method-param-names
         (case fn
           (intern-in-package-of-symbol (list "str" "sym"))
@@ -1789,6 +1792,7 @@
                                       (pkg-class-names string-string-alistp)
                                       (fn-method-names symbol-string-alistp)
                                       (guards$ booleanp)
+                                      (verbose$ booleanp)
                                       (wrld plist-worldp))
   :returns (mv (method jmethodp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
@@ -1822,6 +1826,8 @@
                                             pkg-class-names
                                             fn-method-names
                                             curr-pkg))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~x1~%" method-name fn))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
        (method-params (atj-gen-paramlist (symbol-name-lst formals)
@@ -1877,21 +1883,21 @@
   (xdoc::topstring-p
    "We also add all the quoted constants to the collection.
     The collection does not change for native functions.")
-  (b* (((run-when verbose$)
-        (cw "  ~s0~%" fn)))
-    (if (aij-nativep fn)
-        (mv (atj-gen-shallow-fnnative-method fn
-                                             pkg-class-names
-                                             fn-method-names
-                                             guards$
-                                             wrld)
-            qconsts)
-      (atj-gen-shallow-fndef-method fn
-                                    qconsts
-                                    pkg-class-names
-                                    fn-method-names
-                                    guards$
-                                    wrld))))
+  (if (aij-nativep fn)
+      (mv (atj-gen-shallow-fnnative-method fn
+                                           pkg-class-names
+                                           fn-method-names
+                                           guards$
+                                           verbose$
+                                           wrld)
+          qconsts)
+    (atj-gen-shallow-fndef-method fn
+                                  qconsts
+                                  pkg-class-names
+                                  fn-method-names
+                                  guards$
+                                  verbose$
+                                  wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2097,7 +2103,7 @@
        ((run-when (and verbose$
                        (consp fns)))
         (cw "~%Generate the Java methods ~
-               for the ACL2 functions in package ~x0:~%" pkg))
+               for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
             qconsts) (atj-gen-shallow-fn-methods fns
                                                  qconsts
@@ -2276,9 +2282,9 @@
     "The methods are in the @('methods-by-pkg') alist,
      which is calculated (elsewhere)
      via @(tsee atj-gen-shallow-all-pkg-methods)."))
-  (b* (((run-when verbose$)
-        (cw "  ~s0~%" pkg))
-       (class-name (atj-get-pkg-class-name pkg pkg-class-names))
+  (b* ((class-name (atj-get-pkg-class-name pkg pkg-class-names))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~s1~%" class-name pkg))
        (fields (cdr (assoc-equal pkg fields-by-pkg)))
        (methods (cdr (assoc-equal pkg methods-by-pkg))))
     (make-jclass :access (jaccess-public)

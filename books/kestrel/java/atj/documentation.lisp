@@ -516,9 +516,9 @@
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.
-     See the implementation for a description of the mapping between
-     ACL2 package and function names and these Java class and method names;
-     user-level documentation for this mapping will be added at some point.")
+     The mapping between these Java class and method names
+     and the corresponding ACL2 package and function names
+     is displayed if @(':verbose') is @('t').")
 
    (xdoc::h4 "Optional Test Class")
 
