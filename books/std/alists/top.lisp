@@ -59,6 +59,7 @@
 (include-book "remove-assoc-equal")
 (include-book "alist-map-keys")
 (include-book "alist-map-vals")
+(include-book "assoc")
 
 (include-book "alist-defuns")
 
