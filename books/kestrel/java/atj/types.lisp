@@ -204,7 +204,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist symbol-atjtype-alistp (x)
+(std::defalist symbol-atj-type-alistp (x)
   :short "Recognize alists from symbols to ATJ types."
   :key (symbolp x)
   :val (atj-typep x)
@@ -213,16 +213,16 @@
   :valp-of-nil nil
   ///
 
-  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
-    (implies (symbol-atjtype-alistp alist)
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atj-type-alistp
+    (implies (symbol-atj-type-alistp alist)
              (iff (atj-typep (cdr (assoc-equal key alist)))
                   (assoc-equal key alist))))
 
-  (defrule symbol-atjtype-listp-of-pairlis$
+  (defrule symbol-atj-type-alistp-of-pairlis$
     (implies (and (symbol-listp keys)
                   (atj-type-listp vals)
                   (equal (len keys) (len vals)))
-             (symbol-atjtype-alistp (pairlis$ keys vals)))))
+             (symbol-atj-type-alistp (pairlis$ keys vals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -564,7 +564,7 @@
 
   (define atj-type-annotate-term ((term pseudo-termp)
                                   (required-type? maybe-atj-typep)
-                                  (var-types symbol-atjtype-alistp)
+                                  (var-types symbol-atj-type-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (annotated-term pseudo-termp :hyp :guard)
@@ -684,7 +684,7 @@
 
   (define atj-type-annotate-terms ((terms pseudo-term-listp)
                                    (required-types? maybe-atj-type-listp)
-                                   (var-types symbol-atjtype-alistp)
+                                   (var-types symbol-atj-type-alistp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (int= (len terms) (len required-types?))
