@@ -42,7 +42,8 @@ import java.util.Map;
  * Some of these methods have overloaded variants that operate
  * on narrower types that are contained in the guards:
  * these can be used when guards are satisfied,
- * and may be more efficient.
+ * and may be more efficient;
+ * some also return narrower result types.
  * <p>
  * Each native function is represented by
  * a singleton instance of a direct subclass of this class.
@@ -1736,7 +1737,35 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Number execUnaryMinus(Acl2Number x) {
         // it is not clear if this can be made faster
-        // by knowing that pkg is an ACL2 number:
+        // by knowing that x is a number:
+        return x.negate();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code unary--} ACL2 primitive function,
+     * on a rational.
+     * Since rationals are closed under this operation,
+     * the result is a rational.
+     *
+     * @param x The actual argument to pass to the function.
+     * @return The result of the function on the given argument.
+     */
+    public static Acl2Rational execUnaryMinus(Acl2Rational x) {
+        return x.negate();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code unary--} ACL2 primitive function,
+     * on an integer.
+     * Since integers are closed under this operation,
+     * the result is an integer.
+     *
+     * @param x The actual argument to pass to the function.
+     * @return The result of the function on the given argument.
+     */
+    public static Acl2Integer execUnaryMinus(Acl2Integer x) {
         return x.negate();
     }
 
@@ -1762,7 +1791,21 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Number execUnarySlash(Acl2Number x) {
         // it is not clear if this can be made faster
-        // by knowing that pkg is an ACL2 number:
+        // by knowing that x is an ACL2 number:
+        return x.reciprocate();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code unary-/} ACL2 primitive function,
+     * on a rational.
+     * Since rationals are closed under this operation,
+     * the result is a rational.
+     *
+     * @param x The actual argument to pass to the function.
+     * @return The result of the function on the given argument.
+     */
+    public static Acl2Rational execUnarySlash(Acl2Rational x) {
         return x.reciprocate();
     }
 
@@ -1796,6 +1839,40 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code binary-+} ACL2 primitive function,
+     * on rationals.
+     * Since rationals are closed under this operation,
+     * the result is a rational.
+     *
+     * @param x The first actual argument to pass to the function.
+     * @param y The second actual argument to pass to the function.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Rational execBinaryPlus(Acl2Rational x, Acl2Rational y) {
+        // this should be slightly faster than x.addNumber(y),
+        // which in turn calls y.addRational(x):
+        return x.addRational(y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code binary-+} ACL2 primitive function,
+     * on integers.
+     * Since integers are closed under this operation,
+     * the result is an integer.
+     *
+     * @param x The first actual argument to pass to the function.
+     * @param y The second actual argument to pass to the function.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Integer execBinaryPlus(Acl2Integer x, Acl2Integer y) {
+        // this should be slightly faster than x.addRational(y),
+        // which in turn calls y.addInteger(x):
+        return x.addInteger(y);
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code binary-*} ACL2 primitive function,
      * on any values.
      *
@@ -1820,6 +1897,40 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         // this should be slightly faster than x.multiplyValue(y),
         // which in turn calls y.multiplyNumber(x):
         return x.multiplyNumber(y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code binary-*} ACL2 primitive function,
+     * on rationals.
+     * Since rationals are closed under this operation,
+     * the result is a rational.
+     *
+     * @param x The first actual argument to pass to the function.
+     * @param y The second actual argument to pass to the function.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Rational execBinaryStar(Acl2Rational x, Acl2Rational y) {
+        // this should be slightly faster than x.multiplyNumber(y),
+        // which in turn calls y.multiplyRational(x):
+        return x.multiplyRational(y);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code binary-*} ACL2 primitive function,
+     * on integers.
+     * Since integers are closed under this operation,
+     * the result is an integer.
+     *
+     * @param x The first actual argument to pass to the function.
+     * @param y The second actual argument to pass to the function.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Integer execBinaryStar(Acl2Integer x, Acl2Integer y) {
+        // this should be slightly faster than x.multiplyRational(y),
+        // which in turn calls y.multiplyInteger(x):
+        return x.multiplyInteger(y);
     }
 
     /**
