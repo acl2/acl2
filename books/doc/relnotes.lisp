@@ -566,11 +566,14 @@
     "An ABNF grammar has been added for the whole Java language,
      consisting of the lexical and syntactic sub-grammars
      from the Java language specification.
-     The grammar files have been parser with "
+     The grammar files have been parsed with "
     (xdoc::seetopic "abnf::grammar-parser" "the verified ABNF grammar parser")
     ", obtaining a formal representation of the grammar of Java,
      which can be used to formally specify. at a very high and assured level,
-     the concrete syntax of Java.")
+     the concrete syntax of Java.
+     Various properties of the thus-obtained grammar representation (e.g. "
+    (xdoc::seetopic "abnf::closure" "closure")
+    ") have been proved, for validation.")
 
    (xdoc::p
     "A model of Java Unicode characters has been added,
@@ -580,7 +583,12 @@
     "Models have been added
      of the null and boolean literals,
      of (non-restricted and restricted) keywords,
-     and of identifiers.")
+     and of identifiers.
+     The consistency of these models with the grammar (see above)
+     has been proved.")
+
+   (xdoc::p
+    "Models have been added of all the boolean and integer operations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
