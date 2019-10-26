@@ -522,13 +522,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-function-type-table-name*
+(defval *atj-function-type-info-table-name*
   :short "Name of the table that associates ATJ types to ACL2 functions."
-  'atj-function-type-table)
+  'atj-function-type-info-table)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atj-function-type-table
+(defsection atj-function-type-info-table
   :short "Table that associates ATJ types to ACL2 functions."
   :long
   (xdoc::topstring
@@ -536,7 +536,7 @@
     "This table is populated by
      successful calls of the @(tsee def-atj-function-type) macro."))
   (make-event
-   `(table ,*atj-function-type-table-name* nil nil
+   `(table ,*atj-function-type-info-table-name* nil nil
       :guard (and (symbolp acl2::key)
                   (atj-function-type-info-p acl2::val)))))
 
@@ -550,7 +550,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is retrieved from the "
-    (xdoc::seetopic "atj-function-type-table"
+    (xdoc::seetopic "atj-function-type-info-table"
                     "@(tsee def-atj-function-type) table")
     ". If the table has no entry for the function,
      a function type all consisting of @(':value') is returned.")
@@ -559,7 +559,7 @@
      As we add more support for them, this function may need to be
      generalized to return the whole function type information,
      or renamed to reflect that it returns the main function type."))
-  (b* ((table (table-alist+ *atj-function-type-table-name* wrld))
+  (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair)
         (b* ((fn-info (cdr pair)))
@@ -712,7 +712,7 @@
        (set-ignore-ok t)
        ,@input-thms
        ,output-thm
-       (table ,*atj-function-type-table-name* ',fn ',fn-info))))
+       (table ,*atj-function-type-info-table-name* ',fn ',fn-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
