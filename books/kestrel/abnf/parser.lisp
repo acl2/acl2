@@ -5865,202 +5865,193 @@
 
   :long
 
-  "<p>
-   If a (list of) terminated tree(s) matches a syntactic entity,
-   the string at the leaves of the tree(s) must satisfy certain constraints.
-   For example, if a terminated tree matches @('CRLF'),
-   the string at the leaves of the tree
-   must be non-empty and start with a carriage return.
-   </p>
+  (xdoc::topstring
 
-   <p>
-   The tree matching constraint theorems below capture constraints of this kind.
-   While these theorems are not directly related to the parser,
-   they are motivated by the parser (see below).
-   </p>
+   (xdoc::p
+    "If a (list of) terminated tree(s) matches a syntactic entity,
+     the string at the leaves of the tree(s) must satisfy certain constraints.
+     For example, if a terminated tree matches @('CRLF'),
+     the string at the leaves of the tree
+     must be non-empty and start with a carriage return.")
 
-   <h3>Usage</h3>
+   (xdoc::p
+    "The tree matching constraint theorems below
+     capture constraints of this kind.
+     While these theorems are not directly related to the parser,
+     they are motivated by the parser (see below).")
 
-   <p>
-   These theorems are used, together with the
-   <see topic='@(url grammar-parser-constraints-from-parsing)'>parsing
-   constraint theorems</see>,
-   to prove the
-   <see topic='@(url grammar-parser-disambiguation)'>disambiguation
-   theorems</see>,
-   which in turn are used to prove the
-   <see topic='@(url grammar-parser-completeness)'>completeness
-   theorems</see>.
-   </p>
+   (xdoc::h3 "Usage")
 
-   <p>
-   The tree matching constraint theorems have no rule classes.
-   They are used in the proofs of the disambiguation theorems
-   via @(':use') hints.
-   </p>
+   (xdoc::p
+    "These theorems are used, together with the "
+    (xdoc::seetopic "grammar-parser-constraints-from-parsing"
+                    "parsing constraint theorems")
+    ", to prove the "
+    (xdoc::seetopic "grammar-parser-disambiguation"
+                    "disambiguation theorems")
+    ", which in turn are used to prove the "
+    (xdoc::seetopic "grammar-parser-completeness"
+                    "completeness theorems")
+    ".")
 
-   <p>
-   Some tree matching constraint theorems are used
-   to incrementally prove other tree matching constraint theorems (see below),
-   also via @(':use') hints.
-   </p>
+   (xdoc::p
+    "The tree matching constraint theorems have no rule classes.
+     They are used in the proofs of the disambiguation theorems
+     via @(':use') hints.")
 
-   <h3>Scope</h3>
+   (xdoc::p
+    "Some tree matching constraint theorems are used
+     to incrementally prove other tree matching constraint theorems (see below),
+     also via @(':use') hints.")
 
-   <p>
-   There are tree matching constraint theorems only for some syntactic entities:
-   just the ones used to prove the disambiguation theorems,
-   and to incrementally prove other tree matching constraint theorems.
-   Furthermore, each tree matching constraint theorem only states necessary,
-   but generally not sufficient,
-   conditions for the matching of the corresponding syntactic entity:
-   it states only the constraints used to prove the disambiguation theorems
-   (and, incrementally, other tree matching constraint theorems).
-   </p>
+   (xdoc::h3 "Scope")
 
-   <p>
-   Most tree matching constraint theorems state constraints
-   just on the first natural number of the string at the leaves of the tree(s)
-   (the @(tsee car)),
-   because most of the grammar is LL(1).
-   A few tree matching constraint theorems state additional constraints
-   on the second natural number of the string at the leaves of the tree(s)
-   (the @(tsee cadr)),
-   as needed for the LL(2) portions of the grammar.
-   Since the tree matching constraint theorem
-   @(tsee constraints-from-tree-match-ichars)
-   would have to state constraints
-   either on the first natural number or on the first and second natural numbers
-   depending on the instantiation of @('charstring'),
-   for simplicity this theorem states constraints
-   on the whole string at the leaves of the tree.
-   </p>
+   (xdoc::p
+    "There are tree matching constraint theorems
+     only for some syntactic entities:
+     just the ones used to prove the disambiguation theorems,
+     and to incrementally prove other tree matching constraint theorems.
+     Furthermore, each tree matching constraint theorem only states necessary,
+     but generally not sufficient,
+     conditions for the matching of the corresponding syntactic entity:
+     it states only the constraints used to prove the disambiguation theorems
+     (and, incrementally, other tree matching constraint theorems).")
 
-   <h3>Hypotheses on the Tree(s)</h3>
+   (xdoc::p
+    "Most tree matching constraint theorems state constraints
+     just on the first natural number of the string at the leaves of the tree(s)
+     (the @(tsee car)),
+     because most of the grammar is LL(1).
+     A few tree matching constraint theorems state additional constraints
+     on the second natural number of the string at the leaves of the tree(s)
+     (the @(tsee cadr)),
+     as needed for the LL(2) portions of the grammar.
+     Since the tree matching constraint theorem
+     @(tsee constraints-from-tree-match-ichars)
+     would have to state constraints
+     either on the first natural number
+     or on the first and second natural numbers
+     depending on the instantiation of @('charstring'),
+     for simplicity this theorem states constraints
+     on the whole string at the leaves of the tree.")
 
-   <p>
-   Most tree matching constraint theorems include
-   hypotheses saying that the trees are terminated.
-   This ensures that the strings at the leaves of the trees
-   consist of natural numbers and not rule names,
-   since the constraints are stated on natural numbers.
-   </p>
+   (xdoc::h3 "Hypotheses on the Tree(s)")
 
-   <p>
-   A few tree matching constraint theorems do not need these hypotheses
-   because the corresponding syntactic entities can only be matched
-   by trees whose (starting) leaves are natural numbers.
-   For instance, in @(tsee constraints-from-tree-match-dot-etc.),
-   the group @('(\".\" ...)') can only be matched
-   by a tree whose first leaf is a natural number,
-   upon which the theorem states the constraint.
-   </p>
+   (xdoc::p
+    "Most tree matching constraint theorems include
+     hypotheses saying that the trees are terminated.
+     This ensures that the strings at the leaves of the trees
+     consist of natural numbers and not rule names,
+     since the constraints are stated on natural numbers.")
 
-   <h3>Hypotheses on the String at the Leaves of the Tree(s)</h3>
+   (xdoc::p
+    "A few tree matching constraint theorems do not need these hypotheses
+     because the corresponding syntactic entities can only be matched
+     by trees whose (starting) leaves are natural numbers.
+     For instance, in @(tsee constraints-from-tree-match-dot-etc.),
+     the group @('(\".\" ...)') can only be matched
+     by a tree whose first leaf is a natural number,
+     upon which the theorem states the constraint.")
 
-   <p>
-   The tree matching constraint theorems
-   whose names end with @('-when-nonempty')
-   include hypotheses saying that the string at the leaves is not empty.
-   This is because the corresponding syntactic entities may be matched
-   by a tree with an empty string at the leaves
-   or by an empty list of trees.
-   For example,
-   in @(tsee constraints-from-tree-match-bin-val-rest-when-nonempty),
-   the matching tree may have no subtrees,
-   since the syntactic entity in question
-   is an option @('[ 1*(\".\" 1*BIT) / (\"-\" 1*BIT) ]').
-   As another example,
-   in @(tsee constraints-from-tree-list-match-*digit-when-nonempty),
-   the matching list of trees may be empty.
-   </p>
+   (xdoc::h3 "Hypotheses on the String at the Leaves of the Tree(s)")
 
-   <h3>Proof Methods</h3>
+   (xdoc::p
+    "The tree matching constraint theorems
+     whose names end with @('-when-nonempty')
+     include hypotheses saying that the string at the leaves is not empty.
+     This is because the corresponding syntactic entities may be matched
+     by a tree with an empty string at the leaves
+     or by an empty list of trees.
+     For example,
+     in @(tsee constraints-from-tree-match-bin-val-rest-when-nonempty),
+     the matching tree may have no subtrees,
+     since the syntactic entity in question
+     is an option @('[ 1*(\".\" 1*BIT) / (\"-\" 1*BIT) ]').
+     As another example,
+     in @(tsee constraints-from-tree-list-match-*digit-when-nonempty),
+     the matching list of trees may be empty.")
 
-   <p>
-   The proof of each tree matching constraint theorem
-   expands @(tsee tree-match-element-p) or @(tsee tree-list-match-repetition-p)
-   (depending on whether the theorem applies to
-   a single tree or to a list of trees).
-   But most theorems need explicit @(':expand') hints for that:
-   just enabling the functions does not suffice
-   (presumably due to ACL2's heuristics for expanding recursive functions).
-   </p>
+   (xdoc::h3 "Proof Methods")
 
-   <p>
-   Since many repetitions consist of one element,
-   the rewrite rule @(tsee tree-list-match-repetition-p-of-1-repetition)
-   is used in many proofs.
-   It is enabled just before the tree matching constraint theorems
-   and disabled just after.
-   </p>
+   (xdoc::p
+    "The proof of each tree matching constraint theorem
+     expands @(tsee tree-match-element-p)
+     or @(tsee tree-list-match-repetition-p)
+     (depending on whether the theorem applies to
+     a single tree or to a list of trees).
+     But most theorems need explicit @(':expand') hints for that:
+     just enabling the functions does not suffice
+     (presumably due to ACL2's heuristics for expanding recursive functions).")
 
-   <p>
-   Except for
-   @(tsee constraints-from-tree-match-dot-etc.) and
-   @(tsee constraints-from-tree-match-dash-etc.),
-   the alternations and concatenations of the syntactic entities being matched
-   have an explicit list structure,
-   and so the proof automatically uses rewrite rules like
-   @(tsee tree-list-list-match-alternation-p-of-cons-alternation).
-   In contrast,
-   for @(tsee constraints-from-tree-match-dot-etc.) and
-   for @(tsee constraints-from-tree-match-dash-etc.),
-   we expand
-   @(tsee tree-list-list-match-alternation-p) and
-   @(tsee tree-list-list-match-concatenation-p)
-   via explicit @(':expand') hints,
-   because just enabling these two functions does not suffice
-   (presumably due to ACL2's heuristics for expanding recursive functions).
-   </p>
+   (xdoc::p
+    "Since many repetitions consist of one element,
+     the rewrite rule @(tsee tree-list-match-repetition-p-of-1-repetition)
+     is used in many proofs.
+     It is enabled just before the tree matching constraint theorems
+     and disabled just after.")
 
-   <p>
-   The expansions described above reduce
-   the matching of the (list of) tree(s) with syntactic entities
-   in the hypothesis,
-   to the matching of subtrees with syntactic sub-entities.
-   Tree matching constraint theorems for these subtrees
-   are used in the proofs for the containing trees, via @(':use') hints.
-   For example, the proof of @(tsee constraints-from-tree-match-alpha)
-   uses @(tsee constraints-from-tree-match-ichars) twice,
-   once for each alternative of @('ALPHA') that the subtree may match.
-   </p>
+   (xdoc::p
+    "Except for
+     @(tsee constraints-from-tree-match-dot-etc.) and
+     @(tsee constraints-from-tree-match-dash-etc.),
+     the alternations and concatenations of the syntactic entities being matched
+     have an explicit list structure,
+     and so the proof automatically uses rewrite rules like
+     @(tsee tree-list-list-match-alternation-p-of-cons-alternation).
+     In contrast,
+     for @(tsee constraints-from-tree-match-dot-etc.) and
+     for @(tsee constraints-from-tree-match-dash-etc.),
+     we expand
+     @(tsee tree-list-list-match-alternation-p) and
+     @(tsee tree-list-list-match-concatenation-p)
+     via explicit @(':expand') hints,
+     because just enabling these two functions does not suffice
+     (presumably due to ACL2's heuristics for expanding recursive functions).")
 
-   <p>
-   As the matching of the tree(s) in the hypotheses of the theorems
-   is reduced, in the proofs, to the matching of subtrees as just explained,
-   we also need
-   to reduce the tree strings to subtree strings and
-   to reduce the terminated tree hypotheses to terminated subtree hypotheses,
-   so that the tree matching constraint theorems for the subtrees apply.
-   We accomplish the latter reductions by expanding the definitions of
-   @(tsee tree->string),
-   @(tsee tree-list->string),
-   @(tsee tree-list-list->string), and
-   @(tsee tree-terminatedp).
-   We enable them just before the tree matching constraint theorems
-   and we disable them just after.
-   Enabled rules for
-   @(tsee tree-list-terminatedp) and @(tsee tree-list-list-terminatedp)
-   suffice, so we do not need to enable these two functions.
-   </p>
+   (xdoc::p
+    "The expansions described above reduce
+     the matching of the (list of) tree(s) with syntactic entities
+     in the hypothesis,
+     to the matching of subtrees with syntactic sub-entities.
+     Tree matching constraint theorems for these subtrees
+     are used in the proofs for the containing trees, via @(':use') hints.
+     For example, the proof of @(tsee constraints-from-tree-match-alpha)
+     uses @(tsee constraints-from-tree-match-ichars) twice,
+     once for each alternative of @('ALPHA') that the subtree may match.")
 
-   <p>
-   Since @(tsee constraints-from-tree-match-ichars)
-   states constraints with @(tsee nats-match-insensitive-chars-p),
-   and since that theorem is used in the proofs
-   of several other tree matching constraint theorems,
-   the proofs of the latter theorems
-   use the definition of @(tsee nat-match-insensitive-char-p),
-   which we enable just before the tree matching constraint theorems
-   and we disable just after.
-   The rewrite rules
-   @('nats-match-sensitive-chars-p-when-atom-chars') and
-   @('nats-match-sensitive-chars-p-when-cons-chars')
-   reduce @(tsee nats-match-insensitive-chars-p)
-   to @(tsee nat-match-insensitive-char-p)
-   because the @('chars') argument is constant.
-   </p>"
+   (xdoc::p
+    "As the matching of the tree(s) in the hypotheses of the theorems
+     is reduced, in the proofs, to the matching of subtrees as just explained,
+     we also need
+     to reduce the tree strings to subtree strings and
+     to reduce the terminated tree hypotheses to terminated subtree hypotheses,
+     so that the tree matching constraint theorems for the subtrees apply.
+     We accomplish the latter reductions by expanding the definitions of
+     @(tsee tree->string),
+     @(tsee tree-list->string),
+     @(tsee tree-list-list->string), and
+     @(tsee tree-terminatedp).
+     We enable them just before the tree matching constraint theorems
+     and we disable them just after.
+     Enabled rules for
+     @(tsee tree-list-terminatedp) and @(tsee tree-list-list-terminatedp)
+     suffice, so we do not need to enable these two functions.")
+
+   (xdoc::p
+    "Since @(tsee constraints-from-tree-match-ichars)
+     states constraints with @(tsee nats-match-insensitive-chars-p),
+     and since that theorem is used in the proofs
+     of several other tree matching constraint theorems,
+     the proofs of the latter theorems
+     use the definition of @(tsee nat-match-insensitive-char-p),
+     which we enable just before the tree matching constraint theorems
+     and we disable just after.
+     The rewrite rules
+     @('nats-match-sensitive-chars-p-when-atom-chars') and
+     @('nats-match-sensitive-chars-p-when-cons-chars')
+     reduce @(tsee nats-match-insensitive-chars-p)
+     to @(tsee nat-match-insensitive-char-p)
+     because the @('chars') argument is constant."))
 
   :order-subtopics t)
 
