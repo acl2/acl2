@@ -742,7 +742,7 @@
      on the ACL2 functions that are implemented natively in AIJ.")
    (xdoc::p
     "If ATJ encounters a function that is not in the table,
-     it assumes the wider possible type (i.e. the one for all ACL2 values)
+     it assumes the widest possible type (i.e. the one for all ACL2 values)
      for inputs and output of the function.
      See the code generation functions for details.")
    (xdoc::@def "def-atj-function-type"))
