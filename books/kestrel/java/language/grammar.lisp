@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (language)
+  :parents (syntax)
   :short "Grammar of the Java language [JLS]."
   :long
   (xdoc::topstring

@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ unicode-characters
-  :parents (language)
+  :parents (syntax)
   :short "Unicode characters in Java [JLS:3.1]."
   :long
   (xdoc::topstring

@@ -11,18 +11,18 @@
 (in-package "JAVA")
 
 ; the order of the following INCLUDE-BOOKs determines
-; the order of the subtopics of the LANGUAGE topic below:
-(include-book "syntax")
-(include-book "semantics")
+; the order of the subtopics of the SEMANTICS topic below:
+(include-book "primitive-values")
+(include-book "primitive-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ language
-  :parents (java)
-  :short "A formal model of some aspects of the Java language."
+(defxdoc+ semantics
+  :parents (language)
+  :short "A formal model of some aspects of the semantics of Java."
   :long
   (xdoc::topstring
    (xdoc::p
-    "It is expected that more aspects of the Java language
+    "It is expected that more aspects of the semantics of Java
      will be formalized here over time."))
   :order-subtopics t)

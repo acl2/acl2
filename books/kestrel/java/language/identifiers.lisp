@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ identifiers
-  :parents (language)
+  :parents (syntax)
   :short "Java identifiers [JLS:3.8]."
   :long
   (xdoc::topstring

@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-values
-  :parents (language)
+  :parents (semantics)
   :short "Java primitive values [JLS:4.2]."
   :long
   (xdoc::topstring

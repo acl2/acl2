@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ null-literal
-  :parents (language)
+  :parents (syntax)
   :short "Java null literal [JLS:3.10.7]."
   :order-subtopics t
   :default-parent t)
