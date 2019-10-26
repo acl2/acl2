@@ -195,7 +195,8 @@
        (current-time-expr (jexpr-smethod (jtype-class "System")
                                          "currentTimeMillis"
                                          nil))
-       (fn-type (atj-get-function-type test.function guards$ wrld))
+       (fn-info (atj-get-function-type-info test.function guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
        ((mv shallow-arg-block shallow-arg-jvars)
         (if deep$

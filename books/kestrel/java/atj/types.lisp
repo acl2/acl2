@@ -542,9 +542,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
-  :returns (fn-type atj-function-type-p)
-  :short "Retrieve the main ATJ function type
+(define atj-function-type-info-default ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-info atj-function-type-info-p)
+  :short "Default ATJ function type information for a function."
+  :long
+  (xdoc::topstring-p
+   "This is used when a function has no entry in the table.
+    It consists of a main function type of all @(':value') types,
+    and no other function types.")
+  (make-atj-function-type-info
+   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
+                                 :output :value)
+   :others nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-get-function-type-info-from-table ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-info atj-function-type-info-p)
+  :short "Retrieve the ATJ function type information
           of the specified function from the table."
   :long
   (xdoc::topstring
@@ -553,25 +568,19 @@
     (xdoc::seetopic "atj-function-type-info-table"
                     "@(tsee def-atj-function-type) table")
     ". If the table has no entry for the function,
-     a function type all consisting of @(':value') is returned.")
-   (xdoc::p
-    "We are not yet populating and using the other function types in the table.
-     As we add more support for them, this function may need to be
-     generalized to return the whole function type information,
-     or renamed to reflect that it returns the main function type."))
+     the default function type information is returned."))
   (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair)
         (b* ((fn-info (cdr pair)))
           (if (atj-function-type-info-p fn-info)
-              (atj-function-type-info->main fn-info)
+              fn-info
             (prog2$
              (raise "Internal error: ~
                      malformed function information ~x0 for function ~x1."
                     fn-info fn)
-             (atj-function-type nil :value)))))) ; unreachable
-    (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value))
+             (atj-function-type-info-default fn wrld)))))) ; unreachable
+    (atj-function-type-info-default fn wrld))
   :prepwork
   ((defrulel consp-of-assoc-equal
      (implies (alistp alist)
@@ -580,28 +589,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type ((fn symbolp)
-                               (guards$ booleanp)
-                               (wrld plist-worldp))
-  :returns (fn-type atj-function-type-p)
-  :short "Obtain the main ATJ function type of the specified function."
+(define atj-get-function-type-info ((fn symbolp)
+                                    (guards$ booleanp)
+                                    (wrld plist-worldp))
+  :returns (fn-info atj-function-type-info-p)
+  :short "Obtain the ATJ function type information of the specified function."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the @(':guards') input is @('t'),
      we retrieve the type from the table
-     via @(tsee atj-get-function-type-from-table).
+     via @(tsee atj-get-function-type-info-from-table).
      If the @(':guards') input is @('nil'),
-     we return a function type consisting of all @(':value') types,
-     because in this case types are ignored.")
-   (xdoc::p
-    "The discussion in @(tsee atj-get-function-type-from-table)
-     about generalizing or renaming that function
-     applies to this function as well."))
+     we return the defult function type information,
+     because in this case types are effectively ignored."))
   (if guards$
-      (atj-get-function-type-from-table fn wrld)
-    (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value)))
+      (atj-get-function-type-info-from-table fn wrld)
+    (atj-function-type-info-default fn wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

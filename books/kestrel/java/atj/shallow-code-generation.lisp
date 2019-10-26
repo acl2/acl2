@@ -1684,7 +1684,8 @@
             equal
             bad-atom<=) (list "x" "y"))
           (t (list "x"))))
-       (fn-type (atj-get-function-type fn guards$ wrld))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (fn-in-types (atj-function-type->inputs fn-type))
        (fn-out-type (atj-function-type->output fn-type))
        (method-params (atj-gen-paramlist method-param-names
@@ -1774,7 +1775,8 @@
   (b* ((curr-pkg (symbol-package-name fn))
        (formals (formals fn wrld))
        (body (ubody fn wrld))
-       (fn-type (atj-get-function-type fn guards$ wrld))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
        ((mv formals body)
@@ -1970,7 +1972,8 @@
      to @(tsee atj-gen-shallow-fnname)
      to ensure that the result is the simple name of the method,
      which goes into the generated method declaration."))
-  (b* ((fn-type (atj-get-function-type fn guards$ wrld))
+  (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
        (fn-pkg (symbol-package-name fn))
