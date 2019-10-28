@@ -220,11 +220,13 @@
                 `(:measure-debug t))
          ,@(and flagp `(:flag ,x.name))
          :returns (newx ,x.pred
-                        :hints('(:in-theory (disable ,x.fix ,x.pred)
-                                 :expand ((,x.fix ,x.xvar)
-                                          (:free (a b) (,x.pred (cons a b)))
-                                          (,x.pred ,x.xvar)
-                                          (,x.pred nil)))))
+                        :hints(,@(and (not flagp)
+                                      `(("goal" :induct (,x.fix ,x.xvar))))
+                                 '(:in-theory (disable ,x.fix ,x.pred)
+                                   :expand ((,x.fix ,x.xvar)
+                                            (:free (a b) (,x.pred (cons a b)))
+                                            (,x.pred ,x.xvar)
+                                            (,x.pred nil)))))
          :verify-guards nil
          :progn t
          ;; [Jared]: inlining this since it's just an identity function
@@ -352,7 +354,9 @@
     `(defthm ,foo-fix-when-foo-p
        (implies (,x.pred ,x.xvar)
                 (equal (,x.fix ,x.xvar) ,x.xvar))
-       :hints ('(:expand ((,x.pred ,x.xvar)
+       :hints (,@(and (not flagp)
+                      `(("goal" :induct (,x.fix ,x.xvar))))
+                 '(:expand ((,x.pred ,x.xvar)
                           (,x.fix ,x.xvar))
                  :in-theory (disable ,x.fix ,x.pred)))
        . ,(and flagp `(:flag ,x.name)))))
