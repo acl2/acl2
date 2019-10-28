@@ -186,9 +186,11 @@
   (equal (subsetp-equal (binary-append x y) z)
          (and (subsetp-equal x z) (subsetp-equal y z))))
 
-(defthm subsetp-is-transitive
-  (implies (and (subsetp-equal x y) (subsetp-equal y z))
-           (subsetp-equal x z)))
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/sets.lisp, from where it was taken with thanks.
+(defthm subsetp-trans
+  (implies (and (subsetp x y) (subsetp y z))
+           (subsetp x z)))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/sets.lisp, from where it was taken with thanks.

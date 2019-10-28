@@ -7494,7 +7494,7 @@
      (("goal"
        :in-theory (enable hifat-entry-count)))))
 
-  (defthm
+  (defthmd
     hifat-to-lofat-inversion-lemma-16
     (implies (and (stringp text)
                   (not (zp cluster-size))
@@ -7730,7 +7730,8 @@
       (e/d (lofat-to-hifat-helper
             (:definition hifat-no-dups-p)
             remove1-dir-ent fat32-filename-p-correctness-1
-            not-intersectp-list)
+            not-intersectp-list
+            (:linear hifat-to-lofat-inversion-lemma-16))
            ((:rewrite nth-of-nats=>chars)
             (:rewrite dir-ent-p-when-member-equal-of-dir-ent-list-p)
             (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-2)
