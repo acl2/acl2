@@ -26,7 +26,7 @@
     "This returns the same result as @(tsee definedp),
      but it causes an error if called on a symbol
      that does not name a logic-mode function.
-     The reason is that this utility
+     The reason for ensuring logic mode is that this utility
      checks whether the function has an @('unnormalized body') property,
      but some program-mode functions may be defined
      without having an @('unnormalized-body') property."))
