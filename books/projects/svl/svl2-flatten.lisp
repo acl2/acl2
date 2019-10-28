@@ -2633,11 +2633,12 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
        (all-modnames (get-string-modnames (strip-cars sv-design.modalist)))
        (dont-flatten-all (equal dont-flatten ':all))
+       (top (if top top sv-design.top))
        (dont-flatten (if dont-flatten-all
                          all-modnames
                        (fix-dont-flatten
                         (union-equal dont-flatten
-                                     (if top (list top) (list sv-design.top)))
+                                     (list top))
                         all-modnames)))
 
        (vl-insouts (vl-design-to-insouts vl-design
@@ -2661,7 +2662,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                            dont-flatten vl-insouts
                            svex-simplify-preloaded))
        (- (cw "Inserting ranks to unflattened modules... ~%"))
-       (ranks (svl2-mod-calculate-ranks sv-design.top
+       (ranks (svl2-mod-calculate-ranks top
                                         modules
                                         nil
                                         nil
