@@ -43,7 +43,7 @@
    (xdoc::@def "remove-unused-vars-aux"))
 
   (define remove-unused-vars ((term pseudo-termp))
-    :returns (new-term "A @(tsee pseudo-termp).")
+    :returns (new-term pseudo-termp :hyp :guard)
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
          (fn (ffn-symb term))
@@ -63,7 +63,9 @@
       (fcons-term (make-lambda formals body) actuals)))
 
   (define remove-unused-vars-lst ((terms pseudo-term-listp))
-    :returns (new-terms "A @(tsee pseudo-term-listp).")
+    :returns (new-terms (and (pseudo-term-listp new-terms)
+                             (equal (len new-terms) (len terms)))
+                        :hyp :guard)
     (cond ((endp terms) nil)
           (t (cons (remove-unused-vars (car terms))
                    (remove-unused-vars-lst (cdr terms))))))
@@ -93,14 +95,32 @@
      (more-returns
 
       (remaining-formals
+       true-listp
+       :name true-listp-of-remove-unused-vars-aux-remaining-formals
+       :rule-classes :type-prescription)
+
+      (remaining-actuals
+       true-listp
+       :name true-listp-of-remove-unused-vars-aux-remaining-actuals
+       :rule-classes :type-prescription)
+
+      (remaining-formals
        (<= (acl2-count remaining-formals)
            (acl2-count formals))
-       :name len-of-new-formals-of-remove-unused-vars-aux
+       :name acl2-count-of-remove-unused-vars-aux-remaining-formals
        :rule-classes :linear)
 
       (remaining-actuals
        (<= (acl2-count remaining-actuals)
            (acl2-count actuals))
        :hyp (= (len formals) (len actuals))
-       :name len-of-new-actuals-of-remove-unused-vars-aux
-       :rule-classes :linear)))))
+       :name acl2-count-of-remove-unused-vars-aux-remaining-actuals
+       :rule-classes :linear))
+
+     (defthm same-len-of-remove-unused-vars-aux
+       (b* (((mv remaining-formals remaining-actuals)
+             (remove-unused-vars-aux formals actuals body-vars)))
+         (implies (equal (len formals)
+                         (len actuals))
+                  (equal (len remaining-formals)
+                         (len remaining-actuals))))))))
