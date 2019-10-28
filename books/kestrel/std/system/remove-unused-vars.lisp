@@ -13,6 +13,8 @@
 (include-book "std/util/defines" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(local (include-book "kestrel/utilities/system/all-vars-theorems" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines remove-unused-vars
@@ -39,7 +41,6 @@
    (xdoc::@def "remove-unused-vars")
    (xdoc::@def "remove-unused-vars-lst")
    (xdoc::@def "remove-unused-vars-aux"))
-  :verify-guards nil
 
   (define remove-unused-vars ((term pseudo-termp))
     :returns (new-term "A @(tsee pseudo-termp).")
