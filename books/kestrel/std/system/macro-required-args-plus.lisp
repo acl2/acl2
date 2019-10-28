@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "macro-args-plus")
+(include-book "macro-namep")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
