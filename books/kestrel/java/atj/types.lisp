@@ -510,7 +510,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defaggregate atj-function-type-info
-  :short "Recognize function type information."
+  :short "Recognize ATJ function type information."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -519,6 +519,19 @@
      as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
   ((main atj-function-type-p)
    (others atj-function-type-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define maybe-atj-function-type-info-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognize ATJ function type information and @('nil')."
+  (or (atj-function-type-info-p x)
+      (null x))
+  ///
+
+  (defrule maybe-atj-function-type-info-p-when-atj-function-type-info-p
+    (implies (atj-function-type-info-p x)
+             (maybe-atj-function-type-info-p x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -542,6 +555,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-get-function-type-info-from-table ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-info? maybe-atj-function-type-info-p)
+  :short "Retrieve the ATJ function type information
+          of the specified function from the table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is retrieved from the "
+    (xdoc::seetopic "atj-function-type-info-table"
+                    "@(tsee def-atj-function-type) table")
+    ". If the table has no entry for the function, @('nil') is returned."))
+  (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
+       (pair (assoc-eq fn table))
+       ((when pair)
+        (b* ((fn-info (cdr pair)))
+          (if (atj-function-type-info-p fn-info)
+              fn-info
+            (raise "Internal error: ~
+                    malformed function information ~x0 for function ~x1."
+                   fn-info fn)))))
+    nil)
+  :prepwork
+  ((defrulel consp-of-assoc-equal
+     (implies (alistp alist)
+              (iff (consp (assoc-equal key alist))
+                   (assoc-equal key alist)))))
+  ///
+
+  (defrule atj-function-type-info-p-of-atj-get-function-type-info-from-table
+    (iff (atj-function-type-info-p
+          (atj-get-function-type-info-from-table fn wrld))
+         (atj-get-function-type-info-from-table fn wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-function-type-info-default ((fn symbolp) (wrld plist-worldp))
   :returns (fn-info atj-function-type-info-p)
   :short "Default ATJ function type information for a function."
@@ -554,38 +602,6 @@
    :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
                                  :output :value)
    :others nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-get-function-type-info-from-table ((fn symbolp) (wrld plist-worldp))
-  :returns (fn-info atj-function-type-info-p)
-  :short "Retrieve the ATJ function type information
-          of the specified function from the table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is retrieved from the "
-    (xdoc::seetopic "atj-function-type-info-table"
-                    "@(tsee def-atj-function-type) table")
-    ". If the table has no entry for the function,
-     the default function type information is returned."))
-  (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
-       (pair (assoc-eq fn table))
-       ((when pair)
-        (b* ((fn-info (cdr pair)))
-          (if (atj-function-type-info-p fn-info)
-              fn-info
-            (prog2$
-             (raise "Internal error: ~
-                     malformed function information ~x0 for function ~x1."
-                    fn-info fn)
-             (atj-function-type-info-default fn wrld)))))) ; unreachable
-    (atj-function-type-info-default fn wrld))
-  :prepwork
-  ((defrulel consp-of-assoc-equal
-     (implies (alistp alist)
-              (iff (consp (assoc-equal key alist))
-                   (assoc-equal key alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -604,7 +620,8 @@
      we return the defult function type information,
      because in this case types are effectively ignored."))
   (if guards$
-      (atj-get-function-type-info-from-table fn wrld)
+      (b* ((fn-info? (atj-get-function-type-info-from-table fn wrld)))
+        (or fn-info? (atj-function-type-info-default fn wrld)))
     (atj-function-type-info-default fn wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
