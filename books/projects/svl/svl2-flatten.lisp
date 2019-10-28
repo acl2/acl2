@@ -509,24 +509,58 @@
       (merge-this-insts-aliasdb sub-aliasdb
                                 (cdr insts-aliasdb-alist)))))
 
+
+
+(acl2::defines
+ add-delay-to-vars-in-svex
+ :hints (("Goal"
+          :in-theory (e/d (sv::svex-kind) ())))
+ :guard-hints (("Goal"
+                :in-theory (e/d (sv::svex-kind sv::svar-p sv::svex-p) ())))
+ (define add-delay-to-vars-in-svex ((svex sv::svex-p))
+   (cond ((equal (sv::svex-kind svex) ':quote)
+          svex)
+         ((equal (sv::svex-kind svex) ':var)
+          (sv::change-svar svex :delay 1))
+         (t
+          (cons (car svex)
+                (add-delay-to-vars-in-svex-lst (cdr svex))))))
+
+ (define add-delay-to-vars-in-svex-lst ((lst sv::svexlist-p))
+   (if (atom lst)
+       nil
+     (cons (add-delay-to-vars-in-svex (car lst))
+           (add-delay-to-vars-in-svex-lst (cdr lst))))))
+   
+   
 (define get-svex-from-aliasdb ((name)
                                (trace-name)
                                (delay natp)
                                (aliasdb aliasdb-p))
   :measure (acl2-count trace-name)
   (cond ((not trace-name)
-         (b* ((var (sv::make-svar :name  name
-                                  :delay delay))
+         (b* ((var (sv::make-svar :name name
+                                  :delay 0))
               (res (hons-get var (aliasdb->this aliasdb))))
-           (cdr res)))
+           (cond ((and res (equal delay 0))
+                  (cdr res))
+                 ((and res (equal delay 1))
+                  (add-delay-to-vars-in-svex (cdr res)))
+                 (t
+                  nil))))
         ((atom trace-name)
          (b* ((instname trace-name)
               (subaliases (aliasdb->sub aliasdb))
               (subaliasdb (hons-get instname subaliases)))
            (if subaliasdb
-               (b* ((var (sv::make-svar :name  name :delay delay))
+               (b* ((var (sv::make-svar :name  name :delay 0))
                     (res (hons-get var (aliasdb->this (cdr subaliasdb)))))
-                 (cdr res))
+                 (cond ((and res (equal delay 0))
+                        (cdr res))
+                       ((and res (equal delay 1))
+                        (add-delay-to-vars-in-svex (cdr res)))
+                       (t
+                        nil)))
              nil)))
         (t (b* ((instname (car trace-name))
                 (subaliases (aliasdb->sub aliasdb))
@@ -2674,13 +2708,13 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
     (mv modules rp::rp-state)))
 
-(define get-svl2-modules-ports ((modules svl2-module-alist-p))
+(define svl2-modules-port-info ((modules svl2-module-alist-p))
   (if (atom modules)
       nil
     (acons (caar modules)
            `((:inputs . ,(svl2-module->inputs (cdar modules)))
              (:outputs . ,(svl2-module->outputs (cdar modules))))
-           (get-svl2-modules-ports (cdr modules)))))
+           (svl2-modules-port-info (cdr modules)))))
 
 ;;;
 
