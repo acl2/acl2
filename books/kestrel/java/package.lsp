@@ -69,6 +69,8 @@
                          implicate
                          implode
                          impossible
+                         index-of
+                         integers-from-to
                          irecursivep
                          known-packages
                          lambda-body
@@ -116,6 +118,7 @@
                          string-string-alistp
                          string-symbollist-alistp
                          string-upcase
+                         subcor-var
                          string=>nats
                          symbol-name-lst
                          symbol-pos-alistp
@@ -131,11 +134,14 @@
                          ubyte16
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
+                         uguard
                          unnormalized-body
                          unquote-term
                          unquote-term-list
                          unsigned-byte-listp
                          upper-case-p
                          variablep
+                         std::defret-mutual
+                         set::list-in
                          str::chars-in-charset-p
                          str::natstr)))

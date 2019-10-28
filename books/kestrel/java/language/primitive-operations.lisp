@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-operations
-  :parents (language)
+  :parents (semantics)
   :short "Java primitive operations [JLS:4.2]."
   :long
   (xdoc::topstring

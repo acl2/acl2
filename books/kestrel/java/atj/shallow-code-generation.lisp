@@ -1623,6 +1623,7 @@
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
                                          (guards$ booleanp)
+                                         (verbose$ booleanp)
                                          (wrld plist-worldp))
   :guard (aij-nativep fn)
   :verify-guards nil
@@ -1649,28 +1650,25 @@
      @('Acl2NativeFunction') has a corresponding Java method
      that takes @('Acl2Value') objects as arguments.
      For some of these functions,
-     @('Acl2NativeFunction') also has a variant Java method implementation
+     @('Acl2NativeFunction') also has an overloaded Java method
      that takes argument objects of narrower types,
-     based on the guards of the functions:
-     these Java methods have @('UnderGuard') in their names.
+     based on the guards of the functions.
      For each of the latter functions,
      the generated wrapper Java methods
      call one or the other variant implementation
      based on the ATJ input and output types
      retrieved from the @(tsee def-atj-function-type) table.
-     If the @(':guards') input is @('nil'),
-     the table is not consulted,
-     and @(':value') is the type of every input and output.
-     If instead the @(':guards') is @('t'),
-     then the narrower types are used
-     only if the file @('types-for-natives.lisp') is included
-     prior to calling ATJ;
-     otherwise, @(':value') is the type of every input and output."))
+     This choice happens automatically in Java:
+     depending on the ATJ input types,
+     the generated Java code will use
+     either @('Acl2Value') or the narrower types."))
   (b* ((curr-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
                                             fn-method-names
                                             curr-pkg))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~x1~%" method-name fn))
        (method-param-names
         (case fn
           (intern-in-package-of-symbol (list "str" "sym"))
@@ -1686,7 +1684,8 @@
             equal
             bad-atom<=) (list "x" "y"))
           (t (list "x"))))
-       (fn-type (atj-get-function-type fn guards$ wrld))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (fn-in-types (atj-function-type->inputs fn-type))
        (fn-out-type (atj-function-type->output fn-type))
        (method-params (atj-gen-paramlist method-param-names
@@ -1701,61 +1700,24 @@
           (complex-rationalp "execComplexRationalp")
           (acl2-numberp "execAcl2Numberp")
           (consp "execConsp")
-          (char-code (if (equal fn-in-types '(:character))
-                         "execCharCodeUnderGuard"
-                       "execCharCode"))
-          (code-char (if (equal fn-in-types '(:integer))
-                         "execCodeCharUnderGuard"
-                       "execCodeChar"))
-          (coerce (if (equal fn-in-types '(:value :symbol))
-                      "execCoerceUnderGuard"
-                    "execCoerce"))
-          (intern-in-package-of-symbol
-           (if (equal fn-in-types '(:string :symbol))
-               "execInternInPackageOfSymbolUnderGuard"
-             "execInternInPackageOfSymbol"))
-          (symbol-package-name (if (equal fn-in-types '(:symbol))
-                                   "execSymbolPackageNameUnderGuard"
-                                 "execSymbolPackageName"))
-          (symbol-name (if (equal fn-in-types '(:symbol))
-                           "execSymbolNameUnderGuard"
-                         "execSymbolName"))
-          (pkg-imports (if (equal fn-in-types '(:string))
-                           "execPkgImportsUnderGuard"
-                         "execPkgImports"))
-          (pkg-witness (if (equal fn-in-types '(:string))
-                           "execPkgWitnessUnderGuard"
-                         "execPkgWitness"))
-          (unary-- (if (equal fn-in-types '(:number))
-                       "execUnaryMinusUnderGuard"
-                     "execUnaryMinus"))
-          (unary-/ (if (equal fn-in-types '(:number))
-                       "execUnarySlashUnderGuard"
-                     "execUnarySlash"))
-          (binary-+ (if (equal fn-in-types '(:number :number))
-                        "execBinaryPlusUnderGuard"
-                      "execBinaryPlus"))
-          (binary-* (if (equal fn-in-types '(:number :number))
-                        "execBinaryStarUnderGuard"
-                      "execBinaryStar"))
-          (< (if (equal fn-in-types '(:rational :rational))
-                 "execLessThanUnderGuard"
-               "execLessThan"))
-          (complex (if (equal fn-in-types '(:rational :rational))
-                       "execComplexUnderGuard"
-                     "execComplex"))
-          (realpart (if (equal fn-in-types '(:number))
-                        "execRealPartUnderGuard"
-                      "execRealPart"))
-          (imagpart (if (equal fn-in-types '(:number))
-                        "execImagPartUnderGuard"
-                      "execImagPart"))
-          (numerator (if (equal fn-in-types '(:rational))
-                         "execNumeratorUnderGuard"
-                       "execNumerator"))
-          (denominator (if (equal fn-in-types '(:rational))
-                           "execDenominatorUnderGuard"
-                         "execDenominator"))
+          (char-code "execCharCode")
+          (code-char "execCodeChar")
+          (coerce "execCoerce")
+          (intern-in-package-of-symbol "execInternInPackageOfSymbol")
+          (symbol-package-name "execSymbolPackageName")
+          (symbol-name "execSymbolName")
+          (pkg-imports "execPkgImports")
+          (pkg-witness "execPkgWitness")
+          (unary-- "execUnaryMinus")
+          (unary-/ "execUnarySlash")
+          (binary-+ "execBinaryPlus")
+          (binary-* "execBinaryStar")
+          (< "execLessThan")
+          (complex "execComplex")
+          (realpart "execRealPart")
+          (imagpart "execImagPart")
+          (numerator "execNumerator")
+          (denominator "execDenominator")
           (cons "execCons")
           (car "execCar")
           (cdr "execCdr")
@@ -1810,12 +1772,11 @@
     "We also collect all the quoted constants
      in the pre-translated function body,
      and add it to the collection that it threaded through."))
-  (b* (((run-when verbose$)
-        (cw "  ~s0~%" fn))
-       (curr-pkg (symbol-package-name fn))
+  (b* ((curr-pkg (symbol-package-name fn))
        (formals (formals fn wrld))
        (body (ubody fn wrld))
-       (fn-type (atj-get-function-type fn guards$ wrld))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
        ((mv formals body)
@@ -1825,6 +1786,8 @@
                                             pkg-class-names
                                             fn-method-names
                                             curr-pkg))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~x1~%" method-name fn))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
        (method-params (atj-gen-paramlist (symbol-name-lst formals)
@@ -1885,6 +1848,7 @@
                                            pkg-class-names
                                            fn-method-names
                                            guards$
+                                           verbose$
                                            wrld)
           qconsts)
     (atj-gen-shallow-fndef-method fn
@@ -2008,7 +1972,8 @@
      to @(tsee atj-gen-shallow-fnname)
      to ensure that the result is the simple name of the method,
      which goes into the generated method declaration."))
-  (b* ((fn-type (atj-get-function-type fn guards$ wrld))
+  (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
+       (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
        (fn-pkg (symbol-package-name fn))
@@ -2084,24 +2049,22 @@
     "We generate methods for the functions in @('fns-by-pkg')
      (i.e. the functions to translate to Java, including natives,
      organized by package)
-     that are associated to @('pkg').
-     We sort these functions,
-     so that the methods appear in that order in the class.")
+     that are associated to @('pkg').")
    (xdoc::p
     "We also generate synonym methods for all the functions in @('fns+native')
      (i.e. the functions to translate to Java, including natives)
      that are in other ACL2 packages but that are imported by @('pkg');
-     see @(tsee atj-gen-shallow-synonym-method) for motivation.
-     We sort these functions,
-     so that the methods appear in that order in the class.")
+     see @(tsee atj-gen-shallow-synonym-method) for motivation.")
    (xdoc::p
-    "We put the latter functions before the former functions in the result,
-     so that the methods appear in that order in the class.")
+    "We sort all the methods.")
    (xdoc::p
     "We also collect all the quoted constants
      that occur in the functions in @('pkg') that are translated to Java."))
   (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
-       (fns (sort-symbol-listp fns))
+       ((run-when (and verbose$
+                       (consp fns)))
+        (cw "~%Generate the Java methods ~
+               for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
             qconsts) (atj-gen-shallow-fn-methods fns
                                                  qconsts
@@ -2117,8 +2080,9 @@
                                                          fn-method-names
                                                          guards$
                                                          pkg
-                                                         wrld)))
-    (mv (append synonym-methods fn-methods)
+                                                         wrld))
+       (all-methods (append synonym-methods fn-methods)))
+    (mv (mergesort-jmethods all-methods)
         qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2208,12 +2172,12 @@
      This enables the unqualified reference to them in the lass for @('pkg');
      see @(tsee atj-gen-shallow-symbol).")
    (xdoc::p
-    "We sort all the symbols, so that the fields are in that order."))
+    "We sort all the fields, so that they appear in that order."))
   (b* ((syms (cdr (assoc-equal pkg quoted-symbols-by-pkg)))
        (imported-syms (intersection-eq quoted-symbols (pkg-imports pkg)))
        (all-syms (append syms imported-syms))
-       (all-syms (sort-symbol-listp all-syms)))
-    (atj-gen-shallow-symbol-fields all-syms)))
+       (all-fields (atj-gen-shallow-symbol-fields all-syms)))
+    (mergesort-jfields all-fields)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2260,7 +2224,8 @@
 (define atj-gen-shallow-pkg-class ((pkg stringp)
                                    (fields-by-pkg string-jfieldlist-alistp)
                                    (methods-by-pkg string-jmethodlist-alistp)
-                                   (pkg-class-names string-string-alistp))
+                                   (pkg-class-names string-string-alistp)
+                                   (verbose$ booleanp))
   :returns (class jclassp)
   :short "Generate the class for an ACL2 package."
   :long
@@ -2279,6 +2244,8 @@
      which is calculated (elsewhere)
      via @(tsee atj-gen-shallow-all-pkg-methods)."))
   (b* ((class-name (atj-get-pkg-class-name pkg pkg-class-names))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~s1~%" class-name pkg))
        (fields (cdr (assoc-equal pkg fields-by-pkg)))
        (methods (cdr (assoc-equal pkg methods-by-pkg))))
     (make-jclass :access (jaccess-public)
@@ -2297,7 +2264,8 @@
 (define atj-gen-shallow-pkg-classes ((pkgs string-listp)
                                      (fields-by-pkg string-jfieldlist-alistp)
                                      (methods-by-pkg string-jmethodlist-alistp)
-                                     (pkg-class-names string-string-alistp))
+                                     (pkg-class-names string-string-alistp)
+                                     (verbose$ booleanp))
   :returns (classes jclass-listp)
   :short "Lift @(tsee atj-gen-shallow-pkg-class) to lists."
   :long
@@ -2307,11 +2275,13 @@
        (class (atj-gen-shallow-pkg-class (car pkgs)
                                          fields-by-pkg
                                          methods-by-pkg
-                                         pkg-class-names))
+                                         pkg-class-names
+                                         verbose$))
        (classes (atj-gen-shallow-pkg-classes (cdr pkgs)
                                              fields-by-pkg
                                              methods-by-pkg
-                                             pkg-class-names)))
+                                             pkg-class-names
+                                             verbose$)))
     (if (null (jclass->body class))
         classes
       (cons class classes))))
@@ -2330,48 +2300,6 @@
      we build the Java representation of the ACL2 packages."))
   (make-jcinitializer :static? t
                       :code (atj-gen-pkgs pkgs)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-init-method ()
-  :returns (method jmethodp)
-  :short "Generate the Java public method to initialize the ACL2 environment,
-          in the shallow embedding approach."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This method just checks and sets the initialization flag,
-     because the actual initialization of the ACL2 environment
-     is performed by the static initializer generated by
-     @(tsee atj-gen-shallow-static-initializer).
-     Still, external users of the generated Java code must call this method
-     to trigger, if it has not happened already,
-     the initialization of the Java class
-     and thus the execution of the static initializer.
-     This seems a bit clumsy; it will be improved in the future."))
-  (b* ((exception-message "The ACL2 environment is already initialized.")
-       (exception-message-expr (atj-gen-jstring exception-message))
-       (throw-block (jblock-throw (jexpr-newclass
-                                   (jtype-class "IllegalStateException")
-                                   (list exception-message-expr))))
-       (if-block (jblock-if (jexpr-name "initialized")
-                            throw-block))
-       (initialize-block (jblock-asg-name "initialized"
-                                          (jexpr-literal-true)))
-       (method-body (append if-block
-                            initialize-block)))
-    (make-jmethod :access (jaccess-public)
-                  :abstract? nil
-                  :static? t
-                  :final? nil
-                  :synchronized? nil
-                  :native? nil
-                  :strictfp? nil
-                  :result (jresult-void)
-                  :name "initialize"
-                  :params nil
-                  :throws nil
-                  :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2395,7 +2323,7 @@
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p
-    "The class contains the initialization field and method,
+    "The class contains the initialization method,
      the methods to build the ACL2 packages,
      the classes that contain methods for the ACL2 functions,
      the fields for quoted constants (only numbers and characters for now),
@@ -2409,13 +2337,6 @@
      [JLS:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
-    "After the static initializer,
-     we generate the fields for the quoted constants,
-     followed by the initialization flag field
-     (so all the fields are together).")
-   (xdoc::p
-    "After the fields, we generate the methods to build the packages.")
-   (xdoc::p
     "We ensure that the ACL2 functions natively implemented in AIJ
      (currently the ACL2 primitive functions)
      are included,
@@ -2423,20 +2344,14 @@
      and we proceed to generate the Java nested classes,
      after the methods to build the packages.")
    (xdoc::p
-    "The initialization method is at the very end, after the nested classes.")
-   (xdoc::p
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
      which must be eventually passed to the functions that generate
      the Java test class."))
-  (b* ((static-init (atj-gen-shallow-static-initializer pkgs))
-       (init-field (atj-gen-init-field))
-       (init-method (atj-gen-shallow-init-method))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 packages:~%"))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 functions:~%"))
+       (pkg-methods (mergesort-jmethods pkg-methods))
        (fns+natives (append fns-to-translate
                             (strip-cars *primitive-formals-and-guards*)))
        ((unless (no-duplicatesp-eq fns+natives))
@@ -2471,32 +2386,34 @@
        (fields-by-pkg (atj-gen-shallow-all-pkg-fields pkgs
                                                       qsymbols
                                                       qsymbols-by-pkg))
+       ((run-when verbose$)
+        (cw "~%Generate the Java classes for the ACL2 packages:~%"))
        (classes (atj-gen-shallow-pkg-classes pkgs
                                              fields-by-pkg
                                              methods-by-pkg
-                                             pkg-class-names))
-       (qinteger-fields (atj-gen-shallow-number-fields (mergesort
-                                                        qconsts.integers)))
-       (qrational-fields (atj-gen-shallow-number-fields (mergesort
-                                                         qconsts.rationals)))
-       (qnumber-fields (atj-gen-shallow-number-fields (mergesort
-                                                       qconsts.numbers)))
-       (qchar-fields (atj-gen-shallow-char-fields (mergesort
-                                                   qconsts.chars)))
-       (qstring-fields (atj-gen-shallow-string-fields (mergesort
-                                                       qconsts.strings)))
+                                             pkg-class-names
+                                             verbose$))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java class.~%"))
+       (qinteger-fields (atj-gen-shallow-number-fields qconsts.integers))
+       (qrational-fields (atj-gen-shallow-number-fields qconsts.rationals))
+       (qnumber-fields (atj-gen-shallow-number-fields qconsts.numbers))
+       (qchar-fields (atj-gen-shallow-char-fields qconsts.chars))
+       (qstring-fields (atj-gen-shallow-string-fields qconsts.strings))
        (qcons-fields (atj-gen-shallow-cons-fields (strip-cars qconsts.pairs)
                                                   qconsts.pairs))
-       (all-fields (append qinteger-fields
-                           qrational-fields
-                           qnumber-fields
-                           qchar-fields
-                           qstring-fields
-                           qcons-fields
-                           (list init-field)))
+       (all-qconst-fields (append qinteger-fields
+                                  qrational-fields
+                                  qnumber-fields
+                                  qchar-fields
+                                  qstring-fields
+                                  qcons-fields))
+       (all-qconst-fields (mergesort-jfields all-qconst-fields))
+       (static-init (atj-gen-shallow-static-initializer pkgs))
+       (init-method (atj-gen-init-method))
        (body-class (append (list (jcbody-element-init static-init))
-                           (jfields-to-jcbody-elements all-fields)
                            (jmethods-to-jcbody-elements pkg-methods)
+                           (jfields-to-jcbody-elements all-qconst-fields)
                            (jclasses-to-jcbody-elements classes)
                            (list (jcbody-element-member
                                   (jcmember-method init-method))))))
@@ -2541,6 +2458,8 @@
   (b* (((mv class pkg-class-names fn-method-names)
         (atj-gen-shallow-main-class
          pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java compilation unit.~%"))
        (cunit
         (make-jcunit
          :package? java-package$

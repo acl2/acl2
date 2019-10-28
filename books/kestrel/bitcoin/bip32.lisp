@@ -14,6 +14,7 @@
 (include-book "kestrel/crypto/ecurve/secp256k1-interface" :dir :system)
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
+(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
@@ -129,19 +130,11 @@
                (equal (len x) 32))
       :rule-classes :tau-system))
 
-  (define bip32-chain-code-fix ((x bip32-chain-code-p))
-    :returns (fixed-x bip32-chain-code-p)
+  (std::deffixer bip32-chain-code-fix
+    :pred bip32-chain-code-p
+    :body-fix (repeat 32 0)
     :parents (bip32-chain-code)
-    :short "Fixer for @(tsee bip32-chain-code)."
-    (mbe :logic (if (bip32-chain-code-p x) x (repeat 32 0))
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule bip32-chain-code-fix-when-bip32-chain-code-p
-      (implies (bip32-chain-code-p x)
-               (equal (bip32-chain-code-fix x)
-                      x))))
+    :short "Fixer for @(tsee bip32-chain-code).")
 
   (fty::deffixtype bip32-chain-code
     :pred bip32-chain-code-p
@@ -681,21 +674,13 @@
 
     (in-theory (disable (:e bip32-index-treep))))
 
-  (define bip32-index-tree-fix ((x bip32-index-treep))
-    :returns (fixed-x bip32-index-treep)
+  (std::deffixer bip32-index-tree-fix
+    :pred bip32-index-treep
+    :body-fix (list nil)
     :parents (bip32-index-tree)
-    :short "Fixer for @(tsee bip32-index-tree)."
-    (mbe :logic (if (bip32-index-treep x) x (list nil))
-         :exec x)
-    :no-function t
-    ///
+    :short "Fixer for @(tsee bip32-index-tree).")
 
-    (defrule bip32-index-tree-fix-when-bip32-index-treep
-      (implies (bip32-index-treep x)
-               (equal (bip32-index-tree-fix x)
-                      x)))
-
-    (in-theory (disable (:e bip32-index-tree-fix))))
+  (in-theory (disable (:e bip32-index-tree-fix)))
 
   (fty::deffixtype bip32-index-tree
     :pred bip32-index-treep

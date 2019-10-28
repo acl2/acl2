@@ -13,6 +13,7 @@
 (include-book "basic/top")
 (include-book "strings/top")
 (include-book "system/top")
+(include-book "util/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

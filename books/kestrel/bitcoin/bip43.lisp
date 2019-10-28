@@ -12,6 +12,8 @@
 
 (include-book "bip32")
 
+(include-book "kestrel/std/util/deffixer" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ bip43
@@ -60,18 +62,11 @@
     (integer-range-p 1 (expt 2 31) x)
     :no-function t)
 
-  (define bip43-purpose-fix ((x bip43-purposep))
-    :returns (fixed-x bip43-purposep)
+  (std::deffixer bip43-purpose-fix
+    :pred bip43-purposep
+    :body-fix 1
     :parents (bip43-purpose)
-    (mbe :logic (if (bip43-purposep x) x 1)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule bip43-purpose-fix-when-bip43-purposep
-      (implies (bip43-purposep x)
-               (equal (bip43-purpose-fix x)
-                      x))))
+    :short "Fixer for @(tsee bip43-purpose).")
 
   (fty::deffixtype bip43-purpose
     :pred bip43-purposep

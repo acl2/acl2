@@ -416,6 +416,9 @@
       whose translation is @('(fn qc1 qc2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
       and each @('qc1'), @('qc2'), etc. is a quoted constant.
+      If @(':guards') is @('t'),
+      then the values of @('qc1'), @('qc2'), etc.
+      must satisfy the guard of @('fn').
       All the @('namej') strings must be distinct.")
     (xdoc::p
      "Each doublet @('(namej termj)') specifies a test,
@@ -480,7 +483,11 @@
      a Java exception is thrown if this protocol is not observed.
      This @('initialize') method should be also called
      before calling any of the public methods provided by AIJ,
-     because AIJ itself relies on this initialization to work properly.")
+     because AIJ itself relies on this initialization to work properly.
+     This method is actually empty,
+     but calling it ensures that the class is initialized:
+     it is the class's static initializer
+     that performs the actual initialization.")
 
    (xdoc::p
     "In the deep embedding approach,
@@ -513,9 +520,9 @@
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.
-     See the implementation for a description of the mapping between
-     ACL2 package and function names and these Java class and method names;
-     user-level documentation for this mapping will be added at some point.")
+     The mapping between these Java class and method names
+     and the corresponding ACL2 package and function names
+     is displayed if @(':verbose') is @('t').")
 
    (xdoc::h4 "Optional Test Class")
 

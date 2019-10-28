@@ -80,13 +80,13 @@
      and ACL2's tau system types.")
    (xdoc::p
     "With a table of the types of the involved ACL2 functions at hand
-     (the table being constructed via calls of the macro),
+     (the table being constructed via calls of @(tsee def-atj-function-type)),
      ATJ performs a type analysis of the ACL2 terms in function bodies
      as it translates them to Java.
      Critically, ATJ compares
      the type inferred for the actual argument of a function
      (this type is inferred by analyzing terms recursively)
-     with the type of the corresponding formal argument of a function
+     with the type of the corresponding formal argument of the function
      (this type is retrieved from the table of function types):
      if they differ, ATJ inserts code to convert from the former to the latter,
      unless the former is a subtype of the latter in Java.
@@ -111,7 +111,25 @@
    (xdoc::p
     "The above is just an overview of the use of types by ATJ.
      More details are in the documentation of their implementation,
-     and in the code generation functions that use them."))
+     and in the code generation functions that use them.")
+   (xdoc::p
+    "All of the above is being extended so that each ACL2 function
+     may have more than one input/output type associated with it:
+     (i) a main input/output type,
+     provable from the guards as described above; and
+     (ii) zero or more other input/output types,
+     normally narrower than the main ones,
+     which may be used (in the future) to generate
+     possibly more efficient overloaded methods for the ACL2 function.
+     For instance, AIJ already includes overloaded methods
+     for ACL2's primitive arithmetic operations (@(tsee binary-+) etc.)
+     that take and return narrower types than @('Acl2Number'),
+     thanks to the well-known closure operations over rationals and integers
+     satisfied by these operations.
+     This documentation topic will be appropriately revised and extended
+     when support for these additional function types,
+     and their use for overloaded methods,
+     is completed."))
   :order-subtopics t
   :default-parent t)
 
@@ -127,7 +145,7 @@
    :cons
    :value
    :jint)
-  :short "Recognize the ATJ types."
+  :short "Recognize ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -151,7 +169,7 @@
 
 (define maybe-atj-typep (x)
   :returns (yes/no booleanp)
-  :short "Recognize the ATJ types and @('nil')."
+  :short "Recognize ATJ types and @('nil')."
   (or (atj-typep x)
       (null x))
   ///
@@ -186,8 +204,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist symbol-atjtype-alistp (x)
-  :short "Alists from symbols to ATJ types."
+(std::defalist symbol-atj-type-alistp (x)
+  :short "Recognize alists from symbols to ATJ types."
   :key (symbolp x)
   :val (atj-typep x)
   :true-listp t
@@ -195,16 +213,22 @@
   :valp-of-nil nil
   ///
 
-  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atjtype-alistp
-    (implies (symbol-atjtype-alistp alist)
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atj-type-alistp
+    (implies (symbol-atj-type-alistp alist)
              (iff (atj-typep (cdr (assoc-equal key alist)))
-                  (assoc-equal key alist)))))
+                  (assoc-equal key alist))))
+
+  (defrule symbol-atj-type-alistp-of-pairlis$
+    (implies (and (symbol-listp keys)
+                  (atj-type-listp vals)
+                  (equal (len keys) (len vals)))
+             (symbol-atj-type-alistp (pairlis$ keys vals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "Partial order over the ATJ types."
+  :short "Partial order over ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -412,7 +436,7 @@
 
 (define atj-type-to-jtype ((type atj-typep))
   :returns (jtype jtypep :hyp :guard)
-  :short "Java type corresponding to each ATJ type."
+  :short "Java type corresponding to an ATJ type."
   (case type
     (:character *aij-type-char*)
     (:string *aij-type-string*)
@@ -458,11 +482,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defaggregate atj-function-type
-  :short "ATJ types associated to an ACL2 function."
+  :short "Recognize ATJ function types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of types for the arguments (i.e. inputs)
+    "An ATJ function type consists of
+     types for the arguments (i.e. inputs)
      and a type for the result (i.e. output).
      This is like an arrow type in higher-order languages.")
    (xdoc::p
@@ -476,13 +501,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-function-type-table-name*
-  :short "Name of the table that associates ATJ types to ACL2 functions."
-  'atj-function-type-table)
+(std::deflist atj-function-type-listp (x)
+  :short "Recognize true lists of ATJ function types."
+  (atj-function-type-p x)
+  :true-listp t
+  :elementp-of-nil nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atj-function-type-table
+(std::defaggregate atj-function-type-info
+  :short "Recognize ATJ function type information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In general, each ACL2 function has, associated with it,
+     a `main' function type and zero or more `other' function types,
+     as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
+  ((main atj-function-type-p)
+   (others atj-function-type-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define maybe-atj-function-type-info-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognize ATJ function type information and @('nil')."
+  (or (atj-function-type-info-p x)
+      (null x))
+  ///
+
+  (defrule maybe-atj-function-type-info-p-when-atj-function-type-info-p
+    (implies (atj-function-type-info-p x)
+             (maybe-atj-function-type-info-p x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-function-type-info-table-name*
+  :short "Name of the table that associates ATJ types to ACL2 functions."
+  'atj-function-type-info-table)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atj-function-type-info-table
   :short "Table that associates ATJ types to ACL2 functions."
   :long
   (xdoc::topstring
@@ -490,62 +549,80 @@
     "This table is populated by
      successful calls of the @(tsee def-atj-function-type) macro."))
   (make-event
-   `(table ,*atj-function-type-table-name* nil nil
+   `(table ,*atj-function-type-info-table-name* nil nil
       :guard (and (symbolp acl2::key)
-                  (atj-function-type-p acl2::val)))))
+                  (atj-function-type-info-p acl2::val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type-from-table ((fn symbolp) (wrld plist-worldp))
-  :returns (fn-type atj-function-type-p)
-  :short "Retrieve the ATJ type of the specified function from the table."
+(define atj-get-function-type-info-from-table ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-info? maybe-atj-function-type-info-p)
+  :short "Retrieve the ATJ function type information
+          of the specified function from the table."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is retrieved from the "
-    (xdoc::seetopic "atj-function-type-table"
+    (xdoc::seetopic "atj-function-type-info-table"
                     "@(tsee def-atj-function-type) table")
-    ". If the table has no entry for the function,
-     a function type all consisting of @(':value') is returned."))
-  (b* ((table (table-alist+ *atj-function-type-table-name* wrld))
+    ". If the table has no entry for the function, @('nil') is returned."))
+  (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair)
-        (b* ((fn-type (cdr pair)))
-          (if (atj-function-type-p fn-type)
-              fn-type
-            (prog2$
-             (raise "Internal error: ~
-                     malformed function type ~x0 for function ~x1."
-                    fn-type fn)
-             (atj-function-type nil :value)))))) ; unreachable
-    (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value))
+        (b* ((fn-info (cdr pair)))
+          (if (atj-function-type-info-p fn-info)
+              fn-info
+            (raise "Internal error: ~
+                    malformed function information ~x0 for function ~x1."
+                   fn-info fn)))))
+    nil)
   :prepwork
   ((defrulel consp-of-assoc-equal
      (implies (alistp alist)
               (iff (consp (assoc-equal key alist))
-                   (assoc-equal key alist))))))
+                   (assoc-equal key alist)))))
+  ///
+
+  (defrule atj-function-type-info-p-of-atj-get-function-type-info-from-table
+    (iff (atj-function-type-info-p
+          (atj-get-function-type-info-from-table fn wrld))
+         (atj-get-function-type-info-from-table fn wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-get-function-type ((fn symbolp)
-                               (guards$ booleanp)
-                               (wrld plist-worldp))
-  :returns (fn-type atj-function-type-p)
-  :short "Obtain the ATJ type of the specified function."
+(define atj-function-type-info-default ((fn symbolp) (wrld plist-worldp))
+  :returns (fn-info atj-function-type-info-p)
+  :short "Default ATJ function type information for a function."
+  :long
+  (xdoc::topstring-p
+   "This is used when a function has no entry in the table.
+    It consists of a main function type of all @(':value') types,
+    and no other function types.")
+  (make-atj-function-type-info
+   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
+                                 :output :value)
+   :others nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-get-function-type-info ((fn symbolp)
+                                    (guards$ booleanp)
+                                    (wrld plist-worldp))
+  :returns (fn-info atj-function-type-info-p)
+  :short "Obtain the ATJ function type information of the specified function."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the @(':guards') input is @('t'),
      we retrieve the type from the table
-     via @(tsee atj-get-function-type-from-table).
+     via @(tsee atj-get-function-type-info-from-table).
      If the @(':guards') input is @('nil'),
-     we return a function type consisting of all @(':value') types,
-     because in this case types are ignored."))
+     we return the defult function type information,
+     because in this case types are effectively ignored."))
   (if guards$
-      (atj-get-function-type-from-table fn wrld)
-    (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                            :output :value)))
+      (b* ((fn-info? (atj-get-function-type-info-from-table fn wrld)))
+        (or fn-info? (atj-function-type-info-default fn wrld)))
+    (atj-function-type-info-default fn wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,13 +726,14 @@
         (def-atj-function-type-input-theorems formals in-tys fn wrld))
        (output-thm
         (def-atj-function-type-output-theorem out-ty fn wrld))
-       (fn-ty (make-atj-function-type :inputs in-tys :output out-ty)))
+       (fn-ty (make-atj-function-type :inputs in-tys :output out-ty))
+       (fn-info (make-atj-function-type-info :main fn-ty :others nil)))
     `(encapsulate
        ()
        (set-ignore-ok t)
        ,@input-thms
        ,output-thm
-       (table ,*atj-function-type-table-name* ',fn ',fn-ty))))
+       (table ,*atj-function-type-info-table-name* ',fn ',fn-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -681,7 +759,7 @@
      on the ACL2 functions that are implemented natively in AIJ.")
    (xdoc::p
     "If ATJ encounters a function that is not in the table,
-     it assumes the wider possible type (i.e. the one for all ACL2 values)
+     it assumes the widest possible type (i.e. the one for all ACL2 values)
      for inputs and output of the function.
      See the code generation functions for details.")
    (xdoc::@def "def-atj-function-type"))

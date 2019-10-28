@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "centaur/depgraph/toposort" :dir :system)
+(include-book "std/lists/index-of" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -258,10 +260,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-make-parallel-asg ((names string-listp)
+(define atj-parallel-asg-depgraph ((vars string-listp)
+                                   (exprs jexpr-listp))
+  :guard (= (len vars) (len exprs))
+  :returns (graph alistp)
+  :short "Calculate a dependency graph for a parallel assignment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since Java does not have parallel assignment,
+     in order to assign the expressions @('exprs') to the variables @('vars'),
+     we attempt to topologically order these assignments
+     according to their dependencies.
+     This function calculates the dependency graph,
+     in a form suitable for "
+    (xdoc::seetopic "depgraph::depgraph" "this dependency graph library")
+    ".")
+   (xdoc::p
+    "We go through the variables in order,
+     and for each we construct an association pair
+     for the graph represented as an alist.
+     For each variable,
+     we collect all the variables in the corresponding expression,
+     but we exclude the variable itself
+     and any variable not in the initial set.
+     Thus, we use an auxiliary function that has the unchanging initial set
+     as an additional argument."))
+  (atj-parallel-asg-depgraph-aux vars exprs vars)
+
+  :prepwork
+
+  ((define atj-parallel-asg-depgraph-aux ((vars string-listp)
+                                          (exprs jexpr-listp)
+                                          (all-vars string-listp))
+     :guard (= (len vars) (len exprs))
+     :returns (graph alistp)
+     (b* (((when (endp vars)) nil)
+          (var (car vars))
+          (expr (car exprs))
+          (deps (remove-equal var
+                              (intersection-equal (jexpr-vars expr)
+                                                  all-vars)))
+          (rest-alist (atj-parallel-asg-depgraph-aux (cdr vars)
+                                                     (cdr exprs)
+                                                     all-vars)))
+       (acons var deps rest-alist))
+
+     ///
+
+     (more-returns
+      (graph (subsetp-equal (alist-keys graph) vars)
+             :name atj-parallel-asg-depgraph-aux-subsetp-vars
+             :hints (("Goal" :in-theory (enable alist-keys)))))))
+
+  ///
+
+  (more-returns
+   (graph (subsetp-equal (alist-keys graph) vars)
+          :name atj-parallel-asg-depgraph-subsetp-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-serialize-parallel-asg ((serialization string-listp)
+                                    (vars string-listp)
+                                    (exprs jexpr-listp))
+  :guard (and (= (len vars) (len exprs))
+              (subsetp-equal serialization vars))
+  :returns (block jblockp)
+  :short "Generate a block that performs a parallel assignment
+          of the given expressions to the given variables,
+          according to the supplied serialization."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When the dependencies in a parallel assignment are not circular,
+     it is possible to realize the parallel assignment
+     via a sequence of single assignment that respects the dependencies.
+     This function does that, based on the given serialization,
+     which is calculated elsewhere via a topological sort.")
+   (xdoc::p
+    "We go through the serialization, and for each element (i.e. variable name)
+     we find the position in the @('names') list,
+     and use that position to pick the corresponding expression
+     to use in the assignment."))
+  (b* (((when (endp serialization)) nil)
+       (var (car serialization))
+       (pos (acl2::index-of var vars))
+       (expr (nth pos exprs))
+       (first-asg (jblock-asg (jexpr-name var) expr))
+       (rest-asg (atj-serialize-parallel-asg (cdr serialization) vars exprs)))
+    (append first-asg rest-asg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-make-parallel-asg ((vars string-listp)
                                (types jtype-listp)
                                (exprs jexpr-listp))
-  :guard (and (= (len names) (len types))
+  :guard (and (= (len vars) (len types))
               (= (len types) (len exprs)))
   :returns (block jblockp)
   :short "Generate a block that performs a parallel assignment
@@ -285,15 +380,18 @@
      in general we cannot assign the new values in order,
      because earlier assignments may incorrectly change
      the value of expressions for later assignments.
-     For now we use a very simple strategy:
+     We first attempt to topologically sort the variables
+     according to their dependencies:
+     if there are no circularities,
+     we perform the assignments in the topologial order.
+     If instead there are circularities,
+     for now we use a very simple strategy:
      we create temporary variables for all the method's arguments,
      we initialize them with the expressions,
      and then we assign the temporary variables to the method's parameters.
-     Clearly, this can be easily improved,
-     e.g. by assigning directly according to a topological sort
-     when there are no circular dependencies,
-     or otherwise reducing the number of temporary variables
-     when there are circular dependencies.")
+     This can be improved,
+     by reducing the number of temporary variables
+     to just where there are circular dependencies.")
    (xdoc::p
     "The temporary variables are called @('$1'), @('2'), etc.,
      which does not conflict with any other variables
@@ -306,29 +404,37 @@
      the block with the temporary variable declarations and initializations
      separately from the block with the assignments to the parameters.
      The main function concatenates them into an overall block."))
-  (b* (((mv tmp-block asg-block)
-        (atj-make-parallel-asg-aux names types exprs 1)))
+  (b* ((graph (atj-parallel-asg-depgraph vars exprs))
+       ((mv acyclicp serialization) (depgraph::toposort graph))
+       ((unless (string-listp serialization))
+        (raise "Internal error: ~
+                topological sort of graph ~x0 of strings ~
+                has generated non-strings ~x1."
+               graph serialization))
+       ((when acyclicp) (atj-serialize-parallel-asg serialization vars exprs))
+       ((mv tmp-block asg-block)
+        (atj-make-parallel-asg-aux vars types exprs 1)))
     (append tmp-block asg-block))
 
   :prepwork
-  ((define atj-make-parallel-asg-aux ((names string-listp)
+  ((define atj-make-parallel-asg-aux ((vars string-listp)
                                       (types jtype-listp)
                                       (exprs jexpr-listp)
                                       (i posp))
-     :guard (and (= (len names) (len types))
+     :guard (and (= (len vars) (len types))
                  (= (len types) (len exprs)))
      :returns (mv (tmp-block jblockp)
                   (asg-block jblockp))
-     (b* (((when (endp names)) (mv nil nil))
-          (name (car names))
+     (b* (((when (endp vars)) (mv nil nil))
+          (var (car vars))
           (type (car types))
           (expr (car exprs))
           (tmp (str::cat "$" (str::natstr i)))
           (first-tmp (jblock-locvar type tmp expr))
-          (first-asg (jblock-asg (jexpr-name name)
+          (first-asg (jblock-asg (jexpr-name var)
                                  (jexpr-name tmp)))
           ((mv rest-tmp
-               rest-asg) (atj-make-parallel-asg-aux (cdr names)
+               rest-asg) (atj-make-parallel-asg-aux (cdr vars)
                                                     (cdr types)
                                                     (cdr exprs)
                                                     (1+ i))))

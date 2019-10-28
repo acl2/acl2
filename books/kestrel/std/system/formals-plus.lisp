@@ -29,13 +29,20 @@
      that allows us to prove the return type theorem
      without strengthening the guard on @('wrld').")
    (xdoc::p
-    "Note that @(tsee formals), which is called by this function,
-     causes an error on a symbol that does not name a function.")
+    "Similarly to @(tsee formals),
+     this utility causes an error if called on a symbol
+     that does not name a function.
+     But the error message is slightly different
+     from the one of @(tsee formals).")
    (xdoc::p
     "This utility also operates on lambda expressions,
      unlike @(tsee formals)."))
-  (b* ((result (cond ((symbolp fn) (formals fn wrld))
-                     (t (lambda-formals fn)))))
+  (b* ((result (if (symbolp fn)
+                   (b* ((formals (getpropc fn 'formals t wrld)))
+                     (if (eq formals t)
+                         (raise "The symbol ~x0 does not name a function." fn)
+                       formals))
+                 (lambda-formals fn))))
     (if (symbol-listp result)
         result
       (raise "Internal error: ~

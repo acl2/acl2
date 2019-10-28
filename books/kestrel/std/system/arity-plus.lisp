@@ -26,7 +26,7 @@
     "This returns the same result as @(tsee arity)
      on named functions and lambda expressions,
      but it causes an error on symbols that do not name functions
-     (while @(tsee arity) returns @('nil') in this case.")
+     (while @(tsee arity) returns @('nil') in this case).")
    (xdoc::p
     "Compared to @(tsee arity),
      @('arity+') has a slightly stronger guard on @('fn')

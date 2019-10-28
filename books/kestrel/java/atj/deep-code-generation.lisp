@@ -498,23 +498,13 @@
                                             :name "arguments"))
        (method-params (list method-param-function
                             method-param-arguments))
-       (exception-message "The ACL2 environment is not initialized.")
-       (exception-message-expr (atj-gen-jstring exception-message))
-       (throw-block (jblock-throw (jexpr-newclass
-                                   (jtype-class "IllegalStateException")
-                                   (list exception-message-expr))))
-       (if-block (jblock-if (jexpr-unary (junop-logcompl)
-                                         (jexpr-name "initialized"))
-                            throw-block))
        (function-expr (jexpr-smethod *aij-type-named-fn*
                                      "make"
                                      (list (jexpr-name "function"))))
        (call-expr (jexpr-imethod function-expr
                                  "call"
                                  (list (jexpr-name "arguments"))))
-       (return-block (jblock-return call-expr))
-       (method-body (append if-block
-                            return-block)))
+       (method-body (jblock-return call-expr)))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -530,62 +520,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-init-method ((pkgs string-listp)
-                                  (fns-to-translate symbol-listp))
-  :returns (method jmethodp)
-  :short "Generate the Java public method to initialize the ACL2 environment."
+(define atj-gen-deep-static-initializer ((pkgs string-listp)
+                                         (fns-to-translate symbol-listp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer
+          for the main (i.e. non-test) Java class declaration,
+          in the deep embedding approach."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a public static method,
-     which must be called before calling the method to call ACL2 functions,
-     and also before calling the AIJ methods
-     to translate between Java and ACL2 values.")
-   (xdoc::p
-    "If the initialization flag is cleared,
-     the initialization is performed and the flag is set.
-     Otherwise, an exception is thrown,
-     because initialization must occur only once.")
-   (xdoc::p
-    "If @(':deep') is @('t'),
-     @('fns-block?') contains code
-     to build the deeply embedded representations of the ACL2 functions and
-     to validate the definitions of all the deeply embedded ACL2 functions.
-     If @(':deep') is @('nil'), @('fns-block?') is @('nil').
-     The presence or absence of code in this block
-     is the only difference between deep and shallow embedding
-     in the initialization method generated here."))
-  (b* ((exception-message "The ACL2 environment is already initialized.")
-       (exception-message-expr (atj-gen-jstring exception-message))
-       (throw-block (jblock-throw (jexpr-newclass
-                                   (jtype-class "IllegalStateException")
-                                   (list exception-message-expr))))
-       (if-block (jblock-if (jexpr-name "initialized")
-                            throw-block))
-       (pkgs-block (atj-gen-pkgs pkgs))
-       (fns-build-block (atj-gen-deep-fndefs fns-to-translate))
-       (fns-validate-block (jblock-smethod *aij-type-named-fn*
-                                           "validateAll"
-                                           nil))
-       (initialize-block (jblock-asg-name "initialized"
-                                          (jexpr-literal-true)))
-       (method-body (append if-block
-                            pkgs-block
-                            fns-build-block
-                            fns-validate-block
-                            initialize-block)))
-    (make-jmethod :access (jaccess-public)
-                  :abstract? nil
-                  :static? t
-                  :final? nil
-                  :synchronized? nil
-                  :native? nil
-                  :strictfp? nil
-                  :result (jresult-void)
-                  :name "initialize"
-                  :params nil
-                  :throws nil
-                  :body method-body)))
+    "This contains code to initialize the ACL2 environment:
+     we build the Java representation of the ACL2 packages and functions."))
+  (make-jcinitializer :static? t
+                      :code (append (atj-gen-pkgs pkgs)
+                                    (atj-gen-deep-fndefs fns-to-translate)
+                                    (jblock-smethod *aij-type-named-fn*
+                                                    "validateAll"
+                                                    nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,27 +553,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a public class that contains all the generated members.
+    "This is a public class.
      [JLS:7.6] says that a Java implementation may require
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p
-    "The class contains the initialization field and method,
+    "The class contains the initialization method,
+     the static initializer,
      the methods to build the ACL2 packages,
      the methods to build the ACL2 functions,
      and the method to call ACL2 code from external code."))
-  (b* ((init-field (atj-gen-init-field))
-       ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 packages:~%"))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        ((run-when verbose$)
-        (cw "~%Generating Java code for the ACL2 functions:~%"))
+        (cw "~%Generate the Java methods to build the ACL2 functions:~%"))
        (fn-methods (atj-gen-deep-fndef-methods
                     fns-to-translate guards$ verbose$ wrld))
-       (init-method (atj-gen-deep-init-method pkgs fns-to-translate))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java class.~%"))
+       (static-init (atj-gen-deep-static-initializer pkgs fns-to-translate))
+       (init-method (atj-gen-init-method))
        (call-method (atj-gen-deep-call-method))
-       (body-class (append (list (jcbody-element-member
-                                  (jcmember-field init-field)))
+       (body-class (append (list (jcbody-element-init static-init))
                            (jmethods-to-jcbody-elements pkg-methods)
                            (jmethods-to-jcbody-elements fn-methods)
                            (list (jcbody-element-member
@@ -653,7 +606,9 @@
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
   (b* ((class (atj-gen-deep-main-class
-               pkgs fns-to-translate guards$ java-class$ verbose$ wrld)))
+               pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the main Java compilation unit.~%")))
     (make-jcunit :package? java-package$
                  :imports (list (jimport nil (str::cat *aij-package* ".*"))
                                 (jimport nil "java.math.BigInteger")

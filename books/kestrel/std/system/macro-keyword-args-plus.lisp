@@ -14,8 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-keyword-args+ ((mac (macro-namep mac wrld))
-                             (wrld plist-worldp))
+(define macro-keyword-args+ ((mac symbolp) (wrld plist-worldp))
   :returns (keyword-args symbol-alistp)
   :parents (std/system/macro-queries)
   :short (xdoc::topstring
@@ -24,11 +23,12 @@
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee macro-keyword-args),
-    but it has a stronger guard,
-    is guard-verified,
+    but it is guard-verified
     and includes run-time checks (which should always succeed)
     that allow us to prove the return type theorem and to verify the guards
-    without strengthening the guard on @('wrld').")
+    without strengthening the guard on @('wrld').
+    Furthermore, this utility causes an error (via @(tsee macro-args+))
+    if called on a symbol that does not name a macro.")
   (b* ((all-args (macro-args+ mac wrld))
        (args-after-&key (cdr (member-eq '&key all-args)))
        (keyword-args (macro-keyword-args+-aux mac args-after-&key)))

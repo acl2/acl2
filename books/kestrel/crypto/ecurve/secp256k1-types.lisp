@@ -14,6 +14,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/utilities/bytes-as-digits" :dir :system)
+(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,19 +64,11 @@
         :rule-classes :tau-system
         :enable secp256k1-prime)))
 
-  (define secp256k1-field-fix ((x secp256k1-fieldp))
-    :returns (fixed-x secp256k1-fieldp)
+  (std::deffixer secp256k1-field-fix
+    :pred secp256k1-fieldp
+    :body-fix 0
     :parents (secp256k1-field)
-    :short "Fixer for @(tsee secp256k1-field)."
-    (mbe :logic (if (secp256k1-fieldp x) x 0)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule secp256k1-field-fix-when-secp256k1-fieldp
-      (implies (secp256k1-fieldp x)
-               (equal (secp256k1-field-fix x)
-                      x))))
+    :short "Fixer for @(tsee secp256k1-field).")
 
   (fty::deffixtype secp256k1-field
     :pred secp256k1-fieldp
@@ -159,19 +152,11 @@
         :rule-classes :tau-system
         :enable secp256k1-order)))
 
-  (define secp256k1-priv-key-fix ((x secp256k1-priv-key-p))
-    :returns (fixed-x secp256k1-priv-key-p)
+  (std::deffixer secp256k1-priv-key-fix
+    :pred secp256k1-priv-key-p
+    :body-fix 1
     :parents (secp256k1-priv-key)
-    :short "Fixer for @(tsee secp256k1-priv-key)."
-    (mbe :logic (if (secp256k1-priv-key-p x) x 1)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule secp256k1-priv-key-fix-when-secp256k1-priv-key-p
-      (implies (secp256k1-priv-key-p x)
-               (equal (secp256k1-priv-key-fix x)
-                      x))))
+    :short "Fixer for @(tsee secp256k1-priv-key).")
 
   (fty::deffixtype secp256k1-priv-key
     :pred secp256k1-priv-key-p
@@ -201,19 +186,11 @@
       (implies (secp256k1-pub-key-p x)
                (secp256k1-pointp x))))
 
-  (define secp256k1-pub-key-fix ((x secp256k1-pub-key-p))
-    :returns (fixed-x secp256k1-pub-key-p)
+  (std::deffixer secp256k1-pub-key-fix
+    :pred secp256k1-pub-key-p
+    :body-fix (secp256k1-point 1 1)
     :parents (secp256k1-pub-key)
-    :short "Fixer for @(tsee secp256k1-pub-key)."
-    (mbe :logic (if (secp256k1-pub-key-p x) x (secp256k1-point 1 1))
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule secp256k1-pub-key-fix-when-secp256k1-pub-key-p
-      (implies (secp256k1-pub-key-p x)
-               (equal (secp256k1-pub-key-fix x)
-                      x))))
+    :short "Fixer for @(tsee secp256k1-pub-key).")
 
   (fty::deffixtype secp256k1-pub-key
     :pred secp256k1-pub-key-p

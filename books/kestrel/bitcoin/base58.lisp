@@ -10,6 +10,7 @@
 
 (in-package "BITCOIN")
 
+(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/lists/index-of-theorems" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
@@ -81,20 +82,17 @@
              (characterp x))
     :rule-classes :compound-recognizer))
 
-(define base58-character-fix ((x base58-characterp))
-  :returns (fixed-x base58-characterp)
+(std::deffixer base58-character-fix
+  :pred base58-characterp
+  :body-fix *base58-zero*
   :parents (base58-character)
-  :short "Fixer for @(tsee base58-character)."
-  (mbe :logic (if (base58-characterp x) x *base58-zero*)
-       :exec x)
-  ///
+  :short "Fixer for @(tsee base58-character).")
 
-  (more-returns
-   (fixed-x characterp :rule-classes :type-prescription))
-
-  (defrule base58-character-fix-when-base58-characterp
-    (implies (base58-characterp x)
-             (equal (base58-character-fix x) x))))
+(defsection base58-character-fix-ext
+  :extension base58-character-fix
+  (defret characterp-of-base58-character-fix
+    (characterp fixed-x)
+    :rule-classes :type-prescription))
 
 (defsection base58-character
   :short "Base58 characters."

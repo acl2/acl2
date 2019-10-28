@@ -1,6 +1,6 @@
 ; Lists of Contiguous Integers
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,10 +21,9 @@
   :parents (kestrel-utilities)
   :short "Ordered list of all the integers in a range."
   :long
-  "<p>
-   The range goes from @('min') to @('max'), inclusive.
-   If @('min') exceeds @('max'), the result is @('nil').
-   </p>"
+  (xdoc::topstring-p
+   "The range goes from @('min') to @('max'), inclusive.
+    If @('min') exceeds @('max'), the result is @('nil').")
   (mbe :logic (b* ((min (ifix min))
                    (max (ifix max)))
                 (cond ((> min max) nil)

@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-types
-  :parents (language)
+  :parents (syntax)
   :short "Java primitive types [JLS:4.2]."
   :long
   (xdoc::topstring

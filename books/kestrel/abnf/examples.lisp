@@ -464,10 +464,14 @@
    <p>
    These rules generate terminal strings consisting only of Unicode codes,
    i.e. natural numbers between 0 and @('x10FFFF').
-   However, running this proof currently takes a long time
-   due to the inefficient definition of @(tsee rulelist-in-termset-p)
+   Proving this by execution would take a long time
+   due to the specification-appropriate but execution-inefficient
+   definition of @(tsee rulelist-in-termset-p)
    and to the relatively large size of the range of natural numbers.
-   It remains to speed up this proof and include it here.
+   Thus, we prove the theorems (quickly)
+   by disabling the executable counterpart of @(tsee integers-from-to)
+   and by using library theorems that relate @(tsee integers-from-to)
+   to @(tsee in) and @(tsee list-in).
    </p>
    <p>
    We use @(tsee add-const-to-untranslate-preprocess)
@@ -483,4 +487,18 @@
     (rulelist-wfp *all-json-grammar-rules*))
 
   (defrule rulelist-closedp-of-*all-json-grammar-rules*
-    (rulelist-closedp *all-json-grammar-rules*)))
+    (rulelist-closedp *all-json-grammar-rules*))
+
+  (defrule unicode-only-*all-json-grammar-rules*
+    (rulelist-in-termset-p *all-json-grammar-rules*
+                           (integers-from-to 0 #x10ffff))
+    :enable (rule-in-termset-p
+             repetition-in-termset-p
+             element-in-termset-p
+             num-val-in-termset-p
+             char-val-in-termset-p
+             char-insensitive-in-termset-p)
+    :disable ((:e integers-from-to))
+    :prep-books
+    ((local
+      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))

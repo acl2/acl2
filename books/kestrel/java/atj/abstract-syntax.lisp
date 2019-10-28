@@ -11,6 +11,7 @@
 (in-package "JAVA")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -70,27 +71,20 @@
 
 ; Library extensions.
 
-(define string-list-fix ((x string-listp))
-  :returns (fixed-x string-listp)
-  :short "Fixer for @(tsee string-listp)."
-  :long
-  (xdoc::topstring-p
-   "This is not specific to Java,
-    and it should be moved to a more general library eventually.")
-  (mbe :logic (if (string-listp x) x nil)
-       :exec x)
-  ///
-  (defrule string-list-fix-when-string-listp
-    (implies (string-listp x)
-             (equal (string-list-fix x)
-                    x))))
-
 (defsection string-list
-  :short "Fixtype of true lists of ACL2 strings."
+  :short "Fixtype of true lists of ACL2 strings,
+          i.e. values recognized by @(tsee string-listp)."
   :long
   (xdoc::topstring-p
    "This is not specific to Java,
     and it should be moved to a more general library eventually.")
+
+  (std::deffixer string-list-fix
+    :pred string-listp
+    :body-fix nil
+    :parents (string-list)
+    :short "Fixer for @(tsee string-list).")
+
   (fty::deffixtype string-list
     :pred string-listp
     :fix string-list-fix
@@ -99,21 +93,18 @@
     :forward t))
 
 (defsection maybe-string
-  :short "ACL2 strings and @('nil')."
+  :short "Fixtype of ACL2 strings and @('nil'),
+          i.e. values recognized by @(tsee maybe-stringp)."
   :long
   (xdoc::topstring-p
    "This is not specific to Java,
     and it should be moved to a more general library eventually.")
 
-  (define maybe-string-fix ((x maybe-stringp))
-    :returns (fixed-x maybe-stringp)
-    (mbe :logic (if (maybe-stringp x) x nil)
-         :exec x)
-    ///
-    (defrule maybe-string-fix-when-maybe-stringp
-      (implies (maybe-stringp x)
-               (equal (maybe-string-fix x)
-                      x))))
+  (std::deffixer maybe-string-fix
+    :pred maybe-stringp
+    :body-fix nil
+    :parents (maybe-string)
+    :short "Fixer for @(tsee maybe-string).")
 
   (fty::deffixtype maybe-string
     :pred maybe-stringp
@@ -322,6 +313,56 @@
     :true-listp t
     :elementp-of-nil nil
     :pred jexpr-listp))
+
+(defines jexpr-vars
+  :short "Variables in a Java expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return all the names in name expressions.
+     The list is without duplicates but in no particular order."))
+
+  (define jexpr-vars ((expr jexprp))
+    :returns (vars string-listp)
+    (jexpr-case expr
+                :literal nil
+                :name (list expr.get)
+                :newarray (jexpr-vars expr.size)
+                :newarray-init (jexpr-list-vars expr.init)
+                :array (union-equal (jexpr-vars expr.array)
+                                    (jexpr-vars expr.index))
+                :newclass (jexpr-list-vars expr.args)
+                :field (jexpr-vars expr.target)
+                :method (jexpr-list-vars expr.args)
+                :smethod (jexpr-list-vars expr.args)
+                :imethod (union-equal (jexpr-vars expr.target)
+                                      (jexpr-list-vars expr.args))
+                :postinc (jexpr-vars expr.arg)
+                :postdec (jexpr-vars expr.arg)
+                :cast (jexpr-vars expr.arg)
+                :unary (jexpr-vars expr.arg)
+                :binary (union-equal (jexpr-vars expr.left)
+                                     (jexpr-vars expr.right))
+                :cond (union-equal (jexpr-vars expr.test)
+                                   (union-equal (jexpr-vars expr.then)
+                                                (jexpr-vars expr.else)))
+                :paren (jexpr-vars expr.get))
+    :measure (jexpr-count expr))
+
+  (define jexpr-list-vars ((exprs jexpr-listp))
+    :returns (vars string-listp)
+    (cond ((endp exprs) nil)
+          (t (union-equal (jexpr-vars (car exprs))
+                          (jexpr-list-vars (cdr exprs)))))
+    :measure (jexpr-list-count exprs))
+
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (local (include-book "std/lists/union" :dir :system))
+  (verify-guards jexpr-vars))
 
 (define jexpr-name-list ((names string-listp))
   :returns (exprs jexpr-listp)
@@ -691,6 +732,36 @@
   :elementp-of-nil nil
   :pred jfield-listp)
 
+(define mergesort-jfields ((fields jfield-listp))
+  :returns (sorted-fields jfield-listp :hyp :guard)
+  :verify-guards :after-returns
+  :short "Sort a list of fields according to their names."
+  (b* ((len-fields (len fields))
+       ((when (<= len-fields 1)) fields)
+       (len/2 (floor len-fields 2))
+       (fields1 (mergesort-jfields (take len/2 fields)))
+       (fields2 (mergesort-jfields (nthcdr len/2 fields))))
+    (merge-jfields fields1 fields2))
+  :measure (len fields)
+
+  :prepwork
+
+  ((local (include-book "arithmetic-5/top" :dir :system))
+   (local (include-book "std/lists/take" :dir :system))
+   (local (include-book "std/lists/nthcdr" :dir :system))
+
+   (define merge-jfields ((fields1 jfield-listp) (fields2 jfield-listp))
+     :returns (merged-fields jfield-listp :hyp :guard)
+     (cond ((endp fields1) fields2)
+           ((endp fields2) fields1)
+           (t (if (string<= (jfield->name (car fields1))
+                            (jfield->name (car fields2)))
+                  (cons (car fields1)
+                        (merge-jfields (cdr fields1) fields2))
+                (cons (car fields2)
+                      (merge-jfields fields1 (cdr fields2))))))
+     :measure (+ (len fields1) (len fields2)))))
+
 (fty::deftagsum jresult
   :short "Result of a Java method [JLS:8.4.5]."
   (:type ((get jtype)))
@@ -773,6 +844,36 @@
   :true-listp t
   :elementp-of-nil nil
   :pred jmethod-listp)
+
+(define mergesort-jmethods ((methods jmethod-listp))
+  :returns (sorted-methods jmethod-listp :hyp :guard)
+  :verify-guards :after-returns
+  :short "Sort a list of methods according to their names."
+  (b* ((len-methods (len methods))
+       ((when (<= len-methods 1)) methods)
+       (len/2 (floor len-methods 2))
+       (methods1 (mergesort-jmethods (take len/2 methods)))
+       (methods2 (mergesort-jmethods (nthcdr len/2 methods))))
+    (merge-jmethods methods1 methods2))
+  :measure (len methods)
+
+  :prepwork
+
+  ((local (include-book "arithmetic-5/top" :dir :system))
+   (local (include-book "std/lists/take" :dir :system))
+   (local (include-book "std/lists/nthcdr" :dir :system))
+
+   (define merge-jmethods ((methods1 jmethod-listp) (methods2 jmethod-listp))
+     :returns (merged-methods jmethod-listp :hyp :guard)
+     (cond ((endp methods1) methods2)
+           ((endp methods2) methods1)
+           (t (if (string<= (jmethod->name (car methods1))
+                            (jmethod->name (car methods2)))
+                  (cons (car methods1)
+                        (merge-jmethods (cdr methods1) methods2))
+                (cons (car methods2)
+                      (merge-jmethods methods1 (cdr methods2))))))
+     :measure (+ (len methods1) (len methods2)))))
 
 (fty::defprod jcinitializer
   :short "Java class initializer [JLS:8.6] [JLS:8.7]."
