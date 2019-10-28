@@ -10,7 +10,7 @@
 
 (in-package "STD")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "deffixer")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

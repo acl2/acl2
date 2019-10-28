@@ -696,6 +696,18 @@
     "@(csee std::defret) now substitutes the list of return value names for
      symbols named @('<VALUES>') in the body and hints.")
 
+   (xdoc::p
+    "A new macro @(tsee std::deffixer) has been added
+     that automates the definition of fixing functions,
+     and the generation of theorems about them,
+     according to a common pattern.
+     The macro can be extended to cover variations in the pattern if needed.
+     This can be used as a building block
+     for extending @(tsee fty::deffixtype) to generate
+     not only the equivalence, but also the fixer for the fixtype.
+     This macro is currently in the Std/util extensions in the Kestrel Books,
+     but could be moved to @('[books]/std/util') at some point.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Tools")
