@@ -1237,6 +1237,8 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 (define create-assign-occ-names ((trace trace-p)
                                  (prefix)
                                  (cnt natp))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (trace-p) ())))
   :inline t
   (if (car trace)
       (cons (car trace) (sa prefix cnt))

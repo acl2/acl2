@@ -192,6 +192,38 @@
              :Expand (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) rest) env-wires)
              :in-theory (e/d () ())))))
 
+
+
+(progn
+  (defthm svex-env-append-opener-cons
+    (equal (svex-env-append (cons x rest) lst2)
+           (hons-acons (car x) (cdr x)
+                       (svex-env-append rest lst2)))
+    :hints (("Goal"
+             :in-theory (e/d (svex-env-append) ()))))
+
+  (defthm svex-env-append-opener-nil
+    (equal (svex-env-append nil lst2)
+           lst2)
+    :hints (("Goal"
+             :in-theory (e/d (svex-env-append) ())))))
+
+(progn
+  (defthm create-next-env-for-wires-opener-nil
+    (equal (create-next-env-for-wires nil env-wires)
+           nil)
+    :hints (("Goal"
+             :in-theory (e/d (create-next-env-for-wires) ()))))
+
+  (defthm create-next-env-for-wires-opener-cons
+    (equal (create-next-env-for-wires (cons x rest) env-wires)
+           (acons x
+                  (entry-4vec-fix (hons-get (sv::change-svar x :delay 0)
+                                            env-wires))
+                  (create-next-env-for-wires rest env-wires)))
+    :hints (("Goal"
+             :in-theory (e/d (create-next-env-for-wires) ())))))
+
 (progn
 
   (def-rw-opener-error
@@ -317,26 +349,26 @@
                              ())))))
 
 (def-rw-opener-error
-  svl2-run-cycle-opener-error
-  (svl2-run-cycle modname inputs delayed-env modules)
+  svl2-run-phase-opener-error
+  (svl2-run-phase modname inputs delayed-env modules)
   :vars-to-avoid (modules))
 
 (def-rw-opener-error
-  svl2-run-cycle-occs-opener-error
-  (svl2-run-cycle-occs occs env-wires delayed-env modules)
+  svl2-run-phase-occs-opener-error
+  (svl2-run-phase-occs occs env-wires delayed-env modules)
   :vars-to-avoid (modules
                   env-wires
                   delayed-env))
 
 (acl2::defines
- svl2-run-cycle$
- :flag-defthm-macro defthm-svl2-run-cycle$
- (define svl2-run-cycle$ (modname
+ svl2-run-phase$
+ :flag-defthm-macro defthm-svl2-run-phase$
+ (define svl2-run-phase$ (modname
                           inputs
                           delayed-env
                           modules)
    :verify-guards nil
-   :flag svl2-run-cycle$
+   :flag svl2-run-phase$
    :measure (acl2::nat-list-measure
              (list (svl2-get-module-rank$ modname; (sv::modname-fix modname)
                                           modules;(svl2-module-alist-fix modules)
@@ -354,17 +386,19 @@
           (b* ((x (cdr (assoc-equal modname modules)))
                (env-wires (svl2-start-env (CDR (STD::DA-NTH 1 X)) inputs))
                (env-wires
-                (svl-run-add-delayed-ins env-wires delayed-env
-                                         (CDR (STD::DA-NTH 2 X))))
+                (svex-env-append (svl-env->wires delayed-env)
+                                 env-wires))
+                #|(svl-run-add-delayed-ins env-wires delayed-env
+                                         (CDR (STD::DA-NTH 2 X)))||#
                ((mv env-wires next-delayed-env.modules)
-                (svl2-run-cycle-occs$ (CDR (STD::DA-NTH 4 X))
+                (svl2-run-phase-occs$ (CDR (STD::DA-NTH 4 X))
                                       env-wires
                                       (svl-env->modules delayed-env)
                                       modules))
                (out-vals (svl2-retrieve-values (CDR (STD::DA-NTH 3 X))
                                                env-wires))
                (next-delayed-env (make-svl-env
-                                  :wires (hons-gets-fast-alist
+                                  :wires (create-next-env-for-wires
                                           (CDR (STD::DA-NTH 2 X))
                                           env-wires)
                                   :modules next-delayed-env.modules))
@@ -372,7 +406,7 @@
             (mv out-vals
                 next-delayed-env)))))
 
- (define svl2-run-cycle-occs$ (occs
+ (define svl2-run-phase-occs$ (occs
                                env-wires
                                delayed-env-alist
                                modules)
@@ -382,7 +416,7 @@
                                            )
                    (cons-count occs;(svl2-occ-alist-fix occs)
                                )))
-   :flag svl2-run-cycle-occs$
+   :flag svl2-run-phase-occs$
    (let ((occ-name (caar occs))
          (occ (cdar occs)))
      (cond ((atom occs)
@@ -392,7 +426,7 @@
                                         (svex-eval2 (std::da-nth 1 (cdr occ))
                                                     env-wires)
                                         env-wires)))
-              (svl2-run-cycle-occs$ (cdr occs)
+              (svl2-run-phase-occs$ (cdr occs)
                                     env-wires
                                     delayed-env-alist
                                     modules)))
@@ -401,7 +435,7 @@
                    (mod.delayed-env (entry-svl-env-fix (hons-get occ-name delayed-env-alist)))
 
                    ((mv mod-output-vals mod-delayed-env)
-                    (svl2-run-cycle$ (std::da-nth 2 (cdr occ))
+                    (svl2-run-phase$ (std::da-nth 2 (cdr occ))
                                      mod-input-vals
                                      mod.delayed-env
                                      modules))
@@ -409,7 +443,7 @@
                                                      (STD::DA-NTH 1 (CDR occ))
                                                      env-wires))
                    ((mv env-wires rest-delayed-env)
-                    (svl2-run-cycle-occs$ (cdr occs)
+                    (svl2-run-phase-occs$ (cdr occs)
                                           env-wires
                                           delayed-env-alist
                                           modules)))
@@ -596,70 +630,72 @@
              :in-theory (e/d (SVL2-OCC-P) ())))))
                   
 
- (defthm-svl2-run-cycle$
-   (defthm svl2-run-cycle-is-svl2-run-cycle$
+ (defthm-svl2-run-phase$
+   (defthm svl2-run-phase-is-svl2-run-phase$
      (implies (and (sv::modname-p modname)
                    (sv::4veclist-p inputs)
                    (svl-env-p delayed-env)
                    (svl2-module-alist-p modules))
-              (equal (svl2-run-cycle modname inputs delayed-env modules)
-                     (svl2-run-cycle$ modname inputs delayed-env modules)))
-     :flag svl2-run-cycle$)
+              (equal (svl2-run-phase modname inputs delayed-env modules)
+                     (svl2-run-phase$ modname inputs delayed-env modules)))
+     :flag svl2-run-phase$)
 
-   (defthm svl2-run-cycle-occs-is-svl2-run-cycle-occs$
+   (defthm svl2-run-phase-occs-is-svl2-run-phase-occs$
      (implies (and (svl2-occ-alist-p occs)
                    (sv::svex-env-p env-wires)
                    (svl-env-alist-p delayed-env-alist)
                    (svl2-module-alist-p modules))
-              (equal (svl2-run-cycle-occs occs env-wires delayed-env-alist modules)
-                     (svl2-run-cycle-occs$ occs env-wires delayed-env-alist modules)))
-     :flag svl2-run-cycle-occs$)
+              (equal (svl2-run-phase-occs occs env-wires delayed-env-alist modules)
+                     (svl2-run-phase-occs$ occs env-wires delayed-env-alist modules)))
+     :flag svl2-run-phase-occs$)
    :hints (("Goal"
-            :expand ((SVL2-RUN-CYCLE-OCCS OCCS
+            :expand ((SVL2-RUN-PHASE-OCCS OCCS
                                           ENV-WIRES DELAYED-ENV-ALIST MODULES)
-                     (SVL2-RUN-CYCLE-OCCS$ OCCS
+                     (SVL2-RUN-PHASE-OCCS$ OCCS
                                            ENV-WIRES DELAYED-ENV-ALIST MODULES)
-                     (SVL2-RUN-CYCLE MODNAME INPUTS DELAYED-ENV MODULES)
+                     (SVL2-RUN-PHASE MODNAME INPUTS DELAYED-ENV MODULES)
                      )
             :in-theory (e/d (svexlist-eval2-is-svexlist-eval
-                             svl2-run-cycle
-                             svl2-run-cycle$
-                             SVL2-RUN-CYCLE-OCCS$
-                             svl2-run-cycle-occs) ())))))
+                             svl2-run-phase
+                             svl2-run-phase$
+                             SVL2-RUN-PHASE-OCCS$
+                             svl2-run-phase-occs) ())))))
 
 
 
 (progn
   (def-rw-opener-error
-    svl2-run-cycle$-opener-error
-    (svl2-run-cycle$ modname inputs
+    svl2-run-phase$-opener-error
+    (svl2-run-phase$ modname inputs
                      delayed-env
                      modules)
     :vars-to-avoid (modules))
 
   (rp::defthm-lambda
-   svl2-run-cycle$-opener
+   svl2-run-phase$-opener
    (implies
     (svl2-well-ranked-module$ modname modules)
-    (equal (svl2-run-cycle$ modname inputs
+    (equal (svl2-run-phase$ modname inputs
                             delayed-env
                             modules)
            (b* ((x (cdr (assoc-equal modname modules)))
-                (- (cw "Using svl2-run-cycle$-opener for ~p0 ~%"
+                (- (cw "Using svl2-run-phase$-opener for ~p0 ~%"
                        modname))
-                (env-wires (svl-run-add-delayed-ins
-                                        (svl2-start-env (CDR (STD::DA-NTH 1 X)) inputs)
-                                        delayed-env
-                                        (CDR (STD::DA-NTH 2 X))))
+                (env-wires (svex-env-append
+                            (svl-env->wires delayed-env)
+                            (svl2-start-env (CDR (STD::DA-NTH 1 X)) inputs)
+                                        ;delayed-env
+                                        ;(CDR (STD::DA-NTH 2 X))
+                                        ))
                 ((mv env-wires next-delayed-env.modules)
-                 (svl2-run-cycle-occs$ (CDR (STD::DA-NTH 4 X))
+                 (svl2-run-phase-occs$ (CDR (STD::DA-NTH 4 X))
                                        env-wires
                                        (svl-env->modules delayed-env)
                                        modules))
                 (out-vals (svl2-retrieve-values (CDR (STD::DA-NTH 3 X))
                                                 env-wires))
                 (next-delayed-env (make-svl-env
-                                   :wires (hons-gets-fast-alist
+                                   :wires (create-next-env-for-wires
                                            (CDR (STD::DA-NTH 2 X))
                                            env-wires)
                                    :modules next-delayed-env.modules))
@@ -667,54 +703,54 @@
              (mv out-vals
                  next-delayed-env))))
    :hints (("Goal"
-            :expand (svl2-run-cycle$ modname inputs
+            :expand (svl2-run-phase$ modname inputs
                                      delayed-env
                                      modules)
             :in-theory (e/d () ())))))
 
 (progn
   (def-rw-opener-error
-    svl2-run-cycle-occs$-opener-error
-    (svl2-run-cycle-occs$ occs env-wires delayed-env-alist modules)
+    svl2-run-phase-occs$-opener-error
+    (svl2-run-phase-occs$ occs env-wires delayed-env-alist modules)
     :vars-to-avoid (env-wires))
 
-  (defthm svl2-run-cycle-occs$-opener-nil
-    (equal (svl2-run-cycle-occs$ nil env-wires delayed-env-alist modules)
+  (defthm svl2-run-phase-occs$-opener-nil
+    (equal (svl2-run-phase-occs$ nil env-wires delayed-env-alist modules)
            (mv env-wires nil))
     :hints (("Goal"
-             :expand (svl2-run-cycle-occs$ nil env-wires delayed-env-alist modules)
+             :expand (svl2-run-phase-occs$ nil env-wires delayed-env-alist modules)
              :in-theory (e/d () ()))))
 
-  (defthm svl2-run-cycle-occs$-opener-cons-assign
-    (equal (svl2-run-cycle-occs$
+  (defthm svl2-run-phase-occs$-opener-cons-assign
+    (equal (svl2-run-phase-occs$
             (cons (cons occ-name (cons ':assign cdr-occ)) rest)
             env-wires delayed-env-alist modules)
            (b* ((env-wires (hons-acons (STD::DA-NTH 0 cdr-occ)
                                        (svex-eval2 (std::da-nth 1 cdr-occ)
                                                    env-wires)
                                        env-wires)))
-             (svl2-run-cycle-occs$ rest
+             (svl2-run-phase-occs$ rest
                                    env-wires
                                    delayed-env-alist
                                    modules)))
     :hints (("Goal"
-             :expand (svl2-run-cycle-occs$
+             :expand (svl2-run-phase-occs$
                       (cons (cons occ-name (cons ':assign cdr-occ)) rest)
                       env-wires delayed-env-alist modules)
              :in-theory (e/d () ()))))
 
-  (defthm-lambda svl2-run-cycle-occs$-opener-cons-module
-    (equal (svl2-run-cycle-occs$
+  (defthm-lambda svl2-run-phase-occs$-opener-cons-module
+    (equal (svl2-run-phase-occs$
             (cons (cons occ-name (cons ':module cdr-occ)) rest)
             env-wires delayed-env-alist modules)
            (b* (((mv mod-output-vals mod-delayed-env)
-                 (svl2-run-cycle$ (std::da-nth 2 cdr-occ)
+                 (svl2-run-phase$ (std::da-nth 2 cdr-occ)
                                   (svexlist-eval2 (STD::DA-NTH 0 cdr-occ)
                                                 env-wires)
                                   (entry-svl-env-fix (hons-get occ-name delayed-env-alist))
                                   modules))
                 ((mv env-wires rest-delayed-env)
-                 (svl2-run-cycle-occs$ rest
+                 (svl2-run-phase-occs$ rest
                                        (svl2-save-mod-outputs mod-output-vals
                                                   (std::da-nth 1 cdr-occ)
                                                   env-wires)
@@ -727,7 +763,7 @@
                                  rest-delayed-env)
                    rest-delayed-env))))
     :hints (("Goal"
-             :expand (svl2-run-cycle-occs$
+             :expand (svl2-run-phase-occs$
                       (cons (cons occ-name (cons ':module cdr-occ)) rest)
                       env-wires delayed-env-alist modules)
              :in-theory (e/d () ())))))
