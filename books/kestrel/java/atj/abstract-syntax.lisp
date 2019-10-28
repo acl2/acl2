@@ -104,7 +104,7 @@
     :pred maybe-stringp
     :body-fix nil
     :parents (maybe-string)
-    :short "Fixer for @(maybe-string).")
+    :short "Fixer for @(tsee maybe-string).")
 
   (fty::deffixtype maybe-string
     :pred maybe-stringp
