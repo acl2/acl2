@@ -2386,7 +2386,7 @@
      (protect-system-state-globals
       (mv-let
         (erp trans-result state)
-        (ev-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
+        (ev-for-trans-eval cl-term stobjs-out ctx state
 
 ; See chk-evaluator-use-in-rule for a discussion of how we restrict the use of
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
@@ -2583,7 +2583,7 @@
 ; and tests that the appropriate preconditions for ev-w are upheld (like state
 ; not being in the alist).
 
-        (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
+        (ev-w-for-trans-eval cl-term stobjs-out ctx state
 
 ; See chk-evaluator-use-in-rule for a discussion of how we restrict the use of
 ; evaluators in rules of class :meta or :clause-processor, so that we can use

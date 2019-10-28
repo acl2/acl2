@@ -205,6 +205,8 @@
     DUMB-OCCUR
     DUMB-OCCUR-VAR
     SWAP-STOBJS
+    TRANS-EVAL-DEFAULT-WARNING
+    TRANS-EVAL-NO-WARNING
   ))
 
 (defconst *special-ops*
