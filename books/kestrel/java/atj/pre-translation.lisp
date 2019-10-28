@@ -436,7 +436,13 @@
   :short "Lift @(tsee atj-type-annotate-var) to lists."
   (cond ((endp vars) nil)
         (t (cons (atj-type-annotate-var (car vars) (car types))
-                 (atj-type-annotate-vars (cdr vars) (cdr types))))))
+                 (atj-type-annotate-vars (cdr vars) (cdr types)))))
+  ///
+
+  (more-returns
+   (new-vars (equal (len new-vars)
+                    (len vars))
+             :name len-of-atj-type-annotate-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,15 +561,14 @@
    (xdoc::p
     "An annotated term is still a regular term,
      but it has a certain structure."))
-  :verify-guards nil
 
   (define atj-type-annotate-term ((term pseudo-termp)
                                   (required-type? maybe-atj-typep)
-                                  (var-types symbol-atjtype-alistp)
+                                  (var-types symbol-atj-type-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :returns (mv (annotated-term "A @(tsee pseudo-termp).")
-                 (resulting-type "A @(tsee atj-typep)."))
+    :returns (mv (annotated-term pseudo-termp :hyp :guard)
+                 (resulting-type atj-typep :hyp :guard))
     (b* (((when (variablep term))
           (b* ((var term)
                (var+type (assoc-eq var var-types))
@@ -641,10 +646,18 @@
                 (mv (atj-type-wrap-term term type type)
                     type)))))
          ((when (symbolp fn))
-          (b* ((fn-type (atj-get-function-type fn guards$ wrld))
+          (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
+               (fn-type (atj-function-type-info->main fn-info))
                (in-types (atj-function-type->inputs fn-type))
                (out-type (atj-function-type->output fn-type))
-               ((mv args &) (atj-type-annotate-terms (fargs term)
+               (args (fargs term))
+               ((unless (= (len in-types) (len args)))
+                (raise "Internal error: ~
+                        the function ~x0 has ~x1 arguments ~
+                        but a different number of input types ~x2."
+                       fn (len args) (len in-types))
+                (mv nil :value)) ; irrelevant
+               ((mv args &) (atj-type-annotate-terms args
                                                      in-types
                                                      var-types
                                                      guards$
@@ -672,12 +685,18 @@
 
   (define atj-type-annotate-terms ((terms pseudo-term-listp)
                                    (required-types? maybe-atj-type-listp)
-                                   (var-types symbol-atjtype-alistp)
+                                   (var-types symbol-atj-type-alistp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (int= (len terms) (len required-types?))
-    :returns (mv (annotated-terms "A @(tsee pseudo-term-listp).")
-                 (resulting-types "A @(tsee atj-type-listp)."))
+    :returns (mv (annotated-terms (and (pseudo-term-listp annotated-terms)
+                                       (equal (len annotated-terms)
+                                              (len terms)))
+                                  :hyp :guard)
+                 (resulting-types (and (atj-type-listp resulting-types)
+                                       (equal (len resulting-types)
+                                              (len terms)))
+                                  :hyp :guard))
     (b* (((when (endp terms)) (mv nil nil))
          ((mv term type) (atj-type-annotate-term (car terms)
                                                  (car required-types?)
@@ -689,7 +708,37 @@
                                                     var-types
                                                     guards$
                                                     wrld)))
-      (mv (cons term terms) (cons type types)))))
+      (mv (cons term terms) (cons type types))))
+
+  :verify-guards nil ; done below
+  ///
+
+  (defret-mutual atj-type-annotate-term
+    (defret true-listp-of-atj-type-annotate-term.annotated-terms-aux
+      t
+      :rule-classes nil
+      :fn atj-type-annotate-term)
+    (defret true-listp-of-atj-type-annotate-term.annotated-terms
+      (true-listp annotated-terms)
+      :rule-classes :type-prescription
+      :fn atj-type-annotate-terms)
+    :hints ('(:expand ((atj-type-annotate-terms
+                        terms required-types? var-types guards$ wrld)))))
+
+  (defret-mutual atj-type-annotate-term
+    (defret true-listp-of-atj-type-annotate-term.resulting-types-aux
+      t
+      :rule-classes nil
+      :fn atj-type-annotate-term)
+    (defret true-listp-of-atj-type-annotate-term.resulting-types
+      (true-listp resulting-types)
+      :rule-classes :type-prescription
+      :fn atj-type-annotate-terms)
+    :hints ('(:expand ((atj-type-annotate-terms
+                        terms required-types? var-types guards$ wrld)))))
+
+  (verify-guards atj-type-annotate-term
+    :hints (("Goal" :expand ((pseudo-termp term))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -700,9 +749,8 @@
                                         (guards$ booleanp)
                                         (wrld plist-worldp))
   :guard (int= (len formals) (len in-types))
-  :returns (mv (annotated-formals "A @(tsee symbol-listp).")
-               (annotated-body "A @(tsee pseudo-termp)."))
-  :verify-guards nil
+  :returns (mv (annotated-formals symbol-listp :hyp :guard)
+               (annotated-body pseudo-termp :hyp :guard))
   :short "Add ATJ type annotations to the formal parameters and body
           of an ACL2 function definition."
   :long
@@ -838,7 +886,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-unmark-var ((var symbolp))
-  :returns (mv (unmarked-var symbolp) (new? booleanp))
+  :returns (mv (unmarked-var symbolp)
+               (new? booleanp))
   :short "Decompose a marked variable into its marking and its unmarked name."
   :long
   (xdoc::topstring
@@ -1143,7 +1192,6 @@
   :prepwork
 
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-   ;; (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
    (define atj-mark-lambda-formals ((formals symbol-listp)
                                     (actuals pseudo-term-listp)
@@ -1716,8 +1764,8 @@
                                  (body pseudo-termp)
                                  (curr-pkg stringp))
   :guard (not (equal curr-pkg ""))
-  :returns (mv (new-formals "A @(tsee symbol-listp).")
-               (new-body "A @(tsee pseudo-termp)."))
+  :returns (mv (new-formals symbol-listp :hyp :guard)
+               (new-body pseudo-termp :hyp :guard))
   :short "Rename all the ACL2 variables to their Java names,
           in the formal parameters and body of an ACL2 function."
   :long

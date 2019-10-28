@@ -1174,7 +1174,7 @@
         (macro "macro")
         (const "constant")
         (stobj "single-threaded object")
-        (stobj-live-var "single-threaded object holder")
+        (stobj-live-var "single-threaded object live var")
         (theorem "theorem")
         (theory "theory")
         (label "label")

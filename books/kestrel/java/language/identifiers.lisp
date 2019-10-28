@@ -14,10 +14,12 @@
 (include-book "boolean-literals")
 (include-book "keywords")
 
+(include-book "kestrel/std/util/deffixer" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ identifiers
-  :parents (language)
+  :parents (syntax)
   :short "Java identifiers [JLS:3.8]."
   :long
   (xdoc::topstring
@@ -54,7 +56,7 @@
      with codes 0 to 8, 14 to 27, and 127 to 159,
      as well as the ones with the @('FORMAT') general category value.")
    (xdoc::p
-    "Running OpenJDK 12's implementation of this API method
+    "Running OpenJDK 13's implementation of this API method
      on all the ASCII codes (i.e. the integers from 0 to 127),
      reveals that the ignorable ASCII characters are the ones with the codes
      0 to 8, 14 to 27, and 127, and no others.
@@ -136,7 +138,7 @@
    (xdoc::p
     "[JLS:3.8] says that this notion includes the ASCII
      uppercase and lowercase Latin letters, as well as dollar and underscore.
-     Running OpenJDK 12's
+     Running OpenJDK 13's
      implementation of @('Character.isJavaIdentifierStart(int)')
      on all the ASCII codes (i.e. the integers from 0 to 127)
      returns true for the characters with the codes
@@ -229,7 +231,7 @@
      uppercase and lowercase Latin letters,
      decimal digits, dollar, and underscore.")
    (xdoc::p
-    "Running OpenJDK 12's
+    "Running OpenJDK 13's
      implementation of @('Character.isJavaIdentifierPart(int)')
      on all the ASCII codes (i.e. the integers from 0 to 127)
      returns true for the characters with the codes
@@ -357,18 +359,10 @@
        (not (boolean-literal-p x))
        (not (null-literal-p x))))
 
-(define identifier-fix ((x identifierp))
-  :returns (fixed-x identifierp)
-  :short "Fixer for @(tsee identifierp)."
-  (mbe :logic (if (identifierp x) x (list (char-code #\$)))
-       :exec x)
-  :inline t
-  ///
-
-  (defrule identifier-fix-when-identifierp
-    (implies (identifierp x)
-             (equal (identifier-fix x)
-                    x))))
+(std::deffixer identifier-fix
+  :pred identifierp
+  :body-fix (list (char-code #\$))
+  :short "Fixer for @(tsee identifierp).")
 
 (defsection identifier
   :short "Fixtype for @(tsee identifierp)."
@@ -427,18 +421,10 @@
        (not (boolean-literal-p x))
        (not (null-literal-p x))))
 
-(define midentifier-fix ((x midentifierp))
-  :returns (fixed-x midentifierp)
-  :short "Fixer for @(tsee midentifierp)."
-  (mbe :logic (if (midentifierp x) x (list (char-code #\$)))
-       :exec x)
-  :inline t
-  ///
-
-  (defrule midentifier-fix-when-midentifierp
-    (implies (midentifierp x)
-             (equal (midentifier-fix x)
-                    x))))
+(std::deffixer midentifier-fix
+  :pred midentifierp
+  :body-fix (list (char-code #\$))
+  :short "Fixer for @(tsee midentifierp).")
 
 (defsection midentifier
   :short "Fixtype for @(tsee midentifierp)."

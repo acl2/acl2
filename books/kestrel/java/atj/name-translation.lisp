@@ -443,6 +443,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-get-pkg-class-name ((pkg stringp)
+                                (pkg-class-names string-string-alistp))
+  :returns (class stringp :hyp (string-string-alistp pkg-class-names))
+  :short "Retrieve the Java class name for an ACL2 package name
+          from the mapping, ensuring that the name is present."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function causes an error if the package name is not in the alist,
+     but it should always be called with arguments
+     that do not result in the error.
+     In other words, the error is never expected to actually happen."))
+  (b* ((pair (assoc-equal pkg pkg-class-names))
+       ((unless (consp pair))
+        (raise "Internal error: no class name for package ~x0." pkg)
+        ""))
+    (cdr pair)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-disallowed-method-names*
   :short "Disallowed Java method names."
   :long
@@ -582,3 +602,23 @@
        (method (atj-fn-to-method fn))
        (rest-alist (atj-fns-to-methods (cdr fns))))
     (acons fn method rest-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-get-fn-method-name ((fn symbolp)
+                                (fn-method-names symbol-string-alistp))
+  :returns (method stringp :hyp (symbol-string-alistp fn-method-names))
+  :short "Retrieve the Java method name for an ACL2 function name
+          from the mapping, ensuring that the name is present."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function causes an error if the function name is not in the alist,
+     but it should always be called with arguments
+     that do not result in the error.
+     In other words, the error is never expected to actually happen."))
+  (b* ((pair (assoc-equal fn fn-method-names))
+       ((unless (consp pair))
+        (raise "Internal error: no method name for function ~x0." fn)
+        ""))
+    (cdr pair)))

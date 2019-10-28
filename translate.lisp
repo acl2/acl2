@@ -236,18 +236,17 @@
                  (car stobjs-out)
                  (strip-cars latches)
                  (if latches 0 1)))
-            #-acl2-loop-only
-            ((eq (cdr temp) (car vals))
+            ((equal (cdr temp) (car vals))
+
+; Two live stobjs are the same iff they are eq, so we can use equal instead of
+; equalp.  Indeed, we could perhaps use eq above when #-acl2-loop-only, but we
+; use equal rather than think hard about the possibility of non-live stobjs
+; here.
+
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             latches))
             (t
-             #-acl2-loop-only
-             (er hard! 'latch-stobjs1
-                 "We had thought that the values in user-stobj-alist match up ~
-                  with the values of corresponding stobjs.  Please contact ~
-                  the ACL2 implementors.")
-             #+acl2-loop-only
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             (put-assoc-eq (car stobjs-out)
@@ -611,30 +610,30 @@
 ; be *the-live-state*, as it is at the top of LP.
 
 ; Now here is a way to run ev from within the loop on a state other
-; than the live state: Ev a call of ev.  Here is a concrete form.
-; First, go outside the loop and call (build-state) to obtain a dummy
-; state.  I will write that '(NIL ... NIL).  At present, it has 15
-; components, most of which are nil, but some, like the initial global
-; table, are non-trivial.  Then inside the loop execute:
+; than the live state: Ev a call of ev.  Here is what to execute inside the
+; loop.
 
+; (defttag t)
+; (remove-untouchable ev t)
 ; (let ((st (build-state)))
-;    (ev `(ev 'a '((a . 1)) ',st 'nil 'nil 't) nil state nil nil t))
+;      (ev `(ev 'a '((a . 1)) ',st 'nil 'nil 't) nil state nil nil t))
 
 ; The outermost state above is indeed the live one, but the inner ev is
 ; executed on a dummy state.  The computation above produces the result
 ; (NIL (NIL 1 NIL) NIL).
 
-; The inner state object has to pass the state-p predicate if guard
-; checking is enabled in the outer state.  If guard checking is turned
-; off in the live state, the following example shows the inner ev
-; running on something that is not even a state-p.  To make this
-; example work, first evaluate :set-guard-checking nil.
+; The inner state object has to pass the state-p predicate if guard checking is
+; enabled in the outer state.  If guard checking is turned off in the live
+; state, the following example shows the inner ev running on something that is
+; not even a state-p.  At one time we could make this example work by first
+; evaluating the remove-untouchable form above and then :set-guard-checking
+; nil; but now we get a hard ACL2 error about program-only functions.
 
 ; (ev '(ev 'a '((a . 1)) '(nil nil nil nil nil 0) 'nil 'nil 't)
 ;     nil state nil nil t)
 
-; The 0, above, is the big-clock-entry and must be a non-negative
-; integer.  The result is (NIL (NIL 1 NIL) NIL).
+; The 0, above, is the big-clock-entry and must be a non-negative integer.  The
+; result, when we could compute a result, was (NIL (NIL 1 NIL) NIL).
 
 ; Finally, the example below shows the inner ev running a function,
 ; foo, defined in the dummy world.  It doesn't matter if foo is
@@ -685,7 +684,7 @@
 ;                  NIL NIL 1 NIL NIL NIL NIL NIL NIL)
 ;            'nil 'nil 't) nil state nil nil t)
 
-; The output of the ev above is (NIL (NIL (DUMMY-FOO . 1) NIL) NIL).
+; The output of the ev above was (NIL (NIL (DUMMY-FOO . 1) NIL) NIL).
 
 ; The above example can be made slightly more interesting by replacing
 ; the three occurrences of FOO by EV.  It still produces the same
@@ -10045,63 +10044,51 @@
 
 (defun stobj-let-fn (x)
 
-; Warning: Keep this in sync with stobj-let-fn-raw, with the handling of
-; stobj-let in translate11, and with the handling of stobj-let in oneify.
+; Warning: Keep this in sync with stobj-let-fn-raw and with the handling of
+; stobj-let in both translate11 and oneify.
+
+; Warning: Do not merge stobj-let-fn and stobj-let-fn-raw into a single
+; function.  We call stobj-let-fn in oneify, so we need that logical code even
+; in raw Lisp.
 
 ; See the Essay on Nested Stobjs.
 
   (mv-let
-   (msg bound-vars actuals stobj producer-vars producer updaters
-        corresp-accessor-fns consumer)
-   (parse-stobj-let x)
-   (declare (ignore corresp-accessor-fns))
-   (cond (msg (er hard 'stobj-let "~@0" msg))
-         (t (let* ((guarded-producer
-                    `(check-vars-not-free (,stobj) ,producer))
-                   (guarded-consumer
-                    `(check-vars-not-free ,bound-vars ,consumer))
-                   (updated-guarded-consumer
-                    `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
-                       ,guarded-consumer))
-                   (form
-                    `(let ,(pairlis$ bound-vars (pairlis$ actuals nil))
-                       (declare (ignorable ,@bound-vars))
-                       ,(cond
-                         ((cdr producer-vars)
-                          `(mv-let ,producer-vars
-                                   ,guarded-producer
-                                   ,updated-guarded-consumer))
-                         (t `(let ((,(car producer-vars) ,guarded-producer))
-                               ,updated-guarded-consumer)))))
-                   (no-dups-exprs
-                    (no-duplicatesp-checks-for-stobj-let-actuals actuals nil)))
-              `(progn$ ,@no-dups-exprs
+    (msg bound-vars actuals stobj producer-vars producer updaters
+         corresp-accessor-fns consumer)
+    (parse-stobj-let x)
+    (declare (ignore corresp-accessor-fns))
+    (cond (msg (er hard 'stobj-let "~@0" msg))
+          (t
+           (let* ((guarded-producer
+                   `(check-vars-not-free (,stobj) ,producer))
+                  (guarded-consumer
+                   `(check-vars-not-free ,bound-vars ,consumer))
+                  (updated-guarded-consumer
+                   `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
+                      ,guarded-consumer))
+                  (form
+                   `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
+                      (declare (ignorable ,@bound-vars))
+                      ,(cond
+                        ((cdr producer-vars)
+                         `(mv-let ,producer-vars
+                            ,guarded-producer
+                            ,updated-guarded-consumer))
+                        (t `(let ((,(car producer-vars) ,guarded-producer))
+                              ,updated-guarded-consumer))))))
+             `(progn$ ,@(no-duplicatesp-checks-for-stobj-let-actuals actuals
+                                                                     nil)
 
-; Warning: Think carefully before modifying how the no-dups-exprs test (just
-; above) is worked into this logical code.  A concern is whether a program-mode
+; Warning: Think carefully before modifying how the no-dupslicates test just
+; above is worked into this logical code.  A concern is whether a program-mode
 ; wrapper will be able to circumvent this check.  Fortunately, the check only
 ; needs to be done if there are updater calls in form, in which case there is
 ; invariant-risk that will cause execution of this code as *1* code.  A concern
 ; is that if the no-dups-exprs check is buried in a function call, perhaps that
 ; call would somehow avoid that check by being executed in raw Lisp.
 
-                       ,form))))))
-
-(defun the-live-var-bindings (stobj-names)
-  (cond ((endp stobj-names) nil)
-        (t (cons (let ((stobj (car stobj-names)))
-                   `(,(the-live-var stobj) ,stobj))
-                 (the-live-var-bindings (cdr stobj-names))))))
-
-(defun the-maybe-live-var-bindings (stobj-names)
-  (cond ((endp stobj-names) nil)
-        (t (cons (let* ((stobj (car stobj-names))
-                        (live-var (the-live-var stobj)))
-                   `(,live-var
-                     (if (live-stobjp ,stobj)
-                         ,stobj
-                       ,live-var)))
-                 (the-maybe-live-var-bindings (cdr stobj-names))))))
+                      ,form))))))
 
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
@@ -10117,97 +10104,24 @@
 ; Warning: Keep this in sync with stobj-let-fn and with the
 ; handling of stobj-let in translate11.
 
-; This function could be admitted into the logic were it not for the calls of
-; congruent-stobj-rep-raw and non-memoizable-stobj-raw below.
+; Warning: Do not merge stobj-let-fn and stobj-let-fn-raw into a single
+; function.  We call stobj-let-fn in oneify, so we need that logical code even
+; in raw Lisp.
 
 ; See the Essay on Nested Stobjs.
 
   (mv-let
-   (msg bound-vars actuals stobj producer-vars producer updaters
-        corresp-accessor-fns consumer)
-   (parse-stobj-let x)
-   (declare (ignore updaters corresp-accessor-fns
-                    #-hons stobj))
-   (cond (msg (er hard 'stobj-let "~@0" msg))
-         (t
-
-; Should we allow trans-eval under a stobj-let?  We decided not to, for two
-; reasons: first, potential user confusion over the meaning of a stobj
-; reference (which in the trans-eval case is to the value in the
-; *user-stobj-alist*, not to the value bound by a superior stobj-let); and
-; second, difficulty in getting the implementation right!  The following
-; example illustrates how trans-eval would operate, were we to allow it in such
-; a circumstance.  Note that the trans-eval call below updates the global
-; stobj, sub1, not the locally bound sub1 that is a field of top1.
-
-;   (defstobj sub1 sub1-fld1)
-;   (defstobj top1 (top1-fld :type sub1))
-;
-;   (defun f (x top1 state)
-;     (declare (xargs :stobjs (top1 state) :mode :program))
-;     (stobj-let
-;      ((sub1 (top1-fld top1)))
-;      (sub1 state)
-;      (mv-let (erp val state)
-;
-;   ; NOTE: The reference to sub1 inside the following trans-eval call is
-;   ; actually a reference to the global sub1 from the *user-stobj-alist*, not
-;   ; to the sub1 bound by stobj-let above.
-;
-;              (trans-eval `(update-sub1-fld1 ',x sub1) 'my-top state t)
-;              (declare (ignore erp val))
-;              (mv sub1 state))
-;      top1))
-;
-;   (f 7 top1 state)
-;   (assert-event (equal (sub1-fld1 sub1) 7))
-;   (f 8 top1 state)
-;   (assert-event (equal (sub1-fld1 sub1) 8))
-;
-;   (defun f2 (top1)
-;     (declare (xargs :stobjs top1 :mode :program))
-;     (stobj-let
-;      ((sub1 (top1-fld top1)))
-;      (val)
-;      (sub1-fld1 sub1)
-;      val))
-;
-;   (assert-event (equal (f2 top1) nil))
-
-; Thus, in the code below, we bind the live var for each bound stobj so that we
-; will get the error "It is illegal to run ACL2 evaluators...." when attempting
-; to call trans-eval (as trans-eval calls ev-for-trans-eval, which calls
-; user-stobj-alist-safe, which calls chk-user-stobj-alist, which checks the
-; global *user-stobj-alist* against the live stobj values).
-
-; Another reason to bind the-live-stobj is in case we need to print the stobj
-; during guard violations or tracing, in which case we can distinguish it from
-; the global stobj with the same name.  See for example stobj-print-symbol,
-; which is used during tracing.
-
-          `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil))
-                  ,@(the-live-var-bindings bound-vars))
-             (declare (ignorable ,@bound-vars))
-             ,(let* ((modified-bound-vars (intersection-eq producer-vars
-                                                           bound-vars))
-                     (flush-form
-                      #-hons nil
-                      #+hons
-                      (and modified-bound-vars
-                           (not (non-memoizable-stobj-raw stobj))
-                           `(memoize-flush ,(congruent-stobj-rep-raw stobj)))))
-                (cond
-                 ((cdr producer-vars)
-                  `(mv-let ,producer-vars
-                           ,producer
-                           ,@(and modified-bound-vars
-                                  `((declare (ignore ,@modified-bound-vars))))
-                           ,(if flush-form
-                                `(progn ,flush-form ,consumer)
-                              consumer)))
-                 (t `(let ((,(car producer-vars) ,producer))
-                       ,@(and modified-bound-vars
-                              `((declare (ignore ,@modified-bound-vars))))
+    (msg bound-vars actuals stobj producer-vars producer updaters
+         corresp-accessor-fns consumer)
+    (parse-stobj-let x)
+    (declare (ignore corresp-accessor-fns))
+    (cond (msg (er hard 'stobj-let "~@0" msg))
+          (t
+           (let* ((updated-consumer
+                   `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
+                      ,consumer))
+                  #+hons
+                  (flush-form
 
 ; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
@@ -10269,8 +10183,78 @@
 ;              :use (true-prop false-prop)))
 ;     :rule-classes nil)
 
-                       ,@(and flush-form (list flush-form))
-                       ,consumer)))))))))
+                   (and (intersection-eq producer-vars bound-vars)
+                        (not (non-memoizable-stobj-raw stobj))
+                        `(memoize-flush ,(congruent-stobj-rep-raw
+                                          stobj))))
+                  (form
+                   `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil))
+                           (*local-user-stobj-lst*
+
+; Should we allow trans-eval under a stobj-let?  We decided not to, for two
+; reasons: first, potential user confusion over the meaning of a stobj
+; reference (which in the trans-eval case is to the value in the
+; *user-stobj-alist*, not to the value bound by a superior stobj-let); and
+; second, difficulty in getting the implementation right!  The following
+; example illustrates how trans-eval would operate, were we to allow it in such
+; a circumstance.  Note that the trans-eval call below updates the global
+; stobj, sub1, not the locally bound sub1 that is a field of top1.
+
+;   (defstobj sub1 sub1-fld1)
+;   (defstobj top1 (top1-fld :type sub1))
+;
+;   (defun f (x top1 state)
+;     (declare (xargs :stobjs (top1 state) :mode :program))
+;     (stobj-let
+;      ((sub1 (top1-fld top1)))
+;      (sub1 state)
+;      (mv-let (erp val state)
+;
+;   ; NOTE: The reference to sub1 inside the following trans-eval call is
+;   ; actually a reference to the global sub1 from the *user-stobj-alist*, not
+;   ; to the sub1 bound by stobj-let above.
+;
+;              (trans-eval `(update-sub1-fld1 ',x sub1) 'my-top state t)
+;              (declare (ignore erp val))
+;              (mv sub1 state))
+;      top1))
+;
+;   (f 7 top1 state)
+;   (assert-event (equal (sub1-fld1 sub1) 7))
+;   (f 8 top1 state)
+;   (assert-event (equal (sub1-fld1 sub1) 8))
+;
+;   (defun f2 (top1)
+;     (declare (xargs :stobjs top1 :mode :program))
+;     (stobj-let
+;      ((sub1 (top1-fld top1)))
+;      (val)
+;      (sub1-fld1 sub1)
+;      val))
+;
+;   (assert-event (equal (f2 top1) nil))
+
+; Thus we bind *local-user-stobj-lst* so that we will get the error "It is
+; illegal to run ACL2 evaluators...." when attempting to call trans-eval (as
+; trans-eval calls ev-for-trans-eval, which calls user-stobj-alist-safe, which
+; calls chk-user-stobj-alist).
+
+                            (append ',bound-vars *local-user-stobj-lst*)))
+                      (declare (ignorable ,@bound-vars))
+                      ,(cond
+                        ((cdr producer-vars)
+                         `(mv-let ,producer-vars
+                            ,producer
+                            ,(cond
+                              #+hons
+                              (flush-form
+                               `(progn ,flush-form ,updated-consumer))
+                              (t updated-consumer))))
+                        (t `(let ((,(car producer-vars) ,producer))
+                              #+hons
+                              ,@(and flush-form (list flush-form))
+                              ,updated-consumer))))))
+             form)))))
 
 (defun stobj-field-accessor-p (fn stobj wrld)
   (and
@@ -10605,6 +10589,7 @@
               (not (and (member-eq (car x) '(pand por pargs plet))
                         (eq (access state-vars state-vars :parallel-execution-enabled)
                             t)))
+              (not (eq (car x) 'swap-stobjs))
               (not (untouchable-fn-p (car x)
                                      wrld
                                      (access state-vars state-vars
@@ -14029,6 +14014,61 @@
                          "It is illegal for a LOOP$ expression to occurr in a ~
                           slot of ilk ~x0."
                          ilk))))
+   ((and (not (eq stobjs-out t))
+         (eq (car x) 'swap-stobjs)
+
+; If the number of arguments is not 2, we'll get an error when we translate
+; this call in the normal way (by macroexpansion).
+
+         (= (length (cdr x)) 2))
+    (let ((s1 (cadr x))
+          (s2 (caddr x)))
+      (cond
+       ((eq stobjs-out :stobjs-out)
+        (trans-er ctx
+                  "The macro ~x0 must not be called directly in the ACL2 ~
+                   top-level loop, as opposed to being made inside a function ~
+                   definition.  The call ~x1 is thus illegal."
+                  'swap-stobjs
+                  x))
+       ((and (stobjp s1 known-stobjs wrld)
+             (stobjp s2 known-stobjs wrld)
+             (not (eq s1 s2))
+             (congruent-stobjsp s1 s2 wrld))
+        (mv-let (erp val bindings)
+          (translate11 (list 'mv s1 s2)
+                       ilk stobjs-out bindings known-stobjs flet-alist
+                       cform ctx wrld state-vars)
+          (cond (erp (trans-er+? cform x
+                                 ctx
+                                 "The form ~x0 failed to translate because ~
+                                  translation of the corresponding form, ~x1, ~
+                                  failed with the following error ~
+                                  message:~|~@2"
+                                 x
+                                 (list 'mv s1 s2)
+                                 val))
+                (t (trans-value (listify (list s2 s1)))))))
+       (t (trans-er ctx
+                    "Illegal swap-stobjs call: ~x0.  ~@1  See :DOC swap-stobjs."
+                    x
+                    (cond
+                     ((or (not (stobjp s1 known-stobjs wrld))
+                          (not (stobjp s2 known-stobjs wrld)))
+                      (msg "Note that ~&0 ~#0~[is not a known stobj name~/are ~
+                            not known stobj names~] in the context of that ~
+                            call."
+                           (if (stobjp s1 known-stobjs wrld)
+                               (list s2)
+                             (if (stobjp s2 known-stobjs wrld)
+                                 (list s1)
+                               (list s1 s2)))))
+                     ((eq s1 s2)
+                      "The two arguments of swap-stobjs must be distinct ~
+                       names.")
+                     (t ; (not (congruent-stobjsp s1 s2 wrld))
+                      "The two arguments fail the requirement of being ~
+                       congruent stobjs.")))))))
    ((and (not (eq stobjs-out t)) (eq (car x) 'mv))
 
 ; If stobjs-out is t we let normal macroexpansion handle mv.
@@ -15729,36 +15769,21 @@
                              (cdr alist2)))))
 
 #-acl2-loop-only
-(defun-one-output chk-user-stobj-alist (stobjs alist acc ctx)
-  (if (endp alist)
-      (if acc
-
-; We use interface-er rather than (er hard ...) because we do not expect to be
-; in the context of a (catch 'raw-ev-fncall ...).
-
-          (interface-er
-           "It is illegal to run ACL2 evaluators trans-eval and ~
-            simple-translate-and-eval on any term that mentions a stobj that ~
-            has been bound by with-local-stobj or stobj-let.  The reason is ~
-            that those evaluators expect each stobj to match perfectly the ~
-            corresponding global stobj that is stored in the ACL2 state.  The ~
-            offending stobj name~#0~[ is~/s are~]:  ~&0."
-           acc)
-        t)
-    (if (and (member-eq (caar alist) stobjs)
-             (not (eq (symbol-value (the-live-var (caar alist)))
-                      (cdar alist))))
-        (chk-user-stobj-alist stobjs
-                              (cdr alist)
-                              (cons (caar alist) acc)
-                              ctx)
-      (chk-user-stobj-alist stobjs (cdr alist) acc ctx))))
+(defun-one-output chk-user-stobj-alist (stobjs ctx)
+  (let ((int (intersection-eq stobjs *local-user-stobj-lst*)))
+    (when int
+      (er hard! ctx
+          "It is illegal to run ACL2 evaluators trans-eval and ~
+           simple-translate-and-eval on any term that mentions a stobj that ~
+           has been bound by with-local-stobj or stobj-let.  The reason is ~
+           that those evaluators expect each stobj to match perfectly the ~
+           corresponding global stobj that is stored in the ACL2 state.  The ~
+           offending stobj name~#0~[ is~/s are~]:  ~&0."
+          int))))
 
 (defun user-stobj-alist-safe (ctx stobjs state)
   #-acl2-loop-only
-  (if stobjs ; optimization
-      (chk-user-stobj-alist stobjs (user-stobj-alist state) nil ctx)
-    (user-stobj-alist state))
+  (chk-user-stobj-alist stobjs ctx)
   #+acl2-loop-only
   (declare (ignore ctx stobjs))
   (user-stobj-alist state))
@@ -15827,7 +15852,7 @@
                  (warning$ ctx "User-stobjs-modified"
                            "A call of the ACL2 evaluator on the term ~x0 has ~
                             modified the user stobj~#1~[~/s~] ~&1.  See :DOC ~
-                            user-stobjs-modified-warning."
+                            user-stobjs-modified-warnings."
                            trans
                            user-stobjs))
                 (t state))))

@@ -362,6 +362,8 @@
      :throw (list (print-jline (msg "throw ~@0;"
                                     (print-jexpr statem.expr))
                                indent-level))
+     :break (list (print-jline "break;" indent-level))
+     :continue (list (print-jline "continue;" indent-level))
      :if (append (list (print-jline (msg "if (~@0) {"
                                          (print-jexpr statem.test))
                                     indent-level))
@@ -374,6 +376,11 @@
                      (list (print-jline "} else {" indent-level))
                      (print-jblock statem.else (1+ indent-level))
                      (list (print-jline "}" indent-level)))
+     :while (append (list (print-jline (msg "while (~@0) {"
+                                            (print-jexpr statem.test))
+                                       indent-level))
+                    (print-jblock statem.body (1+ indent-level))
+                    (list (print-jline "}" indent-level)))
      :do (append (list (print-jline "do {" indent-level))
                  (print-jblock statem.body (1+ indent-level))
                  (list (print-jline (msg "} while (~@0);"

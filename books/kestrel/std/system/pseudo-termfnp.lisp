@@ -27,6 +27,14 @@
       (pseudo-lambdap x))
   ///
 
+  (defrule pseudo-termfnp-when-symbolp
+    (implies (symbolp x)
+             (pseudo-termfnp x)))
+
+  (defrule pseudo-termfnp-when-pseudo-lambdap
+    (implies (pseudo-lambdap x)
+             (pseudo-termfnp x)))
+
   (defrule pseudo-termfnp-of-car-when-pseudo-termp
     (implies (and (pseudo-termp term)
                   (consp term))

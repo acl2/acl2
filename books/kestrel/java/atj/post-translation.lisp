@@ -12,6 +12,10 @@
 
 (include-book "abstract-syntax")
 
+(include-book "centaur/depgraph/toposort" :dir :system)
+(include-book "std/lists/index-of" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-post-translation
@@ -88,7 +92,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-check-foldable-return ((block jblockp))
   :returns (mv (yes/no booleanp)
@@ -196,7 +200,7 @@
                               jblock-count-ifs-positive-when-nth-ifelse
                               (i (- (len block) 2)))))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-fold-returns ((block jblockp))
   :returns (new-block jblockp :hyp :guard)
@@ -232,14 +236,362 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-post-translate ((body jblockp))
+(defxdoc+ atj-post-translation-tailrec-elimination
+  :parents (atj-post-translation)
+  :short "Post-translation step:
+          eliminate tail recursions in favor of loops."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is well-known that tail recursions can be turned into loops;
+     this process is often called `tail recursion elimination'.
+     This post-translation step does that,
+     by surrounding the body of a tail-recursive method
+     in a @('while (true) { ... }') loop,
+     and replacing each recursive call with a @('continue')
+     preceded by an assignment to the method's parameters
+     of the values passed to the recursive call.")
+   (xdoc::p
+    "It seems better to realize this as a post-translation step,
+     rather than as part of the ACL2-to-Java translation,
+     which is already fairly complicated."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-parallel-asg-depgraph ((vars string-listp)
+                                   (exprs jexpr-listp))
+  :guard (= (len vars) (len exprs))
+  :returns (graph alistp)
+  :short "Calculate a dependency graph for a parallel assignment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since Java does not have parallel assignment,
+     in order to assign the expressions @('exprs') to the variables @('vars'),
+     we attempt to topologically order these assignments
+     according to their dependencies.
+     This function calculates the dependency graph,
+     in a form suitable for "
+    (xdoc::seetopic "depgraph::depgraph" "this dependency graph library")
+    ".")
+   (xdoc::p
+    "We go through the variables in order,
+     and for each we construct an association pair
+     for the graph represented as an alist.
+     For each variable,
+     we collect all the variables in the corresponding expression,
+     but we exclude the variable itself
+     and any variable not in the initial set.
+     Thus, we use an auxiliary function that has the unchanging initial set
+     as an additional argument."))
+  (atj-parallel-asg-depgraph-aux vars exprs vars)
+
+  :prepwork
+
+  ((define atj-parallel-asg-depgraph-aux ((vars string-listp)
+                                          (exprs jexpr-listp)
+                                          (all-vars string-listp))
+     :guard (= (len vars) (len exprs))
+     :returns (graph alistp)
+     (b* (((when (endp vars)) nil)
+          (var (car vars))
+          (expr (car exprs))
+          (deps (remove-equal var
+                              (intersection-equal (jexpr-vars expr)
+                                                  all-vars)))
+          (rest-alist (atj-parallel-asg-depgraph-aux (cdr vars)
+                                                     (cdr exprs)
+                                                     all-vars)))
+       (acons var deps rest-alist))
+
+     ///
+
+     (more-returns
+      (graph (subsetp-equal (alist-keys graph) vars)
+             :name atj-parallel-asg-depgraph-aux-subsetp-vars
+             :hints (("Goal" :in-theory (enable alist-keys)))))))
+
+  ///
+
+  (more-returns
+   (graph (subsetp-equal (alist-keys graph) vars)
+          :name atj-parallel-asg-depgraph-subsetp-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-serialize-parallel-asg ((serialization string-listp)
+                                    (vars string-listp)
+                                    (exprs jexpr-listp))
+  :guard (and (= (len vars) (len exprs))
+              (subsetp-equal serialization vars))
+  :returns (block jblockp)
+  :short "Generate a block that performs a parallel assignment
+          of the given expressions to the given variables,
+          according to the supplied serialization."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When the dependencies in a parallel assignment are not circular,
+     it is possible to realize the parallel assignment
+     via a sequence of single assignment that respects the dependencies.
+     This function does that, based on the given serialization,
+     which is calculated elsewhere via a topological sort.")
+   (xdoc::p
+    "We go through the serialization, and for each element (i.e. variable name)
+     we find the position in the @('names') list,
+     and use that position to pick the corresponding expression
+     to use in the assignment."))
+  (b* (((when (endp serialization)) nil)
+       (var (car serialization))
+       (pos (acl2::index-of var vars))
+       (expr (nth pos exprs))
+       (first-asg (jblock-asg (jexpr-name var) expr))
+       (rest-asg (atj-serialize-parallel-asg (cdr serialization) vars exprs)))
+    (append first-asg rest-asg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-make-parallel-asg ((vars string-listp)
+                               (types jtype-listp)
+                               (exprs jexpr-listp))
+  :guard (and (= (len vars) (len types))
+              (= (len types) (len exprs)))
+  :returns (block jblockp)
+  :short "Generate a block that performs a parallel assignment
+          of the given expressions to the given variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the context of turning tail-recursions into loops,
+     but it is more general.")
+   (xdoc::p
+    "A recursive method call performs, in substance,
+     a parallel assignment of the actual arguments to the formal parameters,
+     and then proceeds to re-execute the method's body.
+     When we turn such a recursive call into a @('continue')
+     so that we can re-execute the (loop's) body,
+     we first need to assign, to the method's formal parameters,
+     the expressions for the actual arguments.
+     This function generates that assignment.")
+   (xdoc::p
+    "As mentioned before, the assignment must be parallel:
+     in general we cannot assign the new values in order,
+     because earlier assignments may incorrectly change
+     the value of expressions for later assignments.
+     We first attempt to topologically sort the variables
+     according to their dependencies:
+     if there are no circularities,
+     we perform the assignments in the topologial order.
+     If instead there are circularities,
+     for now we use a very simple strategy:
+     we create temporary variables for all the method's arguments,
+     we initialize them with the expressions,
+     and then we assign the temporary variables to the method's parameters.
+     This can be improved,
+     by reducing the number of temporary variables
+     to just where there are circular dependencies.")
+   (xdoc::p
+    "The temporary variables are called @('$1'), @('2'), etc.,
+     which does not conflict with any other variables
+     generated by ATJ's translation.
+     Their types are the same as the ones of the method's parameters,
+     which are passed to these function along with their names,
+     and the expressions to assign.")
+   (xdoc::p
+    "We use a recursive auxiliary function that produces
+     the block with the temporary variable declarations and initializations
+     separately from the block with the assignments to the parameters.
+     The main function concatenates them into an overall block."))
+  (b* ((graph (atj-parallel-asg-depgraph vars exprs))
+       ((mv acyclicp serialization) (depgraph::toposort graph))
+       ((unless (string-listp serialization))
+        (raise "Internal error: ~
+                topological sort of graph ~x0 of strings ~
+                has generated non-strings ~x1."
+               graph serialization))
+       ((when acyclicp) (atj-serialize-parallel-asg serialization vars exprs))
+       ((mv tmp-block asg-block)
+        (atj-make-parallel-asg-aux vars types exprs 1)))
+    (append tmp-block asg-block))
+
+  :prepwork
+  ((define atj-make-parallel-asg-aux ((vars string-listp)
+                                      (types jtype-listp)
+                                      (exprs jexpr-listp)
+                                      (i posp))
+     :guard (and (= (len vars) (len types))
+                 (= (len types) (len exprs)))
+     :returns (mv (tmp-block jblockp)
+                  (asg-block jblockp))
+     (b* (((when (endp vars)) (mv nil nil))
+          (var (car vars))
+          (type (car types))
+          (expr (car exprs))
+          (tmp (str::cat "$" (str::natstr i)))
+          (first-tmp (jblock-locvar type tmp expr))
+          (first-asg (jblock-asg (jexpr-name var)
+                                 (jexpr-name tmp)))
+          ((mv rest-tmp
+               rest-asg) (atj-make-parallel-asg-aux (cdr vars)
+                                                    (cdr types)
+                                                    (cdr exprs)
+                                                    (1+ i))))
+       (mv (append first-tmp rest-tmp)
+           (append first-asg rest-asg))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-elim-tailrec-in-jstatems+jblocks
+  :short "Eliminate all the tail-recursive calls in a method's
+          statement or block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We recursively traverse the statements and blocks
+     and replace each call of the given method name
+     with a parallel assignment to the method parameters
+     followed by a @('continue').")
+   (xdoc::p
+    "Since we only apply this post-processing step to tail-recursive methods,
+     we know that recursive calls may only appear as @('return') expressions;
+     otherwise, the call would not be tail-recursive.
+     Thus, we only need to look for @('return') statements
+     whose expression is a recursive call,
+     and replace such statements as outlined above.")
+   (xdoc::p
+    "Since a single statement may be replaced by a block,
+     we systematically turn statements into blocks (often singletons),
+     and handle the transformation of blocks appropriately."))
+
+  (define atj-elim-tailrec-in-jstatem ((statem jstatemp)
+                                       (method-params jparam-listp)
+                                       (method-name stringp))
+    :returns (new-block jblockp :hyp (jstatemp statem))
+    (jstatem-case
+     statem
+     :locvar (list statem)
+     :expr (list statem)
+     :return (if (and (jexprp statem.expr?)
+                      (jexpr-case statem.expr? :method)
+                      (equal (jexpr-method->name statem.expr?)
+                             method-name))
+                 (b* ((names (jparam-list->names method-params))
+                      (types (jparam-list->types method-params))
+                      (exprs (jexpr-method->args statem.expr?))
+                      ((unless (= (len names) (len exprs))) ; just for guards
+                       (raise "Internal error: ~
+                               call of method ~s0 has ~x1 parameters ~
+                               but is called with ~x2 arguments."
+                              method-name (len names) (len exprs))))
+                   (append
+                    (atj-make-parallel-asg names types exprs)
+                    (jblock-continue)))
+               (list statem))
+     :throw (list statem)
+     :break (list statem)
+     :continue (list statem)
+     :if (jblock-if statem.test
+                    (atj-elim-tailrec-in-jblock statem.then
+                                                method-params
+                                                method-name))
+     :ifelse (jblock-ifelse statem.test
+                            (atj-elim-tailrec-in-jblock statem.then
+                                                        method-params
+                                                        method-name)
+                            (atj-elim-tailrec-in-jblock statem.else
+                                                        method-params
+                                                        method-name))
+     :while (jblock-while statem.test
+                          (atj-elim-tailrec-in-jblock statem.body
+                                                      method-params
+                                                      method-name))
+     :do (jblock-do (atj-elim-tailrec-in-jblock statem.body
+                                                method-params
+                                                method-name)
+                    statem.test)
+     :for (jblock-for statem.init
+                      statem.test
+                      statem.update
+                      (atj-elim-tailrec-in-jblock statem.body
+                                                  method-params
+                                                  method-name)))
+    :measure (jstatem-count statem))
+
+  (define atj-elim-tailrec-in-jblock ((block jblockp)
+                                      (method-params jparam-listp)
+                                      (method-name stringp))
+    :returns (new-block jblockp :hyp (jblockp block))
+    (cond ((endp block) nil)
+          (t (append (atj-elim-tailrec-in-jstatem (car block)
+                                                  method-params
+                                                  method-name)
+                     (atj-elim-tailrec-in-jblock (cdr block)
+                                                 method-params
+                                                 method-name))))
+    :measure (jblock-count block))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-elim-tailrec-in-jstatem))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-elim-tailrec ((name stringp)
+                          (params jparam-listp)
+                          (body jblockp))
+  :returns (new-block jblockp)
+  :short "Turn the body of a tail-recursive method into a loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called only on tail-recursive methods.
+     We replace the recursive calls in the block
+     and we surround the block with a @('while') loop with test @('true');
+     the loop is actually exited when a @('return') is executed.")
+   (xdoc::p
+    "Under suitable conditions,
+     it should be possible to generate more idiomatic @('while') loops,
+     with an actual continuation test instead of @('true'),
+     and with base cases outside the loop.
+     However, the current form always works
+     for all possible tail-recursive methods.")
+   (xdoc::p
+    "Because of the constant @('true') continuation test in the @('while'),
+     it is unnecessary to have a dummy @('return') after the loop.
+     According to Java's static semantics,
+     code after the loop is unreachable."))
+  (list (make-jstatem-while
+         :test (jexpr-literal-true)
+         :body (atj-elim-tailrec-in-jblock body params name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-post-translate ((name stringp)
+                            (params jparam-listp)
+                            (body jblockp)
+                            (tailrecp booleanp))
   :returns (new-body jblockp :hyp :guard)
   :parents (atj-post-translation)
   :short "Post-translate a Java method body generated from an ACL2 function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we just fold @('return')s into @('if')s.
-     More post-translation steps could be added, and applied here,
+    "We always fold @('return')s into @('if')s.")
+   (xdoc::p
+    "If the method is tail-recursive,
+     which is signaled by the @('tailrecp') flag,
+     then we replace the tail recursion with a loop.
+     It is critical that this step is performed
+     after folding @('return')s into @('if')s,
+     because tail recursion elimination
+     looks for recursive calls in @('return')s.")
+   (xdoc::p
+    "More post-translation steps could be added, and applied here,
      in the future."))
-  (atj-fold-returns body))
+  (b* ((body (atj-fold-returns body))
+       (body (if tailrecp
+                 (atj-elim-tailrec name params body)
+               body)))
+    body))

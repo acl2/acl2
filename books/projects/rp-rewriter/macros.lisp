@@ -91,7 +91,7 @@
     :prepwork
     ((local
       (include-book "arithmetic-5/top" :dir :system)))
-    (if (<= n 0)
+    (if (zp n)
         0
       (+ 1
          (get-digit-count (floor (nfix n) 10)))))

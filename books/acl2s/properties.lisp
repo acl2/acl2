@@ -226,81 +226,67 @@ Properties are just tested with a short timeout.
 
 |#
 
-(defmacro modeling-start ()
-  '(progn
+(defmacro modeling-set-parms (cgen cgen-local defunc table)
+  `(progn
+     (acl2s-defaults :set cgen-timeout ,cgen)
+     (acl2s-defaults :set cgen-local-timeout ,cgen-local)
+     (set-defunc-timeout ,defunc)
+     (set-acl2s-property-table-proof-timeout ,table)
+     (set-acl2s-property-table-testing-timeout ,table)))
+
+(defmacro modeling-start
+  (&key (cgen '2) (cgen-local '1) (defunc '5) (table '5))
+  `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp t)
      (set-defunc-skip-function-contractp t)
      (set-defunc-skip-body-contractsp t)
-     
-     (acl2s-defaults :set cgen-timeout 2)
-     (acl2s-defaults :set cgen-local-timeout 1)
-     (set-defunc-timeout 5)
-    
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
-     (set-acl2s-property-table-proof-timeout 5)
-     (set-acl2s-property-table-testing-timeout 5)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
 
-(defmacro modeling-validate-defs ()
-  '(progn
+     
+(defmacro modeling-validate-defs
+  (&key (cgen '4) (cgen-local '2) (defunc '10) (table '10))
+  `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp nil)
      (set-defunc-skip-function-contractp nil)
      (set-defunc-skip-body-contractsp nil)
-     
      (set-defunc-termination-strictp nil)
      (set-defunc-function-contract-strictp nil)
      (set-defunc-body-contracts-strictp nil)
-     
-     (acl2s-defaults :set cgen-timeout 4)
-     (acl2s-defaults :set cgen-local-timeout 2)
-     (set-defunc-timeout 10)
-    
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
-     (set-acl2s-property-table-proof-timeout 10)
-     (set-acl2s-property-table-testing-timeout 10)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
 
-(defmacro modeling-admit-defs ()
-  '(progn
+(defmacro modeling-admit-defs
+  (&key (cgen '30) (cgen-local '15) (defunc '60) (table '30))
+  `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp nil)
      (set-defunc-skip-function-contractp nil)
      (set-defunc-skip-body-contractsp nil)
-     
      (set-defunc-termination-strictp t)
      (set-defunc-function-contract-strictp t)
      (set-defunc-body-contracts-strictp t)
-     
-     (acl2s-defaults :set cgen-timeout 30)
-     (acl2s-defaults :set cgen-local-timeout 15)
-     (set-defunc-timeout 60)
-    
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
-     (set-acl2s-property-table-proof-timeout 30)
-     (set-acl2s-property-table-testing-timeout 30)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
 
-(defmacro modeling-admit-all ()
-  '(progn
+(defmacro modeling-admit-all
+  (&key (cgen '30) (cgen-local '15) (defunc '60) (table '30))
+  `(progn
      (acl2s-defaults :set testing-enabled t)
      (set-defunc-skip-admissibilityp nil)
      (set-defunc-skip-function-contractp nil)
      (set-defunc-skip-body-contractsp nil)
-     
      (set-defunc-termination-strictp t)
      (set-defunc-function-contract-strictp t)
      (set-defunc-body-contracts-strictp t)
-     
-     (acl2s-defaults :set cgen-timeout 30)
-     (acl2s-defaults :set cgen-local-timeout 15)
-     (set-defunc-timeout 60)
-    
      (set-acl2s-property-table-proofs? t)
      (set-acl2s-property-table-testing? t)
-     (set-acl2s-property-table-proof-timeout 200)
-     (set-acl2s-property-table-testing-timeout 200)))
+     (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
 
 #|
 (modeling-start)

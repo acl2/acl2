@@ -1042,11 +1042,28 @@
 #-acl2-loop-only
 (progn
 
-(defvar *user-stobj-alist* nil)
+(defvar *user-stobj-alist*
 
-; The value of the above variable is an alist that pairs user-defined
-; single-threaded object names with their live ones.  It does NOT
-; contain an entry for STATE, which is not user-defined.
+; The value of this variable is an alist that pairs user-defined
+; single-threaded object names with their live ones.  It does NOT contain an
+; entry for STATE, which is not user-defined.
+
+  nil)
+
+(defvar *local-user-stobj-lst*
+
+; This variable contains a list of user-defined stobjs that are locally bound
+; by stobj-let or with-local-stobj.  It may contain duplicates, because of
+; nested bindings.  We could eliminate duplicates by extending it using
+; add-to-set-eq and union-eq instead of cons and append, but repeated binding
+; may be relatively rare, so the cost of repeated linear searches probably
+; would dwarf the cost of the consing.  Of course, there is a linear search
+; every time trans-eval is called; see the intersection-eq call in
+; chk-user-stobj-alist, which is called by user-stobj-alist-safe, which is
+; called by ev-for-trans-eval.  But trans-eval calls should be relatively rare,
+; too.
+
+  nil)
 
 ; The following SPECIAL VARIABLE, *wormholep*, when non-nil, means that we
 ; are within a wormhole and are obliged to undo every change visited upon
@@ -13053,6 +13070,37 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+(and (not acl2-loop-only) (not acl2-mv-as-values))
 (defmacro mv-list (input-arity x)
   `(cons ,x (mv-refs (1- ,input-arity))))
+
+(defmacro swap-stobjs (x y)
+
+; The call (swap-stobjs st1 st2) logically swaps two input stobjs st1 and st2,
+; but with the same stobjs-out as (mv st1 st2).  See translate11
+
+; Note that since there are no duplicate live stobjs, it should be fine to call
+; this macro even if one or both inputs are locally-bound (by with-local-stobj
+; or stobj-let).  Ultimately, the user-stobj-alist is put right by the calls of
+; latch-stobjs in raw-ev-fncall.
+
+; Trans-eval does not itself manage the user-stobj-alist, so we disallow the
+; use of swap-stobjs at the top level; see translate11 and macroexpand1*-cmp.
+; Before implementing that restriction, the following example illustrated that
+; the user-stobj-alist wasn't being suitably updated by top-level calls.
+
+;   (defstobj st1 fld1)
+;   (defstobj st2 fld2 :congruent-to st1)
+;   (defun foo (st1 st2)
+;     (declare (xargs :stobjs (st1 st2)))
+;     (swap-stobjs st1 st2))
+;   (update-fld1 3 st1)
+;   (update-fld1 4 st2)
+;   (swap-stobjs st1 st2)
+;   (fld1 st1) ; ERROR: 3, but should be 4
+;   (fld1 st2) ; ERROR: 4, but should be 3
+;   (foo st1 st2)
+;   (fld1 st1) ; 4, now as expected
+;   (fld1 st2) ; 3, now as expected
+
+  `(mv ,y ,x))
 
 (defun update-nth (key val l)
   (declare (xargs :guard (true-listp l))

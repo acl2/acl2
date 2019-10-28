@@ -204,6 +204,7 @@
     MAYBE-FLUSH-AND-COMPRESS1
     DUMB-OCCUR
     DUMB-OCCUR-VAR
+    SWAP-STOBJS
   ))
 
 (defconst *special-ops*

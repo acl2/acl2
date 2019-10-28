@@ -10,6 +10,9 @@
 
 (in-package "JAVA")
 
+; Avoid failure for (def-atj-function-type < ...) in ACL2(r):
+; cert_param: (non-acl2r)
+
 (include-book "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

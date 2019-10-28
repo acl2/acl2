@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define arity+ ((fn (pseudo-termfnp fn)) (wrld plist-worldp))
-  :returns (result natp)
+  :returns (arity natp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
@@ -26,7 +26,7 @@
     "This returns the same result as @(tsee arity)
      on named functions and lambda expressions,
      but it causes an error on symbols that do not name functions
-     (while @(tsee arity) returns @('nil') in this case.")
+     (while @(tsee arity) returns @('nil') in this case).")
    (xdoc::p
     "Compared to @(tsee arity),
      @('arity+') has a slightly stronger guard on @('fn')
@@ -53,5 +53,4 @@
                   (if (eq formals t)
                       (raise "The symbol ~x0 does not name a function." fn)
                     formals)))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp
-                                           pseudo-lambdap))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))

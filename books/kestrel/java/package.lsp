@@ -69,12 +69,16 @@
                          implicate
                          implode
                          impossible
+                         index-of
+                         integers-from-to
+                         irecursivep
                          known-packages
                          lambda-body
                          lambda-formals
                          logext
                          loghead
                          logic-fns-with-raw-code
+                         logicp
                          lower-case-p
                          make-lambda
                          maybe-stringp
@@ -114,6 +118,7 @@
                          string-string-alistp
                          string-symbollist-alistp
                          string-upcase
+                         subcor-var
                          string=>nats
                          symbol-name-lst
                          symbol-pos-alistp
@@ -121,6 +126,7 @@
                          symbol-symbol-alistp
                          symbol-package-name-lst
                          table-alist+
+                         tail-recursive-p
                          trans-eval
                          tuplep
                          typed-tuplep
@@ -128,11 +134,14 @@
                          ubyte16
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
+                         uguard
                          unnormalized-body
                          unquote-term
                          unquote-term-list
                          unsigned-byte-listp
                          upper-case-p
                          variablep
+                         std::defret-mutual
+                         set::list-in
                          str::chars-in-charset-p
                          str::natstr)))

@@ -32,6 +32,7 @@
 (include-book "rawp")
 (include-book "stobjs-in-plus")
 (include-book "stobjs-out-plus")
+(include-book "tail-recursive-p")
 (include-book "ubody")
 (include-book "ubody-plus")
 (include-book "uguard")

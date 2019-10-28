@@ -10,12 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "macro-namep")
+(include-book "macro-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-args+ ((mac (macro-namep mac wrld))
-                     (wrld plist-worldp))
+(define macro-args+ ((mac symbolp) (wrld plist-worldp))
   :returns (result true-listp)
   :parents (std/system/macro-queries)
   :short (xdoc::topstring
@@ -25,13 +24,16 @@
   (xdoc::topstring
    (xdoc::p
     "This returns the same result as @(tsee macro-args),
-     but it has a stronger guard
-     and includes a run-time check (which should always succeed) on the result
+     but it has a run-time check (which should always succeed) on the result
      that allows us to prove the return type theorem
-     without strengthening the guard on @('wrld')."))
-  (b* ((result (macro-args mac wrld)))
-    (if (true-listp result)
-        result
-      (raise "Internal error: ~
-              the MACRO-ARGS property ~x0 of ~x1 is not a true list."
-             result mac))))
+     without strengthening the guard on @('wrld').
+     Furthermore, this utility causes an error
+     if called on a symbol that does not name a macro."))
+  (if (not (macro-symbolp mac wrld))
+      (raise "The symbol ~x0 does not name a macro." mac)
+    (b* ((result (macro-args mac wrld)))
+      (if (true-listp result)
+          result
+        (raise "Internal error: ~
+                the MACRO-ARGS property ~x0 of ~x1 is not a true list."
+               result mac)))))

@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ keywords
-  :parents (language)
+  :parents (syntax)
   :short "The Java keywords [JLS:3.9]."
   :long
   (xdoc::topstring
