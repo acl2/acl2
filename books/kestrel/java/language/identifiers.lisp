@@ -14,6 +14,8 @@
 (include-book "boolean-literals")
 (include-book "keywords")
 
+(include-book "kestrel/std/util/deffixer" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ identifiers
@@ -357,18 +359,10 @@
        (not (boolean-literal-p x))
        (not (null-literal-p x))))
 
-(define identifier-fix ((x identifierp))
-  :returns (fixed-x identifierp)
-  :short "Fixer for @(tsee identifierp)."
-  (mbe :logic (if (identifierp x) x (list (char-code #\$)))
-       :exec x)
-  :inline t
-  ///
-
-  (defrule identifier-fix-when-identifierp
-    (implies (identifierp x)
-             (equal (identifier-fix x)
-                    x))))
+(std::deffixer identifier-fix
+  :pred identifierp
+  :body-fix (list (char-code #\$))
+  :short "Fixer for @(tsee identifierp).")
 
 (defsection identifier
   :short "Fixtype for @(tsee identifierp)."
@@ -427,18 +421,10 @@
        (not (boolean-literal-p x))
        (not (null-literal-p x))))
 
-(define midentifier-fix ((x midentifierp))
-  :returns (fixed-x midentifierp)
-  :short "Fixer for @(tsee midentifierp)."
-  (mbe :logic (if (midentifierp x) x (list (char-code #\$)))
-       :exec x)
-  :inline t
-  ///
-
-  (defrule midentifier-fix-when-midentifierp
-    (implies (midentifierp x)
-             (equal (midentifier-fix x)
-                    x))))
+(std::deffixer midentifier-fix
+  :pred midentifierp
+  :body-fix (list (char-code #\$))
+  :short "Fixer for @(tsee midentifierp).")
 
 (defsection midentifier
   :short "Fixtype for @(tsee midentifierp)."

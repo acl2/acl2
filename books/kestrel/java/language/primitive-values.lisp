@@ -15,6 +15,7 @@
 (include-book "kestrel/fty/sbyte16" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
+(include-book "kestrel/std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,29 +128,27 @@
 
   (define float-value-p (x)
     :returns (yes/no booleanp)
+    :parents (float-value)
+    :short "Recognizer for @(tsee float-value)."
     (and (tuplep 2 x)
          (eq (first x) :float)
-         (float-value-p-aux (second x))))
-
-  (define float-value-fix ((x float-value-p))
-    :returns (fixed-x float-value-p
-                      :hints (("Goal" :in-theory (enable float-value-p))))
-    (mbe :logic (if (float-value-p x)
-                    x
-                  (list :float (float-value-witness)))
-         :exec x)
+         (float-value-p-aux (second x)))
     ///
-    (defrule float-value-fix-when-float-value-p
-      (implies (float-value-p x)
-               (equal (float-value-fix x) x))))
+    (defrule float-value-p-of-wrapped-float-value-witness
+      (float-value-p (list :float (float-value-witness)))))
+
+  (std::deffixer float-value-fix
+    :pred float-value-p
+    :body-fix (list :float (float-value-witness))
+    :parents (float-value)
+    :short "Fixer for @(tsee float-value).")
 
   (fty::deffixtype float-value
     :pred float-value-p
     :fix float-value-fix
     :equiv float-value-equiv
     :define t
-    :forward t
-    :topic float-value))
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,29 +181,27 @@
 
   (define double-value-p (x)
     :returns (yes/no booleanp)
+    :parents (double-value)
+    :short "Recognizer for @(tsee double-value)."
     (and (tuplep 2 x)
          (eq (first x) :double)
-         (double-value-p-aux (second x))))
-
-  (define double-value-fix ((x double-value-p))
-    :returns (fixed-x double-value-p
-                      :hints (("Goal" :in-theory (enable double-value-p))))
-    (mbe :logic (if (double-value-p x)
-                    x
-                  (list :double (double-value-witness)))
-         :exec x)
+         (double-value-p-aux (second x)))
     ///
-    (defrule double-value-fix-when-double-value-p
-      (implies (double-value-p x)
-               (equal (double-value-fix x) x))))
+    (defrule double-value-p-of-wrapped-double-value-witness
+      (double-value-p (list :double (double-value-witness)))))
+
+  (std::deffixer double-value-fix
+    :pred double-value-p
+    :body-fix (list :double (double-value-witness))
+    :parents (double-value)
+    :short "Fixer for @(tsee double-value).")
 
   (fty::deffixtype double-value
     :pred double-value-p
     :fix double-value-fix
     :equiv double-value-equiv
     :define t
-    :forward t
-    :topic double-value))
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,24 +570,16 @@
       (implies (doublex-value-p x)
                (numericx-value-p x))))
 
-  (define numericx-value-fix ((x numericx-value-p))
-    :returns (fixed-x numericx-value-p)
-    :parents (numericx-value)
-    :short "Fixer for @(tsee numericx-value)."
-    (mbe :logic (if (numericx-value-p x) x (char-value 0))
-         :exec x)
-    ///
-    (defrule numericx-value-fix-when-numericx-value-p
-      (implies (numericx-value-p x)
-               (equal (numericx-value-fix x) x))))
+  (std::deffixer numericx-value-fix
+    :pred numericx-value-p
+    :body-fix (char-value 0))
 
   (fty::deffixtype numericx-value
     :pred numericx-value-p
     :fix numericx-value-fix
     :equiv numericx-value-equiv
     :define t
-    :forward t
-    :topic numericx-value))
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -681,24 +670,18 @@
                (primitivex-value-p x))
       :enable numericx-value-p))
 
-  (define primitivex-value-fix ((x primitivex-value-p))
-    :returns (fixed-x primitivex-value-p)
+  (std::deffixer primitivex-value-fix
+    :pred primitivex-value-p
+    :body-fix (char-value 0)
     :parents (primitivex-value)
-    :short "Fixer for @(tsee primitivex-value)."
-    (mbe :logic (if (primitivex-value-p x) x (char-value 0))
-         :exec x)
-    ///
-    (defrule primitivex-value-fix-when-primitivex-value-p
-      (implies (primitivex-value-p x)
-               (equal (primitivex-value-fix x) x))))
+    :short "Fixer for @(tsee primitivex-value).")
 
   (fty::deffixtype primitivex-value
     :pred primitivex-value-p
     :fix primitivex-value-fix
     :equiv primitivex-value-equiv
     :define t
-    :forward t
-    :topic primitivex-value))
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
