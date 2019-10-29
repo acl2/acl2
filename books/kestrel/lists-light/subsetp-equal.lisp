@@ -43,10 +43,15 @@
                                      subsetp-equal
                                      add-to-set-equal))))
 
-(defthm subsetp-equal-of-remove-equal2
+(defthm subsetp-equal-of-remove-equal-arg1
   (implies (subsetp-equal x y)
            (subsetp-equal (remove-equal a x) y))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
+
+(defthm subsetp-equal-of-remove1-equal-arg1
+  (implies (subsetp-equal x y)
+           (subsetp-equal (remove1-equal a x) y))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove1-equal))))
 
 
 ;; Disabled because it might be slow, so we include a cheap version below.
@@ -124,3 +129,22 @@
                                    (quotep y))))
                 (subsetp-equal x y))
            (subsetp-equal x (cons a y))))
+
+(defthm subsetp-equal-of-take-same
+  (implies (and (natp n)
+                (< n (len x)))
+           (subsetp-equal (take n x) x)))
+
+(defthm subsetp-equal-of-take
+  (implies (and (subsetp-equal x y)
+                (natp n)
+                (< n (len x)))
+           (subsetp-equal (take n x) y)))
+
+(defthm subsetp-equal-of-nthcdr-same
+  (subsetp-equal (nthcdr n x) x))
+
+(defthm subsetp-equal-of-nthcdr
+  (implies (subsetp-equal x y)
+           (subsetp-equal (nthcdr n x) y))
+  :hints (("Goal" :in-theory (enable nthcdr))))

@@ -143,3 +143,11 @@
            :in-theory (e/d (nthcdr-when-<-of-len)
                            (append-of-true-list-fix-arg1
                             append-of-take-and-nthcdr-2)))))
+
+(defthm equal-of-append-and-append-when-equal-of-len-and-len
+  (implies (equal (len x1) (len x2))
+           (equal (equal (append x1 y1) (append x2 y2))
+                  (and (equal (true-list-fix x1)
+                              (true-list-fix x2))
+                       (equal y1 y2))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))

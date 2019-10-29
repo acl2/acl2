@@ -17,6 +17,8 @@
 ;; Unlike TAKE, FIRSTN may return fewer than the requested number of elements
 ;; if the list is too short.
 
+(local (include-book "nthcdr"))
+
 ;; From coi/lists/basic.lisp:
 (defun firstn (n l)
   "The sublist of L consisting of its first N elements."
@@ -81,3 +83,31 @@
            (equal (firstn m lst)
                   (take m lst)))
   :hints (("Goal" :in-theory (enable firstn take))))
+
+(defthm firstn-becomes-take-gen
+  (implies (natp n)
+           (equal (firstn n lst)
+                  (if (<= n (len lst))
+                      (take n lst)
+                    (take (len lst) lst))))
+  :hints (("Goal" :in-theory (enable firstn take))))
+
+(defthm firstn-of-1
+  (equal (firstn 1 lst)
+         (if (consp lst)
+             (list (car lst))
+           nil))
+  :hints (("Goal" :in-theory (enable firstn))))
+
+(defthm firstn-when-<=-of-len
+  (implies (<= (len x) (nfix n))
+           (equal (firstn n x)
+                  (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable firstn))))
+
+(defthm append-of-firstn-and-nthcdr
+  (equal (append (firstn n x) (nthcdr n x))
+         (if (< (len x) (nfix n))
+             (true-list-fix x)
+           x))
+  :hints (("Goal" :in-theory (e/d (nthcdr firstn append) (firstn-becomes-take-gen)))))
