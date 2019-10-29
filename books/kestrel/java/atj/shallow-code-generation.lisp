@@ -723,7 +723,7 @@
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
      when the source ATJ type is @(':jint')
-     and the destination ATJ type is @(':value').
+     and the destination ATJ type is @(':avalue').
      In ACL2, Java @('int') values are represented as
      values satisfying @(tsee int-value-p):
      this function converts the Java @('int') returned by the expression
@@ -763,7 +763,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is @(':value')
+     when the source ATJ type is @(':avalue')
      and the destination ATJ type is @(':jint').
      In ACL2, Java @('int') values are represented as
      values satisfying @(tsee int-value-p):
@@ -819,10 +819,10 @@
      is the type of the corresponding formal argument.")
    (xdoc::p
     "To convert from @(':jint') to any other type
-     we first convert to @(':value')
+     we first convert to @(':avalue')
      via @(tsee atj-convert-expr-from-jint-to-value),
      and then we cast to the other type
-     (unless the other type is already @(':value')).
+     (unless the other type is already @(':avalue')).
      To convert to @(':jint') from any other type,
      we use @(tsee atj-convert-expr-from-value-to-jint);
      note that any other type is a subtype of @('Acl2Value') in Java,
@@ -837,7 +837,7 @@
   (cond ((eq src-type dst-type) expr)
         ((eq src-type :jint)
          (b* ((acl2-value-expr (atj-convert-expr-from-jint-to-value expr)))
-           (if (eq dst-type :value)
+           (if (eq dst-type :avalue)
                acl2-value-expr
              (jexpr-cast (atj-type-to-jtype dst-type) acl2-value-expr))))
         ((eq dst-type :jint)
@@ -916,7 +916,7 @@
      and renamed via @(tsee atj-rename-term).
      If the @(':guards') input is @('nil'),
      then all the type annotations consist of
-     the type @(':value') of all ACL2 values,
+     the type @(':avalue') of all ACL2 values,
      i.e. it is as if there were no types."))
   :verify-guards nil
 
@@ -1173,7 +1173,7 @@
        the literal is not too large.
        If the argument is not a quoted integer,
        we translate it to a Java expression,
-       which will have the type @(':integer') required by @(tsee int-value);
+       which will have the type @(':ainteger') required by @(tsee int-value);
        we then wrap the expression with code
        to convert it to the Java type @('int').")
      (xdoc::p
@@ -1206,7 +1206,7 @@
                                                            qpairs
                                                            t ; GUARDS$
                                                            wrld))
-             (expr (atj-adapt-expr-to-type arg-expr :integer :jint)))
+             (expr (atj-adapt-expr-to-type arg-expr :ainteger :jint)))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-result-index))))

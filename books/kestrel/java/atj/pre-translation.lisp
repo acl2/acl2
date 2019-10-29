@@ -210,14 +210,14 @@
      For the Java primitive types,
      the first letter is @('J') and the second letter is from the Java type."))
   (case type
-    (:integer "AI")
-    (:rational "AR")
-    (:number "AN")
-    (:character "AC")
-    (:string "AS")
-    (:symbol "AY")
-    (:cons "AP")
-    (:value "AV")
+    (:ainteger "AI")
+    (:arational "AR")
+    (:anumber "AN")
+    (:acharacter "AC")
+    (:astring "AS")
+    (:asymbol "AY")
+    (:acons "AP")
+    (:avalue "AV")
     (:jint "JI"))
   ///
 
@@ -236,18 +236,18 @@
   :long
   (xdoc::topstring-p
    "This is the inverse of @(tsee atj-type-id).")
-  (cond ((equal id "AI") :integer)
-        ((equal id "AR") :rational)
-        ((equal id "AN") :number)
-        ((equal id "AC") :character)
-        ((equal id "AS") :string)
-        ((equal id "AY") :symbol)
-        ((equal id "AP") :cons)
-        ((equal id "AV") :value)
+  (cond ((equal id "AI") :ainteger)
+        ((equal id "AR") :arational)
+        ((equal id "AN") :anumber)
+        ((equal id "AC") :acharacter)
+        ((equal id "AS") :astring)
+        ((equal id "AY") :asymbol)
+        ((equal id "AP") :acons)
+        ((equal id "AV") :avalue)
         ((equal id "JI") :jint)
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
-            :value))) ; irrelevant
+            :avalue))) ; irrelevant
   ///
 
   (defrule atj-type-of-id-of-atj-type-id
@@ -296,7 +296,7 @@
                      (eql (char string 3) #\>)
                      (eql (char string 6) #\])))
         (raise "Internal error: ~x0 is not a conversion function." conv)
-        (mv :value :value)) ; irrelevant
+        (mv :avalue :avalue)) ; irrelevant
        (src-id (subseq string 1 3))
        (dst-id (subseq string 4 6))
        (src-type (atj-type-of-id src-id))
@@ -346,11 +346,11 @@
                   (fquotep term)
                   (flambda-applicationp term)))
         (raise "Internal error: the term ~x0 has the wrong format." term)
-        (mv nil :value :value)) ; irrelevant
+        (mv nil :avalue :avalue)) ; irrelevant
        (fn (ffn-symb term))
        ((when (flambdap fn))
         (raise "Internal error: the term ~x0 has the wrong format." term)
-        (mv nil :value :value)) ; irrelevant
+        (mv nil :avalue :avalue)) ; irrelevant
        ((mv src-type dst-type) (atj-types-of-conv fn)))
     (mv (fargn term 1) src-type dst-type))
   ///
@@ -420,7 +420,7 @@
                      (eql (char string 0) #\[)
                      (eql (char string 3) #\])))
         (raise "Internal error: ~x0 has the wrong format." var)
-        (mv nil :value)) ; irrelevant
+        (mv nil :avalue)) ; irrelevant
        (unannotated-string (subseq string 4 (length string)))
        (unannotated-var (intern-in-package-of-symbol unannotated-string var))
        (type-id (subseq string 1 3))
@@ -575,7 +575,7 @@
                ((unless (consp var+type))
                 (prog2$
                  (raise "Internal error: the variable ~x0 has no type." term)
-                 (mv nil :value))) ; irrelevant
+                 (mv nil :avalue))) ; irrelevant
                (type (cdr var+type))
                (var (atj-type-annotate-var var type)))
             (mv (atj-type-wrap-term var type required-type?)
@@ -656,7 +656,7 @@
                         the function ~x0 has ~x1 arguments ~
                         but a different number of input types ~x2."
                        fn (len args) (len in-types))
-                (mv nil :value)) ; irrelevant
+                (mv nil :avalue)) ; irrelevant
                ((mv args &) (atj-type-annotate-terms args
                                                      in-types
                                                      var-types

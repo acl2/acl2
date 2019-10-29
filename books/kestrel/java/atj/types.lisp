@@ -83,7 +83,7 @@
      (the table being constructed
      via calls of @(tsee def-atj-main-function-type)),
      ATJ performs a type analysis of the ACL2 terms in function bodies
-     as it translates them to Java.
+     before translating them to Java.
      Critically, ATJ compares
      the type inferred for the actual argument of a function
      (this type is inferred by analyzing terms recursively)
@@ -115,7 +115,7 @@
      (i) a main input/output type,
      provable from the guards as described above; and
      (ii) zero or more other input/output types,
-     normally narrower than the main ones,
+     narrower than the main ones,
      which may be used (in the future) to generate
      possibly more efficient overloaded methods for the ACL2 function.
      For instance, AIJ already includes overloaded methods
@@ -137,14 +137,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum atj-typep
-  (:integer
-   :rational
-   :number
-   :character
-   :string
-   :symbol
-   :cons
-   :value
+  (:ainteger
+   :arational
+   :anumber
+   :acharacter
+   :astring
+   :asymbol
+   :acons
+   :avalue
    :jint)
   :short "Recognize ATJ types."
   :long
@@ -159,7 +159,9 @@
      (integers, rationals, numbers,
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
-     as well as a type corresponding to the Java primitive type @('int').
+     whose names start with @('a') for `ACL2',
+     as well as a type corresponding to the Java primitive type @('int'),
+     whose name start with @('j') for `Java'.
      More types will be added in the future.")
    (xdoc::p
     "Each ATJ type corresponds to
@@ -237,23 +239,23 @@
      the subtype/supertype relationship corresponds to
      both the value subset/superset relationship in ACL2
      and the subclass/superclass relationship in AIJ.
-     Furthermore, the ATJ type @(':jint') is a subtype of @(':value').
-     The type @(':value') is always the top of the partial order,
+     Furthermore, the ATJ type @(':jint') is a subtype of @(':avalue').
+     The type @(':avalue') is always the top of the partial order,
      since it consists of all the ACL2 values.")
    (xdoc::p
     "To validate the definition,
      we prove that this is indeed a partial order (over the ATJ types),
      i.e. reflexive, anti-symmetric, and transitive."))
   (case sub
-    (:integer (and (member-eq sup '(:integer :rational :number :value)) t))
-    (:rational (and (member-eq sup '(:rational :number :value)) t))
-    (:number (and (member-eq sup '(:number :value)) t))
-    (:character (and (member-eq sup '(:character :value)) t))
-    (:string (and (member-eq sup '(:string :value)) t))
-    (:symbol (and (member-eq sup '(:symbol :value)) t))
-    (:cons (and (member-eq sup '(:cons :value)) t))
-    (:value (eq sup :value))
-    (:jint (and (member-eq sup '(:jint :value)) t)))
+    (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
+    (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
+    (:anumber (and (member-eq sup '(:anumber :avalue)) t))
+    (:acharacter (and (member-eq sup '(:acharacter :avalue)) t))
+    (:astring (and (member-eq sup '(:astring :avalue)) t))
+    (:asymbol (and (member-eq sup '(:asymbol :avalue)) t))
+    (:acons (and (member-eq sup '(:acons :avalue)) t))
+    (:avalue (eq sup :avalue))
+    (:jint (and (member-eq sup '(:jint :avalue)) t)))
   ///
 
   (defrule atj-type-subeqp-reflexive
@@ -306,34 +308,34 @@
      follows from these and the partial order properties,
      according to lattice theory."))
   (case type1
-    (:character (case type2
-                  (:character :character)
-                  (t :value)))
-    (:string (case type2
-               (:string :string)
-               (t :value)))
-    (:symbol (case type2
-               (:symbol :symbol)
-               (t :value)))
-    (:integer (case type2
-                (:integer :integer)
-                (:rational :rational)
-                (:number :number)
-                (t :value)))
-    (:rational (case type2
-                 ((:integer :rational) :rational)
-                 (:number :number)
-                 (t :value)))
-    (:number (case type2
-               ((:integer :rational :number) :number)
-               (t :value)))
-    (:cons (case type2
-             (:cons :cons)
-             (t :value)))
-    (:value :value)
+    (:acharacter (case type2
+                  (:acharacter :acharacter)
+                  (t :avalue)))
+    (:astring (case type2
+               (:astring :astring)
+               (t :avalue)))
+    (:asymbol (case type2
+               (:asymbol :asymbol)
+               (t :avalue)))
+    (:ainteger (case type2
+                (:ainteger :ainteger)
+                (:arational :arational)
+                (:anumber :anumber)
+                (t :avalue)))
+    (:arational (case type2
+                 ((:ainteger :arational) :arational)
+                 (:anumber :anumber)
+                 (t :avalue)))
+    (:anumber (case type2
+               ((:ainteger :arational :anumber) :anumber)
+               (t :avalue)))
+    (:acons (case type2
+             (:acons :acons)
+             (t :avalue)))
+    (:avalue :avalue)
     (:jint (case type2
              (:jint :jint)
-             (t :value))))
+             (t :avalue))))
   ///
 
   (defrule atj-type-join-upper-bound
@@ -373,14 +375,14 @@
      each value satisfying the subtype's predicate
      also satisfies the supertype's predicate."))
   (case type
-    (:character 'characterp)
-    (:string 'stringp)
-    (:symbol 'symbolp)
-    (:integer 'integerp)
-    (:rational 'rationalp)
-    (:number 'acl2-numberp)
-    (:cons 'consp)
-    (:value '(lambda (_) 't))
+    (:acharacter 'characterp)
+    (:astring 'stringp)
+    (:asymbol 'symbolp)
+    (:ainteger 'integerp)
+    (:arational 'rationalp)
+    (:anumber 'acl2-numberp)
+    (:acons 'consp)
+    (:avalue '(lambda (_) 't))
     (:jint 'int-value-p))
   ///
 
@@ -405,14 +407,14 @@
                      (atj-type-predicate-gen-thms-2 (cdr types1) types2)))))
 
   (define atj-type-predicate-gen-thms ()
-    (b* ((types '(:integer
-                  :rational
-                  :number
-                  :character
-                  :string
-                  :symbol
-                  :cons
-                  :value
+    (b* ((types '(:ainteger
+                  :arational
+                  :anumber
+                  :acharacter
+                  :astring
+                  :asymbol
+                  :acons
+                  :avalue
                   :jint)))
       `(encapsulate
          ()
@@ -439,14 +441,14 @@
   :returns (jtype jtypep :hyp :guard)
   :short "Java type corresponding to an ATJ type."
   (case type
-    (:character *aij-type-char*)
-    (:string *aij-type-string*)
-    (:symbol *aij-type-symbol*)
-    (:integer *aij-type-int*)
-    (:rational *aij-type-rational*)
-    (:number *aij-type-number*)
-    (:cons *aij-type-cons*)
-    (:value *aij-type-value*)
+    (:acharacter *aij-type-char*)
+    (:astring *aij-type-string*)
+    (:asymbol *aij-type-symbol*)
+    (:ainteger *aij-type-int*)
+    (:arational *aij-type-rational*)
+    (:anumber *aij-type-number*)
+    (:acons *aij-type-cons*)
+    (:avalue *aij-type-value*)
     (:jint (jtype-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -471,14 +473,14 @@
      Note that a constant like @('2') does not get type @(':jint').
      Instead, ATJ assigns @(':jint') to a term like @('(int-value 2)');
      see the code generation functions."))
-  (cond ((characterp value) :character)
-        ((stringp value) :string)
-        ((symbolp value) :symbol)
-        ((integerp value) :integer)
-        ((rationalp value) :rational)
-        ((acl2-numberp value) :number)
-        ((consp value) :cons)
-        (t :value)))
+  (cond ((characterp value) :acharacter)
+        ((stringp value) :astring)
+        ((symbolp value) :asymbol)
+        ((integerp value) :ainteger)
+        ((rationalp value) :arational)
+        ((acl2-numberp value) :anumber)
+        ((consp value) :acons)
+        (t :avalue)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,11 +595,11 @@
   :long
   (xdoc::topstring-p
    "This is used when a function has no entry in the table.
-    It consists of a main function type of all @(':value') types,
+    It consists of a main function type of all @(':avalue') types,
     and no other function types.")
   (make-atj-function-type-info
-   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                                 :output :value)
+   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :avalue)
+                                 :output :avalue)
    :others nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

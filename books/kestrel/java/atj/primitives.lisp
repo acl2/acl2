@@ -290,7 +290,7 @@
 (defsection atj-types-for-primitivess
   :short "ATJ types for the Java primitive constructors and operations."
 
-  (def-atj-main-function-type int-value (:integer) :jint)
+  (def-atj-main-function-type int-value (:ainteger) :jint)
 
   (def-atj-main-function-type jint-plus (:jint) :jint)
 

@@ -19,37 +19,47 @@
 ; Specialize the input and output types of a library function
 ; (this should be moved to a more central file, ideally).
 
-(java::def-atj-main-function-type char-fix$inline (:value) :character)
+(java::def-atj-main-function-type char-fix$inline (:avalue) :acharacter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Specialize the input and output types of some of the ABNF parser's functions.
 
-(java::def-atj-main-function-type downcase$inline (:character) :character)
+(java::def-atj-main-function-type downcase$inline (:acharacter) :acharacter)
 
-(java::def-atj-main-function-type upcase$inline (:character) :character)
+(java::def-atj-main-function-type upcase$inline (:acharacter) :acharacter)
 
 (java::def-atj-main-function-type nat-match-insensitive-char-p
-                                  (:integer :character)
-                                  :symbol)
+                                  (:ainteger :acharacter)
+                                  :asymbol)
 
-(java::def-atj-main-function-type parse-exact (:integer :value) :value)
+(java::def-atj-main-function-type parse-exact (:ainteger :avalue) :avalue)
 
 (java::def-atj-main-function-type parse-in-range
-                                  (:integer :integer :value)
-                                  :value)
+                                  (:ainteger :ainteger :avalue)
+                                  :avalue)
 
 (java::def-atj-main-function-type parse-in-either-range
-                                  (:integer :integer :integer :integer :value)
-                                  :value)
+                                  (:ainteger
+                                   :ainteger
+                                   :ainteger
+                                   :ainteger
+                                   :avalue)
+                                  :avalue)
 
 (java::def-atj-main-function-type parse-*-in-either-range
-                                  (:integer :integer :integer :integer :value)
-                                  :value)
+                                  (:ainteger
+                                   :ainteger
+                                   :ainteger
+                                   :ainteger
+                                   :avalue)
+                                  :avalue)
 
-(java::def-atj-main-function-type parse-ichar (:character :value) :value)
+(java::def-atj-main-function-type parse-ichar (:acharacter :avalue) :avalue)
 
-(java::def-atj-main-function-type parse-ichars (:character :character :value) :value)
+(java::def-atj-main-function-type parse-ichars
+                                  (:acharacter :acharacter :avalue)
+                                  :avalue)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
