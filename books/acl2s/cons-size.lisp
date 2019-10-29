@@ -168,3 +168,27 @@
   (<= (cons-size x)
       (acl2-count x))
   :rule-classes :linear)
+
+; This shows that cons-size can be used to prove termination of
+; acl2-count (which is what acl2-size is).
+
+(defun acl2-size (x)
+  (declare (xargs :guard t :termination-method :measure
+                  :measure (if (and (not (rationalp x))
+                                    (complex/complex-rationalp x))
+                               1
+                             (* 2 (cons-size x)))))
+  (if (consp x)
+      (+ 1 (acl2-size (car x))
+         (acl2-size (cdr x)))
+    (if (rationalp x)
+        (if (integerp x)
+            (integer-abs x)
+          (+ (integer-abs (numerator x))
+             (denominator x)))
+      (if (complex/complex-rationalp x)
+          (+ 1 (acl2-size (realpart x))
+             (acl2-size (imagpart x)))
+        (if (stringp x)
+            (length x)
+          0)))))
