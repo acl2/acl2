@@ -935,7 +935,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) application."
     :long
@@ -1068,7 +1068,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @('or') application."
     :long
@@ -1150,7 +1150,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 (@tsee int-val) application."
     :long
@@ -1230,7 +1230,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 application of a function
             that models a Java @('int') binary operation."
@@ -1314,7 +1314,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 function application."
     :long
@@ -1478,7 +1478,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
@@ -1520,7 +1520,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 term."
     :long
@@ -1584,7 +1584,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (blocks jblock-listp)
                  (expr jexpr-listp)
-                 (new-jvar-result-index "A @(tsee posp)."))
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
     (if (endp terms)
