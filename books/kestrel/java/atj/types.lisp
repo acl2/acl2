@@ -32,9 +32,10 @@
   (xdoc::topstring
    (xdoc::p
     "In order to make the generated Java code more efficient and idiomatic,
-     ATJ uses types that correspond to sets of ACL2 values
-     and that are mapped to corresponding Java types.
-     These types are used only when
+     ATJ uses types that correspond to
+     both ACL2 types (in the sense of sets of ACL2 values)
+     and Java types.
+     These ATJ types are used only when
      @(':deep') is @('nil') and @(':guards') is @('t').")
    (xdoc::p
     "For example, consider a unary ACL2 function
@@ -154,19 +155,23 @@
     (xdoc::seetopic "atj-types" "here")
     ".")
    (xdoc::p
-    "Currently ATJ uses types corresponding to
+    "Currently ATJ uses types for
      all the AIJ public class types for ACL2 values
      (integers, rationals, numbers,
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
      whose names start with @('a') for `ACL2',
-     as well as a type corresponding to the Java primitive type @('int'),
-     whose name start with @('j') for `Java'.
+     as well as a type for the Java primitive type @('int'),
+     whose name starts with @('j') for `Java'.
      More types will be added in the future.")
    (xdoc::p
-    "Each ATJ type corresponds to
-     (i) an ACL2 predicate (see @(tsee atj-type-predicate)) and
-     (ii) a Java type (see @(tsee atj-type-to-jtype)).")))
+    "Each ATJ type denotes
+     (i) an ACL2 type (see @(tsee atj-type-to-atype)) and
+     (ii) a Java type (see @(tsee atj-type-to-jtype)).
+     The initial @('a') and @('j') in their names
+     does not mean that they denote either ACL2 types or Java types,
+     but just that the ones starting with @('a') denote ACL2's ``natural'' types
+     while the one starting with @('j') denotes Java's ``natural'' types.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -309,29 +314,29 @@
      according to lattice theory."))
   (case type1
     (:acharacter (case type2
-                  (:acharacter :acharacter)
-                  (t :avalue)))
+                   (:acharacter :acharacter)
+                   (t :avalue)))
     (:astring (case type2
-               (:astring :astring)
-               (t :avalue)))
-    (:asymbol (case type2
-               (:asymbol :asymbol)
-               (t :avalue)))
-    (:ainteger (case type2
-                (:ainteger :ainteger)
-                (:arational :arational)
-                (:anumber :anumber)
+                (:astring :astring)
                 (t :avalue)))
-    (:arational (case type2
-                 ((:ainteger :arational) :arational)
+    (:asymbol (case type2
+                (:asymbol :asymbol)
+                (t :avalue)))
+    (:ainteger (case type2
+                 (:ainteger :ainteger)
+                 (:arational :arational)
                  (:anumber :anumber)
                  (t :avalue)))
+    (:arational (case type2
+                  ((:ainteger :arational) :arational)
+                  (:anumber :anumber)
+                  (t :avalue)))
     (:anumber (case type2
-               ((:ainteger :arational :anumber) :anumber)
-               (t :avalue)))
+                ((:ainteger :arational :anumber) :anumber)
+                (t :avalue)))
     (:acons (case type2
-             (:acons :acons)
-             (t :avalue)))
+              (:acons :acons)
+              (t :avalue)))
     (:avalue :avalue)
     (:jint (case type2
              (:jint :jint)
@@ -358,13 +363,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-predicate ((type atj-typep))
+(define atj-type-to-atype ((type atj-typep))
   :returns (pred pseudo-termfnp)
-  :short "Predicate denoted by an ATJ type."
+  :short "ACL2 type denoted by an ATJ type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate is the set of values denoted by the type.")
+    "The ACL2 type is the predicate that recognizes
+     the set of values of the type.")
    (xdoc::p
     "The predicate for the @(':jint') type is @(tsee int-value-p),
      i.e. the model of Java @('int') values in the Java languge formalization.
@@ -386,27 +392,27 @@
     (:jint 'int-value-p))
   ///
 
-  (define atj-type-predicate-gen-thm ((type1 atj-typep) (type2 atj-typep))
+  (define atj-type-to-atype-gen-thm ((type1 atj-typep) (type2 atj-typep))
     (if (atj-type-subeqp type1 type2)
-        `((defthm ,(packn (list 'atj-type-predicate-thm- type1 '- type2))
-            (implies (,(atj-type-predicate type1) x)
-                     (,(atj-type-predicate type2) x))
+        `((defthm ,(packn (list 'atj-type-to-atype-thm- type1 '- type2))
+            (implies (,(atj-type-to-atype type1) x)
+                     (,(atj-type-to-atype type2) x))
             :rule-classes nil))
       nil))
 
-  (define atj-type-predicate-gen-thms-1 ((type atj-typep)
-                                         (types atj-type-listp))
+  (define atj-type-to-atype-gen-thms-1 ((type atj-typep)
+                                        (types atj-type-listp))
     (cond ((endp types) nil)
-          (t (append (atj-type-predicate-gen-thm type (car types))
-                     (atj-type-predicate-gen-thms-1 type (cdr types))))))
+          (t (append (atj-type-to-atype-gen-thm type (car types))
+                     (atj-type-to-atype-gen-thms-1 type (cdr types))))))
 
-  (define atj-type-predicate-gen-thms-2 ((types1 atj-type-listp)
-                                         (types2 atj-type-listp))
+  (define atj-type-to-atype-gen-thms-2 ((types1 atj-type-listp)
+                                        (types2 atj-type-listp))
     (cond ((endp types1) nil)
-          (t (append (atj-type-predicate-gen-thms-1 (car types1) types2)
-                     (atj-type-predicate-gen-thms-2 (cdr types1) types2)))))
+          (t (append (atj-type-to-atype-gen-thms-1 (car types1) types2)
+                     (atj-type-to-atype-gen-thms-2 (cdr types1) types2)))))
 
-  (define atj-type-predicate-gen-thms ()
+  (define atj-type-to-atype-gen-thms ()
     (b* ((types '(:ainteger
                   :arational
                   :anumber
@@ -419,27 +425,18 @@
       `(encapsulate
          ()
          (set-ignore-ok t)
-         ,@(atj-type-predicate-gen-thms-2 types types))))
+         ,@(atj-type-to-atype-gen-thms-2 types types))))
 
-  (defmacro atj-type-predicate-validate ()
-    `(make-event (atj-type-predicate-gen-thms)))
+  (defmacro atj-type-to-atype-validate ()
+    `(make-event (atj-type-to-atype-gen-thms)))
 
-  (atj-type-predicate-validate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-types-predicates ((types atj-type-listp))
-  :returns (preds pseudo-termfn-listp)
-  :short "Lift @(tsee atj-type-predicate) to lists."
-  (cond ((endp types) nil)
-        (t (cons (atj-type-predicate (car types))
-                 (atj-types-predicates (cdr types))))))
+  (atj-type-to-atype-validate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-to-jtype ((type atj-typep))
   :returns (jtype jtypep :hyp :guard)
-  :short "Java type corresponding to an ATJ type."
+  :short "Java type denoted by an ATJ type."
   (case type
     (:acharacter *aij-type-char*)
     (:astring *aij-type-string*)
@@ -646,7 +643,7 @@
                             (pkg-witness (symbol-package-name fn))))
        (guard (guard fn nil wrld))
        (thm-formula (implicate guard
-                               `(,(atj-type-predicate type) ,formal))))
+                               `(,(atj-type-to-atype type) ,formal))))
     `(defthm ,thm-name
        ,(untranslate thm-formula t wrld)
        :rule-classes nil)))
@@ -696,7 +693,7 @@
        (formals (formals fn wrld))
        (guard (guard fn nil wrld))
        (thm-formula (implicate guard
-                               `(,(atj-type-predicate type)
+                               `(,(atj-type-to-atype type)
                                  (,fn ,@formals)))))
     `(defthm ,thm-name
        ,(untranslate thm-formula t wrld)
