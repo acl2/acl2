@@ -234,23 +234,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-to-atype ((type atj-typep))
+  :returns (pred pseudo-termfnp)
+  :short "ACL2 type denoted by an ATJ type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 type is the predicate that recognizes
+     the set of values of the type.")
+   (xdoc::p
+    "The predicates for the @(':a...') types are straightforward.
+     The predicate for the @(':jint') type is @(tsee int-value-p),
+     i.e. the model of Java @('int') values in the Java languge formalization.
+     Also see " (xdoc::seetopic "atj-primitives" "here") "."))
+  (case type
+    (:acharacter 'characterp)
+    (:astring 'stringp)
+    (:asymbol 'symbolp)
+    (:ainteger 'integerp)
+    (:arational 'rationalp)
+    (:anumber 'acl2-numberp)
+    (:acons 'consp)
+    (:avalue '(lambda (_) 't))
+    (:jint 'int-value-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
   :short "Partial order over ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For the ATJ types that correspond to AIJ public class types,
+    "For the ATJ types that denote the AIJ public class types,
      the subtype/supertype relationship corresponds to
-     both the value subset/superset relationship in ACL2
-     and the subclass/superclass relationship in AIJ.
+     both the value subset/superset relationship in ACL2.
      Furthermore, the ATJ type @(':jint') is a subtype of @(':avalue').
      The type @(':avalue') is always the top of the partial order,
      since it consists of all the ACL2 values.")
    (xdoc::p
     "To validate the definition,
      we prove that this is indeed a partial order (over the ATJ types),
-     i.e. reflexive, anti-symmetric, and transitive."))
+     i.e. reflexive, anti-symmetric, and transitive.
+     We also prove that @(tsee atj-type-to-atype) is monotonic,
+     i.e. that for each subtype/supertype pair
+     each value satisfying the subtype's predicate
+     also satisfies the supertype's predicate;
+     we generate a theorem for each such pair,
+     because the predicate inclusion relation is at the meta level."))
   (case sub
     (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
     (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
@@ -283,13 +314,60 @@
                   (atj-type-subeqp x y)
                   (atj-type-subeqp y z))
              (atj-type-subeqp x z))
-    :rule-classes nil))
+    :rule-classes nil)
+
+  ;; monotonicity theorem for (TYPE1, TYPE2) if TYPE1 <= TYPE2, otherwise NIL:
+  (define atj-type-to-atype-gen-mono-thm ((type1 atj-typep) (type2 atj-typep))
+    (if (atj-type-subeqp type1 type2)
+        `((defthm ,(packn (list 'atj-type-to-atype-thm- type1 '- type2))
+            (implies (,(atj-type-to-atype type1) x)
+                     (,(atj-type-to-atype type2) x))
+            :rule-classes nil))
+      nil))
+
+  ;; monotonicity theorems for all (TYPE, TYPE') with TYPE' in TYPES:
+  (define atj-type-to-atype-gen-mono-thms-1 ((type atj-typep)
+                                        (types atj-type-listp))
+    (cond ((endp types) nil)
+          (t (append (atj-type-to-atype-gen-mono-thm type (car types))
+                     (atj-type-to-atype-gen-mono-thms-1 type (cdr types))))))
+
+  ;; monotonicity theorems for all (TYPE1, TYPE2)
+  ;; with TYPE1 in TYPES1 and TYPE2 in TYPES2:
+  (define atj-type-to-atype-gen-mono-thms-2 ((types1 atj-type-listp)
+                                             (types2 atj-type-listp))
+    (cond ((endp types1) nil)
+          (t (append (atj-type-to-atype-gen-mono-thms-1 (car types1) types2)
+                     (atj-type-to-atype-gen-mono-thms-2 (cdr types1) types2)))))
+
+  ;; monotonicity theorems for all pairs of types:
+  (define atj-type-to-atype-gen-mono-thms ()
+    (b* ((types '(:ainteger
+                  :arational
+                  :anumber
+                  :acharacter
+                  :astring
+                  :asymbol
+                  :acons
+                  :avalue
+                  :jint)))
+      `(encapsulate
+         ()
+         (set-ignore-ok t)
+         ,@(atj-type-to-atype-gen-mono-thms-2 types types))))
+
+  ;; macro to generate the monotonicity theorems:
+  (defmacro atj-type-to-atype-mono ()
+    `(make-event (atj-type-to-atype-gen-mono-thms)))
+
+  ;; generate the monotonicity theorems:
+  (atj-type-to-atype-mono))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-subp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "Strict variant of @(tsee atj-type-subeqp)."
+  :short "Strict version of @(tsee atj-type-subeqp)."
   (and (atj-type-subeqp sub sup)
        (not (equal sub sup))))
 
@@ -360,77 +438,6 @@
              (atj-type-subeqp (atj-type-join x y) z))
     :rule-classes nil
     :enable atj-type-subeqp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-type-to-atype ((type atj-typep))
-  :returns (pred pseudo-termfnp)
-  :short "ACL2 type denoted by an ATJ type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The ACL2 type is the predicate that recognizes
-     the set of values of the type.")
-   (xdoc::p
-    "The predicate for the @(':jint') type is @(tsee int-value-p),
-     i.e. the model of Java @('int') values in the Java languge formalization.
-     Also see " (xdoc::seetopic "atj-primitives" "here") ".")
-   (xdoc::p
-    "For validation, for each subtype/supertype pair
-     we generate a theorem saying that
-     each value satisfying the subtype's predicate
-     also satisfies the supertype's predicate."))
-  (case type
-    (:acharacter 'characterp)
-    (:astring 'stringp)
-    (:asymbol 'symbolp)
-    (:ainteger 'integerp)
-    (:arational 'rationalp)
-    (:anumber 'acl2-numberp)
-    (:acons 'consp)
-    (:avalue '(lambda (_) 't))
-    (:jint 'int-value-p))
-  ///
-
-  (define atj-type-to-atype-gen-thm ((type1 atj-typep) (type2 atj-typep))
-    (if (atj-type-subeqp type1 type2)
-        `((defthm ,(packn (list 'atj-type-to-atype-thm- type1 '- type2))
-            (implies (,(atj-type-to-atype type1) x)
-                     (,(atj-type-to-atype type2) x))
-            :rule-classes nil))
-      nil))
-
-  (define atj-type-to-atype-gen-thms-1 ((type atj-typep)
-                                        (types atj-type-listp))
-    (cond ((endp types) nil)
-          (t (append (atj-type-to-atype-gen-thm type (car types))
-                     (atj-type-to-atype-gen-thms-1 type (cdr types))))))
-
-  (define atj-type-to-atype-gen-thms-2 ((types1 atj-type-listp)
-                                        (types2 atj-type-listp))
-    (cond ((endp types1) nil)
-          (t (append (atj-type-to-atype-gen-thms-1 (car types1) types2)
-                     (atj-type-to-atype-gen-thms-2 (cdr types1) types2)))))
-
-  (define atj-type-to-atype-gen-thms ()
-    (b* ((types '(:ainteger
-                  :arational
-                  :anumber
-                  :acharacter
-                  :astring
-                  :asymbol
-                  :acons
-                  :avalue
-                  :jint)))
-      `(encapsulate
-         ()
-         (set-ignore-ok t)
-         ,@(atj-type-to-atype-gen-thms-2 types types))))
-
-  (defmacro atj-type-to-atype-validate ()
-    `(make-event (atj-type-to-atype-gen-thms)))
-
-  (atj-type-to-atype-validate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
