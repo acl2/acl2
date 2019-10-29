@@ -274,8 +274,10 @@
    (xdoc::p
     "The (ACL2-based) ordering on the @('a...') types is straightforward.
      The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
-     which are obviously ACL2 values;
-     thus, @(':jint') is below @(':avalue') in the partial order.")
+     whose representation is always a @(tsee cons)
+     (satisfying additional properties; see "
+    (xdoc::seetopic "atj-primitives" "here")
+    "); thus, @(':jint') is below @(':acons') in the partial order.")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -287,7 +289,16 @@
      we generate a theorem for each such pair,
      because the predicate inclusion relation is at the meta level.
      The motonocity validates that the partial order
-     is consistent with the inclusion of the denoted ACL2 types."))
+     is consistent with the inclusion of the denoted ACL2 types.")
+   (xdoc::p
+    "It is also not difficult to see that,
+     besides being order-presering (i.e. monotonic),
+     @(tsee atj-type-to-atype) is also order-reflecting:
+     if @('(atj-type-to-atype x)') is included in @('(atj-type-to-atype y)'),
+     then @('(atj-type-asubeq x y)') holds;
+     we may prove this explicitly at some point.
+     Being both order-preserving and order-reflecting,
+     @(tsee atj-type-to-atype) is an order embedding."))
   (case sub
     (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
     (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
@@ -297,7 +308,7 @@
     (:asymbol (and (member-eq sup '(:asymbol :avalue)) t))
     (:acons (and (member-eq sup '(:acons :avalue)) t))
     (:avalue (eq sup :avalue))
-    (:jint (and (member-eq sup '(:jint :avalue)) t)))
+    (:jint (and (member-eq sup '(:jint :acons :avalue)) t)))
   ///
 
   (defrule atj-type-asubeqp-reflexive
@@ -427,11 +438,12 @@
                 ((:ainteger :arational :anumber) :anumber)
                 (t :avalue)))
     (:acons (case type2
-              (:acons :acons)
+              ((:acons :jint) :acons)
               (t :avalue)))
     (:avalue :avalue)
     (:jint (case type2
              (:jint :jint)
+             (:acons :acons)
              (t :avalue))))
   ///
 
