@@ -665,7 +665,6 @@
   :guard (and (int= (len blocks) (len vars))
               (int= (len exprs) (len vars)))
   :returns (block jblockp :hyp (jblock-listp blocks))
-  :verify-guards nil
   :short "Generate shallowly embedded ACL2 @(tsee let) bindings."
   :long
   (xdoc::topstring
