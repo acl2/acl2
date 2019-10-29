@@ -245,7 +245,7 @@
    (xdoc::p
     "The predicates for the @(':a...') types are straightforward.
      The predicate for the @(':jint') type is @(tsee int-value-p),
-     i.e. the model of Java @('int') values in the Java languge formalization.
+     i.e. the model of Java @('int') values in the Java language formalization.
      Also see " (xdoc::seetopic "atj-primitives" "here") "."))
   (case type
     (:acharacter 'characterp)
@@ -260,28 +260,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
+(define atj-type-asubeqp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "Partial order over ATJ types."
+  :short "ACL2 partial order over ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For the ATJ types that denote the AIJ public class types,
-     the subtype/supertype relationship corresponds to
-     both the value subset/superset relationship in ACL2.
-     Furthermore, the ATJ type @(':jint') is a subtype of @(':avalue').
-     The type @(':avalue') is always the top of the partial order,
-     since it consists of all the ACL2 values.")
+    "The ATJ types form a partial order,
+     based on the inclusion of the ACL2 types they denote.
+     There is another partial order on the ATJ types,
+     based on the subtype relation over the Java types they denote;
+     this will be explicated in the future.")
    (xdoc::p
-    "To validate the definition,
-     we prove that this is indeed a partial order (over the ATJ types),
+    "The (ACL2-based) ordering on the @('a...') types is straightforward.
+     The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
+     which are obviously ACL2 values;
+     thus, @(':jint') is below @(':avalue') in the partial order.")
+   (xdoc::p
+    "To validate this definition of partial order,
+     we prove that the relation is indeed a partial order,
      i.e. reflexive, anti-symmetric, and transitive.
      We also prove that @(tsee atj-type-to-atype) is monotonic,
      i.e. that for each subtype/supertype pair
      each value satisfying the subtype's predicate
      also satisfies the supertype's predicate;
      we generate a theorem for each such pair,
-     because the predicate inclusion relation is at the meta level."))
+     because the predicate inclusion relation is at the meta level.
+     The motonocity validates that the partial order
+     is consistent with the inclusion of the denoted ACL2 types."))
   (case sub
     (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
     (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
@@ -294,31 +300,31 @@
     (:jint (and (member-eq sup '(:jint :avalue)) t)))
   ///
 
-  (defrule atj-type-subeqp-reflexive
+  (defrule atj-type-asubeqp-reflexive
     (implies (atj-typep x)
-             (atj-type-subeqp x x))
+             (atj-type-asubeqp x x))
     :rule-classes nil)
 
-  (defrule atj-type-subeqp-antisymmetric
+  (defrule atj-type-asubeqp-antisymmetric
     (implies (and (atj-typep x)
                   (atj-typep y)
-                  (atj-type-subeqp x y)
-                  (atj-type-subeqp y x))
+                  (atj-type-asubeqp x y)
+                  (atj-type-asubeqp y x))
              (equal x y))
     :rule-classes nil)
 
-  (defrule atj-type-subeqp-transitive
+  (defrule atj-type-asubeqp-transitive
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-subeqp x y)
-                  (atj-type-subeqp y z))
-             (atj-type-subeqp x z))
+                  (atj-type-asubeqp x y)
+                  (atj-type-asubeqp y z))
+             (atj-type-asubeqp x z))
     :rule-classes nil)
 
   ;; monotonicity theorem for (TYPE1, TYPE2) if TYPE1 <= TYPE2, otherwise NIL:
   (define atj-type-to-atype-gen-mono-thm ((type1 atj-typep) (type2 atj-typep))
-    (if (atj-type-subeqp type1 type2)
+    (if (atj-type-asubeqp type1 type2)
         `((defthm ,(packn (list 'atj-type-to-atype-thm- type1 '- type2))
             (implies (,(atj-type-to-atype type1) x)
                      (,(atj-type-to-atype type2) x))
@@ -365,31 +371,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-subp ((sub atj-typep) (sup atj-typep))
+(define atj-type-asubp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "Strict version of @(tsee atj-type-subeqp)."
-  (and (atj-type-subeqp sub sup)
+  :short "Strict version of @(tsee atj-type-asubeqp)."
+  (and (atj-type-asubeqp sub sup)
        (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-join ((type1 atj-typep) (type2 atj-typep))
+(define atj-type-ajoin ((type1 atj-typep) (type2 atj-typep))
   :returns (type atj-typep :hyp :guard)
-  :short "Least upper bound of two ATJ types."
+  :short "Least upper bound of two ATJ types,
+          according to the ACL2-based partial order."
   :long
   (xdoc::topstring
    (xdoc::p
     "ATJ types form a join semilattice,
-     with the partial order @(tsee atj-type-subeqp).")
+     with the partial order @(tsee atj-type-asubeqp).")
    (xdoc::p
-    "To validate the definition,
+    "To validate this definition of least upper bound,
      we prove that the this operation indeed returns an upper bound
      that is less than or equal to any other upper bound,
      i.e. that it returns the least upper bound.")
    (xdoc::p
     "The commutativity, idempotence, and associativity of the join operation
      follows from these and the partial order properties,
-     according to lattice theory."))
+     according to lattice theory.")
+   (xdoc::p
+    "ATJ uses this least upper bound operation
+     to calculate the type of an @(tsee if)
+     from the types of the `then' and `else' branches.
+     Since the value may come from either branch,
+     it is appropriate for this operation
+     to be according to the ACL2-based partial order."))
   (case type1
     (:acharacter (case type2
                    (:acharacter :acharacter)
@@ -421,23 +435,23 @@
              (t :avalue))))
   ///
 
-  (defrule atj-type-join-upper-bound
+  (defrule atj-type-ajoin-upper-bound
     (implies (and (atj-typep x)
                   (atj-typep y))
-             (and (atj-type-subeqp x (atj-type-join x y))
-                  (atj-type-subeqp y (atj-type-join x y))))
+             (and (atj-type-asubeqp x (atj-type-ajoin x y))
+                  (atj-type-asubeqp y (atj-type-ajoin x y))))
     :rule-classes nil
-    :enable atj-type-subeqp)
+    :enable atj-type-asubeqp)
 
-  (defrule atj-type-join-least
+  (defrule atj-type-ajoin-least
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-subeqp x z)
-                  (atj-type-subeqp y z))
-             (atj-type-subeqp (atj-type-join x y) z))
+                  (atj-type-asubeqp x z)
+                  (atj-type-asubeqp y z))
+             (atj-type-asubeqp (atj-type-ajoin x y) z))
     :rule-classes nil
-    :enable atj-type-subeqp))
+    :enable atj-type-asubeqp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

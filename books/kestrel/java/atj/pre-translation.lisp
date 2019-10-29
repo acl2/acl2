@@ -607,7 +607,7 @@
                                                                guards$
                                                                wrld))
                      (type (or required-type?
-                               (atj-type-join first-type second-type)))
+                               (atj-type-ajoin first-type second-type)))
                      (first (if required-type?
                                 first
                               (atj-type-rewrap-term first first-type type)))
@@ -635,7 +635,7 @@
                                                            guards$
                                                            wrld))
                    (type (or required-type?
-                             (atj-type-join then-type else-type)))
+                             (atj-type-ajoin then-type else-type)))
                    (then (if required-type?
                              then
                            (atj-type-rewrap-term then then-type type)))
