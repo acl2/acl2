@@ -32,13 +32,22 @@
   :returns (yes/no booleanp)
   :short "Check if an ACL2 string is a valid ASCII Java identifier."
   :long
-  (xdoc::topstring-p
-   "The string must be non-empty,
-    start with a letter or underscore or dollar sign,
-    and continue with zero or more
-    letters, digits, underscores, and dollar signs.
-    It must also be different
-    from Java keywords and from the boolean and null literals.")
+  (xdoc::topstring
+   (xdoc::p
+    "The string must be non-empty,
+     start with a letter or underscore or dollar sign,
+     and continue with zero or more
+     letters, digits, underscores, and dollar signs.
+     It must also be different
+     from Java keywords and from the boolean and null literals.")
+   (xdoc::p
+    "Here for simplicity we disallow ignorable characters.
+     See "
+    (xdoc::seetopic "identifiers" "the formalization of identifiers")
+    " for more details.
+     It is expected that (perhaps an extension of) that formalization
+     will replace this function here,
+     but for now this function is adequate to ATJ's needs."))
   (and (not (member-equal string *jkeywords*))
        (not (member-equal string *boolean-literals*))
        (not (equal string *null-literal*))
@@ -56,7 +65,6 @@
 
 (define atj-string-ascii-java-package-name-p ((string stringp))
   :returns (yes/no booleanp)
-  :verify-guards nil
   :short "Check if an ACL2 string is a valid ASCII Java package name."
   :long
   (xdoc::topstring-p
