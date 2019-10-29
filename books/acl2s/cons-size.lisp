@@ -173,7 +173,7 @@
 ; acl2-count (which is what acl2-size is).
 
 (defun acl2-size (x)
-  (declare (xargs :guard t :termination-method :measure
+  (declare (xargs :guard t
                   :measure (if (and (not (rationalp x))
                                     (complex/complex-rationalp x))
                                1
