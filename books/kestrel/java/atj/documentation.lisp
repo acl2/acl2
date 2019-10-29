@@ -333,7 +333,7 @@
        Furthermore, if the @(':deep') input is @('nil'),
        the Java methods in the generated code
        have the argument and return types
-       specified via @(tsee def-atj-function-type),
+       specified via @(tsee def-atj-main-function-type),
        and the generated Java code may manipulate
        Java primitive values directly.")
      (xdoc::li
@@ -516,7 +516,7 @@
      if @(':guards') is @('t'),
      each method has argument and return types
      determined from the types assigned to the corresponding ACL2 function
-     via @(tsee def-atj-function-type).
+     via @(tsee def-atj-main-function-type).
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.

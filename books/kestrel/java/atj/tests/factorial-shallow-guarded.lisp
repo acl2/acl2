@@ -18,7 +18,7 @@
 
 ; Specialize the input and output types of the factorial function.
 
-(java::def-atj-function-type fact (:integer) :integer)
+(java::def-atj-main-function-type fact (:integer) :integer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -290,26 +290,26 @@
 (defsection atj-types-for-primitivess
   :short "ATJ types for the Java primitive constructors and operations."
 
-  (def-atj-function-type int-value (:integer) :jint)
+  (def-atj-main-function-type int-value (:integer) :jint)
 
-  (def-atj-function-type jint-plus (:jint) :jint)
+  (def-atj-main-function-type jint-plus (:jint) :jint)
 
-  (def-atj-function-type jint-minus (:jint) :jint)
+  (def-atj-main-function-type jint-minus (:jint) :jint)
 
-  (def-atj-function-type jint-not (:jint) :jint)
+  (def-atj-main-function-type jint-not (:jint) :jint)
 
-  (def-atj-function-type jint-add (:jint :jint) :jint)
+  (def-atj-main-function-type jint-add (:jint :jint) :jint)
 
-  (def-atj-function-type jint-sub (:jint :jint) :jint)
+  (def-atj-main-function-type jint-sub (:jint :jint) :jint)
 
-  (def-atj-function-type jint-mul (:jint :jint) :jint)
+  (def-atj-main-function-type jint-mul (:jint :jint) :jint)
 
-  (def-atj-function-type jint-div (:jint :jint) :jint)
+  (def-atj-main-function-type jint-div (:jint :jint) :jint)
 
-  (def-atj-function-type jint-rem (:jint :jint) :jint)
+  (def-atj-main-function-type jint-rem (:jint :jint) :jint)
 
-  (def-atj-function-type jint-and (:jint :jint) :jint)
+  (def-atj-main-function-type jint-and (:jint :jint) :jint)
 
-  (def-atj-function-type jint-ior (:jint :jint) :jint)
+  (def-atj-main-function-type jint-ior (:jint :jint) :jint)
 
-  (def-atj-function-type jint-xor (:jint :jint) :jint))
+  (def-atj-main-function-type jint-xor (:jint :jint) :jint))

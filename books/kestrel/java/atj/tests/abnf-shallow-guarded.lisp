@@ -19,35 +19,37 @@
 ; Specialize the input and output types of a library function
 ; (this should be moved to a more central file, ideally).
 
-(java::def-atj-function-type char-fix$inline (:value) :character)
+(java::def-atj-main-function-type char-fix$inline (:value) :character)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Specialize the input and output types of some of the ABNF parser's functions.
 
-(java::def-atj-function-type downcase$inline (:character) :character)
+(java::def-atj-main-function-type downcase$inline (:character) :character)
 
-(java::def-atj-function-type upcase$inline (:character) :character)
+(java::def-atj-main-function-type upcase$inline (:character) :character)
 
-(java::def-atj-function-type nat-match-insensitive-char-p
-                             (:integer :character)
-                             :symbol)
+(java::def-atj-main-function-type nat-match-insensitive-char-p
+                                  (:integer :character)
+                                  :symbol)
 
-(java::def-atj-function-type parse-exact (:integer :value) :value)
+(java::def-atj-main-function-type parse-exact (:integer :value) :value)
 
-(java::def-atj-function-type parse-in-range (:integer :integer :value) :value)
+(java::def-atj-main-function-type parse-in-range
+                                  (:integer :integer :value)
+                                  :value)
 
-(java::def-atj-function-type parse-in-either-range
-                             (:integer :integer :integer :integer :value)
-                             :value)
+(java::def-atj-main-function-type parse-in-either-range
+                                  (:integer :integer :integer :integer :value)
+                                  :value)
 
-(java::def-atj-function-type parse-*-in-either-range
-                             (:integer :integer :integer :integer :value)
-                             :value)
+(java::def-atj-main-function-type parse-*-in-either-range
+                                  (:integer :integer :integer :integer :value)
+                                  :value)
 
-(java::def-atj-function-type parse-ichar (:character :value) :value)
+(java::def-atj-main-function-type parse-ichar (:character :value) :value)
 
-(java::def-atj-function-type parse-ichars (:character :character :value) :value)
+(java::def-atj-main-function-type parse-ichars (:character :character :value) :value)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

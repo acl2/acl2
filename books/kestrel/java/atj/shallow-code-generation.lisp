@@ -1657,8 +1657,9 @@
      the generated wrapper Java methods
      call one or the other variant implementation
      based on the ATJ input and output types
-     retrieved from the @(tsee def-atj-function-type) table.
-     This choice happens automatically in Java:
+     retrieved from the "
+    (xdoc::seetopic "atj-function-type-info-table" "ATJ function type table")
+    ". This choice happens automatically in Java:
      depending on the ATJ input types,
      the generated Java code will use
      either @('Acl2Value') or the narrower types."))
