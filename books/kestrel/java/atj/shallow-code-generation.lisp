@@ -2310,8 +2310,9 @@
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :returns (mv (class jclassp)
-               (pkg-class-names "A @(tsee string-string-alistp).")
-               (fn-method-names "A @(tsee symbol-string-alistp)."))
+               (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
+               (fn-method-names symbol-string-alistp
+                                :hyp (symbol-listp fns-to-translate)))
   :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration,
           in the shallow embedding approach."
@@ -2427,7 +2428,9 @@
                      :superinterfaces nil
                      :body body-class)
         pkg-class-names
-        fn-method-names)))
+        fn-method-names))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2439,8 +2442,9 @@
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :returns (mv (cunit jcunitp)
-               (pkg-class-names "A @(tsee string-string-alistp).")
-               (fn-method-names "A @(tsee symbol-string-alistp)."))
+               (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
+               (fn-method-names symbol-string-alistp
+                                :hyp (symbol-listp fns-to-translate)))
   :verify-guards nil
   :short "Generate the main Java compilation unit,
           in the shallow embedding approach."
