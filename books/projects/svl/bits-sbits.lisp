@@ -1344,7 +1344,36 @@
     :hints (("Goal"
              :in-theory (e/d (4vec-concat$)
                              ()))))
-
+  
+  
+  (defthm integerp-4vec-concat$-slower
+    (implies (and (integerp (bits x 0 size))
+                  (integerp y)
+                  (natp size))
+             (integerp (4vec-concat$ size x y)))
+    :hints (("goal"
+             :in-theory (e/d (4vec-concat$
+                              4vec-concat
+                              4vec-part-select
+                              4vec
+                              sv::4vec->lower
+                              sv::4vec->upper)
+                             (convert-4vec-concat-to-4vec-concat$
+                              (:rewrite natp-implies-integerp)
+                              (:rewrite bitp-implies-natp)
+                              (:definition bitp)
+                              (:rewrite acl2::cancel-mod-+)
+                              (:rewrite acl2::mod-x-y-=-x-y . 1)
+                              (:rewrite acl2::|(integerp (- x))|)
+                              (:rewrite acl2::|(equal (if a b c) x)|)
+                              (:rewrite acl2::prefer-positive-addends-equal)
+                              (:rewrite acl2::mod-x-y-=-x+y . 1)
+                              (:rewrite acl2::mod-zero . 3)
+                              (:type-prescription
+                               acl2::expt-type-prescription-nonpositive-base-odd-exponent)
+                              (:type-prescription
+                                acl2::expt-type-prescription-nonpositive-base-even-exponent))))))
+  
   (defthm integerp-4vec-concat$
     (implies (and (integerp x)
                   (integerp y)

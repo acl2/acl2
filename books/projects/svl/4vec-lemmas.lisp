@@ -3187,6 +3187,9 @@
                             SV::3VEC-FIX)
                            (4vec)))))
 
+
+
+
 (encapsulate
   nil
 
@@ -3327,6 +3330,89 @@
                               ash
                               loghead
                               ))))))
+
+
+(defthm 4vec-bitand-with-0
+   (and (equal (sv::4vec-bitand 0 x)
+               0)
+        (equal (sv::4vec-bitand x 0)
+               0))
+   :hints (("Goal"
+            :in-theory (e/d (sv::4vec-bitand
+                             3VEC-BITAND
+                             SV::3VEC-FIX) ()))))
+
+(defthm 4vec-bitand-with-1
+   (and (equal (sv::4vec-bitand 1 x)
+               (4vec-part-select 0 1 (sv::3vec-fix x)))
+        (equal (sv::4vec-bitand x 1)
+               (4vec-part-select 0 1 (sv::3vec-fix x))))
+   :hints (("Goal"
+            :in-theory (e/d* (sv::4vec-bitand
+                              bitops::ihsext-recursive-redefs
+                              bitops::ihsext-inductions
+                              4VEC-PART-SELECT
+                              3VEC-BITAND
+                              SV::3VEC-FIX
+                              4VEC-CONCAT)
+                             (4vec)))))
+
+(defthm 4vec-bitor-with-0
+   (and (equal (sv::4vec-bitor 0 x)
+               (sv::3vec-fix x))
+        (equal (sv::4vec-bitor x 0)
+               (sv::3vec-fix x)))
+   :hints (("Goal"
+            :in-theory (e/d (4vec-bitor
+                             4vec-fix
+                             sv::3vec-bitor
+                             sv::3vec-fix
+                             ifix) ()))))
+
+(defthm 4vec-?-with-0
+   (and (equal (sv::4vec-? 0 x y)
+               (sv::4vec-fix y)))
+   :hints (("Goal"
+            :in-theory (e/d* (sv::4vec-fix
+                             bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs
+                             4vec-?
+                             sv::3vec-fix
+                             sv::3vec-?
+                             ifix) ()))))
+
+(defthm 4vec-?-with-1
+   (and (equal (sv::4vec-? 1 x y)
+               (sv::4vec-fix x)))
+   :hints (("Goal"
+            :in-theory (e/d* (sv::4vec-fix
+                             bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs
+                             4vec-?
+                             sv::3vec-fix
+                             sv::3vec-?
+                             ifix) ()))))
+
+
+(defthm integerp-4vec?
+  (implies (and (integerp test)
+                (integerp x)
+                (integerp y))
+           (integerp (sv::4vec-? test x y)))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-?
+                            sv::3vec-?
+                            4vec-fix
+                            sv::3vec-fix) ()))))
+
+(defthm integerp-4vec-bitand
+   (implies (and (integerp y )
+                 (integerp x))
+            (integerp (sv::4vec-bitand x y)))
+   :hints (("Goal"
+            :in-theory (e/d (sv::4vec-bitand
+                             sv::3vec-bitand
+                             sv::3vec-fix) ()))))
 
 (defthmd logand-of-single-loghead
   (implies (syntaxp (or (atom y)
@@ -3703,3 +3789,11 @@
               (sv::4vec-bitand x y))
        (equal (sv::4vec-bitand x (sv::3vec-fix y))
               (sv::4vec-bitand x y))))
+
+(defthm integerp-implies-3vec-p
+  (implies (integerp x)
+           (sv::3vec-p x))
+  :hints (("Goal"
+           :in-theory (e/d (sv::3vec-p) ()))))
+
+
