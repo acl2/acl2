@@ -121,6 +121,8 @@
                             4vec-rsh
                             sv::4vec-shift-core) ()))))
 
+
+
 (defthm mod-of-4vec-zero-ext
   (implies (and (natp size)
                 (natp val))
@@ -484,6 +486,34 @@
                                4vec
                                (:REWRITE ACL2::|(equal (if a b c) x)|)
                                acl2::associativity-of-logapp))))))
+
+
+
+
+(encapsulate
+  nil
+  
+  (local
+   (use-arithmetic-5 nil))
+
+  (defthm equal-of-4vec-concat-with-size=1
+    (implies (and (4vec-p x)
+                  (4vec-p l))
+             (equal (equal x
+                           (sv::4vec-concat 1 k l))
+                    (and (equal (sv::4vec-part-select 0 1 x)
+                                (sv::4vec-part-select 0 1 k))
+                         (equal (svl::4vec-rsh 1 x)
+                                l))))
+    :hints (("Goal"
+             :in-theory (e/d* (4VEC-RSH
+                               bitops::ihsext-recursive-redefs
+                               bitops::ihsext-inductions
+                               4VEC-PART-SELECT
+                               4VEC-CONCAT
+                               4VEC-SHIFT-CORE
+                               4VEC-ZERO-EXT)
+                              (4vec))))))
 
 #|(local
  (defthm 4vec->lower-opener
@@ -1802,7 +1832,6 @@
 
   (defthm 4vec-rsh-of-4vec-rsh
     (implies (and (natp s1)
-;(natp val)
                   (natp s2))
              (equal (4vec-rsh s1 (4vec-rsh s2 val))
                     (4vec-rsh (+ s1 s2) val)))
@@ -1810,6 +1839,151 @@
              :in-theory (e/d (4vec-rsh
                               sv::4VEC-SHIFT-CORE)
                              (4vec))))))
+
+
+(defthm 4vec-rsh-of-bitxor
+  (implies (natp amount)
+           (equal (sv::4vec-rsh amount (sv::4vec-bitxor x y))
+                  (sv::4vec-bitxor (sv::4vec-rsh amount x)
+                                   (sv::4vec-rsh amount y))))
+  :hints (("goal"
+           :in-theory (e/d* (sv::4vec-bitxor
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             sv::4vec-rsh
+                             4vec-shift-core)
+                            ((:definition unsigned-byte-p)
+                             (:definition 4vec)
+                             (:rewrite bitops::logcdr-of-logxor)
+                             (:definition acl2::logtail**)
+                             (:rewrite bitops::logcdr-of-logtail)
+                             (:definition bitops::logxor$)
+                             (:rewrite bitops::logcdr-of-logior)
+                             (:definition bitops::lognot$)
+                             (:definition bitops::logand$)
+                             (:type-prescription bitops::logcdr-natp)
+                             (:rewrite acl2::logtail-identity)
+                             (:definition acl2::unsigned-byte-p**)
+                             (:definition bitops::logior$)
+                             (:rewrite bitops::logcdr-of-lognot)
+                             (:definition acl2::bitmaskp**)
+                             (:rewrite bitops::logcdr-of-bit)
+                             (:rewrite bitops::logcar-of-logtail)
+                             (:rewrite bitops::logbit-to-logbitp)
+                             (:rewrite bitops::logand-with-bitmask)
+                             (:rewrite bitops::logand-with-negated-bitmask)
+                             (:type-prescription acl2::logcdr-type)
+                             (:definition acl2::logbitp**)
+                             (:rewrite acl2::unsigned-byte-p-plus)
+                             acl2::logand-logxor
+                             (:definition integer-range-p)
+                             (:rewrite acl2::zip-open))))))
+
+(defthm 4vec-rsh-of-bitor
+  (implies (natp amount)
+           (equal (sv::4vec-rsh amount (sv::4vec-bitor x y))
+                  (sv::4vec-bitor (sv::4vec-rsh amount x)
+                                  (sv::4vec-rsh amount y))))
+  :hints (("goal"
+           :in-theory (e/d* (sv::4vec-bitor
+                             SV::3VEC-BITOR
+                             SV::3VEC-FIX
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             sv::4vec-rsh
+                             4vec-shift-core)
+                            ((:definition 4vec)
+                             (:DEFINITION ACL2::LOGTAIL**)
+                             (:REWRITE BITOPS::LOGCDR-OF-LOGTAIL)
+                             (:DEFINITION BITOPS::LOGIOR$)
+                             (:REWRITE ACL2::LOGTAIL-IDENTITY)
+                             (:DEFINITION ACL2::UNSIGNED-BYTE-P**)
+                             (:DEFINITION BITOPS::LOGAND$)
+                             (:REWRITE BITOPS::LOGCDR-OF-LOGAND)
+                             (:rewrite bitops::logcdr-of-lognot)
+                             (:definition acl2::bitmaskp**)
+                             (:rewrite bitops::logcdr-of-bit)
+                             (:rewrite bitops::logcar-of-logtail)
+                             (:rewrite bitops::logbit-to-logbitp)
+                             (:rewrite bitops::logand-with-bitmask)
+                             (:rewrite bitops::logand-with-negated-bitmask)
+                             (:type-prescription acl2::logcdr-type)
+                             (:definition acl2::logbitp**)
+                             (:rewrite acl2::unsigned-byte-p-plus)
+                             acl2::logand-logxor
+                             (:definition integer-range-p)
+                             (:rewrite acl2::zip-open))))))
+
+(defthm 4vec-rsh-of-bitand
+  (implies (natp amount)
+           (equal (sv::4vec-rsh amount (sv::4vec-bitand x y))
+                  (sv::4vec-bitand (sv::4vec-rsh amount x)
+                                   (sv::4vec-rsh amount y))))
+  :hints (("goal"
+           :in-theory (e/d* (sv::4vec-bitand
+                             sv::3vec-bitand
+                             SV::3VEC-FIX
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             sv::4vec-rsh
+                             4vec-shift-core)
+                            ((:definition 4vec)
+                             (:DEFINITION ACL2::LOGTAIL**)
+                             (:REWRITE BITOPS::LOGCDR-OF-LOGTAIL)
+                             (:DEFINITION BITOPS::LOGIOR$)
+                             (:REWRITE ACL2::LOGTAIL-IDENTITY)
+                             (:DEFINITION ACL2::UNSIGNED-BYTE-P**)
+                             (:DEFINITION BITOPS::LOGAND$)
+                             (:REWRITE BITOPS::LOGCDR-OF-LOGAND)
+                             (:rewrite bitops::logcdr-of-lognot)
+                             (:definition acl2::bitmaskp**)
+                             (:rewrite bitops::logcdr-of-bit)
+                             (:rewrite bitops::logcar-of-logtail)
+                             (:rewrite bitops::logbit-to-logbitp)
+                             (:rewrite bitops::logand-with-bitmask)
+                             (:rewrite bitops::logand-with-negated-bitmask)
+                             (:type-prescription acl2::logcdr-type)
+                             (:definition acl2::logbitp**)
+                             (:rewrite acl2::unsigned-byte-p-plus)
+                             acl2::logand-logxor
+                             (:definition integer-range-p)
+                             (:rewrite acl2::zip-open))))))
+
+(defthm 4vec-rsh-of-4vec-part-select-1
+  (implies (and (natp amount)
+                (natp start)
+                (natp size)
+                (< amount size))
+           (equal (sv::4vec-rsh amount (sv::4vec-part-select start size x))
+                  (sv::4vec-part-select (+ start amount) (- size amount) x)))
+  :hints (("Goal"
+           :in-theory (e/d* (sv::4vec-part-select
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             sv::4vec-rsh
+                             4VEC-SHIFT-CORE
+                             4VEC-CONCAT)
+                            (4vec)))))
+
+(defthm 4vec-rsh-of-4vec-part-select-2
+  (implies (and (natp amount)
+                (natp start)
+                (natp size)
+                (<= size amount))
+           (equal (sv::4vec-rsh amount (sv::4vec-part-select start size x))
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d* (sv::4vec-part-select
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             sv::4vec-rsh
+                             4VEC-SHIFT-CORE
+                             4VEC-CONCAT)
+                            (4vec)))))
+
+
+
+
 
 (defthm 4vec-part-install-of-4vec-part-install-sizes=1
   (implies (and (natp start1)
@@ -2802,7 +2976,8 @@
                                         (4vec-rsh start val2)))))
      :hints (("Goal"
               :in-theory (e/d (4vec-bitand$
-                               4vec-bitand-of-4vec-rsh) ())))))
+                               4vec-bitand-of-4vec-rsh)
+                              (4VEC-RSH-OF-BITAND))))))
 
   (defthm 4vec-part-select-of-4vec-bitand$-2
     (implies (and (natp bits-size)
@@ -2860,7 +3035,8 @@
                                        (4vec-rsh start val2)))))
      :hints (("Goal"
               :in-theory (e/d (4vec-bitor$
-                               4vec-bitor-of-4vec-rsh) ())))))
+                               4vec-bitor-of-4vec-rsh)
+                              (4VEC-RSH-OF-BITor))))))
 
   (defthm 4vec-part-select-of-4vec-bitor$-2
     (implies (and (natp bits-size)
@@ -2917,7 +3093,8 @@
                                         (4vec-rsh start val2)))))
      :hints (("Goal"
               :in-theory (e/d (4vec-bitxor$
-                               4vec-bitxor-of-4vec-rsh) ())))))
+                               4vec-bitxor-of-4vec-rsh)
+                              (4VEC-RSH-OF-BITxor))))))
 
   (defthm 4vec-part-select-of-4vec-bitxor$-2
     (implies (and (natp bits-size)

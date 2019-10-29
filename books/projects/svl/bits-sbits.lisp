@@ -495,12 +495,54 @@
                               (size (+ (- S1) S2))
                               (val1 (4VEC-RSH S1 X))
                               (val2 y)))
-             :in-theory (e/d (4vec-concat$) ())))))
+             :in-theory (e/d (4vec-concat$) ()))))
+
+
+  (defthm 4vec-rsh-of-bits-1
+    (implies (and (natp amount)
+                  (natp start)
+                  (natp size)
+                  (< amount size))
+             (equal (sv::4vec-rsh amount (svl::bits x start size))
+                    (svl::bits x (+ start amount) (- size amount))))
+    :hints (("Goal"
+             :use ((:instance 4vec-rsh-of-4vec-part-select-1))
+             :in-theory (e/d () (4vec-rsh-of-4vec-part-select-1)))))
+
+  (defthm 4vec-rsh-of-bits-2
+    (implies (and (natp amount)
+                  (natp start)
+                  (natp size)
+                  (<= size amount))
+             (equal (sv::4vec-rsh amount (svl::bits x start size))
+                    0))
+    :hints (("Goal"
+             :use ((:instance 4vec-rsh-of-4vec-part-select-1))
+             :in-theory (e/d () (4vec-rsh-of-4vec-part-select-1))))))
 
 (encapsulate
   nil
 
   ;; 4vec-concat lemmas
+
+  (defthm equal-of-4vec-concat$-with-size=1
+    (implies (and (4vec-p x)
+                  (4vec-p l))
+             (equal (equal x
+                           (4vec-concat$ 1 k l))
+                    (and (equal (bits x 0 1)
+                                (bits k 0 1))
+                         (equal (svl::4vec-rsh 1 x)
+                                l))))
+    :hints (("Goal"
+             :use (:instance equal-of-4vec-concat-with-size=1) 
+             :in-theory (e/d* (4vec-concat$)
+                              (equal-of-4vec-concat-with-size=1
+                               4VEC-PART-SELECT-OF-CONCAT-1
+                               4VEC-RSH-OF-4VEC-CONCAT-2
+                               4VEC-RSH-OF-WIDTH=0
+                               SV::4VEC-FIX-OF-4VEC
+                               SV::4VEC-P-OF-4VEC-CONCAT)))))
 
   (defthm 4vec-concat$-of-4vec-fix
     (and (equal (4vec-concat$ x (4vec-fix y) z)
