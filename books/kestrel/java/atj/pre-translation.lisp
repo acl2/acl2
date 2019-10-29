@@ -1803,9 +1803,9 @@
                            (deep$ booleanp)
                            (guards$ booleanp)
                            (wrld plist-worldp))
-  :returns (mv (new-formals "A @(tsee symbol-listp).")
-               (new-body "A @(tsee pseudo-termp)."))
-  :verify-guards nil
+  :guard (= (len formals) (len in-types))
+  :returns (mv (new-formals symbol-listp :hyp :guard)
+               (new-body pseudo-termp :hyp :guard))
   :parents (atj-pre-translation)
   :short "Pre-translate the formal parameters and body
           of an ACL2 function definition."
