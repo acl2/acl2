@@ -560,12 +560,8 @@
   :short "Retrieve the ATJ function type information
           of the specified function from the table."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is retrieved from the "
-    (xdoc::seetopic "atj-function-type-info-table"
-                    "@(tsee def-atj-function-type) table")
-    ". If the table has no entry for the function, @('nil') is returned."))
+  (xdoc::topstring-p
+   "If the table has no entry for the function, @('nil') is returned.")
   (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair)
