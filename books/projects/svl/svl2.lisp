@@ -348,11 +348,36 @@
                         ,modules))
 
 
-(define s-equal ((x)
-                 (y))
-  :inline t 
-  (equal (if (symbolp x) (symbol-name x) x)
-         (if (symbolp y) (symbol-name y) y)))
+(local
+   (defthm consp-assoc-equal-in-iff-context
+     (implies (alistp x)
+              (iff (consp (assoc-equal key x))
+                   (assoc-equal key x)))))
+
+
+(progn
+  (define 4vec-list-listp (x)
+    :enabled t
+    (if (atom x)
+        (equal x nil)
+      (and (sv::4veclist-p (car x))
+           (4vec-list-listp (cdr x)))))
+
+  (define svex-list-listp (x)
+    :enabled t
+    (if (atom x)
+        (equal x nil)
+      (and (sv::svexlist-p (car x))
+           (svex-list-listp (cdr x)))))
+  
+  (define svexlist-list-eval2 (x env)
+    :returns (res 4vec-list-listp
+                  :hyp (and (sv::svex-env-p env)
+                            (svex-list-listp x)))
+    (if (atom x)
+        nil
+      (cons (svexlist-eval2 (car x) env)
+            (svexlist-list-eval2 (cdr x) env)))))
 
 (encapsulate
   nil
@@ -371,199 +396,239 @@
   ;; The inner lists contain inputs as svex'es when svl2-run-cycle is to be
   ;; called at each cycle.
   ;; the outer list is as long as the total number of phases.
+
+  ;; All the functions in this encapsulation will be executed.
+
+
+  (define s-equal ((x)
+                   (y))
+    :inline t
+    "Convert symbols into strings when checking equality to get rid of package"
+    (equal (if (symbolp x) (symbol-name x) x)
+           (if (symbolp y) (symbol-name y) y)))
   
   (define get-max-len (lsts)
-  :returns (res natp)
-  (if (atom lsts)
-      0
-    (max (len (car lsts))
-         (get-max-len (cdr lsts)))))
+    :returns (res natp)
+    (if (atom lsts)
+        0
+      (max (len (car lsts))
+           (get-max-len (cdr lsts)))))
 
-(progn
-
-  (define svl2-run-fix-inputs_phases-aux ((cur)
-                                          (phase-cnt natp)
-                                          (last))
-    (cond ((zp phase-cnt) nil)
-          ((atom cur)
-           (cons last
-                 (svl2-run-fix-inputs_phases-aux cur
-                                                 (1- phase-cnt)
-                                                 last)))
-          ((s-equal (car cur) '~)
-           (cond ((equal last '0)
-                  (cons 1
-                        (svl2-run-fix-inputs_phases-aux cur
-                                                        (1- phase-cnt)
-                                                        1)))
-                 ((equal last '1)
-                  (cons 0
-                        (svl2-run-fix-inputs_phases-aux cur
-                                                        (1- phase-cnt)
-                                                        0)))
-                 ((s-equal last '_)
-                  (cons '_
-                        (svl2-run-fix-inputs_phases-aux cur
-                                                        (1- phase-cnt)
-                                                        '_)))
-                 (t
-                  (cons `(sv::bitnot ,last)
-                        (svl2-run-fix-inputs_phases-aux cur
-                                                        (1- phase-cnt)
-                                                        `(sv::bitnot
-                                                          ,last))))))
-          (t
-           (cons (cond ((s-equal (car cur) '_)
-                        `',(sv::4vec-x))
-                       (t (car cur)))
-                 (svl2-run-fix-inputs_phases-aux (cdr cur)
-                                                 (1- phase-cnt)
-                                                 (car cur))))))
+  (progn
+    (define svl2-run-fix-inputs_phases-aux ((cur)
+                                            (phase-cnt natp)
+                                            (last))
+      (cond ((zp phase-cnt) nil)
+            ((atom cur)
+             (cons last
+                   (svl2-run-fix-inputs_phases-aux cur
+                                                   (1- phase-cnt)
+                                                   last)))
+            ((s-equal (car cur) '~)
+             (cond ((equal last '0)
+                    (cons 1
+                          (svl2-run-fix-inputs_phases-aux cur
+                                                          (1- phase-cnt)
+                                                          1)))
+                   ((equal last '1)
+                    (cons 0
+                          (svl2-run-fix-inputs_phases-aux cur
+                                                          (1- phase-cnt)
+                                                          0)))
+                   ((s-equal last '_)
+                    (cons '_
+                          (svl2-run-fix-inputs_phases-aux cur
+                                                          (1- phase-cnt)
+                                                          '_)))
+                   (t
+                    (cons `(sv::bitnot ,last)
+                          (svl2-run-fix-inputs_phases-aux cur
+                                                          (1- phase-cnt)
+                                                          `(sv::bitnot
+                                                            ,last))))))
+            (t
+             (cons (cond ((s-equal (car cur) '_)
+                          `',(sv::4vec-x))
+                         (t (car cur)))
+                   (svl2-run-fix-inputs_phases-aux (cdr cur)
+                                                   (1- phase-cnt)
+                                                   (car cur))))))
                                                       
     
 
-  (define svl2-run-fix-inputs_phases ((sig-binds)
-                                      (phase-cnt natp))
-    (if (atom sig-binds)
-        nil
-      (cons (svl2-run-fix-inputs_phases-aux (car sig-binds)
-                                            phase-cnt
-                                            '_)
-            (svl2-run-fix-inputs_phases (cdr sig-binds)
-                                        phase-cnt)))))
+    (define svl2-run-fix-inputs_phases ((sig-binds)
+                                        (phase-cnt natp))
+      (if (atom sig-binds)
+          nil
+        (cons (svl2-run-fix-inputs_phases-aux (car sig-binds)
+                                              phase-cnt
+                                              '_)
+              (svl2-run-fix-inputs_phases (cdr sig-binds)
+                                          phase-cnt)))))
 
-(define get-substr ((str stringp)
-                    (start natp)
-                    (size natp))
-  :verify-guards nil 
-  (b* ((chars (take (+ start size) (explode str)))
-       (chars (nthcdr start chars)))
-    (coerce chars 'string)))
+  (define get-substr ((str stringp)
+                      (start natp)
+                      (size natp))
+    (b* ((chars (take (+ start size) (explode str)))
+         (chars (nthcdr start chars)))
+      (if (character-listp chars)
+          (coerce chars 'string)
+        "")))
 
-(define svl2-run-simplify-signame ((signame))
-  :verify-guards nil
-  (b* ((pos-of-[ (str::strpos "[" signame))
-       (pos-of-colon (str::strpos ":" signame))
-       (pos-of-] (str::strpos "]" signame)))
-    (if (and pos-of-[
-             pos-of-colon
-             pos-of-])
-        (mv (get-substr signame 0 pos-of-[)
-            (Str::digit-list-value
-             (explode
-              (get-substr signame
-                          (1+ pos-of-[)
-                          (+ pos-of-colon (- pos-of-[) -1))))
-            (Str::digit-list-value
-             (explode
-              (get-substr signame
-                          (1+ pos-of-colon)
-                          (+ pos-of-] (- pos-of-colon) -1)))))
-      (mv signame nil nil))))
+  (define svl2-run-simplify-signame ((signame stringp))
+    (b* ((pos-of-[ (str::strpos "[" signame))
+         (pos-of-colon (str::strpos ":" signame))
+         (pos-of-] (str::strpos "]" signame)))
+      (if (and pos-of-[
+               pos-of-colon
+               pos-of-])
+          (b* ((pos1 (explode
+                      (get-substr signame
+                                  (nfix (1+ pos-of-[))
+                                  (nfix (+ pos-of-colon (- pos-of-[) -1)))))
+               (pos2 (explode
+                      (get-substr signame
+                                  (nfix (1+ pos-of-colon))
+                                  (nfix (+ pos-of-] (- pos-of-colon) -1)))))
+               ((unless (and (str::digit-listp pos1)
+                             (str::digit-listp pos2)))
+                (progn$
+                 (hard-error 'svl2-run-simplify-signame
+                             "~p0 has an unexpected structure. It should be ~
+    e.g., \"sig[32:0]\" or \"sig\""
+                             (list (cons #\0 signame)))
+                 (mv signame nil nil)))) 
+            (mv (get-substr signame 0 pos-of-[)
+                (Str::digit-list-value pos1)
+                (str::digit-list-value pos2)))
+        (mv signame nil nil))))
 
-(progn
-  (define svl2-run-fix-inputs_merge-aux (old-binds new-binds start size)
   
-    (if (atom new-binds)
-        nil
-      (b* ((old-val (if (atom old-binds) `',(sv::4vec-x) (car old-binds)))
-           (new-bind (car new-binds)))
-        (cons `(sv::partinst ,start ,size ,old-val ,new-bind)
-              (svl2-run-fix-inputs_merge-aux (if (atom old-binds) nil (cdr old-binds))
-                                             (cdr new-binds)
-                                             start size)))))
+                   
 
-  (define svl2-run-fix-inputs_merge ((signames)
-                                     (sig-binds))
-    :verify-guards nil
-    (if (or (atom signames)
-            (atom sig-binds))
-        nil
-      (b* ((rest (svl2-run-fix-inputs_merge (cdr signames)
-                                            (cdr sig-binds)))
-           ((mv name b1 b2)
-            (svl2-run-simplify-signame (car signames))))
-        (cond ((and b1 b2)
-               (b* (((mv b1 b2) (if (> b2 b1) (mv b2 b1) (mv b1 b2)))
-                    (start b2)
-                    (size (+ b1 (- b2) 1))
-                    (old-assign (assoc-equal name rest))
-                    (new-binds (svl2-run-fix-inputs_merge-aux (cdr old-assign)
-                                                              (car sig-binds)
-                                                              start
-                                                              size)))
-                 (put-assoc-equal name new-binds rest)))               
-              (t
-               (acons (car signames) (car sig-binds) rest)))))))
+  (progn
+    (define svl2-run-fix-inputs_merge-aux (old-binds new-binds start size)
+  
+      (if (atom new-binds)
+          nil
+        (b* ((old-val (if (atom old-binds) `',(sv::4vec-x) (car old-binds)))
+             (new-bind (car new-binds)))
+          (cons `(sv::partinst ,start ,size ,old-val ,new-bind)
+                (svl2-run-fix-inputs_merge-aux (if (atom old-binds) nil (cdr old-binds))
+                                               (cdr new-binds)
+                                               start size)))))
+
+    (define svl2-run-fix-inputs_merge ((signames string-listp)
+                                       (sig-binds))
+      :verify-guards nil
+      :returns (res alistp)
+      (if (or (atom signames)
+              (atom sig-binds))
+          nil
+        (b* ((rest (svl2-run-fix-inputs_merge (cdr signames)
+                                              (cdr sig-binds)))
+             ((mv name b1 b2)
+              (svl2-run-simplify-signame (car signames))))
+          (cond ((and (natp b1) (natp b2))
+                 (b* (((mv b1 b2) (if (> b2 b1) (mv b2 b1) (mv b1 b2)))
+                      (start b2)
+                      (size (+ b1 (- b2) 1))
+                      (old-assign (assoc-equal name rest))
+                      (new-binds (svl2-run-fix-inputs_merge-aux (cdr old-assign)
+                                                                (car sig-binds)
+                                                                start
+                                                                size)))
+                   (put-assoc-equal name new-binds rest)))               
+                (t
+                 (acons (car signames) (car sig-binds) rest)))))
+      ///
+      (verify-guards svl2-run-fix-inputs_merge)))
       
 
 
-(define svl2-run-fix-inputs ((sig-bind-alist alistp))
-  ;; in case an input sig-bind-alist has a key of the form "Data[8:0]"
-  ;; merge it to a single binding "Data".
-  ;; Also extend "~" and unfinished bindings.
-  :verify-guards nil
-  (b* ((sig-names (strip-cars sig-bind-alist))
-       (sig-binds (strip-cdrs sig-bind-alist))
-       (phase-cnt (get-max-len sig-binds))
-       (sig-binds (svl2-run-fix-inputs_phases sig-binds phase-cnt))
-       (sig-bind-alist (svl2-run-fix-inputs_merge sig-names sig-binds)))
-    sig-bind-alist))
+  (define svl2-run-fix-inputs ((sig-bind-alist alistp))
+    ;; in case an input sig-bind-alist has a key of the form "Data[8:0]"
+    ;; merge it to a single binding "Data".
+    ;; Also extend "~" and unfinished bindings.
+    :guard (and (string-listp (strip-cars sig-bind-alist)))
+    :returns (res alistp :hyp (alistp sig-bind-alist))
+    (b* ((sig-names (strip-cars sig-bind-alist))
+         (sig-binds (strip-cdrs sig-bind-alist))
+         (phase-cnt (get-max-len sig-binds))
+         (sig-binds (svl2-run-fix-inputs_phases sig-binds phase-cnt))
+         (sig-bind-alist (svl2-run-fix-inputs_merge sig-names sig-binds)))
+      sig-bind-alist))
 
 
 
 
-(define svl2-generate-inputs_fixorder ((sig-bind-alist alistp)
-                                       (wire-names string-listp))
-  :verify-guards nil
-  (if (atom wire-names)
-      nil
-    (b* ((entry (assoc-equal (car wire-names) sig-bind-alist))
-         (rest (svl2-generate-inputs_fixorder sig-bind-alist
-                                              (cdr wire-names))))
-      (if entry
-          (cons entry rest)
-        (progn$ (cw "Warning! Input ~p0 does not have an assigned value. ~%"
-                    (car wire-names))
-                (acons
-                 (car wire-names)
-                 (repeat (len (cdar sig-bind-alist))
-                         `',(sv::4vec-x))
-                 rest))))))
+  (define svl2-generate-inputs_fixorder ((sig-bind-alist alistp)
+                                         (wire-names ))
+    :returns (res alistp :hyp (alistp sig-bind-alist))
+    (if (atom wire-names)
+        nil
+      (b* ((entry (assoc-equal (car wire-names) sig-bind-alist))
+           (rest (svl2-generate-inputs_fixorder sig-bind-alist
+                                                (cdr wire-names))))
+        (if entry
+            (cons entry rest)
+          (progn$ (cw "Warning! Input ~p0 does not have an assigned value. ~%"
+                      (car wire-names))
+                  (acons
+                   (car wire-names)
+                   (repeat (len (cdar sig-bind-alist))
+                           `',(sv::4vec-x))
+                   rest)))))) 
 
 
-(define transpose (x)
-  :verify-guards nil
-  (if (or (atom x)
-          (atom (car x)))
-      nil
-    (cons (strip-cars x)
-          (transpose (strip-cdrs x)))))
-      
+  (define strip-cars$ (x)
+    (cond
+     ((atom x) nil)
+     (t (cons (if (consp (car x))
+                  (car (car x))
+                nil)
+              (strip-cars$ (cdr x))))))
+
+  (define strip-cdrs$ (x)
+    (cond
+     ((atom x) nil)
+     (t (cons (if (consp (car x))
+                  (cdr (car x))
+                nil)
+              (strip-cdrs$ (cdr x))))))
+  
+  (define transpose (x)
+    :hints (("Goal"
+             :in-theory (e/d (strip-cdrs$ strip-cars$) ())))
+    (if (or (atom x)
+            (atom (car x)))
+        nil
+      (cons (strip-cars$ x)
+            (transpose (strip-cdrs$ x))))) 
 
 
-(define svl2-generate-inputs ((sig-bind-alist alistp)
-                              (input-wires wire-list-p))
-  :verify-guards nil
-  (b* ((sig-bind-alist (svl2-run-fix-inputs sig-bind-alist))
-       (sig-bind-alist (svl2-generate-inputs_fixorder
-                        sig-bind-alist (strip-cars input-wires)))
-       (inputs (transpose (strip-cdrs sig-bind-alist))))
-    inputs)))
-
-;; (svl2-generate-inputs *counter-inputs* '(("Clock") ("Load") ("Data") ("Reset")))
+  (define svl2-generate-inputs ((sig-bind-alist alistp)
+                                (input-wires wire-list-p))
+    :guard (and (string-listp (strip-cars sig-bind-alist)))
+    (b* ((sig-bind-alist (svl2-run-fix-inputs sig-bind-alist))
+         (sig-bind-alist (svl2-generate-inputs_fixorder
+                          sig-bind-alist (strip-cars input-wires)))
+         (inputs (transpose (strip-cdrs sig-bind-alist))))
+      inputs)))
 
 
-(define svexlist-list-eval2 (x env)
-  (if (atom x)
-      nil
-    (cons (SVEXLIST-EVAL2 (car x) env)
-          (svexlist-list-eval2 (cdr x) env))))
 
 
-(define svl2-run-save-output ((out-alist alistp)
+
+
+;; save the output in an alist according to out-bind-alist
+(define svl2-run-save-output ((out-alist sv::svex-env-p)
                               (out-bind-alist alistp))
   :verify-guards nil
+  :returns (mv (res1 alistp)
+               (res2 alistp))
+  :guard (string-listp (strip-cars out-bind-alist))
+  ;;:verify-guards nil
   (if (atom out-bind-alist)
       (mv nil nil)
     (b* (((mv rest-outputs rest-out-bind-alist)
@@ -582,49 +647,121 @@
           (progn$ (cw "Warning \"~p0\" is not an output signal. ~%" signame)
                   (mv rest-outputs (acons key (cdr val) rest-out-bind-alist))))        
          (out-val (cdr out-entry)) 
-         ((unless (and pos1 pos2))
+         ((unless (and (natp pos1)
+                       (natp pos2)))
           (mv (acons (car val) out-val rest-outputs)
               (acons key (cdr val) rest-out-bind-alist)))
          ((mv start size) (if (> pos1 pos2)
-                              (mv pos2 (+ pos1 (- pos2) 1))
-                            (mv pos1 (+ pos2 (- pos1) 1)))))
+                              (mv pos2 (nfix (+ pos1 (- pos2) 1)))
+                            (mv pos1 (nfix (+ pos2 (- pos1) 1))))))
       (mv (acons (car val) (bits out-val start size) rest-outputs)
-          (acons key (cdr val) rest-out-bind-alist))))) 
-         
-          
+          (acons key (cdr val) rest-out-bind-alist))))
+  ///
 
-(define svl2-run-aux ((modname sv::modname-p)
-                      (inputs)
-                      (out-wires string-listp)
-                      (out-bind-alist alistp)
-                      (delayed-env svl-env-p)
-                      (modules svl2-module-alist-p))
-  :verify-guards nil
-  (if (atom inputs)
-      (progn$ ;(svl-free-env modname delayed-env modules (expt 2 30))
-       nil)
-    (b* (((mv out-vals next-delayed-env)
-          (svl2-run-phase modname (car inputs) delayed-env modules))
-         (out-alist (pairlis$ out-wires out-vals))
-         ((mv outputs out-bind-alist) (svl2-run-save-output out-alist out-bind-alist))
-         (rest (svl2-run-aux modname (cdr inputs) out-wires out-bind-alist next-delayed-env modules)))
-      (append outputs
-              rest))))
+  (local
+   (defthm svex-env-p-returns-4vec-p
+     (implies (and (sv::svex-env-p env)
+                   (assoc-equal key env))
+              (4vec-p (cdr (assoc-equal key env))))))
+  
+  (verify-guards svl2-run-save-output
+    :hints (("Goal"
+             :in-theory (e/d () ())))))
 
-(define svl2-run ((modname sv::modname-p)
-                  (inputs-env sv::svex-env-p) ;; needs to be fast-alist
-                  (ins-bind-alist alistp) ;; a constant to tell what input
-                  ;; signal should be assigned to what and when
-                  (out-bind-alist alistp) ;; same as above but for outputs
-                  (modules svl2-module-alist-p))
-  :verify-guards nil
-  (declare (ignorable out-bind-alist))
-  (b* ((module (cdr (assoc-equal modname modules)))
-       (input-wires (svl2-module->inputs module))
-       (output-wires (strip-cars (svl2-module->outputs module)))
-       (inputs-unbound (svl2-generate-inputs ins-bind-alist input-wires))
-       (inputs (svexlist-list-eval2 inputs-unbound inputs-env)))
-    (svl2-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules)))
+(local
+ (defthm svl2-run-save-output-returns-string-alistp
+   (implies (string-listp (strip-cars out-bind-alist))
+            (string-listp (strip-cars (mv-nth 1 (svl2-run-save-output out-alist
+                                                                      out-bind-alist)))))
+   :hints (("Goal"
+            :in-theory (e/d (svl2-run-save-output) ())))))
+
+(encapsulate
+  nil
+ 
+  (define pairlis3 (x y)
+    (if (or (atom x)
+            (atom y))
+        nil
+      (acons (car x) (car y)
+             (pairlis3 (cdr x) (cdr y)))))
+
+  (local
+   (defthm svex-env-p-of-parlis3
+     (implies (and (sv::svarlist-p x)
+                   (sv::4veclist-p y))
+              (sv::svex-env-p (pairlis3 x y)))
+     :hints (("Goal"
+              :in-theory (e/d (sv::svex-env-p
+                               pairlis3
+                               sv::svar-p) ())))))
+
+  (define svl2-run-aux ((modname sv::modname-p)
+                        (inputs 4vec-list-listp)
+                        (out-wires sv::svarlist-p)
+                        (out-bind-alist alistp)
+                        (delayed-env svl-env-p)
+                        (modules svl2-module-alist-p))
+    :guard (string-listp (strip-cars out-bind-alist))
+    (if (atom inputs)
+        (progn$ ;(svl-free-env modname delayed-env modules (expt 2 30))
+         nil)
+      (b* (((mv out-vals next-delayed-env)
+            (svl2-run-phase modname (car inputs) delayed-env modules))
+           (out-alist (pairlis3 out-wires out-vals))
+           ((mv outputs out-bind-alist) (svl2-run-save-output out-alist out-bind-alist))
+           (rest (svl2-run-aux modname (cdr inputs) out-wires out-bind-alist next-delayed-env modules)))
+        (append outputs rest))))
+
+
+  (local
+   (defthm svl2-run-guard-lemma1
+     (implies (and (wire-list-p x))
+              (sv::svarlist-p (strip-cars x)))
+     :hints (("goal"
+              :in-theory (e/d (svl2-module->outputs
+                               svl2-module-alist-p
+                               sv::svarlist-p
+                               wire-list-p
+                               wire-list-fix) ())))))
+
+  (local
+   (defthm svl2-run-guard-lemma2
+     (implies (and (SVL2-MODULE-ALIST-P modules)
+                   (ASSOC-EQUAL MODNAME MODULES))
+              (SVL2-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES))))
+     :hints (("goal"
+              :in-theory (e/d (svl2-module->outputs
+                               svl2-module-alist-p
+                               sv::svarlist-p
+                               wire-list-p
+                               wire-list-fix) ())))))
+
+  (define svl2-run ((modname sv::modname-p)
+                    (inputs-env sv::svex-env-p) ;; needs to be fast-alist
+                    (ins-bind-alist alistp) ;; a constant to tell what input
+                    ;; signal should be assigned to what and when
+                    (out-bind-alist alistp) ;; same as above but for outputs
+                    (modules svl2-module-alist-p))
+    :guard (and (string-listp (strip-cars out-bind-alist))
+                (string-listp (strip-cars ins-bind-alist)))
+    (declare (ignorable out-bind-alist))
+    (b* ((module (assoc-equal modname modules))
+         ((unless module)
+          (hard-error 'svl2-run
+                      "Module ~p0 cannot be found! ~%"
+                      (list (cons #\0 modname))))
+         (module (cdr module))
+         (input-wires (svl2-module->inputs module))
+         (output-wires (strip-cars (svl2-module->outputs module)))
+         (inputs-unbound (svl2-generate-inputs ins-bind-alist input-wires))
+         ((unless (svex-list-listp inputs-unbound))
+          (hard-error 'svl2-run
+                      "Something went wrong while parsing inputs... ~p0 ~%"
+                      (list (cons #\0 inputs-unbound))))
+         ;; everything up to here uses only constants (only executable counterparts)
+         (inputs (svexlist-list-eval2 inputs-unbound inputs-env)))
+      (svl2-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules))))
 
 
 

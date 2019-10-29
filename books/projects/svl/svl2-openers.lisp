@@ -767,3 +767,151 @@
                       (cons (cons occ-name (cons ':module cdr-occ)) rest)
                       env-wires delayed-env-alist modules)
              :in-theory (e/d () ())))))
+
+
+
+(progn
+  (def-rw-opener-error
+    pairlis3-opener-error
+    (pairlis3 x y))
+
+  (defthm pairlis3-opener-done
+    (implies (or (atom x)
+                 (atom y))
+             (equal (pairlis3 x y)
+                    nil))
+    :hints (("Goal"
+             :in-theory (e/d (pairlis3) ()))))
+
+  (defthm pairlis3-opener-cons
+    (equal (pairlis3 (cons x rest1)
+                     (cons y rest2))
+           (acons x y (pairlis3 rest1 rest2)))
+    :hints (("Goal"
+             :in-theory (e/d (pairlis3) ())))))
+
+(progn
+  (def-rw-opener-error
+    svl2-run-save-output-opener-error
+    (svl2-run-save-output out-alist out-bind-alist))
+
+  (defthm svl2-run-save-output-opener-nil
+    (equal (svl2-run-save-output out-alist nil)
+           (mv nil nil))
+    :hints (("Goal"
+             :in-theory (e/d (svl2-run-save-output) ()))))
+
+  (rp::defthm-lambda
+   svl2-run-save-output-opener-cons
+   (equal (svl2-run-save-output out-alist
+                                (cons x rest))
+          (b* (((mv rest-outputs rest-out-bind-alist)
+                (svl2-run-save-output out-alist rest))
+               (this x)
+               (key (car this))
+               (val (cdr this))
+               ((when (atom val))
+                (mv rest-outputs rest-out-bind-alist))
+               ((when (s-equal (car val) '_))
+                (mv rest-outputs (acons key (cdr val) rest-out-bind-alist)))
+               ((mv signame pos1 pos2)
+                (svl2-run-simplify-signame key))
+               (out-entry (assoc-equal signame out-alist))
+               ((unless out-entry)
+                (progn$ (cw "Warning \"~p0\" is not an output signal. ~%" signame)
+                        (mv rest-outputs (acons key (cdr val) rest-out-bind-alist))))        
+               (out-val (cdr out-entry)) 
+               ((unless (and (natp pos1)
+                             (natp pos2)))
+                (mv (acons (car val) out-val rest-outputs)
+                    (acons key (cdr val) rest-out-bind-alist)))
+               ((mv start size) (if (> pos1 pos2)
+                                    (mv pos2 (nfix (+ pos1 (- pos2) 1)))
+                                  (mv pos1 (nfix (+ pos2 (- pos1) 1))))))
+            (mv (acons (car val) (bits out-val start size) rest-outputs)
+                (acons key (cdr val) rest-out-bind-alist))))
+   :hints (("Goal"
+            :in-theory (e/d (svl2-run-save-output) ())))))
+
+
+(progn
+  (def-rw-opener-error
+    svl2-run-aux-opener-error
+    (svl2-run-aux modname inputs out-wires out-bind-alist delayed-env modules)
+    :vars-to-avoid (modules delayed-env))
+
+
+  (defthm svl2-run-aux-opener-nil
+    (equal (svl2-run-aux modname nil out-wires out-bind-alist
+                         delayed-env modules)
+           nil)
+    :hints (("Goal"
+             :in-theory (e/d (svl2-run-aux) ()))))
+  
+  (rp::defthm-lambda
+   svl2-run-aux-opener-cons
+   (equal (svl2-run-aux modname (cons x y) out-wires out-bind-alist
+                        delayed-env modules)
+          (b* (((mv out-vals next-delayed-env)
+                (svl2-run-phase modname x delayed-env modules))
+               (out-alist (pairlis3 out-wires out-vals))
+               ((mv outputs out-bind-alist) (svl2-run-save-output out-alist out-bind-alist))
+               (rest (svl2-run-aux modname y out-wires out-bind-alist next-delayed-env modules)))
+            (append outputs rest)))
+   :hints (("Goal"
+            :in-theory (e/d (svl2-run-aux) ())))))
+
+
+
+(progn
+  (def-rw-opener-error
+    svl2-run-opener-error
+    (svl2-run modname inputs-env ins-bind-alist out-bind-alist modules)
+    :vars-to-avoid (modules))
+
+  (rp::defthm-lambda
+   svl2-run-def-opener
+   (equal (svl2-run modname
+                    inputs-env
+                    ins-bind-alist
+                    out-bind-alist
+                    modules)
+          (b* ((module (assoc-equal modname modules))
+               ((unless module)
+                (hard-error 'svl2-run
+                            "Module ~p0 cannot be found! ~%"
+                            (list (cons #\0 modname))))
+               (module (cdr module))
+               (input-wires (svl2-module->inputs module))
+               (output-wires (strip-cars (svl2-module->outputs module)))
+               (inputs-unbound (svl2-generate-inputs ins-bind-alist input-wires))
+               ((unless (svex-list-listp inputs-unbound))
+                (hard-error 'svl2-run
+                            "Something went wrong while parsing inputs... ~p0 ~%"
+                            (list (cons #\0 inputs-unbound))))
+               ;; everything up to here uses only constants (only executable counterparts)
+               (inputs (svexlist-list-eval2 inputs-unbound inputs-env)))
+            (svl2-run-aux modname inputs output-wires out-bind-alist
+                          (make-svl-env) modules)))
+   :hints (("Goal"
+            :in-theory (e/d (svl2-run) ())))))
+
+
+(progn
+  (def-rw-opener-error
+    svexlist-list-eval2-opener-error
+    (svexlist-list-eval2 x env)
+    :vars-to-avoid (env))
+
+  (defthm svexlist-list-eval2-opener-nil
+    (equal (svexlist-list-eval2 nil env)
+           nil)
+    :hints (("Goal"
+             :in-theory (e/d (svexlist-list-eval2) ()))))
+
+  (defthm svexlist-list-eval2-opener-cons
+    (equal (svexlist-list-eval2 (cons x rest) env)
+           (cons (svexlist-eval2 x env)
+                 (svexlist-list-eval2 rest env)))
+    :hints (("Goal"
+             :in-theory (e/d (svexlist-list-eval2) ())))))
