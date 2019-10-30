@@ -315,7 +315,7 @@
 
 (define atj-type-wrap-term ((term pseudo-termp)
                             (src-type atj-typep)
-                            (dst-type? maybe-atj-typep))
+                            (dst-type? atj-maybe-typep))
   :returns (wrapped-term pseudo-termp :hyp (pseudo-termp term))
   :short "Wrap an ACL2 term with a type conversion function."
   :long
@@ -365,7 +365,7 @@
 
 (define atj-type-rewrap-term ((term pseudo-termp)
                               (src-type atj-typep)
-                              (dst-type? maybe-atj-typep))
+                              (dst-type? atj-maybe-typep))
   :returns (rewrapped-term pseudo-termp :hyp (pseudo-termp term)
                            :hints (("Goal" :expand ((pseudo-termp term)))))
   :short "Re-wrap an ACL2 term with a type conversion function."
@@ -563,8 +563,8 @@
      but it has a certain structure."))
 
   (define atj-type-annotate-term ((term pseudo-termp)
-                                  (required-type? maybe-atj-typep)
-                                  (var-types symbol-atj-type-alistp)
+                                  (required-type? atj-maybe-typep)
+                                  (var-types atj-symbol-type-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
     :returns (mv (annotated-term pseudo-termp :hyp :guard)
@@ -684,8 +684,8 @@
           (or required-type? type))))
 
   (define atj-type-annotate-terms ((terms pseudo-term-listp)
-                                   (required-types? maybe-atj-type-listp)
-                                   (var-types symbol-atj-type-alistp)
+                                   (required-types? atj-maybe-type-listp)
+                                   (var-types atj-symbol-type-alistp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
     :guard (int= (len terms) (len required-types?))

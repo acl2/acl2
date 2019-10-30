@@ -175,19 +175,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define maybe-atj-typep (x)
+(define atj-maybe-typep (x)
   :returns (yes/no booleanp)
   :short "Recognize ATJ types and @('nil')."
   (or (atj-typep x)
       (null x))
   ///
 
-  (defrule maybe-atj-typep-when-atj-typep
+  (defrule atj-maybe-typep-when-atj-typep
     (implies (atj-typep x)
-             (maybe-atj-typep x)))
+             (atj-maybe-typep x)))
 
-  (defrule atj-type-iff-when-maybe-atj-typep
-    (implies (maybe-atj-typep x)
+  (defrule atj-type-iff-when-atj-maybe-typep
+    (implies (atj-maybe-typep x)
              (iff (atj-typep x) x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,19 +200,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist maybe-atj-type-listp (x)
+(std::deflist atj-maybe-type-listp (x)
   :short "Recognize true lists of ATJ types and @('nil')s."
-  (maybe-atj-typep x)
+  (atj-maybe-typep x)
   :true-listp t
   :elementp-of-nil t
   ///
-  (defrule maybe-atj-type-listp-when-atj-type-listp
+  (defrule atj-maybe-type-listp-when-atj-type-listp
     (implies (atj-type-listp x)
-             (maybe-atj-type-listp x))))
+             (atj-maybe-type-listp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist symbol-atj-type-alistp (x)
+(std::defalist atj-symbol-type-alistp (x)
   :short "Recognize alists from symbols to ATJ types."
   :key (symbolp x)
   :val (atj-typep x)
@@ -221,16 +221,16 @@
   :valp-of-nil nil
   ///
 
-  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atj-type-alistp
-    (implies (symbol-atj-type-alistp alist)
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-atj-symbol-type-alistp
+    (implies (atj-symbol-type-alistp alist)
              (iff (atj-typep (cdr (assoc-equal key alist)))
                   (assoc-equal key alist))))
 
-  (defrule symbol-atj-type-alistp-of-pairlis$
+  (defrule atj-symbol-type-alistp-of-pairlis$
     (implies (and (symbol-listp keys)
                   (atj-type-listp vals)
                   (equal (len keys) (len vals)))
-             (symbol-atj-type-alistp (pairlis$ keys vals)))))
+             (atj-symbol-type-alistp (pairlis$ keys vals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,15 +262,16 @@
 
 (define atj-type-asubeqp ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "ACL2 partial order over ATJ types."
+  :short "ACL2-based partial order over ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
     "The ATJ types form a partial order,
-     based on the inclusion of the ACL2 types they denote.
+     based on the inclusion of the ACL2 types they denote;
+     this denotation is defined by @(tsee atj-type-to-atype).
      There is another partial order on the ATJ types,
-     based on the subtype relation over the Java types they denote;
-     this will be explicated in the future.")
+     based on the subtype relation over the Java types they denote:
+     see @(tsee atj-type-jsubeqp).")
    (xdoc::p
     "The (ACL2-based) ordering on the @('a...') types is straightforward.
      The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
@@ -344,7 +345,7 @@
 
   ;; monotonicity theorems for all (TYPE, TYPE') with TYPE' in TYPES:
   (define atj-type-to-atype-gen-mono-thms-1 ((type atj-typep)
-                                        (types atj-type-listp))
+                                             (types atj-type-listp))
     (cond ((endp types) nil)
           (t (append (atj-type-to-atype-gen-mono-thm type (car types))
                      (atj-type-to-atype-gen-mono-thms-1 type (cdr types))))))
@@ -379,14 +380,6 @@
 
   ;; generate the monotonicity theorems:
   (atj-type-to-atype-mono))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-type-asubp ((sub atj-typep) (sup atj-typep))
-  :returns (yes/no booleanp)
-  :short "Strict version of @(tsee atj-type-asubeqp)."
-  (and (atj-type-asubeqp sub sup)
-       (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -470,6 +463,11 @@
 (define atj-type-to-jtype ((type atj-typep))
   :returns (jtype jtypep :hyp :guard)
   :short "Java type denoted by an ATJ type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(':a...') types denote the corresponding AIJ class types.
+     The @(':jint') type denotes the Java primitive type @('int')."))
   (case type
     (:acharacter *aij-type-char*)
     (:astring *aij-type-string*)
@@ -489,6 +487,319 @@
   (cond ((endp types) nil)
         (t (cons (atj-type-to-jtype (car types))
                  (atj-types-to-jtypes (cdr types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-jsubeqp ((sub atj-typep) (sup atj-typep))
+  :returns (yes/no booleanp)
+  :short "Java-based partial order over ATJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides the ACL2-based partial order @(tsee atj-type-asubeqp),
+     the ATJ types also form another partial order,
+     based on the Java subtype relation
+     over the Java types denoted by the ATJ types
+     as defined by @(tsee atj-type-to-jtype).")
+   (xdoc::p
+    "The (Java-based) ordering on the @(':a...') types is straightforward,
+     according to the subclass relation over the AIJ class types;
+     in fact, this is consistent with @(tsee atj-type-asubeqp),
+     which we prove below for validation.
+     But the @(':jint') type is unrelated to the other types;
+     it is neither larger nor smaller than any of the others,
+     because the Java @('int') type is unrelated to Java class types.
+     (Boxing conversions are not relevant in this context.)")
+   (xdoc::p
+    "To validate this definition of partial order,
+     we prove that the relation is indeed a partial order,
+     i.e. reflexive, anti-symmetric, and transitive.
+     We would also like to prove, analogously to @(tsee atj-type-asubeq),
+     that @(tsee atj-type-jsubeqp) is an order embedding,
+     i.e. order-preserving (i.e. monotonic) and order-reflecting,
+     into the Java subtype ordering;
+     we will do that after the Java language formalization
+     is extended to include a definition of the latter ordering."))
+  (case sub
+    (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
+    (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
+    (:anumber (and (member-eq sup '(:anumber :avalue)) t))
+    (:acharacter (and (member-eq sup '(:acharacter :avalue)) t))
+    (:astring (and (member-eq sup '(:astring :avalue)) t))
+    (:asymbol (and (member-eq sup '(:asymbol :avalue)) t))
+    (:acons (and (member-eq sup '(:acons :avalue)) t))
+    (:avalue (eq sup :avalue))
+    (:jint (eq sup :jint)))
+  ///
+
+  (defrule atj-type-jsubeqp-reflexive
+    (implies (atj-typep x)
+             (atj-type-jsubeqp x x))
+    :rule-classes nil)
+
+  (defrule atj-type-jsubeqp-antisymmetric
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-type-jsubeqp x y)
+                  (atj-type-jsubeqp y x))
+             (equal x y))
+    :rule-classes nil)
+
+  (defrule atj-type-jsubeqp-transitive
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-typep z)
+                  (atj-type-jsubeqp x y)
+                  (atj-type-jsubeqp y z))
+             (atj-type-jsubeqp x z))
+    :rule-classes nil)
+
+  (defrule atj-type-jsubeqp-is-asubeq-on-atypes
+    (implies (and (atj-typep x)
+                  (eql (char (symbol-name x) 0) #\A)
+                  (atj-typep y)
+                  (eql (char (symbol-name y) 0) #\A))
+             (equal (atj-type-jsubeqp x y)
+                    (atj-type-asubeqp x y)))
+    :rule-classes nil
+    :enable atj-typep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-jsubeqp ((sub atj-maybe-typep) (sup atj-maybe-typep))
+  :returns (yes/no booleanp)
+  :short "Extension of @(tsee atj-type-jsubeqp)
+          to include @('nil') as bottom."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For certain purposes, we want to calculate
+     the greatest lower bound of two ATJ types
+     with respect to @(tsee atj-type-jsubeq).
+     However, the ATJ types with this partial order
+     do not quite form a meet semilattice,
+     because there is no lower bound for @(':jint') and the @(':a...') types.")
+   (xdoc::p
+    "One option to overcome this problem may be to extend the ATJ types
+     with one that is below both the @(':jint') and the @(':a...') types.
+     This could denote the empty ACL2 type in @(tsee atj-type-to-atype),
+     but there is no candidate Java type for @(tsee atj-type-to-jtype):
+     Java @('int') types are disjoint from Java class types.")
+   (xdoc::p
+    "So, instead of extending the ATJ types,
+     we extend the partial order to the set of ATJ types plus @('nil'),
+     where @('nil') is below every ATJ type.")
+   (xdoc::p
+    "We show that this extended relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (if (atj-typep sub)
+      (and (atj-typep sup)
+           (atj-type-jsubeqp sub sup))
+    t)
+  ///
+
+  (defrule atj-maybe-type-jsubeqp-reflexive
+    (implies (atj-maybe-typep x)
+             (atj-maybe-type-jsubeqp x x))
+    :rule-classes nil
+    :use atj-type-jsubeqp-reflexive)
+
+  (defrule atj-maybe-type-jsubeqp-antisymmetric
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-type-jsubeqp x y)
+                  (atj-maybe-type-jsubeqp y x))
+             (equal x y))
+    :rule-classes nil
+    :enable atj-maybe-typep
+    :use atj-type-jsubeqp-antisymmetric)
+
+  (defrule atj-maybe-type-jsubeqp-transitive
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-typep z)
+                  (atj-maybe-type-jsubeqp x y)
+                  (atj-maybe-type-jsubeqp y z))
+             (atj-maybe-type-jsubeqp x z))
+    :rule-classes nil
+    :enable atj-maybe-typep
+    :use atj-type-jsubeqp-transitive))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-jmeet ((x atj-maybe-typep) (y atj-maybe-typep))
+  :returns (result atj-maybe-typep :hyp :guard)
+  :short "Greatest lower bound of two ATJ types or @('nil')s,
+          according to the Java-based partial order extended to @('nil')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(tsee atj-maybe-type-jsubeqp),
+     the addition of @('nil') as bottom element to @(tsee atj-type-jsubeqp)
+     results in a meet semilattice.")
+   (xdoc::p
+    "To validate this definition of greatest lower bound,
+     we prove that the this operation indeed returns a lower bound
+     that is greater than or equal to any other lower bound,
+     i.e. that it returns the greatest lower bound.")
+   (xdoc::p
+    "The commutativity, idempotence, and associativity of the join operation
+     follows from these and the partial order properties,
+     according to lattice theory.")
+   (xdoc::p
+    "ATJ will use this greatest lower bound operation
+     to ensure that generated overloaded methods
+     can always be clearly selected based on the most specific argument types.
+     ATJ will actually use the lifting of this operation to lists
+     (since in general methods have multiple arguments),
+     which we define below."))
+  (case x
+    (:acharacter (case y
+                   ((:acharacter :avalue) :acharacter)
+                   (t nil)))
+    (:astring (case y
+                ((:astring :avalue) :astring)
+                (t nil)))
+    (:asymbol (case y
+                ((:asymbol :avalue) :asymbol)
+                (t nil)))
+    (:ainteger (case y
+                 ((:ainteger :arational :anumber :avalue) :ainteger)
+                 (t nil)))
+    (:arational (case y
+                  (:ainteger :ainteger)
+                  ((:arational :anumber :avalue) :arational)
+                  (t nil)))
+    (:anumber (case y
+                (:ainteger :ainteger)
+                (:arational :arational)
+                ((:anumber :avalue) :anumber)
+                (t nil)))
+    (:acons (case y
+              ((:acons :avalue) :acons)
+              (t nil)))
+    (:avalue (case y
+               (:jint nil)
+               (t y)))
+    (:jint (case y
+             (:jint :jint)
+             (t nil))))
+  ///
+
+  (defrule atj-maybe-type-jmeet-lower-bound
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y))
+             (and (atj-maybe-type-jsubeqp (atj-maybe-type-jmeet x y) x)
+                  (atj-maybe-type-jsubeqp (atj-maybe-type-jmeet x y) y)))
+    :rule-classes nil
+    :enable (atj-maybe-type-jsubeqp atj-type-jsubeqp))
+
+  (defrule atj-maybe-type-jmeet-greatest
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-typep z)
+                  (atj-maybe-type-jsubeqp z x)
+                  (atj-maybe-type-jsubeqp z y))
+             (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))
+    :rule-classes nil
+    :enable (atj-maybe-type-jsubeqp atj-type-jsubeqp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-list-jsubeqp ((sub atj-maybe-type-listp)
+                                     (sup atj-maybe-type-listp))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-maybe-type-jsubeqp) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are ordered element-wise.
+     Given two lists of different lengths
+     such that the shorter one is a prefix of the longer one
+     (i.e. the two lists cannot be ordered based on their initial elements),
+     the shorter one is smaller than the longer one.")
+   (xdoc::p
+    "We show that the resulting relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (cond ((endp sub) t)
+        ((endp sup) nil)
+        (t (and (atj-maybe-type-jsubeqp (car sub) (car sup))
+                (atj-maybe-type-list-jsubeqp (cdr sub) (cdr sup)))))
+  ///
+
+  (defrule atj-maybe-type-list-jsubeqp-reflexive
+    (implies (atj-maybe-type-listp x)
+             (atj-maybe-type-list-jsubeqp x x))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-maybe-type-jsubeqp-reflexive (x (car x))))))
+
+  (defrule atj-maybe-type-list-jsubeqp-antisymmetric
+    (implies (and (atj-maybe-type-listp x)
+                  (atj-maybe-type-listp y)
+                  (atj-maybe-type-list-jsubeqp x y)
+                  (atj-maybe-type-list-jsubeqp y x))
+             (equal x y))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-maybe-type-jsubeqp-antisymmetric
+                    (x (car x)) (y (car y))))))
+
+  (defrule atj-maybe-type-list-jsubeqp-transitive
+    (implies (and (atj-maybe-type-listp x)
+                  (atj-maybe-type-listp y)
+                  (atj-maybe-type-listp z)
+                  (atj-maybe-type-list-jsubeqp x y)
+                  (atj-maybe-type-list-jsubeqp y z))
+             (atj-maybe-type-list-jsubeqp x z))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-maybe-type-jsubeqp-transitive
+                    (x (car x)) (y (car y)) (z (car z)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-list-jmeet ((x atj-maybe-type-listp)
+                                   (y atj-maybe-type-listp))
+  :returns (glb atj-maybe-type-listp :hyp :guard)
+  :short "Lift @(tsee atj-maybe-type-jmeet) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done element-wise,
+     stopping when the shorter list is exhausted,
+     and thus discarding the rest of the longer list.")
+   (xdoc::p
+    "We show that this indeed returns the greatest lower bound
+     of the order relation lifted to lists."))
+  (cond ((endp x) nil)
+        ((endp y) nil)
+        (t (cons (atj-maybe-type-jmeet (car x) (car y))
+                 (atj-maybe-type-list-jmeet (cdr x) (cdr y)))))
+  ///
+
+  (defrule atj-maybe-type-list-jmeet-lower-bound
+    (implies (and (atj-maybe-type-listp x)
+                  (atj-maybe-type-listp y))
+             (and (atj-maybe-type-list-jsubeqp (atj-maybe-type-list-jmeet x y)
+                                               x)
+                  (atj-maybe-type-list-jsubeqp (atj-maybe-type-list-jmeet x y)
+                                               y)))
+    :rule-classes nil
+    :enable (atj-maybe-type-list-jsubeqp
+             atj-maybe-type-jsubeqp
+             atj-type-jsubeqp
+             atj-maybe-type-jmeet))
+
+  (defrule atj-maybe-type-jmeet-greatest
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-typep z)
+                  (atj-maybe-type-jsubeqp z x)
+                  (atj-maybe-type-jsubeqp z y))
+             (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))
+    :rule-classes nil
+    :enable (atj-maybe-type-list-jsubeqp
+             atj-maybe-type-jsubeqp
+             atj-type-jsubeqp
+             atj-maybe-type-jmeet)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
