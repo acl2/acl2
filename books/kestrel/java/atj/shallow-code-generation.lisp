@@ -1583,7 +1583,8 @@
                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (blocks jblock-listp)
-                 (expr jexpr-listp)
+                 (exprs (and (jexpr-listp exprs)
+                             (equal (len exprs) (len terms))))
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
