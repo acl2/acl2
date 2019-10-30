@@ -676,8 +676,6 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          *
          * @throws Acl2EvaluationException If the package name is invalid
          *                                 or the package is not defined.
-         * @throws IllegalStateException   If the package witness
-         *                                 is not set yet.
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
