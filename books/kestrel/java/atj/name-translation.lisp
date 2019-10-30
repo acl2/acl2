@@ -418,7 +418,7 @@
 
 (define atj-pkgs-to-classes ((pkgs string-listp) (containing-class stringp))
   :guard (no-duplicatesp-equal pkgs)
-  :returns (pkg-class-names string-string-alistp :hyp :guard)
+  :returns (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
   :short "Generate the mapping from ACL2 package names to Java class names."
   :long
   (xdoc::topstring
@@ -575,7 +575,7 @@
 
 (define atj-fns-to-methods ((fns symbol-listp))
   :guard (no-duplicatesp-equal fns)
-  :returns (fn-method-names symbol-string-alistp :hyp :guard)
+  :returns (fn-method-names symbol-string-alistp :hyp (symbol-listp fns))
   :short "Generate the mapping from ACL2 function symbols to Java method names."
   :long
   (xdoc::topstring

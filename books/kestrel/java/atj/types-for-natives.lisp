@@ -25,64 +25,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-atj-main-function-type acl2-numberp (:value) :symbol)
+(def-atj-main-function-type acl2-numberp (:avalue) :asymbol)
 
-(def-atj-main-function-type binary-* (:number :number) :number)
+(def-atj-main-function-type binary-* (:anumber :anumber) :anumber)
 
-(def-atj-main-function-type binary-+ (:number :number) :number)
+(def-atj-main-function-type binary-+ (:anumber :anumber) :anumber)
 
-(def-atj-main-function-type unary-- (:number) :number)
+(def-atj-main-function-type unary-- (:anumber) :anumber)
 
-(def-atj-main-function-type unary-/ (:number) :number)
+(def-atj-main-function-type unary-/ (:anumber) :anumber)
 
-(def-atj-main-function-type < (:rational :rational) :symbol)
+(def-atj-main-function-type < (:arational :arational) :asymbol)
 
-(def-atj-main-function-type car (:value) :value)
+(def-atj-main-function-type car (:avalue) :avalue)
 
-(def-atj-main-function-type cdr (:value) :value)
+(def-atj-main-function-type cdr (:avalue) :avalue)
 
-(def-atj-main-function-type char-code (:character) :integer)
+(def-atj-main-function-type char-code (:acharacter) :ainteger)
 
-(def-atj-main-function-type characterp (:value) :symbol)
+(def-atj-main-function-type characterp (:avalue) :asymbol)
 
-(def-atj-main-function-type code-char (:integer) :character)
+(def-atj-main-function-type code-char (:ainteger) :acharacter)
 
-(def-atj-main-function-type complex (:rational :rational) :number)
+(def-atj-main-function-type complex (:arational :arational) :anumber)
 
-(def-atj-main-function-type complex-rationalp (:value) :symbol)
+(def-atj-main-function-type complex-rationalp (:avalue) :asymbol)
 
-(def-atj-main-function-type coerce (:value :symbol) :value)
+(def-atj-main-function-type coerce (:avalue :asymbol) :avalue)
 
-(def-atj-main-function-type cons (:value :value) :cons)
+(def-atj-main-function-type cons (:avalue :avalue) :acons)
 
-(def-atj-main-function-type consp (:value) :symbol)
+(def-atj-main-function-type consp (:avalue) :asymbol)
 
-(def-atj-main-function-type denominator (:rational) :integer)
+(def-atj-main-function-type denominator (:arational) :ainteger)
 
-(def-atj-main-function-type equal (:value :value) :symbol)
+(def-atj-main-function-type equal (:avalue :avalue) :asymbol)
 
-(def-atj-main-function-type if (:value :value :value) :value)
+(def-atj-main-function-type if (:avalue :avalue :avalue) :avalue)
 
-(def-atj-main-function-type imagpart (:number) :rational)
+(def-atj-main-function-type imagpart (:anumber) :arational)
 
-(def-atj-main-function-type integerp (:value) :symbol)
+(def-atj-main-function-type integerp (:avalue) :asymbol)
 
-(def-atj-main-function-type intern-in-package-of-symbol (:string :symbol) :symbol)
+(def-atj-main-function-type intern-in-package-of-symbol
+  (:astring :asymbol) :asymbol)
 
-(def-atj-main-function-type numerator (:rational) :integer)
+(def-atj-main-function-type numerator (:arational) :ainteger)
 
-(def-atj-main-function-type pkg-imports (:string) :value)
+(def-atj-main-function-type pkg-imports (:astring) :avalue)
 
-(def-atj-main-function-type pkg-witness (:string) :symbol)
+(def-atj-main-function-type pkg-witness (:astring) :asymbol)
 
-(def-atj-main-function-type rationalp (:value) :symbol)
+(def-atj-main-function-type rationalp (:avalue) :asymbol)
 
-(def-atj-main-function-type realpart (:number) :rational)
+(def-atj-main-function-type realpart (:anumber) :arational)
 
-(def-atj-main-function-type stringp (:value) :symbol)
+(def-atj-main-function-type stringp (:avalue) :asymbol)
 
-(def-atj-main-function-type symbol-name (:symbol) :string)
+(def-atj-main-function-type symbol-name (:asymbol) :astring)
 
-(def-atj-main-function-type symbol-package-name (:symbol) :string)
+(def-atj-main-function-type symbol-package-name (:asymbol) :astring)
 
-(def-atj-main-function-type symbolp (:value) :symbol)
+(def-atj-main-function-type symbolp (:avalue) :asymbol)

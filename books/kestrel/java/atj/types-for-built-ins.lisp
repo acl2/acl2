@@ -21,8 +21,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-atj-main-function-type mv-nth (:integer :value) :value)
+(def-atj-main-function-type mv-nth (:ainteger :avalue) :avalue)
 
-(def-atj-main-function-type not (:value) :symbol)
+(def-atj-main-function-type not (:avalue) :asymbol)
 
-(def-atj-main-function-type zp (:integer) :symbol)
+(def-atj-main-function-type zp (:ainteger) :asymbol)
