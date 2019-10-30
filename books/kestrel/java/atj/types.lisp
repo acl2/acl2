@@ -296,7 +296,7 @@
      besides being order-presering (i.e. monotonic),
      @(tsee atj-type-to-atype) is also order-reflecting:
      if @('(atj-type-to-atype x)') is included in @('(atj-type-to-atype y)'),
-     then @('(atj-type-asubeq x y)') holds;
+     then @('(atj-type-a<= x y)') holds;
      we may prove this explicitly at some point.
      Being both order-preserving and order-reflecting,
      @(tsee atj-type-to-atype) is an order embedding."))
@@ -574,7 +574,7 @@
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
      i.e. reflexive, anti-symmetric, and transitive.
-     We would also like to prove, analogously to @(tsee atj-type-asubeq),
+     We would also like to prove, analogously to @(tsee atj-type-a<=),
      that @(tsee atj-type-j<=) is an order embedding,
      i.e. order-preserving (i.e. monotonic) and order-reflecting,
      into the Java subtype ordering;
@@ -613,7 +613,7 @@
              (atj-type-j<= x z))
     :rule-classes nil)
 
-  (defrule atj-type-j<=-is-asubeq-on-atypes
+  (defrule atj-type-j<=-is-a<=-on-atypes
     (implies (and (atj-typep x)
                   (eql (char (symbol-name x) 0) #\A)
                   (atj-typep y)
@@ -634,7 +634,7 @@
    (xdoc::p
     "For certain purposes, we want to calculate
      the greatest lower bound of two ATJ types
-     with respect to @(tsee atj-type-jsubeq).
+     with respect to @(tsee atj-type-j<=).
      However, the ATJ types with this partial order
      do not quite form a meet semilattice,
      because there is no lower bound for @(':jint') and the @(':a...') types.")
