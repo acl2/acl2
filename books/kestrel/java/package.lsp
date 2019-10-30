@@ -34,6 +34,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         conjoin
                          cons-pos-alistp
                          define-sk
                          defxdoc+
