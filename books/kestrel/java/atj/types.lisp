@@ -1007,6 +1007,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-main-function-type-input-theorem ((fn symbolp)
+                                              (guard pseudo-termp)
                                               (formal symbolp)
                                               (type atj-typep)
                                               (wrld plist-worldp))
@@ -1027,7 +1028,6 @@
      for the same reason."))
   (b* ((thm-name (packn-pos (list 'atj- fn '-input- formal '- type)
                             (pkg-witness (symbol-package-name fn))))
-       (guard (guard fn nil wrld))
        (thm-formula (implicate guard
                                `(,(atj-type-to-atype type) ,formal))))
     `(local
@@ -1038,6 +1038,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-main-function-type-input-theorems ((fn symbolp)
+                                               (guard pseudo-termp)
                                                (formals symbol-listp)
                                                (types atj-type-listp)
                                                (wrld plist-worldp))
@@ -1053,13 +1054,15 @@
   (if (endp formals)
       nil
     (cons (atj-main-function-type-input-theorem
-           fn (car formals) (car types) wrld)
+           fn guard (car formals) (car types) wrld)
           (atj-main-function-type-input-theorems
-           fn (cdr formals) (cdr types) wrld))))
+           fn guard (cdr formals) (cdr types) wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-main-function-type-output-theorem ((fn symbolp)
+                                               (guard pseudo-termp)
+                                               (formals symbol-listp)
                                                (type atj-typep)
                                                (wrld plist-worldp))
   :mode :program
@@ -1079,8 +1082,6 @@
      for the same reason."))
   (b* ((thm-name (packn-pos (list 'atj- fn '-output- type)
                             (pkg-witness (symbol-package-name fn))))
-       (formals (formals fn wrld))
-       (guard (guard fn nil wrld))
        (thm-formula (implicate guard
                                `(,(atj-type-to-atype type)
                                  (,fn ,@formals)))))
@@ -1129,10 +1130,11 @@
                    fn
                    (atj-function-type->inputs main)
                    (atj-function-type->output main)))))
+       (guard (guard fn nil wrld))
        (input-thms
-        (atj-main-function-type-input-theorems fn formals in-types wrld))
+        (atj-main-function-type-input-theorems fn guard formals in-types wrld))
        (output-thm
-        (atj-main-function-type-output-theorem fn out-type wrld))
+        (atj-main-function-type-output-theorem fn guard formals out-type wrld))
        (fn-ty (make-atj-function-type :inputs in-types :output out-type))
        (fn-info (make-atj-function-type-info :main fn-ty :others nil)))
     `(encapsulate
