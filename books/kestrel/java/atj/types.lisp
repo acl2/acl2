@@ -381,6 +381,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-a< ((sub atj-typep) (sup atj-typep))
+  :returns (yes/no booleanp)
+  :short "Irreflexive kernel (i.e. strict version) of @(tsee atj-type-a<=)."
+  (and (atj-type-a<= sub sup)
+       (not (equal sub sup))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-ajoin ((x atj-typep) (y atj-typep))
   :returns (lub atj-typep :hyp :guard)
   :short "Least upper bound of two ATJ types,
@@ -453,6 +461,62 @@
                   (atj-type-a<= y z))
              (atj-type-a<= (atj-type-ajoin x y) z))
     :enable atj-type-a<=))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-a<= ((sub atj-type-listp) (sup atj-type-listp))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-type-a<=) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are ordered element-wise.
+     Given two lists of different lengths
+     such that the shorter one is a prefix of the longer one
+     (i.e. the two lists cannot be ordered based on their initial elements),
+     the shorter one is smaller than the longer one.")
+   (xdoc::p
+    "We show that the resulting relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (cond ((endp sub) t)
+        ((endp sup) nil)
+        (t (and (atj-type-a<= (car sub) (car sup))
+                (atj-type-list-a<= (cdr sub) (cdr sup)))))
+  ///
+
+  (defrule atj-type-list-a<=-reflexive
+    (implies (atj-type-listp x)
+             (atj-type-list-a<= x x)))
+
+  (defrule atj-type-list-a<=-antisymmetric
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y)
+                  (atj-type-list-a<= x y)
+                  (atj-type-list-a<= y x))
+             (equal x y))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-type-a<=-antisymmetric
+                    (x (car x)) (y (car y))))))
+
+  (defrule atj-type-list-a<=-transitive
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y)
+                  (atj-type-listp z)
+                  (atj-type-list-a<= x y)
+                  (atj-type-list-a<= y z))
+             (atj-type-list-a<= x z))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-type-a<=-transitive
+                    (x (car x)) (y (car y)) (z (car z)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-a< ((sub atj-type-listp) (sup atj-type-listp))
+  :returns (yes/no booleanp)
+  :short "Irreflexive kernel (i.e. strict version)
+          of @(tsee atj-type-list-a<=)."
+  (and (atj-type-list-a<= sub sup)
+       (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
