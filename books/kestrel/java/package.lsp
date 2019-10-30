@@ -95,6 +95,7 @@
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-lambdap
                          pseudo-termfn-listp
                          pseudo-termfnp
                          pure-raw-p
