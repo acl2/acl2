@@ -1042,8 +1042,14 @@
      as well as an event to record the function type in the table."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
+       (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
        ((unless (atj-type-listp in-types))
-        (raise "The second input, ~x0, must be a true list of types." in-types))
+        (raise "The second input, ~x0, must be a true list of types."
+               in-types))
+       ((unless (= (len in-types) (len formals)))
+        (raise "The number of input types ~x0 must match ~
+                the arity ~x1 of the function ~x2."
+               in-types (len formals) fn))
        ((unless (atj-typep out-type))
         (raise "The third input, ~x0, must be a type." out-type))
        (fn-info? (atj-get-function-type-info-from-table fn wrld))
@@ -1059,7 +1065,6 @@
                    fn
                    (atj-function-type->inputs main)
                    (atj-function-type->output main)))))
-       (formals (formals fn wrld))
        (input-thms
         (atj-main-function-type-input-theorems fn formals in-types wrld))
        (output-thm
