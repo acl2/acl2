@@ -400,8 +400,8 @@
        (jvar-body "body")
        (formals (formals fn wrld))
        (body (ubody fn wrld))
-       (in-types (repeat (len formals) :value)) ; actually irrelevant
-       (out-type :value) ; actually irrelevant
+       (in-types (repeat (len formals) :avalue)) ; actually irrelevant
+       (out-type :avalue) ; actually irrelevant
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type t guards$ wrld))
        (fn-block (jblock-locvar *aij-type-named-fn*

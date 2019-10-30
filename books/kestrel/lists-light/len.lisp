@@ -102,3 +102,13 @@
   (implies (< 0 (len x))
            (consp x))
   :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+(defthmd <-of-len-and-2-cases
+  (equal (< (len x) 2)
+         (or (not (consp x))
+             (equal 1 (len x)))))
+
+(defthmd equal-of-len-and-1
+  (implies (true-listp x)
+           (equal (equal 1 (len x))
+                  (equal x (list (car x))))))

@@ -31,3 +31,18 @@
   :hints (("Goal" :in-theory (enable last))))
 
 (theory-invariant (incompatible (:rewrite car-of-last-becomes-nth) (:rewrite nth-of-len-minus-1-becomes-car-of-last)))
+
+;; Tweaked to match std
+(defthm last-of-cons
+  (equal (last (cons a x))
+         (if (consp x)
+             (last x)
+           (cons a x)))
+  :hints (("Goal" :in-theory (enable last))))
+
+(defthm last-when-not-consp-cheap
+  (implies (not (consp x))
+           (equal (last x)
+                  x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable last))))

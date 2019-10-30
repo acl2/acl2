@@ -32,9 +32,10 @@
   (xdoc::topstring
    (xdoc::p
     "In order to make the generated Java code more efficient and idiomatic,
-     ATJ uses types that correspond to sets of ACL2 values
-     and that are mapped to corresponding Java types.
-     These types are used only when
+     ATJ uses types that correspond to
+     both ACL2 types (in the sense of sets of ACL2 values)
+     and Java types.
+     These ATJ types are used only when
      @(':deep') is @('nil') and @(':guards') is @('t').")
    (xdoc::p
     "For example, consider a unary ACL2 function
@@ -71,7 +72,7 @@
      in which case (ii) above should be modified to
      prove the type of each result individually.)
      Since we do not want ATJ to attempt any theorem proving,
-     we provide a macro @(tsee def-atj-function-type)
+     we provide a macro @(tsee def-atj-main-function-type)
      to perform those theorem proving tasks
      and to record the input and output types of ACL2 functions in a table,
      and we have ATJ make use of this table.
@@ -80,9 +81,10 @@
      and ACL2's tau system types.")
    (xdoc::p
     "With a table of the types of the involved ACL2 functions at hand
-     (the table being constructed via calls of @(tsee def-atj-function-type)),
+     (the table being constructed
+     via calls of @(tsee def-atj-main-function-type)),
      ATJ performs a type analysis of the ACL2 terms in function bodies
-     as it translates them to Java.
+     before translating them to Java.
      Critically, ATJ compares
      the type inferred for the actual argument of a function
      (this type is inferred by analyzing terms recursively)
@@ -109,16 +111,12 @@
      The types of these Java methods are part of the ``API''
      that the generated Java code provides to external Java code.")
    (xdoc::p
-    "The above is just an overview of the use of types by ATJ.
-     More details are in the documentation of their implementation,
-     and in the code generation functions that use them.")
-   (xdoc::p
     "All of the above is being extended so that each ACL2 function
      may have more than one input/output type associated with it:
      (i) a main input/output type,
      provable from the guards as described above; and
      (ii) zero or more other input/output types,
-     normally narrower than the main ones,
+     narrower than the main ones,
      which may be used (in the future) to generate
      possibly more efficient overloaded methods for the ACL2 function.
      For instance, AIJ already includes overloaded methods
@@ -129,21 +127,25 @@
      This documentation topic will be appropriately revised and extended
      when support for these additional function types,
      and their use for overloaded methods,
-     is completed."))
+     is completed.")
+   (xdoc::p
+    "The above is just an overview of the use of types by ATJ.
+     More details are in the documentation of their implementation,
+     and in the code generation functions that use them."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum atj-typep
-  (:integer
-   :rational
-   :number
-   :character
-   :string
-   :symbol
-   :cons
-   :value
+  (:ainteger
+   :arational
+   :anumber
+   :acharacter
+   :astring
+   :asymbol
+   :acons
+   :avalue
    :jint)
   :short "Recognize ATJ types."
   :long
@@ -153,33 +155,39 @@
     (xdoc::seetopic "atj-types" "here")
     ".")
    (xdoc::p
-    "Currently ATJ uses types corresponding to
+    "Currently ATJ uses types for
      all the AIJ public class types for ACL2 values
      (integers, rationals, numbers,
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
-     as well as a type corresponding to the Java primitive type @('int').
+     whose names start with @('a') for `ACL2',
+     as well as a type for the Java primitive type @('int'),
+     whose name starts with @('j') for `Java'.
      More types will be added in the future.")
    (xdoc::p
-    "Each ATJ type corresponds to
-     (i) an ACL2 predicate (see @(tsee atj-type-predicate)) and
-     (ii) a Java type (see @(tsee atj-type-to-jtype)).")))
+    "Each ATJ type denotes
+     (i) an ACL2 type (see @(tsee atj-type-to-atype)) and
+     (ii) a Java type (see @(tsee atj-type-to-jtype)).
+     The initial @('a') and @('j') in their names
+     does not mean that they denote either ACL2 types or Java types,
+     but just that the ones starting with @('a') denote ACL2's ``natural'' types
+     while the one starting with @('j') denotes Java's ``natural'' types.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define maybe-atj-typep (x)
+(define atj-maybe-typep (x)
   :returns (yes/no booleanp)
   :short "Recognize ATJ types and @('nil')."
   (or (atj-typep x)
       (null x))
   ///
 
-  (defrule maybe-atj-typep-when-atj-typep
+  (defrule atj-maybe-typep-when-atj-typep
     (implies (atj-typep x)
-             (maybe-atj-typep x)))
+             (atj-maybe-typep x)))
 
-  (defrule atj-type-iff-when-maybe-atj-typep
-    (implies (maybe-atj-typep x)
+  (defrule atj-type-iff-when-atj-maybe-typep
+    (implies (atj-maybe-typep x)
              (iff (atj-typep x) x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -192,19 +200,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist maybe-atj-type-listp (x)
+(std::deflist atj-maybe-type-listp (x)
   :short "Recognize true lists of ATJ types and @('nil')s."
-  (maybe-atj-typep x)
+  (atj-maybe-typep x)
   :true-listp t
   :elementp-of-nil t
   ///
-  (defrule maybe-atj-type-listp-when-atj-type-listp
+  (defrule atj-maybe-type-listp-when-atj-type-listp
     (implies (atj-type-listp x)
-             (maybe-atj-type-listp x))))
+             (atj-maybe-type-listp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist symbol-atj-type-alistp (x)
+(std::defalist atj-symbol-type-alistp (x)
   :short "Recognize alists from symbols to ATJ types."
   :key (symbolp x)
   :val (atj-typep x)
@@ -213,239 +221,322 @@
   :valp-of-nil nil
   ///
 
-  (defrule atj-typep-of-cdr-of-assoc-equal-when-symbol-atj-type-alistp
-    (implies (symbol-atj-type-alistp alist)
+  (defrule atj-typep-of-cdr-of-assoc-equal-when-atj-symbol-type-alistp
+    (implies (atj-symbol-type-alistp alist)
              (iff (atj-typep (cdr (assoc-equal key alist)))
                   (assoc-equal key alist))))
 
-  (defrule symbol-atj-type-alistp-of-pairlis$
+  (defrule atj-symbol-type-alistp-of-pairlis$
     (implies (and (symbol-listp keys)
                   (atj-type-listp vals)
                   (equal (len keys) (len vals)))
-             (symbol-atj-type-alistp (pairlis$ keys vals)))))
+             (atj-symbol-type-alistp (pairlis$ keys vals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-subeqp ((sub atj-typep) (sup atj-typep))
-  :returns (yes/no booleanp)
-  :short "Partial order over ATJ types."
+(define atj-type-to-atype ((x atj-typep))
+  :returns (atype pseudo-termfnp)
+  :short "ACL2 type denoted by an ATJ type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For the ATJ types that correspond to AIJ public class types,
-     the subtype/supertype relationship corresponds to
-     both the value subset/superset relationship in ACL2
-     and the subclass/superclass relationship in AIJ.
-     Furthermore, the ATJ type @(':jint') is a subtype of @(':value').
-     The type @(':value') is always the top of the partial order,
-     since it consists of all the ACL2 values.")
+    "The ACL2 type is the predicate that recognizes
+     the set of values of the type.")
    (xdoc::p
-    "To validate the definition,
-     we prove that this is indeed a partial order (over the ATJ types),
-     i.e. reflexive, anti-symmetric, and transitive."))
-  (case sub
-    (:integer (and (member-eq sup '(:integer :rational :number :value)) t))
-    (:rational (and (member-eq sup '(:rational :number :value)) t))
-    (:number (and (member-eq sup '(:number :value)) t))
-    (:character (and (member-eq sup '(:character :value)) t))
-    (:string (and (member-eq sup '(:string :value)) t))
-    (:symbol (and (member-eq sup '(:symbol :value)) t))
-    (:cons (and (member-eq sup '(:cons :value)) t))
-    (:value (eq sup :value))
-    (:jint (and (member-eq sup '(:jint :value)) t)))
-  ///
-
-  (defrule atj-type-subeqp-reflexive
-    (implies (atj-typep x)
-             (atj-type-subeqp x x))
-    :rule-classes nil)
-
-  (defrule atj-type-subeqp-antisymmetric
-    (implies (and (atj-typep x)
-                  (atj-typep y)
-                  (atj-type-subeqp x y)
-                  (atj-type-subeqp y x))
-             (equal x y))
-    :rule-classes nil)
-
-  (defrule atj-type-subeqp-transitive
-    (implies (and (atj-typep x)
-                  (atj-typep y)
-                  (atj-typep z)
-                  (atj-type-subeqp x y)
-                  (atj-type-subeqp y z))
-             (atj-type-subeqp x z))
-    :rule-classes nil))
+    "The predicates for the @(':a...') types are straightforward.
+     The predicate for the @(':jint') type is @(tsee int-value-p),
+     i.e. the model of Java @('int') values in the Java language formalization.
+     Also see " (xdoc::seetopic "atj-primitives" "here") "."))
+  (case x
+    (:acharacter 'characterp)
+    (:astring 'stringp)
+    (:asymbol 'symbolp)
+    (:ainteger 'integerp)
+    (:arational 'rationalp)
+    (:anumber 'acl2-numberp)
+    (:acons 'consp)
+    (:avalue '(lambda (_) 't))
+    (:jint 'int-value-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-subp ((sub atj-typep) (sup atj-typep))
+(define atj-type-a<= ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "Strict variant of @(tsee atj-type-subeqp)."
-  (and (atj-type-subeqp sub sup)
+  :short "ACL2-based partial order over ATJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ATJ types form a partial order,
+     based on the inclusion of the ACL2 types they denote;
+     this denotation is defined by @(tsee atj-type-to-atype).
+     There is another partial order on the ATJ types,
+     based on the subtype relation over the Java types they denote:
+     see @(tsee atj-type-j<=).")
+   (xdoc::p
+    "The (ACL2-based) ordering on the @('a...') types is straightforward.
+     The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
+     whose representation is always a @(tsee cons)
+     (satisfying additional properties; see "
+    (xdoc::seetopic "atj-primitives" "here")
+    "); thus, @(':jint') is below @(':acons') in the partial order.")
+   (xdoc::p
+    "To validate this definition of partial order,
+     we prove that the relation is indeed a partial order,
+     i.e. reflexive, anti-symmetric, and transitive.
+     We also prove that @(tsee atj-type-to-atype) is monotonic,
+     i.e. that for each subtype/supertype pair
+     each value satisfying the subtype's predicate
+     also satisfies the supertype's predicate;
+     we generate a theorem for each such pair,
+     because the predicate inclusion relation is at the meta level.
+     The motonocity validates that the partial order
+     is consistent with the inclusion of the denoted ACL2 types.")
+   (xdoc::p
+    "It is also not difficult to see that,
+     besides being order-presering (i.e. monotonic),
+     @(tsee atj-type-to-atype) is also order-reflecting:
+     if @('(atj-type-to-atype x)') is included in @('(atj-type-to-atype y)'),
+     then @('(atj-type-a<= x y)') holds;
+     we may prove this explicitly at some point.
+     Being both order-preserving and order-reflecting,
+     @(tsee atj-type-to-atype) is an order embedding."))
+  (case sub
+    (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
+    (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
+    (:anumber (and (member-eq sup '(:anumber :avalue)) t))
+    (:acharacter (and (member-eq sup '(:acharacter :avalue)) t))
+    (:astring (and (member-eq sup '(:astring :avalue)) t))
+    (:asymbol (and (member-eq sup '(:asymbol :avalue)) t))
+    (:acons (and (member-eq sup '(:acons :avalue)) t))
+    (:avalue (eq sup :avalue))
+    (:jint (and (member-eq sup '(:jint :acons :avalue)) t)))
+  ///
+
+  (defrule atj-type-a<=-reflexive
+    (implies (atj-typep x)
+             (atj-type-a<= x x)))
+
+  (defrule atj-type-a<=-antisymmetric
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-type-a<= x y)
+                  (atj-type-a<= y x))
+             (equal x y))
+    :rule-classes nil)
+
+  (defrule atj-type-a<=-transitive
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-typep z)
+                  (atj-type-a<= x y)
+                  (atj-type-a<= y z))
+             (atj-type-a<= x z))
+    :rule-classes nil)
+
+  ;; monotonicity theorem for (SUB, SUP) if SUB <= SUP, otherwise NIL:
+  (define atj-type-to-atype-gen-mono-thm ((sub atj-typep) (sup atj-typep))
+    (if (atj-type-a<= sub sup)
+        `((defthm ,(packn (list 'atj-type-to-atype-thm- sub '- sup))
+            (implies (,(atj-type-to-atype sub) val)
+                     (,(atj-type-to-atype sup) val))
+            :rule-classes nil))
+      nil))
+
+  ;; monotonicity theorems for all (SUB, SUP) with SUP' in SUPS:
+  (define atj-type-to-atype-gen-mono-thms-1 ((sub atj-typep)
+                                             (sups atj-type-listp))
+    (cond ((endp sups) nil)
+          (t (append (atj-type-to-atype-gen-mono-thm sub (car sups))
+                     (atj-type-to-atype-gen-mono-thms-1 sub (cdr sups))))))
+
+  ;; monotonicity theorems for all (SUB, SUP) with SUB in SUBS and SUP in SUPS:
+  (define atj-type-to-atype-gen-mono-thms-2 ((subs atj-type-listp)
+                                             (sups atj-type-listp))
+    (cond ((endp subs) nil)
+          (t (append (atj-type-to-atype-gen-mono-thms-1 (car subs) sups)
+                     (atj-type-to-atype-gen-mono-thms-2 (cdr subs) sups)))))
+
+  ;; monotonicity theorems for all pairs of types:
+  (define atj-type-to-atype-gen-mono-thms ()
+    (b* ((types '(:ainteger
+                  :arational
+                  :anumber
+                  :acharacter
+                  :astring
+                  :asymbol
+                  :acons
+                  :avalue
+                  :jint)))
+      `(encapsulate
+         ()
+         (set-ignore-ok t)
+         ,@(atj-type-to-atype-gen-mono-thms-2 types types))))
+
+  ;; macro to generate the monotonicity theorems:
+  (defmacro atj-type-to-atype-mono ()
+    `(make-event (atj-type-to-atype-gen-mono-thms)))
+
+  ;; generate the monotonicity theorems:
+  (atj-type-to-atype-mono))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-a< ((sub atj-typep) (sup atj-typep))
+  :returns (yes/no booleanp)
+  :short "Irreflexive kernel (i.e. strict version) of @(tsee atj-type-a<=)."
+  (and (atj-type-a<= sub sup)
        (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-join ((type1 atj-typep) (type2 atj-typep))
-  :returns (type atj-typep :hyp :guard)
-  :short "Least upper bound of two ATJ types."
+(define atj-type-ajoin ((x atj-typep) (y atj-typep))
+  :returns (lub atj-typep :hyp :guard)
+  :short "Least upper bound of two ATJ types,
+          according to the ACL2-based partial order."
   :long
   (xdoc::topstring
    (xdoc::p
     "ATJ types form a join semilattice,
-     with the partial order @(tsee atj-type-subeqp).")
+     with the partial order @(tsee atj-type-a<=).")
    (xdoc::p
-    "To validate the definition,
+    "To validate this definition of least upper bound,
      we prove that the this operation indeed returns an upper bound
      that is less than or equal to any other upper bound,
      i.e. that it returns the least upper bound.")
    (xdoc::p
     "The commutativity, idempotence, and associativity of the join operation
      follows from these and the partial order properties,
-     according to lattice theory."))
-  (case type1
-    (:character (case type2
-                  (:character :character)
-                  (t :value)))
-    (:string (case type2
-               (:string :string)
-               (t :value)))
-    (:symbol (case type2
-               (:symbol :symbol)
-               (t :value)))
-    (:integer (case type2
-                (:integer :integer)
-                (:rational :rational)
-                (:number :number)
-                (t :value)))
-    (:rational (case type2
-                 ((:integer :rational) :rational)
-                 (:number :number)
-                 (t :value)))
-    (:number (case type2
-               ((:integer :rational :number) :number)
-               (t :value)))
-    (:cons (case type2
-             (:cons :cons)
-             (t :value)))
-    (:value :value)
-    (:jint (case type2
+     according to lattice theory.")
+   (xdoc::p
+    "ATJ uses this least upper bound operation
+     to calculate the type of an @(tsee if)
+     from the types of the `then' and `else' branches.
+     Since the value may come from either branch,
+     it is appropriate for this operation
+     to be according to the ACL2-based partial order."))
+  (case x
+    (:acharacter (case y
+                   (:acharacter :acharacter)
+                   (t :avalue)))
+    (:astring (case y
+                (:astring :astring)
+                (t :avalue)))
+    (:asymbol (case y
+                (:asymbol :asymbol)
+                (t :avalue)))
+    (:ainteger (case y
+                 (:ainteger :ainteger)
+                 (:arational :arational)
+                 (:anumber :anumber)
+                 (t :avalue)))
+    (:arational (case y
+                  ((:ainteger :arational) :arational)
+                  (:anumber :anumber)
+                  (t :avalue)))
+    (:anumber (case y
+                ((:ainteger :arational :anumber) :anumber)
+                (t :avalue)))
+    (:acons (case y
+              ((:acons :jint) :acons)
+              (t :avalue)))
+    (:avalue :avalue)
+    (:jint (case y
              (:jint :jint)
-             (t :value))))
+             (:acons :acons)
+             (t :avalue))))
   ///
 
-  (defrule atj-type-join-upper-bound
+  (defrule atj-type-ajoin-upper-bound
     (implies (and (atj-typep x)
                   (atj-typep y))
-             (and (atj-type-subeqp x (atj-type-join x y))
-                  (atj-type-subeqp y (atj-type-join x y))))
-    :rule-classes nil
-    :enable atj-type-subeqp)
+             (and (atj-type-a<= x (atj-type-ajoin x y))
+                  (atj-type-a<= y (atj-type-ajoin x y))))
+    :enable atj-type-a<=)
 
-  (defrule atj-type-join-least
+  (defrule atj-type-ajoin-least
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-subeqp x z)
-                  (atj-type-subeqp y z))
-             (atj-type-subeqp (atj-type-join x y) z))
-    :rule-classes nil
-    :enable atj-type-subeqp))
+                  (atj-type-a<= x z)
+                  (atj-type-a<= y z))
+             (atj-type-a<= (atj-type-ajoin x y) z))
+    :enable atj-type-a<=))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-predicate ((type atj-typep))
-  :returns (pred pseudo-termfnp)
-  :short "Predicate denoted by an ATJ type."
+(define atj-type-list-a<= ((sub atj-type-listp) (sup atj-type-listp))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-type-a<=) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate is the set of values denoted by the type.")
+    "Lists are ordered element-wise.
+     Given two lists of different lengths
+     such that the shorter one is a prefix of the longer one
+     (i.e. the two lists cannot be ordered based on their initial elements),
+     the shorter one is smaller than the longer one.")
    (xdoc::p
-    "The predicate for the @(':jint') type is @(tsee int-value-p),
-     i.e. the model of Java @('int') values in the Java languge formalization.
-     Also see " (xdoc::seetopic "atj-primitives" "here") ".")
-   (xdoc::p
-    "For validation, for each subtype/supertype pair
-     we generate a theorem saying that
-     each value satisfying the subtype's predicate
-     also satisfies the supertype's predicate."))
-  (case type
-    (:character 'characterp)
-    (:string 'stringp)
-    (:symbol 'symbolp)
-    (:integer 'integerp)
-    (:rational 'rationalp)
-    (:number 'acl2-numberp)
-    (:cons 'consp)
-    (:value '(lambda (_) 't))
-    (:jint 'int-value-p))
+    "We show that the resulting relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (cond ((endp sub) t)
+        ((endp sup) nil)
+        (t (and (atj-type-a<= (car sub) (car sup))
+                (atj-type-list-a<= (cdr sub) (cdr sup)))))
   ///
 
-  (define atj-type-predicate-gen-thm ((type1 atj-typep) (type2 atj-typep))
-    (if (atj-type-subeqp type1 type2)
-        `((defthm ,(packn (list 'atj-type-predicate-thm- type1 '- type2))
-            (implies (,(atj-type-predicate type1) x)
-                     (,(atj-type-predicate type2) x))
-            :rule-classes nil))
-      nil))
+  (defrule atj-type-list-a<=-reflexive
+    (implies (atj-type-listp x)
+             (atj-type-list-a<= x x)))
 
-  (define atj-type-predicate-gen-thms-1 ((type atj-typep)
-                                         (types atj-type-listp))
-    (cond ((endp types) nil)
-          (t (append (atj-type-predicate-gen-thm type (car types))
-                     (atj-type-predicate-gen-thms-1 type (cdr types))))))
+  (defrule atj-type-list-a<=-antisymmetric
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y)
+                  (atj-type-list-a<= x y)
+                  (atj-type-list-a<= y x))
+             (equal x y))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-type-a<=-antisymmetric
+                    (x (car x)) (y (car y))))))
 
-  (define atj-type-predicate-gen-thms-2 ((types1 atj-type-listp)
-                                         (types2 atj-type-listp))
-    (cond ((endp types1) nil)
-          (t (append (atj-type-predicate-gen-thms-1 (car types1) types2)
-                     (atj-type-predicate-gen-thms-2 (cdr types1) types2)))))
-
-  (define atj-type-predicate-gen-thms ()
-    (b* ((types '(:integer
-                  :rational
-                  :number
-                  :character
-                  :string
-                  :symbol
-                  :cons
-                  :value
-                  :jint)))
-      `(encapsulate
-         ()
-         (set-ignore-ok t)
-         ,@(atj-type-predicate-gen-thms-2 types types))))
-
-  (defmacro atj-type-predicate-validate ()
-    `(make-event (atj-type-predicate-gen-thms)))
-
-  (atj-type-predicate-validate))
+  (defrule atj-type-list-a<=-transitive
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y)
+                  (atj-type-listp z)
+                  (atj-type-list-a<= x y)
+                  (atj-type-list-a<= y z))
+             (atj-type-list-a<= x z))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-type-a<=-transitive
+                    (x (car x)) (y (car y)) (z (car z)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-types-predicates ((types atj-type-listp))
-  :returns (preds pseudo-termfn-listp)
-  :short "Lift @(tsee atj-type-predicate) to lists."
-  (cond ((endp types) nil)
-        (t (cons (atj-type-predicate (car types))
-                 (atj-types-predicates (cdr types))))))
+(define atj-type-list-a< ((sub atj-type-listp) (sup atj-type-listp))
+  :returns (yes/no booleanp)
+  :short "Irreflexive kernel (i.e. strict version)
+          of @(tsee atj-type-list-a<=)."
+  (and (atj-type-list-a<= sub sup)
+       (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-to-jtype ((type atj-typep))
   :returns (jtype jtypep :hyp :guard)
-  :short "Java type corresponding to an ATJ type."
+  :short "Java type denoted by an ATJ type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(':a...') types denote the corresponding AIJ class types.
+     The @(':jint') type denotes the Java primitive type @('int')."))
   (case type
-    (:character *aij-type-char*)
-    (:string *aij-type-string*)
-    (:symbol *aij-type-symbol*)
-    (:integer *aij-type-int*)
-    (:rational *aij-type-rational*)
-    (:number *aij-type-number*)
-    (:cons *aij-type-cons*)
-    (:value *aij-type-value*)
+    (:acharacter *aij-type-char*)
+    (:astring *aij-type-string*)
+    (:asymbol *aij-type-symbol*)
+    (:ainteger *aij-type-int*)
+    (:arational *aij-type-rational*)
+    (:anumber *aij-type-number*)
+    (:acons *aij-type-cons*)
+    (:avalue *aij-type-value*)
     (:jint (jtype-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -459,7 +550,300 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-of-value (value)
+(define atj-type-j<= ((sub atj-typep) (sup atj-typep))
+  :returns (yes/no booleanp)
+  :short "Java-based partial order over ATJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides the ACL2-based partial order @(tsee atj-type-a<=),
+     the ATJ types also form another partial order,
+     based on the Java subtype relation
+     over the Java types denoted by the ATJ types
+     as defined by @(tsee atj-type-to-jtype).")
+   (xdoc::p
+    "The (Java-based) ordering on the @(':a...') types is straightforward,
+     according to the subclass relation over the AIJ class types;
+     in fact, this is consistent with @(tsee atj-type-a<=),
+     which we prove below for validation.
+     But the @(':jint') type is unrelated to the other types;
+     it is neither larger nor smaller than any of the others,
+     because the Java @('int') type is unrelated to Java class types.
+     (Boxing conversions are not relevant in this context.)")
+   (xdoc::p
+    "To validate this definition of partial order,
+     we prove that the relation is indeed a partial order,
+     i.e. reflexive, anti-symmetric, and transitive.
+     We would also like to prove, analogously to @(tsee atj-type-a<=),
+     that @(tsee atj-type-j<=) is an order embedding,
+     i.e. order-preserving (i.e. monotonic) and order-reflecting,
+     into the Java subtype ordering;
+     we will do that after the Java language formalization
+     is extended to include a definition of the latter ordering."))
+  (case sub
+    (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
+    (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
+    (:anumber (and (member-eq sup '(:anumber :avalue)) t))
+    (:acharacter (and (member-eq sup '(:acharacter :avalue)) t))
+    (:astring (and (member-eq sup '(:astring :avalue)) t))
+    (:asymbol (and (member-eq sup '(:asymbol :avalue)) t))
+    (:acons (and (member-eq sup '(:acons :avalue)) t))
+    (:avalue (eq sup :avalue))
+    (:jint (eq sup :jint)))
+  ///
+
+  (defrule atj-type-j<=-reflexive
+    (implies (atj-typep x)
+             (atj-type-j<= x x)))
+
+  (defrule atj-type-j<=-antisymmetric
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-type-j<= x y)
+                  (atj-type-j<= y x))
+             (equal x y))
+    :rule-classes nil)
+
+  (defrule atj-type-j<=-transitive
+    (implies (and (atj-typep x)
+                  (atj-typep y)
+                  (atj-typep z)
+                  (atj-type-j<= x y)
+                  (atj-type-j<= y z))
+             (atj-type-j<= x z))
+    :rule-classes nil)
+
+  (defrule atj-type-j<=-is-a<=-on-atypes
+    (implies (and (atj-typep x)
+                  (eql (char (symbol-name x) 0) #\A)
+                  (atj-typep y)
+                  (eql (char (symbol-name y) 0) #\A))
+             (equal (atj-type-j<= x y)
+                    (atj-type-a<= x y)))
+    :rule-classes nil
+    :enable atj-typep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-j<= ((sub atj-maybe-typep) (sup atj-maybe-typep))
+  :returns (yes/no booleanp)
+  :short "Extension of @(tsee atj-type-j<=)
+          to include @('nil') as bottom."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For certain purposes, we want to calculate
+     the greatest lower bound of two ATJ types
+     with respect to @(tsee atj-type-j<=).
+     However, the ATJ types with this partial order
+     do not quite form a meet semilattice,
+     because there is no lower bound for @(':jint') and the @(':a...') types.")
+   (xdoc::p
+    "One option to overcome this problem may be to extend the ATJ types
+     with one that is below both the @(':jint') and the @(':a...') types.
+     This could denote the empty ACL2 type in @(tsee atj-type-to-atype),
+     but there is no candidate Java type for @(tsee atj-type-to-jtype):
+     Java @('int') types are disjoint from Java class types.")
+   (xdoc::p
+    "So, instead of extending the ATJ types,
+     we extend the partial order to the set of ATJ types plus @('nil'),
+     where @('nil') is below every ATJ type.")
+   (xdoc::p
+    "We show that this extended relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (if (atj-typep sub)
+      (and (atj-typep sup)
+           (atj-type-j<= sub sup))
+    t)
+  ///
+
+  (defrule atj-maybe-type-j<=-reflexive
+    (implies (atj-maybe-typep x)
+             (atj-maybe-type-j<= x x)))
+
+  (defrule atj-maybe-type-j<=-antisymmetric
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-type-j<= x y)
+                  (atj-maybe-type-j<= y x))
+             (equal x y))
+    :rule-classes nil
+    :use atj-type-j<=-antisymmetric)
+
+  (defrule atj-maybe-type-j<=-transitive
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-typep z)
+                  (atj-maybe-type-j<= x y)
+                  (atj-maybe-type-j<= y z))
+             (atj-maybe-type-j<= x z))
+    :rule-classes nil
+    :use atj-type-j<=-transitive))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-jmeet ((x atj-maybe-typep) (y atj-maybe-typep))
+  :returns (glb atj-maybe-typep :hyp :guard)
+  :short "Greatest lower bound of two ATJ types or @('nil')s,
+          according to the Java-based partial order extended to @('nil')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(tsee atj-maybe-type-j<=),
+     the addition of @('nil') as bottom element to @(tsee atj-type-j<=)
+     results in a meet semilattice.")
+   (xdoc::p
+    "To validate this definition of greatest lower bound,
+     we prove that the this operation indeed returns a lower bound
+     that is greater than or equal to any other lower bound,
+     i.e. that it returns the greatest lower bound.")
+   (xdoc::p
+    "The commutativity, idempotence, and associativity of the join operation
+     follows from these and the partial order properties,
+     according to lattice theory.")
+   (xdoc::p
+    "ATJ will use this greatest lower bound operation
+     to ensure that generated overloaded methods
+     can always be clearly selected based on the most specific argument types.
+     ATJ will actually use the lifting of this operation to lists
+     (since in general methods have multiple arguments),
+     which we define below."))
+  (case x
+    (:acharacter (case y
+                   ((:acharacter :avalue) :acharacter)
+                   (t nil)))
+    (:astring (case y
+                ((:astring :avalue) :astring)
+                (t nil)))
+    (:asymbol (case y
+                ((:asymbol :avalue) :asymbol)
+                (t nil)))
+    (:ainteger (case y
+                 ((:ainteger :arational :anumber :avalue) :ainteger)
+                 (t nil)))
+    (:arational (case y
+                  (:ainteger :ainteger)
+                  ((:arational :anumber :avalue) :arational)
+                  (t nil)))
+    (:anumber (case y
+                (:ainteger :ainteger)
+                (:arational :arational)
+                ((:anumber :avalue) :anumber)
+                (t nil)))
+    (:acons (case y
+              ((:acons :avalue) :acons)
+              (t nil)))
+    (:avalue (case y
+               (:jint nil)
+               (t y)))
+    (:jint (case y
+             (:jint :jint)
+             (t nil))))
+  ///
+
+  (defrule atj-maybe-type-jmeet-lower-bound
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y))
+             (and (atj-maybe-type-j<= (atj-maybe-type-jmeet x y) x)
+                  (atj-maybe-type-j<= (atj-maybe-type-jmeet x y) y)))
+    :enable (atj-maybe-type-j<= atj-type-j<=))
+
+  (defrule atj-maybe-type-jmeet-greatest
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-typep z)
+                  (atj-maybe-type-j<= z x)
+                  (atj-maybe-type-j<= z y))
+             (atj-maybe-type-j<= z (atj-maybe-type-jmeet x y)))
+    :enable (atj-maybe-type-j<= atj-type-j<=)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-list-j<= ((sub atj-maybe-type-listp)
+                                 (sup atj-maybe-type-listp))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-maybe-type-j<=) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are ordered element-wise.
+     Given two lists of different lengths
+     such that the shorter one is a prefix of the longer one
+     (i.e. the two lists cannot be ordered based on their initial elements),
+     the shorter one is smaller than the longer one.")
+   (xdoc::p
+    "We show that the resulting relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (cond ((endp sub) t)
+        ((endp sup) nil)
+        (t (and (atj-maybe-type-j<= (car sub) (car sup))
+                (atj-maybe-type-list-j<= (cdr sub) (cdr sup)))))
+  ///
+
+  (defrule atj-maybe-type-list-j<=-reflexive
+    (implies (atj-maybe-type-listp x)
+             (atj-maybe-type-list-j<= x x)))
+
+  (defrule atj-maybe-type-list-j<=-antisymmetric
+    (implies (and (atj-maybe-type-listp x)
+                  (atj-maybe-type-listp y)
+                  (atj-maybe-type-list-j<= x y)
+                  (atj-maybe-type-list-j<= y x))
+             (equal x y))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-maybe-type-j<=-antisymmetric
+                    (x (car x)) (y (car y))))))
+
+  (defrule atj-maybe-type-list-j<=-transitive
+    (implies (and (atj-maybe-type-listp x)
+                  (atj-maybe-type-listp y)
+                  (atj-maybe-type-listp z)
+                  (atj-maybe-type-list-j<= x y)
+                  (atj-maybe-type-list-j<= y z))
+             (atj-maybe-type-list-j<= x z))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-maybe-type-j<=-transitive
+                    (x (car x)) (y (car y)) (z (car z)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-list-jmeet ((x atj-maybe-type-listp)
+                                   (y atj-maybe-type-listp))
+  :returns (glb atj-maybe-type-listp :hyp :guard)
+  :short "Lift @(tsee atj-maybe-type-jmeet) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done element-wise,
+     stopping when the shorter list is exhausted,
+     and thus discarding the rest of the longer list.")
+   (xdoc::p
+    "We show that this indeed returns the greatest lower bound
+     of the order relation lifted to lists."))
+  (cond ((endp x) nil)
+        ((endp y) nil)
+        (t (cons (atj-maybe-type-jmeet (car x) (car y))
+                 (atj-maybe-type-list-jmeet (cdr x) (cdr y)))))
+  ///
+
+  (defrule atj-maybe-type-list-jmeet-lower-bound
+    (implies (and (atj-maybe-type-listp x)
+                  (atj-maybe-type-listp y))
+             (and (atj-maybe-type-list-j<= (atj-maybe-type-list-jmeet x y) x)
+                  (atj-maybe-type-list-j<= (atj-maybe-type-list-jmeet x y) y)))
+    :enable atj-maybe-type-list-j<=)
+
+  (defrule atj-maybe-type-jmeet-greatest
+    (implies (and (atj-maybe-typep x)
+                  (atj-maybe-typep y)
+                  (atj-maybe-typep z)
+                  (atj-maybe-type-j<= z x)
+                  (atj-maybe-type-j<= z y))
+             (atj-maybe-type-j<= z (atj-maybe-type-jmeet x y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-of-value (val)
   :returns (type atj-typep)
   :short "ATJ type of an ACL2 value."
   :long
@@ -470,14 +854,14 @@
      Note that a constant like @('2') does not get type @(':jint').
      Instead, ATJ assigns @(':jint') to a term like @('(int-value 2)');
      see the code generation functions."))
-  (cond ((characterp value) :character)
-        ((stringp value) :string)
-        ((symbolp value) :symbol)
-        ((integerp value) :integer)
-        ((rationalp value) :rational)
-        ((acl2-numberp value) :number)
-        ((consp value) :cons)
-        (t :value)))
+  (cond ((characterp val) :acharacter)
+        ((stringp val) :astring)
+        ((symbolp val) :asymbol)
+        ((integerp val) :ainteger)
+        ((rationalp val) :arational)
+        ((acl2-numberp val) :anumber)
+        ((consp val) :acons)
+        (t :avalue)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -522,16 +906,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define maybe-atj-function-type-info-p (x)
+(define atj-maybe-function-type-info-p (x)
   :returns (yes/no booleanp)
   :short "Recognize ATJ function type information and @('nil')."
   (or (atj-function-type-info-p x)
       (null x))
   ///
 
-  (defrule maybe-atj-function-type-info-p-when-atj-function-type-info-p
+  (defrule atj-maybe-function-type-info-p-when-atj-function-type-info-p
     (implies (atj-function-type-info-p x)
-             (maybe-atj-function-type-info-p x))))
+             (atj-maybe-function-type-info-p x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -547,7 +931,7 @@
   (xdoc::topstring
    (xdoc::p
     "This table is populated by
-     successful calls of the @(tsee def-atj-function-type) macro."))
+     successful calls of the @(tsee def-atj-main-function-type) macro."))
   (make-event
    `(table ,*atj-function-type-info-table-name* nil nil
       :guard (and (symbolp acl2::key)
@@ -556,16 +940,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-get-function-type-info-from-table ((fn symbolp) (wrld plist-worldp))
-  :returns (fn-info? maybe-atj-function-type-info-p)
+  :returns (fn-info? atj-maybe-function-type-info-p)
   :short "Retrieve the ATJ function type information
           of the specified function from the table."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is retrieved from the "
-    (xdoc::seetopic "atj-function-type-info-table"
-                    "@(tsee def-atj-function-type) table")
-    ". If the table has no entry for the function, @('nil') is returned."))
+  (xdoc::topstring-p
+   "If the table has no entry for the function, @('nil') is returned.")
   (b* ((table (table-alist+ *atj-function-type-info-table-name* wrld))
        (pair (assoc-eq fn table))
        ((when pair)
@@ -596,11 +976,11 @@
   :long
   (xdoc::topstring-p
    "This is used when a function has no entry in the table.
-    It consists of a main function type of all @(':value') types,
+    It consists of a main function type of all @(':avalue') types,
     and no other function types.")
   (make-atj-function-type-info
-   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :value)
-                                 :output :value)
+   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :avalue)
+                                 :output :avalue)
    :others nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -626,13 +1006,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define def-atj-function-type-input-theorem ((formal symbolp)
-                                             (type atj-typep)
-                                             (fn symbolp)
-                                             (wrld plist-worldp))
+(define atj-main-function-type-input-theorem ((fn symbolp)
+                                              (guard pseudo-termp)
+                                              (formal symbolp)
+                                              (type atj-typep)
+                                              (wrld plist-worldp))
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
   :mode :program
-  :short "Theorem generated by @(tsee def-atj-function-type)
+  :short "Theorem generated by @(tsee def-atj-main-function-type)
           for an input of an ACL2 function."
   :long
   (xdoc::topstring
@@ -642,47 +1023,52 @@
      that corresponds to the specified type.")
    (xdoc::p
     "The theorem has no rule classes because its only purpose is
-     to make sure that its formula holds."))
+     to make sure that its formula holds.
+     The theorem is local (to the @(tsee encapsulate) generated by the macro)
+     for the same reason."))
   (b* ((thm-name (packn-pos (list 'atj- fn '-input- formal '- type)
                             (pkg-witness (symbol-package-name fn))))
-       (guard (guard fn nil wrld))
        (thm-formula (implicate guard
-                               `(,(atj-type-predicate type) ,formal))))
-    `(defthm ,thm-name
-       ,(untranslate thm-formula t wrld)
-       :rule-classes nil)))
+                               `(,(atj-type-to-atype type) ,formal))))
+    `(local
+      (defthm ,thm-name
+        ,(untranslate thm-formula t wrld)
+        :rule-classes nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define def-atj-function-type-input-theorems ((formals symbol-listp)
-                                              (types atj-type-listp)
-                                              (fn symbolp)
-                                              (wrld plist-worldp))
+(define atj-main-function-type-input-theorems ((fn symbolp)
+                                               (guard pseudo-termp)
+                                               (formals symbol-listp)
+                                               (types atj-type-listp)
+                                               (wrld plist-worldp))
   :guard (= (len formals) (len types))
   :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
   :mode :program
-  :short "Theorems generated by @(tsee def-atj-function-type)
+  :short "Theorems generated by @(tsee def-atj-main-function-type)
           for all the inputs of an ACL2 function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee def-atj-function-type-input-theorem) to lists."))
+    "This lifts @(tsee atj-main-function-type-input-theorem) to lists."))
   (if (endp formals)
       nil
-    (cons (def-atj-function-type-input-theorem
-            (car formals) (car types) fn wrld)
-          (def-atj-function-type-input-theorems
-            (cdr formals) (cdr types) fn wrld))))
+    (cons (atj-main-function-type-input-theorem
+           fn guard (car formals) (car types) wrld)
+          (atj-main-function-type-input-theorems
+           fn guard (cdr formals) (cdr types) wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define def-atj-function-type-output-theorem ((type atj-typep)
-                                              (fn symbolp)
-                                              (wrld plist-worldp))
+(define atj-main-function-type-output-theorem ((fn symbolp)
+                                               (guard pseudo-termp)
+                                               (formals symbol-listp)
+                                               (type atj-typep)
+                                               (wrld plist-worldp))
   :mode :program
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
-  :short "Theorem generated by @(tsee def-atj-function-type)
-          the the output of an ACL2 function."
+  :short "Theorem generated by @(tsee def-atj-main-function-type)
+          for the output of an ACL2 function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -691,24 +1077,28 @@
      that corresponds to the specified type.")
    (xdoc::p
     "The theorem has no rule classes because its only purpose is
-     to make sure that its formula holds."))
+     to make sure that its formula holds.
+     The theorem is local (to the @(tsee encapsulate) generated by the macro)
+     for the same reason."))
   (b* ((thm-name (packn-pos (list 'atj- fn '-output- type)
                             (pkg-witness (symbol-package-name fn))))
-       (formals (formals fn wrld))
-       (guard (guard fn nil wrld))
        (thm-formula (implicate guard
-                               `(,(atj-type-predicate type)
+                               `(,(atj-type-to-atype type)
                                  (,fn ,@formals)))))
-    `(defthm ,thm-name
-       ,(untranslate thm-formula t wrld)
-       :rule-classes nil)))
+    `(local
+      (defthm ,thm-name
+        ,(untranslate thm-formula t wrld)
+        :rule-classes nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define def-atj-function-type-fn (fn in-tys out-ty (wrld plist-worldp))
-  :returns (event "A @(tsee acl2::pseudo-event-formp).")
+(define def-atj-main-function-type-fn (fn
+                                       in-types
+                                       out-type
+                                       (wrld plist-worldp))
+  :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program
-  :short "Top-level event generated by @(tsee def-atj-function-type)."
+  :short "Top-level event generated by @(tsee def-atj-main-function-type)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -717,16 +1107,35 @@
      as well as an event to record the function type in the table."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
-       ((unless (atj-type-listp in-tys))
-        (raise "The second input, ~x0, must be a true list of types." in-tys))
-       ((unless (atj-typep out-ty))
-        (raise "The third input, ~x0, must be a type." out-ty))
-       (formals (formals fn wrld))
+       (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
+       ((unless (atj-type-listp in-types))
+        (raise "The second input, ~x0, must be a true list of types."
+               in-types))
+       ((unless (= (len in-types) (len formals)))
+        (raise "The number of input types ~x0 must match ~
+                the arity ~x1 of the function ~x2."
+               in-types (len formals) fn))
+       ((unless (atj-typep out-type))
+        (raise "The third input, ~x0, must be a type." out-type))
+       (fn-info? (atj-get-function-type-info-from-table fn wrld))
+       ((when fn-info?)
+        (b* ((main (atj-function-type-info->main fn-info?)))
+          (if (and (equal (atj-function-type->inputs main) in-types)
+                   (equal (atj-function-type->output main) out-type))
+              `(value-triple :redundant)
+            (raise "The proposed ATJ main function type [~x0 -> ~x1] for ~x2 ~
+                    differs from the already recorded [~x3 -> ~x4]."
+                   in-types
+                   out-type
+                   fn
+                   (atj-function-type->inputs main)
+                   (atj-function-type->output main)))))
+       (guard (guard fn nil wrld))
        (input-thms
-        (def-atj-function-type-input-theorems formals in-tys fn wrld))
+        (atj-main-function-type-input-theorems fn guard formals in-types wrld))
        (output-thm
-        (def-atj-function-type-output-theorem out-ty fn wrld))
-       (fn-ty (make-atj-function-type :inputs in-tys :output out-ty))
+        (atj-main-function-type-output-theorem fn guard formals out-type wrld))
+       (fn-ty (make-atj-function-type :inputs in-types :output out-type))
        (fn-info (make-atj-function-type-info :main fn-ty :others nil)))
     `(encapsulate
        ()
@@ -737,7 +1146,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-atj-function-type
+(defsection def-atj-main-function-type
   :short (xdoc::topstring
           "Macro to prove and record that an ACL2 function
            has certain input and output "
@@ -762,6 +1171,7 @@
      it assumes the widest possible type (i.e. the one for all ACL2 values)
      for inputs and output of the function.
      See the code generation functions for details.")
-   (xdoc::@def "def-atj-function-type"))
-  (defmacro def-atj-function-type (fn in-tys out-ty)
-    `(make-event (def-atj-function-type-fn ',fn ',in-tys ',out-ty (w state)))))
+   (xdoc::@def "def-atj-main-function-type"))
+  (defmacro def-atj-main-function-type (fn in-types out-type)
+    `(make-event
+      (def-atj-main-function-type-fn ',fn ',in-types ',out-type (w state)))))

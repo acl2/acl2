@@ -175,7 +175,7 @@ with the same hints and directives that defthm accepts.
 
 (defmacro property (&rest args)
   `(with-output
-    :on (error summary)
+    :off :all
     (make-event
      (b* (((list name? name prop kwd-alist)
            (parse-property ',args (w state)))
@@ -195,22 +195,42 @@ with the same hints and directives that defthm accepts.
           ((when (and proofs? testing?))
            `(encapsulate
              ()
-             (with-time-limit ,testing-timeout (test? ,prop))
-             (with-time-limit ,proof-timeout (,prove ,@args))))
+             (with-time-limit
+              ,testing-timeout
+              (with-output
+               :on (error summary)
+               (test? ,prop)))
+             (with-time-limit
+              ,proof-timeout
+              (with-output
+               :on (error summary)
+               (,prove ,@args)))))
           ((when proofs?)
-           `(with-time-limit ,proof-timeout (,prove ,@args)))
+           `(with-time-limit
+             ,proof-timeout
+             (with-output
+              :on (error summary)
+              (,prove ,@args))))
           ((when (and testing? name?))
            `(with-time-limit
              ,testing-timeout
-             (defthm-test-no-proof ,@args)))
+             (with-output
+              :on (error summary)
+              (defthm-test-no-proof ,@args))))
           ((when testing?)
-           `(with-time-limit ,testing-timeout (test? ,prop)))
+           `(with-time-limit
+             ,testing-timeout
+             (with-output
+              :on (error summary)
+              (test? ,prop))))
           ((when name?)
            `(with-time-limit
              ,proof-timeout
-             (defthmskipall ,@args))))
+             (with-output
+              :on (error summary)
+              (defthmskipall ,@args)))))
        `(value-triple :passed)))))
-       
+
 #|
 
 start-modeling: 
