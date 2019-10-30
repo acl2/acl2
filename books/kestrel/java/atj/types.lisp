@@ -234,8 +234,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-to-atype ((type atj-typep))
-  :returns (pred pseudo-termfnp)
+(define atj-type-to-atype ((x atj-typep))
+  :returns (atype pseudo-termfnp)
   :short "ACL2 type denoted by an ATJ type."
   :long
   (xdoc::topstring
@@ -247,7 +247,7 @@
      The predicate for the @(':jint') type is @(tsee int-value-p),
      i.e. the model of Java @('int') values in the Java language formalization.
      Also see " (xdoc::seetopic "atj-primitives" "here") "."))
-  (case type
+  (case x
     (:acharacter 'characterp)
     (:astring 'stringp)
     (:asymbol 'symbolp)
@@ -314,8 +314,7 @@
 
   (defrule atj-type-asubeqp-reflexive
     (implies (atj-typep x)
-             (atj-type-asubeqp x x))
-    :rule-classes nil)
+             (atj-type-asubeqp x x)))
 
   (defrule atj-type-asubeqp-antisymmetric
     (implies (and (atj-typep x)
@@ -334,29 +333,28 @@
              (atj-type-asubeqp x z))
     :rule-classes nil)
 
-  ;; monotonicity theorem for (TYPE1, TYPE2) if TYPE1 <= TYPE2, otherwise NIL:
-  (define atj-type-to-atype-gen-mono-thm ((type1 atj-typep) (type2 atj-typep))
-    (if (atj-type-asubeqp type1 type2)
-        `((defthm ,(packn (list 'atj-type-to-atype-thm- type1 '- type2))
-            (implies (,(atj-type-to-atype type1) x)
-                     (,(atj-type-to-atype type2) x))
+  ;; monotonicity theorem for (SUB, SUP) if SUB <= SUP, otherwise NIL:
+  (define atj-type-to-atype-gen-mono-thm ((sub atj-typep) (sup atj-typep))
+    (if (atj-type-asubeqp sub sup)
+        `((defthm ,(packn (list 'atj-type-to-atype-thm- sub '- sup))
+            (implies (,(atj-type-to-atype sub) val)
+                     (,(atj-type-to-atype sup) val))
             :rule-classes nil))
       nil))
 
-  ;; monotonicity theorems for all (TYPE, TYPE') with TYPE' in TYPES:
-  (define atj-type-to-atype-gen-mono-thms-1 ((type atj-typep)
-                                             (types atj-type-listp))
-    (cond ((endp types) nil)
-          (t (append (atj-type-to-atype-gen-mono-thm type (car types))
-                     (atj-type-to-atype-gen-mono-thms-1 type (cdr types))))))
+  ;; monotonicity theorems for all (SUB, SUP) with SUP' in SUPS:
+  (define atj-type-to-atype-gen-mono-thms-1 ((sub atj-typep)
+                                             (sups atj-type-listp))
+    (cond ((endp sups) nil)
+          (t (append (atj-type-to-atype-gen-mono-thm sub (car sups))
+                     (atj-type-to-atype-gen-mono-thms-1 sub (cdr sups))))))
 
-  ;; monotonicity theorems for all (TYPE1, TYPE2)
-  ;; with TYPE1 in TYPES1 and TYPE2 in TYPES2:
-  (define atj-type-to-atype-gen-mono-thms-2 ((types1 atj-type-listp)
-                                             (types2 atj-type-listp))
-    (cond ((endp types1) nil)
-          (t (append (atj-type-to-atype-gen-mono-thms-1 (car types1) types2)
-                     (atj-type-to-atype-gen-mono-thms-2 (cdr types1) types2)))))
+  ;; monotonicity theorems for all (SUB, SUP) with SUB in SUBS and SUP in SUPS:
+  (define atj-type-to-atype-gen-mono-thms-2 ((subs atj-type-listp)
+                                             (sups atj-type-listp))
+    (cond ((endp subs) nil)
+          (t (append (atj-type-to-atype-gen-mono-thms-1 (car subs) sups)
+                     (atj-type-to-atype-gen-mono-thms-2 (cdr subs) sups)))))
 
   ;; monotonicity theorems for all pairs of types:
   (define atj-type-to-atype-gen-mono-thms ()
@@ -383,8 +381,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-ajoin ((type1 atj-typep) (type2 atj-typep))
-  :returns (type atj-typep :hyp :guard)
+(define atj-type-ajoin ((x atj-typep) (y atj-typep))
+  :returns (lub atj-typep :hyp :guard)
   :short "Least upper bound of two ATJ types,
           according to the ACL2-based partial order."
   :long
@@ -408,33 +406,33 @@
      Since the value may come from either branch,
      it is appropriate for this operation
      to be according to the ACL2-based partial order."))
-  (case type1
-    (:acharacter (case type2
+  (case x
+    (:acharacter (case y
                    (:acharacter :acharacter)
                    (t :avalue)))
-    (:astring (case type2
+    (:astring (case y
                 (:astring :astring)
                 (t :avalue)))
-    (:asymbol (case type2
+    (:asymbol (case y
                 (:asymbol :asymbol)
                 (t :avalue)))
-    (:ainteger (case type2
+    (:ainteger (case y
                  (:ainteger :ainteger)
                  (:arational :arational)
                  (:anumber :anumber)
                  (t :avalue)))
-    (:arational (case type2
+    (:arational (case y
                   ((:ainteger :arational) :arational)
                   (:anumber :anumber)
                   (t :avalue)))
-    (:anumber (case type2
+    (:anumber (case y
                 ((:ainteger :arational :anumber) :anumber)
                 (t :avalue)))
-    (:acons (case type2
+    (:acons (case y
               ((:acons :jint) :acons)
               (t :avalue)))
     (:avalue :avalue)
-    (:jint (case type2
+    (:jint (case y
              (:jint :jint)
              (:acons :acons)
              (t :avalue))))
@@ -445,7 +443,6 @@
                   (atj-typep y))
              (and (atj-type-asubeqp x (atj-type-ajoin x y))
                   (atj-type-asubeqp y (atj-type-ajoin x y))))
-    :rule-classes nil
     :enable atj-type-asubeqp)
 
   (defrule atj-type-ajoin-least
@@ -455,7 +452,6 @@
                   (atj-type-asubeqp x z)
                   (atj-type-asubeqp y z))
              (atj-type-asubeqp (atj-type-ajoin x y) z))
-    :rule-classes nil
     :enable atj-type-asubeqp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -534,8 +530,7 @@
 
   (defrule atj-type-jsubeqp-reflexive
     (implies (atj-typep x)
-             (atj-type-jsubeqp x x))
-    :rule-classes nil)
+             (atj-type-jsubeqp x x)))
 
   (defrule atj-type-jsubeqp-antisymmetric
     (implies (and (atj-typep x)
@@ -600,9 +595,7 @@
 
   (defrule atj-maybe-type-jsubeqp-reflexive
     (implies (atj-maybe-typep x)
-             (atj-maybe-type-jsubeqp x x))
-    :rule-classes nil
-    :use atj-type-jsubeqp-reflexive)
+             (atj-maybe-type-jsubeqp x x)))
 
   (defrule atj-maybe-type-jsubeqp-antisymmetric
     (implies (and (atj-maybe-typep x)
@@ -611,7 +604,6 @@
                   (atj-maybe-type-jsubeqp y x))
              (equal x y))
     :rule-classes nil
-    :enable atj-maybe-typep
     :use atj-type-jsubeqp-antisymmetric)
 
   (defrule atj-maybe-type-jsubeqp-transitive
@@ -622,13 +614,12 @@
                   (atj-maybe-type-jsubeqp y z))
              (atj-maybe-type-jsubeqp x z))
     :rule-classes nil
-    :enable atj-maybe-typep
     :use atj-type-jsubeqp-transitive))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-maybe-type-jmeet ((x atj-maybe-typep) (y atj-maybe-typep))
-  :returns (result atj-maybe-typep :hyp :guard)
+  :returns (glb atj-maybe-typep :hyp :guard)
   :short "Greatest lower bound of two ATJ types or @('nil')s,
           according to the Java-based partial order extended to @('nil')."
   :long
@@ -691,7 +682,6 @@
                   (atj-maybe-typep y))
              (and (atj-maybe-type-jsubeqp (atj-maybe-type-jmeet x y) x)
                   (atj-maybe-type-jsubeqp (atj-maybe-type-jmeet x y) y)))
-    :rule-classes nil
     :enable (atj-maybe-type-jsubeqp atj-type-jsubeqp))
 
   (defrule atj-maybe-type-jmeet-greatest
@@ -701,7 +691,6 @@
                   (atj-maybe-type-jsubeqp z x)
                   (atj-maybe-type-jsubeqp z y))
              (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))
-    :rule-classes nil
     :enable (atj-maybe-type-jsubeqp atj-type-jsubeqp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -729,9 +718,7 @@
 
   (defrule atj-maybe-type-list-jsubeqp-reflexive
     (implies (atj-maybe-type-listp x)
-             (atj-maybe-type-list-jsubeqp x x))
-    :rule-classes nil
-    :hints ('(:use (:instance atj-maybe-type-jsubeqp-reflexive (x (car x))))))
+             (atj-maybe-type-list-jsubeqp x x)))
 
   (defrule atj-maybe-type-list-jsubeqp-antisymmetric
     (implies (and (atj-maybe-type-listp x)
@@ -782,11 +769,7 @@
                                                x)
                   (atj-maybe-type-list-jsubeqp (atj-maybe-type-list-jmeet x y)
                                                y)))
-    :rule-classes nil
-    :enable (atj-maybe-type-list-jsubeqp
-             atj-maybe-type-jsubeqp
-             atj-type-jsubeqp
-             atj-maybe-type-jmeet))
+    :enable atj-maybe-type-list-jsubeqp)
 
   (defrule atj-maybe-type-jmeet-greatest
     (implies (and (atj-maybe-typep x)
@@ -794,16 +777,11 @@
                   (atj-maybe-typep z)
                   (atj-maybe-type-jsubeqp z x)
                   (atj-maybe-type-jsubeqp z y))
-             (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))
-    :rule-classes nil
-    :enable (atj-maybe-type-list-jsubeqp
-             atj-maybe-type-jsubeqp
-             atj-type-jsubeqp
-             atj-maybe-type-jmeet)))
+             (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-of-value (value)
+(define atj-type-of-value (val)
   :returns (type atj-typep)
   :short "ATJ type of an ACL2 value."
   :long
@@ -814,13 +792,13 @@
      Note that a constant like @('2') does not get type @(':jint').
      Instead, ATJ assigns @(':jint') to a term like @('(int-value 2)');
      see the code generation functions."))
-  (cond ((characterp value) :acharacter)
-        ((stringp value) :astring)
-        ((symbolp value) :asymbol)
-        ((integerp value) :ainteger)
-        ((rationalp value) :arational)
-        ((acl2-numberp value) :anumber)
-        ((consp value) :acons)
+  (cond ((characterp val) :acharacter)
+        ((stringp val) :astring)
+        ((symbolp val) :asymbol)
+        ((integerp val) :ainteger)
+        ((rationalp val) :arational)
+        ((acl2-numberp val) :anumber)
+        ((consp val) :acons)
         (t :avalue)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
