@@ -260,7 +260,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-asubeqp ((sub atj-typep) (sup atj-typep))
+(define atj-type-a<= ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
   :short "ACL2-based partial order over ATJ types."
   :long
@@ -271,7 +271,7 @@
      this denotation is defined by @(tsee atj-type-to-atype).
      There is another partial order on the ATJ types,
      based on the subtype relation over the Java types they denote:
-     see @(tsee atj-type-jsubeqp).")
+     see @(tsee atj-type-j<=).")
    (xdoc::p
     "The (ACL2-based) ordering on the @('a...') types is straightforward.
      The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
@@ -312,30 +312,30 @@
     (:jint (and (member-eq sup '(:jint :acons :avalue)) t)))
   ///
 
-  (defrule atj-type-asubeqp-reflexive
+  (defrule atj-type-a<=-reflexive
     (implies (atj-typep x)
-             (atj-type-asubeqp x x)))
+             (atj-type-a<= x x)))
 
-  (defrule atj-type-asubeqp-antisymmetric
+  (defrule atj-type-a<=-antisymmetric
     (implies (and (atj-typep x)
                   (atj-typep y)
-                  (atj-type-asubeqp x y)
-                  (atj-type-asubeqp y x))
+                  (atj-type-a<= x y)
+                  (atj-type-a<= y x))
              (equal x y))
     :rule-classes nil)
 
-  (defrule atj-type-asubeqp-transitive
+  (defrule atj-type-a<=-transitive
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-asubeqp x y)
-                  (atj-type-asubeqp y z))
-             (atj-type-asubeqp x z))
+                  (atj-type-a<= x y)
+                  (atj-type-a<= y z))
+             (atj-type-a<= x z))
     :rule-classes nil)
 
   ;; monotonicity theorem for (SUB, SUP) if SUB <= SUP, otherwise NIL:
   (define atj-type-to-atype-gen-mono-thm ((sub atj-typep) (sup atj-typep))
-    (if (atj-type-asubeqp sub sup)
+    (if (atj-type-a<= sub sup)
         `((defthm ,(packn (list 'atj-type-to-atype-thm- sub '- sup))
             (implies (,(atj-type-to-atype sub) val)
                      (,(atj-type-to-atype sup) val))
@@ -389,7 +389,7 @@
   (xdoc::topstring
    (xdoc::p
     "ATJ types form a join semilattice,
-     with the partial order @(tsee atj-type-asubeqp).")
+     with the partial order @(tsee atj-type-a<=).")
    (xdoc::p
     "To validate this definition of least upper bound,
      we prove that the this operation indeed returns an upper bound
@@ -441,18 +441,18 @@
   (defrule atj-type-ajoin-upper-bound
     (implies (and (atj-typep x)
                   (atj-typep y))
-             (and (atj-type-asubeqp x (atj-type-ajoin x y))
-                  (atj-type-asubeqp y (atj-type-ajoin x y))))
-    :enable atj-type-asubeqp)
+             (and (atj-type-a<= x (atj-type-ajoin x y))
+                  (atj-type-a<= y (atj-type-ajoin x y))))
+    :enable atj-type-a<=)
 
   (defrule atj-type-ajoin-least
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-asubeqp x z)
-                  (atj-type-asubeqp y z))
-             (atj-type-asubeqp (atj-type-ajoin x y) z))
-    :enable atj-type-asubeqp))
+                  (atj-type-a<= x z)
+                  (atj-type-a<= y z))
+             (atj-type-a<= (atj-type-ajoin x y) z))
+    :enable atj-type-a<=))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,13 +486,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-jsubeqp ((sub atj-typep) (sup atj-typep))
+(define atj-type-j<= ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
   :short "Java-based partial order over ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the ACL2-based partial order @(tsee atj-type-asubeqp),
+    "Besides the ACL2-based partial order @(tsee atj-type-a<=),
      the ATJ types also form another partial order,
      based on the Java subtype relation
      over the Java types denoted by the ATJ types
@@ -500,7 +500,7 @@
    (xdoc::p
     "The (Java-based) ordering on the @(':a...') types is straightforward,
      according to the subclass relation over the AIJ class types;
-     in fact, this is consistent with @(tsee atj-type-asubeqp),
+     in fact, this is consistent with @(tsee atj-type-a<=),
      which we prove below for validation.
      But the @(':jint') type is unrelated to the other types;
      it is neither larger nor smaller than any of the others,
@@ -511,7 +511,7 @@
      we prove that the relation is indeed a partial order,
      i.e. reflexive, anti-symmetric, and transitive.
      We would also like to prove, analogously to @(tsee atj-type-asubeq),
-     that @(tsee atj-type-jsubeqp) is an order embedding,
+     that @(tsee atj-type-j<=) is an order embedding,
      i.e. order-preserving (i.e. monotonic) and order-reflecting,
      into the Java subtype ordering;
      we will do that after the Java language formalization
@@ -528,42 +528,42 @@
     (:jint (eq sup :jint)))
   ///
 
-  (defrule atj-type-jsubeqp-reflexive
+  (defrule atj-type-j<=-reflexive
     (implies (atj-typep x)
-             (atj-type-jsubeqp x x)))
+             (atj-type-j<= x x)))
 
-  (defrule atj-type-jsubeqp-antisymmetric
+  (defrule atj-type-j<=-antisymmetric
     (implies (and (atj-typep x)
                   (atj-typep y)
-                  (atj-type-jsubeqp x y)
-                  (atj-type-jsubeqp y x))
+                  (atj-type-j<= x y)
+                  (atj-type-j<= y x))
              (equal x y))
     :rule-classes nil)
 
-  (defrule atj-type-jsubeqp-transitive
+  (defrule atj-type-j<=-transitive
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-jsubeqp x y)
-                  (atj-type-jsubeqp y z))
-             (atj-type-jsubeqp x z))
+                  (atj-type-j<= x y)
+                  (atj-type-j<= y z))
+             (atj-type-j<= x z))
     :rule-classes nil)
 
-  (defrule atj-type-jsubeqp-is-asubeq-on-atypes
+  (defrule atj-type-j<=-is-asubeq-on-atypes
     (implies (and (atj-typep x)
                   (eql (char (symbol-name x) 0) #\A)
                   (atj-typep y)
                   (eql (char (symbol-name y) 0) #\A))
-             (equal (atj-type-jsubeqp x y)
-                    (atj-type-asubeqp x y)))
+             (equal (atj-type-j<= x y)
+                    (atj-type-a<= x y)))
     :rule-classes nil
     :enable atj-typep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-maybe-type-jsubeqp ((sub atj-maybe-typep) (sup atj-maybe-typep))
+(define atj-maybe-type-j<= ((sub atj-maybe-typep) (sup atj-maybe-typep))
   :returns (yes/no booleanp)
-  :short "Extension of @(tsee atj-type-jsubeqp)
+  :short "Extension of @(tsee atj-type-j<=)
           to include @('nil') as bottom."
   :long
   (xdoc::topstring
@@ -589,32 +589,32 @@
      i.e. reflexive, anti-symmetric, and transitive."))
   (if (atj-typep sub)
       (and (atj-typep sup)
-           (atj-type-jsubeqp sub sup))
+           (atj-type-j<= sub sup))
     t)
   ///
 
-  (defrule atj-maybe-type-jsubeqp-reflexive
+  (defrule atj-maybe-type-j<=-reflexive
     (implies (atj-maybe-typep x)
-             (atj-maybe-type-jsubeqp x x)))
+             (atj-maybe-type-j<= x x)))
 
-  (defrule atj-maybe-type-jsubeqp-antisymmetric
+  (defrule atj-maybe-type-j<=-antisymmetric
     (implies (and (atj-maybe-typep x)
                   (atj-maybe-typep y)
-                  (atj-maybe-type-jsubeqp x y)
-                  (atj-maybe-type-jsubeqp y x))
+                  (atj-maybe-type-j<= x y)
+                  (atj-maybe-type-j<= y x))
              (equal x y))
     :rule-classes nil
-    :use atj-type-jsubeqp-antisymmetric)
+    :use atj-type-j<=-antisymmetric)
 
-  (defrule atj-maybe-type-jsubeqp-transitive
+  (defrule atj-maybe-type-j<=-transitive
     (implies (and (atj-maybe-typep x)
                   (atj-maybe-typep y)
                   (atj-maybe-typep z)
-                  (atj-maybe-type-jsubeqp x y)
-                  (atj-maybe-type-jsubeqp y z))
-             (atj-maybe-type-jsubeqp x z))
+                  (atj-maybe-type-j<= x y)
+                  (atj-maybe-type-j<= y z))
+             (atj-maybe-type-j<= x z))
     :rule-classes nil
-    :use atj-type-jsubeqp-transitive))
+    :use atj-type-j<=-transitive))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -625,8 +625,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(tsee atj-maybe-type-jsubeqp),
-     the addition of @('nil') as bottom element to @(tsee atj-type-jsubeqp)
+    "As discussed in @(tsee atj-maybe-type-j<=),
+     the addition of @('nil') as bottom element to @(tsee atj-type-j<=)
      results in a meet semilattice.")
    (xdoc::p
     "To validate this definition of greatest lower bound,
@@ -680,25 +680,25 @@
   (defrule atj-maybe-type-jmeet-lower-bound
     (implies (and (atj-maybe-typep x)
                   (atj-maybe-typep y))
-             (and (atj-maybe-type-jsubeqp (atj-maybe-type-jmeet x y) x)
-                  (atj-maybe-type-jsubeqp (atj-maybe-type-jmeet x y) y)))
-    :enable (atj-maybe-type-jsubeqp atj-type-jsubeqp))
+             (and (atj-maybe-type-j<= (atj-maybe-type-jmeet x y) x)
+                  (atj-maybe-type-j<= (atj-maybe-type-jmeet x y) y)))
+    :enable (atj-maybe-type-j<= atj-type-j<=))
 
   (defrule atj-maybe-type-jmeet-greatest
     (implies (and (atj-maybe-typep x)
                   (atj-maybe-typep y)
                   (atj-maybe-typep z)
-                  (atj-maybe-type-jsubeqp z x)
-                  (atj-maybe-type-jsubeqp z y))
-             (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))
-    :enable (atj-maybe-type-jsubeqp atj-type-jsubeqp)))
+                  (atj-maybe-type-j<= z x)
+                  (atj-maybe-type-j<= z y))
+             (atj-maybe-type-j<= z (atj-maybe-type-jmeet x y)))
+    :enable (atj-maybe-type-j<= atj-type-j<=)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-maybe-type-list-jsubeqp ((sub atj-maybe-type-listp)
-                                     (sup atj-maybe-type-listp))
+(define atj-maybe-type-list-j<= ((sub atj-maybe-type-listp)
+                                 (sup atj-maybe-type-listp))
   :returns (yes/no booleanp)
-  :short "Lift @(tsee atj-maybe-type-jsubeqp) to lists."
+  :short "Lift @(tsee atj-maybe-type-j<=) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -712,33 +712,33 @@
      i.e. reflexive, anti-symmetric, and transitive."))
   (cond ((endp sub) t)
         ((endp sup) nil)
-        (t (and (atj-maybe-type-jsubeqp (car sub) (car sup))
-                (atj-maybe-type-list-jsubeqp (cdr sub) (cdr sup)))))
+        (t (and (atj-maybe-type-j<= (car sub) (car sup))
+                (atj-maybe-type-list-j<= (cdr sub) (cdr sup)))))
   ///
 
-  (defrule atj-maybe-type-list-jsubeqp-reflexive
+  (defrule atj-maybe-type-list-j<=-reflexive
     (implies (atj-maybe-type-listp x)
-             (atj-maybe-type-list-jsubeqp x x)))
+             (atj-maybe-type-list-j<= x x)))
 
-  (defrule atj-maybe-type-list-jsubeqp-antisymmetric
+  (defrule atj-maybe-type-list-j<=-antisymmetric
     (implies (and (atj-maybe-type-listp x)
                   (atj-maybe-type-listp y)
-                  (atj-maybe-type-list-jsubeqp x y)
-                  (atj-maybe-type-list-jsubeqp y x))
+                  (atj-maybe-type-list-j<= x y)
+                  (atj-maybe-type-list-j<= y x))
              (equal x y))
     :rule-classes nil
-    :hints ('(:use (:instance atj-maybe-type-jsubeqp-antisymmetric
+    :hints ('(:use (:instance atj-maybe-type-j<=-antisymmetric
                     (x (car x)) (y (car y))))))
 
-  (defrule atj-maybe-type-list-jsubeqp-transitive
+  (defrule atj-maybe-type-list-j<=-transitive
     (implies (and (atj-maybe-type-listp x)
                   (atj-maybe-type-listp y)
                   (atj-maybe-type-listp z)
-                  (atj-maybe-type-list-jsubeqp x y)
-                  (atj-maybe-type-list-jsubeqp y z))
-             (atj-maybe-type-list-jsubeqp x z))
+                  (atj-maybe-type-list-j<= x y)
+                  (atj-maybe-type-list-j<= y z))
+             (atj-maybe-type-list-j<= x z))
     :rule-classes nil
-    :hints ('(:use (:instance atj-maybe-type-jsubeqp-transitive
+    :hints ('(:use (:instance atj-maybe-type-j<=-transitive
                     (x (car x)) (y (car y)) (z (car z)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -765,19 +765,17 @@
   (defrule atj-maybe-type-list-jmeet-lower-bound
     (implies (and (atj-maybe-type-listp x)
                   (atj-maybe-type-listp y))
-             (and (atj-maybe-type-list-jsubeqp (atj-maybe-type-list-jmeet x y)
-                                               x)
-                  (atj-maybe-type-list-jsubeqp (atj-maybe-type-list-jmeet x y)
-                                               y)))
-    :enable atj-maybe-type-list-jsubeqp)
+             (and (atj-maybe-type-list-j<= (atj-maybe-type-list-jmeet x y) x)
+                  (atj-maybe-type-list-j<= (atj-maybe-type-list-jmeet x y) y)))
+    :enable atj-maybe-type-list-j<=)
 
   (defrule atj-maybe-type-jmeet-greatest
     (implies (and (atj-maybe-typep x)
                   (atj-maybe-typep y)
                   (atj-maybe-typep z)
-                  (atj-maybe-type-jsubeqp z x)
-                  (atj-maybe-type-jsubeqp z y))
-             (atj-maybe-type-jsubeqp z (atj-maybe-type-jmeet x y)))))
+                  (atj-maybe-type-j<= z x)
+                  (atj-maybe-type-j<= z y))
+             (atj-maybe-type-j<= z (atj-maybe-type-jmeet x y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
