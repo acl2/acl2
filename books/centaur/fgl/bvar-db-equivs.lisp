@@ -253,14 +253,12 @@
                   ((when b-varp)
                    (add-term-equiv b bvar bvar-db))
 
-                  ;; Heuristic 2: when one object is a "good" g-integer, g-boolean, or g-concrete,
+                  ;; Heuristic 2: when one object has no free variables,
                   ;;              normalize other -> good obj.
-                  (a-goodp (fgl-object-case a
-                             :g-integer t :g-boolean t :g-concrete t :otherwise nil))
+                  (a-goodp (fgl-object-variable-free-p a))
                   ((when a-goodp)
                    (add-term-equiv b bvar bvar-db))
-                  (b-goodp (fgl-object-case b
-                             :g-integer t :g-boolean t :g-concrete t :otherwise nil))
+                  (b-goodp (fgl-object-variable-free-p b))
                   ((when b-goodp)
                    (add-term-equiv a bvar bvar-db)))
 

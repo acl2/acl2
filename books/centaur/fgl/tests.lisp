@@ -33,10 +33,51 @@
 (include-book "top-plus")
 
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
-
+(include-book "misc/eval" :dir :system)
 (value-triple (acl2::tshell-ensure))
 
 
+(acl2::must-fail
+ (fgl-thm
+  (b* ((x1 (logcdr x)))
+    (equal (loghead 3 x1) (+ 1 (loghead 3 x1))))))
+
+;; check the counterexample assignment
+(make-event
+ (if (integerp (cdr (assoc 'x (interp-st-get-counterexample-obj-alist interp-st))))
+     '(value-triple :ok)
+   (er hard? 'check-counterexample "Unexpected counterexample form~%")))
+   
+
+
+(acl2::must-fail
+ (encapsulate nil
+   (local (disable-definition assoc-equal))
+   (fgl-thm
+    (b* ((x1 (logcdr (cdr (assoc '(a . b) x)))))
+      (equal (loghead 3 x1) (+ 1 (loghead 3 x1)))))))
+
+(make-event
+ (b* ((alist (cdr (assoc 'x (interp-st-get-counterexample-obj-alist interp-st))))
+      (look (assoc-equal '(a . b) alist)))
+   (if (integerp (cdr look))
+       '(value-triple :ok)
+     (er hard? 'check-counterexample "Unexpected counterexample form~%"))) )
+
+
+(acl2::must-fail
+ (fgl-thm
+  (b* ((x1 (logcons b (logcdr x)))
+       (x2 (logcons (logcar x1) y)))
+    (equal (loghead 3 x2) (loghead 3 (logcons 1 y))))))
+
+(make-event
+ (b* ((alist (interp-st-get-counterexample-obj-alist interp-st))
+      (bpair (assoc 'b alist)))
+   (if (and bpair
+            (not (equal bpair 1)))
+       '(value-triple :ok)
+     (er hard? 'check-counterexample "Unexpected counterexample form~%"))) )
 
 
 
@@ -627,8 +668,7 @@
  :hyp (unsigned-byte-p 7 x)
  :concl (if (logbitp 8 x)
             (fgl-error :msg "Logbitp 8!")
-          t)
- :rule-classes nil)
+          t))
 
 (make-event
  (b* (((mv err ?val state)
@@ -636,8 +676,7 @@
         :hyp (unsigned-byte-p 7 x)
         :concl (if (logbitp 6 x)
                    (fgl-error :msg "Logbitp 6!")
-                 t)
-        :rule-classes nil))
+                 t)))
       ((unless (and err
                     (equal (@ :fgl-interp-error-message) "Logbitp 6!")))
        (er soft 'test-fgl-error "Didn't work?")))
@@ -652,8 +691,7 @@
                      (if (logbitp 8 x)
                          (syntax-interp (cw "Yes~%"))
                        (syntax-interp (cw "No~%"))))
-                   t)
- :rule-classes nil)
+                   t))
 
 
 (fancy-ev-add-primitive interp-st->flags$inline t)
@@ -668,10 +706,9 @@
                             (if (logbitp 6 x)
                                 (syntax-interp (cw "Yes~%"))
                               (syntax-interp (cw "No~%"))))
-                          t)
-        :rule-classes nil))
+                          t)))
       ((unless (and err
                     (fgl-object-case (@ :fgl-interp-error-debug-obj) :g-boolean)))
-       (er soft 'test-with-fgl-testbench "Didn't work?")))
+       (er soft 'test-with-fgl-testbench "Didn't work? err: ~x0 debug-obj: ~x1" err (@ :fgl-interp-error-debug-obj))))
    (value '(value-triple :ok))))
 

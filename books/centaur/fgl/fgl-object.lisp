@@ -34,6 +34,7 @@
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "arith-base")
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
 (defprod g-map-tag
@@ -419,3 +420,33 @@ case you misspell @(':g-concrete').</p>
 
 
 
+(defines fgl-object-variable-free-p
+  (define fgl-object-variable-free-p ((x fgl-object-p))
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    (fgl-object-case x
+      :g-var nil
+      :g-apply (fgl-objectlist-variable-free-p x.args)
+      :g-cons (and (fgl-object-variable-free-p x.car)
+                   (fgl-object-variable-free-p x.cdr))
+      :g-map (fgl-object-alist-variable-free-p x.alist)
+      :g-ite (and (fgl-object-variable-free-p x.test)
+                  (fgl-object-variable-free-p x.then)
+                  (fgl-object-variable-free-p x.else))
+      :otherwise t))
+
+  (define fgl-objectlist-variable-free-p ((x fgl-objectlist-p))
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
+    (if (atom x)
+        t
+      (and (fgl-object-variable-free-p (car x))
+           (fgl-objectlist-variable-free-p (cdr x)))))
+
+  (define fgl-object-alist-variable-free-p ((x fgl-object-alist-p))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
+    (if (atom x)
+        t
+      (and (or (not (mbt (consp (car x))))
+               (fgl-object-variable-free-p (cdar x)))
+           (fgl-object-alist-variable-free-p (cdr x)))))
+  ///
+  (memoize 'fgl-object-variable-free-p))

@@ -171,19 +171,17 @@
 ;;   counterexample translation rules, discussed below.
 
 ;;   The "smarter" version: we create a "cgraph" with an edge A->B whenever
-;;   obtaining a value for A might help derive a value for B (via one of the
+;;   obtaining a value for B might help derive a value for A (via one of the
 ;;   counterexample translation rules). Edges are labeled with the rule and
-;;   substitution that gives rise to that derivation.  Often B is an immediate
-;;   subterm of A, but this isn't always the case.  To get a variable-level
-;;   counterexample, we then traverse the cgraph in topological order trying to
-;;   find a value for each term encountered.  Or, if we want a value for some
-;;   particular set of terms, restrict the cgraph to just those terms and their
-;;   ancestors and similarly traverse that.  If there are any SCCs containing
+;;   substitution that gives rise to that derivation.  Often A is an immediate
+;;   subterm of B, but this isn't always the case.  To get a variable-level
+;;   counterexample, we then traverse the cgraph depth-first starting from the
+;;   variables, trying to find a value for each term after finding values for
+;;   all of its descendants.
+
+;;   If there are any SCCs containing
 ;;   multiple terms in the graph, then we try to recover a value for each term
-;;   in arbitrary order and check whether we get to a fixpoint.  Implementation
-;;   note: the graph we'll actually create is the reverse cgraph, where we can
-;;   look up a term B to obtain all in-edges of B, since this will make it
-;;   easier to traverse in the way we need to.
+;;   in arbitrary order and check whether we get to a fixpoint.
 
 ;;   Rule types.
 
@@ -220,6 +218,53 @@
 ;;    we'll add two edges a->b and b->a.  Whichever of a or b we're able to
 ;;    resolve first will determine the value of the other, provided the
 ;;    equivalence is assigned T.
+
+
+;; A counterexample rule has two functions: it is used to make the cgraph from
+;; the bvar-db, without reference to any particular Boolean assignment, and
+;; then it is used as part of the cgraph when trying to derive values for a
+;; particular assignment.
+
+;; When creating the cgraph, we start with an object stored in the Boolean
+;; variable database and find any counterexample rules that have a match for
+;; that object.  E.g., perhaps the object is (intcar (intcdr a)) and we match
+;; it against the rule intcar-intcdr-ctrex-elim, below.  This means we'll make
+;; an edge
+;;   (intcdr a) -> (intcar (intcdr a))
+;; where the edge is labelled with the rule, the match variable CAR (the var of
+;; the rule corresponding to the term that matched) and the substitution
+;;  ((x . (intcdr a))).
+
+;; If we also find (intcdr (intcdr a)), then we'll match on the other matchvar
+;; (cdr) of the same rule.  When this happens, we'll end up joining the two
+;; compatible applications of the rule on the same edge structure, essentially
+;; making two edges with the same label.
+
+;; More generally, we can have rules that are hung on some relation between
+;; subterms.  Suppose we have a rule of this form:
+
+;; (def-ctrex-rule foo-ctrex-rule
+;;   :match ((v (foo a b)))
+;;   :assign (bar b)
+;;   :assigned-var a
+;;   :ruletype :property)
+
+;; If we come across a term (foo (g d) (h e)) while creating the counterexample graph,
+;; we'll add an edge (g d) -> (foo (g d) (h e)) labeled with
+;;  (v, foo-ctrex-rule, ((a . (g d)) (b . (h e)))).
+
+;; Problem: By doing this, we're saying "derive a value for (foo (g d) (h e))
+;; in order to derive a value for (g d)".  But we're also going to need a value
+;; for (h e) in order to apply this rule.  So when we traverse the graph, we'll
+;; implicitly end up looking for a value for (h e) when we try and apply this
+;; rule -- sort of an edge for an edge.
+
+
+
+
+
+
+
 
 
 (fty::deflist ctrex-rulelist :elt-type ctrex-rule :true-listp t)
@@ -361,15 +406,10 @@
   :ruletype :property)
 
 
-
-
-
-
-
 (defconst *fake-ctrex-rule-for-equivs*
   (make-ctrex-rule :name 'fake-ctrex-rule-for-equivs
-                   :match '((y . y))
-                   :assign 'y
+                   :match '((val . (equiv x y)))
+                   :assign '(if val y x)
                    :assigned-var 'x
                    :hyp 't
                    :ruletype nil))
@@ -753,9 +793,14 @@
                ((unless (eql (len x.args) 2))
                 (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
                ((list arg1 arg2) x.args)
-               (rule (change-ctrex-rule *fake-ctrex-rule-for-equivs* :equiv x.fn))
-               (cgraph (add-cgraph-edge 'y `((x . ,arg2) (y . ,arg1)) rule cgraph))
-               (cgraph (add-cgraph-edge 'y `((x . ,arg1) (y . ,arg2)) rule cgraph))
+               (rule1 (change-ctrex-rule *fake-ctrex-rule-for-equivs*
+                                         :match `((val . ,(pseudo-term-call x.fn '(x y))))
+                                         :equiv x.fn))
+               (rule2 (change-ctrex-rule *fake-ctrex-rule-for-equivs*
+                                         :match `((val . ,(pseudo-term-call x.fn '(y x))))
+                                         :equiv x.fn))
+               (cgraph (add-cgraph-edge 'val `((x . ,arg2) (y . ,arg1)) rule2 cgraph))
+               (cgraph (add-cgraph-edge 'val `((x . ,arg1) (y . ,arg2)) rule1 cgraph))
                ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld)))
             (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld)))
          (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
@@ -1451,37 +1496,6 @@
 
 
 
-(defines fgl-object-variable-free-p
-  (define fgl-object-variable-free-p ((x fgl-object-p))
-    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
-    (fgl-object-case x
-      :g-var nil
-      :g-apply (fgl-objectlist-variable-free-p x.args)
-      :g-cons (and (fgl-object-variable-free-p x.car)
-                   (fgl-object-variable-free-p x.cdr))
-      :g-map (fgl-object-alist-variable-free-p x.alist)
-      :g-ite (and (fgl-object-variable-free-p x.test)
-                  (fgl-object-variable-free-p x.then)
-                  (fgl-object-variable-free-p x.else))
-      :otherwise t))
-
-  (define fgl-objectlist-variable-free-p ((x fgl-objectlist-p))
-    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
-    (if (atom x)
-        t
-      (and (fgl-object-variable-free-p (car x))
-           (fgl-objectlist-variable-free-p (cdr x)))))
-
-  (define fgl-object-alist-variable-free-p ((x fgl-object-alist-p))
-    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
-    (if (atom x)
-        t
-      (and (or (not (mbt (consp (car x))))
-               (fgl-object-variable-free-p (cdar x)))
-           (fgl-object-alist-variable-free-p (cdr x)))))
-  ///
-  (memoize 'fgl-object-variable-free-p))
-
 
 (define magitastic-ev-definition ((fn pseudo-fnsym-p) state)
   :returns (mv ok
@@ -2066,9 +2080,15 @@
                        (symbol-alistp y))
                   (symbol-alistp (append x y)))))
 
-(local (defthm symbol-alistp-when-fgl-object-bindings-p
-         (implies (fgl-object-bindings-p x)
-                  (symbol-alistp x))))
+;; (local (defthm symbol-alistp-when-fgl-object-bindings-p
+;;          (implies (fgl-object-bindings-p x)
+;;                   (symbol-alistp x))))
+
+(local (defthm caar-of-fgl-object-bindings-fix-type
+         (implies (consp (fgl-object-bindings-fix x))
+                  (pseudo-var-p (caar (fgl-object-bindings-fix x))))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))
+         :rule-classes :type-prescription))
 
 (defines cgraph-derive-assignments
   (define cgraph-derive-assignments-obj ((x fgl-object-p)
@@ -2194,20 +2214,27 @@
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
     (b* (((cgraph-edge x))
-         ((mv match-subst assigns sts)
+         ((mv match-subst new-assigns new-sts)
           (cgraph-derive-assignments-matches x.match-vars x.rule x.subst
                                               assigns sts env$ cgraph replimit))
          ((unless match-subst)
           ;; BOZO It would kind of make sense to produce a real error message
           ;; here, but then we'd get not just the root cause of a given error,
           ;; but tons of messages about its various consequences.
-          (mv t (candidate-assigns-fix cands) assigns sts))
+          (mv t (candidate-assigns-fix cands) new-assigns new-sts))
+         ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                           (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+          (mv nil nil
+              (cgraph-alist-fix assigns)
+              (cgraph-derivstates-fix sts)))
+         ((mv eval-subst assigns sts)
+          (cgraph-derive-assignments-eval-subst x.subst new-assigns new-sts env$ cgraph replimit logicman bvar-db state))
          ((ctrex-rule x.rule))
          ((mv new-subst cands)
           (if (eq x.rule.ruletype :property)
               (candidate-assigns-complete-match-subst x.rule cands)
             (mv nil (candidate-assigns-fix cands))))
-         (match-subst (append new-subst match-subst x.subst))
+         (match-subst (append new-subst match-subst eval-subst))
          ((mv err val)
           (magitastic-ev x.rule.assign match-subst 1000 state t t))
          ;; (- (cw "magitastic-ev ~x0: ~x2 ~x3~%" x.rule.assign nil err val))
@@ -2219,6 +2246,51 @@
       (mv nil 
           (cons (make-candidate-assign :edge x :val val) cands)
           assigns sts)))
+
+  (define cgraph-derive-assignments-eval-subst ((subst fgl-object-bindings-p)
+                                                (assigns cgraph-alist-p)
+                                                (sts cgraph-derivstates-p)
+                                                (env$)
+                                                (cgraph cgraph-p)
+                                                (replimit posp)
+                                                &optional
+                                                (logicman 'logicman)
+                                                (bvar-db 'bvar-db)
+                                                (state 'state))
+    :returns (mv (eval-subst symbol-alistp)
+                 (new-assigns cgraph-alist-p)
+                 (new-sts cgraph-derivstates-p))
+    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                   7
+                   (len (fgl-object-bindings-fix subst)))
+    :guard (and (lbfr-listp (fgl-object-bindings-bfrlist subst))
+                (bfr-env$-p env$ (logicman->bfrstate))
+                (equal (bfr-nvars) (next-bvar bvar-db))
+                (lbfr-listp (cgraph-bfrlist cgraph)))
+    (b* ((subst (fgl-object-bindings-fix subst))
+         ((when (atom subst))
+          (mv nil
+              (cgraph-alist-fix assigns)
+              (cgraph-derivstates-fix sts)))
+         ;; ((unless (mbt (and (consp (car subst))
+         ;;                    (pseudo-var-p (caar subst)))))
+         ;;  (cgraph-derive-assignments-eval-subst (cdr subst) assigns sts env$ cgraph replimit))
+         ((cons var obj) (car subst))
+         ((mv new-assigns new-sts) (cgraph-derive-assignments-obj obj assigns sts env$ cgraph replimit))
+         ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                           (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+          (mv nil
+              (cgraph-alist-fix assigns)
+              (cgraph-derivstates-fix sts)))
+         (pair (hons-get ;; (fgl-object-fix obj)
+                obj new-assigns))
+         ((mv rest-subst assigns sts)
+          (cgraph-derive-assignments-eval-subst (cdr subst) new-assigns new-sts env$ cgraph replimit)))
+      (mv (if pair
+              (cons (cons var (cdr pair)) rest-subst)
+            rest-subst)
+          assigns sts)))
+    
                
   (define cgraph-derive-assignments-matches ((x pseudo-var-list-p)
                                              (rule ctrex-rule-p)
@@ -2296,6 +2368,9 @@
 
   ///
   (local (in-theory (enable bfr-listp-when-not-member-witness)))
+  (local
+   (make-event
+    `(in-theory (disable . ,(getpropc 'cgraph-derive-assignments-obj-fn 'recursivep nil (w state))))))
 
   (defret-mutual measure-decr-of-cgraph-derive-assigns
     (defret measure-decr-of-<fn>
@@ -2321,6 +2396,12 @@
           (cgraph-derive-assigns-measure cgraph assigns sts replimit))
       :hints ('(:expand (<call>)))
       :rule-classes :linear
+      :fn cgraph-derive-assignments-eval-subst)
+    (defret measure-decr-of-<fn>
+      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
+      :hints ('(:expand (<call>)))
+      :rule-classes :linear
       :fn cgraph-derive-assignments-matches)
     (defret measure-decr-of-<fn>
       (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
@@ -2330,10 +2411,29 @@
       :fn cgraph-derive-assignments-match))
 
   (verify-guards cgraph-derive-assignments-obj-fn
-    :hints (("goal" :Expand ((cgraph-edgelist-bfrlist x)))))
+    :hints (("goal" :Expand ((cgraph-edgelist-bfrlist x)
+                             (fgl-object-bindings-bfrlist subst)))))
 
   (local (in-theory (disable cons-equal)))
 
+  ;; (local (defthm fgl-object-bindings-fix-open-when-bad-car
+  ;;          (implies (not (and (consp (car subst))
+  ;;                             (pseudo-var-p (caar subst))))
+  ;;                   (equal (fgl-object-bindings-fix (cdr subst))
+  ;;                          (fgl-object-bindings-fix subst)))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))))
+
+  ;; (local (defthm cdar-of-fgl-object-bindings-fix
+  ;;          (implies (and (consp (car subst))
+  ;;                        (pseudo-var-p (caar subst)))
+  ;;                   (equal (cdar (fgl-object-bindings-fix subst))
+  ;;                          (fgl-object-fix (cdar subst))))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))))
+
+  ;; (local (defthm fgl-object-bindings-fix-when-atom
+  ;;          (implies (not (consp subst))
+  ;;                   (not (fgl-object-bindings-fix subst)))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))))
 
   (fty::deffixequiv-mutual cgraph-derive-assignments))
 
@@ -2517,14 +2617,14 @@
                 (bvar-db (interp-st->bvar-db interp-st))
                 (env$ (interp-st->ctrex-env interp-st)))
                (errmsg cgraph memo cgraph-index env$)
-               (b* ((ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
+               (b* ((env$ (bfr-env$-fix env$ (logicman->bfrstate)))
+                    (ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
                     ((unless (ctrex-ruletable-p ruletable))
                      (mv "bad ctrex-ruletable~%" cgraph memo cgraph-index env$))
                     ((mv cgraph memo) ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
                      (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable
                                             (logicman->bfrstate)
                                             (w state)))
-                    (env$ (bfr-env$-fix env$ (logicman->bfrstate)))
                     ((mv var-vals assigns sts)
                      (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
                     (- (fast-alist-free assigns))
@@ -2551,7 +2651,7 @@
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness))))
 
   (defret bfr-env$-p-of-<fn>
-    (implies (and (not errmsg)
+    (implies (and ;; (not errmsg)
                   (equal bfrstate (logicman->bfrstate (interp-st->logicman interp-st))))
              (bfr-env$-p (interp-st->ctrex-env new-interp-st) bfrstate))))
 
@@ -2619,6 +2719,13 @@
                         '(cdr (hons-get :bvar-db-ctrex-consistency-errors (@ :fgl-user-scratch)))))
                interp-st)))
 
+(define counterex-bindings-summarize-errors (infer-errors eval-errors)
+  (if infer-errors
+      (if eval-errors
+          (msg "~@0~%~@1" infer-errors eval-errors)
+        infer-errors)
+    eval-errors))
+
 
 (define interp-st-counterex-bindings ((x fgl-object-bindings-p)
                                       (interp-st)
@@ -2639,21 +2746,21 @@
                                                         fgl-object-bindings-p))))))
   (b* ((x (fgl-object-bindings-fix x))
        (vars (fgl-object-alist-vars x nil))
-       ((mv err interp-st)
+       ((mv infer-err interp-st)
         (interp-st-infer-ctrex-var-assignments vars interp-st state))
-       ((when err)
-        (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
-            nil nil interp-st)))
+       ;; ((when err)
+       ;;  (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
+       ;;      nil nil interp-st))
+       )
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (env$ (interp-st->ctrex-env interp-st)))
-               (errmsg binding-vals var-vals)
+               (eval-err binding-vals var-vals)
                (b* (((mv eval-err objs) (magic-fgl-objectlist-eval (alist-vals x) env$))
                     ;; (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
                     (binding-vals (pairlis$ (alist-keys x) objs))
                     (var-vals (env$->obj-alist env$)))
                  (mv eval-err binding-vals var-vals))
-               (mv (and errmsg
-                        (msg "Error evaluating objects under the counterexample: ~@0" errmsg))
+               (mv (counterex-bindings-summarize-errors infer-err eval-err)
                    binding-vals  var-vals interp-st)))
   ///
   (defret interp-st-get-of-<fn>

@@ -315,3 +315,9 @@ be a string or message identifying the particular SAT check.</p>"
 
 (defmacro without-fgl-testbench (term)
   `(with-branch-on-if-flag t (narrow-equiv nil ,term)))
+
+(define interp-st-get-counterexample-obj-alist (interp-st)
+  (stobj-let ((env$ (interp-st->ctrex-env interp-st)))
+             (obj-alist)
+             (env$->obj-alist env$)
+             obj-alist))
