@@ -546,7 +546,13 @@
   :short "Lift @(tsee atj-type-to-jtype) to lists."
   (cond ((endp types) nil)
         (t (cons (atj-type-to-jtype (car types))
-                 (atj-types-to-jtypes (cdr types))))))
+                 (atj-types-to-jtypes (cdr types)))))
+  ///
+
+  (more-returns
+   (jtypes (equal (len jtypes) (len types))
+           :name len-of-atj-types-to-jtypes
+           :rule-classes :linear)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

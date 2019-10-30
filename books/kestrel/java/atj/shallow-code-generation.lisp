@@ -918,7 +918,6 @@
      then all the type annotations consist of
      the type @(':avalue') of all ACL2 values,
      i.e. it is as if there were no types."))
-  :verify-guards nil
 
   (define atj-gen-shallow-ifapp ((test pseudo-termp)
                                  (then pseudo-termp)
@@ -1311,7 +1310,10 @@
                                  (qpairs cons-pos-alistp)
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (not (equal curr-pkg ""))
+                (or (not (pseudo-lambdap fn))
+                    (equal (len (lambda-formals fn))
+                           (len args))))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1582,7 +1584,8 @@
                                  (guards$ booleanp)
                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
-    :returns (mv (blocks jblock-listp)
+    :returns (mv (blocks (and (jblock-listp blocks)
+                              (equal (len blocks) (len terms))))
                  (exprs (and (jexpr-listp exprs)
                              (equal (len exprs) (len terms))))
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1615,7 +1618,15 @@
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
             jvar-result-index)))
-    :measure (two-nats-measure (acl2-count terms) 0)))
+    :measure (two-nats-measure (acl2-count terms) 0))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-gen-shallow-term
+    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
+                                       unquote-term
+                                       pseudo-termfnp
+                                       pseudo-lambdap)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1626,7 +1637,6 @@
                                          (verbose$ booleanp)
                                          (wrld plist-worldp))
   :guard (aij-nativep fn)
-  :verify-guards nil
   :returns (method jmethodp)
   :short "Generate a shallowly embedded ACL2 function
           that is natively implemented in AIJ."
@@ -1689,6 +1699,18 @@
        (fn-type (atj-function-type-info->main fn-info))
        (fn-in-types (atj-function-type->inputs fn-type))
        (fn-out-type (atj-function-type->output fn-type))
+       ((unless (= (len fn-in-types)
+                   (len method-param-names)))
+        (raise "Internal error: ~
+                the number ~x0 of parameter types does not match ~
+                the number ~x1 of parameter names."
+               (len fn-in-types)
+               (len method-param-names))
+        ;; irrelevant:
+        (make-jmethod :access (jaccess-public)
+                      :result (jresult-void)
+                      :name ""
+                      :body (jblock-return nil)))
        (method-params (atj-gen-paramlist method-param-names
                                          (atj-types-to-jtypes fn-in-types)))
        (jcall-method-name
