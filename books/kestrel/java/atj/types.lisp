@@ -1050,7 +1050,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee def-atj-main-function-type-input-theorem) to lists."))
+    "This lifts @(tsee atj-main-function-type-input-theorem) to lists."))
   (if (endp formals)
       nil
     (cons (atj-main-function-type-input-theorem
