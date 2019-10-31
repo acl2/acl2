@@ -19,13 +19,15 @@ package edu.kestrel.acl2.aij;
  */
 public abstract class Acl2NamedFunction extends Acl2Function {
 
-    //////////////////////////////////////// package-private members:
+    //////////////////////////////////////// private members:
 
     /**
      * Name of this named function.
      * This is never {@code null}.
      */
     private final Acl2Symbol name;
+
+    //////////////////////////////////////// package-private members:
 
     /**
      * Constructs a named function with the given name
@@ -143,7 +145,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @param name The name of the named function.
      * @return The named function.
-     * @throws IllegalArgumentException if name is null
+     * @throws IllegalArgumentException If {@code name} is {@code null}.
      */
     public static Acl2NamedFunction make(Acl2Symbol name) {
         if (name == null)
@@ -188,14 +190,12 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * @param values The arguments of the call.
      * @return The result of calling this named function on the arguments.
      * @throws IllegalArgumentException If {@code values} is {@code null},
-     *                                  or any of its elements is {@code null}.
+     *                                  or any of its elements is {@code null}
+     *                                  or {@code values.length} differs from
+     *                                  the function's arity.
      * @throws IllegalStateException    If not all the defined functions
      *                                  have been validated.
-     * @throws Acl2EvaluationException  If this named function is
-     *                                  neither defined nor native,
-     *                                  or {@code values.length} differs from
-     *                                  the function's arity,
-     *                                  or a call of {@code pkg-imports}
+     * @throws Acl2EvaluationException  If a call of {@code pkg-imports}
      *                                  or {@code pkg-witness} fails.
      */
     public Acl2Value call(Acl2Value[] values) throws Acl2EvaluationException {
@@ -204,6 +204,10 @@ public abstract class Acl2NamedFunction extends Acl2Function {
                     ("Not all function definitions have been validated.");
         if (values == null)
             throw new IllegalArgumentException("Null value array.");
+        if (values.length != getArity())
+            throw new IllegalArgumentException
+                    ("Wrong number of actual arguments " + values.length +
+                            " for function with arity " + getArity() + ".");
         for (int i = 0; i < values.length; ++i)
             if (values[i] == null)
                 throw new IllegalArgumentException

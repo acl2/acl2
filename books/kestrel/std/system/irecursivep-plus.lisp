@@ -27,7 +27,11 @@
     that allows us to prove the return type theorem
     without strengthening the guard on @('wrld').
     Furthermore, this utility causes an error if called on a symbol
-    that does not name a logic-mode function.")
+    that does not name a logic-mode function;
+    the reason for ensuring logic mode is that this utility
+    looks at the @('recursivep') property,
+    which is always @('nil') for program-mode functions
+    (i.e. it is set only for logic-mode functions).")
   (cond ((not (function-symbolp fn wrld))
          (raise "The symbol ~x0 does not name a function." fn))
         ((not (logicp fn wrld))

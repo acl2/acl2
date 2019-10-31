@@ -67,3 +67,8 @@
   (implies (no-duplicatesp-equal x)
            (no-duplicatesp-equal (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))
+
+(defthm no-duplicatesp-equal-of-true-list-fix
+  (equal (no-duplicatesp-equal (true-list-fix x))
+         (no-duplicatesp-equal x))
+  :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))

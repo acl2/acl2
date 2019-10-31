@@ -15,8 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define no-stobjs-p+ ((fn (function-namep fn wrld))
-                      (wrld plist-worldp))
+(define no-stobjs-p+ ((fn symbolp) (wrld plist-worldp))
   :guard (not (member-eq fn *stobjs-out-invalid*))
   :returns (yes/no booleanp)
   :parents (std/system/function-queries)
@@ -24,8 +23,15 @@
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee no-stobjs-p).")
   :long
-  (xdoc::topstring-p
-   "This returns the same result as @(tsee no-stobjs-p),
-    but it has a stronger guard and is guard-verified.")
+  (xdoc::topstring
+   (xdoc::p
+    "This returns the same result as @(tsee no-stobjs-p),
+     but it is guard-verified
+     and it causes an error (via @(tsee stobjs-in+)
+     if called on a symbol that does not name a function.")
+   (xdoc::p
+    "The function must not be in @('*stobjs-out-invalid*'),
+     because in that case its output stobjs depend on how it is called.
+     This condition is part of the guard of this utility."))
   (and (all-nils (stobjs-in+ fn wrld))
        (all-nils (stobjs-out+ fn wrld))))

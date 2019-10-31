@@ -16,7 +16,7 @@
 
 ; Specialize the input and output types of the function.
 
-(java::def-atj-function-type f-int (:jint :jint) :jint)
+(java::def-atj-main-function-type f-int (:jint :jint) :jint)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -7019,458 +7019,440 @@
 
   :long
 
-  "<p>
-   If a (list of) terminated tree(s) matches a syntactic entity,
-   attempting to parse the string at the leaves of the tree(s)
-   with a parsing function for a different syntactic entity fails, in general.
-   For example, if a terminated tree matches @('HTAB'),
-   @(tsee parse-sp) fails on the string at the leaves of the tree:
-   this is stated by the disambiguation theorem @(tsee fail-sp-when-match-htab).
-   </p>
+  (xdoc::topstring
 
-   <p>
-   The disambiguation theorems below state this kind of facts.
-   Essentially, these theorems say that certain syntactic entities
-   are incompatible with certain parsing functions;
-   they are used to show that the parser can disambiguate its input
-   (hence the name of these theorems).
-   </p>
+   (xdoc::p
+    "If a (list of) terminated tree(s) matches a syntactic entity,
+     attempting to parse the string at the leaves of the tree(s)
+     with a parsing function for a different syntactic entity fails, in general.
+     For example, if a terminated tree matches @('HTAB'),
+     @(tsee parse-sp) fails on the string at the leaves of the tree:
+     this is stated by the disambiguation theorem
+     @(tsee fail-sp-when-match-htab).")
 
-   <h3>Usage</h3>
+   (xdoc::p
+    "The disambiguation theorems below state this kind of facts.
+     Essentially, these theorems say that certain syntactic entities
+     are incompatible with certain parsing functions;
+     they are used to show that the parser can disambiguate its input
+     (hence the name of these theorems).")
 
-   <p>
-   The disambiguation theorems are used to prove the
-   <see topic='@(url grammar-parser-completeness)'>completeness
-   theorems</see>.
-   </p>
+   (xdoc::h3 "Usage")
 
-   <p>
-   The disambiguation theorems are rewrite rules that are disabled by default.
-   They are explicitly enabled in the individual completeness theorems.
-   </p>
+   (xdoc::p
+    "The disambiguation theorems are used to prove the "
+    (xdoc::seetopic "grammar-parser-completeness"
+                    "completeness theorems")
+    ".")
 
-   <p>
-   Some disambiguation theorems are used
-   to incrementally prove other disambiguation theorems (see below),
-   also via explicit enabling.
-   </p>
+   (xdoc::p
+    "The disambiguation theorems are rewrite rules that are disabled by default.
+     They are explicitly enabled in the individual completeness theorems.")
 
-   <h3>Scope</h3>
+   (xdoc::p
+    "Some disambiguation theorems are used
+     to incrementally prove other disambiguation theorems (see below),
+     also via explicit enabling.")
 
-   <p>
-   There are disambiguation theorems
-   only for some combinations of syntactic entities and parsing functions:
-   just the ones used to prove the completeness theorems,
-   and to incrementally prove other disambiguation theorems.
-   </p>
+   (xdoc::h3 "Scope")
 
-   <p>
-   Given the potentially ``quadratic'' number
-   of disambiguation theorems
-   (i.e. for all syntactic entities combined with all parsing functions),
-   some disambiguation theorems group together
-   multiple tree matching hypotheses or multiple parsing failure conclusions.
-   For example, @(tsee fail-bit/digit/hexdig/dot/dash-when-match-slash)
-   asserts the failure of multiple parsing functions
-   for the given tree matching hypothesis:
-   this theorem replaces five potential theorems
-   (one for each parsing function mentioned there).
-   As another example, @(tsee fail-cwsp-when-match-alt/conc/rep)
-   asserts the failure of a given parsing function
-   for multiple syntactic entities matched by the tree:
-   this theorem replaces three potential theorems
-   (one for each syntactic entity mentioned there).
-   More grouping (and thus reduction in the number of disambiguation theorems)
-   is possible,
-   but we also try to keep the disambiguation theorems' names
-   sufficiently descriptive while not excessively long.
-   </p>
+   (xdoc::p
+    "There are disambiguation theorems
+     only for some combinations of syntactic entities and parsing functions:
+     just the ones used to prove the completeness theorems,
+     and to incrementally prove other disambiguation theorems.")
 
-   <h3>Formulation</h3>
+   (xdoc::p
+    "Given the potentially ``quadratic'' number
+     of disambiguation theorems
+     (i.e. for all syntactic entities combined with all parsing functions),
+     some disambiguation theorems group together
+     multiple tree matching hypotheses or multiple parsing failure conclusions.
+     For example, @(tsee fail-bit/digit/hexdig/dot/dash-when-match-slash)
+     asserts the failure of multiple parsing functions
+     for the given tree matching hypothesis:
+     this theorem replaces five potential theorems
+     (one for each parsing function mentioned there).
+     As another example, @(tsee fail-cwsp-when-match-alt/conc/rep)
+     asserts the failure of a given parsing function
+     for multiple syntactic entities matched by the tree:
+     this theorem replaces three potential theorems
+     (one for each syntactic entity mentioned there).
+     More grouping (and thus reduction in the number of disambiguation theorems)
+     is possible,
+     but we also try to keep the disambiguation theorems' names
+     sufficiently descriptive while not excessively long.")
 
-   <p>
-   The formulation of the disambiguation theorems is derived from
-   the subgoals that arise in the completeness proofs
-   (and in the incrementally proved disambiguation proofs):
-   the disambiguation theorems serve to prove those subgoals.
-   The disambiguation theorems were developed
-   in the process of proving the completeness theorems,
-   based on failed subgoals in the latter.
-   </p>
+   (xdoc::h3 "Formulation")
 
-   <p>
-   In particular,
-   the ``asymmetric'' use of trees and parsing functions
-   to show incompatibility
-   (as opposed to showing incompatibility
-   between parsing functions or between trees)
-   reflects the structure of the subgoals in the completeness theorems;
-   see the documentation of the completeness theorems for details.
-   </p>
+   (xdoc::p
+    "The formulation of the disambiguation theorems is derived from
+     the subgoals that arise in the completeness proofs
+     (and in the incrementally proved disambiguation proofs):
+     the disambiguation theorems serve to prove those subgoals.
+     The disambiguation theorems were developed
+     in the process of proving the completeness theorems,
+     based on failed subgoals in the latter.")
 
-   <p>
-   The formulation of each disambiguation theorem also involves
-   some remaining input
-   that is @(tsee append)ed after the string at the leaves of the tree(s).
-   That is, each disambiguation theorem says something of this form:
-   if a (list of) terminated tree(s) matches certain syntactic entities
-   and possibly satisfies certain
-   <see topic='@(url grammar-parser-disambiguating-restrictions)'
-   >disambiguating restrictions</see>,
-   then running certain parsing functions on the @(tsee append) of
-   (i) the string at the leaves of the tree and
-   (ii) some remaining input
-   possibly satisfing certain hypotheses explained below,
-   fails.
-   This is similar to the way in which
-   the completeness theorems are formulated.
-   </p>
+   (xdoc::p
+    "In particular,
+     the ``asymmetric'' use of trees and parsing functions
+     to show incompatibility
+     (as opposed to showing incompatibility
+     between parsing functions or between trees)
+     reflects the structure of the subgoals in the completeness theorems;
+     see the documentation of the completeness theorems for details.")
 
-   <p>
-   Most disambiguation theorems involve a single (list of) tree(s).
-   Four of them (i.e.
-   @(tsee fail-alpha/digit/dash-when-match-*cwsp-close-round/square),
-   @(tsee fail-bit/digit/hexdig/dot/dash-when-match-*cwsp-close-round/square),
-   @(tsee fail-alt-rest-comp-when-match-*cwsp-close-round/square), and
-   @(tsee fail-conc-rest-comp-when-match-*cwsp-close-round/square))
-   involve a list of trees matching @('*c-wsp')
-   and a tree matching @('\")\"') or @('\"]\"');
-   the parsing function in their conclusion
-   is applied to the @(tsee append) of
-   (i) the string at the leaves of the list of trees,
-   (ii) the string at the leaves of the tree, and
-   (iii) some remaining input.
-   These four theorems are used
-   in the completeness proofs of the mutually recursive parsing functions,
-   precisely in the induction step lemmas
-   for @(tsee parse-group) and @(tsee parse-option).
-   In those lemmas, the tree matching hypothesis reduces to, among others,
-   the fact that a list of subtrees matches @('*c-wsp')
-   and that the subtree just after that list matches @('\")\"') or @('\"]\"'):
-   the four disambiguation theorems apply to that (list of) subtree(s).
-   Note that @('*c-wsp \")\"') and @('*c-wsp \"]\"') are the ending parts
-   of the definientia of @('group') and @('option').
-   </p>
+   (xdoc::p
+    "The formulation of each disambiguation theorem also involves
+     some remaining input
+     that is @(tsee append)ed after the string at the leaves of the tree(s).
+     That is, each disambiguation theorem says something of this form:
+     if a (list of) terminated tree(s) matches certain syntactic entities
+     and possibly satisfies certain "
+    (xdoc::seetopic "grammar-parser-disambiguating-restrictions"
+                    "disambiguating restrictions")
+    ", then running certain parsing functions on the @(tsee append) of
+     (i) the string at the leaves of the tree and
+     (ii) some remaining input
+     possibly satisfing certain hypotheses explained below,
+     fails.
+     This is similar to the way in which
+     the completeness theorems are formulated.")
 
-   <h3>Hypotheses on the Remaining Input</h3>
+   (xdoc::p
+    "Most disambiguation theorems involve a single (list of) tree(s).
+     Four of them (i.e.
+     @(tsee fail-alpha/digit/dash-when-match-*cwsp-close-round/square),
+     @(tsee fail-bit/digit/hexdig/dot/dash-when-match-*cwsp-close-round/square),
+     @(tsee fail-alt-rest-comp-when-match-*cwsp-close-round/square), and
+     @(tsee fail-conc-rest-comp-when-match-*cwsp-close-round/square))
+     involve a list of trees matching @('*c-wsp')
+     and a tree matching @('\")\"') or @('\"]\"');
+     the parsing function in their conclusion
+     is applied to the @(tsee append) of
+     (i) the string at the leaves of the list of trees,
+     (ii) the string at the leaves of the tree, and
+     (iii) some remaining input.
+     These four theorems are used
+     in the completeness proofs of the mutually recursive parsing functions,
+     precisely in the induction step lemmas
+     for @(tsee parse-group) and @(tsee parse-option).
+     In those lemmas, the tree matching hypothesis reduces to, among others,
+     the fact that a list of subtrees matches @('*c-wsp')
+     and that the subtree just after that list matches @('\")\"') or @('\"]\"'):
+     the four disambiguation theorems apply to that (list of) subtree(s).
+     Note that @('*c-wsp \")\"') and @('*c-wsp \"]\"') are the ending parts
+     of the definientia of @('group') and @('option').")
 
-   <p>
-   In all the disambiguation theorems,
-   the remaining input (following the string at the leaves of the tree(s))
-   is denoted by the variable @('rest-input').
-   The hypotheses on the remaining input, when present,
-   are that certain parsing functions fail on the remaining input.
-   </p>
+   (xdoc::h3 "Hypotheses on the Remaining Input")
 
-   <p>
-   In most cases, the hypotheses on the remaining input are present
-   when the (list of) tree(s) may have an empty string at the leaves.
-   When that string is empty,
-   the incompatibility between the tree(s) and the parsing functions
-   does not apply.
-   Thus, each of these theorems includes the hypothesis
-   that the parsing function fails on the remaining input,
-   to ensure that the conclusion holds in this case.
-   For example, in @(tsee fail-bit-when-match-*cwsp),
-   if the list of trees is empty,
-   the incompatibility between (the first tree of the list matching) @('c-wsp')
-   and the parsing function @(tsee parse-bit) does not apply;
-   but the hypothesis that @(tsee parse-bit) fails on @('rest-input')
-   maintains the truth of the theorem in case the list of trees is empty.
-   In general, for each of these disambiguation theorems,
-   the hypothesis asserts the failure on the remaining input
-   of the same parsing function that the theorem shows to be
-   incompatible with the syntactic entity matched by the tree(s).
-   </p>
+   (xdoc::p
+    "In all the disambiguation theorems,
+     the remaining input (following the string at the leaves of the tree(s))
+     is denoted by the variable @('rest-input').
+     The hypotheses on the remaining input, when present,
+     are that certain parsing functions fail on the remaining input.")
 
-   <p>
-   The hypotheses just mentioned could be weakened
-   to require the parsing failure on the remaining input
-   only if the string at the leaves of the tree(s) is in fact empty;
-   however, the stronger hypotheses keep the theorems simpler
-   without precluding the eventual proof of the top-level completeness theorem.
-   Another possibility is to have, instead, hypotheses stating that
-   the string at the leaves of the tree(s) are not empty;
-   however, the current formulation seems more readily usable
-   in the proofs of completeness,
-   obviating a case split based on whether the string is empty or not.
-   </p>
+   (xdoc::p
+    "In most cases, the hypotheses on the remaining input are present
+     when the (list of) tree(s) may have an empty string at the leaves.
+     When that string is empty,
+     the incompatibility between the tree(s) and the parsing functions
+     does not apply.
+     Thus, each of these theorems includes the hypothesis
+     that the parsing function fails on the remaining input,
+     to ensure that the conclusion holds in this case.
+     For example, in @(tsee fail-bit-when-match-*cwsp),
+     if the list of trees is empty,
+     the incompatibility
+     between (the first tree of the list matching) @('c-wsp')
+     and the parsing function @(tsee parse-bit) does not apply;
+     but the hypothesis that @(tsee parse-bit) fails on @('rest-input')
+     maintains the truth of the theorem in case the list of trees is empty.
+     In general, for each of these disambiguation theorems,
+     the hypothesis asserts the failure on the remaining input
+     of the same parsing function that the theorem shows to be
+     incompatible with the syntactic entity matched by the tree(s).")
 
-   <p>
-   The disambiguation theorem
-   @(tsee fail-equal-slash-when-match-equal-and-rest-fail-slash)
-   has the hypothesis that @(tsee parse-ichar) with argument @('#\\/')
-   fails on the remaining input.
-   Without this hypothesis,
-   @(tsee parse-ichars) with arguments @('#\\=') and @('#\\/') could succeed:
-   after parsing the @('\"=\"') in the string at the leaves of the tree,
-   it could parse a @('\"/\"') in the remaining input,
-   obtaining a @('\"=/\"').
-   </p>
+   (xdoc::p
+    "The hypotheses just mentioned could be weakened
+     to require the parsing failure on the remaining input
+     only if the string at the leaves of the tree(s) is in fact empty;
+     however, the stronger hypotheses keep the theorems simpler
+     without precluding the eventual proof of
+    the top-level completeness theorem.
+     Another possibility is to have, instead, hypotheses stating that
+     the string at the leaves of the tree(s) are not empty;
+     however, the current formulation seems more readily usable
+     in the proofs of completeness,
+     obviating a case split based on whether the string is empty or not.")
 
-   <p>
-   The disambiguation theorem @(tsee fail-*digit-star-*digit-when-match-1*digit)
-   has the hypotheses that
-   both @(tsee parse-ichar) with argument @('#\\*')
-   and @(tsee parse-digit)
-   fail on the remaining input.
-   Without the first hypothesis,
-   @(tsee parse-*digit-star-*digit) could succeed:
-   after parsing the @('DIGIT')s from the string at the leaves of the trees,
-   it could parse a @('\"*\"') from the remaining input,
-   and then zero or more @('DIGIT')s,
-   obtaining a @('(*DIGIT \"*\" *DIGIT)').
-   Without the second hypothesis,
-   @(tsee parse-*digit-star-*digit) could also succeed:
-   after parsing the @('DIGIT')s from the string at the leaves of the trees,
-   it could parse additional @('DIGIT')s from the remaining input,
-   then a @('\"*\"'),
-   and then zero or more @('DIGIT')s,
-   obtaining a @('(*DIGIT \"*\" *DIGIT)').
-   The second hypothesis is stronger than needed,
-   because the presence of a @('DIGIT') at the start of the remaining input
-   does not imply the success of @(tsee parse-*digit-star-*digit);
-   however, the stronger hypothesis keeps the theorems simpler
-   without precluding the eventual proof of the top-level completeness theorem.
-   </p>
+   (xdoc::p
+    "The disambiguation theorem
+     @(tsee fail-equal-slash-when-match-equal-and-rest-fail-slash)
+     has the hypothesis that @(tsee parse-ichar) with argument @('#\\/')
+     fails on the remaining input.
+     Without this hypothesis,
+     @(tsee parse-ichars) with arguments @('#\\=') and @('#\\/') could succeed:
+     after parsing the @('\"=\"') in the string at the leaves of the tree,
+     it could parse a @('\"/\"') in the remaining input,
+     obtaining a @('\"=/\"').")
 
-   <p>
-   The disambiguation theorem @(tsee fail-cwsp-when-match-cnl)
-   has the hypothesis that @(tsee parse-wsp) fails on the remaining input.
-   Without this hypothesis, @(tsee parse-cwsp) could succeed:
-   after parsing the @('c-nl') from the string at the leaves of the tree,
-   it could parse a @('WSP') from the remaining input,
-   obtaining a @('c-wsp').
-   </p>
+   (xdoc::p
+    "The disambiguation theorem
+     @(tsee fail-*digit-star-*digit-when-match-1*digit)
+     has the hypotheses that
+     both @(tsee parse-ichar) with argument @('#\\*')
+     and @(tsee parse-digit)
+     fail on the remaining input.
+     Without the first hypothesis,
+     @(tsee parse-*digit-star-*digit) could succeed:
+     after parsing the @('DIGIT')s from the string at the leaves of the trees,
+     it could parse a @('\"*\"') from the remaining input,
+     and then zero or more @('DIGIT')s,
+     obtaining a @('(*DIGIT \"*\" *DIGIT)').
+     Without the second hypothesis,
+     @(tsee parse-*digit-star-*digit) could also succeed:
+     after parsing the @('DIGIT')s from the string at the leaves of the trees,
+     it could parse additional @('DIGIT')s from the remaining input,
+     then a @('\"*\"'),
+     and then zero or more @('DIGIT')s,
+     obtaining a @('(*DIGIT \"*\" *DIGIT)').
+     The second hypothesis is stronger than needed,
+     because the presence of a @('DIGIT') at the start of the remaining input
+     does not imply the success of @(tsee parse-*digit-star-*digit);
+     however, the stronger hypothesis keeps the theorems simpler
+     without precluding the eventual proof of
+     the top-level completeness theorem.")
 
-   <p>
-   The disambiguation theorems
-   @(tsee fail-alt-rest-comp-when-match-cnl) and
-   @(tsee fail-conc-rest-comp-when-match-cnl)
-   also have the hypothesis that @(tsee parse-wsp) fails on the remaining input.
-   Without this hypothesis,
-   @(tsee parse-alt-rest-comp) or
-   @(tsee parse-conc-rest-comp)
-   could succeed:
-   after parsing the @('c-nl') from the string at the leaves of the tree,
-   it could parse a @('WSP') from the remaining input,
-   forming the first @('c-wsp')
-   of a @('(*c-wsp \"/\" *c-wsp concatenation)')
-   or of a @('*(1*c-wsp repetition)'),
-   and then proceed to parse more, eventually obtaining
-   a @('(*c-wsp \"/\" *c-wsp concatenation)') or @('*(1*c-wsp repetition)').
-   The hypothesis is stronger than needed,
-   because the presence of a @('WSP') at the start of the remaining input
-   does not imply the success of
-   @(tsee parse-alt-rest-comp) or
-   @(tsee parse-conc-rest-comp);
-   however, the stronger hypothesis keeps the theorems simpler
-   without precluding the eventual proof of the top-level completeness theorem.
-   </p>
+   (xdoc::p
+    "The disambiguation theorem @(tsee fail-cwsp-when-match-cnl)
+     has the hypothesis that @(tsee parse-wsp) fails on the remaining input.
+     Without this hypothesis, @(tsee parse-cwsp) could succeed:
+     after parsing the @('c-nl') from the string at the leaves of the tree,
+     it could parse a @('WSP') from the remaining input,
+     obtaining a @('c-wsp').")
 
-   <p>
-   The disambiguation theorem @(tsee fail-conc-rest-comp-when-match-*cwsp)
-   has the hypotheses that both @(tsee parse-repetition) and @(tsee parse-cwsp)
-   fail on the remaining input.
-   Without the first hypothesis,
-   @(tsee parse-conc-rest-comp) could succeed:
-   after parsing the @('*c-wsp') from the string at the leaves of the trees,
-   assuming that there is at least one tree,
-   it could parse a @('repetition') from the remaining input,
-   obtaining a @('(1*c-wsp repetition)').
-   Without the second hypothesis,
-   @(tsee parse-conc-rest-comp) could also succeed:
-   after parsing the @('*c-wsp') from the string at the leaves of the trees,
-   it could parse a @('c-wsp') from the remaining input,
-   and then a @('repetition'),
-   obtaining a @('(1*c-wsp repetition)').
-   </p>
+   (xdoc::p
+    "The disambiguation theorems
+     @(tsee fail-alt-rest-comp-when-match-cnl) and
+     @(tsee fail-conc-rest-comp-when-match-cnl)
+     also have the hypothesis that @(tsee parse-wsp) fails
+     on the remaining input.
+     Without this hypothesis,
+     @(tsee parse-alt-rest-comp) or
+     @(tsee parse-conc-rest-comp)
+     could succeed:
+     after parsing the @('c-nl') from the string at the leaves of the tree,
+     it could parse a @('WSP') from the remaining input,
+     forming the first @('c-wsp')
+     of a @('(*c-wsp \"/\" *c-wsp concatenation)')
+     or of a @('*(1*c-wsp repetition)'),
+     and then proceed to parse more, eventually obtaining
+     a @('(*c-wsp \"/\" *c-wsp concatenation)') or @('*(1*c-wsp repetition)').
+     The hypothesis is stronger than needed,
+     because the presence of a @('WSP') at the start of the remaining input
+     does not imply the success of
+     @(tsee parse-alt-rest-comp) or
+     @(tsee parse-conc-rest-comp);
+     however, the stronger hypothesis keeps the theorems simpler
+     without precluding the eventual proof of
+     the top-level completeness theorem.")
 
-   <h3>Hypotheses on the Tree(s)</h3>
+   (xdoc::p
+    "The disambiguation theorem @(tsee fail-conc-rest-comp-when-match-*cwsp)
+     has the hypotheses that
+     both @(tsee parse-repetition) and @(tsee parse-cwsp)
+     fail on the remaining input.
+     Without the first hypothesis,
+     @(tsee parse-conc-rest-comp) could succeed:
+     after parsing the @('*c-wsp') from the string at the leaves of the trees,
+     assuming that there is at least one tree,
+     it could parse a @('repetition') from the remaining input,
+     obtaining a @('(1*c-wsp repetition)').
+     Without the second hypothesis,
+     @(tsee parse-conc-rest-comp) could also succeed:
+     after parsing the @('*c-wsp') from the string at the leaves of the trees,
+     it could parse a @('c-wsp') from the remaining input,
+     and then a @('repetition'),
+     obtaining a @('(1*c-wsp repetition)').")
 
-   <p>
-   Many disambiguation theorems include
-   hypotheses saying that the trees are terminated.
-   This ensures that the strings at the leaves of the trees
-   consist of natural numbers and not rule names,
-   since the incompatibilities with the parsing functions
-   are in terms of natural numbers.
-   Some disambiguation theorems do not need these hypotheses
-   because the syntactic entities can only be matched
-   by trees whose (starting) leaves are natural numbers.
-   For instance, in @(tsee fail-dot-when-match-dash-etc.),
-   the group @('(\"-\" ...)') can only be matched by a tree
-   whose first leaf is a natural number,
-   upon which the incompatibility with the parsing function applies.
-   </p>
+   (xdoc::h3 "Hypotheses on the Tree(s)")
 
-   <p>
-   A few disambiguation theorems include hypotheses
-   that the tree(s) satisfy the
-   <see topic='@(url grammar-parser-disambiguating-restrictions)'
-   >disambiguating restrictions</see>.
-   These theorems say that @(tsee parse-wsp) fails
-   on the strings at the leaves of trees
-   that satisfy the disambiguating restrictions.
-   Since the restrictions say that these trees cannot start with @('WSP'),
-   as the syntactic entities matched by the trees
-   would otherwise allow that,
-   these hypotheses are essential to the truth of these theorems.
-   </p>
+   (xdoc::p
+    "Many disambiguation theorems include
+     hypotheses saying that the trees are terminated.
+     This ensures that the strings at the leaves of the trees
+     consist of natural numbers and not rule names,
+     since the incompatibilities with the parsing functions
+     are in terms of natural numbers.
+     Some disambiguation theorems do not need these hypotheses
+     because the syntactic entities can only be matched
+     by trees whose (starting) leaves are natural numbers.
+     For instance, in @(tsee fail-dot-when-match-dash-etc.),
+     the group @('(\"-\" ...)') can only be matched by a tree
+     whose first leaf is a natural number,
+     upon which the incompatibility with the parsing function applies.")
 
-   <h3>Proof Methods</h3>
+   (xdoc::p
+    "A few disambiguation theorems include hypotheses
+     that the tree(s) satisfy the "
+    (xdoc::seetopic "grammar-parser-disambiguating-restrictions"
+                    "disambiguating restrictions")
+    ". These theorems say that @(tsee parse-wsp) fails
+     on the strings at the leaves of trees
+     that satisfy the disambiguating restrictions.
+     Since the restrictions say that these trees cannot start with @('WSP'),
+     as the syntactic entities matched by the trees
+     would otherwise allow that,
+     these hypotheses are essential to the truth of these theorems.")
 
-   <p>
-   Most disambiguation theorems are proved by using, via @(':use') hints,
-   parsing constraint theorems and tree matching constraint theorems
-   that explicate incompatible constraints
-   between the parsing functions
-   and the syntactic entities matched by the trees.
-   For example, in @(tsee fail-sp-when-match-htab),
-   the fact that the tree matches @('HTAB') induces the constraint that
-   the first natural number of the string at the leaves of the tree is 9,
-   but the fact that @(tsee parse-sp) succeeds induces the constraint that
-   the first natural number of the string at the leaves of the tree is 32.
-   </p>
+   (xdoc::h3 "Proof Methods")
 
-   <p>
-   The disambiguation theorems
-   @(tsee fail-case-insensitive-string-when-match-case-sensitive-string) and
-   @(tsee fail-char-val-when-match-num/prose-val)
-   have a @(':cases') hint on whether
-   the string at the leaves of the tree has a second natural number or not.
-   Without this hint, the proof fails.
-   Perhaps this case split is related to the fact that
-   these disambiguation theorems are proved via constraints that involve
-   not only the first but also the second natural number in the string,
-   for LL(2) parts of the grammar.
-   </p>
+   (xdoc::p
+    "Most disambiguation theorems are proved by using, via @(':use') hints,
+     parsing constraint theorems and tree matching constraint theorems
+     that explicate incompatible constraints
+     between the parsing functions
+     and the syntactic entities matched by the trees.
+     For example, in @(tsee fail-sp-when-match-htab),
+     the fact that the tree matches @('HTAB') induces the constraint that
+     the first natural number of the string at the leaves of the tree is 9,
+     but the fact that @(tsee parse-sp) succeeds induces the constraint that
+     the first natural number of the string at the leaves of the tree is 32.")
 
-   <p>
-   The proofs of some disambiguation theorems use other disambiguation theorems.
-   The former enable the latter explcitly, to use them as rewrite rules.
-   As explained earlier, some disambiguation theorems group together
-   multiple tree matching hypotheses or multiple parsing conclusions,
-   to reduce the potentially quadratic number of theorems.
-   This means that,
-   when some of these disambiguation theorems are used in the proofs of others,
-   only ``parts'' of the former are actually used.
-   </p>
+   (xdoc::p
+    "The disambiguation theorems
+     @(tsee fail-case-insensitive-string-when-match-case-sensitive-string) and
+     @(tsee fail-char-val-when-match-num/prose-val)
+     have a @(':cases') hint on whether
+     the string at the leaves of the tree has a second natural number or not.
+     Without this hint, the proof fails.
+     Perhaps this case split is related to the fact that
+     these disambiguation theorems are proved via constraints that involve
+     not only the first but also the second natural number in the string,
+     for LL(2) parts of the grammar.")
 
-   <p>
-   A disambiguation theorem about a list of trees matching a repetition,
-   such that another disambiguation theorem exists
-   about a tree matching the element of that repetition
-   and about the same parsing function,
-   is proved just by enabling the latter disambiguation theorem
-   and @(tsee tree-list-match-repetition-p),
-   without any parsing constraint theorems
-   and tree matching constraint theorems.
-   For example, @(tsee fail-bit-when-match-*cwsp) is proved just by enabling
-   @(tsee fail-bit/digit/hexdig/dot/dash-when-match-cwsp)
-   (of which only the @(tsee parse-bit) failure is used here) and
-   @(tsee tree-list-match-repetition-p).
-   </p>
+   (xdoc::p
+    "The proofs of some disambiguation theorems
+     use other disambiguation theorems.
+     The former enable the latter explcitly, to use them as rewrite rules.
+     As explained earlier, some disambiguation theorems group together
+     multiple tree matching hypotheses or multiple parsing conclusions,
+     to reduce the potentially quadratic number of theorems.
+     This means that,
+     when some of these disambiguation theorems
+     are used in the proofs of others,
+     only ``parts'' of the former are actually used.")
 
-   <p>
-   Some disambiguation theorems are proved by
-   expanding the tree matching hypotheses
-   and the parsing function calls in the conclusions,
-   and enabling disambiguation theorems so that they apply to
-   the resulting subtree matching facts and called parsing functions;
-   we also enable
-   predicates like @(tsee tree-terminatedp) and recursive companions and
-   functions like @(tsee tree->string) and recursive companions,
-   so that they apply to the subtrees resulting from the matching expansion.
-   For example,
-   @(tsee fail-alpha/digit/dash-when-match-alt-rest-comp) is proved by
-   reducing the tree matching hypothesis to
-   a list of subtrees matching @('*c-wsp') and a tree matching @('\"/\"').
-   Then @(tsee fail-alpha/digit/dash-when-match-cwsp)
-   is used for the case in which the list of subtrees is not empty,
-   while @(tsee fail-alpha/digit/dash-when-match-slash-/-close-round/square)
-   (the @('slash') part)
-   is used for the case in which the list of subtree is empty.
-   </p>
+   (xdoc::p
+    "A disambiguation theorem about a list of trees matching a repetition,
+     such that another disambiguation theorem exists
+     about a tree matching the element of that repetition
+     and about the same parsing function,
+     is proved just by enabling the latter disambiguation theorem
+     and @(tsee tree-list-match-repetition-p),
+     without any parsing constraint theorems
+     and tree matching constraint theorems.
+     For example, @(tsee fail-bit-when-match-*cwsp) is proved just by enabling
+     @(tsee fail-bit/digit/hexdig/dot/dash-when-match-cwsp)
+     (of which only the @(tsee parse-bit) failure is used here) and
+     @(tsee tree-list-match-repetition-p).")
 
-   <p>
-   The proofs of some disambiguation theorems use certain completeness theorems.
-   In some cases, this is related to LL(*) parts of the grammar:
-   the completeness theorems serve to go ``past''
-   the unbounded look-ahead,
-   before reaching the point where the constraints
-   from (sub)tree matching and (called) parsing functions are incompatible.
-   For example, @(tsee fail-conc-rest-comp-when-match-alt-rest-comp)
-   shows the incompatibility
-   between @('(*c-wsp \"/\" *c-wsp concatenation)')
-   and @('(1*c-wsp repetition)'):
-   the completeness theorem @(tsee parse-1*cwsp-when-tree-list-match)
-   is used to go past the unbounded @('1*c-wsp')
-   that could start @('(*c-wsp \"/\" *c-wsp concatenation)')
-   to show that @('repetition') is incompatible with @('\"/\"').
-   As another example, @(tsee fail-*digit-star-*digit-when-match-1*digit)
-   shows the incompatibility
-   between @('(*DIGIT \"*\" *DIGIT)') and @('1*DIGIT'):
-   the completeness theorem @(tsee parse-*digit-when-tree-list-match)
-   is used to go past the unbounded @('*DIGIT')
-   that could start @('1*DIGIT')
-   to show that @('\"*\"') is incompatible with
-   the assumptions on the remaining input.
-   </p>
+   (xdoc::p
+    "Some disambiguation theorems are proved by
+     expanding the tree matching hypotheses
+     and the parsing function calls in the conclusions,
+     and enabling disambiguation theorems so that they apply to
+     the resulting subtree matching facts and called parsing functions;
+     we also enable
+     predicates like @(tsee tree-terminatedp) and recursive companions and
+     functions like @(tsee tree->string) and recursive companions,
+     so that they apply to the subtrees resulting from the matching expansion.
+     For example,
+     @(tsee fail-alpha/digit/dash-when-match-alt-rest-comp) is proved by
+     reducing the tree matching hypothesis to
+     a list of subtrees matching @('*c-wsp') and a tree matching @('\"/\"').
+     Then @(tsee fail-alpha/digit/dash-when-match-cwsp)
+     is used for the case in which the list of subtrees is not empty,
+     while @(tsee fail-alpha/digit/dash-when-match-slash-/-close-round/square)
+     (the @('slash') part)
+     is used for the case in which the list of subtree is empty.")
 
-   <p>
-   In other disambiguation theorems,
-   the use of completeness theorems
-   is not related to LL(*) parts of the grammar,
-   but is suggested by subgoals involving trees
-   and parsing functions called by the ones in the theorems' conclusions.
-   For example, in @(tsee fail-cwsp-when-match-cnl),
-   the expansion of @(tsee parse-cwsp) and @(tsee parse-cnl-wsp)
-   produces a call to @(tsee parse-cnl)
-   on the string at the leaves of the tree
-   that the theorem hypothesizes to match @('c-nl'):
-   thus, @(tsee parse-cnl-when-tree-match) applies here.
-   </p>
+   (xdoc::p
+    "The proofs of some disambiguation theorems
+     use certain completeness theorems.
+     In some cases, this is related to LL(*) parts of the grammar:
+     the completeness theorems serve to go ``past''
+     the unbounded look-ahead,
+     before reaching the point where the constraints
+     from (sub)tree matching and (called) parsing functions are incompatible.
+     For example, @(tsee fail-conc-rest-comp-when-match-alt-rest-comp)
+     shows the incompatibility
+     between @('(*c-wsp \"/\" *c-wsp concatenation)')
+     and @('(1*c-wsp repetition)'):
+     the completeness theorem @(tsee parse-1*cwsp-when-tree-list-match)
+     is used to go past the unbounded @('1*c-wsp')
+     that could start @('(*c-wsp \"/\" *c-wsp concatenation)')
+     to show that @('repetition') is incompatible with @('\"/\"').
+     As another example, @(tsee fail-*digit-star-*digit-when-match-1*digit)
+     shows the incompatibility
+     between @('(*DIGIT \"*\" *DIGIT)') and @('1*DIGIT'):
+     the completeness theorem @(tsee parse-*digit-when-tree-list-match)
+     is used to go past the unbounded @('*DIGIT')
+     that could start @('1*DIGIT')
+     to show that @('\"*\"') is incompatible with
+     the assumptions on the remaining input.")
 
-   <p>
-   When a disambiguation theorem uses a completeness theorem,
-   the former appears in the file just after the latter,
-   with a comment referring to the completeness theorem used.
-   However, the disambiguation theorem is
-   under the manual topic about disambiguation theorems,
-   not under the manual topic about completeness theorems.
-   </p>
+   (xdoc::p
+    "In other disambiguation theorems,
+     the use of completeness theorems
+     is not related to LL(*) parts of the grammar,
+     but is suggested by subgoals involving trees
+     and parsing functions called by the ones in the theorems' conclusions.
+     For example, in @(tsee fail-cwsp-when-match-cnl),
+     the expansion of @(tsee parse-cwsp) and @(tsee parse-cnl-wsp)
+     produces a call to @(tsee parse-cnl)
+     on the string at the leaves of the tree
+     that the theorem hypothesizes to match @('c-nl'):
+     thus, @(tsee parse-cnl-when-tree-match) applies here.")
 
-   <p>
-   The disambiguation theorem @(tsee fail-conc-rest-comp-when-match-*cwsp)
-   uses, as a rewrite rule,
-   the <see topic='@(url grammar-parser-parsing-failure-propagation)'>parsing
-   failure propagation theorem</see>
-   @(tsee fail-conc-rest-comp-when-fail-cwsp).
-   </p>
+   (xdoc::p
+    "When a disambiguation theorem uses a completeness theorem,
+     the former appears in the file just after the latter,
+     with a comment referring to the completeness theorem used.
+     However, the disambiguation theorem is
+     under the manual topic about disambiguation theorems,
+     not under the manual topic about completeness theorems.")
 
-   <p>
-   In some theorems, just enabling some functions does not suffice
-   to expand them in all the places where they need to be expanded
-   (presumably due to ACL2's heuristics for expanding recursive functions).
-   Thus, we use @(':expand') hints in those cases.
-   </p>
+   (xdoc::p
+    "The disambiguation theorem @(tsee fail-conc-rest-comp-when-match-*cwsp)
+     uses, as a rewrite rule, the "
+    (xdoc::seetopic "grammar-parser-parsing-failure-propagation"
+                    "parsing failure propagation theorem")
+    " @(tsee fail-conc-rest-comp-when-fail-cwsp).")
 
-   <p>
-   Some of the disambiguation theorem proofs
-   do not seem as systematic as desired.
-   Two of them use @(':cases') hints
-   (different from the ones discussed earlier,
-   which are related to LL(2) parts of the grammar),
-   one of them uses an @(':induct') hint,
-   one of them uses a local lemma,
-   some use various rules about @(tsee tree-list-match-repetition-p),
-   and some expand many definitions.
-   It may be possible to make these proofs more systematic,
-   by introducing and using
-   some additional ``intermediate '' disambiguation theorems
-   and some additional rules about the ABNF semantics.
-   </p>"
+   (xdoc::p
+    "In some theorems, just enabling some functions does not suffice
+     to expand them in all the places where they need to be expanded
+     (presumably due to ACL2's heuristics for expanding recursive functions).
+     Thus, we use @(':expand') hints in those cases.")
+
+   (xdoc::p
+    "Some of the disambiguation theorem proofs
+     do not seem as systematic as desired.
+     Two of them use @(':cases') hints
+     (different from the ones discussed earlier,
+     which are related to LL(2) parts of the grammar),
+     one of them uses an @(':induct') hint,
+     one of them uses a local lemma,
+     some use various rules about @(tsee tree-list-match-repetition-p),
+     and some expand many definitions.
+     It may be possible to make these proofs more systematic,
+     by introducing and using
+     some additional ``intermediate '' disambiguation theorems
+     and some additional rules about the ABNF semantics."))
 
   :order-subtopics t)
 
