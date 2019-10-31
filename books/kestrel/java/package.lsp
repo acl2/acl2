@@ -34,6 +34,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         conjoin
                          cons-pos-alistp
                          define-sk
                          defxdoc+
@@ -95,6 +96,7 @@
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-lambdap
                          pseudo-termfn-listp
                          pseudo-termfnp
                          pure-raw-p

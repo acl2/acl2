@@ -25,6 +25,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; primary types:
+
 (def-atj-main-function-type acl2-numberp (:avalue) :asymbol)
 
 (def-atj-main-function-type binary-* (:anumber :anumber) :anumber)
@@ -87,3 +89,17 @@
 (def-atj-main-function-type symbol-package-name (:asymbol) :astring)
 
 (def-atj-main-function-type symbolp (:avalue) :asymbol)
+
+; secondary types:
+
+; (these are temporarily commented out
+; while support for generating overloaded methods is being added)
+
+;; (def-atj-other-function-type binary-+ (:arational :arational) :arational)
+;; (def-atj-other-function-type binary-+ (:ainteger :ainteger) :ainteger)
+
+;; (def-atj-other-function-type binary-* (:arational :arational) :arational)
+;; (def-atj-other-function-type binary-* (:ainteger :ainteger) :ainteger)
+
+;; (def-atj-other-function-type unary-- (:arational) :arational)
+;; (def-atj-other-function-type unary-- (:ainteger) :ainteger)
