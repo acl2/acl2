@@ -524,7 +524,7 @@
            :hints ((and stable-under-simplificationp
                         `(:expand (,(car (last clause)))
                           :in-theory (enable logicman->ipasiri-of-update-logicman->ipasiri-split))))))
-                    
+  
 
   (defret logicman-invar-of-<fn>
     (implies (and (logicman-invar logicman)
@@ -551,7 +551,13 @@
   (defret logicman-get-of-<fn>
     (implies (not (equal (logicman-field-fix key) :ipasir))
              (equal (logicman-get key new-logicman)
-                    (logicman-get key logicman)))))
+                    (logicman-get key logicman))))
+
+  (defret status-of-<fn>
+    (or (equal status :unsat)
+        (equal status :sat)
+        (equal status :failed))
+    :rule-classes ((:forward-chaining :trigger-terms (status)))))
 
 
 
@@ -579,7 +585,7 @@
                                          (interp-st interp-st-bfrs-ok)
                                          state)
   :guard (bfr-mode-is :aignet (interp-st-bfr-mode))
-  :returns (mv (ans)
+  :returns (mv status
                new-interp-st
                new-state)
   :ignore-ok t
@@ -587,7 +593,7 @@
   ;; :guard-debug t
   :guard-hints (("goal" :in-theory (enable interp-st-bfrs-ok)))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
-        (mv bfr interp-st state))
+        (mv :failed interp-st state))
        ((fgl-ipasir-config config)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (pathcond (interp-st->pathcond interp-st))
@@ -608,9 +614,7 @@
                     ((mv ans logicman)
                      (logicman-ipasir-solve config.ipasir-index logicman)))
                  (mv ans logicman state))
-               (if (eq ans :unsat)
-                   (mv nil interp-st state)
-                 (mv bfr interp-st state))))
+               (mv ans interp-st state)))
   ///
   
   (defret logicman-ipasirs-assumption-free-of-<fn>
@@ -629,11 +633,11 @@
                                    (logicman-ipasirs-assumption-free-of-interp-st-ipasir-sat-check-core))
             :use logicman-ipasirs-assumption-free-of-interp-st-ipasir-sat-check-core)))
 
-  (defret interp-st-bfr-p-of-<fn>
-    (implies (and (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-p bfr)
-                  (equal logicman (interp-st->logicman interp-st)))
-             (lbfr-p ans logicman)))
+  ;; (defret interp-st-bfr-p-of-<fn>
+  ;;   (implies (and (interp-st-bfrs-ok interp-st)
+  ;;                 (interp-st-bfr-p bfr)
+  ;;                 (equal logicman (interp-st->logicman interp-st)))
+  ;;            (lbfr-p ans logicman)))
 
   (defret logicman-equiv-of-<fn>
     (logicman-equiv (interp-st->logicman new-interp-st)
@@ -848,44 +852,44 @@
 
   (set-ignore-ok t)
 
-  (defret eval-of-<fn>
-    (implies (and (interp-st-bfrs-ok interp-st)
-                  (interp-st-bfr-p bfr)
-                  (not (interp-st->errmsg new-interp-st))
-                  (equal logicman (interp-st->logicman interp-st))
-                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
-                                          (interp-st->pathcond interp-st)
-                                          (interp-st->logicman interp-st))
-                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
-                                          (interp-st->constraint interp-st)
-                                          (interp-st->logicman interp-st)))
-             (equal (gobj-bfr-eval ans env logicman)
-                    (gobj-bfr-eval bfr env (interp-st->logicman interp-st))))
-    :hints ((acl2::function-termhint
-             interp-st-ipasir-sat-check-core
-             (:solve
-              (b* ((aignet (logicman->aignet logicman))
-                   (sat-lits (logicman->sat-litsi config.ipasir-index logicman))
-                   (ipasir (logicman->ipasiri config.ipasir-index logicman))
-                   (aignet-invals (alist-to-bitarr (aignet::num-ins aignet)
-                                                   (fgl-env->bfr-vals env) nil))
-                   (cnf-vals (aignet::aignet->cnf-vals aignet-invals nil nil sat-lits aignet)))
-                `(:use ((:instance logicman-ipasir-solve-unsat-implies
-                         (logicman ,(acl2::hq logicman))
-                         (ipasir-idx ,(acl2::hq config.ipasir-index))
-                         (env ,(acl2::hq cnf-vals)))
-                        ;; (:instance aignet::cnf-for-aignet-implies-eval-formula
-                        ;;  (cnf ,(acl2::hq (ipasir::ipasir$a->formula ipasir)))
-                        ;;  (invals ,(acl2::hq aignet-invals))
-                        ;;  (regvals nil)
-                        ;;  (cnf-vals nil)
-                        ;;  (sat-lits ,(acl2::hq sat-lits))
-                        ;;  (aignet ,(acl2::hq aignet)))
-                        )
-                  :in-theory (e/d (bfr-eval logicman-pathcond-eval)
-                                  ;; (aignet::cnf-for-aignet-necc
-                                  ;;  aignet::cnf-for-aignet-implies-eval-formula)
-                                  )))))))
+  ;; (defret eval-of-<fn>
+  ;;   (implies (and (interp-st-bfrs-ok interp-st)
+  ;;                 (interp-st-bfr-p bfr)
+  ;;                 (not (interp-st->errmsg new-interp-st))
+  ;;                 (equal logicman (interp-st->logicman interp-st))
+  ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
+  ;;                                         (interp-st->pathcond interp-st)
+  ;;                                         (interp-st->logicman interp-st))
+  ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
+  ;;                                         (interp-st->constraint interp-st)
+  ;;                                         (interp-st->logicman interp-st)))
+  ;;            (equal (gobj-bfr-eval ans env logicman)
+  ;;                   (gobj-bfr-eval bfr env (interp-st->logicman interp-st))))
+  ;;   :hints ((acl2::function-termhint
+  ;;            interp-st-ipasir-sat-check-core
+  ;;            (:solve
+  ;;             (b* ((aignet (logicman->aignet logicman))
+  ;;                  (sat-lits (logicman->sat-litsi config.ipasir-index logicman))
+  ;;                  (ipasir (logicman->ipasiri config.ipasir-index logicman))
+  ;;                  (aignet-invals (alist-to-bitarr (aignet::num-ins aignet)
+  ;;                                                  (fgl-env->bfr-vals env) nil))
+  ;;                  (cnf-vals (aignet::aignet->cnf-vals aignet-invals nil nil sat-lits aignet)))
+  ;;               `(:use ((:instance logicman-ipasir-solve-unsat-implies
+  ;;                        (logicman ,(acl2::hq logicman))
+  ;;                        (ipasir-idx ,(acl2::hq config.ipasir-index))
+  ;;                        (env ,(acl2::hq cnf-vals)))
+  ;;                       ;; (:instance aignet::cnf-for-aignet-implies-eval-formula
+  ;;                       ;;  (cnf ,(acl2::hq (ipasir::ipasir$a->formula ipasir)))
+  ;;                       ;;  (invals ,(acl2::hq aignet-invals))
+  ;;                       ;;  (regvals nil)
+  ;;                       ;;  (cnf-vals nil)
+  ;;                       ;;  (sat-lits ,(acl2::hq sat-lits))
+  ;;                       ;;  (aignet ,(acl2::hq aignet)))
+  ;;                       )
+  ;;                 :in-theory (e/d (bfr-eval logicman-pathcond-eval)
+  ;;                                 ;; (aignet::cnf-for-aignet-necc
+  ;;                                 ;;  aignet::cnf-for-aignet-implies-eval-formula)
+  ;;                                 )))))))
   
 
 
@@ -957,7 +961,39 @@
              (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
 
   (defret w-state-of-<fn>
-    (equal (w new-state) (w state))))
+    (equal (w new-state) (w state)))
+
+  ;; (defret status-of-<fn>
+  ;;   (or (equal status :unsat)
+  ;;       (equal status :sat)
+  ;;       (equal status :failed))
+  ;;   :rule-classes ((:forward-chaining :trigger-terms (status))))
+
+  (defret <fn>-unsat-implies
+    (implies (and (equal status :unsat)
+                  (interp-st-bfrs-ok interp-st)
+                  (interp-st-bfr-p bfr)
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st)))
+             (not (gobj-bfr-eval bfr env (interp-st->logicman interp-st))))
+    :hints ((acl2::function-termhint
+             interp-st-ipasir-sat-check-core
+             (:solve
+              (b* ((aignet (logicman->aignet logicman))
+                   (sat-lits (logicman->sat-litsi config.ipasir-index logicman))
+                   (ipasir (logicman->ipasiri config.ipasir-index logicman))
+                   (aignet-invals (alist-to-bitarr (aignet::num-ins aignet)
+                                                   (fgl-env->bfr-vals env) nil))
+                   (cnf-vals (aignet::aignet->cnf-vals aignet-invals nil nil sat-lits aignet)))
+                `(:use ((:instance logicman-ipasir-solve-unsat-implies
+                         (logicman ,(acl2::hq logicman))
+                         (ipasir-idx ,(acl2::hq config.ipasir-index))
+                         (env ,(acl2::hq cnf-vals))))
+                  :in-theory (e/d (bfr-eval logicman-pathcond-eval)))))))))
 
 (local (in-theory (disable w)))
 
@@ -966,19 +1002,20 @@
                                            (bfr interp-st-bfr-p)
                                            (interp-st interp-st-bfrs-ok)
                                            state)
-    :returns (mv (ans)
+    :returns (mv (status)
                  new-interp-st
                  new-state)
     (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
-          ;; Skip the SAT check when not in aignet mode, for now.
-          (mv bfr interp-st state))
+          (mv :failed interp-st state))
          ((when (interp-st->errmsg interp-st))
-          (mv nil interp-st state))
+          (mv :failed interp-st state))
          ((unless (fgl-ipasir-config-p params))
-          (fgl-interp-error
-           :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object")))
+          (b* ((interp-st (fgl-interp-store-debug-info
+                           "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object"
+                           nil interp-st)))
+            (mv :failed interp-st state)))
          ((when (eq bfr nil))
-          (mv nil interp-st state)))
+          (mv :unsat interp-st state)))
       (interp-st-ipasir-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))
@@ -1051,7 +1088,12 @@
   ///
   (defret bfr-env$-p-of-<fn>
     (bfr-env$-p new-env$ (logicman->bfrstate))
-    :hints(("Goal" :in-theory (enable bfr-env$-p)))))
+    :hints(("Goal" :in-theory (enable bfr-env$-p))))
+
+  (defret aignet-vals-p-of-<fn>
+    (implies (not err)
+             (aignet::aignet-vals-p (env$->bitarr new-env$)
+                                    (logicman->aignet logicman)))))
 
 
 
@@ -1078,7 +1120,14 @@
   (defret bfr-env$-p-of-<fn>
     (implies (not err)
              (bfr-env$-p (interp-st->ctrex-env new-interp-st)
-                         (logicman->bfrstate (interp-st->logicman interp-st))))))
+                         (logicman->bfrstate (interp-st->logicman interp-st)))))
+
+  (defret aignet-vals-p-of-<fn>
+    (implies (and (not err)
+                  (bfr-mode-is :aignet (interp-st-bfr-mode)))
+             (aignet::aignet-vals-p
+              (env$->bitarr (interp-st->ctrex-env new-interp-st))
+              (logicman->aignet (interp-st->logicman interp-st))))))
 
 (defmacro fgl-use-ipasir ()
   '(progn (defattach interp-st-sat-check interp-st-ipasir-sat-check-impl)

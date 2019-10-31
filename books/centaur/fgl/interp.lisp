@@ -2086,10 +2086,10 @@
            (b* ((interp-st (interp-st-set-error :abort-rewrite interp-st)))
              (fgl-interp-value nil)))
 
-          ((fgl-sat-check 2)
-           (fgl-interp-sat-check (first args)
-                                (second args)
-                                interp-st state))
+          ;; ((fgl-sat-check 2)
+          ;;  (fgl-interp-sat-check (first args)
+          ;;                       (second args)
+          ;;                       interp-st state))
 
           ((syntax-interp-fn 2)
            (fgl-interp-syntax-interp (first args)
@@ -2579,23 +2579,25 @@
                         ;; Note: Was interp-term-equivs
                         (fgl-interp-term x interp-st state))))
       
-      (define fgl-interp-sat-check ((params pseudo-termp)
-                                   (x pseudo-termp)
-                                   (interp-st interp-st-bfrs-ok)
-                                   state)
-        :measure (list (nfix (interp-st->reclimit interp-st))
-                       2020 (+ (pseudo-term-binding-count params)
-                               (pseudo-term-binding-count x))
-                       70)
-        :returns (mv (xobj fgl-object-p)
-                     new-interp-st new-state)
-        (b* (((fgl-interp-recursive-call ans-bfr) (fgl-interp-test x interp-st state))
-             (interp-st (interp-st-push-scratch-bfr ans-bfr interp-st))
-             ((fgl-interp-value params-obj) (fgl-interp-term-equivs params interp-st state))
-             ((mv ans-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
-             ((fgl-interp-value ans-bfr)
-              (interp-st-sat-check-wrapper params-obj ans-bfr interp-st state)))
-          (fgl-interp-value (mk-g-boolean ans-bfr))))
+
+      ;; ;; Revisit this!
+      ;; (define fgl-interp-sat-check ((params pseudo-termp)
+      ;;                              (x pseudo-termp)
+      ;;                              (interp-st interp-st-bfrs-ok)
+      ;;                              state)
+      ;;   :measure (list (nfix (interp-st->reclimit interp-st))
+      ;;                  2020 (+ (pseudo-term-binding-count params)
+      ;;                          (pseudo-term-binding-count x))
+      ;;                  70)
+      ;;   :returns (mv (xobj fgl-object-p)
+      ;;                new-interp-st new-state)
+      ;;   (b* (((fgl-interp-recursive-call ans-bfr) (fgl-interp-test x interp-st state))
+      ;;        (interp-st (interp-st-push-scratch-bfr ans-bfr interp-st))
+      ;;        ((fgl-interp-value params-obj) (fgl-interp-term-equivs params interp-st state))
+      ;;        ((mv ans-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+      ;;        ((fgl-interp-value ans-bfr)
+      ;;         (fgl-sat-check-impl params-obj ans-bfr interp-st state)))
+      ;;     (fgl-interp-value (mk-g-boolean ans-bfr))))
 
       (define fgl-interp-return-last ((return-last-fnname pseudo-termp)
                                      (first-arg pseudo-termp)
@@ -8587,27 +8589,27 @@
 
   
 
-  (defthm interp-st-bvar-db-ok-of-interp-st-sat-check
-    (b* (((mv & new-interp-st) (interp-st-sat-check-wrapper params bfr interp-st state)))
-      (implies (interp-st-bfrs-ok interp-st)
-               (iff (interp-st-bvar-db-ok new-interp-st env)
-                    (interp-st-bvar-db-ok interp-st env))))
-    :hints (("goal" :in-theory (e/d (interp-st-bfrs-ok
-                                     bfr-varname-p
-                                     gobj-bfr-eval
-                                     ;; note: bfr-lookup should take bfr-mode, not logicman!
-                                     bfr-lookup)
-                                    (interp-st-bvar-db-ok-necc))
-             :use ((:instance interp-st-bvar-db-ok-necc
-                    (interp-st interp-st)
-                    (n (interp-st-bvar-db-ok-witness
-                        (mv-nth 1 (interp-st-sat-check-wrapper params bfr interp-st state)) env)))
-                   (:instance interp-st-bvar-db-ok-necc
-                    (interp-st (mv-nth 1 (interp-st-sat-check-wrapper params bfr interp-st state)))
-                    (n (interp-st-bvar-db-ok-witness interp-st env)))))
-            (and stable-under-simplificationp
-                 (let* ((lit (assoc 'interp-st-bvar-db-ok clause)))
-                   `(:expand (,lit) )))))
+  ;; (defthm interp-st-bvar-db-ok-of-interp-st-sat-check
+  ;;   (b* (((mv & new-interp-st) (interp-st-sat-check-wrapper params bfr interp-st state)))
+  ;;     (implies (interp-st-bfrs-ok interp-st)
+  ;;              (iff (interp-st-bvar-db-ok new-interp-st env)
+  ;;                   (interp-st-bvar-db-ok interp-st env))))
+  ;;   :hints (("goal" :in-theory (e/d (interp-st-bfrs-ok
+  ;;                                    bfr-varname-p
+  ;;                                    gobj-bfr-eval
+  ;;                                    ;; note: bfr-lookup should take bfr-mode, not logicman!
+  ;;                                    bfr-lookup)
+  ;;                                   (interp-st-bvar-db-ok-necc))
+  ;;            :use ((:instance interp-st-bvar-db-ok-necc
+  ;;                   (interp-st interp-st)
+  ;;                   (n (interp-st-bvar-db-ok-witness
+  ;;                       (mv-nth 1 (interp-st-sat-check-wrapper params bfr interp-st state)) env)))
+  ;;                  (:instance interp-st-bvar-db-ok-necc
+  ;;                   (interp-st (mv-nth 1 (interp-st-sat-check-wrapper params bfr interp-st state)))
+  ;;                   (n (interp-st-bvar-db-ok-witness interp-st env)))))
+  ;;           (and stable-under-simplificationp
+  ;;                (let* ((lit (assoc 'interp-st-bvar-db-ok clause)))
+  ;;                  `(:expand (,lit) )))))
 
   ;; (local (defthm interp-st-bvar-db-ok-necc-free
   ;;          (b* ((bvar-db (interp-st->bvar-db interp-st))

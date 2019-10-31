@@ -37,31 +37,17 @@
 
 (local (in-theory (disable w)))
 
-(defconst *interp-st-sat-check-thms*
+(defconst *interp-st-sat-check-thms-base*
   '((defret interp-st-bfrs-ok-of-<fn>
       (implies (and (interp-st-bfrs-ok interp-st)
                     (interp-st-bfr-p bfr))
                (interp-st-bfrs-ok new-interp-st)))
 
-    (defret interp-st-bfr-p-of-<fn>
-      (implies (and (interp-st-bfrs-ok interp-st)
-                    (interp-st-bfr-p bfr)
-                    (equal logicman (interp-st->logicman interp-st)))
-               (lbfr-p ans logicman)))
-
-    (defret eval-of-<fn>
-      (implies (and (interp-st-bfrs-ok interp-st)
-                    (interp-st-bfr-p bfr)
-                    (not (interp-st->errmsg new-interp-st))
-                    (equal logicman (interp-st->logicman interp-st))
-                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
-                                            (interp-st->pathcond interp-st)
-                                            (interp-st->logicman interp-st))
-                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
-                                            (interp-st->constraint interp-st)
-                                            (interp-st->logicman interp-st)))
-               (equal (gobj-bfr-eval ans env logicman)
-                      (gobj-bfr-eval bfr env (interp-st->logicman interp-st)))))
+    ;; (defret interp-st-bfr-p-of-<fn>
+    ;;   (implies (and (interp-st-bfrs-ok interp-st)
+    ;;                 (interp-st-bfr-p bfr)
+    ;;                 (equal logicman (interp-st->logicman interp-st)))
+    ;;            (lbfr-p ans logicman)))
 
 
     (defret interp-st-get-of-<fn>
@@ -74,6 +60,7 @@
                (equal (interp-st-get key new-interp-st)
                       (interp-st-get key interp-st))))
 
+    
     ;; (defret major-stack-ev-of-<fn>
     ;;   (implies (equal stack (interp-st->stack interp-st))
     ;;            (equal (major-stack-ev stack env (interp-st->logicman new-interp-st))
@@ -141,6 +128,26 @@
     (defret w-state-of-<fn>
       (equal (w new-state) (w state)))))
 
+(defconst *interp-st-sat-check-thms*
+  (append *interp-st-sat-check-thms-base*
+          '(;; (defret status-of-<fn>
+            ;;   (or (equal status :unsat)
+            ;;       (equal status :sat)
+            ;;       (equal status :failed))
+            ;;   :rule-classes ((:forward-chaining :trigger-terms (status))))
+
+            (defret <fn>-unsat-implies
+              (implies (and (equal status :unsat)
+                            (interp-st-bfrs-ok interp-st)
+                            (interp-st-bfr-p bfr)
+                            (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                                    (interp-st->pathcond interp-st)
+                                                    (interp-st->logicman interp-st))
+                            (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                                    (interp-st->constraint interp-st)
+                                                    (interp-st->logicman interp-st)))
+                       (not (gobj-bfr-eval bfr env (interp-st->logicman interp-st))))))))
+
 
 (make-event
  `(encapsulate
@@ -154,15 +161,18 @@
                                   (bfr interp-st-bfr-p)
                                   (interp-st interp-st-bfrs-ok)
                                   state)
-       :returns (mv ans
+       :returns (mv status
                     new-interp-st new-state)
        :ignore-ok t
        :irrelevant-formals-ok t
-       (mv bfr interp-st state)))
+       (mv :failed interp-st state)))
 
     (local (in-theory (enable interp-st-sat-check)))
-    . 
-    ,*interp-st-sat-check-thms*))
+    
+    . ,*interp-st-sat-check-thms*))
+
+
+
 
 
 
@@ -191,22 +201,35 @@
 
 
 
-(make-event
- `(define interp-st-sat-check-wrapper ((params fgl-object-p)
-                                       (bfr interp-st-bfr-p)
-                                       (interp-st interp-st-bfrs-ok)
-                                       state)
-    :returns (mv ans
-                 new-interp-st
-                 new-state)
-    :ignore-ok t
-    :irrelevant-formals-ok t
-    (b* (((unless (fgl-object-case params :g-concrete))
-          (fgl-interp-error
-           :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to a value"))))
-      (interp-st-sat-check (g-concrete->val params) bfr interp-st state))
-    ///
-    . ,*interp-st-sat-check-thms*))
+;; (make-event
+;;  `(define fgl-sat-check-impl ((params fgl-object-p)
+;;                                        (bfr interp-st-bfr-p)
+;;                                        (interp-st interp-st-bfrs-ok)
+;;                                        state)
+;;     :returns (mv ans
+;;                  new-interp-st
+;;                  new-state)
+;;     :ignore-ok t
+;;     :irrelevant-formals-ok t
+;;     (b* (((unless (fgl-object-case params :g-concrete))
+;;           (fgl-interp-error
+;;            :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to a value"))))
+;;       (interp-st-sat-check (g-concrete->val params) bfr interp-st state))
+;;     ///
+;;     ,@*interp-st-sat-check-thms-base*
+;;     (defret eval-of-<fn>
+;;       (implies (and (interp-st-bfrs-ok interp-st)
+;;                     (interp-st-bfr-p bfr)
+;;                     (not (interp-st->errmsg new-interp-st))
+;;                     (equal logicman (interp-st->logicman interp-st))
+;;                     (logicman-pathcond-eval (fgl-env->bfr-vals env)
+;;                                             (interp-st->pathcond interp-st)
+;;                                             (interp-st->logicman interp-st))
+;;                     (logicman-pathcond-eval (fgl-env->bfr-vals env)
+;;                                             (interp-st->constraint interp-st)
+;;                                             (interp-st->logicman interp-st)))
+;;                (equal (gobj-bfr-eval ans env logicman)
+;;                       (gobj-bfr-eval bfr env (interp-st->logicman interp-st)))))))
 
 
 ;; (local (defthm aignet-lit->bfr-of-extension
@@ -233,34 +256,34 @@
 ;;                   (equal (bfr-not x (interp-st->logicman new))
 ;;                          (bfr-not x old-logicman)))))
 
-(local (defthm bfr-not-logicman-equiv-congruence
-         (implies (logicman-equiv new old)
-                  (equal (bfr-not x new)
-                         (bfr-not x old)))
-         :hints(("Goal" :in-theory (e/d (bfr-not)
-                                        (logicman->bfrstate-updater-independence))))
-         :rule-classes :congruence))
+;; (local (defthm bfr-not-logicman-equiv-congruence
+;;          (implies (logicman-equiv new old)
+;;                   (equal (bfr-not x new)
+;;                          (bfr-not x old)))
+;;          :hints(("Goal" :in-theory (e/d (bfr-not)
+;;                                         (logicman->bfrstate-updater-independence))))
+;;          :rule-classes :congruence))
 
-(make-event
- `(define interp-st-validity-check (params
-                                    (bfr interp-st-bfr-p)
-                                    (interp-st interp-st-bfrs-ok)
-                                    state)
-    :returns (mv ans new-interp-st new-state)
-    (b* ((not-bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
-                             (bfr)
-                             (bfr-not bfr)
-                             bfr))
-         ((mv not-ans interp-st state)
-          (interp-st-sat-check params not-bfr interp-st state)))
-      (stobj-let ((logicman (interp-st->logicman interp-st)))
-                 (bfr)
-                 (bfr-not not-ans)
-                 (mv bfr interp-st state)))
-    ///
-    (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
+;; (make-event
+;;  `(define interp-st-validity-check (params
+;;                                     (bfr interp-st-bfr-p)
+;;                                     (interp-st interp-st-bfrs-ok)
+;;                                     state)
+;;     :returns (mv ans new-interp-st new-state)
+;;     (b* ((not-bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
+;;                              (bfr)
+;;                              (bfr-not bfr)
+;;                              bfr))
+;;          ((mv not-ans interp-st state)
+;;           (interp-st-sat-check params not-bfr interp-st state)))
+;;       (stobj-let ((logicman (interp-st->logicman interp-st)))
+;;                  (bfr)
+;;                  (bfr-not not-ans)
+;;                  (mv bfr interp-st state)))
+;;     ///
+;;     (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 
-    . ,*interp-st-sat-check-thms*))
+;;     . ,*interp-st-sat-check-thms*))
 
 
 ;; (make-event
@@ -328,7 +351,15 @@
       (implies (not err)
                (bfr-env$-p (interp-st->ctrex-env new-interp-st)
                            (logicman->bfrstate (interp-st->logicman interp-st)))))
-    :hints(("Goal" :in-theory (enable bfr-env$-p)))))
+    :hints(("Goal" :in-theory (enable bfr-env$-p))))
+
+  (defthm aignet-vals-p-of-interp-st-sat-counterexample
+    (b* (((mv err new-interp-st) (interp-st-sat-counterexample params interp-st state)))
+      (implies (and (not err)
+                    (bfr-mode-is :aignet (interp-st-bfr-mode)))
+               (aignet::aignet-vals-p
+                (env$->bitarr (interp-st->ctrex-env new-interp-st))
+                (logicman->aignet (interp-st->logicman interp-st)))))))
 
 ;; (encapsulate
 ;;   (((interp-st-monolithic-sat-counterexample interp-st state) => (mv * interp-st)

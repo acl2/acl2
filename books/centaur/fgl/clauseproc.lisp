@@ -634,20 +634,22 @@
        (sat-config (fgl-toplevel-sat-check-config-wrapper
                     (fgl-config->sat-config config)))
        ((mv ans interp-st state)
-        (interp-st-validity-check
+        (interp-st-sat-check
          ;; BOZO -- use a user-provided config
          sat-config
-         ans-interp interp-st state))
+         (interp-st-bfr-not ans-interp) interp-st state))
        ((acl2::hintcontext-bind ((sat-interp-st interp-st)
                                  (sat-state state))))
 
-       ((when (and (equal ans t)
+       ((when (and (eq ans :unsat)
                    (not (interp-st->errmsg interp-st))))
         ;; Proved!
         (acl2::hintcontext :interp-test
                            (mv nil interp-st state)))
        ((when (interp-st->errmsg interp-st))
         (mv (msg "Interpreter error: ~@0" (interp-st->errmsg interp-st)) interp-st state))
+       ((unless (eq ans :sat))
+        (mv (msg "Final SAT check failed!") interp-st state))
        ((mv sat-ctrex-err interp-st)
         (interp-st-sat-counterexample sat-config interp-st state))
        ((when sat-ctrex-err)
@@ -772,11 +774,10 @@
                     (FGL-OBJECT-BINDINGS-EVAL (STACK$A-MINOR-BINDINGS STACK)
                                            ENV LOGICMAN))
                    (?EVAL-ALIST (APPEND MINOR-ALIST MAJOR-ALIST)))
-                `(:use ((:instance eval-of-interp-st-validity-check
+                `(:use ((:instance interp-st-sat-check-unsat-implies
                          (params ,(acl2::hq sat-config))
-                         (bfr ,(acl2::hq ans-interp))
+                         (bfr ,(acl2::hq (interp-st-bfr-not ans-interp interp-interp-st)))
                          (interp-st ,(acl2::hq interp-interp-st))
-                         (logicman ,(acl2::hq (interp-st->logicman interp-interp-st)))
                          (state ,(acl2::hq interp-state))
                          (env ,(acl2::hq env)))
                         (:instance fgl-interp-test-correct
@@ -794,7 +795,7 @@
                          (b ,(acl2::hq eval-alist))
                          (a ,(acl2::hq orig-alist))
                          (x ,(acl2::hq goal))))
-                  :in-theory (disable eval-of-interp-st-validity-check
+                  :in-theory (disable interp-st-sat-check-unsat-implies
                                       fgl-interp-test-correct
                                       iff-forall-extensions-necc
                                       fgl-ev-of-extension-when-term-vars-bound))))
@@ -831,8 +832,7 @@
                          (b ,(acl2::hq eval-alist))
                          (a ,(acl2::hq orig-alist))
                          (x ,(acl2::hq goal))))
-                  :in-theory (disable eval-of-interp-st-validity-check
-                                      fgl-interp-test-correct
+                  :in-theory (disable fgl-interp-test-correct
                                       iff-forall-extensions-necc
                                       fgl-ev-of-extension-when-term-vars-bound))))))))
 

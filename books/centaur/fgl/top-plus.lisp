@@ -37,6 +37,7 @@
 (include-book "member-equal")
 (include-book "enums")
 (include-book "transform")
+(include-book "sat-binder")
 
 (local (in-theory (disable w)))
 

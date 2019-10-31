@@ -46,12 +46,12 @@
                                       (bfr interp-st-bfr-p)
                                       (interp-st interp-st-bfrs-ok)
                                       state)
-    :returns (mv ans new-interp-st new-state)
+    :returns (mv status new-interp-st new-state)
     (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
           (cw "SAT check failed because we are not in AIGNET mode!~%")
-          (mv bfr interp-st state))
+          (mv :failed interp-st state))
          ((when (interp-st->errmsg interp-st))
-          (mv nil interp-st state))
+          (mv :failed interp-st state))
          ((unless (fgl-sat-config-p params))
           (fgl-interp-error
            :msg (fgl-msg "Malformed fgl-sat-check call: params was not resolved to an fgl-sat-config object."))))
@@ -79,7 +79,16 @@
   (defret bfr-env$-p-of-<fn>
     (implies (not err)
              (bfr-env$-p (interp-st->ctrex-env new-interp-st)
-                         (logicman->bfrstate (interp-st->logicman interp-st))))))
+                         (logicman->bfrstate (interp-st->logicman interp-st)))))
+
+  
+
+  (defret aignet-vals-p-of-<fn>
+    (implies (and (not err)
+                  (bfr-mode-is :aignet (interp-st-bfr-mode)))
+             (aignet::aignet-vals-p
+              (env$->bitarr (interp-st->ctrex-env new-interp-st))
+              (logicman->aignet (interp-st->logicman interp-st))))))
 
 (defmacro fgl-use-default-sat-check ()
   `(progn (defattach interp-st-sat-check fgl-default-sat-check-impl)

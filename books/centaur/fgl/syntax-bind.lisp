@@ -54,17 +54,17 @@ current rewrite rule.</p>"
   :enabled t
   :short "Form that can bind a free variable to the result of some (possibly
 nondeterministic) computation."
-  :long "<p>Logically, @('(binder val)') just returns @('val').  However,
-in FGL, the intended use is to bind a free variable in a rewrite rule to the
+  :long "<p>Logically, @('(binder val)') just returns @('val').  However, in
+FGL, the intended use is to bind a free variable in a rewrite rule to the
 result of some computation with some particular properties.  The @('val')
-argument must be a function @('bindingfn') whose first argument is @('var') and
-which has either a binder rule of the following form:
+argument must be a function--say @('bindingfn')--whose first argument is a
+variable @('var') and which has either a binder rule of the following form:
 @({
  (implies (and ... hyps ...
                (equiv2 var (binding-impl-term ...)))
           (equiv1 (bindingfn var arg1 ... argn) var))
  })
-or else a binder metafunction associated.  In the first case (and assuming we
+or else a binder metafunction associated with it.  In the first case (and assuming we
 are in an @('equiv1') equiv context),
 @({
  (binder (bindingfn var val1 ... valn))
