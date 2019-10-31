@@ -207,6 +207,7 @@
     SWAP-STOBJS
     TRANS-EVAL-DEFAULT-WARNING
     TRANS-EVAL-NO-WARNING
+    COUNT-KEYS
   ))
 
 (defconst *special-ops*

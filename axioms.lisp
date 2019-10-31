@@ -28672,3 +28672,25 @@ Lisp definition."
 
 (defmacro print-cl-cache (&optional i j)
   `(print-cl-cache-fn ,i ,j))
+
+; We include definitions here of count-keys (from Sol Swords) and thus also
+; hons-remove-assoc (from community book
+; books/std/alists/hons-remove-assoc.lisp) in support of hash-table fields of
+; stobjs.
+
+(defun hons-remove-assoc (k x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (if (and (consp (car x))
+             (not (equal k (caar x))))
+        (cons (car x) (hons-remove-assoc k (cdr x)))
+      (hons-remove-assoc k (cdr x)))))
+
+(defun count-keys (al)
+  (declare (xargs :guard t))
+  (if (atom al)
+      0
+    (if (consp (car al))
+        (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
+      (count-keys (cdr al)))))

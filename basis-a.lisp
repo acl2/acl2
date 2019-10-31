@@ -5963,7 +5963,7 @@
    (accessor-name . updater-name)
    resize-name
    resizable
-   . other ; e.g., for hacking in community book books/add-ons/hash-stobjs.lisp
+   . other ; for a hash-table field
    )
   nil)
 
@@ -6016,6 +6016,18 @@
 (defun pack2 (n1 n2)
   (packn (list n1 n2)))
 
+(defun defstobj-fnname-key2 (type)
+
+; This function provides the value of the key2 argument of defstobj-fnname when
+; it is not :top.
+
+  (if (consp type)
+      (case (car type)
+        (array :array)
+        (hash-table :hash-table)
+        (t :scalar))
+    :scalar))
+
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
@@ -6024,23 +6036,16 @@
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
 ; alist.  Key1 describes which function name we are to generate and is one of
 ; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2
-; describes the ``type'' of root.  It is :top if root is the name of the live
-; object (and hence, root starts with a $) and it is otherwise either :array or
-; :non-array.  Note that if renaming-alist is nil, then this function returns
-; the ``default'' name used.  If renaming-alist pairs some default name with an
-; illegal name, the result is, of course, an illegal name.
+; describes the ``type'' of root.  It is :top if root is the name of the stobj
+; and it is otherwise either :array, :hash-table, or :scalar (see
+; defstobj-fnname-key2).  Note that if renaming-alist is nil, then this
+; function returns the ``default'' name used.  If renaming-alist pairs some
+; default name with an illegal name, the result is, of course, an illegal name.
 
   (let* ((default-fnname
            (case key1
              (:recognizer
-              (case key2
-                (:top
-                 (packn-pos
-                  (list (coerce (append (coerce (symbol-name root) 'list)
-                                        '(#\P))
-                                'string))
-                  root))
-                (otherwise (packn-pos (list root "P") root))))
+              (packn-pos (list root "P") root))
 
 ; This function can legitimately return nil for key1 values of :length
 ; and :resize.  We are careful in the assoc-eq call below not to look
@@ -6056,16 +6061,42 @@
              (:accessor
               (case key2
                 (:array (packn-pos (list root "I") root))
+;---<
+                (:hash-table (packn-pos (list root "-GET") root))
+;   >---
                 (otherwise root)))
              (:updater
               (case key2
                 (:array (packn-pos (list "UPDATE-" root "I") root))
+;---<
+                (:hash-table (packn-pos (list root "-PUT") root))
+;   >---
                 (otherwise (packn-pos (list "UPDATE-" root) root))))
              (:creator
               (packn-pos (list "CREATE-" root) root))
+;---<
+             (:boundp
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-BOUNDP") root)))
+             (:accessor?
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-GET?") root)))
+             (:remove
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-REM") root)))
+             (:count
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-COUNT") root)))
+             (:clear
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-CLEAR") root)))
+             (:init
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-INIT") root)))
+;   >---
              (otherwise
               (er hard 'defstobj-fnname
-                  "Implementation error (bad case); please contact ACL2 ~
+                  "Implementation error (bad case); please contact the ACL2 ~
                    implementors."))))
          (temp (and default-fnname ; see comment above
                     (assoc-eq default-fnname renaming-alist))))
@@ -6131,13 +6162,21 @@
            (resizable (if (consp field-desc)
                           (cadr (assoc-keyword :resizable (cdr field-desc)))
                         nil))
-           (key2 (if (and (consp type)
-                          (eq (car type) 'array))
-                     :array
-                   :non-array))
+;---<
+           (key2 (defstobj-fnname-key2 type))
+;   >---
            (fieldp-name (defstobj-fnname field :recognizer key2 renaming))
            (accessor-name (defstobj-fnname field :accessor key2 renaming))
            (updater-name (defstobj-fnname field :updater key2 renaming))
+;---<
+           (boundp-name (defstobj-fnname field :boundp key2 renaming))
+           (accessor?-name (defstobj-fnname field :accessor? key2
+                             renaming))
+           (remove-name (defstobj-fnname field :remove key2 renaming))
+           (count-name (defstobj-fnname field :count key2 renaming))
+           (clear-name (defstobj-fnname field :clear key2 renaming))
+           (init-name (defstobj-fnname field :init key2 renaming))
+;   >---
            (resize-name (defstobj-fnname field :resize key2 renaming))
            (length-name (defstobj-fnname field :length key2 renaming)))
       (cons (make defstobj-field-template
@@ -6151,7 +6190,17 @@
                   :updater-name updater-name
                   :length-name length-name
                   :resize-name resize-name
-                  :resizable resizable)
+                  :resizable resizable
+;---<
+                  :other
+                  (list boundp-name
+                        accessor?-name
+                        remove-name
+                        count-name
+                        clear-name
+                        init-name)
+;   >---
+                  )
             (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
 
@@ -6433,6 +6482,30 @@
          val)
         (t `(the ,type ,val))))
 
+#-acl2-loop-only
+(defun make-hash-table-with-defaults (test size rehash-size rehash-threshold)
+
+; We leave it to the underlying Lisp implementation to provide the size,
+; rehash-size, and rehash-threshold in place of nil.  The test is required to
+; be non-nil, and in fact, is required to have value EQ, EQL, HONS-EQUAL, or
+; EQUAL.  Note that stobj hash tables with test HONS-EQUAL are actually EQL
+; hash tables in the HONS version of ACL2.
+
+; In CCL the relevant defaults appear to be:
+; (:SIZE 60 :REHASH-SIZE 1.5 :REHASH-THRESHOLD 0.85)
+
+; In SBCL the relevant defaults appear to be:
+; (:SIZE 16 :REHASH-SIZE 1.5 :REHASH-THRESHOLD 1.0)
+
+  (apply 'make-hash-table
+         `(:test
+           ,(if (eq test 'hons-equal)
+                #+hons 'eql #-hons 'equal
+                test)
+           ,@(and size `(:size ,size))
+           ,@(and rehash-size `(:rehash-size ,rehash-size))
+           ,@(and rehash-threshold `(:rehash-threshold ,rehash-threshold)))))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning: Keep the formals in the definitions below in sync with corresponding
@@ -6491,8 +6564,98 @@
                                  :resize-name))
             (resizable (access defstobj-field-template
                                field-template
-                               :resizable)))
+                               :resizable))
+;---<
+            (hashp (and (consp type) (eq (car type) 'hash-table)))
+            (hash-test (and hashp (cadr type)))
+            (other (access defstobj-field-template
+                           field-template
+                           :other))
+            (boundp-name (nth 0 other))
+            (accessor?-name (nth 1 other))
+            (remove-name (nth 2 other))
+            (count-name (nth 3 other))
+            (clear-name (nth 4 other))
+            (init-name (nth 5 other))
+;   >---
+            )
        (cond
+;---<
+        (hashp
+         `((,accessor-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (values (gethash ,(if (eq hash-test 'hons-equal)
+                                 '(hons-copy k)
+                               'k)
+                            (the hash-table (svref ,var ,n)))))
+           (,updater-name
+            (k v ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+hons (memoize-flush ,var)
+              (setf (gethash ,(if (eq hash-test 'hons-equal)
+                                  '(hons-copy k)
+                                'k)
+                             (the hash-table (svref ,var ,n)))
+                    v)
+              ,var))
+           (,boundp-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (multiple-value-bind (val boundp)
+                (gethash ,(if (eq hash-test 'hons-equal)
+                              '(hons-copy k)
+                            'k)
+                         (the hash-table (svref ,var ,n)))
+              (declare (ignore val))
+              (if boundp t nil)))
+           (,accessor?-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (multiple-value-bind
+                (val boundp)
+                (gethash ,(if (eq hash-test 'hons-equal)
+                              '(hons-copy k)
+                            'k)
+                         (the hash-table (svref ,var ,n)))
+              (mv val (if boundp t nil))))
+           (,remove-name
+            (k ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (remhash ,(if (eq hash-test 'hons-equal)
+                            '(hons-copy k)
+                          'k)
+                       (the hash-table (svref ,var ,n)))
+              ,var))
+           (,count-name
+            (,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (hash-table-count (the hash-table (svref ,var ,n))))
+           (,clear-name
+            (,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (clrhash (the hash-table (svref ,var ,n)))
+              ,var))
+           (,init-name
+            (ht-size rehash-size rehash-threshold ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (setf (svref ,var ,n)
+                    (make-hash-table-with-defaults ',hash-test
+                                                   ht-size
+                                                   rehash-size
+                                                   rehash-threshold))
+              ,var))))
+;   >---
         (arrayp
          `((,length-name
             (,var)
@@ -6638,6 +6801,11 @@
    (t (let* ((field-template (car field-templates))
              (type (access defstobj-field-template field-template :type))
              (arrayp (and (consp type) (eq (car type) 'array)))
+;---<
+             (hashp (and (consp type) (eq (car type) 'hash-table)))
+             (hash-test (and hashp (cadr type)))
+             (hash-init-size (and hashp (caddr type)))
+;   >---
              (array-etype0 (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
              (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
@@ -6677,6 +6845,14 @@
                                        :element-type ',array-etype
                                        :initial-element ',init)))
                 (defstobj-raw-init-fields (cdr field-templates))))
+;---<
+         (hashp
+          (cons `(make-hash-table-with-defaults ',hash-test
+                                                ,hash-init-size
+                                                nil
+                                                nil)
+                (defstobj-raw-init-fields (cdr field-templates))))
+;   >---
          ((eq type t)
           (cons (kwote init)
                 (defstobj-raw-init-fields (cdr field-templates))))
@@ -6817,8 +6993,9 @@
 ; recognizers for the single-threaded resource named name with the given
 ; template.  The answer contains the top-level recognizer as well as the
 ; definitions of all component recognizers.  The answer contains defs for
-; auxiliary functions used in array component recognizers.  The defs are listed
-; in an order suitable for processing (components first, then top-level).
+; auxiliary functions used in array and hash-table component recognizers.  The
+; defs are listed in an order suitable for processing (components first, then
+; top-level).
 
   (cond
    ((endp field-templates)
@@ -6870,6 +7047,15 @@
                                 (and ,(translate-stobj-type-to-guard
                                        etype '(car x) wrld)
                                      (,recog-name (cdr x)))))))
+;---<
+             ((and (consp type)
+                   (eq (car type) 'hash-table))
+              `(,recog-name (x)
+                            (declare (xargs :guard t
+                                            :verify-guards t)
+                                     (ignore x))
+                            t))
+;   >---
              (t (let ((type-term (translate-stobj-type-to-guard
                                   type 'x wrld)))
 
