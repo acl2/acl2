@@ -861,6 +861,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-maybe-type-list-j< ((sub atj-maybe-type-listp)
+                                (sup atj-maybe-type-listp))
+  :returns (yes/no booleanp)
+  :short "Irreflexive kernel (i.e. strict version)
+          of @(tsee atj-maybe-type-list-j<=)."
+  (and (atj-maybe-type-list-j<= sub sup)
+       (not (equal sub sup))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-maybe-type-list-jmeet ((x atj-maybe-type-listp)
                                    (y atj-maybe-type-listp))
   :returns (glb atj-maybe-type-listp :hyp :guard)
@@ -1521,3 +1531,54 @@
   (defmacro def-atj-other-function-type (fn in-types out-type)
     `(make-event
       (def-atj-other-function-type-fn ',fn ',in-types ',out-type (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-output-type-of-min-input-types ((in-types atj-type-listp)
+                                            (fn-types atj-function-type-listp))
+  :returns (out-type? atj-maybe-typep :hyp :guard)
+  :short "Output type for the minimum input types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When this function is called,
+     @('in-types') are the types inferred for
+     the actual arguments of a function call,
+     and @('fn-types') are the secondary function types of the called function.
+     The goal here is to see if the argument types match
+     any secondary function type,
+     in the sense that the input types of the secondary function type
+     are greater than or equal to, according to the Java-based partial order,
+     the types of the actual arguments.
+     If no such secondary function type is found, we return @('nil').
+     If instead some exist, we select the minimum one,
+     which should always exist because of the closure property
+     enforced by @(tsee def-atj-other-function-type),
+     and we return its corresponding output type.
+     In other words, given the types of the actual arguments,
+     the returned output type (if any) tells us
+     the result type of the overloaded method
+     that will be resolved at compile time."))
+  (atj-output-type-of-min-input-types-aux in-types fn-types nil nil)
+
+  :prepwork
+  ((define atj-output-type-of-min-input-types-aux
+     ((in-types atj-type-listp)
+      (fn-types atj-function-type-listp)
+      (current-min-in-types atj-type-listp)
+      (current-out-type? atj-maybe-typep))
+     :returns (out-type? atj-maybe-typep :hyp :guard)
+     (b* (((when (endp fn-types)) current-out-type?)
+          (fn-type (car fn-types))
+          (fn-in-types (atj-function-type->inputs fn-type))
+          ((mv current-min-in-types current-out-type?)
+           (if (and (atj-maybe-type-list-j<= in-types fn-in-types)
+                    (or (null current-out-type?)
+                        (atj-maybe-type-list-j< fn-in-types
+                                                current-min-in-types)))
+               (mv fn-in-types (atj-function-type->output fn-type))
+             (mv current-min-in-types current-out-type?))))
+       (atj-output-type-of-min-input-types-aux in-types
+                                               (cdr fn-types)
+                                               current-min-in-types
+                                               current-out-type?)))))
