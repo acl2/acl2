@@ -12,6 +12,7 @@
 
 (include-book "organize-symbols-by-name")
 (include-book "organize-symbols-by-pkg")
+(include-book "symbol-name-lst")
 (include-book "symbol-package-name-lst")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
