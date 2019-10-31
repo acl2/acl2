@@ -125,9 +125,7 @@
               (len (mv-nth 1 (remove-trivial-vars-aux formals actuals)))))
 
      (more-returns
-      (new-formals true-listp
-                   :name remove-trivial-vars-returns-lemma
-                   :rule-classes :type-prescription))
+      (new-formals true-listp :rule-classes :type-prescription))
 
      (defret remove-trivial-vars-termination-lemma
        :hyp (equal (len formals) (len actuals))

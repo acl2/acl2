@@ -93,16 +93,8 @@
      ///
 
      (more-returns
-
-      (remaining-formals
-       true-listp
-       :name true-listp-of-remove-unused-vars-aux-remaining-formals
-       :rule-classes :type-prescription)
-
-      (remaining-actuals
-       true-listp
-       :name true-listp-of-remove-unused-vars-aux-remaining-actuals
-       :rule-classes :type-prescription))
+      (remaining-formals true-listp :rule-classes :type-prescription)
+      (remaining-actuals true-listp :rule-classes :type-prescription))
 
      (defret acl2-count-of-remove-unused-vars-aux-remaining-formals
        (<= (acl2-count remaining-formals)
