@@ -929,18 +929,6 @@
   (b* ((ctrex-eval (aignet-vals->invals ctrex-eval vals aignet)))
     (aignet-vals->regvals-after-invals 0 vals ctrex-eval aignet))
   ///
-  (defthm len-of-aignet-vals->invals-iter
-    (implies (and (<= (num-ins aignet) (len invals))
-                  (<= (nfix n) (num-ins aignet)))
-             (equal (len (aignet-vals->invals-iter n invals vals aignet))
-                    (len invals)))
-    :hints(("Goal" :in-theory (enable aignet-vals->invals-iter))))
-
-  (defthm len-of-aignet-vals->invals
-    (implies (<= (num-ins aignet) (len invals))
-             (equal (len (aignet-vals->invals invals vals aignet))
-                    (len invals)))
-    :hints(("Goal" :in-theory (enable aignet-vals->invals))))
 
   (verify-guards aignet-vals->in/regvals)
 
