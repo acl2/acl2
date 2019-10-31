@@ -7300,10 +7300,6 @@
     `(mv-let ,(cadr mv-let-form)
              (let* (,@(and (not (eq st 'state))
                            `((,st (,creator))))
-
-; We bind the live var so that user-stobj-alist-safe can catch misguided
-; attempts to use functions like trans-eval in inappropriate contexts.
-
                     ,@(cond ((eq st 'state)
                              '((*inside-with-local-state* t)
                                (*wormholep*
@@ -7318,9 +7314,7 @@
                                (*t-stack-length* *t-stack-length*)
                                (*32-bit-integer-stack* *32-bit-integer-stack*)
                                (*32-bit-integer-stack-length*
-                                *32-bit-integer-stack-length*)))
-                            (t `((*local-user-stobj-lst*
-                                  (cons ',st *local-user-stobj-lst*))))))
+                                *32-bit-integer-stack-length*)))))
                ,(let ((p (if w
                              (oneify producer flet-fns w program-p)
                            producer)))

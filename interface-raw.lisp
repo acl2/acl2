@@ -1521,13 +1521,7 @@
 ; Warning: Keep these cases in sync with stobj-let-fn.
 
         (('let bindings . rest)
-         `(let* ((*local-user-stobj-lst* ; binding might not be needed
-                  (append (loop for pair in ',bindings
-                                when (live-stobjp (car pair))
-                                collect (car pair))
-                          *local-user-stobj-lst*))
-                 ,@bindings)
-            ,@rest))
+         `(let* ,bindings ,@rest))
         (('progn conjoined-no-dups-exprs
                  ('let bindings . rest))
 
@@ -1536,13 +1530,7 @@
 ; form by oneify.
 
          `(progn ,conjoined-no-dups-exprs
-                 (let* ((*local-user-stobj-lst* ; binding might not be needed
-                         (append (loop for pair in ',bindings
-                                       when (live-stobjp (car pair))
-                                       collect (car pair))
-                                 *local-user-stobj-lst*))
-                        ,@bindings)
-                   ,@rest)))
+                 (let* ,bindings ,@rest)))
         (& (interface-er "Implementation error: unexpected form of stobj-let ~
                           encountered by ~
                           oneify!.~|~%Input:~|~y0~%Output:~|~y1~%Please ~

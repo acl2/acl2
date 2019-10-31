@@ -10188,58 +10188,7 @@
                         `(memoize-flush ,(congruent-stobj-rep-raw
                                           stobj))))
                   (form
-                   `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil))
-                           (*local-user-stobj-lst*
-
-; Should we allow trans-eval under a stobj-let?  We decided not to, for two
-; reasons: first, potential user confusion over the meaning of a stobj
-; reference (which in the trans-eval case is to the value in the
-; *user-stobj-alist*, not to the value bound by a superior stobj-let); and
-; second, difficulty in getting the implementation right!  The following
-; example illustrates how trans-eval would operate, were we to allow it in such
-; a circumstance.  Note that the trans-eval call below updates the global
-; stobj, sub1, not the locally bound sub1 that is a field of top1.
-
-;   (defstobj sub1 sub1-fld1)
-;   (defstobj top1 (top1-fld :type sub1))
-;
-;   (defun f (x top1 state)
-;     (declare (xargs :stobjs (top1 state) :mode :program))
-;     (stobj-let
-;      ((sub1 (top1-fld top1)))
-;      (sub1 state)
-;      (mv-let (erp val state)
-;
-;   ; NOTE: The reference to sub1 inside the following trans-eval call is
-;   ; actually a reference to the global sub1 from the *user-stobj-alist*, not
-;   ; to the sub1 bound by stobj-let above.
-;
-;              (trans-eval `(update-sub1-fld1 ',x sub1) 'my-top state t)
-;              (declare (ignore erp val))
-;              (mv sub1 state))
-;      top1))
-;
-;   (f 7 top1 state)
-;   (assert-event (equal (sub1-fld1 sub1) 7))
-;   (f 8 top1 state)
-;   (assert-event (equal (sub1-fld1 sub1) 8))
-;
-;   (defun f2 (top1)
-;     (declare (xargs :stobjs top1 :mode :program))
-;     (stobj-let
-;      ((sub1 (top1-fld top1)))
-;      (val)
-;      (sub1-fld1 sub1)
-;      val))
-;
-;   (assert-event (equal (f2 top1) nil))
-
-; Thus we bind *local-user-stobj-lst* so that we will get the error "It is
-; illegal to run ACL2 evaluators...." when attempting to call trans-eval (as
-; trans-eval calls ev-for-trans-eval, which calls user-stobj-alist-safe, which
-; calls chk-user-stobj-alist).
-
-                            (append ',bound-vars *local-user-stobj-lst*)))
+                   `(let* ,(pairlis$ bound-vars (pairlis$ actuals nil))
                       (declare (ignorable ,@bound-vars))
                       ,(cond
                         ((cdr producer-vars)
@@ -15768,26 +15717,6 @@
                                            alist1)
                              (cdr alist2)))))
 
-#-acl2-loop-only
-(defun-one-output chk-user-stobj-alist (stobjs ctx)
-  (let ((int (intersection-eq stobjs *local-user-stobj-lst*)))
-    (when int
-      (er hard! ctx
-          "It is illegal to run ACL2 evaluators trans-eval and ~
-           simple-translate-and-eval on any term that mentions a stobj that ~
-           has been bound by with-local-stobj or stobj-let.  The reason is ~
-           that those evaluators expect each stobj to match perfectly the ~
-           corresponding global stobj that is stored in the ACL2 state.  The ~
-           offending stobj name~#0~[ is~/s are~]:  ~&0."
-          int))))
-
-(defun user-stobj-alist-safe (ctx stobjs state)
-  #-acl2-loop-only
-  (chk-user-stobj-alist stobjs ctx)
-  #+acl2-loop-only
-  (declare (ignore ctx stobjs))
-  (user-stobj-alist state))
-
 (defun collect-user-stobjs (stobjs-out)
   (cond ((endp stobjs-out) nil)
         ((or (null (car stobjs-out))
@@ -15796,7 +15725,7 @@
         (t (cons (car stobjs-out)
                  (collect-user-stobjs (cdr stobjs-out))))))
 
-(defun ev-for-trans-eval (trans vars stobjs-out ctx state aok
+(defun ev-for-trans-eval (trans stobjs-out ctx state aok
                                 user-stobjs-modified-warning)
 
 ; WARNING: This function must never be in :logic mode, because it can violate
@@ -15806,9 +15735,9 @@
 
 ; Warning: Keep in sync with ev-w-for-trans-eval.
 
-; Trans is a translated term with the indicated stobjs-out, and vars is
-; (all-vars term).  We return the result of evaluating trans, but formulated as
-; an error triple with possibly updated state as described in trans-eval.
+; Trans is a translated term with the indicated stobjs-out.  We return the
+; result of evaluating trans, but formulated as an error triple with possibly
+; updated state as described in trans-eval.
 
 ; This function is called by trans-eval, and is a suitable alternative to
 ; trans-eval when the term to be evaluated has already been translated by
@@ -15816,7 +15745,7 @@
 
   (let ((alist (cons (cons 'state
                            (coerce-state-to-object state))
-                     (user-stobj-alist-safe 'trans-eval vars state)))
+                     (user-stobj-alist state)))
         (user-stobjs (collect-user-stobjs stobjs-out)))
     (mv-let
       (erp val latches)
@@ -15872,7 +15801,7 @@
                state)))))))
 
 #+acl2-par
-(defun ev-w-for-trans-eval (trans vars stobjs-out ctx state aok
+(defun ev-w-for-trans-eval (trans stobjs-out ctx state aok
                                   user-stobjs-modified-warning)
 
 ; Warning: Keep in sync with ev-for-trans-eval.
@@ -15883,7 +15812,7 @@
 
   (let ((alist (cons (cons 'state
                            (coerce-state-to-object state))
-                     (user-stobj-alist-safe 'trans-eval vars state)))
+                     (user-stobj-alist state)))
         (user-stobjs (collect-user-stobjs stobjs-out)))
     (mv-let
       (erp val)
@@ -15940,7 +15869,7 @@
           "Global variables, such as ~&0, are not allowed. See :DOC ASSIGN ~
            and :DOC @."
           (reverse (non-stobjps vars t wrld)))) ;;; known-stobjs = t
-     (t (ev-for-trans-eval term vars stobjs-out ctx state aok
+     (t (ev-for-trans-eval term stobjs-out ctx state aok
                            user-stobjs-modified-warning)))))
 
 (defun trans-eval0 (form ctx state aok user-stobjs-modified-warning)
@@ -16431,7 +16360,7 @@
 ; Note that we call translate with logic-modep nil.  Thus, :program
 ; mode functions may appear in x.
 
-; Keep in sync with simple-translate-and-eval@par.
+; Keep in sync with simple-translate-and-eval-cmp.
 
   (er-let* ((term (translate x '(nil) nil t ctx wrld state)))
 
@@ -16467,12 +16396,7 @@
                                         (cons (cons 'state
                                                     (coerce-state-to-object
                                                      state))
-                                              (user-stobj-alist-safe
-                                               'simple-translate-and-eval
-                                               (intersection-eq
-                                                ok-stobj-names
-                                                vars)
-                                               state)))
+                                              (user-stobj-alist state)))
                                 state nil nil aok)
                             (declare (ignore latches))
 
@@ -16572,12 +16496,7 @@
                                     (cons (cons 'state
                                                 (coerce-state-to-object
                                                  state))
-                                          (user-stobj-alist-safe
-                                           'simple-translate-and-eval
-                                           (intersection-eq
-                                            ok-stobj-names
-                                            vars)
-                                           state)))
+                                          (user-stobj-alist state)))
                             (w state)
                             (user-stobj-alist state)
                             safe-mode gc-off nil aok)
