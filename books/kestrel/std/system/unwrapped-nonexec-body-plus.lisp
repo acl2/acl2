@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "definedp")
 (include-book "formals-plus")
+(include-book "logic-function-namep")
 (include-book "non-executablep")
 (include-book "ubody-plus")
 
