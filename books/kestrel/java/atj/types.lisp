@@ -1021,11 +1021,7 @@
                     malformed function information ~x0 for function ~x1."
                    fn-info fn)))))
     nil)
-  :prepwork
-  ((defrulel consp-of-assoc-equal
-     (implies (alistp alist)
-              (iff (consp (assoc-equal key alist))
-                   (assoc-equal key alist)))))
+  :prepwork ((local (include-book "std/alists/assoc" :dir :system)))
   ///
 
   (defrule atj-function-type-info-p-of-atj-get-function-type-info-from-table
