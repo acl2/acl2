@@ -102,20 +102,18 @@
       (remaining-actuals
        true-listp
        :name true-listp-of-remove-unused-vars-aux-remaining-actuals
-       :rule-classes :type-prescription)
+       :rule-classes :type-prescription))
 
-      (remaining-formals
+     (defret acl2-count-of-remove-unused-vars-aux-remaining-formals
        (<= (acl2-count remaining-formals)
            (acl2-count formals))
-       :name acl2-count-of-remove-unused-vars-aux-remaining-formals
        :rule-classes :linear)
 
-      (remaining-actuals
+     (defret acl2-count-of-remove-unused-vars-aux-remaining-actuals
        (<= (acl2-count remaining-actuals)
            (acl2-count actuals))
        :hyp (= (len formals) (len actuals))
-       :name acl2-count-of-remove-unused-vars-aux-remaining-actuals
-       :rule-classes :linear))
+       :rule-classes :linear)
 
      (defthm same-len-of-remove-unused-vars-aux
        (b* (((mv remaining-formals remaining-actuals)

@@ -127,9 +127,10 @@
      (more-returns
       (new-formals true-listp
                    :name remove-trivial-vars-returns-lemma
-                   :rule-classes :type-prescription)
-      (new-actuals (<= (acl2-count new-actuals)
-                       (acl2-count actuals))
-                   :name remove-trivial-vars-termination-lemma
-                   :hyp (equal (len formals) (len actuals))
-                   :rule-classes :linear)))))
+                   :rule-classes :type-prescription))
+
+     (defret remove-trivial-vars-termination-lemma
+       :hyp (equal (len formals) (len actuals))
+       (<= (acl2-count new-actuals)
+           (acl2-count actuals))
+       :rule-classes :linear))))
