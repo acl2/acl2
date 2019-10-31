@@ -50,6 +50,7 @@
      These source files can be compiled either in IntelliJ IDEA
      or via the @('Makefile') file in this directory,
      which generates class and jar files in the same places
-     where IntelliJ IDEA does;
-     this @('Makefile') assumes that OpenJDK Java 13 is in the path,
+     where IntelliJ IDEA does.
+     This @('Makefile') also generates Javadoc HTML documentation.
+     This @('Makefile') assumes that OpenJDK Java 13 is in the path,
      but it may well work with other Java versions or implementations.")))
