@@ -597,10 +597,9 @@
                  (atj-types-to-jtypes (cdr types)))))
   ///
 
-  (more-returns
-   (jtypes (equal (len jtypes) (len types))
-           :name len-of-atj-types-to-jtypes
-           :rule-classes :linear)))
+  (defret len-of-atj-types-to-jtypes
+    (equal (len jtypes)
+           (len types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
