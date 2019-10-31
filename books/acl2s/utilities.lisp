@@ -8,6 +8,7 @@
 
 (in-package "ACL2S")
 (include-book "kestrel/utilities/proof-builder-macros" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc ACL2s-utilities
   :parents (acl2::acl2-sedan)
@@ -115,6 +116,45 @@ testing. The macro supports testing for @(see thm),
 </p>
 ")
 
+#|
+; May be useful if I (local ...) causes problems
+
+(defun gen-acl2s-local-fn (var val forms state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (b* ((old (get-acl2s-defaults var (w state)))
+       (set? (not (equal old val)))
+       (set (and set? `((with-output
+                         :off :all
+                         (acl2s-defaults :set ,var ,val)))))
+       (reset (and set? `((with-output
+                           :off :all
+                           (acl2s-defaults :set ,var ,old)))))
+       (forms (acl2::collect$ (lambda$ (x) `(with-output :stack :pop ,x))
+                              forms)))
+    `(encapsulate nil ,@set ,@forms ,@reset)))
+
+(defmacro gen-acl2s-local (var val forms)
+  `(with-output
+    :off :all :stack :push
+    (make-event (gen-acl2s-local-fn ',var ',val ',forms state))))
+|#
+
+(defun gen-acl2s-local-fn (var val forms)
+  (declare (xargs :mode :program))
+  (b* ((set `(with-output
+              :off :all :on (error)
+              (local (acl2s-defaults :set ,var ,val))))
+       (forms (collect$ '(lambda (x) `(with-output :stack :pop ,x))
+                        forms)))
+    `(with-output
+      :off :all :stack :push
+      (encapsulate nil ,set ,@forms))))
+
+(defmacro gen-acl2s-local (var val forms)
+  (gen-acl2s-local-fn var val forms))
+
+; :trans1 (gen-acl2s-local testing-enabled nil ((test? (= x y)) (thm t)))
+
 ;; If there are opportunities to do so, we should extend
 ;; test-then-skip-proofs so that it supports more forms.
 
@@ -122,53 +162,68 @@ testing. The macro supports testing for @(see thm),
   (declare (xargs :guard (true-listp thm)))
   (cond
    ((equal (car thm) 'defthm)
-    `(encapsulate ()
-      (acl2s::test? ,(third thm))
-      (skip-proofs ,thm)))
+    `(gen-acl2s-local testing-enabled
+                      t
+                      ((test? ,(third thm))
+                       (skip-proofs ,thm))))
    ((equal (car thm) 'thm)
-    `(encapsulate ()
-      (acl2s::test? ,(second thm))
-      (skip-proofs ,thm)))
-   ((member (car thm) '(acl2::defcong acl2::defequiv acl2::defrefinement))
-    `(make-event
-      (er-let* ((defthm (acl2::macroexpand1* ',thm 'ctx (w state) state)))
-               (value `(encapsulate
-                        ()
-                        (acl2s::test? ,(second (third defthm)))
-                        (skip-proofs ,',thm))))))
-   (t `(skip-proofs ,thm))))
+    `(gen-acl2s-local testing-enabled
+                      t
+                      ((test? ,(second thm))
+                       (skip-proofs ,thm))))
+   ((member (car thm) '(defcong defequiv defrefinement))
+    `(with-output
+      :off :all :on (error) :stack :push
+      (make-event
+       (er-let* ((defthm
+                   (acl2::macroexpand1* ',thm 'ctx (w state) state))
+                 (form (acl2::trans-eval (cadadr defthm) 'ctx state t)))
+                (value `(with-output
+                         :stack :pop
+                         (gen-acl2s-local
+                          testing-enabled
+                          t
+                          ((test? ,(third (cdr form)))
+                           (skip-proofs ,',thm)))))))))
+    (t `(skip-proofs ,thm))))
+
+; :trans1 (test-then-skip-proofs (defthm foo (equal (+ x y) (+ y x))))
+; :trans1 (test-then-skip-proofs (thm  (equal (+ x y) (+ y x))))
+; :trans1 (test-then-skip-proofs (defequiv =))
+
 
 (defxdoc thm-no-test
   :parents (acl2s-utilities acl2::cgen)
   :short "A version of @('thm') with testing disabled."
   :long"<p>
-A macro that uses @('with-outer-locals') to locally turn off
-@('cgen') testing and then calls @('thm').
+A macro that locally turns off @('cgen') testing and then calls @('thm').
 </p>
 ")
 
+
 (defmacro thm-no-test (&rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (make-event (mv-let (erp val state)
-                        (thm ,@args)
-                        (declare (ignore val))
-                        (cond (erp (er soft 'thm "The thm failed"))
-                              (t (value `(value-triple :passed))))))))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((thm ,@args))))
+
+; :trans1 (thm-no-test (equal (+ x y) (+ y x)))
+; :trans1 (thm (equal (+ x y) (+ y x)))
 
 (defxdoc defthm-no-test
   :parents (acl2s-utilities acl2::cgen)
   :short "A version of @('defthm') with testing disabled."
   :long"<p>
-A macro that uses @('with-outer-locals') to locally turn off
-@('cgen') testing and then calls @('defthm').
+A macro that locally turns off @('cgen') testing and then calls @('defthm').
 </p>
 ")
 
 (defmacro defthm-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (defthm ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defthm ,name ,@args))))
+
+; :trans1 (defthm-no-test foo (equal (+ x y) (+ y x)))
+; :u (defthm foo (equal (+ x y) (+ y x))) :u
 
 ;---------------------------------------------------------------------------
 ; Symbol generation utilities
@@ -345,18 +400,27 @@ functions over natural numbers.
   :rule-classes :well-founded-relation)
 
 (defmacro defthm-test-no-proof (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled t))
-    (test? ,@args)
-    (skip-proofs (defthm ,name ,@args))))
+  `(gen-acl2s-local testing-enabled
+                    t
+                    ((test? ,@args)
+                     (skip-proofs (defthm ,name ,@args)))))
+
+; :trans1 (defthm-test-no-proof foo (equal (+ x y) (+ y x)))
+; :u (defthm foo (equal (+ x y) (+ y x))) :u
 
 (defmacro defthmskipall (name &rest args)
   `(skip-proofs (defthm-no-test ,name ,@args)))
 
+; :trans1 (defthmskipall foo (equal (+ x y) (+ y x)))
+; :u (defthm foo (equal (+ x y) (+ y x))) :u
+
 (defmacro defun-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (defun ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defun ,name ,@args))))
+
+; :trans1 (defun-no-test f (x) (1+ x))
+; :u  (defun f (x) (1+ x)) :u
 
 ; I tried a few different ways of doing this, so I figured I would
 ; leave this here so that if I make any other changes, there is less
