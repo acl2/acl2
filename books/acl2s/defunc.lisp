@@ -2173,14 +2173,14 @@ To debug a failed defunc form, you can proceed in multiple ways:
         ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro defunc-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (defunc ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defunc ,name ,@args))))
 
 (defmacro defuncd-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (defuncd ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defuncd ,name ,@args))))
 
 (defmacro defundcd (name &rest args)
   `(encapsulate
@@ -2192,11 +2192,11 @@ To debug a failed defunc form, you can proceed in multiple ways:
         ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro defundc-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (defundc ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defundc ,name ,@args))))
 
 (defmacro defundcd-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (defundcd ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defundcd ,name ,@args))))
