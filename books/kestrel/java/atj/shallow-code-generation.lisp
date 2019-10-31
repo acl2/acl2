@@ -17,9 +17,12 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "std/typed-alists/cons-pos-alistp" :dir :system)
+
+(local (include-book "kestrel/std/basic/symbol-name-lst" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1778,7 +1781,6 @@
                                       (wrld plist-worldp))
   :returns (mv (method jmethodp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
-  :verify-guards nil
   :short "Generate a shallowly embedded ACL2 function definition."
   :long
   (xdoc::topstring
@@ -1796,12 +1798,22 @@
      in the pre-translated function body,
      and add it to the collection that it threaded through."))
   (b* ((curr-pkg (symbol-package-name fn))
-       (formals (formals fn wrld))
-       (body (ubody fn wrld))
+       (formals (formals+ fn wrld))
+       (body (ubody+ fn wrld))
+       ((run-when (null body))
+        (raise "Internal error: ~
+                the function ~x0 has no unnormalized body."
+               fn))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
+       ((unless (= (len in-types) (len formals)))
+        (raise "Internal error: ~
+                the number ~x0 of parameters of ~x1 ~
+                does not match the number ~x2 of input types of ~x1."
+               (len formals) fn (len in-types))
+        (mv (ec-call (jmethod-fix nil)) qconsts)) ; irrelevant
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))

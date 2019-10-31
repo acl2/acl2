@@ -65,6 +65,7 @@
                          fmt-hard-right-margin
                          fmt-soft-right-margin
                          formals
+                         formals+
                          fquotep
                          function-namep
                          implicate
@@ -92,6 +93,7 @@
                          packn-pos
                          partition-rest-and-keyword-args
                          patbind-fun
+                         patbind-run-unless
                          patbind-run-when
                          primitivep
                          printable-charlist-p
@@ -133,6 +135,7 @@
                          tuplep
                          typed-tuplep
                          ubody
+                         ubody+
                          ubyte16
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
