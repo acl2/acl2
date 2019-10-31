@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "irecursivep")
-(include-book "ubody")
+(include-book "ubody-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,13 +19,12 @@
                                    (= 1 (len (irecursivep fn wrld)))))
                           (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :verify-guards nil
   :parents (std/system/function-queries)
   :short "Check if a singly recursive function is tail-recursive."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A singly recursive function is tail recursive if
+    "A singly recursive function is tail-recursive if
      each of its recursive calls are the last action taken by the function
      on that execution path.
      We recursively examine the body of the function
@@ -53,12 +52,11 @@
      and the body of the lambda expression passes the check.
      The body of the lambda expression is the last thing
      to be evaluated in the call."))
-  (tail-recursive-p-aux fn (ubody fn wrld))
+  (tail-recursive-p-aux fn (ubody+ fn wrld))
 
   :prepwork
   ((define tail-recursive-p-aux ((fn symbolp) (term pseudo-termp))
      :returns (yes/no booleanp)
-     :verify-guards nil
      (b* (((when (variablep term)) t)
           ((when (fquotep term)) t)
           ((when (eq (ffn-symb term) 'if))
