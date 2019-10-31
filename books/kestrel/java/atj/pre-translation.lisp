@@ -457,10 +457,9 @@
                  (atj-type-annotate-vars (cdr vars) (cdr types)))))
   ///
 
-  (more-returns
-   (new-vars (equal (len new-vars)
-                    (len vars))
-             :name len-of-atj-type-annotate-vars)))
+  (defret len-of-atj-type-annotate-vars
+    (equal (len new-vars)
+           (len vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -471,7 +470,16 @@
   (b* (((when (endp vars)) (mv nil nil))
        ((mv var type) (atj-type-unannotate-var (car vars)))
        ((mv vars types) (atj-type-unannotate-vars (cdr vars))))
-    (mv (cons var vars) (cons type types))))
+    (mv (cons var vars) (cons type types)))
+  ///
+
+  (defret len-of-atj-type-unannotate-vars.unannotated-vars
+    (equal (len unannotated-vars)
+           (len vars)))
+
+  (defret len-of-atj-type-unannotate-vars.types
+    (equal (len types)
+           (len vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,7 +805,12 @@
        (formals (atj-type-annotate-vars formals in-types))
        ((mv body &)
         (atj-type-annotate-term body out-type var-types guards$ wrld)))
-    (mv formals body)))
+    (mv formals body))
+  ///
+
+  (defret len-of-atj-type-annotate-formals+body.new-formals
+    (equal (len annotated-formals)
+           (len formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -905,7 +918,12 @@
   :short "Lift @(tsee atj-mark-var-new) to lists."
   (cond ((endp vars) nil)
         (t (cons (atj-mark-var-new (car vars))
-                 (atj-mark-vars-new (cdr vars))))))
+                 (atj-mark-vars-new (cdr vars)))))
+  ///
+
+  (defret len-of-atj-mark-vars-new
+    (equal (len marked-vars)
+           (len vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -943,7 +961,16 @@
   (b* (((when (endp vars)) (mv nil nil))
        ((mv var new?) (atj-unmark-var (car vars)))
        ((mv vars new?s) (atj-unmark-vars (cdr vars))))
-    (mv (cons var vars) (cons new? new?s))))
+    (mv (cons var vars) (cons new? new?s)))
+  ///
+
+  (defret len-of-atj-unmark-vars.unmarked-vars
+    (equal (len unmarked-vars)
+           (len vars)))
+
+  (defret len-of-atj-unmark-vars.new?s
+    (equal (len new?s)
+           (len vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1259,18 +1286,14 @@
      ///
 
      (more-returns
-      (marked-formals true-listp
-                      :name true-listp-of-atj-mark-lambda-formals.marked-formals
-                      :rule-classes :type-prescription)
-      (marked-formals (equal (len marked-formals)
-                             (len formals))
-                      :name len-of-atj-mark-lambda-formals.marked-formals)
+      (marked-formals true-listp :rule-classes :type-prescription)
+      (new-vars-to-mark-new true-listp
+                            :hyp (true-listp vars-to-mark-new)
+                            :rule-classes :type-prescription))
 
-      (new-vars-to-mark-new
-       true-listp
-       :hyp (true-listp vars-to-mark-new)
-       :name true-listp-of-atj-mark-lambda-formals.new-vars-to-nark-new
-       :rule-classes :type-prescription))))
+     (defret len-of-atj-mark-lambda-formals.marked-formals
+       (equal (len marked-formals)
+              (len formals)))))
 
   :verify-guards nil ; done below
 
@@ -1297,7 +1320,12 @@
      this top level is discussed in @(tsee atj-mark-term)."))
   (b* ((marked-formals (atj-mark-vars-new formals))
        ((mv marked-body &) (atj-mark-term body formals nil formals)))
-    (mv marked-formals marked-body)))
+    (mv marked-formals marked-body))
+  ///
+
+  (defret len-of-atj-mark-formals+body.new-formals
+    (equal (len new-formals)
+           (len formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1580,12 +1608,11 @@
   ///
 
   (more-returns
-   (new-formals (equal (len new-formals)
-                       (len formals))
-                :name len-of-new-formals-of-atj-rename-formals)
-   (new-formals true-listp
-                :name true-listp-of-new-formals-of-atj-rename-formals
-                :rule-classes :type-prescription)))
+   (new-formals true-listp :rule-classes :type-prescription))
+
+  (defret len-of-atj-rename-formals.new-formals
+    (equal (len new-formals)
+           (len formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1822,7 +1849,12 @@
        ((mv new-body & &)
         (atj-rename-term
          body renaming-new renaming-old indices curr-pkg vars-by-name)))
-    (mv new-formals new-body)))
+    (mv new-formals new-body))
+  ///
+
+  (defret len-of-atj-rename-formals+body.new-formals
+    (equal (len new-formals)
+           (len formals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1856,4 +1888,9 @@
        ((mv formals body) (atj-mark-formals+body formals body))
        ((mv formals body) (atj-rename-formals+body
                            formals body (symbol-package-name fn))))
-    (mv formals body)))
+    (mv formals body))
+  ///
+
+  (defret len-of-atj-pre-translate.new-formals
+    (equal (len new-formals)
+           (len formals))))
