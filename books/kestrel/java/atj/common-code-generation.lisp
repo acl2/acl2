@@ -473,6 +473,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-values-flat ((values true-listp))
+  :returns (exprs jexpr-listp)
+  :short "Lift @(tsee atj-gen-value-flat) to lists."
+  (cond ((endp values) nil)
+        (t (cons (atj-gen-value-flat (car values))
+                 (atj-gen-values-flat (cdr values)))))
+  ///
+
+  (defret len-of-atj-gen-values-flat
+    (equal (len exprs) (len values))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-pkg-method-name ((pkg stringp))
   :returns (method-name stringp)
   :short "Name of the Java method that adds an ACL2 package definition."
