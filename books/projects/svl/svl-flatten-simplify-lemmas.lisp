@@ -24,13 +24,13 @@
 ; Original author: Mertcan Temel <mert@utexas.edu>
 
 
-;; List of lemmas that are expected to be used by svex-simplify during svl2
+;; List of lemmas that are expected to be used by svex-simplify during svl
 ;; creation.
 
 
 (in-package "SVL")
 
-(defconst *svl2-flatten-simplify-lemmas*
+(defconst *svl-flatten-simplify-lemmas*
   '(;;4vec-rsh-of-4vec-concat
     ;;4vec-rsh-of-4vec-concat-2
     ;;4vec-rsh-of-4vec-rsh

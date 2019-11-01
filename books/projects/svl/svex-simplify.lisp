@@ -278,8 +278,8 @@
        ;; CREATE THE TERM TO BE REWRITTEN
        (term (if (or (equal hyp ''t)
                      (equal hyp 't))
-                 `(svex-eval2 ',svex ,env-term)
-               `(implies ,hyp (svex-eval2 ',svex ,env-term))))
+                 `(svex-eval-wog ',svex ,env-term)
+               `(implies ,hyp (svex-eval-wog ',svex ,env-term))))
        ((mv rw rp::rp-state)
         (rp::rp-rw-aux term
                        rules-alist
@@ -310,7 +310,7 @@
     (('svl::4vec-concat$ & & &)  (cons 'sv::concat   (cdr term)))
 
     (('sv::4vec-fix$inline &) (cons 'id (cdr term)))
-    (('svl::4vec-fix2 &) (cons 'id (cdr term)))
+    (('svl::4vec-fix-wog &) (cons 'id (cdr term)))
     (('sv::4vec-bit-extract & &) (cons 'sv::bitsel (cdr term)))
     (('sv::3vec-fix &)           (cons 'sv::unfloat  (cdr term)))
     (('4vec-bitnot &)            (cons 'sv::bitnot   (cdr term)))

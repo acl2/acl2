@@ -32,7 +32,7 @@
 
 (include-book "bits-sbits-meta")
 
-(include-book "svex-eval2-meta")
+(include-book "svex-eval-wog-meta")
 
 (include-book "4vec-rsh-meta")
 

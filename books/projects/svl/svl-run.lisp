@@ -25,39 +25,40 @@
 
 (in-package "SVL")
 
-(include-book "svl2-flatten")
-(include-book "svl")
+(include-book "svl-flatten")
 
 (progn
-  (define svl2-get-module-rank ((modname sv::modname-p)
-                                (modules svl2-module-alist-p))
+  (define svl-get-module-rank ((modname sv::modname-p)
+                               (modules svl-module-alist-p))
     :returns (res natp)
     (b* ((module (assoc-equal modname modules)))
       (if module
-          (nfix (svl2-module->rank (cdr module)))
+          (nfix (svl-module->rank (cdr module)))
         0)))
 
-  (define svl2-get-max-occ-rank ((occs svl2-occ-alist-p)
-                                 (modules svl2-module-alist-p))
+  (define svl-get-max-occ-rank ((occs svl-occ-alist-p)
+                                (modules svl-module-alist-p))
     :returns (res natp)
     (cond ((atom occs)
            0)
-          ((equal (svl2-occ-kind (cdar occs)) ':assign)
-           (svl2-get-max-occ-rank (cdr occs)
-                                  modules))
-          (t (max (svl2-get-module-rank (svl2-occ-module->name (cdar occs)) modules)
-                  (svl2-get-max-occ-rank (cdr occs) modules)))))
+          ((equal (svl-occ-kind (cdar occs)) ':assign)
+           (svl-get-max-occ-rank (cdr occs)
+                                 modules))
+          (t (max (svl-get-module-rank (svl-occ-module->name (cdar occs)) modules)
+                  (svl-get-max-occ-rank (cdr occs) modules)))))
 
-  (define svl2-well-ranked-module ((modname sv::modname-p)
-                                   (modules svl2-module-alist-p))
-    (and (assoc-equal modname modules) 
-         (> (svl2-get-module-rank modname modules)
-            (svl2-get-max-occ-rank (svl2-module->occs
-                                    (cdr (assoc-equal modname modules)))
-                                   modules)))))
+  (define svl-well-ranked-module ((modname sv::modname-p)
+                                  (modules svl-module-alist-p))
+    (and (or (assoc-equal modname modules)
+             (cw "Module ~p0 is not found in the given svl-module-alist ~%."
+                 modname))
+         (> (svl-get-module-rank modname modules)
+            (svl-get-max-occ-rank (svl-module->occs
+                                   (cdr (assoc-equal modname modules)))
+                                  modules)))))
 
-(define svl2-start-env ((wires wire-list-p)
-                        (vals sv::4veclist-p))
+(define svl-start-env ((wires wire-list-p)
+                       (vals sv::4veclist-p))
   :returns (res sv::svex-env-p
                 :hyp (and (wire-list-p wires)
                           (sv::4veclist-p vals)))
@@ -71,7 +72,7 @@
          ((& size . start)
           (4vec-part-select start size (car vals)))
          (& (car vals))))
-     (svl2-start-env (cdr wires) (cdr vals)))))
+     (svl-start-env (cdr wires) (cdr vals)))))
 
 (define entry-4vec-fix (entry)
   :guard (or (consp entry)
@@ -89,8 +90,8 @@
       (cdr entry)
     (make-svl-env)))
 
-(define svl2-retrieve-values ((wires wire-list-p)
-                              (env-wires sv::svex-env-p))
+(define svl-retrieve-values ((wires wire-list-p)
+                             (env-wires sv::svex-env-p))
   :returns (res sv::4veclist-p :hyp (and (wire-list-p wires)
                                          (sv::svex-env-p env-wires)))
   (if (atom wires)
@@ -101,8 +102,8 @@
               ((& w . s)
                (4vec-part-select s w (entry-4vec-fix value)))
               (& (entry-4vec-fix value)))
-            (svl2-retrieve-values (cdr wires)
-                                  env-wires)))))
+            (svl-retrieve-values (cdr wires)
+                                 env-wires)))))
 
 #|(define save-lhs-to-env-wires ((val sv::4vec-p)
                                (lhs sv::lhs-p)
@@ -137,11 +138,9 @@
 
 
 
-
-
-(define svl2-save-mod-outputs ((vals sv::4veclist-p)
-                               (wire-list-list wire-list-listp)
-                               (env-wires sv::svex-env-p))
+(define svl-save-mod-outputs ((vals sv::4veclist-p)
+                              (wire-list-list wire-list-listp)
+                              (env-wires sv::svex-env-p))
   :returns (res sv::svex-env-p
                 :hyp (and (sv::4veclist-p vals)
                           (wire-list-listp wire-list-list)
@@ -154,12 +153,12 @@
          (env-wires (save-wires-to-env-wires cur-val
                                              cur-wire-list
                                              env-wires)))
-      (svl2-save-mod-outputs (cdr vals)
-                             (cdr wire-list-list)
-                             env-wires))))
+      (svl-save-mod-outputs (cdr vals)
+                            (cdr wire-list-list)
+                            env-wires))))
 
-(memoize 'svl2-module-alist-p)
-(memoize 'svl2-well-ranked-module)
+(memoize 'svl-module-alist-p)
+(memoize 'svl-well-ranked-module)
 
 (define create-next-env-for-wires ((delayed-ins SV::SVARLIST-P)
                                    (env-wires sv::svex-env-p))
@@ -170,15 +169,14 @@
       nil
     (b* ((cur (car delayed-ins))
          (cur- (sv::change-svar cur :delay 0)) ;; read the value from evn-wires
-         ;; by converting the delay to 0, but save with delay=1 
+         ;; by converting the delay to 0, but save with delay=1
          (val (entry-4vec-fix (hons-get cur- env-wires))))
       (acons cur
              val
              (create-next-env-for-wires (cdr delayed-ins)
                                         env-wires)))))
-                                   
 
-(define svex-env-append ((lst1 sv::svex-env-p) 
+(define svex-env-append ((lst1 sv::svex-env-p)
                          (lst2 sv::svex-env-p))
   :returns (res sv::svex-env-p
                 :hyp (and (sv::svex-env-p lst1)
@@ -190,53 +188,53 @@
                 (svex-env-append (cdr lst1) lst2))))
 
 (acl2::defines
- svl2-run-phase
- (define svl2-run-phase ((modname sv::modname-p)
-                         (inputs sv::4veclist-p)
-                         (delayed-env svl-env-p)
-                         (modules svl2-module-alist-p))
+ svl-run-phase
+ (define svl-run-phase ((modname sv::modname-p)
+                        (inputs sv::4veclist-p)
+                        (delayed-env svl-env-p)
+                        (modules svl-module-alist-p))
    :verify-guards nil
 
    ;; :guard (and (assoc-equal modname modules)
-   ;;             (svl2-well-ranked-module modname modules))
+   ;;             (svl-well-ranked-module modname modules))
 
    :measure (acl2::nat-list-measure
-             (list (svl2-get-module-rank modname modules)
+             (list (svl-get-module-rank modname modules)
                    (cons-count (sv::modname-fix modname))))
    :hints (("Goal"
             :in-theory (e/d (rp::measure-lemmas
-                             SVL2-GET-MAX-OCC-RANK
-                             SVL2-MODULE->OCCS
+                             SVL-GET-MAX-OCC-RANK
+                             SVL-MODULE->OCCS
                              SV::MODNAME-FIX
-                             SVL2-WELL-RANKED-MODULE
-                             svl2-occ-module->name) ())))
+                             SVL-WELL-RANKED-MODULE
+                             svl-occ-module->name) ())))
 
    :returns (mv (out-vals sv::4veclist-p
                           :hyp (and (sv::4veclist-p inputs)
                                     (svl-env-p delayed-env)
-                                    (svl2-module-alist-p modules)))
+                                    (svl-module-alist-p modules)))
                 (next-delayed-env svl-env-p
                                   :hyp (and (sv::4veclist-p inputs)
                                             (svl-env-p delayed-env)
-                                            (svl2-module-alist-p modules))))
-   (cond ((not (svl2-well-ranked-module modname modules)) ;; for termination
+                                            (svl-module-alist-p modules))))
+   (cond ((not (svl-well-ranked-module modname modules)) ;; for termination
           (mv
            (cw "Either Module ~p0 is missing or it has invalid ranks~%"
                modname)
            (make-svl-env)))
          (t
-          (b* (((svl2-module module) (cdr (assoc-equal modname modules)))
-               (env-wires (svl2-start-env module.inputs inputs))
+          (b* (((svl-module module) (cdr (assoc-equal modname modules)))
+               (env-wires (svl-start-env module.inputs inputs))
                (env-wires
                 (svex-env-append (svl-env->wires delayed-env)
                                  env-wires))
                ((mv env-wires next-delayed-env.modules)
-                (svl2-run-phase-occs module.occs
-                                     env-wires
-                                     (svl-env->modules delayed-env)
-                                     modules))
-               (out-vals (svl2-retrieve-values module.outputs
-                                               env-wires))
+                (svl-run-phase-occs module.occs
+                                    env-wires
+                                    (svl-env->modules delayed-env)
+                                    modules))
+               (out-vals (svl-retrieve-values module.outputs
+                                              env-wires))
                (next-delayed-env (make-svl-env
                                   :wires (create-next-env-for-wires
                                           module.delayed-inputs
@@ -246,53 +244,53 @@
             (mv out-vals
                 next-delayed-env)))))
 
- (define svl2-run-phase-occs ((occs svl2-occ-alist-p)
-                              (env-wires sv::svex-env-p)
-                              (delayed-env-alist svl-env-alist-p)
-                              (modules svl2-module-alist-p))
+ (define svl-run-phase-occs ((occs svl-occ-alist-p)
+                             (env-wires sv::svex-env-p)
+                             (delayed-env-alist svl-env-alist-p)
+                             (modules svl-module-alist-p))
    :measure (acl2::nat-list-measure
-             (list (svl2-get-max-occ-rank occs modules)
+             (list (svl-get-max-occ-rank occs modules)
                    (cons-count occs)))
 
-   :returns (mv (res-env-wires sv::svex-env-p :hyp (and (svl2-occ-alist-p occs)
+   :returns (mv (res-env-wires sv::svex-env-p :hyp (and (svl-occ-alist-p occs)
                                                         (sv::svex-env-p env-wires)
                                                         (svl-env-alist-p delayed-env-alist)
-                                                        (svl2-module-alist-p modules)))
+                                                        (svl-module-alist-p modules)))
                 (next-delayed-env.modules SVL-ENV-ALIST-P
-                                          :hyp (and (svl2-occ-alist-p occs)
+                                          :hyp (and (svl-occ-alist-p occs)
                                                     (sv::svex-env-p env-wires)
                                                     (svl-env-alist-p delayed-env-alist)
-                                                    (svl2-module-alist-p modules))))
+                                                    (svl-module-alist-p modules))))
 
    (let ((occ-name (caar occs))
          (occ (cdar occs)))
      (cond ((atom occs)
             (mv env-wires nil))
-           ((equal (svl2-occ-kind occ) ':assign)
-            (b* ((env-wires (hons-acons (svl2-occ-assign->output occ)
-                                        (svex-eval (svl2-occ-assign->svex occ)
-                                                        env-wires)
+           ((equal (svl-occ-kind occ) ':assign)
+            (b* ((env-wires (hons-acons (svl-occ-assign->output occ)
+                                        (svex-eval (svl-occ-assign->svex occ)
+                                                   env-wires)
                                         env-wires)))
-              (svl2-run-phase-occs (cdr occs)
-                                   env-wires
-                                   delayed-env-alist
-                                   modules)))
-           (t (b* ((mod-input-vals (sv::svexlist-eval (svl2-occ-module->inputs occ)
-                                                           env-wires))
+              (svl-run-phase-occs (cdr occs)
+                                  env-wires
+                                  delayed-env-alist
+                                  modules)))
+           (t (b* ((mod-input-vals (sv::svexlist-eval (svl-occ-module->inputs occ)
+                                                      env-wires))
                    (mod.delayed-env (entry-svl-env-fix (hons-get occ-name delayed-env-alist)))
                    ((mv mod-output-vals mod-delayed-env)
-                    (svl2-run-phase (svl2-occ-module->name occ)
-                                    mod-input-vals
-                                    mod.delayed-env
-                                    modules))
-                   (env-wires (svl2-save-mod-outputs mod-output-vals
-                                                     (svl2-occ-module->outputs  occ)
-                                                     env-wires))
+                    (svl-run-phase (svl-occ-module->name occ)
+                                   mod-input-vals
+                                   mod.delayed-env
+                                   modules))
+                   (env-wires (svl-save-mod-outputs mod-output-vals
+                                                    (svl-occ-module->outputs  occ)
+                                                    env-wires))
                    ((mv env-wires rest-delayed-env)
-                    (svl2-run-phase-occs (cdr occs)
-                                         env-wires
-                                         delayed-env-alist
-                                         modules)))
+                    (svl-run-phase-occs (cdr occs)
+                                        env-wires
+                                        delayed-env-alist
+                                        modules)))
                 (mv env-wires
                     (if (not (equal mod-delayed-env (make-svl-env)))
                         (hons-acons occ-name
@@ -301,83 +299,57 @@
                       rest-delayed-env)))))))
  ///
 
- (local
-  (defthm svex-env-p-of-hons-gets-fast-alist
-    (implies (and (sv::svarlist-p names)
-                  (sv::svex-env-p env))
-             (sv::svex-env-p (hons-gets-fast-alist names env)))
-    :hints (("goal"
-             :expand (hons-gets-fast-alist (cdr names) nil)
-             :induct (hons-gets-fast-alist names env)
-             :do-not-induct t
-             :in-theory (e/d (hons-gets-fast-alist
-                              sv::svar-p
-                              occ-name-p
-                              svex-env-p
-                              occ-name-list-p)
-                             ())))))
+ #|(local
+ (defthm svex-env-p-of-hons-gets-fast-alist
+ (implies (and (sv::svarlist-p names)
+ (sv::svex-env-p env))
+ (sv::svex-env-p (hons-gets-fast-alist names env)))
+ :hints (("goal"
+ :expand (hons-gets-fast-alist (cdr names) nil)
+ :induct (hons-gets-fast-alist names env)
+ :do-not-induct t
+ :in-theory (e/d (hons-gets-fast-alist
+ sv::svar-p
+ occ-name-p
+ svex-env-p
+ occ-name-list-p)
+ ())))))||#
 
  (local
   (defthm guard-lemma1
-    (implies (and (SVL2-MODULE-ALIST-P modules)
+    (implies (and (SVL-MODULE-ALIST-P modules)
                   (ASSOC-EQUAL MODNAME MODULES))
-             (and (SVL2-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES)))
+             (and (SVL-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES)))
                   (CONSP (ASSOC-EQUAL MODNAME MODULES))))
     :hints (("Goal"
-             :in-theory (e/d (SVL2-MODULE-ALIST-P) ())))))
+             :in-theory (e/d (SVL-MODULE-ALIST-P) ())))))
 
- (verify-guards svl2-run-phase-occs
+ (verify-guards svl-run-phase-occs
    :otf-flg t
    :hints (("Goal"
-            :in-theory (e/d (svexlist-eval2-is-svexlist-eval
-                             svl2-well-ranked-module)
+            :in-theory (e/d (svexlist-eval-wog-is-svexlist-eval
+                             svl-well-ranked-module)
                             ())))))
 
-(defmacro svl2-run-cycle (modnames inputs
-                                   delayed-env
-                                   modules)
-  `(svl2-run-phase ,modnames ,inputs ,delayed-env
-                   ,modules))
+(defmacro svl-run-cycle (modnames inputs
+                                  delayed-env
+                                  modules)
+  `(svl-run-phase ,modnames ,inputs ,delayed-env
+                  ,modules))
 
-(defmacro svl2-run-cycle-occs (occs
-                               env-wires
-                               delayed-env-alist
-                               modules)
-  `(svl2-run-phase-occs ,occs ,env-wires
-                        ,delayed-env-alist
-                        ,modules))
-
+(defmacro svl-run-cycle-occs (occs
+                              env-wires
+                              delayed-env-alist
+                              modules)
+  `(svl-run-phase-occs ,occs ,env-wires
+                       ,delayed-env-alist
+                       ,modules))
 
 (local
-   (defthm consp-assoc-equal-in-iff-context
-     (implies (alistp x)
-              (iff (consp (assoc-equal key x))
-                   (assoc-equal key x)))))
-
-
-(progn
-  (define 4vec-list-listp (x)
-    :enabled t
-    (if (atom x)
-        (equal x nil)
-      (and (sv::4veclist-p (car x))
-           (4vec-list-listp (cdr x)))))
-
-  (define svex-list-listp (x)
-    :enabled t
-    (if (atom x)
-        (equal x nil)
-      (and (sv::svexlist-p (car x))
-           (svex-list-listp (cdr x)))))
-  
-  (define svexlist-list-eval2 (x env)
-    :returns (res 4vec-list-listp
-                  :hyp (and (sv::svex-env-p env)
-                            (svex-list-listp x)))
-    (if (atom x)
-        nil
-      (cons (svexlist-eval2 (car x) env)
-            (svexlist-list-eval2 (cdr x) env)))))
+ (defthm consp-assoc-equal-in-iff-context
+   (implies (alistp x)
+            (iff (consp (assoc-equal key x))
+                 (assoc-equal key x)))))
 
 (encapsulate
   nil
@@ -393,12 +365,11 @@
   ;;   ("Data[8:0]" data8-10 _ _ data8-12)
   ;;   ("Data[63:9]" data-rest)))
   ;; is parsed and a list of list is created.
-  ;; The inner lists contain inputs as svex'es when svl2-run-cycle is to be
+  ;; The inner lists contain inputs as svex'es when svl-run-cycle is to be
   ;; called at each cycle.
   ;; the outer list is as long as the total number of phases.
 
   ;; All the functions in this encapsulation will be executed.
-
 
   (define s-equal ((x)
                    (y))
@@ -406,7 +377,7 @@
     "Convert symbols into strings when checking equality to get rid of package"
     (equal (if (symbolp x) (symbol-name x) x)
            (if (symbolp y) (symbol-name y) y)))
-  
+
   (define get-max-len (lsts)
     :returns (res natp)
     (if (atom lsts)
@@ -415,56 +386,55 @@
            (get-max-len (cdr lsts)))))
 
   (progn
-    (define svl2-run-fix-inputs_phases-aux ((cur)
-                                            (phase-cnt natp)
-                                            (last))
+    (define svl-run-fix-inputs_phases-aux ((cur)
+                                           (phase-cnt natp)
+                                           (last))
       (cond ((zp phase-cnt) nil)
             ((atom cur)
              (cons last
-                   (svl2-run-fix-inputs_phases-aux cur
-                                                   (1- phase-cnt)
-                                                   last)))
+                   (svl-run-fix-inputs_phases-aux cur
+                                                  (1- phase-cnt)
+                                                  last)))
             ((s-equal (car cur) '~)
              (cond ((equal last '0)
                     (cons 1
-                          (svl2-run-fix-inputs_phases-aux cur
-                                                          (1- phase-cnt)
-                                                          1)))
+                          (svl-run-fix-inputs_phases-aux cur
+                                                         (1- phase-cnt)
+                                                         1)))
                    ((equal last '1)
                     (cons 0
-                          (svl2-run-fix-inputs_phases-aux cur
-                                                          (1- phase-cnt)
-                                                          0)))
+                          (svl-run-fix-inputs_phases-aux cur
+                                                         (1- phase-cnt)
+                                                         0)))
                    ((s-equal last '_)
                     (cons '_
-                          (svl2-run-fix-inputs_phases-aux cur
-                                                          (1- phase-cnt)
-                                                          '_)))
+                          (svl-run-fix-inputs_phases-aux cur
+                                                         (1- phase-cnt)
+                                                         '_)))
                    (t
                     (cons `(sv::bitnot ,last)
-                          (svl2-run-fix-inputs_phases-aux cur
-                                                          (1- phase-cnt)
-                                                          `(sv::bitnot
-                                                            ,last))))))
+                          (svl-run-fix-inputs_phases-aux cur
+                                                         (1- phase-cnt)
+                                                         `(sv::bitnot
+                                                           ,last))))))
             (t
              (cons (cond ((s-equal (car cur) '_)
                           `',(sv::4vec-x))
                          (t (car cur)))
-                   (svl2-run-fix-inputs_phases-aux (cdr cur)
-                                                   (1- phase-cnt)
-                                                   (car cur))))))
-                                                      
-    
+                   (svl-run-fix-inputs_phases-aux (cdr cur)
+                                                  (1- phase-cnt)
+                                                  (car cur))))))
 
-    (define svl2-run-fix-inputs_phases ((sig-binds)
-                                        (phase-cnt natp))
+
+    (define svl-run-fix-inputs_phases ((sig-binds)
+                                       (phase-cnt natp))
       (if (atom sig-binds)
           nil
-        (cons (svl2-run-fix-inputs_phases-aux (car sig-binds)
-                                              phase-cnt
-                                              '_)
-              (svl2-run-fix-inputs_phases (cdr sig-binds)
-                                          phase-cnt)))))
+        (cons (svl-run-fix-inputs_phases-aux (car sig-binds)
+                                             phase-cnt
+                                             '_)
+              (svl-run-fix-inputs_phases (cdr sig-binds)
+                                         phase-cnt)))))
 
   (define get-substr ((str stringp)
                       (start natp)
@@ -475,7 +445,7 @@
           (coerce chars 'string)
         "")))
 
-  (define svl2-run-simplify-signame ((signame stringp))
+  (define svl-run-simplify-signame ((signame stringp))
     (b* ((pos-of-[ (str::strpos "[" signame))
          (pos-of-colon (str::strpos ":" signame))
          (pos-of-] (str::strpos "]" signame)))
@@ -493,60 +463,58 @@
                ((unless (and (str::digit-listp pos1)
                              (str::digit-listp pos2)))
                 (progn$
-                 (hard-error 'svl2-run-simplify-signame
+                 (hard-error 'svl-run-simplify-signame
                              "~p0 has an unexpected structure. It should be ~
     e.g., \"sig[32:0]\" or \"sig\""
                              (list (cons #\0 signame)))
-                 (mv signame nil nil)))) 
+                 (mv signame nil nil))))
             (mv (get-substr signame 0 pos-of-[)
                 (Str::digit-list-value pos1)
                 (str::digit-list-value pos2)))
         (mv signame nil nil))))
 
-  
-                   
+
 
   (progn
-    (define svl2-run-fix-inputs_merge-aux (old-binds new-binds start size)
-  
+    (define svl-run-fix-inputs_merge-aux (old-binds new-binds start size)
+
       (if (atom new-binds)
           nil
         (b* ((old-val (if (atom old-binds) `',(sv::4vec-x) (car old-binds)))
              (new-bind (car new-binds)))
           (cons `(sv::partinst ,start ,size ,old-val ,new-bind)
-                (svl2-run-fix-inputs_merge-aux (if (atom old-binds) nil (cdr old-binds))
-                                               (cdr new-binds)
-                                               start size)))))
+                (svl-run-fix-inputs_merge-aux (if (atom old-binds) nil (cdr old-binds))
+                                              (cdr new-binds)
+                                              start size)))))
 
-    (define svl2-run-fix-inputs_merge ((signames string-listp)
-                                       (sig-binds))
+    (define svl-run-fix-inputs_merge ((signames string-listp)
+                                      (sig-binds))
       :verify-guards nil
       :returns (res alistp)
       (if (or (atom signames)
               (atom sig-binds))
           nil
-        (b* ((rest (svl2-run-fix-inputs_merge (cdr signames)
-                                              (cdr sig-binds)))
+        (b* ((rest (svl-run-fix-inputs_merge (cdr signames)
+                                             (cdr sig-binds)))
              ((mv name b1 b2)
-              (svl2-run-simplify-signame (car signames))))
+              (svl-run-simplify-signame (car signames))))
           (cond ((and (natp b1) (natp b2))
                  (b* (((mv b1 b2) (if (> b2 b1) (mv b2 b1) (mv b1 b2)))
                       (start b2)
                       (size (+ b1 (- b2) 1))
                       (old-assign (assoc-equal name rest))
-                      (new-binds (svl2-run-fix-inputs_merge-aux (cdr old-assign)
-                                                                (car sig-binds)
-                                                                start
-                                                                size)))
-                   (put-assoc-equal name new-binds rest)))               
+                      (new-binds (svl-run-fix-inputs_merge-aux (cdr old-assign)
+                                                               (car sig-binds)
+                                                               start
+                                                               size)))
+                   (put-assoc-equal name new-binds rest)))
                 (t
                  (acons (car signames) (car sig-binds) rest)))))
       ///
-      (verify-guards svl2-run-fix-inputs_merge)))
-      
+      (verify-guards svl-run-fix-inputs_merge)))
 
 
-  (define svl2-run-fix-inputs ((sig-bind-alist alistp))
+  (define svl-run-fix-inputs ((sig-bind-alist alistp))
     ;; in case an input sig-bind-alist has a key of the form "Data[8:0]"
     ;; merge it to a single binding "Data".
     ;; Also extend "~" and unfinished bindings.
@@ -555,21 +523,20 @@
     (b* ((sig-names (strip-cars sig-bind-alist))
          (sig-binds (strip-cdrs sig-bind-alist))
          (phase-cnt (get-max-len sig-binds))
-         (sig-binds (svl2-run-fix-inputs_phases sig-binds phase-cnt))
-         (sig-bind-alist (svl2-run-fix-inputs_merge sig-names sig-binds)))
+         (sig-binds (svl-run-fix-inputs_phases sig-binds phase-cnt))
+         (sig-bind-alist (svl-run-fix-inputs_merge sig-names sig-binds)))
       sig-bind-alist))
 
 
 
-
-  (define svl2-generate-inputs_fixorder ((sig-bind-alist alistp)
-                                         (wire-names ))
+  (define svl-generate-inputs_fixorder ((sig-bind-alist alistp)
+                                        (wire-names ))
     :returns (res alistp :hyp (alistp sig-bind-alist))
     (if (atom wire-names)
         nil
       (b* ((entry (assoc-equal (car wire-names) sig-bind-alist))
-           (rest (svl2-generate-inputs_fixorder sig-bind-alist
-                                                (cdr wire-names))))
+           (rest (svl-generate-inputs_fixorder sig-bind-alist
+                                               (cdr wire-names))))
         (if entry
             (cons entry rest)
           (progn$ (cw "Warning! Input ~p0 does not have an assigned value. ~%"
@@ -578,8 +545,7 @@
                    (car wire-names)
                    (repeat (len (cdar sig-bind-alist))
                            `',(sv::4vec-x))
-                   rest)))))) 
-
+                   rest))))))
 
   (define strip-cars$ (x)
     (cond
@@ -596,7 +562,7 @@
                   (cdr (car x))
                 nil)
               (strip-cdrs$ (cdr x))))))
-  
+
   (define transpose (x)
     :hints (("Goal"
              :in-theory (e/d (strip-cdrs$ strip-cars$) ())))
@@ -604,14 +570,13 @@
             (atom (car x)))
         nil
       (cons (strip-cars$ x)
-            (transpose (strip-cdrs$ x))))) 
+            (transpose (strip-cdrs$ x)))))
 
-
-  (define svl2-generate-inputs ((sig-bind-alist alistp)
-                                (input-wires wire-list-p))
+  (define svl-generate-inputs ((sig-bind-alist alistp)
+                               (input-wires wire-list-p))
     :guard (and (string-listp (strip-cars sig-bind-alist)))
-    (b* ((sig-bind-alist (svl2-run-fix-inputs sig-bind-alist))
-         (sig-bind-alist (svl2-generate-inputs_fixorder
+    (b* ((sig-bind-alist (svl-run-fix-inputs sig-bind-alist))
+         (sig-bind-alist (svl-generate-inputs_fixorder
                           sig-bind-alist (strip-cars input-wires)))
          (inputs (transpose (strip-cdrs sig-bind-alist))))
       inputs)))
@@ -619,11 +584,9 @@
 
 
 
-
-
 ;; save the output in an alist according to out-bind-alist
-(define svl2-run-save-output ((out-alist sv::svex-env-p)
-                              (out-bind-alist alistp))
+(define svl-run-save-output ((out-alist sv::svex-env-p)
+                             (out-bind-alist alistp))
   :verify-guards nil
   :returns (mv (res1 alistp)
                (res2 alistp))
@@ -632,7 +595,7 @@
   (if (atom out-bind-alist)
       (mv nil nil)
     (b* (((mv rest-outputs rest-out-bind-alist)
-          (svl2-run-save-output out-alist (cdr out-bind-alist)))
+          (svl-run-save-output out-alist (cdr out-bind-alist)))
          (this (car out-bind-alist))
          (key (car this))
          (val (cdr this))
@@ -641,12 +604,12 @@
          ((when (s-equal (car val) '_))
           (mv rest-outputs (acons key (cdr val) rest-out-bind-alist)))
          ((mv signame pos1 pos2)
-          (svl2-run-simplify-signame key))
+          (svl-run-simplify-signame key))
          (out-entry (assoc-equal signame out-alist))
          ((unless out-entry)
           (progn$ (cw "Warning \"~p0\" is not an output signal. ~%" signame)
-                  (mv rest-outputs (acons key (cdr val) rest-out-bind-alist))))        
-         (out-val (cdr out-entry)) 
+                  (mv rest-outputs (acons key (cdr val) rest-out-bind-alist))))
+         (out-val (cdr out-entry))
          ((unless (and (natp pos1)
                        (natp pos2)))
           (mv (acons (car val) out-val rest-outputs)
@@ -663,22 +626,22 @@
      (implies (and (sv::svex-env-p env)
                    (assoc-equal key env))
               (4vec-p (cdr (assoc-equal key env))))))
-  
-  (verify-guards svl2-run-save-output
+
+  (verify-guards svl-run-save-output
     :hints (("Goal"
              :in-theory (e/d () ())))))
 
 (local
- (defthm svl2-run-save-output-returns-string-alistp
+ (defthm svl-run-save-output-returns-string-alistp
    (implies (string-listp (strip-cars out-bind-alist))
-            (string-listp (strip-cars (mv-nth 1 (svl2-run-save-output out-alist
-                                                                      out-bind-alist)))))
+            (string-listp (strip-cars (mv-nth 1 (svl-run-save-output out-alist
+                                                                     out-bind-alist)))))
    :hints (("Goal"
-            :in-theory (e/d (svl2-run-save-output) ())))))
+            :in-theory (e/d (svl-run-save-output) ())))))
 
 (encapsulate
   nil
- 
+
   (define pairlis3 (x y)
     (if (or (atom x)
             (atom y))
@@ -696,80 +659,85 @@
                                pairlis3
                                sv::svar-p) ())))))
 
-  (define svl2-run-aux ((modname sv::modname-p)
-                        (inputs 4vec-list-listp)
-                        (out-wires sv::svarlist-p)
-                        (out-bind-alist alistp)
-                        (delayed-env svl-env-p)
-                        (modules svl2-module-alist-p))
+  (define svl-run-aux ((modname sv::modname-p)
+                       (inputs 4vec-list-listp)
+                       (out-wires sv::svarlist-p)
+                       (out-bind-alist alistp)
+                       (delayed-env svl-env-p)
+                       (modules svl-module-alist-p))
     :guard (string-listp (strip-cars out-bind-alist))
     (if (atom inputs)
         (progn$ ;(svl-free-env modname delayed-env modules (expt 2 30))
          nil)
       (b* (((mv out-vals next-delayed-env)
-            (svl2-run-phase modname (car inputs) delayed-env modules))
+            (svl-run-phase modname (car inputs) delayed-env modules))
            (out-alist (pairlis3 out-wires out-vals))
-           ((mv outputs out-bind-alist) (svl2-run-save-output out-alist out-bind-alist))
-           (rest (svl2-run-aux modname (cdr inputs) out-wires out-bind-alist next-delayed-env modules)))
+           ((mv outputs out-bind-alist) (svl-run-save-output out-alist out-bind-alist))
+           (rest (svl-run-aux modname (cdr inputs) out-wires out-bind-alist next-delayed-env modules)))
         (append outputs rest))))
 
-
   (local
-   (defthm svl2-run-guard-lemma1
+   (defthm svl-run-guard-lemma1
      (implies (and (wire-list-p x))
               (sv::svarlist-p (strip-cars x)))
      :hints (("goal"
-              :in-theory (e/d (svl2-module->outputs
-                               svl2-module-alist-p
+              :in-theory (e/d (svl-module->outputs
+                               svl-module-alist-p
                                sv::svarlist-p
                                wire-list-p
                                wire-list-fix) ())))))
 
   (local
-   (defthm svl2-run-guard-lemma2
-     (implies (and (SVL2-MODULE-ALIST-P modules)
-                   (ASSOC-EQUAL MODNAME MODULES))
-              (SVL2-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES))))
+   (defthm svl-run-guard-lemma2
+     (implies (and (svl-module-alist-p modules)
+                   (assoc-equal modname modules))
+              (svl-module-p (cdr (assoc-equal modname modules))))
      :hints (("goal"
-              :in-theory (e/d (svl2-module->outputs
-                               svl2-module-alist-p
+              :in-theory (e/d (svl-module->outputs
+                               svl-module-alist-p
                                sv::svarlist-p
                                wire-list-p
                                wire-list-fix) ())))))
 
-  (define svl2-run ((modname sv::modname-p)
-                    (inputs-env sv::svex-env-p) ;; needs to be fast-alist
-                    (ins-bind-alist alistp) ;; a constant to tell what input
-                    ;; signal should be assigned to what and when
-                    (out-bind-alist alistp) ;; same as above but for outputs
-                    (modules svl2-module-alist-p))
+  (local
+   (defthm wire-listp-implies-alistp
+     (implies (and
+               (wire-list-p wires))
+              (alistp wires))
+     :rule-classes :type-prescription))
+
+  (define svl-run ((modname sv::modname-p)
+                   (inputs-env sv::svex-env-p) ;; needs to be fast-alist
+                   (ins-bind-alist alistp) ;; a constant to tell what input
+                   ;; signal should be assigned to what and when
+                   (out-bind-alist alistp) ;; same as above but for outputs
+                   (modules svl-module-alist-p))
     :guard (and (string-listp (strip-cars out-bind-alist))
                 (string-listp (strip-cars ins-bind-alist)))
     (declare (ignorable out-bind-alist))
     (b* ((module (assoc-equal modname modules))
          ((unless module)
-          (hard-error 'svl2-run
+          (hard-error 'svl-run
                       "Module ~p0 cannot be found! ~%"
                       (list (cons #\0 modname))))
          (module (cdr module))
-         (input-wires (svl2-module->inputs module))
-         (output-wires (strip-cars (svl2-module->outputs module)))
-         (inputs-unbound (svl2-generate-inputs ins-bind-alist input-wires))
+         (input-wires (svl-module->inputs module))
+         (output-wires (strip-cars (svl-module->outputs module)))
+         (inputs-unbound (svl-generate-inputs ins-bind-alist input-wires))
          ((unless (svex-list-listp inputs-unbound))
-          (hard-error 'svl2-run
+          (hard-error 'svl-run
                       "Something went wrong while parsing inputs... ~p0 ~%"
                       (list (cons #\0 inputs-unbound))))
          ;; everything up to here uses only constants (only executable counterparts)
-         (inputs (svexlist-list-eval2 inputs-unbound inputs-env)))
-      (svl2-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules))))
-
+         (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
+      (svl-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules))))
 
 
 ;; :i-am-here
 
 ;; (include-book "/Users/user/async/fft/svl-tests/svl-tests")
 
-;; ;;*counter-svl2-design*
+;; ;;*counter-svl-design*
 
 ;; (progn
 ;;   (defconst *counter-inputs*
@@ -786,113 +754,111 @@
 ;;        count_low5 count_low6 count_low7 count_low8 count_low9 count_low10)
 ;;       ("Count[63:32]" count_high1 _ _ _ count_high2)))
 
-
-;;   (value-triple (svl2-run "COUNTER" (make-fast-alist '((data8-10 . -5)
+;;   (value-triple (svl-run "COUNTER" (make-fast-alist '((data8-10 . -5)
 ;;                                                        (data8-12 . 5)
 ;;                                                        (data-rest . 10)))
 ;;                           *counter-inputs*
 ;;                           *counter-outputs*
-;;                           *counter-svl2-design*)))
-          
+;;                           *counter-svl-design*)))
 
 ;; :i-am-here
 #|
 (make-event
- (b* ((modnames '("full_adder_1$WIDTH=1"
-                  "full_adder$WIDTH=1"
-                  "booth2_reduction_dadda_17x65_97"
-                  "booth2_multiplier_signed_64x32_97"))
-      ((mv modules rp::rp-state)
-       (svl2-flatten-design modnames
-                            *big-sv-design*
-                            *big-vl-design2*)))
-   (mv nil
-       `(defconst *big-svl2-design*
-          ',modules)
-       state
-       rp::rp-state)))
+(b* ((modnames '("full_adder_1$WIDTH=1"
+"full_adder$WIDTH=1"
+"booth2_reduction_dadda_17x65_97"
+"booth2_multiplier_signed_64x32_97"))
+((mv modules rp::rp-state)
+(svl-flatten-design modnames
+*big-sv-design*
+*big-vl-design2*)))
+(mv nil
+`(defconst *big-svl-design*
+',modules)
+state
+rp::rp-state)))
 
 (make-event
- (b* ((modnames '("FullAdder" "LF_127_126" "HalfAdder"))
-      ((mv modules rp::rp-state)
-       (svl2-flatten-design modnames
-                            *signed64-sv-design*
-                            *signed64-vl-design2*)))
-   (mv nil
-       `(defconst *signed64-svl2-design*
-          ',modules)
-       state
-       rp::rp-state)))
+(b* ((modnames '("FullAdder" "LF_127_126" "HalfAdder"))
+((mv modules rp::rp-state)
+(svl-flatten-design modnames
+*signed64-sv-design*
+*signed64-vl-design2*)))
+(mv nil
+`(defconst *signed64-svl-design*
+',modules)
+state
+rp::rp-state)))
 
 (make-event
- (b* ((modnames '("FullAdder" "LF_255_254" "HalfAdder"))
-      ((mv modules rp::rp-state)
-       (svl2-flatten-design modnames
-                            *signed128-sv-design*
-                            *signed128-vl-design2*)))
-   (mv nil
-       `(defconst *signed128-svl2-design*
-          ',modules)
-       state
-       rp::rp-state)))
+(b* ((modnames '("FullAdder" "LF_255_254" "HalfAdder"))
+((mv modules rp::rp-state)
+(svl-flatten-design modnames
+*signed128-sv-design*
+*signed128-vl-design2*)))
+(mv nil
+`(defconst *signed128-svl-design*
+',modules)
+state
+rp::rp-state)))
 
 (make-event
- (b* ((modnames '("FullAdder" "BK_511_510" "HalfAdder"))
-      ((mv modules rp::rp-state)
-       (svl2-flatten-design modnames
-                            *signed256-sv-design*
-                            *signed256-vl-design2*)))
-   (mv nil
-       `(defconst *signed256-svl2-design*
-          ',modules)
-       state
-       rp::rp-state)))
+(b* ((modnames '("FullAdder" "BK_511_510" "HalfAdder"))
+((mv modules rp::rp-state)
+(svl-flatten-design modnames
+*signed256-sv-design*
+*signed256-vl-design2*)))
+(mv nil
+`(defconst *signed256-svl-design*
+',modules)
+state
+rp::rp-state)))
 
 (make-event
- (b* ((modnames '())
-      ((mv modules rp::rp-state)
-       (svl2-flatten-design modnames
-                            *mult-sv-design*
-                            *mult-vl-design2*)))
-   (mv nil
-       `(defconst *mult-svl2-design*
-          ',modules)
-       state
-       rp::rp-state)))
+(b* ((modnames '())
+((mv modules rp::rp-state)
+(svl-flatten-design modnames
+*mult-sv-design*
+*mult-vl-design2*)))
+(mv nil
+`(defconst *mult-svl-design*
+',modules)
+state
+rp::rp-state)))
 
-(get-svl2-modules-ports *signed128-svl2-design*)
-
-(time$
- (svl2-run-cycle "Multiplier_15_0_1000"
-                 (list 233 45)
-                 (make-svl-env)
-                 *mult-svl2-design*))
+(get-svl-modules-ports *signed128-svl-design*)
 
 (time$
- (svl2-run-cycle "Mult_64_64"
-                 (list 233 45)
-                 (make-svl-env)
-                 *signed64-svl2-design*))
+(svl-run-cycle "Multiplier_15_0_1000"
+(list 233 45)
+(make-svl-env)
+*mult-svl-design*))
 
 (time$
- (svl2-run-cycle "Mult_256_256"
-                 (list 233 45)
-                 (make-svl-env)
-                 *signed256-svl2-design*))
+(svl-run-cycle "Mult_64_64"
+(list 233 45)
+(make-svl-env)
+*signed64-svl-design*))
 
 (time$
- (svl2-run-cycle "Mult_128_128"
-                 (list 233 45)
-                 (make-svl-env)
-                 *signed128-svl2-design*))
+(svl-run-cycle "Mult_256_256"
+(list 233 45)
+(make-svl-env)
+*signed256-svl-design*))
 
 (time$
- (b* (((mv res &)
-       (svl2-run-cycle "booth2_multiplier_signed_64x32_97"
-                       (list 0 0 233 45)
-                       (make-svl-env)
-                       *big-svl2-design*)))
-   (bits (+ (bits (car res) 0 97 )
-                 (bits (car res) 97 97 )) 
-             0 97 )))
+(svl-run-cycle "Mult_128_128"
+(list 233 45)
+(make-svl-env)
+*signed128-svl-design*))
+
+(time$
+(b* (((mv res &)
+(svl-run-cycle "booth2_multiplier_signed_64x32_97"
+(list 0 0 233 45)
+(make-svl-env)
+*big-svl-design*)))
+(bits (+ (bits (car res) 0 97 )
+(bits (car res) 97 97 ))
+0 97 )))
 ||#

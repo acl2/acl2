@@ -36,16 +36,315 @@
 (include-book "macros")
 (include-book "centaur/fty/top" :dir :system)
 
-(include-book "sv-to-svl")
+;;(include-book "sv-to-svl")
 
 (include-book "svex-simplify")
 
-(include-book "svl2-flatten-simplify-lemmas")
+(include-book "svl-flatten-simplify-lemmas")
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
 (in-theory (disable acl2::natp-when-gte-0
                     acl2::natp-when-integerp))
+
+(fty::deftagsum
+ tmp-occ
+ (:assign ((inputs wire-list)
+           (delayed-inputs sv::svarlist-p)
+           (outputs wire-list)
+           (svex sv::svex-p)))
+ (:module ((inputs module-occ-wire-list)
+           (outputs module-occ-wire-list)
+           (name stringp))))
+
+(fty::defalist tmp-occ-alist
+               :key-type occ-name
+               :true-listp t
+               :val-type tmp-occ)
+
+
+
+(define wire-list-listp (list)
+  :enabled t
+  (if (atom list)
+      (equal list nil)
+    (and (wire-list-p (car list))
+         (wire-list-listp (cdr list)))))
+
+(define wire-list-list-fix (list)
+  :returns (res wire-list-listp)
+  :enabled t
+  (if (wire-list-listp list)
+      list
+    nil))
+
+(fty::deffixtype wire-list-list
+                 :pred  wire-list-listp
+                 :fix   wire-list-list-fix
+                 :equiv equal)
+
+(fty::deftagsum
+ svl-occ
+ (:assign ((output sv::svar-p)
+           (svex sv::svex-p)))
+ (:module ((inputs sv::svexlist-p)
+           (outputs wire-list-list)
+           (name sv::modname-p))))
+
+(fty::defalist svl-occ-alist
+               :true-listp t
+               :val-type svl-occ)
+
+
+(progn
+
+  (defun vl-insouts-get-range (vl-logic)
+    (b* (((unless (or (equal (car vl-logic)
+                             ':VL-LOGIC)
+                      (equal (car vl-logic)
+                             'VL::PDIMS)))
+          (progn$ (hard-error 'vl-smodule-get-range
+                              "Unknown data type ~%"
+                              nil)
+                  (mv t nil)))
+         (range (assoc-equal ':VL-RANGE (cdr vl-logic)))
+         ((unless range)
+          (mv t (cons '? '?)))
+         (endp (cdadr (cadadr range)))
+         (startp (cdadr (cadddr range))))
+
+      (mv nil (cons (- (1+ (abs (- endp startp)))
+                       0;(min endp startp)
+                       )
+                    0))))
+
+  (define vl-insouts-assocwire (name wires)
+    (if (atom wires)
+        nil
+      (if (and (consp (car wires))
+               (consp (caar wires))
+               (equal name (caaar wires)))
+          (car wires)
+        (vl-insouts-assocwire name (cdr wires)))))
+
+  (defun vl-smodule-to-insouts (smodule )
+    (if (atom smodule)
+        (mv nil nil t)
+      (b* ((c (car smodule))
+           (type (car c))
+           ((mv inrest outrest success)
+            (vl-smodule-to-insouts (cdr smodule) ))
+           ((when (not (equal type ':VL-PORTDECL)))
+            (mv inrest outrest success))
+           (porttype (cddr (cadr c)))
+           (portname (caadr c))
+           (- (and (equal porttype ':VL-INOUT)
+                   (cw "Warning! a module has port-type of ':vl-inout ~%")))
+           ((when (and (not (equal porttype ':VL-INPUT))
+                       (not (equal porttype ':VL-OUTPUT))
+                       (not (equal porttype ':VL-INOUT))))
+            (mv (cw "Unknown porttype. ~p0 ~%" porttype)
+                nil
+                nil))
+           #|((mv & range) (vl-insouts-get-range (cadar (caddr c))))||#
+           #|(wire (vl-insouts-getwire portname wires))||#
+           (ins (if (or (equal porttype ':VL-INPUT)
+                        (equal porttype ':VL-INOUT))
+                    (cons portname inrest)
+                  inrest))
+           (outs (if (or (equal porttype ':VL-OUTPUT)
+                         (equal porttype ':VL-INOUT))
+                     (cons portname outrest)
+                   outrest)))
+        (mv ins outs (and (not (equal porttype ':VL-INOUT))
+                          success)))))
+
+  (defun vl-ansi-ports-to-insouts (ports  most-recent-type )
+    ;; For modules whose port types are declared right in the port list are
+    ;; scanned here.
+    (if (atom ports)
+        (mv nil nil t)
+      (b* ((port (car ports))
+           ((unless (equal (car port) ':VL-ANSI-PORTDECL))
+            (progn$ (cw  "Unexpected happened!! car of port is ~p0 ~%" (car port))
+                    (mv nil nil nil)))
+           (port (cdr port))
+           (portname (cdr (assoc-equal 'vl::NAME port)))
+           (porttype (cdr (assoc-equal 'vl::dir port)))
+           (porttype (if porttype porttype
+                       most-recent-type))
+           (- (and (equal porttype ':VL-INOUT)
+                   (cw "Warning! a module has port-type of ':vl-inout ~%")))
+           ((unless (or (equal porttype ':VL-INPUT)
+                        (equal porttype ':VL-OUTPUT)
+                        (equal porttype ':VL-INOUT)))
+            (progn$
+             (cw "Unknown port type! port-type is: ~p0~%" porttype)
+             (mv nil nil nil)))
+           ((mv rest-ins rest-outs success)
+            (vl-ansi-ports-to-insouts (cdr ports)  porttype)))
+        (mv (if (or (equal porttype ':VL-INPUT)
+                    (equal porttype ':VL-INOUT))
+                (cons portname rest-ins)
+              rest-ins)
+            (if (or (equal porttype ':VL-OUTPUT)
+                    (equal porttype ':VL-INOUT))
+                (cons portname rest-outs)
+              rest-outs)
+            (and (not (equal porttype ':VL-INOUT))
+                 success)))))
+
+  (defun vl-module-to-insouts (vl-module mod-names)
+    (and
+     (consp vl-module)
+     (equal (car vl-module) ':VL-MODULE)
+     (consp (cadr vl-module))
+     (consp (caadr vl-module))
+     (consp (caaadr vl-module))
+     (b* ((smodule (caadr vl-module))
+          (module-name (caaar smodule))
+          ((when (and (not (member-equal module-name
+                                         mod-names))
+                      mod-names))
+           nil)
+          ((mv ins outs success1)
+           (vl-smodule-to-insouts (caadr smodule)))
+          ((mv ins2 outs2 success2)
+           (vl-ansi-ports-to-insouts
+            (cdr (assoc-equal 'vl::ansi-ports
+                              (cadddr (cdddr vl-module))))
+            nil))
+          (- (or (and success1
+                      success2)
+                 (cw "Warning issued for module ~p0. Flattening this module may
+           be useful. ~%" module-name))))
+       (list* module-name (append ins ins2) (append outs outs2)))))
+
+  (defun vl-modules-to-insouts (vl-modules mod-names)
+    (if (atom vl-modules)
+        nil
+      (b* ((cur (vl-module-to-insouts (car vl-modules) mod-names))
+           (rest (vl-modules-to-insouts (cdr vl-modules) mod-names)))
+        (if cur
+            (cons cur rest)
+          rest))))
+
+  (defun insouts-add-missing-modules-aux (sv-module-name insouts)
+    (if (atom insouts)
+        nil
+      (b* ((cur (car insouts))
+           (name (car cur))
+           ((when (and (stringp sv-module-name)
+                       (stringp name)
+                       (str::strprefixp (concatenate 'string name "$") sv-module-name)))
+            (list* sv-module-name (cadr cur) (cddr cur))))
+        (insouts-add-missing-modules-aux sv-module-name (cdr insouts)))))
+
+  (defun insouts-add-missing-modules (insouts sv-modules)
+    ;; some modules created with parameters for example width for input signals
+    ;; does not show up in the original insouts lists. It is because sv-design
+    ;; appends the parameter to the module's name whereas vl design does
+    ;; not. SV design does this appending with $ sign so we search the existing
+    ;; insouts list to find the origin of that missing module.
+    (declare (ignorable sv-modules))
+    (if (atom sv-modules)
+        insouts
+      (b* ((cur-sv-module (car sv-modules))
+           (name (car cur-sv-module))
+           ((when (assoc-equal name insouts))
+            (insouts-add-missing-modules insouts (cdr sv-modules)))
+           (new-insout (insouts-add-missing-modules-aux name insouts)))
+        (if new-insout
+            (insouts-add-missing-modules (cons new-insout insouts)
+                                         (cdr sv-modules))
+          (insouts-add-missing-modules insouts
+                                       (cdr sv-modules))))))
+
+  (define vl-design-to-insouts (vl-design sv-design mod-names)
+    :verify-guards nil
+    (and (consp vl-design)
+         (equal (car vl-design) ':VL-DESIGN)
+         (consp (cadr vl-design))
+         (consp (cadr vl-design))
+         (consp (caadr vl-design))
+         (consp (caaadr vl-design))
+         (or (equal (car (caaadr vl-design)) "VL Syntax 2016-08-26")
+             (hard-error "VL Syntax version is different exiting just in case ~
+  ~%" nil nil))
+         (b* ((insouts (vl-modules-to-insouts (cdr (caaadr vl-design)) mod-names))
+              (insouts (insouts-add-missing-modules insouts
+                                                    (cdr (assoc-equal
+                                                          'SV::MODALIST sv-design)))))
+           insouts))))
+
+(progn
+  (define vl-insouts-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (string-listp ins)
+                   (string-listp outs)
+                   (vl-insouts-p rest)))))))
+
+  (define vl-insouts-sized-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (wire-list-p ins)
+                   (wire-list-p outs)
+                   (vl-insouts-sized-p rest)))))))
+
+  (define vl-insouts-insert-wire-sizes-aux ((sigs string-listp)
+                                            (wires SV::WIRELIST-P))
+    :verify-guards nil
+    (if (atom sigs)
+        nil
+      (b* ((cur (car sigs))
+           (cur-wire (vl-insouts-assocwire cur wires))
+           ((Unless cur-wire)
+            (hard-error 'vl-insouts-insert-wire-sizes
+                        "Signal ~p0 cannot be found in wires ~p1 ~%"
+                        (list (cons #\0 cur)
+                              (cons #\1 wires))))
+           (w (sv::wire->width cur-wire)))
+        (cons `(,cur ,w . 0)
+              (vl-insouts-insert-wire-sizes-aux (cdr sigs)
+                                                wires)))))
+
+  (define vl-insouts-insert-wire-sizes ((vl-insouts vl-insouts-p)
+                                        (sv-design sv::design-p)
+                                        (module-names string-listp))
+    :verify-guards nil
+    :guard-hints (("Goal"
+                   :in-theory (e/d (VL-INSOUTS-P
+                                    SV::DESIGN->MODALIST
+                                    assoc-equal
+                                    SV::MODALIST-FIX) ())))
+    (if (atom module-names)
+        nil
+      (b* ((cur (car module-names))
+           (this-vl-insouts (assoc-equal cur vl-insouts))
+           (rest (vl-insouts-insert-wire-sizes vl-insouts
+                                               sv-design
+                                               (cdr module-names)))
+           ((unless this-vl-insouts)
+            rest)
+           (modalist (sv::design->modalist sv-design))
+           (sv-module (assoc-equal cur modalist))
+           ((unless sv-module)
+            rest)
+           (sv-module (cdr sv-module))
+           (wires (sv::module->wires sv-module))
+           (ins (cadr this-vl-insouts))
+           (ins (vl-insouts-insert-wire-sizes-aux ins wires))
+           (outs (cddr this-vl-insouts))
+           (outs (vl-insouts-insert-wire-sizes-aux outs wires)))
+        (cons `(,cur ,ins . ,outs)
+              rest)))))
 
 (define alistp$ (x)
   :enabled t
@@ -150,39 +449,39 @@
    :val-type sv::svex-p)
 
   (fty::deftypes
-   aliasdb
-   (fty::defprod aliasdb
+   svl-aliasdb
+   (fty::defprod svl-aliasdb
                  ((this alias-alist)
-                  (sub aliasdb-alist-p))
+                  (sub svl-aliasdb-alist-p))
                  :tag nil
                  :count nil
                  :measure (+ 1 (cons-countw x 2))
                  :layout :list)
 
-   (fty::defalist aliasdb-alist
+   (fty::defalist svl-aliasdb-alist
                   :count nil
                   :measure (cons-countw x 2)
-                  :val-type aliasdb)))
+                  :val-type svl-aliasdb)))
 
 ;; (local
-;;  (defthm TRUE-LISTP-ALIASDB->THIS
-;;    (implies (aliasdb-p aliasdb)
-;;             (true-listp (ALIASDB->THIS aliasdb)))
+;;  (defthm TRUE-LISTP-SVL-ALIASDB->THIS
+;;    (implies (svl-aliasdb-p svl-aliasdb)
+;;             (true-listp (SVL-ALIASDB->THIS svl-aliasdb)))
 ;;    :otf-flg t
 ;;    :hints (("Goal"
-;;             :in-theory (e/d (ALIASDB->THIS
+;;             :in-theory (e/d (SVL-ALIASDB->THIS
 ;;                              ALIAS-ALIST-FIX
-;;                              aliasdb-p) ())))))
+;;                              svl-aliasdb-p) ())))))
 
 (acl2::defines
- free-aliasdb
+ free-svl-aliasdb
  :hints (("Goal"
           :in-theory (e/d (rp::measure-lemmas
-                           aliasdb->sub
-                           ALIASDB-FIX
-                           ALIASDB-p
-                           aliasdb-alist-p
-                           aliasdb-alist-fix) ())))
+                           svl-aliasdb->sub
+                           SVL-ALIASDB-FIX
+                           SVL-ALIASDB-p
+                           svl-aliasdb-alist-p
+                           svl-aliasdb-alist-fix) ())))
  :prepwork
  ((local
    (defthm lemma1
@@ -192,22 +491,22 @@
      :hints (("goal"
               :in-theory (e/d (cons-count) ()))))))
 
- (define free-aliasdb ((aliasdb aliasdb-p))
-   :measure (cons-count (aliasdb-fix aliasdb))
-   (b* ((aliasdb (mbe :logic (aliasdb-fix aliasdb)
-                      :exec aliasdb))
-        (- (fast-alist-free (aliasdb->this aliasdb)))
-        (- (fast-alist-free (aliasdb->sub aliasdb)))
-        (- (free-aliasdb-alist (aliasdb->sub aliasdb))))
+ (define free-svl-aliasdb ((svl-aliasdb svl-aliasdb-p))
+   :measure (cons-count (svl-aliasdb-fix svl-aliasdb))
+   (b* ((svl-aliasdb (mbe :logic (svl-aliasdb-fix svl-aliasdb)
+                      :exec svl-aliasdb))
+        (- (fast-alist-free (svl-aliasdb->this svl-aliasdb)))
+        (- (fast-alist-free (svl-aliasdb->sub svl-aliasdb)))
+        (- (free-svl-aliasdb-alist (svl-aliasdb->sub svl-aliasdb))))
      nil))
- (define free-aliasdb-alist ((subs aliasdb-alist-P))
-   :measure (cons-count (aliasdb-alist-fix subs))
-   (b* ((subs (mbe :logic (aliasdb-alist-fix subs)
+ (define free-svl-aliasdb-alist ((subs svl-aliasdb-alist-P))
+   :measure (cons-count (svl-aliasdb-alist-fix subs))
+   (b* ((subs (mbe :logic (svl-aliasdb-alist-fix subs)
                    :exec subs)))
      (if (atom subs)
          nil
-       (b* ((- (free-aliasdb (cdar subs))))
-         (free-aliasdb-alist (cdr subs)))))))
+       (b* ((- (free-svl-aliasdb (cdar subs))))
+         (free-svl-aliasdb-alist (cdr subs)))))))
 
 (define trace-p (trace)
   (declare (ignorable trace))
@@ -281,7 +580,7 @@
 (define aliaspair->alias ((alias-1 sv::lhs-p)
                           (alias-2 sv::lhs-p)
                           (trace trace-p)
-                          (aliases aliasdb-p))
+                          (aliases svl-aliasdb-p))
   :verify-guards nil
   (b* (((mv alias-1 alias-2)
         (if (and (equal (len alias-2) 1)
@@ -317,9 +616,9 @@
             nil))
        (svex2-old-val (if (equal place nil)
                           aliases
-                        (cdr (hons-get place (aliasdb->sub aliases)))))
+                        (cdr (hons-get place (svl-aliasdb->sub aliases)))))
        (svex2-old-val (if svex2-old-val
-                          (hons-get newname (aliasdb->this
+                          (hons-get newname (svl-aliasdb->this
                                              svex2-old-val))
                         nil))
        (svex2-old-val (cond (svex2-old-val (cdr svex2-old-val))
@@ -351,77 +650,77 @@
                   '(("m1" "m2" . "m3")
                     ("m1" . "m2")
                     "m1")
-                    (make-aliasdb))
+                    (make-svl-aliasdb))
 
 (aliaspair->alias '((65 :VAR 16 . 0))
                   '((65 :SELF . 1040))
                   '(("m1" "m2" . "m3")
                     ("m1" . "m2")
                     "m1")
-                  (make-aliasdb))
+                  (make-svl-aliasdb))
 ||#
 
-(define insert-into-aliasdb (place key val aliasdb)
+(define insert-into-svl-aliasdb (place key val svl-aliasdb)
   :verify-guards nil
   ;; place can be nil or consed module names.
   (cond ((not place)
-         (change-aliasdb aliasdb
+         (change-svl-aliasdb svl-aliasdb
                          :this
 ; (fast-alist-clean
                          (hons-acons key val
-                                     (aliasdb->this aliasdb))
+                                     (svl-aliasdb->this svl-aliasdb))
 ; )
                          ))
         ((atom place)
-         (b* ((sub-aliasdb (hons-get place (aliasdb->sub aliasdb)))
-              (sub-aliasdb (if sub-aliasdb (cdr sub-aliasdb) (make-aliasdb)))
-              (sub-aliasdb
-               (change-aliasdb
-                sub-aliasdb
+         (b* ((sub-svl-aliasdb (hons-get place (svl-aliasdb->sub svl-aliasdb)))
+              (sub-svl-aliasdb (if sub-svl-aliasdb (cdr sub-svl-aliasdb) (make-svl-aliasdb)))
+              (sub-svl-aliasdb
+               (change-svl-aliasdb
+                sub-svl-aliasdb
                 :this
 ;(fast-alist-clean
                 (hons-acons key val
-                            (aliasdb->this sub-aliasdb))
+                            (svl-aliasdb->this sub-svl-aliasdb))
 ; )
                 )))
-           (change-aliasdb
-            aliasdb
+           (change-svl-aliasdb
+            svl-aliasdb
             :sub
 ;(fast-alist-clean
             (hons-acons place
-                        sub-aliasdb
-                        (aliasdb->sub aliasdb))
+                        sub-svl-aliasdb
+                        (svl-aliasdb->sub svl-aliasdb))
 ; )
             )))
         (t (b* ((curplace (car place))
-                (cur-sub (hons-get curplace (aliasdb->sub aliasdb)))
-                (cur-sub (if cur-sub (cdr cur-sub) (make-aliasdb)))
-                (cur-sub (insert-into-aliasdb (cdr place) key val cur-sub)))
-             (change-aliasdb aliasdb
+                (cur-sub (hons-get curplace (svl-aliasdb->sub svl-aliasdb)))
+                (cur-sub (if cur-sub (cdr cur-sub) (make-svl-aliasdb)))
+                (cur-sub (insert-into-svl-aliasdb (cdr place) key val cur-sub)))
+             (change-svl-aliasdb svl-aliasdb
                              :sub
 ; (fast-alist-clean
                              (hons-acons curplace
                                          cur-sub
-                                         (aliasdb->sub aliasdb))
+                                         (svl-aliasdb->sub svl-aliasdb))
 ; )
                              )))))
 
-(define aliaspair-lst->aliasdb ((aliaspairs sv::lhspairs-p)
+(define aliaspair-lst->svl-aliasdb ((aliaspairs sv::lhspairs-p)
                                 (trace trace-p))
   :verify-guards nil
   (if (atom aliaspairs)
-      (make-aliasdb)
-    (b* ((rest (aliaspair-lst->aliasdb (cdr aliaspairs) trace))
+      (make-svl-aliasdb)
+    (b* ((rest (aliaspair-lst->svl-aliasdb (cdr aliaspairs) trace))
          ((mv cur-place cur-name cur-svex)
           (aliaspair->alias (caar aliaspairs)
                             (cdar aliaspairs)
                             trace
                             rest)))
-      (insert-into-aliasdb cur-place cur-name cur-svex rest))))
+      (insert-into-svl-aliasdb cur-place cur-name cur-svex rest))))
 
 #|
 (wet
- (aliaspair-lst->aliasdb '((((65 :var 16 . 0)) (65 :self . 1040))
+ (aliaspair-lst->svl-aliasdb '((((65 :var 16 . 0)) (65 :self . 1040))
                        (((65 :var 15 . 0)) (65 :self . 975))
                        (((65 :var 14 . 0)) (65 :self . 910))
                        (((65 :var 13 . 0)) (65 :self . 845))
@@ -442,7 +741,7 @@
                        ("m1" . "m2")
                        "m1")))
 
-(aliaspair-lst->aliasdb '((((3 :VAR
+(aliaspair-lst->svl-aliasdb '((((3 :VAR
                            ("partial_product_mux" . "multiplier_bits")
                            . 0))
                        (3 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
@@ -480,35 +779,34 @@
 
 ||#
 
-(define merge-this-insts-aliasdb ((sub-aliasdb aliasdb-alist-p)
-                                  (insts-aliasdb-alist aliasdb-alist-p))
+(define merge-this-insts-svl-aliasdb ((sub-svl-aliasdb svl-aliasdb-alist-p)
+                                  (insts-svl-aliasdb-alist svl-aliasdb-alist-p))
   :verify-guards nil
   :guard-hints (("Goal"
                  :in-theory (e/d () (fast-alist-clean))))
-  (if (atom insts-aliasdb-alist)
-      (fast-alist-clean sub-aliasdb)
-    (b* ((cur (car insts-aliasdb-alist))
+  (if (atom insts-svl-aliasdb-alist)
+      (fast-alist-clean sub-svl-aliasdb)
+    (b* ((cur (car insts-svl-aliasdb-alist))
          (name (car cur))
-         (cur-aliasdb (cdr cur))
-         (cursub (hons-get name sub-aliasdb))
-         (cursub (if cursub (cdr cursub) (make-aliasdb)))
-         (- (if (aliasdb->sub cursub)
-                (hard-error 'merge-this-insts-aliasdb
+         (cur-svl-aliasdb (cdr cur))
+         (cursub (hons-get name sub-svl-aliasdb))
+         (cursub (if cursub (cdr cursub) (make-svl-aliasdb)))
+         (- (if (svl-aliasdb->sub cursub)
+                (hard-error 'merge-this-insts-svl-aliasdb
                             "Unexpected sub entry while merge ~p0~%"
                             (list (cons #\0 cursub)))
               nil))
-         (- (fast-alist-free (aliasdb->this cursub)))
-         (- (fast-alist-free (aliasdb->this cur-aliasdb)))
-         (cursub-this (append (aliasdb->this cursub)
-                              (aliasdb->this cur-aliasdb)))
+         (- (fast-alist-free (svl-aliasdb->this cursub)))
+         (- (fast-alist-free (svl-aliasdb->this cur-svl-aliasdb)))
+         (cursub-this (append (svl-aliasdb->this cursub)
+                              (svl-aliasdb->this cur-svl-aliasdb)))
          (cursub-this (fast-alist-clean (make-fast-alist cursub-this)))
-         (cursub (change-aliasdb cursub
+         (cursub (change-svl-aliasdb cursub
                                  :this cursub-this
-                                 :sub (aliasdb->sub cur-aliasdb)))
-         (sub-aliasdb (hons-acons name cursub sub-aliasdb)))
-      (merge-this-insts-aliasdb sub-aliasdb
-                                (cdr insts-aliasdb-alist)))))
-
+                                 :sub (svl-aliasdb->sub cur-svl-aliasdb)))
+         (sub-svl-aliasdb (hons-acons name cursub sub-svl-aliasdb)))
+      (merge-this-insts-svl-aliasdb sub-svl-aliasdb
+                                (cdr insts-svl-aliasdb-alist)))))
 
 
 (acl2::defines
@@ -531,17 +829,16 @@
        nil
      (cons (add-delay-to-vars-in-svex (car lst))
            (add-delay-to-vars-in-svex-lst (cdr lst))))))
-   
-   
-(define get-svex-from-aliasdb ((name)
+
+(define get-svex-from-svl-aliasdb ((name)
                                (trace-name)
                                (delay natp)
-                               (aliasdb aliasdb-p))
+                               (svl-aliasdb svl-aliasdb-p))
   :measure (acl2-count trace-name)
   (cond ((not trace-name)
          (b* ((var (sv::make-svar :name name
                                   :delay 0))
-              (res (hons-get var (aliasdb->this aliasdb))))
+              (res (hons-get var (svl-aliasdb->this svl-aliasdb))))
            (cond ((and res (equal delay 0))
                   (cdr res))
                  ((and res (equal delay 1))
@@ -550,11 +847,11 @@
                   nil))))
         ((atom trace-name)
          (b* ((instname trace-name)
-              (subaliases (aliasdb->sub aliasdb))
-              (subaliasdb (hons-get instname subaliases)))
-           (if subaliasdb
+              (subaliases (svl-aliasdb->sub svl-aliasdb))
+              (subsvl-aliasdb (hons-get instname subaliases)))
+           (if subsvl-aliasdb
                (b* ((var (sv::make-svar :name  name :delay 0))
-                    (res (hons-get var (aliasdb->this (cdr subaliasdb)))))
+                    (res (hons-get var (svl-aliasdb->this (cdr subsvl-aliasdb)))))
                  (cond ((and res (equal delay 0))
                         (cdr res))
                        ((and res (equal delay 1))
@@ -563,13 +860,13 @@
                         nil)))
              nil)))
         (t (b* ((instname (car trace-name))
-                (subaliases (aliasdb->sub aliasdb))
-                (subaliasdb (hons-get instname subaliases)))
-             (if subaliasdb
-                 (get-svex-from-aliasdb name
+                (subaliases (svl-aliasdb->sub svl-aliasdb))
+                (subsvl-aliasdb (hons-get instname subaliases)))
+             (if subsvl-aliasdb
+                 (get-svex-from-svl-aliasdb name
                                         (cdr trace-name)
                                         delay
-                                        (cdr subaliasdb))
+                                        (cdr subsvl-aliasdb))
                nil)))))
 
 (defun nthcdr2 (acl2::n acl2::l)
@@ -582,7 +879,7 @@
       (nthcdr2 (+ acl2::n -1) (cdr acl2::l)))))
 
 (acl2::defines
- update-svex-with-aliasdb
+ update-svex-with-svl-aliasdb
  :guard-hints (("Goal"
                 :in-theory (e/d (svex-kind
                                  sv::svar-p
@@ -590,8 +887,8 @@
  :hints (("Goal"
           :in-theory (e/d (svex-kind) ())))
 
- (define update-svex-with-aliasdb ((svex sv::svex-p)
-                                   (aliasdb aliasdb-p)
+ (define update-svex-with-svl-aliasdb ((svex sv::svex-p)
+                                   (svl-aliasdb svl-aliasdb-p)
                                    (skip-var-name)
                                    (trace-size natp))
    (let ((kind (sv::svex-kind svex)))
@@ -608,52 +905,52 @@
                  (mv (cdr var-name) (car
                  var-name))
                  (mv var-name nil)))||#
-                 (res (get-svex-from-aliasdb name place var-delay aliasdb)))
+                 (res (get-svex-from-svl-aliasdb name place var-delay svl-aliasdb)))
               (if res
                   res
                 svex)))
            (t
             (cons-with-hint (car svex)
-                            (update-svex-with-aliasdb-lst (cdr svex)
-                                                          aliasdb
+                            (update-svex-with-svl-aliasdb-lst (cdr svex)
+                                                          svl-aliasdb
                                                           skip-var-name
                                                           trace-size)
                             svex)))))
 
- (define update-svex-with-aliasdb-lst ((lst sv::svexlist-p)
-                                       (aliasdb aliasdb-p)
+ (define update-svex-with-svl-aliasdb-lst ((lst sv::svexlist-p)
+                                       (svl-aliasdb svl-aliasdb-p)
                                        (skip-var-name)
                                        (trace-size natp))
    (if (atom lst)
        nil
      (cons-with-hint
-      (update-svex-with-aliasdb (car lst)
-                                aliasdb skip-var-name trace-size)
-      (update-svex-with-aliasdb-lst (cdr lst)
-                                    aliasdb skip-var-name trace-size)
+      (update-svex-with-svl-aliasdb (car lst)
+                                svl-aliasdb skip-var-name trace-size)
+      (update-svex-with-svl-aliasdb-lst (cdr lst)
+                                    svl-aliasdb skip-var-name trace-size)
       lst))))
 
 (define fix-this-aliases ((this-aliases alias-alist-p)
                           (trace-size natp)
-                          (aliasdb aliasdb-p))
+                          (svl-aliasdb svl-aliasdb-p))
   (if (atom this-aliases)
       nil
     (b* ((cur (car this-aliases))
          (cur-name (car cur))
          (cur-svex (cdr cur))
-         (cur-svex (update-svex-with-aliasdb cur-svex
-                                             aliasdb
+         (cur-svex (update-svex-with-svl-aliasdb cur-svex
+                                             svl-aliasdb
                                              cur-name
                                              trace-size)))
       (hons-acons cur-name
                   cur-svex
                   (fix-this-aliases (cdr this-aliases)
                                     trace-size
-                                    aliasdb)))))
+                                    svl-aliasdb)))))
 
 (acl2::defines
- mod-aliaspairs->aliasdb-pt1
- (define mod-aliaspairs->aliasdb-pt1 ((modname sv::modname-p)
+ mod-aliaspairs->svl-aliasdb-pt1
+ (define mod-aliaspairs->svl-aliasdb-pt1 ((modname sv::modname-p)
                                       (modalist sv::modalist-p)
                                       ;;  (proc-history )
                                       (trace trace-p)
@@ -663,10 +960,10 @@
    (declare (xargs :mode :program)) ;; to profile
    :measure (nfix limit)
    (cond ((zp limit)
-          (progn$ (hard-error 'mod-aliaspairs->aliasdb-pt1
+          (progn$ (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
                               "Limit Reached! ~%"
                               nil)
-                  (make-aliasdb)))
+                  (make-svl-aliasdb)))
          ;; ((hons-get modname proc-history)
          ;;  (cdr (hons-get modname proc-history)))
          (t
@@ -674,45 +971,45 @@
                (module (if module
                            (cdr module)
                          (progn$
-                          (hard-error 'mod-aliaspairs->aliasdb-pt1
+                          (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
                                       "Module not found in modalist ~p0 ~%"
                                       (list (cons #\0 modname)))
                           nil)))
                ((sv::module module) module)
-               (aliasdb (aliaspair-lst->aliasdb module.aliaspairs
+               (svl-aliasdb (aliaspair-lst->svl-aliasdb module.aliaspairs
                                                 trace))
-               (insts-aliasdb-alist
-                (mod-aliaspairs->aliasdb-pt1-lst module.insts
+               (insts-svl-aliasdb-alist
+                (mod-aliaspairs->svl-aliasdb-pt1-lst module.insts
                                                  modalist
                                                  ;;proc-history
                                                  trace
                                                  mods-to-skip
                                                  (1- limit)))
-               (merged-sub (merge-this-insts-aliasdb (aliasdb->sub aliasdb)
-                                                     insts-aliasdb-alist))
-               (aliasdb (change-aliasdb aliasdb :sub merged-sub))
-               (this-aliases (aliasdb->this aliasdb))
+               (merged-sub (merge-this-insts-svl-aliasdb (svl-aliasdb->sub svl-aliasdb)
+                                                     insts-svl-aliasdb-alist))
+               (svl-aliasdb (change-svl-aliasdb svl-aliasdb :sub merged-sub))
+               (this-aliases (svl-aliasdb->this svl-aliasdb))
                (this-aliases (fix-this-aliases this-aliases
                                                (len (car trace))
-                                               aliasdb))
-               (- (fast-alist-free (aliasdb->this aliasdb))))
-            (change-aliasdb aliasdb :this this-aliases)))))
+                                               svl-aliasdb))
+               (- (fast-alist-free (svl-aliasdb->this svl-aliasdb))))
+            (change-svl-aliasdb svl-aliasdb :this this-aliases)))))
 
- (define mod-aliaspairs->aliasdb-pt1-lst ((insts sv::modinstlist-p)
+ (define mod-aliaspairs->svl-aliasdb-pt1-lst ((insts sv::modinstlist-p)
                                           (modalist sv::modalist-p)
                                           (trace trace-p)
                                           (mods-to-skip sv::modnamelist-p)
                                           (limit natp "To prove termination"))
    :measure (nfix limit)
    (cond ((zp limit)
-          (progn$ (hard-error 'mod-aliaspairs->aliasdb-pt1
+          (progn$ (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
                               "Limit Reached! ~%"
                               nil)
                   nil))
          ((atom insts)
           nil)
          (t (b* (((sv::modinst inst) (car insts))
-                 (rest (mod-aliaspairs->aliasdb-pt1-lst (cdr insts)
+                 (rest (mod-aliaspairs->svl-aliasdb-pt1-lst (cdr insts)
                                                         modalist
                                                         trace
                                                         mods-to-skip
@@ -724,7 +1021,7 @@
                                  inst.instname)
                                trace)))
               (acons inst.instname
-                     (mod-aliaspairs->aliasdb-pt1 inst.modname
+                     (mod-aliaspairs->svl-aliasdb-pt1 inst.modname
                                                   modalist
                                                   trace-
                                                   mods-to-skip
@@ -733,12 +1030,12 @@
 
 #|
 
-(mod-aliaspairs->aliasdb-pt1 "mul_test1"
+(mod-aliaspairs->svl-aliasdb-pt1 "mul_test1"
                              (make-fast-alist (sv::design->modalist *booth-sv-design*))
                              nil
                              (expt 2 30))
 
-(mod-aliaspairs->aliasdb-pt1 "booth2_multiplier_signed_64x32_97"
+(mod-aliaspairs->svl-aliasdb-pt1 "booth2_multiplier_signed_64x32_97"
                              (make-fast-alist (sv::design->modalist *big-sv-design*))
                              nil
                              '("booth2_reduction_dadda_17x65_97")
@@ -813,16 +1110,16 @@
           (hons-acons cur-svar cur-svex
                       rest)))))
 (acl2::defines
- mod-aliaspairs->aliasdb-pt2
+ mod-aliaspairs->svl-aliasdb-pt2
  :prepwork
  ((local
    (defthm lemma1
-     (O< (CONS-COUNT (ALIASDB-ALIST-FIX (CADR ALIASDB)))
-         (CONS-COUNT (ALIASDB-FIX ALIASDB)))
+     (O< (CONS-COUNT (SVL-ALIASDB-ALIST-FIX (CADR SVL-ALIASDB)))
+         (CONS-COUNT (SVL-ALIASDB-FIX SVL-ALIASDB)))
      :hints (("Goal"
               :in-theory (e/d (cons-count
-                               ALIASDB-FIX
-                               ALIASDB-ALIST-FIX) ())))))
+                               SVL-ALIASDB-FIX
+                               SVL-ALIASDB-ALIST-FIX) ())))))
   (local
    (defthm lemma2
      (implies (consp x)
@@ -831,81 +1128,81 @@
      :hints (("Goal"
               :in-theory (e/d (cons-count) ()))))))
 
- (define mod-aliaspairs->aliasdb-pt2 ((aliasdb aliasdb-p)
+ (define mod-aliaspairs->svl-aliasdb-pt2 ((svl-aliasdb svl-aliasdb-p)
                                       (aliases-alist alias-alist-p)
                                       (trace trace-p))
    :hints (("Goal"
-            :in-theory (e/d (ALIASDB->SUB
-                             ALIASDB-ALIST-FIX
+            :in-theory (e/d (SVL-ALIASDB->SUB
+                             SVL-ALIASDB-ALIST-FIX
                              rp::measure-lemmas) ())))
-   :measure (cons-count (aliasdb-fix aliasdb))
+   :measure (cons-count (svl-aliasdb-fix svl-aliasdb))
    :verify-guards nil
    (declare (xargs :mode :program)) ;; to profile
-   (b* (((aliasdb aliasdb) aliasdb)
+   (b* (((svl-aliasdb svl-aliasdb) svl-aliasdb)
         ((mv aliases-alist new-this)
-         (add-to-aliases-alist aliasdb.this aliases-alist trace))
-        (- (fast-alist-free aliasdb.this))
-        (- (fast-alist-free aliasdb.sub))
+         (add-to-aliases-alist svl-aliasdb.this aliases-alist trace))
+        (- (fast-alist-free svl-aliasdb.this))
+        (- (fast-alist-free svl-aliasdb.sub))
         ((mv new-sub aliases-alist)
-         (mod-aliaspairs->aliasdb-pt2-lst aliasdb.sub aliases-alist trace)))
-     (mv (change-aliasdb aliasdb
+         (mod-aliaspairs->svl-aliasdb-pt2-lst svl-aliasdb.sub aliases-alist trace)))
+     (mv (change-svl-aliasdb svl-aliasdb
                          :this new-this
                          :sub new-sub)
          aliases-alist)))
 
- (define mod-aliaspairs->aliasdb-pt2-lst ((aliasdb.sub aliasdb-alist-p)
+ (define mod-aliaspairs->svl-aliasdb-pt2-lst ((svl-aliasdb.sub svl-aliasdb-alist-p)
                                           (aliases-alist alias-alist-p)
                                           (trace trace-p))
-   :measure (cons-count (aliasdb-alist-fix aliasdb.sub))
-   (b* ((aliasdb.sub (mbe :logic (aliasdb-alist-fix aliasdb.sub)
-                          :exec aliasdb.sub)))
-     (if (atom aliasdb.sub)
+   :measure (cons-count (svl-aliasdb-alist-fix svl-aliasdb.sub))
+   (b* ((svl-aliasdb.sub (mbe :logic (svl-aliasdb-alist-fix svl-aliasdb.sub)
+                          :exec svl-aliasdb.sub)))
+     (if (atom svl-aliasdb.sub)
          (mv nil aliases-alist)
        (b* ((trace-tmp (cons (if (consp trace)
-                                 (cons-to-end (car trace) (caar aliasdb.sub))
-                               (caar aliasdb.sub))
+                                 (cons-to-end (car trace) (caar svl-aliasdb.sub))
+                               (caar svl-aliasdb.sub))
                              trace))
             ((mv new-sub-entry aliases-alist)
-             (mod-aliaspairs->aliasdb-pt2 (cdar aliasdb.sub)
+             (mod-aliaspairs->svl-aliasdb-pt2 (cdar svl-aliasdb.sub)
                                           aliases-alist
                                           trace-tmp))
             ((mv rest-subs aliases-alist)
-             (mod-aliaspairs->aliasdb-pt2-lst (cdr aliasdb.sub)
+             (mod-aliaspairs->svl-aliasdb-pt2-lst (cdr svl-aliasdb.sub)
                                               aliases-alist
                                               trace)))
-         (mv (hons-acons (caar aliasdb.sub) new-sub-entry rest-subs)
+         (mv (hons-acons (caar svl-aliasdb.sub) new-sub-entry rest-subs)
              aliases-alist))))))
 
-(define mod-aliaspairs->aliasdb ((modname sv::modname-p)
+(define mod-aliaspairs->svl-aliasdb ((modname sv::modname-p)
                                  (modalist sv::modalist-p)
                                  (mods-to-skip sv::modnamelist-p))
   :verify-guards nil
   (declare (xargs :mode :program)) ;; to profile
-  (b* ((aliasdb (mod-aliaspairs->aliasdb-pt1 modname modalist nil
+  (b* ((svl-aliasdb (mod-aliaspairs->svl-aliasdb-pt1 modname modalist nil
                                              mods-to-skip
                                              (expt 2 59)))
-       ((mv aliasdb aliases-alist)
-        (mod-aliaspairs->aliasdb-pt2 aliasdb
+       ((mv svl-aliasdb aliases-alist)
+        (mod-aliaspairs->svl-aliasdb-pt2 svl-aliasdb
                                      nil
                                      nil))
        (- (fast-alist-free aliases-alist)))
-    aliasdb))
+    svl-aliasdb))
 
 #|
 
-(mod-aliaspairs->aliasdb "mul_test1"
+(mod-aliaspairs->svl-aliasdb "mul_test1"
                          (make-fast-alist (sv::design->modalist *booth-sv-design*))
                          nil)
 
 ;; not unfree fast-alist
 (b* ((modalist (make-fast-alist (sv::design->modalist *signed64-sv-design*))))
-  (progn$ (free-aliasdb (mod-aliaspairs->aliasdb "S_SP_64_64"
+  (progn$ (free-svl-aliasdb (mod-aliaspairs->svl-aliasdb "S_SP_64_64"
                                                 modalist
                                                 nil))
          (fast-alist-free modalist)
           nil))
 
-(mod-aliaspairs->aliasdb "booth2_multiplier_signed_64x32_97"
+(mod-aliaspairs->svl-aliasdb "booth2_multiplier_signed_64x32_97"
                          (make-fast-alist (sv::design->modalist *big-sv-design*))
                          '("booth2_reduction_dadda_17x65_97"))
 ||#
@@ -913,7 +1210,7 @@
 ;; (vl-design-to-insouts *big-vl-design2* *big-sv-design*)
 
 (acl2::defines
- update-svex-with-aliasdb-and-trace
+ update-svex-with-svl-aliasdb-and-trace
  :guard-hints (("Goal"
                 :in-theory (e/d (svex-kind
                                  sv::svar-p
@@ -922,12 +1219,12 @@
  :hints (("Goal"
           :in-theory (e/d (svex-kind) ())))
 
- (define update-svex-with-aliasdb-and-trace ((svex sv::svex-p)
-                                             (aliasdb aliasdb-p)
+ (define update-svex-with-svl-aliasdb-and-trace ((svex sv::svex-p)
+                                             (svl-aliasdb svl-aliasdb-p)
                                              (trace trace-p))
    (declare (xargs :mode :program))
    (let ((kind (sv::svex-kind svex)))
-     (cond ((equal aliasdb `(,(make-aliasdb)))
+     (cond ((equal svl-aliasdb `(,(make-svl-aliasdb)))
             svex)
            ((eq kind ':quote)
             svex)
@@ -949,28 +1246,28 @@
                           cur-trace))
 
                  (name (if (consp var-name) (cdr var-name) var-name))
-                 (res (get-svex-from-aliasdb name place var-delay aliasdb))
+                 (res (get-svex-from-svl-aliasdb name place var-delay svl-aliasdb))
                  ((when res) res)
 
                  (svar (sv::change-svar svex :name (if place (cons place name) name))))
               svar))
            (t
             (cons-with-hint (car svex)
-                            (update-svex-with-aliasdb-and-trace-lst (cdr svex)
-                                                                    aliasdb
+                            (update-svex-with-svl-aliasdb-and-trace-lst (cdr svex)
+                                                                    svl-aliasdb
                                                                     trace)
                             svex)))))
 
- (define update-svex-with-aliasdb-and-trace-lst ((lst sv::svexlist-p)
-                                                 (aliasdb aliasdb-p)
+ (define update-svex-with-svl-aliasdb-and-trace-lst ((lst sv::svexlist-p)
+                                                 (svl-aliasdb svl-aliasdb-p)
                                                  (trace trace-p))
    (if (atom lst)
        nil
      (cons-with-hint
-      (update-svex-with-aliasdb-and-trace (car lst)
-                                          aliasdb trace)
-      (update-svex-with-aliasdb-and-trace-lst (cdr lst)
-                                              aliasdb trace)
+      (update-svex-with-svl-aliasdb-and-trace (car lst)
+                                          svl-aliasdb trace)
+      (update-svex-with-svl-aliasdb-and-trace-lst (cdr lst)
+                                              svl-aliasdb trace)
       lst))))
 
 (define get-lhs-w ((lhs sv::lhs-p))
@@ -1249,20 +1546,20 @@
 
   (fast-alist-clean (assign-occ-merge-ins ins)))
 
-(define assign-to-occ ((lhs sv::lhs-p)
-                       (rhs-svex sv::svex-p)
-                       (modname sv::modname-p)
-                       (modalist sv::modalist-p))
+(define assign-to-tmp-occ ((lhs sv::lhs-p)
+                           (rhs-svex sv::svex-p)
+                           (modname sv::modname-p)
+                           (modalist sv::modalist-p))
   (b* ((outs (lhs-to-svl-wirelist lhs))
        ((mv ins prev-ins success)
         (get-inputs-for-svex rhs-svex modname modalist))
        (- (or success
-              (cw "Warning issued (assign-to-occ) for this svex: ~p0 ~
+              (cw "Warning issued (assign-to-tmp-occ) for this svex: ~p0 ~
 it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
        (ins (assign-occ-unify-ins ins))
        (- (fast-alist-free ins)))
-    (make-occ-assign
+    (make-tmp-occ-assign
      :inputs ins
      :delayed-inputs prev-ins
      :outputs outs
@@ -1278,9 +1575,9 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
       (cons (car trace) (sa prefix cnt))
     (sa prefix cnt)))
 
-(define sv-mod->svl2-occs-assigns ((assigns sv::assigns-p)
+(define sv-mod->svl-occs-assigns ((assigns sv::assigns-p)
                                    (trace trace-p)
-                                   (aliasdb aliasdb-p)
+                                   (svl-aliasdb svl-aliasdb-p)
                                    (cnt natp)
                                    (svex-simplify-preloaded)
                                    (modname sv::modname-p)
@@ -1299,20 +1596,20 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
    ((atom assigns)
     (mv nil cnt rp::rp-state))
    (t
-    (b* (;;(- (cw "Starting sv-mod->svl2-occs-assigns ~%"))
+    (b* (;;(- (cw "Starting sv-mod->svl-occs-assigns ~%"))
          (cur (car assigns))
          ((sv::driver driver) (cdr cur))
          #|(- (if (not (equal driver.strength 6))
-                (cw "Driver strength is not 6. For this assignment ~p0 ~%" cur)
-              nil))||#
+         (cw "Driver strength is not 6. For this assignment ~p0 ~%" cur)
+         nil))||#
          (lhs-w (get-lhs-w (car cur)))
 
          ;; Prepare lhs-svex
          (lhs-svex (sv::lhs->svex (car cur)))
 
-         ;;(- (cw "Calling update-svex-with-aliasdb-and-trace ~%"))
-         (lhs-svex (update-svex-with-aliasdb-and-trace lhs-svex
-                                                       aliasdb
+         ;;(- (cw "Calling update-svex-with-svl-aliasdb-and-trace ~%"))
+         (lhs-svex (update-svex-with-svl-aliasdb-and-trace lhs-svex
+                                                       svl-aliasdb
                                                        trace))
 
          ;;(- (cw "Calling svex-simplify ~%"))
@@ -1331,10 +1628,10 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
          (rhs-svex (hons-copy rhs-svex))
          ;;(- (cw "calculating the size of rhs-svex... ~%"))
          ;;(- (cw "rhs-svex size: ~p0 ~%" (rp::cons-count rhs-svex)))
-         
-         ;;(- (cw "Calling update-svex-with-aliasdb-and-trace ~%"))
-         (rhs-svex (update-svex-with-aliasdb-and-trace rhs-svex
-                                                       aliasdb
+
+         ;;(- (cw "Calling update-svex-with-svl-aliasdb-and-trace ~%"))
+         (rhs-svex (update-svex-with-svl-aliasdb-and-trace rhs-svex
+                                                       svl-aliasdb
                                                        trace))
 
          ;;(- (cw "Calling svex-simplify ~%"))
@@ -1344,27 +1641,26 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                                     :runes nil))
 
          ;;(- (cw "Calling svex->lhs ~%"))
-      
 
          ;;(- (cw "Calling assign-to-occ ~%"))
          ;; convert lhs and rhs-svex to svl style occ object
-         (occ (assign-to-occ lhs rhs-svex modname modalist))
+         (tmp-occ (assign-to-tmp-occ lhs rhs-svex modname modalist))
 
-         ;;(- (cw "Done: sv-mod->svl2-occs-assigns ~%"))
-         ((mv rest cnt-new rp::rp-state) (sv-mod->svl2-occs-assigns (cdr assigns)
+         ;;(- (cw "Done: sv-mod->svl-occs-assigns ~%"))
+         ((mv rest cnt-new rp::rp-state) (sv-mod->svl-occs-assigns (cdr assigns)
                                                                     trace
-                                                                    aliasdb
+                                                                    svl-aliasdb
                                                                     (1+ cnt)
                                                                     svex-simplify-preloaded
                                                                     modname
                                                                     modalist))
-         #|(- (cw "Even more done: sv-mod->svl2-occs-assigns ~%"))||#)
+         #|(- (cw "Even more done: sv-mod->svl-occs-assigns ~%"))||#)
       ;; save and return the object.
-      (mv (acons (create-assign-occ-names trace 'assign cnt) occ rest)
+      (mv (acons (create-assign-occ-names trace 'assign cnt) tmp-occ rest)
           cnt-new rp::rp-state)))))
 
-(define sv-mod->svl2-occs-module-aux ((sigs wire-list-p)
-                                      (aliasdb aliasdb-p)
+(define sv-mod->svl-occs-module-aux ((sigs wire-list-p)
+                                      (svl-aliasdb svl-aliasdb-p)
                                       (place)
                                       (svex-simplify-preloaded)
                                       &key
@@ -1375,15 +1671,15 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
   (if (atom sigs)
       (mv nil rp::rp-state)
     (b* (((mv rest rp::rp-state)
-          (sv-mod->svl2-occs-module-aux (cdr sigs)
-                                        aliasdb
+          (sv-mod->svl-occs-module-aux (cdr sigs)
+                                        svl-aliasdb
                                         place
                                         svex-simplify-preloaded))
          (cur (car sigs))
          (cur-name (car cur))
          (cur-w (cadr cur))
 
-         (alias-svex (get-svex-from-aliasdb cur-name place 0 aliasdb))
+         (alias-svex (get-svex-from-svl-aliasdb cur-name place 0 svl-aliasdb))
          #|(- (cw "alias-svex ~p0 for cur-sig ~p1 in place ~p2 ~%"
          alias-svex cur place))||#
          ((unless alias-svex)
@@ -1403,7 +1699,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                          :runes nil))
          (alias-lhs (svex->lhs alias-svex))
          ;; ((unless (equal (len alias-lhs) 1))
-         ;;  (progn$ (hard-error 'sv-mod->svl2-occs-module-aux
+         ;;  (progn$ (hard-error 'sv-mod->svl-occs-module-aux
          ;;                      "This module has an input or output port that
          ;;                             gets more than one wire. ~p0. this is a
          ;;                             temporary error and will be fixed later. ~%"
@@ -1418,8 +1714,8 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
       (mv (acons cur-name alias-lhs rest)
           rp::rp-state))))
 
-(define sv-mod->svl2-occs-module ((modname sv::modname-p)
-                                  (aliasdb aliasdb-p)
+(define sv-mod->svl-occs-module ((modname sv::modname-p)
+                                  (svl-aliasdb svl-aliasdb-p)
                                   (trace trace-p)
                                   (vl-insouts vl-insouts-sized-p)
                                   (svex-simplify-preloaded)
@@ -1430,7 +1726,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
   :verify-guards nil
   (declare (ignorable modname
                       trace
-                      aliasdb
+                      svl-aliasdb
                       vl-insouts
                       svex-simplify-preloaded state
                       rp::rp-state))
@@ -1438,28 +1734,28 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
        (in-names (cadr this-vl-insouts))
        (out-names (cddr this-vl-insouts))
        (place (car trace))
-       ((mv ins rp::rp-state) (sv-mod->svl2-occs-module-aux in-names
-                                                            aliasdb
+       ((mv ins rp::rp-state) (sv-mod->svl-occs-module-aux in-names
+                                                            svl-aliasdb
                                                             place
                                                             svex-simplify-preloaded))
-       ((mv outs rp::rp-state) (sv-mod->svl2-occs-module-aux out-names
-                                                             aliasdb
+       ((mv outs rp::rp-state) (sv-mod->svl-occs-module-aux out-names
+                                                             svl-aliasdb
                                                              place
                                                              svex-simplify-preloaded))
-       (occ (make-occ-module :inputs ins
-                             :outputs outs
-                             :name modname)))
+       (tmp-occ (make-tmp-occ-module :inputs ins
+                                     :outputs outs
+                                     :name modname)))
 
-    (mv occ rp::rp-state)))
+    (mv tmp-occ rp::rp-state)))
 
 (set-state-ok t)
 
 (acl2::defines
- sv-mod->svl2-occs
+ sv-mod->svl-occs
 
- (define sv-mod->svl2-occs ((modname sv::modname-p)
+ (define sv-mod->svl-occs ((modname sv::modname-p)
                             (modalist sv::modalist-p)
-                            (aliasdb aliasdb-p)
+                            (svl-aliasdb svl-aliasdb-p)
                             (trace trace-p)
                             (mods-to-skip sv::modnamelist-p)
                             (vl-insouts vl-insouts-sized-p)
@@ -1486,20 +1782,20 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
           (b* ((module (hons-get modname modalist))
                (module (if module (cdr module)
                          (progn$
-                          (hard-error 'mod-aliaspairlis$->aliasdb-pt1
+                          (hard-error 'mod-aliaspairlis$->svl-aliasdb-pt1
                                       "Module not found in modalist ~p0 ~%"
                                       (list (cons #\0 modname)))
                           nil)))
                ((sv::module module) module)
                ((mv assign-occs ?cnt rp::rp-state)
-                (sv-mod->svl2-occs-assigns module.assigns trace aliasdb
+                (sv-mod->svl-occs-assigns module.assigns trace svl-aliasdb
                                            0
                                            svex-simplify-preloaded
                                            modname modalist))
                ((mv insts-occs  rp::rp-state)
-                (sv-mod->svl2-occs-insts module.insts
+                (sv-mod->svl-occs-insts module.insts
                                          modalist
-                                         aliasdb
+                                         svl-aliasdb
                                          trace
                                          mods-to-skip
                                          vl-insouts
@@ -1507,9 +1803,9 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                          (1- limit))))
             (mv (append assign-occs insts-occs)  rp::rp-state)))))
 
- (define sv-mod->svl2-occs-insts ((insts sv::modinstlist-p)
+ (define sv-mod->svl-occs-insts ((insts sv::modinstlist-p)
                                   (modalist sv::modalist-p)
-                                  (aliasdb aliasdb-p)
+                                  (svl-aliasdb svl-aliasdb-p)
                                   (trace trace-p)
                                   (mods-to-skip sv::modnamelist-p)
                                   (vl-insouts vl-insouts-sized-p)
@@ -1532,9 +1828,9 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
          (t
           (b* (((sv::modinst inst) (car insts))
                ((mv rest  rp::rp-state)
-                (sv-mod->svl2-occs-insts (cdr insts)
+                (sv-mod->svl-occs-insts (cdr insts)
                                          modalist
-                                         aliasdb
+                                         svl-aliasdb
                                          trace
                                          mods-to-skip
                                          vl-insouts
@@ -1546,20 +1842,20 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                 trace))
                ((when (member-equal inst.modname mods-to-skip))
                 (b* (((mv this-occ rp::rp-state)
-                      (sv-mod->svl2-occs-module inst.modname aliasdb trace-tmp
+                      (sv-mod->svl-occs-module inst.modname svl-aliasdb trace-tmp
                                                 vl-insouts svex-simplify-preloaded)))
                   (mv (acons (car trace-tmp)
                              this-occ
                              rest)
                       rp::rp-state)))
-               ((aliasdb aliasdb) aliasdb)
-               #|(aliasdb-tmp (hons-get inst.instname aliasdb.sub))
-               (aliasdb-tmp (if aliasdb (cdr aliasdb) (make-aliasdb)))||#
+               ((svl-aliasdb svl-aliasdb) svl-aliasdb)
+               #|(svl-aliasdb-tmp (hons-get inst.instname svl-aliasdb.sub))
+               (svl-aliasdb-tmp (if svl-aliasdb (cdr svl-aliasdb) (make-svl-aliasdb)))||#
 
                ((mv cur-inst-occs  rp::rp-state)
-                (sv-mod->svl2-occs inst.modname
+                (sv-mod->svl-occs inst.modname
                                    modalist
-                                   aliasdb
+                                   svl-aliasdb
                                    trace-tmp
                                    mods-to-skip
                                    vl-insouts
@@ -1574,11 +1870,11 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
   ;; If it is the case, then we'd have to create assignments for input and
   ;; output signals to assign those aliases for the main module.
 
-  (define svl2-flatten-mod-insert-assigns-for-inputs-aux ((input-wire wire-p)
+  (define svl-flatten-mod-insert-assigns-for-inputs-aux ((input-wire wire-p)
                                                           (lhs sv::lhs-p)
                                                           (rsh natp)
                                                           (cnt natp)
-                                                          (acc occ-alist-p))
+                                                          (acc tmp-occ-alist-p))
     :prepwork
     ((local
       (in-theory (enable occ-name-p
@@ -1587,17 +1883,17 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                          svex-p
                          sv::svar-p)))
      (local
-      (defthm occ-alist-p-is-alistp
-        (implies (occ-alist-p alist)
+      (defthm tmp-occ-alist-p-is-alistp
+        (implies (tmp-occ-alist-p alist)
                  (alistp$ alist)))))
-    :returns (mv (res occ-alist-p :hyp (occ-alist-p acc))
+    :returns (mv (res tmp-occ-alist-p :hyp (tmp-occ-alist-p acc))
                  (cnt-res natp :hyp (natp cnt)))
     :verify-guards nil
     (if (atom lhs)
         (mv acc cnt)
       (b* (((sv::lhrange cur-range) (car lhs))
            ((mv acc cnt)
-            (svl2-flatten-mod-insert-assigns-for-inputs-aux input-wire
+            (svl-flatten-mod-insert-assigns-for-inputs-aux input-wire
                                                             (cdr lhs)
                                                             (+ rsh cur-range.w)
                                                             cnt
@@ -1612,18 +1908,18 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                            ,cur-range.w
                            .
                            ,(sv::lhatom-var->rsh cur-range.atom))))
-           (occ (make-occ-assign :inputs assign-ins
-                                 :delayed-inputs nil
-                                 :outputs assign-outs
-                                 :svex assign-rsh)))
+           (tmp-occ (make-tmp-occ-assign :inputs assign-ins
+                                         :delayed-inputs nil
+                                         :outputs assign-outs
+                                         :svex assign-rsh)))
         (mv (acons (sa 'init_assign cnt)
-                   occ
+                   tmp-occ
                    acc)
             (1+ cnt))))
     ///
-    (verify-guards svl2-flatten-mod-insert-assigns-for-inputs-aux))
+    (verify-guards svl-flatten-mod-insert-assigns-for-inputs-aux))
 
-  (define svl2-flatten-mod-insert-assigns-for-inputs ((this-aliases alias-alist-p)
+  (define svl-flatten-mod-insert-assigns-for-inputs ((this-aliases alias-alist-p)
                                                       (inputs wire-list-p)
                                                       (cnt natp)
                                                       (svex-simplify-preloaded)
@@ -1635,7 +1931,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
     (if (atom inputs)
         (mv nil cnt rp::rp-state)
       (b* (((mv rest cnt rp::rp-state)
-            (svl2-flatten-mod-insert-assigns-for-inputs this-aliases
+            (svl-flatten-mod-insert-assigns-for-inputs this-aliases
                                                         (cdr inputs)
                                                         cnt
                                                         svex-simplify-preloaded))
@@ -1652,14 +1948,14 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                            :runes nil))
            (alias-lhs (svex->lhs alias-svex))
            ((mv assigns cnt)
-            (svl2-flatten-mod-insert-assigns-for-inputs-aux cur
+            (svl-flatten-mod-insert-assigns-for-inputs-aux cur
                                                             alias-lhs
                                                             0
                                                             cnt
                                                             rest)))
         (mv assigns cnt rp::rp-state))))
 
-  (define svl2-flatten-mod-insert-assigns-for-outputs ((this-aliases alias-alist-p)
+  (define svl-flatten-mod-insert-assigns-for-outputs ((this-aliases alias-alist-p)
                                                        (outputs wire-list-p)
                                                        (cnt natp)
                                                        (svex-simplify-preloaded)
@@ -1673,7 +1969,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
     (if (atom outputs)
         (mv nil cnt rp::rp-state)
       (b* (((mv rest cnt rp::rp-state)
-            (svl2-flatten-mod-insert-assigns-for-outputs this-aliases
+            (svl-flatten-mod-insert-assigns-for-outputs this-aliases
                                                          (cdr outputs)
                                                          cnt
                                                          svex-simplify-preloaded
@@ -1694,13 +1990,13 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
            ((mv ins prev-ins success)
             (get-inputs-for-svex alias-svex modname modalist))
            (- (or success
-              (cw "Warning issued (in alias-pairs) for this svex  ~p0 ~
+                  (cw "Warning issued (in alias-pairs) for this svex  ~p0 ~
 it may help to add a rewrite rule for this. ~%" alias-svex)))
-           (occ (make-occ-assign :inputs ins
-                                 :delayed-inputs prev-ins
-                                 :outputs `(,cur)
-                                 :svex alias-svex)))
-        (mv (acons (sa 'out_assign cnt) occ rest)
+           (tmp-occ (make-tmp-occ-assign :inputs ins
+                                         :delayed-inputs prev-ins
+                                         :outputs `(,cur)
+                                         :svex alias-svex)))
+        (mv (acons (sa 'out_assign cnt) tmp-occ rest)
             (1+ cnt)
             rp::rp-state)))))
 
@@ -1708,6 +2004,46 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 ;; Create listeners...
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+(defun sv->svl-listeners-uncovered-occs-get-added-occs-aux (occs alist)
+  (declare (xargs :mode :program))
+  (if (atom occs)
+      alist
+    (sv->svl-listeners-uncovered-occs-get-added-occs-aux
+     (cdr occs)
+     (if (hons-get (car occs) alist)
+         alist
+       (hons-acons (car occs) nil alist)))))
+
+(defun sv->svl-listeners-uncovered-occs-get-added-occs (listeners)
+  (declare (xargs :mode :program))
+  (if (atom listeners)
+      nil
+    (sv->svl-listeners-uncovered-occs-get-added-occs-aux
+     (cdar listeners)
+     (sv->svl-listeners-uncovered-occs-get-added-occs (cdr listeners)))))
+
+(defun sv->svl-listeners-get-missing-occs (added all)
+  (declare (xargs :mode :program))
+  (if (atom all)
+      nil
+    (b* ((rest (sv->svl-listeners-get-missing-occs added (cdr all))))
+      (if (hons-get (car (car all)) added)
+          rest
+        (cons (car (car all))
+              rest)))))
+
+(defun sv->svl-listeners-uncovered-occs (listeners all-occs)
+  (declare (xargs :mode :program))
+  ;; get the names of the unrefered occs by any listener in the listeners list.
+  ;; they need to be executed initially because they may drive constants or something.
+  (b* ((added-occs (sv->svl-listeners-uncovered-occs-get-added-occs
+                    listeners))
+       ;; added-occs is a fast-alist for quick membership lookup.
+       (unadded-occs (sv->svl-listeners-get-missing-occs added-occs all-occs)))
+    (progn$
+     (fast-alist-free added-occs)
+     unadded-occs)))
 
 ;; signals to occ listeners.
 (progn
@@ -1759,19 +2095,19 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                 occ-name
                                                 alist))))
 
-  (define create-signal-to-occ-listeners ((occs occ-alist-p)
+  (define create-signal-to-occ-listeners ((occs tmp-occ-alist-p)
                                           (alist alistp$))
     :returns (res alistp$ :hyp (alistp$ alist))
     (if (atom occs)
         alist
       (b* ((occ-name (caar occs))
-           (occ (cdar occs))
+           (tmp-occ (cdar occs))
            (alist
-            (if (eq (occ-kind occ) ':module)
-                (create-signals-to-occ-listeners-module (occ-module->inputs occ)
+            (if (eq (tmp-occ-kind tmp-occ) ':module)
+                (create-signals-to-occ-listeners-module (tmp-occ-module->inputs tmp-occ)
                                                         occ-name
                                                         alist)
-              (create-signals-to-occ-listeners-assign (occ-assign->inputs occ)
+              (create-signals-to-occ-listeners-assign (tmp-occ-assign->inputs tmp-occ)
                                                       occ-name
                                                       alist))))
         (create-signal-to-occ-listeners (cdr occs) alist)))))
@@ -1872,9 +2208,9 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   (define does-intersect-occ-to-occ-listener ((wire-name sv::svar-p)
                                               (start natp)
                                               (w natp)
-                                              (occ occ-p))
-    (cond ((eq (occ-kind occ) ':module)
-           (let ((lhs (module-occ-wires->lhs (occ-module->inputs occ))))
+                                              (occ tmp-occ-p))
+    (cond ((eq (tmp-occ-kind occ) ':module)
+           (let ((lhs (module-occ-wires->lhs (tmp-occ-module->inputs occ))))
              (check-intersection-for-lhs wire-name
                                          start
                                          w
@@ -1885,7 +2221,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
            (check-intersection-for-wire-list wire-name
                                              start
                                              w
-                                             (occ-assign->inputs occ)))))
+                                             (tmp-occ-assign->inputs occ)))))
 
   #|(does-intersect-occ-to-occ-listener '(:VAR ("product_terms" . 0) . 0)
   91 1
@@ -1917,7 +2253,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -1941,7 +2277,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                  (start natp)
                                  (w natp)
                                  (occ-names occ-name-list-p)
-                                 (all-occs occ-alist-p)
+                                 (all-tmp-occs tmp-occ-alist-p)
                                  (acc true-listp)
                                  &key
                                  (duplicate 'nil))
@@ -1949,19 +2285,19 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                   :hyp (true-listp acc))
     (if (atom occ-names)
         acc
-      (b* ((occ (hons-get (car occ-names) all-occs))
+      (b* ((tmp-occ (hons-get (car occ-names) all-tmp-occs))
            (acc (get-intersecting-occs wire-name
                                        start
                                        w
                                        (cdr occ-names)
-                                       all-occs
+                                       all-tmp-occs
                                        acc
                                        :duplicate duplicate)))
-        (if (and occ
+        (if (and tmp-occ
                  (does-intersect-occ-to-occ-listener wire-name
                                                      start
                                                      w
-                                                     (cdr occ))
+                                                     (cdr tmp-occ))
                  (or duplicate
                      (not (member-equal (car occ-names) acc))))
             (cons (car occ-names) acc)
@@ -1985,12 +2321,12 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
   (define get-intersecting-occ-for-lhs ((lhs sv::lhs-p)
                                         (sig-to-occ-listeners)
-                                        (all-occs occ-alist-p))
+                                        (all-tmp-occs tmp-occ-alist-p))
     (if (atom lhs)
         nil
       (b* ((rest (get-intersecting-occ-for-lhs (cdr lhs)
                                                sig-to-occ-listeners
-                                               all-occs))
+                                               all-tmp-occs))
            ((sv::lhrange range) (car lhs))
            ((when (eq (sv::lhatom-kind range.atom) ':z))
             rest)
@@ -1999,19 +2335,19 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                atom.rsh
                                range.w
                                (cdr (hons-get atom.name sig-to-occ-listeners))
-                               all-occs
+                               all-tmp-occs
                                rest))))
 
   (define get-intersecting-occ-for-wires ((wires wire-list-p)
                                           (sig-to-occ-listeners)
-                                          (all-occs occ-alist-p)
+                                          (all-tmp-occs tmp-occ-alist-p)
                                           &key
                                           (duplicate 'nil))
     (if (atom wires)
         nil
       (b* ((rest (get-intersecting-occ-for-wires (cdr wires)
                                                  sig-to-occ-listeners
-                                                 all-occs
+                                                 all-tmp-occs
                                                  :duplicate duplicate))
            (wire (car wires))
            ((mv name start size)
@@ -2024,22 +2360,22 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                start
                                size
                                (cdr (hons-get name sig-to-occ-listeners))
-                               all-occs
+                               all-tmp-occs
                                rest
                                :duplicate duplicate))))
 
-  (define create-occ-to-occ-listeners ((occs occ-alist-p)
-                                       (all-occs occ-alist-p)
+  (define create-occ-to-occ-listeners ((tmp-occs tmp-occ-alist-p)
+                                       (all-tmp-occs tmp-occ-alist-p)
                                        (sig-to-occ-listeners))
-    (if (atom occs)
+    (if (atom tmp-occs)
         nil
-      (b* ((occ-name (caar occs))
-           (occ (cdar occs))
-           (value (if (equal (occ-kind occ) ':assign)
-                      (get-intersecting-occ-for-wires (occ-assign->outputs occ)
+      (b* ((occ-name (caar tmp-occs))
+           (tmp-occ (cdar tmp-occs))
+           (value (if (equal (tmp-occ-kind tmp-occ) ':assign)
+                      (get-intersecting-occ-for-wires (tmp-occ-assign->outputs tmp-occ)
                                                       sig-to-occ-listeners
-                                                      all-occs)
-                    (b* ((lhs (module-occ-wires->lhs (occ-module->outputs occ))))
+                                                      all-tmp-occs)
+                    (b* ((lhs (module-occ-wires->lhs (tmp-occ-module->outputs tmp-occ))))
                       (get-intersecting-occ-for-lhs
                        (if (sv::lhs-p lhs) lhs
                          (hard-error
@@ -2047,7 +2383,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                           "This should not have happened ~%"
                           nil))
                        sig-to-occ-listeners
-                       all-occs))))
+                       all-tmp-occs))))
            #|(- (if (and (equal (occ-kind occ) ':assign)
            (equal occ-name 'ASSIGN_26))
            (cw "value ~p0, outputs ~p1, listeners ~p2, intersecting ~p3 ~%"
@@ -2065,8 +2401,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
            all-occs
            nil))
            nil))||#
-           (rest (create-occ-to-occ-listeners (cdr occs)
-                                              all-occs
+           (rest (create-occ-to-occ-listeners (cdr tmp-occs)
+                                              all-tmp-occs
                                               sig-to-occ-listeners)))
         (if value
             (acons occ-name value rest)
@@ -2082,19 +2418,19 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
       (strip-cars vals)))
 
   (define add-initial-to-occ-listeners ((input-wires wire-list-p)
-                                        (all-occs occ-alist-p)
+                                        (all-tmp-occs tmp-occ-alist-p)
                                         (sig-to-occ-listeners)
                                         (occ-to-occ-listeners))
     (declare (xargs :mode :program))
     (b* ((val1 (get-intersecting-occ-for-wires input-wires
                                                sig-to-occ-listeners
-                                               all-occs
+                                               all-tmp-occs
                                                :duplicate t))
          (val1 (fast-unify-list val1))
          (occ-to-occ-listeners (hons-acons ':initial val1
                                            occ-to-occ-listeners))
          (val2 (sv->svl-listeners-uncovered-occs occ-to-occ-listeners
-                                                 all-occs))
+                                                 all-tmp-occs))
          (val (append val1 val2)))
       (fast-alist-clean (hons-acons ':initial val
                                     occ-to-occ-listeners)))))
@@ -2125,24 +2461,24 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                                 acc))))
 
   (acl2::defines
-   svl2-sort-occs
-   (define svl2-sort-occs ((occ-name occ-name-p)
-                           (all-occs occ-alist-p)
+   svl-sort-occs
+   (define svl-sort-occs ((occ-name occ-name-p)
+                           (all-tmp-occs tmp-occ-alist-p)
                            (occ-to-occ-listeners)
                            (occ-in-nodes-count))
      :verify-guards nil
      (declare (xargs :mode :program))
-     (b* ((occ (hons-get occ-name all-occs))
+     (b* ((tmp-occ (hons-get occ-name all-tmp-occs))
           (candidates (cdr (hons-get occ-name occ-to-occ-listeners)))
           ((mv rest occ-in-nodes-count)
-           (svl2-sort-occs-lst candidates all-occs occ-to-occ-listeners
+           (svl-sort-occs-lst candidates all-tmp-occs occ-to-occ-listeners
                                occ-in-nodes-count)))
-       (mv (cons occ rest)
+       (mv (cons tmp-occ rest)
            occ-in-nodes-count)))
 
-   (define svl2-sort-occs-lst ((candidates occ-name-list-p
+   (define svl-sort-occs-lst ((candidates occ-name-list-p
                                            "Occs that might be ready to add")
-                               (all-occs occ-alist-p)
+                               (all-tmp-occs tmp-occ-alist-p)
                                (occ-to-occ-listeners)
                                (occ-in-nodes-count))
      (cond
@@ -2154,12 +2490,12 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
             (occ-in-nodes-count (hons-acons cur in-node-cnt occ-in-nodes-count))
             ((mv added-occs occ-in-nodes-count)
              (if (equal in-node-cnt 0)
-                 (svl2-sort-occs cur all-occs occ-to-occ-listeners
+                 (svl-sort-occs cur all-tmp-occs occ-to-occ-listeners
                                  occ-in-nodes-count)
                (mv nil occ-in-nodes-count)))
             ((mv rest occ-in-nodes-count)
-             (svl2-sort-occs-lst (cdr candidates)
-                                 all-occs
+             (svl-sort-occs-lst (cdr candidates)
+                                 all-tmp-occs
                                  occ-to-occ-listeners
                                  occ-in-nodes-count)))
          (mv (append added-occs rest)
@@ -2175,34 +2511,33 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
            0)
          (count-not-added-occs (cdr occ-in-nodes-count)))))
 
-
-  (define get-not-added-module-occs ((all-occs occ-alist-p)
+  (define get-not-added-module-occs ((all-tmp-occs tmp-occ-alist-p)
                                      (occ-in-nodes-count))
     (declare (xargs :mode :program))
     (if (atom occ-in-nodes-count)
         nil
-      (b* ((rest (get-not-added-module-occs all-occs (cdr occ-in-nodes-count)))
+      (b* ((rest (get-not-added-module-occs all-tmp-occs (cdr occ-in-nodes-count)))
            (not-added (not (equal (cdar occ-in-nodes-count) 0)))
-           (is-module (equal (svl::occ-kind (cdr (hons-get (caar occ-in-nodes-count)
-                                                           all-occs)))
+           (is-module (equal (svl::tmp-occ-kind (cdr (hons-get (caar occ-in-nodes-count)
+                                                               all-tmp-occs)))
                              ':module))
-           (module-name (if is-module (svl::occ-module->name (cdr (hons-get (caar occ-in-nodes-count)
-                                                                            all-occs)))
+           (module-name (if is-module (svl::tmp-occ-module->name (cdr (hons-get (caar occ-in-nodes-count)
+                                                                                all-tmp-occs)))
                           nil)))
         (if (and not-added
                  is-module
                  (not (member-equal module-name rest)))
             (cons module-name rest)
-          rest)))) 
-  
-  (define svl2-sort-occs-main ((all-occs occ-alist-p)
+          rest))))
+
+  (define svl-sort-occs-main ((all-tmp-occs tmp-occ-alist-p)
                                (occ-to-occ-listeners))
     (declare (xargs :mode :program))
     (b* ((occ-in-nodes-count (create-occ-in-nodes-count occ-to-occ-listeners
                                                         'occ-in-nodes-count))
          ((mv sorted-occs occ-in-nodes-count)
-          (svl2-sort-occs-lst (cdr (hons-get ':initial occ-to-occ-listeners))
-                              all-occs
+          (svl-sort-occs-lst (cdr (hons-get ':initial occ-to-occ-listeners))
+                              all-tmp-occs
                               occ-to-occ-listeners
                               occ-in-nodes-count))
          (occ-in-nodes-count (fast-alist-clean occ-in-nodes-count))
@@ -2210,8 +2545,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
          (- (and (not (equal not-added-occs-count 0))
                  (progn$
                   (cw "~% ~% Not added modules: ~p0 ~%"
-                      (get-not-added-module-occs all-occs occ-in-nodes-count))
-                  (hard-error 'svl2-sort-occs-main
+                      (get-not-added-module-occs all-tmp-occs occ-in-nodes-count))
+                  (hard-error 'svl-sort-occs-main
                               "~p0 occs are not added! Possibly a combinational
                                loop~% ~%"
                               (list (cons #\0 not-added-occs-count))))))
@@ -2220,36 +2555,6 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
 ;;;;;;;;;;;;;;
 
-(define wire-list-listp (list)
-  :enabled t
-  (if (atom list)
-      (equal list nil)
-    (and (wire-list-p (car list))
-         (wire-list-listp (cdr list)))))
-
-(define wire-list-list-fix (list)
-  :returns (res wire-list-listp)
-  :enabled t
-  (if (wire-list-listp list)
-      list
-    nil))
-
-(fty::deffixtype wire-list-list
-                 :pred  wire-list-listp
-                 :fix   wire-list-list-fix
-                 :equiv equal)
-
-(fty::deftagsum
- svl2-occ
- (:assign ((output sv::svar-p)
-           (svex sv::svex-p)))
- (:module ((inputs sv::svexlist-p)
-           (outputs wire-list-list)
-           (name sv::modname-p))))
-
-(fty::defalist svl2-occ-alist
-               :true-listp t
-               :val-type svl2-occ)
 
 (define lhs->svex ((acl2::x sv::lhs-p))
   :returns (sv::xx svex-p)
@@ -2266,13 +2571,13 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
     (cons (lhs->svex (car lhslist))
           (lhslist->svex (cdr lhslist)))))
 
-(define occs->svl2-occs-assign ((occ-name occ-name-p)
-                                (outputs wire-list-p)
-                                (svex sv::svex-p)
-                                (wires sv::wirelist-p)
-                                (rsh natp))
+(define tmp-occs->svl-occs-assign ((occ-name occ-name-p)
+                                    (outputs wire-list-p)
+                                    (svex sv::svex-p)
+                                    (wires sv::wirelist-p)
+                                    (rsh natp))
   :verify-guards nil
-  :returns (res svl2-occ-alist-p)
+  :returns (res svl-occ-alist-p)
   :guard-hints (("Goal"
                  :in-theory (e/d (svex-p sv::svar-p) ())))
   (if (atom outputs)
@@ -2288,7 +2593,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                          0))))
       (if only-1-output
           (acons occ-name
-                 (make-svl2-occ-assign
+                 (make-svl-occ-assign
                   :output (wire-name cur-output)
                   :svex (if whole-wire-covered
                             svex
@@ -2298,7 +2603,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                          ,svex)))
                  nil)
         (acons (cons occ-name rsh)
-               (make-svl2-occ-assign
+               (make-svl-occ-assign
                 :output (wire-name cur-output)
                 :svex (if whole-wire-covered
                           `(partsel ,rsh ,(wire-size cur-output) ,svex)
@@ -2307,11 +2612,11 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                        ,(wire-name cur-output)
                                        (partsel ,rsh ,(wire-size cur-output)
                                                 ,svex))))
-               (occs->svl2-occs-assign occ-name
-                                       (cdr outputs)
-                                       svex
-                                       wires
-                                       (+ rsh (nfix (wire-size cur-output)))))))))
+               (tmp-occs->svl-occs-assign occ-name
+                                           (cdr outputs)
+                                           svex
+                                           wires
+                                           (+ rsh (nfix (wire-size cur-output)))))))))
 
 (progn
   (define lhrange->wire ((range sv::lhrange-p))
@@ -2338,38 +2643,38 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
       (cons (lhs->wire-list (car lhslist))
             (lhslist->wire-list (cdr lhslist))))))
 
-(define occs->svl2-occs ((occs occ-alist-p)
-                         (wires sv::wirelist-p))
-;:returns (res svl2-occ-alist :hyp (occ-alist-p occs))
+(define tmp-occs->svl-occs ((tmp-occs tmp-occ-alist-p)
+                             (wires sv::wirelist-p))
+;:returns (res svl-occ-alist :hyp (occ-alist-p occs))
   :verify-guards nil
-  :returns (res svl2-occ-alist-p)
+  :returns (res svl-occ-alist-p)
   (cond
-   ((atom occs) nil)
-   ((equal (occ-kind (cdar occs)) ':assign)
-    (b* (((occ-assign occ) (cdar occs))
-         (new-svl2-occs (occs->svl2-occs-assign (caar occs) occ.outputs occ.svex wires 0)))
-      (append new-svl2-occs
-              (occs->svl2-occs (cdr occs) wires))))
-   (t (b* (((occ-module occ) (cdar occs)))
-        (acons (caar occs)
-               (make-svl2-occ-module
-                :inputs (lhslist->svex (strip-cdrs occ.inputs))
-                :outputs (lhslist->wire-list (strip-cdrs occ.outputs))
-                :name occ.name)
-               (occs->svl2-occs (cdr occs)
-                                wires))))))
+   ((atom tmp-occs) nil)
+   ((equal (tmp-occ-kind (cdar tmp-occs)) ':assign)
+    (b* (((tmp-occ-assign tmp-occ) (cdar tmp-occs))
+         (new-svl-occs (tmp-occs->svl-occs-assign (caar tmp-occs) tmp-occ.outputs tmp-occ.svex wires 0)))
+      (append new-svl-occs
+              (tmp-occs->svl-occs (cdr tmp-occs) wires))))
+   (t (b* (((tmp-occ-module tmp-occ) (cdar tmp-occs)))
+        (acons (caar tmp-occs)
+               (make-svl-occ-module
+                :inputs (lhslist->svex (strip-cdrs tmp-occ.inputs))
+                :outputs (lhslist->wire-list (strip-cdrs tmp-occ.outputs))
+                :name tmp-occ.name)
+               (tmp-occs->svl-occs (cdr tmp-occs)
+                                    wires))))))
 
 (fty::defprod
- svl2-module
+ svl-module
  ((rank natp :default '0)
   (inputs wire-list-p)
   (delayed-inputs sv::svarlist-p)
   (outputs wire-list-p)
-  (occs svl2-occ-alist))
+  (occs svl-occ-alist))
  :layout :alist)
 
-(fty::defalist svl2-module-alist
-               :val-type svl2-module
+(fty::defalist svl-module-alist
+               :val-type svl-module
                :true-listp t
                :key-type sv::modname-p)
 
@@ -2393,21 +2698,21 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
     :hints (("Goal"
              :in-theory (e/d (sv::svarlist-p union-equal2) ())))))
 
-(define svl2-collect-delayed-inputs ((occs occ-alist-p))
+(define svl-collect-delayed-inputs ((tmp-occs tmp-occ-alist-p))
   :verify-guards nil
   :returns (res sv::svarlist-p)
-  (if (atom occs)
+  (if (atom tmp-occs)
       nil
-    (b* ((rest (svl2-collect-delayed-inputs (cdr occs)))
-         (occ (cdar occs)))
-      (if (equal (occ-kind occ) ':module)
+    (b* ((rest (svl-collect-delayed-inputs (cdr tmp-occs)))
+         (tmp-occ (cdar tmp-occs)))
+      (if (equal (tmp-occ-kind tmp-occ) ':module)
           rest
-        (union-equal2 (occ-assign->delayed-inputs occ)
+        (union-equal2 (tmp-occ-assign->delayed-inputs tmp-occ)
                       rest))))
   ///
-  (verify-guards svl2-collect-delayed-inputs))
+  (verify-guards svl-collect-delayed-inputs))
 
-(define svl2-flatten-mod ((modname sv::modname-p)
+(define svl-flatten-mod ((modname sv::modname-p)
                           (modalist sv::modalist-p)
                           (mods-to-skip sv::modnamelist-p)
                           (vl-insouts vl-insouts-sized-p)
@@ -2423,63 +2728,63 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
             (cddr (assoc-equal modname vl-insouts))))
 
        (- (cw "Processing alias-pairs... "))
-       ;; Create aliasdb
-       (aliasdb (mod-aliaspairs->aliasdb modname modalist mods-to-skip))
+       ;; Create svl-aliasdb
+       (svl-aliasdb (mod-aliaspairs->svl-aliasdb modname modalist mods-to-skip))
 
        (- (cw "Creating occs... "))
-       ;; Create occs
-       ((mv occs rp::rp-state) (sv-mod->svl2-occs modname
-                                                  modalist
-                                                  aliasdb
-                                                  nil
-                                                  mods-to-skip
-                                                  vl-insouts
-                                                  svex-simplify-preloaded
-                                                  (expt 2 30)))
+       ;; Create tmp-occs
+       ((mv tmp-occs rp::rp-state) (sv-mod->svl-occs modname
+                                                      modalist
+                                                      svl-aliasdb
+                                                      nil
+                                                      mods-to-skip
+                                                      vl-insouts
+                                                      svex-simplify-preloaded
+                                                      (expt 2 30)))
 
        ;; Expand occs for cases where input and output signals are aliased to
        ;; other signals
        ((mv init-occs-for-aliased-inputs & rp::rp-state)
-        (svl2-flatten-mod-insert-assigns-for-inputs (aliasdb->this aliasdb)
+        (svl-flatten-mod-insert-assigns-for-inputs (svl-aliasdb->this svl-aliasdb)
                                                     input-wires
                                                     0
                                                     svex-simplify-preloaded))
        ((mv occs-for-outputs & rp::rp-state)
-        (svl2-flatten-mod-insert-assigns-for-outputs (aliasdb->this aliasdb)
+        (svl-flatten-mod-insert-assigns-for-outputs (svl-aliasdb->this svl-aliasdb)
                                                      output-wires
                                                      0
                                                      svex-simplify-preloaded
                                                      modname
                                                      modalist))
-       (occs (append init-occs-for-aliased-inputs occs-for-outputs occs))
+       (tmp-occs (append init-occs-for-aliased-inputs occs-for-outputs tmp-occs))
 
        (- (cw "Sorting occs... "))
        ;; Create Listeners.
-       (occs (make-fast-alist occs)) ;; necessary for occ-to-occ listeners.
-       (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners occs 'sig-to-occ-listeners)))
-       (occ-to-occ-listeners (create-occ-to-occ-listeners occs occs sig-to-occ-listeners))
+       (tmp-occs (make-fast-alist tmp-occs)) ;; necessary for occ-to-occ listeners.
+       (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners tmp-occs 'sig-to-occ-listeners)))
+       (occ-to-occ-listeners (create-occ-to-occ-listeners tmp-occs tmp-occs sig-to-occ-listeners))
        (occ-to-occ-listeners (make-fast-alist occ-to-occ-listeners))
-       (occ-to-occ-listeners (add-initial-to-occ-listeners input-wires occs
+       (occ-to-occ-listeners (add-initial-to-occ-listeners input-wires tmp-occs
                                                            sig-to-occ-listeners
                                                            occ-to-occ-listeners))
        ;; Sort occs
-       (sorted-occs (svl2-sort-occs-main occs occ-to-occ-listeners))
+       (sorted-occs (svl-sort-occs-main tmp-occs occ-to-occ-listeners))
 
-       ;; Convert occs to to svl2-occs
+       ;; Convert occs to to svl-occs
        (wires (sv::module->wires (cdr (assoc-equal modname modalist))))
-       (new-svl2-occs (occs->svl2-occs sorted-occs wires))
+       (new-svl-occs (tmp-occs->svl-occs sorted-occs wires))
 
-       (- (free-aliasdb aliasdb))
-       (- (fast-alist-free occs))
+       (- (free-svl-aliasdb svl-aliasdb))
+       (- (fast-alist-free tmp-occs))
        (- (fast-alist-free sig-to-occ-listeners))
        (- (fast-alist-free occ-to-occ-listeners))
        (- (cw "Done! ~% ~%"))
        (?module (cons modname
-                      (make-svl2-module :inputs input-wires
+                      (make-svl-module :inputs input-wires
                                         :delayed-inputs
-                                        (svl2-collect-delayed-inputs occs)
+                                        (svl-collect-delayed-inputs tmp-occs)
                                         :outputs output-wires
-                                        :occs new-svl2-occs))))
+                                        :occs new-svl-occs))))
     (mv module rp::rp-state)))
 
 #|(b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
@@ -2489,13 +2794,13 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                   "booth2_reduction_dadda_17x65_97")
                                                 ))
      (svex-simplify-preloaded (svex-simplify-preload)))
-  (svl2-flatten-mod "booth2_reduction_dadda_17x65_97"
+  (svl-flatten-mod "booth2_reduction_dadda_17x65_97"
                     (make-fast-alist (sv::design->modalist *big-sv-design*))
                     '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
                     vl-insouts2
                     svex-simplify-preloaded))||#
 
-(define svl2-flatten-mods ((modnames sv::modnamelist-p)
+(define svl-flatten-mods ((modnames sv::modnamelist-p)
                            (modalist sv::modalist-p)
                            (mods-to-skip sv::modnamelist-p)
                            (vl-insouts vl-insouts-sized-p)
@@ -2508,13 +2813,13 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   (if (atom modnames)
       (mv nil rp::rp-state)
     (b* (((mv this rp::rp-state)
-          (svl2-flatten-mod (car modnames)
+          (svl-flatten-mod (car modnames)
                             modalist
                             mods-to-skip
                             vl-insouts
                             svex-simplify-preloaded))
          ((mv rest rp::rp-state)
-          (svl2-flatten-mods (cdr modnames)
+          (svl-flatten-mods (cdr modnames)
                              modalist
                              mods-to-skip
                              vl-insouts
@@ -2523,9 +2828,9 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
           rp::rp-state))))
 
 (acl2::defines
- svl2-mod-calculate-ranks
- (define svl2-mod-calculate-ranks ((modname sv::modname-p)
-                                   (modules svl2-module-alist-p)
+ svl-mod-calculate-ranks
+ (define svl-mod-calculate-ranks ((modname sv::modname-p)
+                                   (modules svl-module-alist-p)
                                    (ranks alistp$)
                                    (trace) ;; to check for module instantiation loops
                                    (limit natp) ;; to easily prove termination
@@ -2537,7 +2842,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
     ((zp limit)
      ranks)
     ((member-equal modname trace)
-     (hard-error 'svl2-mod-calculate-ranks
+     (hard-error 'svl-mod-calculate-ranks
                  "It seems there's a loop in module instances. Trace = ~p0,
                                   module = ~p1 ~%"
                  (list (cons #\0 trace)
@@ -2545,16 +2850,16 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
     (t  (b* ((module (assoc-equal modname modules))
              ((unless module) ranks)
              (module (cdr module))
-             (occs (svl2-module->occs module))
+             (occs (svl-module->occs module))
              ((mv max-occ-rank ranks)
-              (svl2-mod-calculate-ranks-occs occs
+              (svl-mod-calculate-ranks-occs occs
                                              modules
                                              ranks
                                              (cons modname trace)
                                              (1- limit))))
           (acons modname (1+ max-occ-rank) ranks)))))
- (define svl2-mod-calculate-ranks-occs ((occs svl2-occ-alist-p)
-                                        (modules svl2-module-alist-p)
+ (define svl-mod-calculate-ranks-occs ((occs svl-occ-alist-p)
+                                        (modules svl-module-alist-p)
                                         (ranks alistp$)
                                         (trace)
                                         (limit natp))
@@ -2566,28 +2871,28 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
      (mv 0 ranks))
     (t
      (b* (((mv rest-max ranks)
-           (svl2-mod-calculate-ranks-occs (cdr occs) modules ranks trace (1- limit)))
-          ((when (equal (svl2-occ-kind (cdar occs)) :assign))
+           (svl-mod-calculate-ranks-occs (cdr occs) modules ranks trace (1- limit)))
+          ((when (equal (svl-occ-kind (cdar occs)) :assign))
            (mv rest-max ranks))
-          (modname (svl2-occ-module->name (cdar occs)))
+          (modname (svl-occ-module->name (cdar occs)))
           (module-rank (assoc-equal modname ranks))
           ((when module-rank)
            (mv (max (cdr module-rank) rest-max) ranks))
-          (ranks (svl2-mod-calculate-ranks modname modules ranks trace (1- limit)))
+          (ranks (svl-mod-calculate-ranks modname modules ranks trace (1- limit)))
           (module-rank (assoc-equal modname ranks))
           ((when module-rank)
            (mv (max (cdr module-rank) rest-max) ranks)))
        (mv 0
-           (hard-error 'svl2-mod-calculate-ranks
+           (hard-error 'svl-mod-calculate-ranks
                        "Something is wrong. Cannot calculate rank for module ~p0~%"
                        (list (cons #\0 modname)))))))))
 
 (define update-modules-with-ranks ((ranks alistp)
-                                   (modules svl2-module-alist-p))
+                                   (modules svl-module-alist-p))
   (if (atom modules)
       nil
     (acons (caar modules)
-           (change-svl2-module (cdar modules)
+           (change-svl-module (cdar modules)
                                :rank (nfix (cdr (assoc-equal (caar modules)
                                                              ranks))))
            (update-modules-with-ranks ranks
@@ -2651,7 +2956,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                 rest)
         rest))))
 
-(define svl2-flatten-design ((sv-design sv::design-p)
+(define svl-flatten-design ((sv-design sv::design-p)
                              (vl-design)
                              &key
                              (rp::rp-state 'rp::rp-state)
@@ -2688,15 +2993,15 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                  dont-flatten))
 
        (svex-simplify-preloaded (svex-simplify-preload
-                                 :runes *svl2-flatten-simplify-lemmas*
+                                 :runes *svl-flatten-simplify-lemmas*
                                  ))
-       (- (cw "Starting to flatten modules and create SVL2 design... ~%"))
+       (- (cw "Starting to flatten modules and create SVL design... ~%"))
        ((mv modules rp::rp-state)
-        (svl2-flatten-mods dont-flatten sv-design.modalist
+        (svl-flatten-mods dont-flatten sv-design.modalist
                            dont-flatten vl-insouts
                            svex-simplify-preloaded))
        (- (cw "Inserting ranks to unflattened modules... ~%"))
-       (ranks (svl2-mod-calculate-ranks top
+       (ranks (svl-mod-calculate-ranks top
                                         modules
                                         nil
                                         nil
@@ -2708,13 +3013,13 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
        (- (svex-rw-free-preload svex-simplify-preloaded state)))
     (mv modules rp::rp-state)))
 
-(define svl2-modules-port-info ((modules svl2-module-alist-p))
+(define svl-modules-port-info ((modules svl-module-alist-p))
   (if (atom modules)
       nil
     (acons (caar modules)
-           `((:inputs . ,(svl2-module->inputs (cdar modules)))
-             (:outputs . ,(svl2-module->outputs (cdar modules))))
-           (svl2-modules-port-info (cdr modules)))))
+           `((:inputs . ,(svl-module->inputs (cdar modules)))
+             (:outputs . ,(svl-module->outputs (cdar modules))))
+           (svl-modules-port-info (cdr modules)))))
 
 ;;;
 
@@ -2726,7 +3031,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 :i-am-here
 
 (b* ((modnames '("fa" "mul_test1" "partial")))
-  (svl2-flatten-design modnames
+  (svl-flatten-design modnames
                        *booth-sv-design*
                        *booth-vl-design2*))
 
@@ -2734,11 +3039,11 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                  "full_adder$WIDTH=1"
                  "booth2_reduction_dadda_17x65_97"
                  "booth2_multiplier_signed_64x32_97")))
-  (svl2-flatten-design modnames
+  (svl-flatten-design modnames
                        *big-sv-design*
                        *big-vl-design2*))
 
-#|(svl2-flatten-mod "booth_encoder"
+#|(svl-flatten-mod "booth_encoder"
                  (make-fast-alist (sv::design->modalist *booth-sv-design*))
 nil)||#
 
@@ -2749,7 +3054,7 @@ nil)||#
 "booth2_reduction_dadda_17x65_97"
 "booth2_multiplier_signed_64x32_97")
 )))
-(svl2-flatten-mod "booth2_multiplier_signed_64x32_97"
+(svl-flatten-mod "booth2_multiplier_signed_64x32_97"
 (make-fast-alist (sv::design->modalist *big-sv-design*))
 '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1" "booth2_reduction_dadda_17x65_97")
 vl-insouts2))
@@ -2761,7 +3066,7 @@ vl-insouts2))
 "booth2_reduction_dadda_17x65_97")
 ))
 (svex-simplify-preloaded (svex-simplify-preload)))
-(svl2-flatten-mod "booth2_reduction_dadda_17x65_97"
+(svl-flatten-mod "booth2_reduction_dadda_17x65_97"
 (make-fast-alist (sv::design->modalist *big-sv-design*))
 '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
 vl-insouts2

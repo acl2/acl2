@@ -24,43 +24,15 @@
 ; Original author: Mertcan Temel <mert@utexas.edu>
 
 
-
 (in-package "SVL")
 
-(include-book "../svex-lemmas2")
+(include-book "../svex-eval-wog-openers")
 
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
 (local
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
-
-;; does not seem to help much but will keep it anyways..
-(define is-4vec-fix-necessary (term)
-  (case-match term
-    (('rp ''4vec-p &)
-     nil)
-    (& (b* ((term (rp::ex-from-rp term)))
-         (case-match term
-           (('quote x)
-            (if (integerp x)
-                nil
-              t))
-           (('4vec-concat & & &)
-            nil)
-           (('4vec-bitand & &)
-            nil)
-           (('4vec-bitor & &)
-            nil)
-           (('4vec-rsh & &)
-            nil)
-           (('4vec-lsh & &)
-            nil)
-           (('4vec-bitnot &)
-            nil)
-           ;; this list can go on with all the 4vec-functions...
-           (&
-            t))))))
 
 (define nth-term (n argsvar)
   :guard (natp n)
@@ -70,66 +42,57 @@
         (car argsvar)
       (nth-term (1- n) (cdr argsvar)))))
 
-(defund svex-apply-collect-args2-meta (n max argsvar args-dontrw)
+(defund svex-apply-collect-args-wog-meta (n max argsvar args-dontrw)
   (declare (xargs :measure (nfix (- (nfix max) (nfix n)))))
   (let* ((n (nfix n)) (max (nfix max)))
     (if (zp (- max n))
         (mv nil nil)
       (b* (((mv rest rest-dontrw)
-            (svex-apply-collect-args2-meta (+ 1 n)
-                                           max argsvar
-                                           args-dontrw)))
-        (mv (cons ;;`(if (and nil (is-4vec-fix-necessary (nth-term ,n ,argsvar)))
-                    ;;   (list '4vec-fix2 (nth-term ,n ,argsvar))
-                     `(nth-term ,n ,argsvar)
-                     ;;)
-                  rest)
-            (cons ;;`(if (and nil (is-4vec-fix-necessary (nth-term ,n ,argsvar)))
-                      ;; (list 'nil (nth-term ,n ,args-dontrw))
-                     `(nth-term ,n ,args-dontrw)
-                     ;;)
-                  rest-dontrw))))))
+            (svex-apply-collect-args-wog-meta
+             (+ 1 n) max argsvar args-dontrw)))
+        (mv (cons `(nth-term ,n ,argsvar) rest)
+            (cons `(nth-term ,n ,args-dontrw) rest-dontrw))))))
 
-(defund svex-apply-cases-fn2-meta (argsvar args-dontrw optable)
+(defund svex-apply-cases-wog-fn-meta (argsvar args-dontrw optable)
   (b* (((when (atom optable))
         '((otherwise
            (mv (or (hard-error
-                    'svex-apply-cases-fn2-meta
+                    'svex-apply-cases-wog-fn-meta
                     "attempting to apply unknown function ~x0~%"
                     (list (cons #\0 fn)))
                    (list 'quote (sv::4vec-x)))
                nil))))
        ((list sym fn args) (car optable))
        ((mv entry entry-dontrw)
-        (svex-apply-collect-args2-meta 0 (len args) argsvar args-dontrw))
+        (svex-apply-collect-args-wog-meta 0 (len args) argsvar args-dontrw))
        (call `(mv (list ',fn . ,entry)
                   (list 'nil . ,entry-dontrw))))
     (cons (cons sym (cons call 'nil))
-          (svex-apply-cases-fn2-meta argsvar args-dontrw (cdr optable)))))
+          (svex-apply-cases-wog-fn-meta argsvar args-dontrw (cdr optable)))))
 
 (defmacro svex-apply-cases2-meta (fn args args-dontrw)
   (cons
    'case
    (cons fn
-         (svex-apply-cases-fn2-meta args args-dontrw
+         (svex-apply-cases-wog-fn-meta args args-dontrw
                                     (cons '(ID sv::4VEC-FIX$INLINE (ACL2::X)
                                                "identity function") ;; had to
-                                          ;; change this becaise 4vec-fix is
+                                          ;; change this because 4vec-fix is
                                           ;; the only function that is inlined
                                           (cdr sv::*svex-op-table*))))))
 
-(defund svex-apply2-meta (fn args args-dontrw)
+(defund svex-apply-wog-meta (fn args args-dontrw)
   (declare (xargs :guard (and (true-listp args)
                               (true-listp args-dontrw))))
   (let* ((fn (fnsym-fix fn)))
     (svex-apply-cases2-meta fn args args-dontrw)))
 
 (acl2::defines
- svex-eval2-meta
- :flag-defthm-macro defthm-svex-eval2-meta
+ svex-eval-wog-meta
+ :flag-defthm-macro defthm-svex-eval-wog-meta
  :flag-local nil
 
- (define svex-eval2-meta (x env-falist)
+ (define svex-eval-wog-meta (x env-falist)
    :flag expr
    :measure (cons-count x)
    :hints (("Goal"
@@ -138,7 +101,7 @@
    :verify-guards nil
    :returns (mv (result)
                 (result-dont-rw rp::dont-rw-syntaxp))
-   (let* ((x.kind (svex-kind2 x)))
+   (let* ((x.kind (svex-kind-wog x)))
      (case
        x.kind
        (:quote (mv (cond ((atom x) (list 'quote x))
@@ -154,10 +117,10 @@
         (b* ((x.fn (car x))
              (x.args (cdr x))
              ((mv args args-dontrw)
-              (svex-eval2-meta-lst x.args env-falist)))
-          (svex-apply2-meta x.fn args args-dontrw))))))
+              (svex-eval-wog-meta-lst x.args env-falist)))
+          (svex-apply-wog-meta x.fn args args-dontrw))))))
 
- (define svex-eval2-meta-lst (lst env-falist)
+ (define svex-eval-wog-meta-lst (lst env-falist)
    :flag list
    :measure (cons-count lst)
    :returns (mv (res true-listp)
@@ -165,42 +128,42 @@
    (if (atom lst)
        (mv nil nil)
      (b* (((mv car-term car-dontrw)
-           (svex-eval2-meta (car lst) env-falist))
+           (svex-eval-wog-meta (car lst) env-falist))
           ((mv rest rest-dontrw)
-           (svex-eval2-meta-lst (cdr lst) env-falist)))
+           (svex-eval-wog-meta-lst (cdr lst) env-falist)))
        (mv (cons car-term rest)
            (cons car-dontrw rest-dontrw)))))
 
  ///
 
  (acl2::more-returns
-  svex-eval2-meta-lst
+  svex-eval-wog-meta-lst
   (res-dontrw true-listp
               :hints (("Goal"
                        :induct (true-listp lst)
                        :in-theory (e/d () ())))))
 
- (verify-guards svex-eval2-meta
+ (verify-guards svex-eval-wog-meta
    :hints (("Goal"
             :in-theory (e/d (svex-kind) ())))))
 
-(define svex-eval2-meta-main (term)
+(define svex-eval-wog-meta-main (term)
   (case-match term
-    (('svex-eval2 ('quote svex) env)
+    (('svex-eval-wog ('quote svex) env)
      (b* ((env (rp::ex-from-rp env)))
        (case-match env
          (('falist ('quote env-falist) &)
-          (svex-eval2-meta svex env-falist))
+          (svex-eval-wog-meta svex env-falist))
          (& (mv term nil)))))
     (& (mv term nil))))
 
-;; (svex-eval2-meta '(partsel '0 '1 (bitand x y))
+;; (svex-eval-wog-meta '(partsel '0 '1 (bitand x y))
 ;;                  (make-fast-alist
 ;;                   '((x . (rp 'bitp a))
 ;;                     (y . b)))
 ;;                  'expr)
 
-;; (svex-eval2-meta-main `(svex-eval2 '(partsel '0 '1 (bitand x y))
+;; (svex-eval-wog-meta-main `(svex-eval-wog '(partsel '0 '1 (bitand x y))
 ;;                                    (falist ',(make-fast-alist
 ;;                                               '((x . (rp 'bitp a))
 ;;                                                 (y . b)))
@@ -215,11 +178,11 @@
   (local
    (in-theory (e/d (the-check
                     eql
-                    SVEX-ENV-FASTLOOKUP2)
-                   (svex-kind2-is-svex-kind
-                    4VEC-FIX2-IS-4VEC-FIX
-                    SVEX-APPLY2-IS-SVEX-APPLY
-                    SV::4VEC-EQUAL))))
+                    svex-env-fastlookup-wog)
+                   (svex-kind-wog-is-svex-kind
+                    4vec-fix-wog-is-4vec-fix
+                    svex-apply-wog-is-svex-apply
+                    sv::4vec-equal))))
 
   (local
    (defthm the-check-def
@@ -227,35 +190,34 @@
             z)))
 
   (local
-   (defthm SVEX-ENV-FASTLOOKUP2-def
-     (equal (SVEX-ENV-FASTLOOKUP2 var env)
-            (LET* ((LOOK (HONS-GET VAR ENV)))
-                  (IF LOOK (CDR LOOK) (SV::4VEC-X))))
-     :hints (("Goal"
-              :in-theory (e/d (SVEX-ENV-FASTLOOKUP2) ())))))
+   (defthm svex-env-fastlookup-wog-def
+     (equal (svex-env-fastlookup-wog var env)
+            (let* ((look (hons-get var env)))
+                  (if look (cdr look) (sv::4vec-x))))
+     :hints (("goal"
+              :in-theory (e/d (svex-env-fastlookup-wog) ())))))
 
   (with-output
     :off :all
     :gag-mode nil
     (rp::def-formula-checks
-     svex-eval2-formula-checks
-     (svex-eval2-meta-main
+     svex-eval-wog-formula-checks
+     (svex-eval-wog-meta-main
       sv::4vec-fix$inline
-      svex-eval2))))
+      svex-eval-wog))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
- (defthmd svex-eval2-eval
+ (defthmd svex-eval-wog-eval
    (implies (and (rp-evl-meta-extract-global-facts)
-                 (svex-eval2-formula-checks state)
+                 (svex-eval-wog-formula-checks state)
                  (consp x)
-                 (equal (car x) 'svex-eval2)
+                 (equal (car x) 'svex-eval-wog)
                  (consp (cdr x))
                  (consp (cddr x))
                  (not (cdddr x)))
             (equal (rp-evl x a)
-                   (svex-eval2 (rp-evl (cadr x) a)
+                   (svex-eval-wog (rp-evl (cadr x) a)
                                (rp-evl (caddr x) a))))))
 
 (local
@@ -269,7 +231,7 @@
 (local
  (defthmd falist-eval
    (implies (and (rp-evl-meta-extract-global-facts)
-                 (svex-eval2-formula-checks state)
+                 (svex-eval-wog-formula-checks state)
                  (consp x)
                  (equal (car x) 'falist)
                  (consp (cdr x))
@@ -281,7 +243,7 @@
 (local
  (defthmd falist-eval2
    (implies (and (rp-evl-meta-extract-global-facts)
-                 (svex-eval2-formula-checks state)
+                 (svex-eval-wog-formula-checks state)
                  (consp (rp::ex-from-rp x))
                  (equal (car (rp::ex-from-rp x)) 'falist)
                  (consp (cdr (rp::ex-from-rp x)))
@@ -349,10 +311,8 @@
                  (4vec-part-install m x y z))
           (equal (4vec-part-install m x y (4vec-fix z))
                  (4vec-part-install m x y z))
-
           (equal (4vec-part-install (4vec-fix m) x y z)
-                 (4vec-part-install m x y z))
-          )
+                 (4vec-part-install m x y z)))
      :hints (("goal"
               :in-theory (e/d (sv::4vec-onehot0
                                4vec-part-install
@@ -377,11 +337,11 @@
                :in-theory (e/d (4vec-part-select
                                 4vec-part-install) ())))))
 
-   (defthm rp-evl-of-svex-apply2-meta
+   (defthm rp-evl-of-svex-apply-wog-meta
      (implies (and (rp-evl-meta-extract-global-facts)
-                   (svex-eval2-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (svex-apply2-meta call args args-dontrw)) a)
-                     (svex-apply2 call
+                   (svex-eval-wog-formula-checks state))
+              (equal (rp-evl (mv-nth 0 (svex-apply-wog-meta call args args-dontrw)) a)
+                     (svex-apply-wog call
                                   (rp-evl-lst args a))))
      :hints (("goal"
               :do-not-induct t
@@ -390,9 +350,9 @@
                               (nth x y))
                        (:free (x y)
                               (nth-term x y)))
-              :in-theory (e/d (svex-apply2
-                               svex-apply2-meta)
-                              (svex-apply2-is-svex-apply
+              :in-theory (e/d (svex-apply-wog
+                               svex-apply-wog-meta)
+                              (svex-apply-wog-is-svex-apply
                                (:definition nth)
                                (:rewrite default-cdr)
                                (:rewrite default-car)
@@ -406,7 +366,7 @@
                                (:rewrite rp::rp-evl-of-lambda)
                                (:rewrite rp::rp-evl-of-unary-/-call)
                                (:rewrite rp::rp-evl-of-unary---call)
-                               (:type-prescription is-4vec-fix-necessary)
+                               
                                (:type-prescription fnsym-fix)
                                (:rewrite sv::4vec-p-when-maybe-4vec-p)
                                (:type-prescription 4vec-p)
@@ -417,7 +377,7 @@
                                (:rewrite
                                 sv::car-of-4veclist-fix-x-normalize-const-under-4vec-equiv)
                                (:rewrite sv::4vec-p-of-nth-when-4veclist-p)
-                               (:type-prescription svex-eval2-formula-checks)
+                               (:type-prescription svex-eval-wog-formula-checks)
                                (:type-prescription o<)
                                (:type-prescription sv::fnsym-equiv$inline)
                                (:type-prescription 4vec-part-install)
@@ -468,28 +428,28 @@
                                (:meta acl2::mv-nth-cons-meta)
                                )))))
 
-   (defthm-svex-eval2-meta
-     (defthmd rp-evl-of-svex-eval2-meta
+   (defthm-svex-eval-wog-meta
+     (defthmd rp-evl-of-svex-eval-wog-meta
        (implies (and (rp-evl-meta-extract-global-facts)
-                     (svex-eval2-formula-checks state)
+                     (svex-eval-wog-formula-checks state)
                      (rp::falist-consistent-aux env-falist term))
-                (equal (rp-evl (mv-nth 0 (svex-eval2-meta x env-falist)) a)
-                       (rp-evl `(svex-eval2 ,(list 'quote x) ,term) a)))
+                (equal (rp-evl (mv-nth 0 (svex-eval-wog-meta x env-falist)) a)
+                       (rp-evl `(svex-eval-wog ,(list 'quote x) ,term) a)))
        :flag expr)
 
-     (defthmd rp-evl-of-svex-eval2-meta-lst
+     (defthmd rp-evl-of-svex-eval-wog-meta-lst
        (implies (and (rp-evl-meta-extract-global-facts)
-                     (svex-eval2-formula-checks state)
+                     (svex-eval-wog-formula-checks state)
                      (rp::falist-consistent-aux env-falist term))
-                (equal (rp-evl-lst (mv-nth 0 (svex-eval2-meta-lst lst env-falist)) a)
-                       (rp-evl `(svexlist-eval2 ,(list 'quote lst) ,term) a)))
+                (equal (rp-evl-lst (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist)) a)
+                       (rp-evl `(svexlist-eval-wog ,(list 'quote lst) ,term) a)))
        :flag list)
      :hints (("goal"
-              :in-theory (e/d (svex-eval2-meta-lst
-                               svex-eval2
-                               svexlist-eval2
-                               svex-eval2-meta)
-                              (svex-apply2-is-svex-apply)))))
+              :in-theory (e/d (svex-eval-wog-meta-lst
+                               svex-eval-wog
+                               svexlist-eval-wog
+                               svex-eval-wog-meta)
+                              (svex-apply-wog-is-svex-apply)))))
 
    (local
     (defthm all-falist-consistent-lemma
@@ -505,186 +465,80 @@
       :hints (("goal"
                :in-theory (e/d (rp::is-rp) ())))))
 
-   (defthm rp-evl-of-svex-eval2-meta-main
+   (defthm rp-evl-of-svex-eval-wog-meta-main
      (implies (and (rp-evl-meta-extract-global-facts)
                    (rp::rp-termp term)
-                   (svex-eval2-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (svex-eval2-meta-main term)) a)
+                   (svex-eval-wog-formula-checks state))
+              (equal (rp-evl (mv-nth 0 (svex-eval-wog-meta-main term)) a)
                      (rp-evl term a)))
      :hints (("goal"
-              :use ((:instance rp-evl-of-svex-eval2-meta
+              :use ((:instance rp-evl-of-svex-eval-wog-meta
                                (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                                         term)))))
                                (a a)
                                (x (cadr (cadr term)))
                                (term (caddr (rp::ex-from-rp (caddr
                                                              term))))))
-              :in-theory (e/d (svex-eval2-meta-main
+              :in-theory (e/d (svex-eval-wog-meta-main
                                falist-eval
                                falist-eval2
-                               svex-eval2-eval) ()))))))
-
-#|(local
- (encapsulate
-   nil
-
-   #|(defthm all-falist-consistent-svex-apply2-meta
-     (implies (rp::all-falist-consistent-lst args)
-              (rp::all-falist-consistent
-               (mv-nth 0 (svex-apply2-meta call args args-dontrw))))
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((:free (x y)
-                              (nth x y))
-                       (:free (x y)
-                              (nth-term x y)))
-              :in-theory (e/d (svex-apply2-meta)
-                              ((:DEFINITION RP::FALIST-CONSISTENT)
-                               (:REWRITE DEFAULT-CDR)
-                               (:REWRITE DEFAULT-CAR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
-                               (:TYPE-PRESCRIPTION IS-4VEC-FIX-NECESSARY)
-                               (:REWRITE ACL2::O-P-DEF-O-FINP-1))))))||#
-
-   #|(local
-    (defthm lemma1
-      (implies (and (RP::ALL-FALIST-CONSISTENT X)
-                    (consp x)
-                    (NOT (EQUAL (CAR X) 'QUOTE)))
-               (RP::ALL-FALIST-CONSISTENT-LST (CDR X)))
-      :hints (("Goal"
-               :expand ((RP::ALL-FALIST-CONSISTENT X))
-               :in-theory (e/d () ())))))||#
-
-   #|(local
-    (defthm lemma2
-      (implies (and (rp::falist-consistent-aux env-falist term)
-                    (rp::all-falist-consistent term)
-                    (HONS-ASSOC-EQUAL X ENV-FALIST))
-               (RP::ALL-FALIST-CONSISTENT (CDR (HONS-ASSOC-EQUAL X
-                                                                 ENV-FALIST))))))||#
-
-   #|(local
-   (defthm lemma3
-   (implies (and (rp::falist-consistent-aux env-falist term)
-   (hons-assoc-equal x env-falist))
-   (equal (rp-evl (cdr (hons-assoc-equal x env-falist))
-   a)
-   (cdr (hons-assoc-equal x (rp-evl term a)))))))||#
-
-   #|(defthm-svex-eval2-meta
-     (defthmd all-falist-consistent-svex-eval2-meta
-       (implies (and ;(rp::all-falist-consistent x)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::all-falist-consistent term))
-                (rp::all-falist-consistent
-                 (mv-nth 0 (svex-eval2-meta x env-falist))))
-       :flag expr)
-
-     (defthmd all-falist-consistent-svex-eval2-meta-lst
-       (implies (and ;(rp::all-falist-consistent-lst lst)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::all-falist-consistent term))
-                (rp::all-falist-consistent-lst
-                 (mv-nth 0 (svex-eval2-meta-lst lst env-falist))))
-       :flag list)
-     :hints (("Goal"
-              :in-theory (e/d (svex-kind
-                               SVEX-EVAL2-META
-                               SVEX-EVAL2-META-LST
-                               rp::is-falist)
-                              ()))))||#
-
-   #|(defthm ALL-FALIST-CONSISTENT-lemma3
-     (implies (and (RP::ALL-FALIST-CONSISTENT term)
-                   (rp::is-falist term))
-              (and (RP::FALIST-CONSISTENT-AUX (CADR (CADR term))
-                                              (CADDR term))
-                   (RP::ALL-FALIST-CONSISTENT (CADDR term))))
-     :hints (("Goal"
-              :in-theory (e/d (rp::ex-from-rp) ()))))||#
-
-   #|(defthm ALL-FALIST-CONSISTENT-lemma4
-     (implies (and (RP::ALL-FALIST-CONSISTENT term))
-              (RP::ALL-FALIST-CONSISTENT (rp::ex-from-rp term)))
-     :hints (("Goal"
-              :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp
-                               rp::is-falist) ()))))||#
-
-   #|(defthm all-falist-consistent-svex-eval2-meta-main
-     (implies (and (rp::all-falist-consistent term))
-              (rp::all-falist-consistent (mv-nth 0 (svex-eval2-meta-main term))))
-     :hints (("Goal"
-              :do-not-induct t
-              :use ((:instance
-                     all-falist-consistent-svex-eval2-meta
-                     (env-falist (cadr (cadr (rp::ex-from-rp (caddr
-                                                              term)))))
-                     (x (cadr (cadr term)))
-                     (term (caddr (rp::ex-from-rp (caddr term))))))
-              :in-theory (e/d (svex-eval2-meta-main
-                               rp::is-falist) ()))))||#))||#
+                               svex-eval-wog-eval) ()))))))
 
 (local
  (encapsulate
    nil
 
-   (defthm rp-termp-svex-apply2-meta
-     (implies (rp::rp-TERM-LISTP args)
+   (defthm rp-termp-svex-apply-wog-meta
+     (implies (rp::rp-term-listp args)
               (rp::rp-termp
-               (mv-nth 0 (svex-apply2-meta call args args-dontrw))))
-     :hints (("Goal"
+               (mv-nth 0 (svex-apply-wog-meta call args args-dontrw))))
+     :hints (("goal"
               :do-not-induct t
               :expand ((:free (x y)
                               (nth x y))
                        (:free (x y)
                               (nth-term x y)))
-              :in-theory (e/d (svex-apply2-meta)
-                              ((:DEFINITION RP::FALIST-CONSISTENT)
-                               (:REWRITE DEFAULT-CDR)
-                               (:REWRITE DEFAULT-CAR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
-                               (:TYPE-PRESCRIPTION IS-4VEC-FIX-NECESSARY)
-                               (:REWRITE ACL2::O-P-DEF-O-FINP-1)
-                               (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP)
-                               (:DEFINITION ACL2::APPLY$-BADGEP)
-                               (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
-                               (:DEFINITION TRUE-LISTP)
-                               (:DEFINITION SUBSETP-EQUAL)
-                               (:DEFINITION MEMBER-EQUAL)
-                               (:REWRITE
-                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                               (:TYPE-PRESCRIPTION RP::RP-TERMP))))))
+              :in-theory (e/d (svex-apply-wog-meta)
+                              ((:definition rp::falist-consistent)
+                               (:rewrite default-cdr)
+                               (:rewrite default-car)
+                               (:rewrite acl2::o-p-o-infp-car)
+                               (:rewrite acl2::o-p-def-o-finp-1)
+                               (:rewrite rp::rp-termp-implies-cdr-listp)
+                               (:definition acl2::apply$-badgep)
+                               (:rewrite acl2::apply$-badgep-properties . 3)
+                               (:definition true-listp)
+                               (:definition subsetp-equal)
+                               (:definition member-equal)
+                               (:rewrite
+                                acl2::member-equal-newvar-components-1)
+                               (:type-prescription rp::rp-termp))))))
 
    (local
     (defthm lemma1
       (implies (and (rp::falist-consistent-aux env-falist term)
                     (rp::rp-termp term)
-                    (HONS-ASSOC-EQUAL X ENV-FALIST))
-               (rp::rp-termp (CDR (HONS-ASSOC-EQUAL X
-                                                         ENV-FALIST))))))
+                    (hons-assoc-equal x env-falist))
+               (rp::rp-termp (cdr (hons-assoc-equal x env-falist))))))
 
-   (defthm-svex-eval2-meta
-     (defthmd rp-termp-svex-eval2-meta
-       (implies (and ;(rp::all-falist-consistent x)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::rp-termp term))
+   (defthm-svex-eval-wog-meta
+     (defthmd rp-termp-svex-eval-wog-meta
+       (implies (and (rp::falist-consistent-aux env-falist term)
+                     (rp::rp-termp term))
                 (rp::rp-termp
-                 (mv-nth 0 (svex-eval2-meta x env-falist))))
+                 (mv-nth 0 (svex-eval-wog-meta x env-falist))))
        :flag expr)
 
-     (defthmd rp::rp-termp-svex-eval2-meta-lst
-       (implies (and ;(rp::all-falist-consistent-lst lst)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::rp-termp term))
-                (rp::rp-TERM-LISTP
-                 (mv-nth 0 (svex-eval2-meta-lst lst env-falist))))
+     (defthmd rp::rp-termp-svex-eval-wog-meta-lst
+       (implies (and (rp::falist-consistent-aux env-falist term)
+                     (rp::rp-termp term))
+                (rp::rp-term-listp
+                 (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist))))
        :flag list)
-     :hints (("Goal"
+     :hints (("goal"
               :in-theory (e/d (svex-kind
-                               SVEX-EVAL2-META
-                               SVEX-EVAL2-META-LST
+                               svex-eval-wog-meta
+                               svex-eval-wog-meta-lst
                                rp::is-falist)
                               ()))))
 
@@ -692,7 +546,7 @@
     (defthm lemma2
       (implies (and (rp::rp-termp term))
                (and (rp::rp-termp (rp::ex-from-rp term))))
-      :hints (("Goal"
+      :hints (("goal"
                :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
 
    (local
@@ -702,7 +556,7 @@
                     (not (equal (car term) 'quote))
                     (consp (cdr term))
                     (consp (cddr term)))
-               (RP::RP-TERMP (CADDR term)))))
+               (rp::rp-termp (caddr term)))))
 
    (local
     (defthm rp-termp-implies-ex-from-rp
@@ -711,7 +565,7 @@
       :rule-classes :forward-chaining))
 
    (local
-    (defthm rp-termp-and-FALIST-CONSISTENT-AUX
+    (defthm rp-termp-and-falist-consistent-aux
       (implies (and (rp::rp-termp term)
                     (equal (car term) 'falist)
                     (consp (cdr term))
@@ -721,114 +575,23 @@
                (rp::falist-consistent-aux (cadr (cadr term))
                                           (caddr term)))))
 
-   (defthm rp-termp-svex-eval2-meta-main
+   (defthm rp-termp-svex-eval-wog-meta-main
      (implies (and (rp::rp-termp term))
-              (rp::rp-termp (mv-nth 0 (svex-eval2-meta-main term))))
-     :hints (("Goal"
+              (rp::rp-termp (mv-nth 0 (svex-eval-wog-meta-main term))))
+     :hints (("goal"
               :do-not-induct t
               :use ((:instance
-                     rp-termp-svex-eval2-meta
+                     rp-termp-svex-eval-wog-meta
                      (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                               term)))))
                      (x (cadr (cadr term)))
                      (term (caddr (rp::ex-from-rp (caddr term))))))
-              :in-theory (e/d (svex-eval2-meta-main
+              :in-theory (e/d (svex-eval-wog-meta-main
                                rp::is-falist)
-                              ((:DEFINITION RP::FALIST-CONSISTENT)
-                               (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT)
-                               #|rp-termp-svex-eval2-meta||#)))))))
+                              ((:definition rp::falist-consistent)
+                               (:type-prescription rp::falist-consistent)
+                               #|rp-termp-svex-eval-wog-meta||#)))))))
 
-#|(local
- (encapsulate
-   nil
-
-   (defthm rp-syntaxp-svex-apply2-meta
-     (implies (rp::rp-syntaxp-lst args)
-              (rp::rp-syntaxp
-               (mv-nth 0 (svex-apply2-meta call args args-dontrw))))
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((:free (x y)
-                              (nth x y))
-                       (:free (x y)
-                              (nth-term x y)))
-              :in-theory (e/d (svex-apply2-meta)
-                              ((:DEFINITION RP::FALIST-CONSISTENT)
-                               (:REWRITE DEFAULT-CDR)
-                               (:REWRITE DEFAULT-CAR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
-                               (:TYPE-PRESCRIPTION IS-4VEC-FIX-NECESSARY)
-                               (:REWRITE ACL2::O-P-DEF-O-FINP-1)
-                               (:DEFINITION ACL2::APPLY$-BADGEP)
-                               (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
-                               (:DEFINITION TRUE-LISTP)
-                               (:DEFINITION SUBSETP-EQUAL)
-                               (:DEFINITION MEMBER-EQUAL)
-                               (:REWRITE
-                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                               (:TYPE-PRESCRIPTION RP::RP-SYNTAXP))))))
-
-   (local
-    (defthm lemma1
-      (implies (and (rp::falist-consistent-aux env-falist term)
-                    (rp::rp-syntaxp term)
-                    (HONS-ASSOC-EQUAL X ENV-FALIST))
-               (rp::rp-syntaxp (CDR (HONS-ASSOC-EQUAL X
-                                                      ENV-FALIST))))))
-
-   (defthm-svex-eval2-meta
-     (defthmd rp-syntaxp-svex-eval2-meta
-       (implies (and ;(rp::all-falist-consistent x)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::rp-syntaxp term))
-                (rp::rp-syntaxp
-                 (mv-nth 0 (svex-eval2-meta x env-falist))))
-       :flag expr)
-
-     (defthmd rp::rp-syntaxp-svex-eval2-meta-lst
-       (implies (and ;(rp::all-falist-consistent-lst lst)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::rp-syntaxp term))
-                (rp::rp-syntaxp-lst
-                 (mv-nth 0 (svex-eval2-meta-lst lst env-falist))))
-       :flag list)
-     :hints (("Goal"
-              :in-theory (e/d (svex-kind
-                               SVEX-EVAL2-META
-                               SVEX-EVAL2-META-LST
-                               rp::is-falist)
-                              ()))))
-
-   (local
-    (defthm lemma2
-      (implies (and (rp::rp-syntaxp term))
-               (and (rp::rp-syntaxp (rp::ex-from-rp term))))
-      :hints (("Goal"
-               :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
-
-   (local
-    (defthm lemma3
-      (implies (and (rp::rp-syntaxp term)
-                    (consp term)
-                    (not (equal (car term) 'quote))
-                    (consp (cdr term))
-                    (consp (cddr term)))
-               (RP::RP-SYNTAXP (CADDR term)))))
-
-   (defthm rp-syntaxp-svex-eval2-meta-main
-     (implies (and (rp::rp-syntaxp term)
-                   (rp::all-falist-consistent term))
-              (rp::rp-syntaxp (mv-nth 0 (svex-eval2-meta-main term))))
-     :hints (("Goal"
-              :do-not-induct t
-              :use ((:instance
-                     rp-syntaxp-svex-eval2-meta
-                     (env-falist (cadr (cadr (rp::ex-from-rp (caddr
-                                                              term)))))
-                     (x (cadr (cadr term)))
-                     (term (caddr (rp::ex-from-rp (caddr term))))))
-              :in-theory (e/d (svex-eval2-meta-main
-                               rp::is-falist) ()))))))||#
 
 (local
  (encapsulate
@@ -838,62 +601,59 @@
     (in-theory (enable rp::is-rp
                        rp::is-if)))
 
-   (defthm valid-sc-svex-apply2-meta
+   (defthm valid-sc-svex-apply-wog-meta
      (implies (rp::valid-sc-subterms args a)
               (rp::valid-sc
-               (mv-nth 0 (svex-apply2-meta call args args-dontrw))
+               (mv-nth 0 (svex-apply-wog-meta call args args-dontrw))
                a))
-     :hints (("Goal"
+     :hints (("goal"
               :do-not-induct t
               :expand ((:free (x y)
                               (nth x y))
                        (:free (x y)
                               (nth-term x y)))
-              :in-theory (e/d (svex-apply2-meta)
-                              ((:DEFINITION RP::FALIST-CONSISTENT)
-                               (:REWRITE DEFAULT-CDR)
-                               (:REWRITE DEFAULT-CAR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
-                               (:TYPE-PRESCRIPTION IS-4VEC-FIX-NECESSARY)
-                               (:REWRITE ACL2::O-P-DEF-O-FINP-1)
-                               (:DEFINITION ACL2::APPLY$-BADGEP)
-                               (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
-                               (:DEFINITION TRUE-LISTP)
-                               (:DEFINITION SUBSETP-EQUAL)
-                               (:DEFINITION MEMBER-EQUAL)
-                               (:REWRITE
-                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                               (:TYPE-PRESCRIPTION RP::VALID-SC))))))
+              :in-theory (e/d (svex-apply-wog-meta)
+                              ((:definition rp::falist-consistent)
+                               (:rewrite default-cdr)
+                               (:rewrite default-car)
+                               (:rewrite acl2::o-p-o-infp-car)
+                               (:rewrite acl2::o-p-def-o-finp-1)
+                               (:definition acl2::apply$-badgep)
+                               (:rewrite acl2::apply$-badgep-properties . 3)
+                               (:definition true-listp)
+                               (:definition subsetp-equal)
+                               (:definition member-equal)
+                               (:rewrite
+                                acl2::member-equal-newvar-components-1)
+                               (:type-prescription rp::valid-sc))))))
 
    (local
     (defthm lemma1
       (implies (and (rp::falist-consistent-aux env-falist term)
                     (rp::valid-sc term a)
-                    (HONS-ASSOC-EQUAL X ENV-FALIST))
-               (rp::valid-sc (CDR (HONS-ASSOC-EQUAL X
-                                                    ENV-FALIST))
+                    (hons-assoc-equal x env-falist))
+               (rp::valid-sc (cdr (hons-assoc-equal x
+                                                    env-falist))
                              a))))
 
-   (defthm-svex-eval2-meta
-     (defthmd valid-sc-svex-eval2-meta
-       (implies (and ;(rp::all-falist-consistent x)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::valid-sc term a))
+   (defthm-svex-eval-wog-meta
+     (defthmd valid-sc-svex-eval-wog-meta
+       (implies (and (rp::falist-consistent-aux env-falist term)
+                     (rp::valid-sc term a))
                 (rp::valid-sc
-                 (mv-nth 0 (svex-eval2-meta x env-falist)) a))
+                 (mv-nth 0 (svex-eval-wog-meta x env-falist)) a))
        :flag expr)
 
-     (defthmd rp::valid-sc-svex-eval2-meta-lst
-       (implies (and ;(rp::all-falist-consistent-lst lst)
-                 (rp::falist-consistent-aux env-falist term)
-                 (rp::valid-sc term a))
+     (defthmd rp::valid-sc-svex-eval-wog-meta-lst
+       (implies (and (rp::falist-consistent-aux env-falist term)
+                     (rp::valid-sc term a))
                 (rp::valid-sc-subterms
-                 (mv-nth 0 (svex-eval2-meta-lst lst env-falist)) a))
+                 (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist)) a))
        :flag list)
-     :hints (("Goal"
+     :hints (("goal"
               :in-theory (e/d (svex-kind
-                               SVEX-EVAL2-META
-                               SVEX-EVAL2-META-LST
+                               svex-eval-wog-meta
+                               svex-eval-wog-meta-lst
                                rp::is-falist)
                               ()))))
 
@@ -901,7 +661,7 @@
     (defthm lemma2
       (implies (and (rp::valid-sc term a))
                (and (rp::valid-sc (rp::ex-from-rp term) a)))
-      :hints (("Goal"
+      :hints (("goal"
                :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
 
    (local
@@ -911,11 +671,11 @@
                     (equal (car term) 'falist)
                     (consp (cdr term))
                     (consp (cddr term)))
-               (RP::VALID-SC (CADDR term) a))))
+               (rp::valid-sc (caddr term) a))))
 
 
    (local
-    (defthm rp-termp-and-FALIST-CONSISTENT-AUX
+    (defthm rp-termp-and-falist-consistent-aux
       (implies (and (rp::rp-termp term)
                     (equal (car term) 'falist)
                     (consp (cdr term))
@@ -925,44 +685,44 @@
                (rp::falist-consistent-aux (cadr (cadr term))
                                           (caddr term)))))
    
-   (defthm valid-sc-svex-eval2-meta-main
+   (defthm valid-sc-svex-eval-wog-meta-main
      (implies (and (rp::valid-sc term a)
                    (rp::rp-termp term))
-              (rp::valid-sc (mv-nth 0 (svex-eval2-meta-main term))
+              (rp::valid-sc (mv-nth 0 (svex-eval-wog-meta-main term))
                             a))
-     :hints (("Goal"
+     :hints (("goal"
               :do-not-induct t
               :use ((:instance
-                     valid-sc-svex-eval2-meta
+                     valid-sc-svex-eval-wog-meta
                      (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                               term)))))
                      (x (cadr (cadr term)))
                      (term (caddr (rp::ex-from-rp (caddr term))))))
-              :in-theory (e/d (svex-eval2-meta-main
+              :in-theory (e/d (svex-eval-wog-meta-main
                                rp::is-falist) ()))))))
 
-(defthm valid-rp-meta-rulep-svex-eval2-meta-main
+(defthm valid-rp-meta-rulep-svex-eval-wog-meta-main
   (implies (and (rp-evl-meta-extract-global-facts)
-                (svex-eval2-formula-checks state))
+                (svex-eval-wog-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
-                             :fnc 'svex-eval2-meta-main
-                             :trig-fnc 'svex-eval2
+                             :fnc 'svex-eval-wog-meta-main
+                             :trig-fnc 'svex-eval-wog
                              :dont-rw t
                              :valid-syntax t)))
              (and (rp::rp-meta-valid-syntaxp-sk rule state)
                   (rp::valid-rp-meta-rulep rule state))))
   :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                           (rp::RP-TERMP
-                            svex-eval2-meta-main
-                            rp::rp-TERM-LISTP
-                            rp::VALID-SC
-                            rp::VALID-SC)))))
+  :hints (("goal"
+           :in-theory (e/d (rp::rp-meta-valid-syntaxp)
+                           (rp::rp-termp
+                            svex-eval-wog-meta-main
+                            rp::rp-term-listp
+                            rp::valid-sc
+                            rp::valid-sc)))))
 
-(rp::add-meta-rules svex-eval2-formula-checks
+(rp::add-meta-rules svex-eval-wog-formula-checks
                     (list (make rp::rp-meta-rule-rec
-                                :fnc 'svex-eval2-meta-main
-                                :trig-fnc 'svex-eval2
+                                :fnc 'svex-eval-wog-meta-main
+                                :trig-fnc 'svex-eval-wog
                                 :dont-rw t
                                 :valid-syntax t)))

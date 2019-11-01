@@ -39,7 +39,7 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
-(include-book "../sv-to-svl")
+(include-book "../type-defs")
 (include-book "../bits-sbits-defs")
 
 (define entry-4vec-fix (entry)

@@ -27,7 +27,7 @@
 
 (in-package "SVL")
 
-(include-book "svex-eval2")
+(include-book "svex-eval-wog")
 
 (include-book "bits-sbits-defs")
 
@@ -1637,16 +1637,16 @@
        (equal (4vec-fix (4vec-concat$ size val1 val2))
               (4vec-concat$ size val1 val2))))
 
-(defthm 4vec-fix2-of-functions
-  (and (equal (4vec-fix2 (4vec-bitnot s))
+(defthm 4vec-fix-wog-of-functions
+  (and (equal (4vec-fix-wog (4vec-bitnot s))
               (4vec-bitnot s))
-       (equal (4vec-fix2 (bits val start size ))
+       (equal (4vec-fix-wog (bits val start size ))
               (bits val start size ))
-       (equal (4vec-fix2 (sbits start size new old))
+       (equal (4vec-fix-wog (sbits start size new old))
               (sbits start size new old))
-       (equal (4vec-fix2 (4vec-bitnot$ size val))
+       (equal (4vec-fix-wog (4vec-bitnot$ size val))
               (4vec-bitnot$ size val))
-       (equal (4vec-fix2 (4vec-concat$ size val1 val2))
+       (equal (4vec-fix-wog (4vec-concat$ size val1 val2))
               (4vec-concat$ size val1 val2))))
 
 (encapsulate
