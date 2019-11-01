@@ -416,7 +416,12 @@
                                                        jvar-value-index)))
              (mv (append first-block rest-block)
                  (cons first-expr rest-jexrps)
-                 jvar-value-index)))))
+                 jvar-value-index))))
+  ///
+
+  (defret len-of-atj-gen-values.exprs
+    (equal (len exprs)
+           (len values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -106,7 +106,6 @@
                              (fn-method-names symbol-string-alistp)
                              (wrld plist-worldp))
   :returns (method jmethodp)
-  :verify-guards nil
   :short "Generate a Java method to run one of the specified tests."
   :long
   (xdoc::topstring
@@ -198,6 +197,12 @@
        (fn-info (atj-get-function-type-info test.function guards$ wrld))
        (fn-type (atj-function-type-info->main fn-info))
        (in-types (atj-function-type->inputs fn-type))
+       ((unless (= (len in-types) (len test.arguments)))
+        (raise "Internal error: ~
+                the number ~x0 of input types of ~x1 ~
+                differs from the number ~x2 of test arguments."
+               (len in-types) test.function (len test.arguments))
+        (ec-call (jmethod-fix :this-is-irrelevant)))
        ((mv shallow-arg-block shallow-arg-jvars)
         (if deep$
             (mv nil nil)
@@ -405,7 +410,6 @@
                               (fn-method-names symbol-string-alistp)
                               (wrld plist-worldp))
   :returns (methods jmethod-listp)
-  :verify-guards nil
   :short "Generate all the Java methods to run the specified tests."
   :long
   (xdoc::topstring
@@ -444,7 +448,6 @@
                             (fn-method-names symbol-string-alistp)
                             (wrld plist-worldp))
   :returns (class jclassp)
-  :verify-guards nil
   :short "Generate the test Java class declaration."
   :long
   (xdoc::topstring
@@ -496,7 +499,6 @@
                             (fn-method-names symbol-string-alistp)
                             (wrld plist-worldp))
   :returns (cunit jcunitp)
-  :verify-guards nil
   :short "Generate the test Java compilation unit."
   (b* ((class (atj-gen-test-class tests$
                                   deep$
@@ -518,7 +520,7 @@
 (define atj-gen-main-file ((deep$ booleanp)
                            (guards$ booleanp)
                            (java-package$ maybe-stringp)
-                           (java-class$ maybe-stringp)
+                           (java-class$ stringp)
                            (output-file$ stringp)
                            (pkgs string-listp)
                            (fns-to-translate symbol-listp)
@@ -606,7 +608,7 @@
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)
                             (java-package$ maybe-stringp)
-                            (java-class$ maybe-stringp)
+                            (java-class$ stringp)
                             (output-file$ stringp)
                             (output-file-test$ maybe-stringp)
                             (tests$ atj-test-listp)
