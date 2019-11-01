@@ -92,14 +92,13 @@
 
 ; secondary types:
 
-; (these are temporarily commented out
-; while support for generating overloaded methods is being added)
+(def-atj-other-function-type binary-+ (:arational :arational) :arational)
+(def-atj-other-function-type binary-+ (:ainteger :ainteger) :ainteger)
 
-;; (def-atj-other-function-type binary-+ (:arational :arational) :arational)
-;; (def-atj-other-function-type binary-+ (:ainteger :ainteger) :ainteger)
+(def-atj-other-function-type binary-* (:arational :arational) :arational)
+(def-atj-other-function-type binary-* (:ainteger :ainteger) :ainteger)
 
-;; (def-atj-other-function-type binary-* (:arational :arational) :arational)
-;; (def-atj-other-function-type binary-* (:ainteger :ainteger) :ainteger)
+(def-atj-other-function-type unary-- (:arational) :arational)
+(def-atj-other-function-type unary-- (:ainteger) :ainteger)
 
-;; (def-atj-other-function-type unary-- (:arational) :arational)
-;; (def-atj-other-function-type unary-- (:ainteger) :ainteger)
+(def-atj-other-function-type unary-/ (:arational) :arational)
