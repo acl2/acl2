@@ -1634,15 +1634,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fnnative-method ((fn symbolp)
-                                         (pkg-class-names string-string-alistp)
-                                         (fn-method-names symbol-string-alistp)
-                                         (guards$ booleanp)
-                                         (verbose$ booleanp)
-                                         (wrld plist-worldp))
+                                         (fn-type atj-function-type-p)
+                                         (method-name stringp)
+                                         (method-param-names string-listp)
+                                         (method-body jblockp))
   :guard (aij-nativep fn)
   :returns (method jmethodp)
-  :short "Generate a shallowly embedded ACL2 function
-          that is natively implemented in AIJ."
+  :short "Generate a Java method with the given types
+          for an ACL2 function that is natively implemented in AIJ."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1663,19 +1662,94 @@
      @('Acl2NativeFunction') has a corresponding Java method
      that takes @('Acl2Value') objects as arguments.
      For some of these functions,
-     @('Acl2NativeFunction') also has an overloaded Java method
-     that takes argument objects of narrower types,
-     based on the guards of the functions.
-     For each of the latter functions,
-     the generated wrapper Java methods
-     call one or the other variant implementation
-     based on the ATJ input and output types
-     retrieved from the "
-    (xdoc::seetopic "atj-function-type-info-table" "ATJ function type table")
-    ". This choice happens automatically in Java:
-     depending on the ATJ input types,
-     the generated Java code will use
-     either @('Acl2Value') or the narrower types."))
+     @('Acl2NativeFunction') also has overloaded Java methods
+     that take argument objects of narrower types
+     that correspond to the primary and (if present) secondary ATJ types
+     associated to the ACL2 function via the macros
+     @(tsee def-atj-main-function-type) and
+     @(tsee def-atj-other-function-type).")
+   (xdoc::p
+    "We generate a wrapper method for each such overloaded method:
+     the argument and return types of the wrapper method
+     are the same as the ones of the wrapped method in @('Acl2NativeFunction').
+     This function generates one of these methods,
+     as determined by the function type supplied as input.
+     The types are the only thing that varies across the wrapper methods:
+     their names, bodies, and other attributes are all the same;
+     thus, these are calculated once and passed as inputs to this function.
+     Note that the bodies of the wrapper methods automatically call
+     different methods in @('Acl2NativeFunction') based on the types;
+     the called methods are resolved by the Java compiler."))
+  (b* ((in-types (atj-function-type->inputs fn-type))
+       (out-type (atj-function-type->output fn-type))
+       ((unless (= (len in-types) (len method-param-names)))
+        (raise "Internal error: ~
+                the number ~x0 of input types for ~x1 ~
+                differs from the number ~x2 of calculated method arguments."
+               (len in-types) fn (len method-param-names))
+        (ec-call (jmethod-fix :this-is-irrelevant))))
+    (make-jmethod :access (jaccess-public)
+                  :abstract? nil
+                  :static? t
+                  :final? nil
+                  :synchronized? nil
+                  :native? nil
+                  :strictfp? nil
+                  :result (jresult-type (atj-type-to-jtype out-type))
+                  :name method-name
+                  :params (atj-gen-paramlist method-param-names
+                                             (atj-types-to-jtypes in-types))
+                  :throws (list *aij-class-eval-exc*)
+                  :body method-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-fnnative-methods ((fn symbolp)
+                                          (fn-types atj-function-type-listp)
+                                          (method-name stringp)
+                                          (method-param-names string-listp)
+                                          (method-body jblockp))
+  :guard (aij-nativep fn)
+  :returns (methods jmethod-listp)
+  :short "Lift @(tsee atj-gen-shallow-fnnative-method)
+          to lists of function types."
+  (cond ((endp fn-types) nil)
+        (t (cons (atj-gen-shallow-fnnative-method fn
+                                                  (car fn-types)
+                                                  method-name
+                                                  method-param-names
+                                                  method-body)
+                 (atj-gen-shallow-fnnative-methods fn
+                                                   (cdr fn-types)
+                                                   method-name
+                                                   method-param-names
+                                                   method-body)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-fnnative-all-methods
+  ((fn symbolp)
+   (pkg-class-names string-string-alistp)
+   (fn-method-names symbol-string-alistp)
+   (guards$ booleanp)
+   (verbose$ booleanp)
+   (wrld plist-worldp))
+  :guard (aij-nativep fn)
+  :returns (methods jmethod-listp)
+  :short "Generate all the overloaded Java methods
+          for an ACL2 function that is natively implemented in AIJ."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atj-gen-shallow-fnnative-method) first.
+     Here we calculate, once, the data to pass to that function
+     (via @(tsee atj-gen-shallow-fnnative-methods)).")
+   (xdoc::p
+    "We retrieve all the primary and secondary function types of @('fn'),
+     and generate an overloaded method for each.
+     Note that if @('guards$') is @('nil'),
+     then the retrieved function types boil down to one
+     that consists of all @(':value') types."))
   (b* ((curr-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
@@ -1699,23 +1773,9 @@
             bad-atom<=) (list "x" "y"))
           (t (list "x"))))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
-       (fn-type (atj-function-type-info->main fn-info))
-       (fn-in-types (atj-function-type->inputs fn-type))
-       (fn-out-type (atj-function-type->output fn-type))
-       ((unless (= (len fn-in-types)
-                   (len method-param-names)))
-        (raise "Internal error: ~
-                the number ~x0 of parameter types does not match ~
-                the number ~x1 of parameter names."
-               (len fn-in-types)
-               (len method-param-names))
-        ;; irrelevant:
-        (make-jmethod :access (jaccess-public)
-                      :result (jresult-void)
-                      :name ""
-                      :body (jblock-return nil)))
-       (method-params (atj-gen-paramlist method-param-names
-                                         (atj-types-to-jtypes fn-in-types)))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
+       (all-fn-types (cons main-fn-type other-fn-types))
        (jcall-method-name
         (case fn
           (characterp "execCharacterp")
@@ -1756,73 +1816,82 @@
                              jcall-method-name
                              jcall-arg-exprs))
        (method-body (jblock-return jcall)))
-    (make-jmethod :access (jaccess-public)
-                  :abstract? nil
-                  :static? t
-                  :final? nil
-                  :synchronized? nil
-                  :native? nil
-                  :strictfp? nil
-                  :result (jresult-type (atj-type-to-jtype fn-out-type))
-                  :name method-name
-                  :params method-params
-                  :throws (list *aij-class-eval-exc*)
-                  :body method-body))
+    (atj-gen-shallow-fnnative-methods fn
+                                      all-fn-types
+                                      method-name
+                                      method-param-names
+                                      method-body))
   :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fndef-method ((fn symbolp)
+                                      (fn-type atj-function-type-p)
+                                      (formals symbol-listp)
+                                      (body pseudo-termp)
+                                      (method-name stringp)
                                       (qconsts atj-qconstants-p)
                                       (pkg-class-names string-string-alistp)
                                       (fn-method-names symbol-string-alistp)
+                                      (curr-pkg stringp)
                                       (guards$ booleanp)
-                                      (verbose$ booleanp)
                                       (wrld plist-worldp))
+  :guard (and (not (aij-nativep fn))
+              (not (equal curr-pkg "")))
   :returns (mv (method jmethodp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
-  :short "Generate a shallowly embedded ACL2 function definition."
+  :short "Generate a Java method with the given types
+          for an ACL2 function definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "In the shallow embedding approach,
      each ACL2 function definition is turned into a Java method.
      This is a public static method
-     with the same number of parameters as the ACL2 function.")
+     with the same number of parameters as the ACL2 function.
+     More precisely, we generate an overloaded method
+     for each primary and secondary function type associated to the function
+     via @(tsee def-atj-main-function-type)
+     and @(tsee def-atj-other-function-type).")
    (xdoc::p
-    "First, we pre-translate the function.
+    "This function generates one such method,
+     based on the (primary or secondary) function type passed as input.
+     First, we pre-translate the function.
      Then, we translate the pre-translated function to a Java method.
      Finally, we post-translate the Java method.")
    (xdoc::p
     "We also collect all the quoted constants
      in the pre-translated function body,
-     and add it to the collection that it threaded through."))
-  (b* ((curr-pkg (symbol-package-name fn))
-       (formals (formals+ fn wrld))
-       (body (ubody+ fn wrld))
-       ((run-when (null body))
-        (raise "Internal error: ~
-                the function ~x0 has no unnormalized body."
-               fn))
-       (fn-info (atj-get-function-type-info fn guards$ wrld))
-       (fn-type (atj-function-type-info->main fn-info))
-       (in-types (atj-function-type->inputs fn-type))
+     and add it to the collection that it threaded through.")
+   (xdoc::p
+    "The formals and body of the function, as well as the method name,
+     are the same for all the overloaded methods,
+     so they are calculated once and passed to this function.
+     However, the generation of the Java method
+     (pre-translation, translation, and post-translation)
+     must be done afresh for each overloaded methods,
+     because it is affected by the function types,
+     which are turned into the method's argument and result types:
+     with different types,
+     there may be different type annotations,
+     and in particular different type conversions.
+     In fact, it is expected that, with narrower types,
+     there will be fewer type conversions.
+     The pre-translation steps before the type annotation step
+     could be actually factored out and done once,
+     but for greater implementation simplicity here we repeat them
+     for every overloaded method."))
+  (b* ((in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
        ((unless (= (len in-types) (len formals)))
         (raise "Internal error: ~
                 the number ~x0 of parameters of ~x1 ~
                 does not match the number ~x2 of input types of ~x1."
                (len formals) fn (len in-types))
-        (mv (ec-call (jmethod-fix nil)) qconsts)) ; irrelevant
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
-       (method-name (atj-gen-shallow-fnname fn
-                                            pkg-class-names
-                                            fn-method-names
-                                            curr-pkg))
-       ((run-when verbose$)
-        (cw "  ~s0 for ~x1~%" method-name fn))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
        (method-params (atj-gen-paramlist (symbol-name-lst formals)
@@ -1861,42 +1930,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fn-method ((fn symbolp)
-                                   (qconsts atj-qconstants-p)
-                                   (pkg-class-names string-string-alistp)
-                                   (fn-method-names symbol-string-alistp)
-                                   (guards$ booleanp)
-                                   (verbose$ booleanp)
-                                   (wrld plist-worldp))
-  :returns (mv (method jmethodp)
+(define atj-gen-shallow-fndef-methods ((fn symbolp)
+                                       (fn-types atj-function-type-listp)
+                                       (formals symbol-listp)
+                                       (body pseudo-termp)
+                                       (method-name stringp)
+                                       (qconsts atj-qconstants-p)
+                                       (pkg-class-names string-string-alistp)
+                                       (fn-method-names symbol-string-alistp)
+                                       (curr-pkg stringp)
+                                       (guards$ booleanp)
+                                       (wrld plist-worldp))
+  :guard (and (not (aij-nativep fn))
+              (not (equal curr-pkg "")))
+  :returns (mv (methods jmethod-listp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
-  :verify-guards nil
-  :short "Generate a shallowly embedded
-          ACL2 function natively implemented in AIJ
-          or ACL2 function definition."
-  :long
-  (xdoc::topstring-p
-   "We also add all the quoted constants to the collection.
-    The collection does not change for native functions.")
-  (if (aij-nativep fn)
-      (mv (atj-gen-shallow-fnnative-method fn
-                                           pkg-class-names
-                                           fn-method-names
-                                           guards$
-                                           verbose$
-                                           wrld)
-          qconsts)
-    (atj-gen-shallow-fndef-method fn
-                                  qconsts
-                                  pkg-class-names
-                                  fn-method-names
-                                  guards$
-                                  verbose$
-                                  wrld)))
+  :short "Lift @(tsee atj-gen-shallow-fndef-method) to lists of function types."
+  (b* (((when (endp fn-types)) (mv nil qconsts))
+       ((mv first-methods
+            qconsts) (atj-gen-shallow-fndef-method fn
+                                                   (car fn-types)
+                                                   formals
+                                                   body
+                                                   method-name
+                                                   qconsts
+                                                   pkg-class-names
+                                                   fn-method-names
+                                                   curr-pkg
+                                                   guards$
+                                                   wrld))
+       ((mv rest-methods
+            qconsts) (atj-gen-shallow-fndef-methods fn
+                                                    (cdr fn-types)
+                                                    formals
+                                                    body
+                                                    method-name
+                                                    qconsts
+                                                    pkg-class-names
+                                                    fn-method-names
+                                                    curr-pkg
+                                                    guards$
+                                                    wrld)))
+    (mv (cons first-methods rest-methods) qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-fn-methods ((fns symbol-listp)
+(define atj-gen-shallow-fndef-all-methods
+  ((fn symbolp)
+   (qconsts atj-qconstants-p)
+   (pkg-class-names string-string-alistp)
+   (fn-method-names symbol-string-alistp)
+   (guards$ booleanp)
+   (verbose$ booleanp)
+   (wrld plist-worldp))
+  :guard (not (aij-nativep fn))
+  :returns (mv (methods jmethod-listp)
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+  :short "Generate all the overloaded Java methods
+          for an ACL2 function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atj-gen-shallow-fndef-method) first.
+     Here we calculate, once, the data to pass to that function
+     (via @(tsee atj-gen-shallow-fndef-methods)).")
+   (xdoc::p
+    "We retrieve all the primary and secondary function types of @('fn'),
+     and generate an overloaded method for each.
+     Note that if @('guards$') is @('nil'),
+     then the retrieved function types boil down to one
+     that consists of all @(':value') types."))
+  (b* ((curr-pkg (symbol-package-name fn))
+       (formals (formals+ fn wrld))
+       (body (ubody+ fn wrld))
+       ((run-when (null body))
+        (raise "Internal error: ~
+                the function ~x0 has no unnormalized body."
+               fn))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
+       (all-fn-types (cons main-fn-type other-fn-types))
+       (method-name (atj-gen-shallow-fnname fn
+                                            pkg-class-names
+                                            fn-method-names
+                                            curr-pkg))
+       ((run-when verbose$)
+        (cw "  ~s0 for ~x1~%" method-name fn)))
+    (atj-gen-shallow-fndef-methods fn
+                                   all-fn-types
+                                   formals
+                                   body
+                                   method-name
+                                   qconsts
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   guards$
+                                   wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-fn-methods ((fn symbolp)
                                     (qconsts atj-qconstants-p)
                                     (pkg-class-names string-string-alistp)
                                     (fn-method-names symbol-string-alistp)
@@ -1905,26 +2040,59 @@
                                     (wrld plist-worldp))
   :returns (mv (methods jmethod-listp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
-  :verify-guards nil
-  :short "Lift @(tsee atj-gen-shallow-fn-method) to lists."
-  (b* (((when (endp fns)) (mv nil qconsts))
-       ((mv first-method
-            qconsts) (atj-gen-shallow-fn-method (car fns)
-                                                qconsts
+  :short "Generate all the overloaded Java methods
+          for an ACL2 function natively implemented in AIJ
+          or for an ACL2 function definition."
+  :long
+  (xdoc::topstring-p
+   "We also add all the quoted constants to the collection.
+    The collection does not change for native functions.")
+  (if (aij-nativep fn)
+      (mv (atj-gen-shallow-fnnative-all-methods fn
                                                 pkg-class-names
                                                 fn-method-names
                                                 guards$
                                                 verbose$
-                                                wrld))
-       ((mv rest-methods
-            qconsts) (atj-gen-shallow-fn-methods (cdr fns)
+                                                wrld)
+          qconsts)
+    (atj-gen-shallow-fndef-all-methods fn
+                                       qconsts
+                                       pkg-class-names
+                                       fn-method-names
+                                       guards$
+                                       verbose$
+                                       wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-all-fn-methods ((fns symbol-listp)
+                                        (qconsts atj-qconstants-p)
+                                        (pkg-class-names string-string-alistp)
+                                        (fn-method-names symbol-string-alistp)
+                                        (guards$ booleanp)
+                                        (verbose$ booleanp)
+                                        (wrld plist-worldp))
+  :returns (mv (methods jmethod-listp)
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+  :short "Lift @(tsee atj-gen-shallow-fn-methods) to lists of functions."
+  (b* (((when (endp fns)) (mv nil qconsts))
+       ((mv first-methods
+            qconsts) (atj-gen-shallow-fn-methods (car fns)
                                                  qconsts
                                                  pkg-class-names
                                                  fn-method-names
                                                  guards$
                                                  verbose$
-                                                 wrld)))
-    (mv (cons first-method rest-methods) qconsts)))
+                                                 wrld))
+       ((mv rest-methods
+            qconsts) (atj-gen-shallow-all-fn-methods (cdr fns)
+                                                     qconsts
+                                                     pkg-class-names
+                                                     fn-method-names
+                                                     guards$
+                                                     verbose$
+                                                     wrld)))
+    (mv (append first-methods rest-methods) qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1953,16 +2121,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-synonym-method ((fn symbolp)
+                                        (fn-type atj-function-type-p)
                                         (pkg-class-names string-string-alistp)
                                         (fn-method-names symbol-string-alistp)
-                                        (guards$ booleanp)
-                                        (curr-pkg stringp)
                                         (wrld plist-worldp))
-  :guard (member-eq fn (pkg-imports curr-pkg))
-  (declare (ignore curr-pkg)) ; only used in the guard
   :returns (method jmethodp)
-  :verify-guards nil
-  :short "Generate a shallowly embedded ACL2 function synonym."
+  :short "Generate a Java method with the given types
+          for an ACL2 function synonym."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1975,14 +2140,14 @@
      but that symbol is imported by the @('\"ACL2\"') package,
      making it referenceable as @('acl2::cons')
      besides the ``canonical'' @('common-lisp::cons').
-     In particular, in the @('\"ACL2\"')
+     In particular, in the @('\"ACL2\"') package
      it can be referenced as just @('cons'),
      which makes ACL2 code much more readable.")
    (xdoc::p
-    "In the shallow embedding we translate these two ACL2 packages
-     to two different Java classes,
+    "In the shallow embedding,
+     we translate these two ACL2 packages to two different Java classes,
      and the method that corresponds to @(tsee cons)
-     is in the class for @('\"COMMON-LISP\"'),
+     is declared in the class for @('\"COMMON-LISP\"'),
      where the method can be referenced by simple name,
      without qualifying it with the class name.
      But in classes for other packages, e.g. the class for @('\"ACL2\"'),
@@ -1999,24 +2164,35 @@
      It is hoped that the JVM JIT may optimize the indirection away.")
    (xdoc::p
     "The @('fn') parameter is the name of the ACL2 function in question,
-     e.g. @(tsee cons) in the example above.
-     The @('curr-pkg') parameter is the one that imports @('fn'),
-     e.g. @('\"ACL2\"') in the example above.")
+     e.g. @(tsee cons) in the example above.")
    (xdoc::p
     "We pass the @(tsee symbol-package-name) of @('fn')
      to @(tsee atj-gen-shallow-fnname)
      to ensure that the result is the simple name of the method,
-     which goes into the generated method declaration."))
-  (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
-       (fn-type (atj-function-type-info->main fn-info))
-       (in-types (atj-function-type->inputs fn-type))
+     which goes into the generated method declaration.")
+   (xdoc::p
+    "Recall that, for each ACL2 function,
+     we generate as many overloaded Java methods
+     as the number of primary and secondary types of the function.
+     Accordingly, we must generate
+     the same number of overloaded methods for the function synonyms.
+     This function generates the overloaded method
+     for the function type passed as argument."))
+  (b* ((in-types (atj-function-type->inputs fn-type))
        (out-type (atj-function-type->output fn-type))
        (fn-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
                                             fn-method-names
                                             fn-pkg))
-       (method-param-names (atj-gen-shallow-synonym-method-params (arity fn wrld)))
+       (method-param-names (atj-gen-shallow-synonym-method-params
+                            (arity+ fn wrld)))
+       ((unless (= (len method-param-names) (len in-types)))
+        (raise "Internal error: ~
+                the number ~x0 of input types of ~x1 ~
+                differs from the arity ~x2 of ~x1."
+               (len in-types) fn (len method-param-names))
+        (ec-call (jmethod-fix :this-is-irrelevant)))
        (method-params (atj-gen-paramlist method-param-names
                                          (atj-types-to-jtypes in-types)))
        (class (atj-get-pkg-class-name fn-pkg pkg-class-names))
@@ -2039,29 +2215,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-synonym-methods ((fns symbol-listp)
+(define atj-gen-shallow-synonym-methods ((fn symbolp)
+                                         (fn-types atj-function-type-listp)
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
-                                         (guards$ booleanp)
-                                         (curr-pkg stringp)
                                          (wrld plist-worldp))
-  :guard (subsetp-equal fns (pkg-imports curr-pkg))
   :returns (methods jmethod-listp)
-  :verify-guards nil
-  :short "Lift @(tsee atj-gen-shallow-synonym-method) to lists."
-  (cond ((endp fns) nil)
-        (t (cons (atj-gen-shallow-synonym-method (car fns)
+  :short "Lift @(tsee atj-gen-shallow-synonym-method)
+          to lists of function types."
+  (cond ((endp fn-types) nil)
+        (t (cons (atj-gen-shallow-synonym-method fn
+                                                 (car fn-types)
                                                  pkg-class-names
                                                  fn-method-names
-                                                 guards$
-                                                 curr-pkg
                                                  wrld)
-                 (atj-gen-shallow-synonym-methods (cdr fns)
+                 (atj-gen-shallow-synonym-methods fn
+                                                  (cdr fn-types)
                                                   pkg-class-names
                                                   fn-method-names
-                                                  guards$
-                                                  curr-pkg
                                                   wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-synonym-all-methods
+  ((fn symbolp)
+   (pkg-class-names string-string-alistp)
+   (fn-method-names symbol-string-alistp)
+   (guards$ booleanp)
+   (wrld plist-worldp))
+  :returns (methods jmethod-listp)
+  :short "Generate all the overloaded Java methods
+          for an ACL2 function synonym."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atj-gen-shallow-synonym-method) first.")
+   (xdoc::p
+    "We retrieve all the primary and secondary function types of @('fn'),
+     and generate an overloaded method for each.
+     Note that if @('guards$') is @('nil'),
+     then the retrieved function types boil down to one
+     that consists of all @(':value') types."))
+  (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
+       (all-fn-types (cons main-fn-type other-fn-types)))
+    (atj-gen-shallow-synonym-methods fn
+                                     all-fn-types
+                                     pkg-class-names
+                                     fn-method-names
+                                     wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-all-synonym-methods
+  ((fns symbol-listp)
+   (pkg-class-names string-string-alistp)
+   (fn-method-names symbol-string-alistp)
+   (guards$ booleanp)
+   (wrld plist-worldp))
+  :returns (methods jmethod-listp)
+  :short "Lift @(tsee atj-gen-shallow-synonym-all-methods)
+          to lists of functions."
+  (cond ((endp fns) nil)
+        (t (append (atj-gen-shallow-synonym-all-methods (car fns)
+                                                        pkg-class-names
+                                                        fn-method-names
+                                                        guards$
+                                                        wrld)
+                   (atj-gen-shallow-all-synonym-methods (cdr fns)
+                                                        pkg-class-names
+                                                        fn-method-names
+                                                        guards$
+                                                        wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2076,7 +2302,6 @@
                                      (wrld plist-worldp))
   :returns (mv (methods jmethod-listp)
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
-  :verify-guards nil
   :short "Generate all the methods of the class for an ACL2 package."
   :long
   (xdoc::topstring
@@ -2091,6 +2316,10 @@
      that are in other ACL2 packages but that are imported by @('pkg');
      see @(tsee atj-gen-shallow-synonym-method) for motivation.")
    (xdoc::p
+    "Recall that, for each ACL2 function or function synonym,
+     we generate one overloaded method
+     for each primary or secondary type of the function.")
+   (xdoc::p
     "We sort all the methods.")
    (xdoc::p
     "We also collect all the quoted constants
@@ -2101,24 +2330,25 @@
         (cw "~%Generate the Java methods ~
                for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
-            qconsts) (atj-gen-shallow-fn-methods fns
-                                                 qconsts
-                                                 pkg-class-names
-                                                 fn-method-names
-                                                 guards$
-                                                 verbose$
-                                                 wrld))
+            qconsts) (atj-gen-shallow-all-fn-methods fns
+                                                     qconsts
+                                                     pkg-class-names
+                                                     fn-method-names
+                                                     guards$
+                                                     verbose$
+                                                     wrld))
        (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
        (imported-fns (sort-symbol-listp imported-fns))
-       (synonym-methods (atj-gen-shallow-synonym-methods imported-fns
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         guards$
-                                                         pkg
-                                                         wrld))
+       (synonym-methods (atj-gen-shallow-all-synonym-methods imported-fns
+                                                             pkg-class-names
+                                                             fn-method-names
+                                                             guards$
+                                                             wrld))
        (all-methods (append synonym-methods fn-methods)))
     (mv (mergesort-jmethods all-methods)
-        qconsts)))
+        qconsts))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2144,7 +2374,7 @@
   :returns (mv (methods-by-pkg string-jmethodlist-alistp
                                :hyp (string-listp pkgs))
                (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
-  :verify-guards nil
+  :verify-guards :after-returns
   :short "Generate all the methods of the classes for all the ACL2 packages."
   :long
   (xdoc::topstring
@@ -2189,7 +2419,6 @@
                                     (quoted-symbols-by-pkg
                                      string-symbollist-alistp))
   :returns (fields jfield-listp)
-  :verify-guards nil
   :short "Generate all the fields of the class for an ACL2 package."
   :long
   (xdoc::topstring
@@ -2231,7 +2460,7 @@
                                         (quoted-symbols-by-pkg
                                          string-symbollist-alistp))
   :returns (fields-by-pkg string-jfieldlist-alistp :hyp (string-listp pkgs))
-  :verify-guards nil
+  :verify-guards :after-returns
   :short "Generate all the fields of the class for all the ACL2 packages."
   :long
   (xdoc::topstring
@@ -2344,11 +2573,11 @@
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
+  :guard (no-duplicatesp-equal pkgs)
   :returns (mv (class jclassp)
                (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
                (fn-method-names symbol-string-alistp
                                 :hyp (symbol-listp fns-to-translate)))
-  :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration,
           in the shallow embedding approach."
   :long
@@ -2393,8 +2622,7 @@
        ((unless (no-duplicatesp-eq fns+natives))
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)
-        ;; irrelevant:
-        (mv (make-jclass :access (jaccess-public) :name "") nil nil))
+        (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
@@ -2465,22 +2693,27 @@
         pkg-class-names
         fn-method-names))
   :prepwork
-  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+   (defrulel verify-guards-lemma
+     (implies (cons-pos-alistp alist)
+              (alistp (strip-cars alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-main-cunit ((guards$ booleanp)
-                                    (java-package$ maybe-stringp)
-                                    (java-class$ maybe-stringp)
+                                    (java-package$ stringp)
+                                    (java-class$ stringp)
                                     (pkgs string-listp)
                                     (fns-to-translate symbol-listp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
+  :guard (no-duplicatesp-equal pkgs)
   :returns (mv (cunit jcunitp)
                (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
                (fn-method-names symbol-string-alistp
                                 :hyp (symbol-listp fns-to-translate)))
-  :verify-guards nil
   :short "Generate the main Java compilation unit,
           in the shallow embedding approach."
   :long
