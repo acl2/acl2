@@ -12,9 +12,12 @@
 (in-package "ACL2")
 
 (include-book "byte-to-bits-little")
+(local (include-book "../arithmetic-light/floor"))
+(local (include-book "../arithmetic-light/mod"))
 (local (include-book "../lists-light/append"))
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/nth"))
+(local (include-book "../lists-light/len"))
 
 ;; Convert a sequence of 8-bit bytes to a sequence of bits.  The bits from
 ;; earlier bytes come earlier in the result.  But the least significant bit of
@@ -57,13 +60,20 @@
                   (getbit 1 (car bytes))))
   :hints (("Goal" :in-theory (enable bytes-to-bits-little BYTE-TO-BITS-LITTLE))))
 
+(local
+ (defun cdr-sub8-induct (bytes n)
+   (if (atom bytes)
+       (list bytes n)
+     (cdr-sub8-induct (rest bytes) (+ -8  n)))))
+
 (defthm nth-of-bytes-to-bits-little
-  (implies (and (< n 8) ;gen?
-                (consp bytes)
+  (implies (and (< n (* 8 (len bytes)))
                 (natp n))
            (equal (nth n (bytes-to-bits-little bytes))
-                  (getbit n (nth 0 bytes))))
-  :hints (("Goal" :in-theory (enable bytes-to-bits-little))))
+                  (getbit (mod n 8)
+                          (nth (floor n 8) bytes))))
+  :hints (("Goal" :induct (cdr-sub8-induct bytes n)
+           :in-theory (enable bytes-to-bits-little))))
 
 (defthm nthcdr-of-8-and-bytes-to-bits-little
   (equal (nthcdr 8 (bytes-to-bits-little bytes))
