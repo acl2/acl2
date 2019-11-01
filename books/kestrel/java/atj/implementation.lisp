@@ -158,7 +158,7 @@
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)
-  :mode :program
+  :mode :program ; because of ATJ-PROCESS-INPUTS and ATJ-GEN-EVERYTHING
   :parents (atj-implementation)
   :short "Process the inputs and generate the Java file(s)."
   :long

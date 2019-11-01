@@ -134,10 +134,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-targets ((targets true-listp) deep guards ctx state)
-  :returns (mv erp
-               (result "Always @('nil').")
-               state)
-  :verify-guards nil
+  :returns (mv erp (result null) state)
   :short "Process the @('fn1'), ..., @('fnp') inputs."
   :long
   (xdoc::topstring
@@ -163,7 +160,7 @@
                     (eq guards t))) (value nil))
        (target-prims (intersection-eq targets *atj-primitive-fns*))
        ((when (null target-prims)) (value nil)))
-    (er-soft+ t nil
+    (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
                and the :GUARDS input is T, ~
                ~@0."
@@ -175,9 +172,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-java-package ((java-package) ctx state)
-  :returns (mv erp
-               (nothing "Always @('nil').")
-               state)
+  :returns (mv erp (nothing null) state)
   :verify-guards nil
   :short "Process the @(':java-package') input."
   (b* (((er &) (ensure-string-or-nil$ java-package
@@ -258,7 +253,7 @@
   :returns (mv erp
                (tests$ "An @(tsee atj-test-listp).")
                state)
-  :mode :program
+  :mode :program ; because of TRANS-EVAL
   :short "Process the @(':tests') input."
   :long
   (xdoc::topstring
@@ -300,7 +295,7 @@
      :returns (mv erp
                   tests$ ; ATJ-TEST-LISTP
                   state)
-     :mode :program
+     :mode :program ; because of TRANS-EVAL
      :parents nil
      (b* (((when (endp tests-alist)) (value nil))
           ((cons (cons name term) tests-alist) tests-alist)
@@ -375,7 +370,7 @@
                         otherwise it is the path
                         of the generated test Java file.")
                state)
-  :mode :program
+  :verify-guards nil
   :short "Process the @(':output-dir') input."
   (b* (((er &) (ensure-string$ output-dir "The :OUTPUT-DIR input" t nil))
        ((mv err/msg kind state) (oslib::file-kind output-dir))
@@ -523,7 +518,6 @@
      and then it processes @('worklist-chk'),
      and it is during this processing (when @('gen?') is thus @('nil'))
      that @('collected-chk') gets populated."))
-  :verify-guards nil
 
   (define atj-collect-fns-in-term ((term pseudo-termp)
                                    (gen? booleanp)
@@ -533,13 +527,14 @@
                                    (collected-chk symbol-listp)
                                    (deep$ booleanp)
                                    (guards$ booleanp))
-    :returns (mv (new-worklist-gen "A @(tsee symbol-listp).")
-                 (new-worklist-chk "A @(tsee symbol-listp).")
+    :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
+                 (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
     (b* (((when (variablep term)) (mv worklist-gen worklist-chk nil))
          ((when (fquotep term)) (mv worklist-gen worklist-chk nil))
          (fn (ffn-symb term))
-         ((when (eq fn 'return-last))
+         ((when (and (eq fn 'return-last)
+                     (quotep (fargn term 1)))) ; this should be always true
           (b* ((1st-arg (fargn term 1)))
             (case (unquote 1st-arg)
               (acl2::mbe1-raw (if guards$
@@ -628,8 +623,8 @@
                                     (collected-chk symbol-listp)
                                     (deep$ booleanp)
                                     (guards$ booleanp))
-    :returns (mv (new-worklist-gen "A @(tsee symbol-listp).")
-                 (new-worklist-chk "A @(tsee symbol-listp).")
+    :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
+                 (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
     (b* (((when (endp terms)) (mv worklist-gen worklist-chk nil))
          ((mv worklist-gen worklist-chk unsuppported-return-last?)
@@ -649,7 +644,17 @@
                                 collected-gen
                                 collected-chk
                                 deep$
-                                guards$))))
+                                guards$)))
+
+  :prepwork
+  ((defrule returns-lemma
+     (implies (symbol-listp x)
+              (symbol-listp (remove1-equal a x)))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-collect-fns-in-term
+    :hints (("Goal" :expand (pseudo-termp term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -665,7 +670,7 @@
   :returns (mv erp
                (fns "A @(tsee symbol-listp).")
                state)
-  :mode :program
+  :mode :program ; because termination takes a bit of work
   :short "Worklist algorithm iteration."
   :long
   (xdoc::topstring
@@ -793,7 +798,7 @@
   :returns (mv erp
                (fns-to-translate "A @(tsee symbol-listp).")
                state)
-  :mode :program
+  :mode :program ; because of ATJ-WORKLIST-ITERATE
   :short "Collect the names of all the ACL2 functions to be translated to Java,
           checking that they satisfy all the necessary constraints."
   :long
@@ -918,7 +923,7 @@
                         @(tsee atj-process-tests), and
                         @('verbose$') is the @(':verbose') input.")
                state)
-  :mode :program
+  :mode :program ; because of ATJ-FNS-TO-TRANSLATE and ATJ-PROCESS-TESTS
   :short "Ensure that the inputs to @(tsee atj) are valid."
   :long
   (xdoc::topstring
