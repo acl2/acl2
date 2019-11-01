@@ -268,15 +268,21 @@
             (mv env-wires nil))
            ((equal (svl-occ-kind occ) ':assign)
             (b* ((env-wires (hons-acons (svl-occ-assign->output occ)
-                                        (svex-eval (svl-occ-assign->svex occ)
-                                                   env-wires)
+                                        (mbe :logic (svex-eval-wog (svl-occ-assign->svex occ)
+                                                                   env-wires)
+                                             :exec (svex-eval (svl-occ-assign->svex occ)
+                                                              env-wires))
                                         env-wires)))
               (svl-run-phase-occs (cdr occs)
                                   env-wires
                                   delayed-env-alist
                                   modules)))
-           (t (b* ((mod-input-vals (sv::svexlist-eval (svl-occ-module->inputs occ)
-                                                      env-wires))
+           (t (b* ((mod-input-vals (mbe :logic
+                                        (svexlist-eval-wog (svl-occ-module->inputs occ)
+                                                           env-wires)
+                                        :exec
+                                        (sv::svexlist-eval (svl-occ-module->inputs occ)
+                                                           env-wires)))
                    (mod.delayed-env (entry-svl-env-fix (hons-get occ-name delayed-env-alist)))
                    ((mv mod-output-vals mod-delayed-env)
                     (svl-run-phase (svl-occ-module->name occ)
