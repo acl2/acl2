@@ -333,7 +333,9 @@
        Furthermore, if the @(':deep') input is @('nil'),
        the Java methods in the generated code
        have the argument and return types
-       specified via @(tsee def-atj-main-function-type),
+       specified via @(tsee def-atj-main-function-type)
+       and @(tsee def-atj-other-function-type)
+       (see the `Generated Java Code' section for more information),
        and the generated Java code may manipulate
        Java primitive values directly.")
      (xdoc::li
@@ -503,8 +505,8 @@
 
    (xdoc::p
     "In the shallow embedding approach,
-     the Java class contains one public static method
-     for each function among @('fn1'), ..., @('fnp'),
+     the Java class contains public static methods
+     for the functions among @('fn1'), ..., @('fnp'),
      the functions that they transitively call
      (except for the functions in @(tsee *atj-primitive-fns*),
      when @(':deep') is @('nil') and @(':guards') is @('t'))
@@ -512,11 +514,15 @@
      (the latter are just wrappers of the native implementations).
      Each method has the same number of parameters as the ACL2 function.
      If @(':guards') is @('nil'),
-     each method has @('Acl2Value') as argument and return types;
-     if @(':guards') is @('t'),
-     each method has argument and return types
-     determined from the types assigned to the corresponding ACL2 function
-     via @(tsee def-atj-main-function-type).
+     there is exactly one method for each ACL2 function,
+     and that method has @('Acl2Value') as argument and return types.
+     If @(':guards') is @('t'),
+     for each ACL2 function there are as many overloaded methods
+     as the number of function types associated to the function
+     via @(tsee def-atj-main-function-type)
+     and @(tsee def-atj-other-function-type):
+     each of these function types determines the argument and return types
+     of the corresponding overloaded method.
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.
