@@ -10,9 +10,9 @@
 
 (in-package "JAVA")
 
-(include-book "library-extensions")
-
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
