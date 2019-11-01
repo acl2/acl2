@@ -596,7 +596,7 @@
 
 (define print-jlines-to-channel ((lines msg-listp) (channel symbolp) state)
   :returns state
-  :mode :program
+  :mode :program ; because of FMT1!
   :short "Write pretty-printed lines to an output channel."
   (cond ((endp lines) state)
         (t (b* (((mv & state) (fmt1! "~@0"
@@ -608,7 +608,7 @@
 
 (define print-to-jfile ((lines msg-listp) (filename stringp) state)
   :returns state
-  :mode :program
+  :mode :program ; because of FMT1! in PRINT-JLINES-TO-CHANNEL
   :short "Write pretty-printed lines to a file."
   (b* (((mv channel state) (open-output-channel! filename :character state))
        (state (print-jlines-to-channel lines channel state))

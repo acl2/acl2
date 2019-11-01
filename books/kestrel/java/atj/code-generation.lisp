@@ -529,7 +529,7 @@
   :returns (mv (pkg-class-names "A @(tsee string-string-alistp).")
                (fn-method-names "A @(tsee symbol-string-alistp).")
                state)
-  :mode :program
+  :mode :program ; because of PRINT-TO-JFILE
   :short "Generate the main Java file."
   :long
   (xdoc::topstring
@@ -583,7 +583,7 @@
                            (fn-method-names symbol-string-alistp)
                            state)
   :returns state
-  :mode :program
+  :mode :program ; because of PRINT-TO-JFILE
   :short "Generate the test Java file."
   (b* ((cunit (atj-gen-test-cunit deep$
                                   guards$
@@ -617,7 +617,7 @@
                             (verbose$ booleanp)
                             state)
   :returns (mv erp val state)
-  :mode :program
+  :mode :program ; because of ATJ-GEN-MAIN/TEST-FILE
   :short "Generate the main Java file, and optionally the Java test file."
   :long
   (xdoc::topstring
