@@ -223,6 +223,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test-input ((input pseudo-termp)
+                                (type atj-typep)
                                 (fn symbolp "Just for error messages.")
                                 (call pseudo-termp "Just for error messages.")
                                 (deep$ booleanp)
@@ -238,55 +239,56 @@
    (xdoc::p
     "This is some sub-term @('in') of a term @('(fn ... in ...)')
      specified in the @(':tests') input.
-     This @('in') must be either a quoted constant term
-     or a term of the form @('(int-value (quote <int>))'),
-     where @('<int>') is a signed 32-bit ACL2 integer.
-     The latter is allowed only if
-     the @(':deep') input is @('nil') and the @(':guards') input is @('t').")
-   (xdoc::p
-    "Here we check these conditions, to validate @('in').
+     The requirements on @('in'), as expained in the user documentation,
+     depend on the @(':deep') and @(':guards') inputs,
+     as well as on the ATJ type assigned to
+     the parameter of @('fn') that corresponds to @('in'):
+     these three values are passed as inputs to this function,
+     which checks these requirements, thus validating @('in').
      If the checks succeed, we turn @('in') into
      the corresponding test value.
      Note that these checks imply that @('in') is ground."))
-  (b* (((when (quotep input))
-        (value (atj-test-value-avalue (unquote-term input))))
-       (irrelevant (atj-test-value-avalue :irrelevant))
-       ((when (or deep$ (not guards$)))
-        (er-soft+ ctx t irrelevant
-                  "The term ~x0 that is an argument of ~
-                   the function call (~x1 ...) that translates ~
-                   the test term ~x2 in the :TESTS input, ~
-                   must be a quoted constant."
-                  input fn call))
-       (err-msg (msg "The term ~x0 that is an argument of ~
-                      the function call (~x1 ...) that translates ~
-                      the test term ~x2 in the :TESTS input, ~
-                      must be either a quoted constant ~
-                      or a call (INT-VALUE X) where X is ~
-                      a signed 32-bit integer."
-                     input fn call))
-       ((unless (ffn-symb-p input 'int-value))
-        (er-soft+ ctx t irrelevant "~@0" err-msg))
-       (int-value-args (fargs input))
-       ((unless (= (len int-value-args) 1))
-        (er-soft+ ctx t irrelevant "~@0" err-msg))
-       (int-value-arg (car int-value-args))
-       ((unless (quotep int-value-arg))
-        (er-soft+ ctx t irrelevant "~@0" err-msg))
-       (int (unquote-term int-value-arg))
-       ((unless (sbyte32p int))
-        (er-soft+ ctx t irrelevant "~@0" err-msg)))
-    (value (atj-test-value-jvalue (int-value int)))))
+  (b* ((irrelevant (atj-test-value-avalue :irrelevant)))
+    (if (or deep$
+            (not guards$)
+            (not (eq type :jint)))
+        (if (quotep input)
+            (value (atj-test-value-avalue (unquote-term input)))
+          (er-soft+ ctx t irrelevant
+                    "The term ~x0 that is an argument of ~
+                     the function call (~x1 ...) that translates ~
+                     the test term ~x2 in the :TESTS input, ~
+                     must be a quoted constant."))
+      (b* ((err-msg (msg "The term ~x0 that is an argument of ~
+                          the function call (~x1 ...) that translates ~
+                          the test term ~x2 in the :TESTS input, ~
+                          must be a call (INT-VALUE X) where X is ~
+                          a signed 32-bit integer."
+                         input fn call))
+           ((unless (ffn-symb-p input 'int-value))
+            (er-soft+ ctx t irrelevant "~@0" err-msg))
+           (int-value-args (fargs input))
+           ((unless (= (len int-value-args) 1))
+            (er-soft+ ctx t irrelevant "~@0" err-msg))
+           (int-value-arg (car int-value-args))
+           ((unless (quotep int-value-arg))
+            (er-soft+ ctx t irrelevant "~@0" err-msg))
+           (int (unquote-term int-value-arg))
+           ((unless (sbyte32p int))
+            (er-soft+ ctx t irrelevant "~@0" err-msg)))
+        (value (atj-test-value-jvalue (int-value int)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test-inputs ((inputs pseudo-term-listp)
+                                 (types atj-type-listp)
                                  (fn symbolp "Just for error messages.")
                                  (call pseudo-termp "Just for error messages.")
                                  (deep$ booleanp)
                                  (guards$ booleanp)
                                  ctx
                                  state)
+  :guard (= (len types) (len inputs))
   :returns (mv erp
                (test-inputs atj-test-value-listp)
                state)
@@ -296,11 +298,17 @@
    "This is used to process all the inputs of a test.")
   (b* (((when (endp inputs)) (value nil))
        ((mv erp test-input state)
-        (atj-process-test-input
-         (car inputs) fn call deep$ guards$ ctx state))
+        (atj-process-test-input (car inputs)
+                                (car types)
+                                fn call
+                                deep$ guards$
+                                ctx state))
        ((when erp) (mv t nil state))
-       ((er test-inputs) (atj-process-test-inputs
-                          (cdr inputs) fn call deep$ guards$ ctx state)))
+       ((er test-inputs) (atj-process-test-inputs (cdr inputs)
+                                                  (cdr types)
+                                                  fn call
+                                                  deep$ guards$
+                                                  ctx state)))
     (value (cons test-input test-inputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,8 +379,18 @@
                      fn call)
                 t nil))
        (inputs (fargs term$))
+       (fn-info (atj-get-function-type-info fn guards$ (w state)))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
        ((er test-inputs)
-        (atj-process-test-inputs inputs fn term$ deep$ guards$ ctx state))
+        (atj-process-test-inputs inputs
+                                 (atj-function-type->inputs main-fn-type)
+                                 fn
+                                 term$
+                                 deep$
+                                 guards$
+                                 ctx
+                                 state))
        ((er &) (if guards$
                    (b* ((guard (subcor-var (formals fn (w state))
                                            inputs
@@ -392,10 +410,8 @@
         (b* ((test-output (atj-test-value-avalue output)))
           (value (atj-test name fn test-inputs test-output))))
        (in-types (atj-test-values-to-types test-inputs))
-       (fn-info (atj-get-function-type-info fn guards$ (w state)))
-       (fn-types (cons (atj-function-type-info->main fn-info)
-                       (atj-function-type-info->others fn-info)))
-       (out-type? (atj-output-type-of-min-input-types in-types fn-types))
+       (all-fn-types (cons main-fn-type other-fn-types))
+       (out-type? (atj-output-type-of-min-input-types in-types all-fn-types))
        ((when (null out-type?))
         (er-soft+ ctx t nil
                   "The test term ~x0 in the :TESTS input ~
@@ -405,7 +421,6 @@
                         (atj-test-value-jvalue output)
                       (atj-test-value-avalue output))))
     (value (atj-test name fn test-inputs test-output))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

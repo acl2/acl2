@@ -417,15 +417,24 @@
       and each @('termj') is an untranslated ground term
       whose translation is @('(fn in1 in2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
-      and each @('in1'), @('in2'), etc. is either a quoted constant,
-      a term @('(java::int-value <int>)')
-      where @('<int>') is a quoted signed 32-bit integer;
-      the latter is actually allowed
-      only if @(':deep') is @('nil') and @(':guards') is @('t').
-      If @(':guards') is @('t'),
-      then the values of @('in1'), @('in2'), etc.
-      must satisfy the guard of @('fn').
-      All the @('namej') strings must be distinct.")
+      and each @('in') among @('in1'), @('in2')
+      satisfies the following conditions:")
+    (xdoc::ul
+     (xdoc::li
+      "If @(':deep') is @('t') or @(':guards') is @('nil'),
+       then @('in') must be a quoted constant.")
+     (xdoc::li
+      "If @(':deep') is @('nil') and @(':guards') is @('t'),
+       then requirements on @('in') depend on the type assigned,
+       via @(tsee def-atj-main-function-type),
+       to the input of @('fn') corresponding to @('in'):
+       if the type is @(':a...'),
+       then @('in') must be a quoted constant;
+       if the type is @(':jint'),
+       then @('in') must be a term @('(java::int-value <int>)')
+       where @('<int>') is a quoted signed 32-bit integer."))
+    (xdoc::p
+     "All the @('namej') strings must be distinct.")
     (xdoc::p
      "Each doublet @('(namej termj)') specifies a test,
       in which the result of @('(fn in1 in2 ...)') calculated by ACL2
