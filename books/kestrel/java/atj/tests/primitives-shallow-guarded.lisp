@@ -20,10 +20,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the functions that manipulate Java primitive values.
-; Generation of testing code is not supported yet.
+; Generate Java code for the function that manipulates Java primitive values,
+; with testing code.
 
 (java::atj f-int
            :deep nil
            :guards t
-           :java-class "PrimitivesShallowGuarded")
+           :java-class "PrimitivesShallowGuarded"
+           :tests *f-int-tests*)

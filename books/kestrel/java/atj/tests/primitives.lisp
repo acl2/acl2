@@ -26,3 +26,15 @@
                               (java::int-value-p y))))
   (java::jint-add (java::jint-mul (java::int-value 2) x)
                   (java::jint-mul y y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tests for the function over Java int values.
+
+(defconst *f-int-tests*
+  '(("Fint1" (f-int (java::int-value 8)
+                    (java::int-value 15)))
+    ("Fint2" (f-int (java::int-value -280)
+                    (java::int-value 3971)))
+    ("Fint3" (f-int (java::int-value 1000000)
+                    (java::int-value 1000000)))))
