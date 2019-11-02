@@ -15,50 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (measured-subset 'len (w state)) '(x))
-
-(assert-equal (measured-subset 'binary-append (w state)) '(x))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (measured-subset 'f (w state)) '(x)))
-
-(must-succeed*
- (defun f (x y z)
-   (declare (xargs :measure (nfix (- 10 y))))
-   (if (and (natp y) (< y 10))
-       (f x (1+ y) z)
-     (cons x z)))
- (assert-equal (measured-subset 'f (w state)) '(y)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (measured-subset+ 'len (w state)) '(x))
-
-(assert-equal (measured-subset+ 'binary-append (w state)) '(x))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (measured-subset+ 'f (w state)) '(x)))
-
-(must-succeed*
- (defun f (x y z)
-   (declare (xargs :measure (nfix (- 10 y))))
-   (if (and (natp y) (< y 10))
-       (f x (1+ y) z)
-     (cons x z)))
- (assert-equal (measured-subset+ 'f (w state)) '(y)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (well-founded-relation 'len (w state)) 'o<)
 
 (must-succeed*
