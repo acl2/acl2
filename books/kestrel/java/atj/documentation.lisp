@@ -415,16 +415,20 @@
       @('((name1 term1) ... (nameq termq))'),
       where each @('namej') is a string consisting of only letters and digits,
       and each @('termj') is an untranslated ground term
-      whose translation is @('(fn qc1 qc2 ...)'),
+      whose translation is @('(fn in1 in2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
-      and each @('qc1'), @('qc2'), etc. is a quoted constant.
+      and each @('in1'), @('in2'), etc. is either a quoted constant,
+      a term @('(java::int-value <int>)')
+      where @('<int>') is a quoted signed 32-bit integer;
+      the latter is actually allowed
+      only if @(':deep') is @('nil') and @(':guards') is @('t').
       If @(':guards') is @('t'),
-      then the values of @('qc1'), @('qc2'), etc.
+      then the values of @('in1'), @('in2'), etc.
       must satisfy the guard of @('fn').
       All the @('namej') strings must be distinct.")
     (xdoc::p
      "Each doublet @('(namej termj)') specifies a test,
-      in which the result of @('(fn qc1 qc2 ...)') calculated by ACL2
+      in which the result of @('(fn in1 in2 ...)') calculated by ACL2
       is compared with the result of the same call
       calculated via the generated Java code for @('fn').
       These tests can be run via additional generated Java code
@@ -432,12 +436,10 @@
     (xdoc::p
      "Note that the @(':tests') input is evaluated.")
     (xdoc::p
-     "Currently there is no support for generating tests for
-      Java methods with Java primitive argument or return types
-      (which may be generated only if
-      @(':deep') is @('nil') and @(':guards') is @('t'));
-      attempting to generate these tests may result in a Java compilation error.
-      Support will be added soon."))
+     "Test inputs of the form @('(java::int-value <int>)')
+      can be used only for ACL2 functions that have the ATJ type @(':jint')
+      assigned to the corresponding argument
+      via @(tsee def-atj-main-function-type)."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"

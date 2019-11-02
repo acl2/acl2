@@ -59,6 +59,7 @@
                          fcons-term
                          fcons-term*
                          ffn-symb
+                         ffn-symb-p
                          flambda-applicationp
                          flambdap
                          flatten
