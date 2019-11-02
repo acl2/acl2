@@ -34,7 +34,7 @@
     (xdoc::li
      "Objects of the AIJ classes for ACL2 values (e.g. @('Acl2Integer').
       These correspond to the ATJ "
-     (xdoc::seetopic "types" "atj-types")
+     (xdoc::seetopic "atj-types" "types")
      " whose names start with @('a') (e.g. @(':ainteger').")
     (xdoc::li
      "Java @('int') values, which correspond to the ATJ type @(':jint').
