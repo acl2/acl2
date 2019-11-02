@@ -51,3 +51,4 @@ PrimitivesDeepGuarded.java
 PrimitivesShallowUnguarded.java
 
 PrimitivesShallowGuarded.java
+PrimitivesShallowGuardedTests.java
