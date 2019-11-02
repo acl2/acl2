@@ -12846,23 +12846,22 @@
   :parents (grammar-parser-completeness)
   :short "Top-level completeness theorem of the parser of ABNF grammars."
   :long
-  "<p>
-   For every terminated tree rooted at @('rulelist')
-   that satisfies the
-   <see topic='@(url grammar-parser-disambiguating-restrictions)'
-   >disambiguating restrictions</see>,
-   @(tsee parse-grammar) succeeds on the string at the leaves of the tree
-   and returns that tree.
-   </p>
-   <p>
-   This is proved from @(tsee parse-rulelist-when-tree-match-and-restriction)
-   and the fact that its two parsing failure hypotheses are satisfied
-   because there is no extra input beyond the string at the leaves of the tree.
-   </p>
-   <p>
-   An alternative formulation is to avoid @(tsee tree-fix)
-   but include the hypothesis that the tree satisfies @(tsee treep).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "For every terminated tree rooted at @('rulelist')
+     that satisfies the "
+    (xdoc::seetopic "grammar-parser-disambiguating-restrictions"
+                    "disambiguating restrictions")
+    ", @(tsee parse-grammar) succeeds on the string at the leaves of the tree
+     and returns that tree.")
+   (xdoc::p
+    "This is proved from @(tsee parse-rulelist-when-tree-match-and-restriction)
+     and the fact that its two parsing failure hypotheses are satisfied
+     because there is no extra input
+     beyond the string at the leaves of the tree.")
+   (xdoc::p
+    "An alternative formulation is to avoid @(tsee tree-fix)
+     but include the hypothesis that the tree satisfies @(tsee treep)."))
   (implies (and (tree-match-element-p tree
                                       (element-rulename *rulelist*)
                                       *all-concrete-syntax-rules*)
