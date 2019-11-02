@@ -14,6 +14,7 @@
 (include-book "primitives")
 (include-book "test-structures")
 
+(include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
@@ -947,8 +948,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-pkgs-to-translate ((verbose$ booleanp) state)
-  :returns (pkgs "A @(tsee string-listp).")
-  :verify-guards nil
+  :returns (pkgs string-listp)
   :short "Collect all the ACL2 packages to be translated to Java."
   :long
   (xdoc::topstring
@@ -958,7 +958,7 @@
     "For now we return all the current packages.
      In the future, it might be possible to reduce them
      to just the ones referenced by the functions to be translated to Java."))
-  (b* ((pkgs (known-packages state))
+  (b* ((pkgs (known-packages+ state))
        ((run-when verbose$)
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs)))

@@ -75,7 +75,7 @@
                          index-of
                          integers-from-to
                          irecursivep
-                         known-packages
+                         known-packages+
                          lambda-body
                          lambda-formals
                          logext
