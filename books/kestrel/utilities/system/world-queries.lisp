@@ -32,6 +32,8 @@
 (include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
+(include-book "kestrel/std/system/known-packages" :dir :system)
+(include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/logic-function-namep" :dir :system)
 (include-book "kestrel/std/system/logical-name-listp" :dir :system)
 (include-book "kestrel/std/system/macro-args-plus" :dir :system)
@@ -457,37 +459,6 @@
   :parents (world-queries)
   :short "Check if a @(see rune) is enabled."
   (not (rune-disabledp rune state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define known-packages (state)
-  :returns (pkg-names "A @(tsee string-listp).")
-  :parents (world-queries)
-  :short "List of names of the known packages, in chronological order."
-  :long
-  "<p>
-   See @(tsee known-packages+) for a logic-friendly variant of this utility.
-   </p>"
-  (reverse (strip-cars (known-package-alist state))))
-
-(define known-packages+ (state)
-  :returns (pkg-names string-listp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee known-packages)."
-  :long
-  "<p>
-   This returns the same result as @(tsee known-packages),
-   but it includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('state').
-   </p>"
-  (b* ((result (known-packages state)))
-    (if (string-listp result)
-        result
-      (raise "Internal error: ~
-              the list of keys ~x0 of the alist of known packages ~
-              is not a true list of strings."
-             result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

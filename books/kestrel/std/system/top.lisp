@@ -17,6 +17,8 @@
 (include-book "dumb-occur-var-open")
 (include-book "event-name-queries")
 (include-book "function-queries")
+(include-book "known-packages")
+(include-book "known-packages-plus")
 (include-book "logic-friendly")
 (include-book "macro-queries")
 (include-book "remove-mbe")

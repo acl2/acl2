@@ -469,22 +469,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (string-listp (known-packages state)))
-
-(assert! (no-duplicatesp-equal (known-packages state)))
-
-(assert! (member-equal "ACL2" (known-packages state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (string-listp (known-packages+ state)))
-
-(assert! (no-duplicatesp-equal (known-packages+ state)))
-
-(assert! (member-equal "ACL2" (known-packages+ state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (string-listp (included-books (w state))))
 
 (assert! (no-duplicatesp-equal (included-books (w state))))
