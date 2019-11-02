@@ -203,7 +203,6 @@
     ((local
       (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ttree-with-root-p (tree (rulename stringp))
