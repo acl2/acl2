@@ -40,15 +40,15 @@
     "This defines a null literal as a string at the leaves of
      a terminated tree rooted at the @('null-literal') nonterminal."))
   (exists (tree)
-          (and (ttree-with-root-p tree "null-literal")
+          (and (abnf-tree-with-root-p tree "null-literal")
                (equal (abnf::tree->string tree)
                       x)))
-  :guard-hints (("Goal" :in-theory (enable ttree-with-root-p))))
+  :guard-hints (("Goal" :in-theory (enable abnf-tree-with-root-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define null-literal-tree ()
-  :returns (tree (ttree-with-root-p tree "null-literal"))
+  :returns (tree (abnf-tree-with-root-p tree "null-literal"))
   :short "Tree for the null literal."
   :long
   (xdoc::topstring
@@ -87,7 +87,7 @@
     "This is proved via a lemma asserting that
      a terminated tree rooted at @('null-literal')
      has leaves that satisfy @(tsee null-literal-p).
-     The lemma is proved by exhaustively opening @(tsee ttree-with-root-p),
+     The lemma is proved by exhaustively opening @(tsee abnf-tree-with-root-p),
      thus prescribing the exact form of the tree,
      and in particular its leaves.
      The theorem is then proved by instantiating the lemma
@@ -99,7 +99,7 @@
 
   :prep-lemmas
   ((defrule lemma
-     (implies (ttree-with-root-p tree "null-literal")
+     (implies (abnf-tree-with-root-p tree "null-literal")
               (null-literal-p (abnf::tree->string tree)))
      :rule-classes nil
      :expand ((:free (element)
@@ -107,7 +107,7 @@
               (:free (treess element)
                (abnf::tree-list-match-element-p
                 (car treess) element *grammar*)))
-     :enable (ttree-with-root-p
+     :enable (abnf-tree-with-root-p
               abnf::tree-match-element-p
               abnf::tree-list-match-repetition-p
               abnf::numrep-match-repeat-range-p

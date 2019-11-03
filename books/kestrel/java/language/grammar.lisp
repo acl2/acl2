@@ -205,7 +205,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ttree-with-root-p (tree (rulename stringp))
+(define abnf-tree-with-root-p (tree (rulename stringp))
   :returns (yes/no booleanp)
   :short "Recognize terminated ABNF trees whose root is the given rule name,
           for the Java grammar."
@@ -216,8 +216,8 @@
      a more verbose conjunction of ABNF predicates
      with more verbose arguments.")
    (xdoc::p
-    "The @('t') in @('ttree') stands for `terminated'.
-     That is, the tree has Unicode characters at its leaves,
+    "The tree is terminated,
+     i.e. it has Unicode characters at its leaves,
      not rule names."))
   (and
    (abnf::treep tree)
