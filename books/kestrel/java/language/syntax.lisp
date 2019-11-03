@@ -21,6 +21,10 @@
 (include-book "keywords")
 (include-book "keywords-validation")
 (include-book "identifiers")
+(include-book "decimal-digits")
+(include-book "hexadecimal-digits")
+(include-book "octal-digits")
+(include-book "binary-digits")
 (include-book "primitive-types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
