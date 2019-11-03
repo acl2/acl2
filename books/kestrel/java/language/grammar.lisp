@@ -225,4 +225,27 @@
    (abnf::tree-match-element-p tree
                                (abnf::element-rulename
                                 (abnf::rulename rulename))
-                               *grammar*)))
+                               *grammar*))
+  :no-function t
+  ///
+
+  (defrule abnf-treep-when-abnf-tree-with-root-p
+    (implies (abnf-tree-with-root-p tree rulename) ; free var RULENAME
+             (abnf::treep tree)))
+
+  (defrule not-abnf-tree-with-root-p-of-nil
+    (not (abnf-tree-with-root-p nil rulename))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist abnf-tree-list-with-root-p (x rulename)
+  :guard (stringp rulename)
+  :short "Lift @(tsee abnf-tree-with-root-p) to lists."
+  (abnf-tree-with-root-p x rulename)
+  :true-listp t
+  :elementp-of-nil nil
+  ///
+
+  (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
+    (implies (abnf-tree-list-with-root-p trees rulename) ; free var RULENAME
+             (abnf::tree-listp trees))))
