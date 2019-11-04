@@ -35,7 +35,7 @@
     Furthermore, this utility causes an error if called on a symbol
     that does not name a recursive logic-mode function;
     the reason for ensuring logic-mode is that
-    recursive program-mode functions do not have a measure.")
+    recursive program-mode functions do not have a measured subset.")
   (if (not (irecursivep+ fn wrld))
       (raise "The function ~x0 is not recursive." fn)
     (b* ((justification (getpropc fn 'justification nil wrld))
