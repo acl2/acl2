@@ -93,9 +93,9 @@ identifier =
 
 identifier-chars = java-letter *java-letter-or-digit
 
-java-letter = <any unicode character that is a "java letter">
+java-letter = raw-input-character ; that is a "java letter"
 
-java-letter-or-digit = <any unicode character that is a "java letter-or-digit">
+java-letter-or-digit = raw-input-character ; that is a "java letter-or-digit"
 
 type-identifier = identifier ; but not var
 
