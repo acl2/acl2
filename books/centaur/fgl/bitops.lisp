@@ -81,6 +81,16 @@
   (equal (intcdr (intcons x y))
          (ifix y)))
 
+(define intcar! ((x integerp))
+  :no-function t
+  :enabled t
+  (intcar x)
+  ///
+  (disable-definition intcar!)
+  (def-fgl-rewrite intcar!-fgl
+    (equal (intcar! x)
+           (and (intcar x) t))))
+
 ;; (define check-int-endp (x xsyn)
 ;;   :verify-guards nil
 ;;   (and (fgl-int-endp xsyn)
@@ -111,8 +121,7 @@
               ((when (check-int-endp! x-endp x)) (if (intcar x) y 0))
               ((when (check-int-endp! y-endp y)) (if (intcar y) x 0)))
            (intcons (and (intcar x)
-                         (intcar y)
-                         t)
+                         (intcar! y))
                     (logand (intcdr x) (intcdr y)))))
   :hints(("Goal" :in-theory (enable bitops::logand** int-endp))))
 
@@ -124,9 +133,8 @@
               (y (int y))
               ((when (check-int-endp! x-endp x)) (if (intcar x) -1 y))
               ((when (check-int-endp! y-endp y)) (if (intcar y) -1 x)))
-           (intcons (or (intcar x)
-                        (intcar y)
-                        nil)
+           (intcons (or (intcar! x)
+                        (intcar! y))
                     (logior (intcdr x) (intcdr y)))))
   :hints(("Goal" :in-theory (enable bitops::logior** int-endp))))
 
@@ -177,7 +185,7 @@
            (equal (< x 0)
                   (b* ((x-endp (check-int-endp! x-endp x))
                        ((when x-endp)
-                        (intcar x)))
+                        (intcar! x)))
                     (< (intcdr x) 0))))
   :hints(("Goal" :in-theory (enable int-endp))))
 
@@ -236,7 +244,7 @@
                           (and (check-int-endp! x-endp x)
                                (not (intcar x))))
                       0
-                    (intcons (and (intcar x) t)
+                    (intcons (intcar! x)
                              (loghead (1- n) (intcdr x))))))
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::loghead**))))
@@ -249,8 +257,8 @@
                   (cond ((or (zp n)
                              (eql n 1)
                              (check-int-endp! x-endp x))
-                         (endint (and (intcar x) t)))
-                        (t (intcons (and (intcar x) t)
+                         (endint (intcar! x)))
+                        (t (intcons (intcar! x)
                                     (logext (1- n) (intcdr x)))))))
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::logext**))))
@@ -315,7 +323,7 @@
 (def-fgl-rewrite logbitp-const-index
   (implies (syntaxp (integerp n))
            (equal (logbitp n x)
-                  (intcar (logtail n x))))
+                  (intcar! (logtail n x))))
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp))))
 
 
@@ -327,7 +335,7 @@
       (lifix acc)
     (int-revapp (1- nbits)
                 (intcdr x)
-                (intcons (intcar x) acc)))
+                (intcons (intcar! x) acc)))
   ///
   (local (defun-sk int-revapp-normalize-cond (nbits x)
            (forall acc
@@ -631,7 +639,7 @@
              (equal (logbitp-helper digit-rev digit-width x)
                     (b* (((when (or (check-int-endp! x-endp x)
                                     (eql 0 digit-width)))
-                          (intcar x)))
+                          (intcar! x)))
                       (if (intcar digit-rev)
                           (logbitp-helper (intcdr digit-rev) (1- digit-width) (logtail (ash 1 (1- digit-width)) x))
                         (logbitp-helper (intcdr digit-rev) (1- digit-width) x)))))
@@ -681,7 +689,7 @@
   (implies (syntaxp (integerp n))
            (equal (logapp n x y)
                   (cond ((zp n) (int y))
-                        (t (intcons (and (intcar x) t)
+                        (t (intcons (intcar! x)
                                     (logapp (1- n) (intcdr x) y))))))
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::logapp**))))
@@ -727,11 +735,11 @@
                     (if (and (check-int-endp! x-endp x)
                              (check-int-endp! y-endp y))
                         (endint (if* c
-                                     (and (intcar x) (intcar y))
-                                     (or (intcar x) (intcar y))))
+                                     (and (intcar! x) (intcar! y))
+                                     (or (intcar! x) (intcar! y))))
                       (+carry (if* c
-                                   (or (intcar x) (intcar y))
-                                   (and (intcar x) (intcar y)))
+                                   (or (intcar! x) (intcar! y))
+                                   (and (intcar! x) (intcar! y)))
                               (intcdr x)
                               (intcdr y)))))
     :hints(("Goal" :in-theory (enable +carry int-endp if*
@@ -793,7 +801,7 @@
                             (check-int-endp! y-endp y)))
                  (b* ((less (and (intcar x) (not (intcar y)))))
                    (mv less
-                       (and (not less) (or (intcar x) (not (intcar y)))))))
+                       (and (not less) (or (intcar! x) (not (intcar y)))))))
                 ((mv rest< rest=) (</= (intcdr x) (intcdr y)))
                 ;; ((when (and (syntax-bind rest<-true (eq rest< t))
                 ;;             rest<))
@@ -804,7 +812,7 @@
                 ;; (head< (and (not (intcar x)) (intcar y)))
                 )
              (mv (or rest<
-                     (and rest= (not (intcar x)) (intcar y)))
+                     (and rest= (not (intcar x)) (intcar! y)))
                  (and rest= (iff (intcar x) (intcar y))
                       ;; (not (and (not (intcar x)) (intcar y)))
                       ;; (or (not (intcar x)) (intcar y))
@@ -825,7 +833,7 @@
                     (if (and (syntax-bind y-0 (eql y 0))
                              (equal y 0))
                         (if (check-int-endp! x-endp x)
-                            (intcar x)
+                            (intcar! x)
                           (< (intcdr x) 0))
                       (mv-nth 0 (</= x y)))))
     :hints(("Goal" :in-theory (enable int-endp)))))
@@ -895,13 +903,13 @@
                                      (check-int-endp! y-endp y)))
                           (intcons bit0
                                    (endint (if* c
-                                                (and (intcar x) (intcar y))
-                                                (or (intcar x) (intcar y)))))))
+                                                (and (intcar x) (intcar! y))
+                                                (or (intcar! x) (intcar! y)))))))
                       (intcons bit0
                                (+carry-ext (1- width)
                                              (if* c
-                                                  (or (intcar x) (intcar y))
-                                                  (and (intcar x) (intcar y)))
+                                                  (or (intcar! x) (intcar! y))
+                                                  (and (intcar x) (intcar! y)))
                                              (intcdr x)
                                              (intcdr y))))))
     :hints(("Goal" :in-theory (e/d (+carry-ext
@@ -936,8 +944,8 @@
                       (intcons (xor c (xor (intcar x) (intcar y)))
                                (+carry-trunc (1- width)
                                              (if* c
-                                                  (or (intcar x) (intcar y))
-                                                  (and (intcar x) (intcar y)))
+                                                  (or (intcar! x) (intcar! y))
+                                                  (and (intcar x) (intcar! y)))
                                              (intcdr x)
                                              (intcdr y))))))
     :hints(("Goal" :in-theory (e/d (+carry-trunc
@@ -1104,7 +1112,7 @@
              (equal (integer-length-helper bound x)
                     (b* (((when (or (eql bound 1)
                                     (check-int-endp! x-endp x)))
-                          (mv 0 t (intcar x)))
+                          (mv 0 t (intcar! x)))
                          ((mv rest-len rest-endp rest-negp)
                           (integer-length-helper (1- bound) (intcdr x)))
                          (endp (and rest-endp (iff (intcar x) rest-negp)))
