@@ -174,7 +174,6 @@
 
 (define atj-process-java-package ((java-package) ctx state)
   :returns (mv erp (nothing null) state)
-  :verify-guards nil
   :short "Process the @(':java-package') input."
   (b* (((er &) (ensure-string-or-nil$ java-package
                                       "The :JAVA-PACKAGE input"
@@ -191,7 +190,8 @@
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
                   java-package *aij-package*)))
-    (value nil)))
+    (value nil))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-string-or-nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,9 +203,8 @@
 
 (define atj-process-java-class (java-class ctx state)
   :returns (mv erp
-               (java-class$ "A @(tsee stringp).")
+               (java-class$ (implies (not erp) (stringp java-class$)))
                state)
-  :verify-guards nil
   :short "Process the @(':java-class') input."
   (b* (((er &) (ensure-string-or-nil$ java-class
                                       "The :JAVA-CLASS input"
@@ -218,7 +217,8 @@
                    consisting of only ASCII characters."
                   java-class))
        (name (or java-class *atj-default-java-class*)))
-    (value name)))
+    (value name))
+  :prepwork ((local (in-theory (enable acl2::ensure-string-or-nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,7 +492,6 @@
                         otherwise it is the path
                         of the generated test Java file.")
                state)
-  :verify-guards nil
   :short "Process the @(':output-dir') input."
   (b* (((er &) (ensure-string$ output-dir "The :OUTPUT-DIR input" t nil))
        ((mv err/msg kind state) (oslib::file-kind output-dir))
@@ -542,7 +541,8 @@
                                "The output path ~x0 ~
                                 exists but is not a regular file." file-test)))
                  (value :this-is-irrelevant))))
-    (value (list file file-test))))
+    (value (list file file-test)))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
