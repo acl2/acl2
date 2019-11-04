@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "measured-subset")
 (include-book "irecursivep-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "measure")
 (include-book "irecursivep-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
