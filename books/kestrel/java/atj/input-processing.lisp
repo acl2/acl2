@@ -463,7 +463,7 @@
      :returns (mv erp
                   tests$ ; ATJ-TEST-LISTP
                   state)
-     :mode :program ; because of ATJ-PROCESS-TEST
+     :mode :program ; because of TRANS-EVAL in ATJ-PROCESS-TEST
      :parents nil
      (b* (((when (endp tests-alist)) (value nil))
           ((cons (cons name call) tests-alist) tests-alist)
@@ -792,7 +792,7 @@
   :returns (mv erp
                (fns "A @(tsee symbol-listp).")
                state)
-  :mode :program ; because termination takes a bit of work
+  :mode :program ; until termination is proved (which will take a bit of work)
   :short "Worklist algorithm iteration."
   :long
   (xdoc::topstring
