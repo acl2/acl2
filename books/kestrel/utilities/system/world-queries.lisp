@@ -69,6 +69,8 @@
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/unwrapped-nonexec-body" :dir :system)
 (include-book "kestrel/std/system/unwrapped-nonexec-body-plus" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 (local (include-book "arglistp-theorems"))
@@ -117,57 +119,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define well-founded-relation ((fn symbolp) (wrld plist-worldp))
-  :returns (well-founded-relation "A @(tsee symbolp).")
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Well-founded relation of a named logic-mode recursive function."
-  :long
-  "<p>
-   See @(see well-founded-relation-rule)
-   for a discussion of well-founded relations in ACL2,
-   including the @(':well-founded-relation') rule class.
-   </p>
-   <p>
-   See @(tsee well-founded-relation+) for
-   a logic-friendly variant of this utility.
-   </p>"
-  (b* ((justification (getpropc fn 'justification nil wrld)))
-    (access justification justification :rel)))
-
-(define well-founded-relation+ ((fn (and (logic-function-namep fn wrld)
-                                         (recursivep fn nil wrld)))
-                                (wrld plist-worldp))
-  :returns (well-founded-relation symbolp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee well-founded-relation)."
-  :long
-  "<p>
-   This returns the same result as @(tsee well-founded-relation),
-   but it has a stronger guard,
-   is guard-verified,
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   This utility also includes a run-time check (which should always succeed)
-   on the form of the @('justification') property of the function
-   that allows us to verify the guards
-   without strengthening the guard of @('wrld').
-   </p>"
-  (b* ((justification (getpropc fn 'justification nil wrld))
-       ((unless (weak-justification-p justification))
-        (raise "Internal error: ~
-                the justification ~x0 of ~x1 is not well-formed."
-               justification fn))
-       (well-founded-relation (access justification justification :rel))
-       ((unless (symbolp well-founded-relation))
-        (raise "Internal error: ~
-                the well-founded relation ~x0 of ~x1 is not a symbol."
-               well-founded-relation fn)))
-    well-founded-relation))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

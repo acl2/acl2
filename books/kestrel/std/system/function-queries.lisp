@@ -41,6 +41,8 @@
 (include-book "uguard-plus")
 (include-book "unwrapped-nonexec-body")
 (include-book "unwrapped-nonexec-body-plus")
+(include-book "well-founded-relation")
+(include-book "well-founded-relation-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
