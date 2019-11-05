@@ -101,26 +101,47 @@
      More will be added as ATJ support for Java primitive types is extended."))
   '(int-value))
 
+(defval *atj-primitive-unops*
+  :short "List of (the names of) the ACL2 functions that model
+          Java primitive unary operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we list only some of the available ones
+     from the language formalization.
+     As more ATJ support for Java primitive types is developed,
+     the list will be extended with more of the available functions."))
+  '(int-plus
+    int-minus
+    int-not))
+
 (defval *atj-primitive-binops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive binary operations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we list only some of the available ones.
+    "For now we list only some of the available ones
+     from the language formalization.
      As more ATJ support for Java primitive types is developed,
-     the list will be extended with more of the available functions,
-     as well as with new functions."))
+     the list will be extended with more of the available functions."))
   '(int-add
     int-sub
     int-mul
     int-div
-    int-rem))
+    int-rem
+    int-and
+    int-xor
+    int-ior
+    int-int-shiftl
+    int-int-shiftr
+    int-int-ushiftr))
 
 (defval *atj-primitive-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
   (append *atj-primitive-constructors*
+          *atj-primitive-unops*
           *atj-primitive-binops*)
   ///
   (assert-event (function-name-listp *atj-primitive-fns* (w state)))

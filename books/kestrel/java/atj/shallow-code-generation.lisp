@@ -1217,6 +1217,74 @@
     :measure (two-nats-measure (acl2-count arg)
                                1))
 
+  (define atj-gen-shallow-intunapp ((fn (member-eq fn *atj-primitive-unops*))
+                                    (operand pseudo-termp)
+                                    (src-type atj-typep)
+                                    (dst-type atj-typep)
+                                    (jvar-result-base stringp)
+                                    (jvar-result-index posp)
+                                    (pkg-class-names string-string-alistp)
+                                    (fn-method-names symbol-string-alistp)
+                                    (curr-pkg stringp)
+                                    (qpairs cons-pos-alistp)
+                                    (wrld plist-worldp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded ACL2 application of a function
+            that models a Java @('int') unary operation."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model Java @('int') binary operations
+       (i.e. @(tsee int-minus) etc.) are treated specially.
+       (For now we only consider some of them;
+       more will be considered in the future.)
+       We generate Java code to compute the operand,
+       which will have the Java type @('int') required by
+       @(tsee int-minus) and the other ACL2 functions.
+       Then we convert that to @(':jint') if needed,
+       via @('atj-adapt-expr-to-type').
+       Finally, we generate a Java unary expression
+       whose operator corresponds to the function.
+       The type of the function application is @(':jint').
+       We parenthesize the Java expression
+       to avoid errors due to operator precedences
+       when expressions are nested;
+       in the future we should take precedences into account
+       to avoid unnecessary parentheses and make the code more readable
+       (it may be actually better to handle this in the pretty-printer)."))
+    (b* (((mv operand-block
+              operand-expr
+              jvar-result-index) (atj-gen-shallow-term operand
+                                                       jvar-result-base
+                                                       jvar-result-index
+                                                       pkg-class-names
+                                                       fn-method-names
+                                                       curr-pkg
+                                                       qpairs
+                                                       t ; GUARDS$
+                                                       wrld))
+         (unop (case fn
+                 (int-plus (junop-uplus))
+                 (int-minus (junop-uminus))
+                 (int-not (junop-bitcompl))))
+         (expr (jexpr-paren (jexpr-unary unop operand-expr)))
+         (block operand-block))
+      (mv block
+          (atj-adapt-expr-to-type expr src-type dst-type)
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count operand)
+                               1))
+
   (define atj-gen-shallow-intbinapp ((fn (member-eq fn *atj-primitive-binops*))
                                      (left pseudo-termp)
                                      (right pseudo-termp)
@@ -1260,7 +1328,7 @@
        when expressions are nested;
        in the future we should take precedences into account
        to avoid unnecessary parentheses and make the code more readable
-       (it may be better to handle this in the pretty-printer)."))
+       (it may be actually better to handle this in the pretty-printer)."))
     (b* (((mv left-block
               left-expr
               jvar-result-index) (atj-gen-shallow-term left
@@ -1288,7 +1356,13 @@
                   (int-sub (jbinop-sub))
                   (int-mul (jbinop-mul))
                   (int-div (jbinop-div))
-                  (int-rem (jbinop-rem))))
+                  (int-rem (jbinop-rem))
+                  (int-and (jbinop-bitand))
+                  (int-xor (jbinop-bitxor))
+                  (int-ior (jbinop-bitior))
+                  (int-int-shiftl (jbinop-shl))
+                  (int-int-shiftr (jbinop-sshr))
+                  (int-int-ushiftr (jbinop-ushr))))
          (expr (jexpr-paren (jexpr-binary binop left-expr right-expr)))
          (block (append left-block right-block)))
       (mv block
@@ -1341,10 +1415,10 @@
        i.e. the output type of @(tsee int-value).")
      (xdoc::p
       "If @(':guards') is @('t'),
-       calls of ACL2 functions that model Java @('int') binary operations
-       are handled via a separate function.")
+       calls of ACL2 functions that model Java @('int') operations
+       are handled via separate functions.")
      (xdoc::p
-      "In all other cases, where the call is always strict,
+      "In all other cases, in which the call is always strict,
        we first generate Java code to compute all the actual arguments.
        Calls of lambda expression are handled by a separate function.
        If the function is a named one,
@@ -1401,6 +1475,20 @@
                                      curr-pkg
                                      qpairs
                                      wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-primitive-unops*)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-intunapp fn
+                                    (car args)
+                                    src-type
+                                    dst-type
+                                    jvar-result-base
+                                    jvar-result-index
+                                    pkg-class-names
+                                    fn-method-names
+                                    curr-pkg
+                                    qpairs
+                                    wrld))
          ((when (and guards$
                      (member-eq fn *atj-primitive-binops*)
                      (int= (len args) 2))) ; should be always true
