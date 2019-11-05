@@ -129,10 +129,7 @@
    :jvalue (mv nil
                (atj-gen-jint (int-value->int tvalue.get))
                :jint
-               jvar-value-index))
-  :guard-hints (("Goal" :in-theory (enable int-value->int
-                                           acl2::sbyte32-fix
-                                           sbyte32p))))
+               jvar-value-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
