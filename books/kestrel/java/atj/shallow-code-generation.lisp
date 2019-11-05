@@ -734,7 +734,7 @@
      the ACL2 representation of the Java @('int') value.")
    (xdoc::p
     "The representation is explicated and checked "
-    (xdoc::seetopic "atj-jint-representation-check" "here")
+    (xdoc::seetopic "atj-java-int-value-representation-check" "here")
     ". We create an @('Acl2Integer') from the @('int'),
      and then a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol') for the keyword @(':int')
@@ -778,7 +778,7 @@
      the argument of this function should always be
      an expression that returns an @('Acl2Value') with the right representation,
      i.e. the representation explicated and checked "
-    (xdoc::seetopic "atj-jint-representation-check" "here")
+    (xdoc::seetopic "atj-java-int-value-representation-check" "here")
     ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
      get its @(tsee cdr),
      cast that to @('Acl2ConsPair'),
@@ -1244,12 +1244,12 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model Java @('int') binary operations
-       (i.e. @(tsee jint-add) etc.) are treated specially.
+       (i.e. @(tsee int-add) etc.) are treated specially.
        (For now we only consider some of them;
        more will be considered in the future.)
        We generate Java code to compute the left and right operands,
        which will have the Java type @('int') required by
-       @(tsee jint-add) and the other ACL2 functions.
+       @(tsee int-add) and the other ACL2 functions.
        Then we convert those to @(':jint') if needed,
        via @('atj-adapt-expr-to-type').
        Finally, we generate a Java binary expression
@@ -1284,11 +1284,11 @@
                                                        t ; GUARDS$
                                                        wrld))
          (binop (case fn
-                  (jint-add (jbinop-add))
-                  (jint-sub (jbinop-sub))
-                  (jint-mul (jbinop-mul))
-                  (jint-div (jbinop-div))
-                  (jint-rem (jbinop-rem))))
+                  (int-add (jbinop-add))
+                  (int-sub (jbinop-sub))
+                  (int-mul (jbinop-mul))
+                  (int-div (jbinop-div))
+                  (int-rem (jbinop-rem))))
          (expr (jexpr-paren (jexpr-binary binop left-expr right-expr)))
          (block (append left-block right-block)))
       (mv block

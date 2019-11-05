@@ -24,8 +24,8 @@
 (defun f-int (x y)
   (declare (xargs :guard (and (java::int-value-p x)
                               (java::int-value-p y))))
-  (java::jint-add (java::jint-mul (java::int-value 2) x)
-                  (java::jint-mul y y)))
+  (java::int-add (java::int-mul (java::int-value 2) x)
+                 (java::int-mul y y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
