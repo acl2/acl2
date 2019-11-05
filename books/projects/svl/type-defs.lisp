@@ -154,9 +154,7 @@
   (define module-occ-wire-p (wire)
     :enabled t
     (and (consp wire)
-         (stringp (car wire))
-;(sv::lhs-p (cdr wire))
-         ))
+         (sv::svar-p (car wire))))
 
   (define module-occ-wire-fix (wire)
     :enabled t

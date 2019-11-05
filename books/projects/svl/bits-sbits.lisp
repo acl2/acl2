@@ -57,7 +57,9 @@
 
   ;; this has to have low priority
   (defthm 4vec-bitnot$-of-bits-of-same-size
-    (implies (syntaxp (consp (rp::ex-from-rp term)))
+    (implies (syntaxp (and (consp (rp::ex-from-rp term))
+                           (not (equal (car (rp::ex-from-rp term))
+                                       'svex-env-fastlookup-wog))))
              (equal (4vec-bitnot$ size (bits term 0 size))
                     (4vec-bitnot$ size term)))
     :hints (("Goal"

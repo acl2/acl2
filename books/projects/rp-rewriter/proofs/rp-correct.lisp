@@ -360,3 +360,15 @@
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP
                             remove-disabled-meta-rules) ()))))
+
+(defthm rp-statep-of-rp-rw-aux
+  (implies (rp-statep rp-state)
+           (rp-statep (mv-nth 1 (rp-rw-aux term rules-alist exc-rules
+                                           meta-rules rp-state state))))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ((:DEFINITION RP-RW)
+                            (:DEFINITION RP-STATEP)
+                            (:DEFINITION QUOTEP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION TRUE-LISTP))))))

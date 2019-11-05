@@ -92,7 +92,7 @@
  :flag-defthm-macro defthm-svex-eval-wog-meta
  :flag-local nil
 
- (define svex-eval-wog-meta (x env-falist)
+ (define svex-eval-wog-meta (x env-falist good-env-flg)
    :flag expr
    :measure (cons-count x)
    :hints (("Goal"
@@ -108,19 +108,24 @@
                          ((atom (cdr x)) (list 'quote (sv::4vec-x)))
                          (t (list 'quote (cadr x))))
                    t))
-       (:var (mv (let* ((val (hons-get x env-falist)))
-                   (if val
-                       (cdr val)
-                     (list 'quote (sv::4vec-x))))
-                 t))
+       (:var (if good-env-flg
+                 (mv (let* ((val (hons-get x env-falist)))
+                       (if val
+                           (cdr val)
+                         (list 'quote (sv::4vec-x))))
+                     t)
+               (mv `(svex-env-fastlookup-wog ',x ,env-falist)
+                   (if (atom (rp::ex-from-rp env-falist))
+                       t
+                     `(nil t t)))))
        (otherwise
         (b* ((x.fn (car x))
              (x.args (cdr x))
              ((mv args args-dontrw)
-              (svex-eval-wog-meta-lst x.args env-falist)))
+              (svex-eval-wog-meta-lst x.args env-falist good-env-flg)))
           (svex-apply-wog-meta x.fn args args-dontrw))))))
 
- (define svex-eval-wog-meta-lst (lst env-falist)
+ (define svex-eval-wog-meta-lst (lst env-falist good-env-flg)
    :flag list
    :measure (cons-count lst)
    :returns (mv (res true-listp)
@@ -128,9 +133,9 @@
    (if (atom lst)
        (mv nil nil)
      (b* (((mv car-term car-dontrw)
-           (svex-eval-wog-meta (car lst) env-falist))
+           (svex-eval-wog-meta (car lst) env-falist good-env-flg))
           ((mv rest rest-dontrw)
-           (svex-eval-wog-meta-lst (cdr lst) env-falist)))
+           (svex-eval-wog-meta-lst (cdr lst) env-falist good-env-flg)))
        (mv (cons car-term rest)
            (cons car-dontrw rest-dontrw)))))
 
@@ -150,11 +155,13 @@
 (define svex-eval-wog-meta-main (term)
   (case-match term
     (('svex-eval-wog ('quote svex) env)
-     (b* ((env (rp::ex-from-rp env)))
+     (b* ((env-orig env)
+          (env (rp::ex-from-rp env)))
        (case-match env
          (('falist ('quote env-falist) &)
-          (svex-eval-wog-meta svex env-falist))
-         (& (mv term nil)))))
+          (svex-eval-wog-meta svex env-falist t))
+         (&
+          (svex-eval-wog-meta svex env-orig nil)))))
     (& (mv term nil))))
 
 ;; (svex-eval-wog-meta '(partsel '0 '1 (bitand x y))
@@ -190,7 +197,7 @@
             z)))
 
   (local
-   (defthm svex-env-fastlookup-wog-def
+   (defthm svex-env-fastlookup-wog-def-local
      (equal (svex-env-fastlookup-wog var env)
             (let* ((look (hons-get var env)))
                   (if look (cdr look) (sv::4vec-x))))
@@ -204,6 +211,7 @@
      svex-eval-wog-formula-checks
      (svex-eval-wog-meta-main
       sv::4vec-fix$inline
+      svex-env-fastlookup-wog
       svex-eval-wog))))
 
 
@@ -218,7 +226,20 @@
                  (not (cdddr x)))
             (equal (rp-evl x a)
                    (svex-eval-wog (rp-evl (cadr x) a)
-                               (rp-evl (caddr x) a))))))
+                                  (rp-evl (caddr x) a))))))
+
+(local
+ (defthmd svex-env-fastlookup-wog-eval
+   (implies (and (rp-evl-meta-extract-global-facts)
+                 (svex-eval-wog-formula-checks state)
+                 (consp x)
+                 (equal (car x) 'svex-env-fastlookup-wog)
+                 (consp (cdr x))
+                 (consp (cddr x))
+                 (not (cdddr x)))
+            (equal (rp-evl x a)
+                   (svex-env-fastlookup-wog (rp-evl (cadr x) a)
+                                            (rp-evl (caddr x) a))))))
 
 (local
  (defthmd rp-evl-of-ex-from-rp-reverse
@@ -425,27 +446,33 @@
                                (:rewrite rp::rp-evl-of-acl2-numberp-call)
                                (:rewrite rp::rp-evl-of-<-call)
                                (:rewrite acl2::symbol-listp-implies-symbolp)
-                               (:meta acl2::mv-nth-cons-meta)
-                               )))))
+                               (:meta acl2::mv-nth-cons-meta))))))
 
    (defthm-svex-eval-wog-meta
      (defthmd rp-evl-of-svex-eval-wog-meta
        (implies (and (rp-evl-meta-extract-global-facts)
                      (svex-eval-wog-formula-checks state)
-                     (rp::falist-consistent-aux env-falist term))
-                (equal (rp-evl (mv-nth 0 (svex-eval-wog-meta x env-falist)) a)
+                     (if good-env-flg
+                         (rp::falist-consistent-aux env-falist term)
+                       (equal term env-falist)))
+                (equal (rp-evl (mv-nth 0 (svex-eval-wog-meta x env-falist good-env-flg)) a)
                        (rp-evl `(svex-eval-wog ,(list 'quote x) ,term) a)))
        :flag expr)
 
      (defthmd rp-evl-of-svex-eval-wog-meta-lst
        (implies (and (rp-evl-meta-extract-global-facts)
                      (svex-eval-wog-formula-checks state)
-                     (rp::falist-consistent-aux env-falist term))
-                (equal (rp-evl-lst (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist)) a)
+                     (if good-env-flg
+                         (rp::falist-consistent-aux env-falist term)
+                       (equal term env-falist)))
+                (equal (rp-evl-lst
+                        (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist good-env-flg))
+                                   a)
                        (rp-evl `(svexlist-eval-wog ,(list 'quote lst) ,term) a)))
        :flag list)
      :hints (("goal"
               :in-theory (e/d (svex-eval-wog-meta-lst
+                               SVEX-ENV-FASTLOOKUP-WOG
                                svex-eval-wog
                                svexlist-eval-wog
                                svex-eval-wog-meta)
@@ -476,13 +503,22 @@
                                (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                                         term)))))
                                (a a)
+                               (good-env-flg t)
                                (x (cadr (cadr term)))
                                (term (caddr (rp::ex-from-rp (caddr
-                                                             term))))))
+                                                             term)))))
+                    (:instance rp-evl-of-svex-eval-wog-meta
+                               (good-env-flg nil)
+                               (a a)
+                               (x (cadr (cadr term)))
+                               (term (CADDR TERM))
+                               (env-falist (CADDR TERM))))
               :in-theory (e/d (svex-eval-wog-meta-main
                                falist-eval
+                               rp::rp-evl-of-ex-from-rp
                                falist-eval2
-                               svex-eval-wog-eval) ()))))))
+                               svex-eval-wog-eval)
+                              (RP::RP-EVL-OF-VARIABLE)))))))
 
 (local
  (encapsulate
@@ -523,17 +559,21 @@
 
    (defthm-svex-eval-wog-meta
      (defthmd rp-termp-svex-eval-wog-meta
-       (implies (and (rp::falist-consistent-aux env-falist term)
+       (implies (and (if good-env-flg
+                         (rp::falist-consistent-aux env-falist term)
+                       (equal term env-falist))
                      (rp::rp-termp term))
                 (rp::rp-termp
-                 (mv-nth 0 (svex-eval-wog-meta x env-falist))))
+                 (mv-nth 0 (svex-eval-wog-meta x env-falist good-env-flg))))
        :flag expr)
 
      (defthmd rp::rp-termp-svex-eval-wog-meta-lst
-       (implies (and (rp::falist-consistent-aux env-falist term)
+       (implies (and (if good-env-flg
+                         (rp::falist-consistent-aux env-falist term)
+                       (equal term env-falist))
                      (rp::rp-termp term))
                 (rp::rp-term-listp
-                 (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist))))
+                 (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist good-env-flg))))
        :flag list)
      :hints (("goal"
               :in-theory (e/d (svex-kind
@@ -580,15 +620,27 @@
               (rp::rp-termp (mv-nth 0 (svex-eval-wog-meta-main term))))
      :hints (("goal"
               :do-not-induct t
+              :do-not '(preprocess)
               :use ((:instance
                      rp-termp-svex-eval-wog-meta
                      (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                               term)))))
+                     (good-env-flg t)
                      (x (cadr (cadr term)))
-                     (term (caddr (rp::ex-from-rp (caddr term))))))
+                     (term (caddr (rp::ex-from-rp (caddr term)))))
+                    (:instance
+                     rp-termp-svex-eval-wog-meta
+                     (env-falist (CADDR TERM))
+                     (term (CADDR TERM))
+                     (good-env-flg nil)
+                     (x (CADR (CADR TERM)))
+                     ))
               :in-theory (e/d (svex-eval-wog-meta-main
                                rp::is-falist)
                               ((:definition rp::falist-consistent)
+                               rp-termp-svex-eval-wog-meta
+                               RP::RP-TERM-LISTP
+                               RP::RP-TERMP
                                (:type-prescription rp::falist-consistent)
                                #|rp-termp-svex-eval-wog-meta||#)))))))
 
@@ -638,17 +690,21 @@
 
    (defthm-svex-eval-wog-meta
      (defthmd valid-sc-svex-eval-wog-meta
-       (implies (and (rp::falist-consistent-aux env-falist term)
+       (implies (and (if good-env-flg
+                         (rp::falist-consistent-aux env-falist term)
+                       (equal term env-falist))
                      (rp::valid-sc term a))
                 (rp::valid-sc
-                 (mv-nth 0 (svex-eval-wog-meta x env-falist)) a))
+                 (mv-nth 0 (svex-eval-wog-meta x env-falist good-env-flg)) a))
        :flag expr)
 
      (defthmd rp::valid-sc-svex-eval-wog-meta-lst
-       (implies (and (rp::falist-consistent-aux env-falist term)
+       (implies (and (if good-env-flg
+                         (rp::falist-consistent-aux env-falist term)
+                       (equal term env-falist))
                      (rp::valid-sc term a))
                 (rp::valid-sc-subterms
-                 (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist)) a))
+                 (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist good-env-flg)) a))
        :flag list)
      :hints (("goal"
               :in-theory (e/d (svex-kind
@@ -697,7 +753,15 @@
                      (env-falist (cadr (cadr (rp::ex-from-rp (caddr
                                                               term)))))
                      (x (cadr (cadr term)))
-                     (term (caddr (rp::ex-from-rp (caddr term))))))
+                     (good-env-flg t)
+                     (term (caddr (rp::ex-from-rp (caddr term)))))
+
+                    (:instance
+                     valid-sc-svex-eval-wog-meta
+                     (env-falist (CADDR TERM))
+                     (x (CADR (CADR TERM)))
+                     (good-env-flg nil)
+                     (term (CADDR TERM))))
               :in-theory (e/d (svex-eval-wog-meta-main
                                rp::is-falist) ()))))))
 

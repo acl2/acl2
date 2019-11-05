@@ -130,16 +130,19 @@
     (:executable-counterpart min)
     (:executable-counterpart binary-+)
     (:executable-counterpart binary--)
-    (:executable-counterpart svex-eval2)
+    (:executable-counterpart svex-eval-wog)
     (:executable-counterpart sv::svex-env-p)
     (:executable-counterpart bits)
     (:executable-counterpart rp::rp)
     (:executable-counterpart 4vec-concat$)
     (:executable-counterpart 4vec-bitnot$)
     
-    SVEX-EVAL-IS-SVEX-EVAL2
+    SVEX-EVAL-IS-SVEX-EVAL-WOG
     4VEC-FIX2-IS-4VEC-FIX
     bits-0-1-of-4vec-reduction-and-when-amount=1
     bits-0-1-of-4vec-reduction-and
     4vec-bitand-of-3vec-fix
-    4vec-zero-ext-is-bits)) 
+    4vec-zero-ext-is-bits
+
+
+    )) 

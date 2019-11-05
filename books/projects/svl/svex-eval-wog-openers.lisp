@@ -32,6 +32,15 @@
   (svex-eval-wog x env))
 
 
+(rp::defthm-lambda
+ svex-env-fastlookup-wog-def
+ (implies (syntaxp (consp (rp::ex-from-rp env)))
+          (equal (svex-env-fastlookup-wog var env)
+                 (let* ((look (hons-get var env)))
+                   (if look (cdr look) (sv::4vec-x)))))
+ :hints (("Goal"
+          :in-theory (e/d (svex-env-fastlookup-wog) ())))) 
+
 (encapsulate
   nil
 

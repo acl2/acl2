@@ -60,12 +60,11 @@
                             svex-kind) ()))))
 
 (define svex-env-fastlookup-wog (var env)
-  :inline t
   (let* ((look (hons-get var env)))
     (if look (cdr look) (sv::4vec-x)))
   :returns (res 4vec-p :hyp (sv::svex-env-p env))
   ///
-  (defthm SVEX-ENV-FASTLOOKUP-WOG-is-SVEX-ENV-FASTLOOKUP
+  (defthmd svex-env-fastlookup-wog-is-svex-env-fastlookup
     (implies (and (svex-env-p env)
                   (sv::svar-p var))
              (equal (SVEX-ENV-FASTLOOKUP-WOG var env)
@@ -301,6 +300,7 @@
            :in-theory (e/d (svex-call->fn
                             svex-kind
                             svex-eval-wog
+                            svex-env-fastlookup-wog-is-svex-env-fastlookup
                             svexlist-eval-wog
                             svex-p
                             sv::svar-p
