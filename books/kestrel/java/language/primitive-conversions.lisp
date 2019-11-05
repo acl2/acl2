@@ -89,7 +89,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-widening-conversions
-  :parents (semantics)
+  :parents (primitive-conversions)
   :short "Java primitive widening conversions [JLS:5.1.2]."
   :order-subtopics t
   :default-parent t)
@@ -161,7 +161,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-narrowing-conversions
-  :parents (semantics)
+  :parents (primitive-conversions)
   :short "Java primitive narrowing conversions [JLS:5.1.3]."
   :order-subtopics t
   :default-parent t)
@@ -257,7 +257,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-widening-narrowing-conversions
-  :parents (semantics)
+  :parents (primitive-conversions)
   :short "Java primitive widening and narrowing conversions [JLS:5.1.4]."
   :order-subtopics t
   :default-parent t)
@@ -268,4 +268,5 @@
   :in-type (primitive-type-byte)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
-  :short "Narrowing conversion from @('byte') to @('char') [JLS:5.1.3].")
+  :short "Widening and narrowing conversion
+          from @('byte') to @('char') [JLS:5.1.3].")
