@@ -57,6 +57,8 @@
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
+(include-book "kestrel/std/system/ruler-extenders" :dir :system)
+(include-book "kestrel/std/system/ruler-extenders-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-name-listp" :dir :system)
@@ -119,57 +121,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ruler-extenders ((fn symbolp) (wrld plist-worldp))
-  :returns (ruler-extenders "A @(tsee symbol-listp) of @(':all').")
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Ruler-extenders of a named logic-mode recursive function."
-  :long
-  "<p>
-   See @(see rulers) for background.
-   </p>
-   <p>
-   See @(tsee ruler-extenders+) for a logic-friendly variant of this utility.
-   </p>"
-  (b* ((justification (getpropc fn 'justification nil wrld)))
-    (access justification justification :ruler-extenders)))
-
-(define ruler-extenders+ ((fn (and (logic-function-namep fn wrld)
-                                   (recursivep fn nil wrld)))
-                          (wrld plist-worldp))
-  :returns (ruler-extenders (or (symbol-listp ruler-extenders)
-                                (equal ruler-extenders :all)))
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee ruler-extenders)."
-  :long
-  "<p>
-   This returns the same result as @(tsee ruler-extenders),
-   but it has a stronger guard,
-   is guard-verified,
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   This utility also includes a run-time check (which should always succeed)
-   on the form of the @('justification') property of the function
-   that allows us to verify the guards
-   without strengthening the guard of @('wrld').
-   </p>"
-  (b* ((justification (getpropc fn 'justification nil wrld))
-       ((unless (weak-justification-p justification))
-        (raise "Internal error: ~
-                the 'JUSTIFICATION property ~x0 of ~x1 is not well-formed."
-               justification fn))
-       (ruler-extenders (access justification justification :ruler-extenders))
-       ((unless (or (symbol-listp ruler-extenders)
-                    (eq ruler-extenders :all)))
-        (raise "Internal error: ~
-                the well-founded relation ~x0 of ~x1 ~
-                is neither a true list of symbols nor :ALL."
-               ruler-extenders fn)))
-    ruler-extenders))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

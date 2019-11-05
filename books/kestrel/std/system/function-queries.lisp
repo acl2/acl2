@@ -32,6 +32,8 @@
 (include-book "primitivep-plus")
 (include-book "pure-raw-p")
 (include-book "rawp")
+(include-book "ruler-extenders")
+(include-book "ruler-extenders-plus")
 (include-book "stobjs-in-plus")
 (include-book "stobjs-out-plus")
 (include-book "tail-recursive-p")

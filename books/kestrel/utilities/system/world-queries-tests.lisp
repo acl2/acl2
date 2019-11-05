@@ -15,68 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (ruler-extenders 'len (w state)) '(mv-list return-last))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :ruler-extenders (cons)))
-   (cons 3
-         (if (consp x)
-             (f (cdr x))
-           nil)))
- (assert-equal (ruler-extenders 'f (w state)) '(cons)))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :ruler-extenders :all))
-   (cons 3
-         (if (consp x)
-             (f (cdr x))
-           nil)))
- (assert-equal (ruler-extenders 'f (w state)) :all))
-
-(must-succeed*
- (defun fact (n)
-   (declare (xargs :ruler-extenders (:lambdas)))
-   (the (integer 1 *)
-        (if (posp n)
-            (* n (fact (1- n)))
-          1)))
- (assert-equal (ruler-extenders 'fact (w state)) '(:lambdas)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (ruler-extenders+ 'len (w state)) '(mv-list return-last))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :ruler-extenders (cons)))
-   (cons 3
-         (if (consp x)
-             (f (cdr x))
-           nil)))
- (assert-equal (ruler-extenders+ 'f (w state)) '(cons)))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :ruler-extenders :all))
-   (cons 3
-         (if (consp x)
-             (f (cdr x))
-           nil)))
- (assert-equal (ruler-extenders+ 'f (w state)) :all))
-
-(must-succeed*
- (defun fact (n)
-   (declare (xargs :ruler-extenders (:lambdas)))
-   (the (integer 1 *)
-        (if (posp n)
-            (* n (fact (1- n)))
-          1)))
- (assert-equal (ruler-extenders+ 'fact (w state)) '(:lambdas)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (thm-formula 'car-cdr-elim (w state))
               '(implies (consp x)
                         (equal (cons (car x) (cdr x)) x)))
