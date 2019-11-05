@@ -63,7 +63,15 @@
   :short "Java @('char') values [JLS:4.2.1]."
   ((nat ubyte16))
   :tag :char
-  :layout :list)
+  :layout :list
+  ///
+
+  (defrule char-value->nat-upper-bound
+    (<= (char-value->nat x) 65535)
+    :rule-classes :linear
+    :enable (char-value->nat
+             acl2::ubyte16p
+             acl2::ubyte16-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,7 +79,22 @@
   :short "Java @('byte') values [JLS:4.2.1]."
   ((int sbyte8))
   :tag :byte
-  :layout :list)
+  :layout :list
+  ///
+
+  (defrule byte-value->int-lower-bound
+    (<= -128 (byte-value->int x))
+    :rule-classes :linear
+    :enable (byte-value->int
+             acl2::sbyte8p
+             acl2::sbyte8-fix))
+
+  (defrule byte-value->int-upper-bound
+    (<= (byte-value->int x) 127)
+    :rule-classes :linear
+    :enable (byte-value->int
+             acl2::sbyte8p
+             acl2::sbyte8-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,7 +102,22 @@
   :short "Java @('short') values [JLS:4.2.1]."
   ((int sbyte16))
   :tag :short
-  :layout :list)
+  :layout :list
+  ///
+
+  (defrule short-value->int-lower-bound
+    (<= -32768 (short-value->int x))
+    :rule-classes :linear
+    :enable (short-value->int
+             acl2::sbyte16p
+             acl2::sbyte16-fix))
+
+  (defrule short-value->int-upper-bound
+    (<= (short-value->int x) 32767)
+    :rule-classes :linear
+    :enable (short-value->int
+             acl2::sbyte16p
+             acl2::sbyte16-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,7 +125,22 @@
   :short "Java @('int') values [JLS:4.2.1]."
   ((int sbyte32))
   :tag :int
-  :layout :list)
+  :layout :list
+  ///
+
+  (defrule int-value->int-lower-bound
+    (<= -2147483648 (int-value->int x))
+     :rule-classes :linear
+    :enable (int-value->int
+             acl2::sbyte32p
+             acl2::sbyte32-fix))
+
+  (defrule int-value->int-upper-bound
+    (<= (int-value->int x) 2147483647)
+    :rule-classes :linear
+    :enable (int-value->int
+             acl2::sbyte32p
+             acl2::sbyte32-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,7 +148,22 @@
   :short "Java @('long') values [JLS:4.2.1]."
   ((int sbyte64))
   :tag :long
-  :layout :list)
+  :layout :list
+  ///
+
+  (defrule long-value->int-lower-bound
+    (<= -9223372036854775808 (long-value->int x))
+     :rule-classes :linear
+    :enable (long-value->int
+             acl2::sbyte64p
+             acl2::sbyte64-fix))
+
+  (defrule long-value->int-upper-bound
+    (<= (long-value->int x) 9223372036854775807)
+    :rule-classes :linear
+    :enable (long-value->int
+             acl2::sbyte64p
+             acl2::sbyte64-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
