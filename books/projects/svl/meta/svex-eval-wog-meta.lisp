@@ -770,10 +770,10 @@
 
                     (:instance
                      valid-sc-svex-eval-wog-meta
-                     (env-falist (CADDR TERM))
-                     (x (CADR (CADR TERM)))
+                     (env-falist (caddr term))
+                     (x (cadr (cadr term)))
                      (good-env-flg nil)
-                     (term (CADDR TERM))))
+                     (term (caddr term))))
               :in-theory (e/d (svex-eval-wog-meta-main
                                rp::is-falist) ()))))))
 
