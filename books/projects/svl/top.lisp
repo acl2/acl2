@@ -36,6 +36,9 @@
 
 (in-package "SVL")
 
+
+(include-book "svexl")
+
 (include-book "svex-eval-wog-openers")
 
 (include-book "bits-sbits")
@@ -45,3 +48,5 @@
 (include-book "macros")
 
 (include-book "svl-openers")
+
+
