@@ -34,6 +34,10 @@
 (local
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 
+
+(local
+ (in-theory (enable hons-get)))
+
 (define nth-term (n argsvar)
   :guard (natp n)
   (if (atom argsvar)
@@ -185,9 +189,11 @@
   (local
    (in-theory (e/d (the-check
                     eql
+                    hons-get
                     svex-env-fastlookup-wog)
                    (svex-kind-wog-is-svex-kind
                     4vec-fix-wog-is-4vec-fix
+                    hons-assoc-equal
                     svex-apply-wog-is-svex-apply
                     sv::4vec-equal))))
 
@@ -204,6 +210,12 @@
      :hints (("goal"
               :in-theory (e/d (svex-env-fastlookup-wog) ())))))
 
+
+  (local
+   (defthm hons-get-is-assoc-equal
+     (equal (hons-get x y)
+            (hons-assoc-equal x y))))
+  
   (with-output
     :off :all
     :gag-mode nil

@@ -59,8 +59,13 @@
            :in-theory (e/d (svex-kind-wog
                             svex-kind) ()))))
 
+
+(local
+ (in-theory (enable hons-get)))
+
 (define svex-env-fastlookup-wog (var env)
-  (let* ((look (hons-get var env)))
+  (let* ((look (mbe :logic (hons-assoc-equal var env)
+                    :exec (hons-get var env))))
     (if look (cdr look) (sv::4vec-x)))
   :returns (res 4vec-p :hyp (sv::svex-env-p env))
   ///

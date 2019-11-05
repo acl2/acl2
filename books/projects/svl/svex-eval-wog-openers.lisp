@@ -27,10 +27,14 @@
 
 (include-book "svex-eval-wog")
 
+
+
+(local
+ (in-theory (enable hons-get)))
+
 (def-rw-opener-error
   svex-eval-wog_opener-error
   (svex-eval-wog x env))
-
 
 (rp::defthm-lambda
  svex-env-fastlookup-wog-def
@@ -58,8 +62,9 @@
     :hints (("Goal"
              :in-theory (e/d (;;svex-env-lookup
                               svex-eval-wog
+                              hons-get
                               svex-env-fastlookup-wog)
-                             (hons-get))))))
+                             (hons-assoc-equal))))))
 
 (encapsulate
   nil
