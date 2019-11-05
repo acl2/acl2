@@ -45,7 +45,9 @@
      This is just nomenclature, the substance does not change.")
    (xdoc::p
     "For now we just define (unannotated) primitive types.
-     Annotated primitive types will be added later."))
+     Annotated primitive types will be added later.")
+   (xdoc::p
+    "We also formalize the subtype relation on primitive types [JLS:4.10]."))
   :order-subtopics t
   :default-parent t)
 
@@ -112,3 +114,29 @@
     (implies (floating-point-typep type)
              (numeric-typep type))
     :enable (floating-point-typep numeric-typep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primitive-type-<1 ((sub primitive-typep) (sup primitive-typep))
+  :returns (yes/no booleanp)
+  :short "Direct subtype relation over primitive types [JLS:4.10.1]."
+  :long
+  (xdoc::topstring-p
+   "This is denoted (for all types) @($<_1$) in [JLS].")
+  (or (and (primitive-type-case sub :byte)
+           (primitive-type-case sup :short))
+      (and (primitive-type-case sub :short)
+           (primitive-type-case sup :int))
+      (and (primitive-type-case sub :int)
+           (primitive-type-case sup :long))
+      (and (primitive-type-case sub :long)
+           (primitive-type-case sup :float))
+      (and (primitive-type-case sub :float)
+           (primitive-type-case sup :double))
+      (and (primitive-type-case sub :char)
+           (primitive-type-case sup :int)))
+  :hooks (:fix)
+  ///
+
+  (defrule primitive-type-<1-irreflexive
+    (not (primitive-type-<1 x x))))
