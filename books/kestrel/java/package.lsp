@@ -112,11 +112,13 @@
                          remove-trivial-vars
                          remove-unused-vars
                          sbyte16
+                         sbyte16p
                          sbyte32
                          sbyte32p
                          sbyte64
                          sbyte64p
                          sbyte8
+                         sbyte8p
                          sort-symbol-listp
                          str-fix
                          string-downcase
@@ -138,6 +140,7 @@
                          ubody
                          ubody+
                          ubyte16
+                         ubyte16p
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          uguard

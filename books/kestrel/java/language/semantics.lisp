@@ -14,6 +14,7 @@
 ; the order of the subtopics of the SEMANTICS topic below:
 (include-book "primitive-values")
 (include-book "primitive-operations")
+(include-book "primitive-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
