@@ -176,29 +176,23 @@
     (implies (mv-nth 0 (atj-check-foldable-return block))
              (jstatem-case (nth (- (len block) 2) block) :ifelse)))
 
-  (more-returns
+  (defret atj-check-foldable-return-then-decreases
+    :hyp (mv-nth 0 (atj-check-foldable-return block))
+    (< (jblock-count-ifs then-block)
+       (jblock-count-ifs block))
+    :rule-classes :linear
+    :hints(("Goal" :use (lemma
+                         (:instance jblock-count-ifs-positive-when-nth-ifelse
+                          (i (- (len block) 2)))))))
 
-   (then-block (< (jblock-count-ifs then-block)
-                  (jblock-count-ifs block))
-               :name atj-check-foldable-return-then-decreases
-               :hyp (mv-nth 0 (atj-check-foldable-return block))
-               :rule-classes :linear
-               :hints(("Goal"
-                       :use (lemma
-                             (:instance
-                              jblock-count-ifs-positive-when-nth-ifelse
-                              (i (- (len block) 2)))))))
-
-   (else-block (< (jblock-count-ifs else-block)
-                  (jblock-count-ifs block))
-               :name atj-check-foldable-return-else-decreases
-               :hyp (mv-nth 0 (atj-check-foldable-return block))
-               :rule-classes :linear
-               :hints(("Goal"
-                       :use (lemma
-                             (:instance
-                              jblock-count-ifs-positive-when-nth-ifelse
-                              (i (- (len block) 2)))))))))
+  (defret atj-check-foldable-return-else-decreases
+    :hyp (mv-nth 0 (atj-check-foldable-return block))
+    (< (jblock-count-ifs else-block)
+       (jblock-count-ifs block))
+    :rule-classes :linear
+    :hints(("Goal" :use (lemma
+                         (:instance jblock-count-ifs-positive-when-nth-ifelse
+                          (i (- (len block) 2))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,16 +302,14 @@
 
      ///
 
-     (more-returns
-      (graph (subsetp-equal (alist-keys graph) vars)
-             :name atj-parallel-asg-depgraph-aux-subsetp-vars
-             :hints (("Goal" :in-theory (enable alist-keys)))))))
+     (defret atj-parallel-asg-depgraph-aux-subsetp-vars
+       (subsetp-equal (alist-keys graph) vars)
+       :hints (("Goal" :in-theory (enable alist-keys))))))
 
   ///
 
-  (more-returns
-   (graph (subsetp-equal (alist-keys graph) vars)
-          :name atj-parallel-asg-depgraph-subsetp-vars)))
+  (defret atj-parallel-asg-depgraph-subsetp-vars
+    (subsetp-equal (alist-keys graph) vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

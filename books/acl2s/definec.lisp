@@ -269,22 +269,21 @@ bells and whistles of @('acl2s::defunc').
         ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro definec-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (definec ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((definec ,name ,@args))))
 
 (defmacro definecd-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (definecd ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((definecd ,name ,@args))))
 
 (defmacro definedc-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (definedc ,name ,@args)))
+  `(gen-acl2s-local testing-enabled
+                    nil 
+                    ((definedc ,name ,@args))))
 
 (defmacro definedcd-no-test (name &rest args)
-  `(acl2::with-outer-locals
-    (local (acl2s-defaults :set testing-enabled nil))
-    (definedcd ,name ,@args)))
-
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((definedcd ,name ,@args))))

@@ -10,6 +10,8 @@
 
 (in-package "JAVA")
 
+(include-book "../language/primitive-types")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
@@ -172,17 +174,50 @@
    (xdoc::p
     "We capture array types via a natural recursive structure,
      by wrapping the component type."))
-  (:boolean ())
-  (:char ())
-  (:byte ())
-  (:short ())
-  (:int ())
-  (:long ())
-  (:float ())
-  (:double ())
+  (:prim ((type primitive-type)))
   (:class ((name string)))
   (:array ((comp jtype)))
   :pred jtypep)
+
+(define jtype-boolean ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('boolean')."
+  (jtype-prim (primitive-type-boolean)))
+
+(define jtype-char ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('char')."
+  (jtype-prim (primitive-type-char)))
+
+(define jtype-byte ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('byte')."
+  (jtype-prim (primitive-type-byte)))
+
+(define jtype-short ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('short')."
+  (jtype-prim (primitive-type-short)))
+
+(define jtype-int ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('int')."
+  (jtype-prim (primitive-type-int)))
+
+(define jtype-long ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('long')."
+  (jtype-prim (primitive-type-long)))
+
+(define jtype-float ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('float')."
+  (jtype-prim (primitive-type-float)))
+
+(define jtype-double ()
+  :returns (type jtypep)
+  :short "Build the Java primitive type @('double')."
+  (jtype-prim (primitive-type-double)))
 
 (fty::deflist jtype-list
   :short "True lists of Java types."

@@ -27,21 +27,20 @@
   :short "An executable mapping from
           the concrete syntax of ABNF to the abstract syntax of ABNF."
   :long
-  "<p>
-   The ABNF abstract syntax is an abstraction of the concrete syntax.
-   That is, there is a mapping
-   from the parse trees obtained by parsing sequences of natural numbers
-   according to the rules of the concrete syntax of ABNF,
-   to the entities of the abstract syntax of ABNF.
-   The mapping abstracts away many of the details of the concrete syntax.
-   </p>
-   <p>
-   This abstraction mapping is defined by a collection of functions.
-   These functions explicitly check that the trees
-   satisfy certain expected conditions.
-   Eventually, these expected conditions
-   should be proved to follow from suitable guards.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The ABNF abstract syntax is an abstraction of the concrete syntax.
+     That is, there is a mapping
+     from the parse trees obtained by parsing sequences of natural numbers
+     according to the rules of the concrete syntax of ABNF,
+     to the entities of the abstract syntax of ABNF.
+     The mapping abstracts away many of the details of the concrete syntax.")
+   (xdoc::p
+    "This abstraction mapping is defined by a collection of functions.
+     These functions explicitly check that the trees
+     satisfy certain expected conditions.
+     Eventually, these expected conditions
+     should be proved to follow from suitable guards."))
   :order-subtopics t)
 
 (define abstract-fail ()
@@ -49,10 +48,9 @@
   :parents (concrete-to-abstract-syntax)
   :short "Called when abstraction fails."
   :long
-  "<p>
-   The error message does not carry a lot of information,
-   but it keeps the abstraction functions simple for now.
-   </p>"
+  (xdoc::topstring-p
+   "The error message does not carry a lot of information,
+    but it keeps the abstraction functions simple for now.")
   (hard-error 'abnf "ABNF Grammar Abstraction Error." nil)
   :no-function t)
 
@@ -63,10 +61,9 @@
           where @('term') is a terminal numeric or character value notation,
           is generally abstracted to its list of natural numbers."
   :long
-  "<p>
-   The parse tree must be a leaf labeled by a list of natural numbers.
-   That list of natural numbers is returned.
-   </p>"
+  (xdoc::topstring-p
+   "The parse tree must be a leaf labeled by a list of natural numbers.
+    That list of natural numbers is returned.")
   (if (tree-case tree :leafterm)
       (tree-leafterm->get tree)
     (abstract-fail))
@@ -80,10 +77,9 @@
           that denotes a single natural number,
           is sometimes abstracted to its only natural number."
   :long
-  "<p>
-   The parse tree must be a leaf labeled by a list of one natural number.
-   That natural number is returned.
-   </p>"
+  (xdoc::topstring-p
+   "The parse tree must be a leaf labeled by a list of one natural number.
+    That natural number is returned.")
   (b* ((nats (abstract-terminals tree)))
     (if (consp nats)
         (car nats)
@@ -98,11 +94,10 @@
           terminal numeric or character value notations,
           is generally abstracted to its list of natural numbers."
   :long
-  "<p>
-   The parse tree must have a root labeled by no rule name,
-   with a single leaf subtree labeled by a list of natural numbers.
-   That list of natural numbers is returned.
-   </p>"
+  (xdoc::topstring-p
+   "The parse tree must have a root labeled by no rule name,
+    with a single leaf subtree labeled by a list of natural numbers.
+    That list of natural numbers is returned.")
   (b* (((fun (fail)) (abstract-fail))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -122,11 +117,10 @@
           that all denote single natural numbers,
           is sometimes abstracted to its only natural number."
   :long
-  "<p>
-   The parse tree must have a root labeled by no rule name,
-   with a single leaf subtree labeled by a list of one natural number.
-   That natural number is returned.
-   </p>"
+  (xdoc::topstring-p
+   "The parse tree must have a root labeled by no rule name,
+    with a single leaf subtree labeled by a list of one natural number.
+    That natural number is returned.")
   (b* ((nats (abstract-grouped-terminals tree)))
     (if (consp nats)
         (car nats)
@@ -142,11 +136,10 @@
           that all denote single natural numbers,
           are abstracted to the list of its natural numbers."
   :long
-  "<p>
-   Each parse tree must have a root labeled by no rule name,
-   with a single leaf subtree labeled by a list of one natural number.
-   That natural number is returned in correspondence to the parse tree.
-   </p>"
+  (xdoc::topstring-p
+   "Each parse tree must have a root labeled by no rule name,
+    with a single leaf subtree labeled by a list of one natural number.
+    That natural number is returned in correspondence to the parse tree.")
   (b* (((fun (fail)) (prog2$ (abstract-fail) nil))
        ((when (endp trees)) nil)
        ((cons tree trees) trees)
@@ -365,16 +358,15 @@
           or between a @('(\".\" 1*HEXDIG)')
           and a @('(\"-\" 1*HEXDIG)') parse tree."
   :long
-  "<p>
-   This is used by
-   @(tsee abstract-bin-val-rest),
-   @(tsee abstract-dec-val-rest), and
-   @(tsee abstract-hex-val-rest)
-   to distinguish between the two alternatives
-   in the definiens of @('bin-val'), @('dec-val'), and @('hex-val').
-   For the first alternative, @('t') is returned;
-   for the second alternative, @('nil') is returned.
-   </p>"
+  (xdoc::topstring-p
+   "This is used by
+    @(tsee abstract-bin-val-rest),
+    @(tsee abstract-dec-val-rest), and
+    @(tsee abstract-hex-val-rest)
+    to distinguish between the two alternatives
+    in the definiens of @('bin-val'), @('dec-val'), and @('hex-val').
+    For the first alternative, @('t') is returned;
+    for the second alternative, @('nil') is returned.")
   (b* (((fun (fail)) (abstract-fail))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -684,10 +676,10 @@
   :short "A @('rulename') parse tree is abstracted to
           its corresponding rule name."
   :long
-  "<p>
-   The characters are converted to lowercase,
-   according to the normalized representation required by @(tsee rulename-wfp).
-   </p>"
+  (xdoc::topstring-p
+   "The characters are converted to lowercase,
+    according to the normalized representation
+    required by @(tsee rulename-wfp).")
   (b* (((fun (fail)) (prog2$ (abstract-fail) (rulename "")))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
@@ -733,17 +725,16 @@
   :short "A @('repeat') parse tree is abstracted to
           its correspoding repetition range."
   :long
-  "<p>
-   The two alternatives of the @('repeat') rule
-   both consist of singleton concatenations,
-   so a @('repeat') parse tree must have a list of one list of trees.
-   For the first alternative, the list of trees
-   must consist of one or more @('DIGIT') parse trees;
-   for the second alternative, the list of trees
-   must consist of a single @('(*DIGIT \"*\" *DIGIT)') parse tree.
-   The latter kind of parse tree is distinguished from the former kind
-   by having a @('nil') rule for the @('(*DIGIT \"*\" *DIGIT)') group.
-   </p>"
+  (xdoc::topstring-p
+   "The two alternatives of the @('repeat') rule
+    both consist of singleton concatenations,
+    so a @('repeat') parse tree must have a list of one list of trees.
+    For the first alternative, the list of trees
+    must consist of one or more @('DIGIT') parse trees;
+    for the second alternative, the list of trees
+    must consist of a single @('(*DIGIT \"*\" *DIGIT)') parse tree.
+    The latter kind of parse tree is distinguished from the former kind
+    by having a @('nil') rule for the @('(*DIGIT \"*\" *DIGIT)') group.")
   (b* (((fun (fail)) (prog2$ (abstract-fail)
                              (repeat-range 0 (nati-finite 0))))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -766,10 +757,9 @@
   :short "A @('[repeat]') parse tree is abstracted to
           its corresponding repetition range."
   :long
-  "<p>
-   When the @('repeat') subtree is absent,
-   the tree is abstracted to the range from 1 to 1.
-   </p>"
+  (xdoc::topstring-p
+   "When the @('repeat') subtree is absent,
+    the tree is abstracted to the range from 1 to 1.")
   (b* (((fun (fail)) (prog2$ (abstract-fail)
                              (repeat-range 0 (nati-finite 0))))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -906,8 +896,7 @@
             @('(*c-wsp \"/\" *c-wsp concatenation)') parse trees
             is abstracted to the list of its concatenations
             (i.e. an alternation)."
-    :long
-    "@(def abstract-alt-rest)"
+    :long "@(def abstract-alt-rest)"
     (b* (((fun (fail)) (abstract-fail))
          ((when (endp trees)) nil)
          ((cons tree trees) trees)
@@ -945,8 +934,7 @@
             @('(1*c-wsp repetition)') parse trees
             is abstracted to the list of its repetitions
             (i.e. a concatenation)."
-    :long
-    "@(def abstract-conc-rest)"
+    :long "@(def abstract-conc-rest)"
     (b* (((fun (fail)) (abstract-fail))
          ((when (endp trees)) nil)
          ((cons tree trees) trees)

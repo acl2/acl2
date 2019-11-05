@@ -11,7 +11,7 @@
 # This file compiles the Java source files of AIJ without IntelliJ IDEA.
 # It generates the class and jar files in the same places as IntelliJ IDEA does.
 
-# This file also generates Javadoc documentation
+# This file also generates Javadoc HTML documentation
 # for public, package-private, and private classes and members
 # (not for protected classes and members
 # because AIJ currently does not have any).

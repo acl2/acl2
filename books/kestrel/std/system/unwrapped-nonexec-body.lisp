@@ -18,7 +18,7 @@
   :returns (unwrapped-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :parents (std/system/function-queries)
-  :short "Body of a named logic-mode defined non-executable function,
+  :short "Body of a non-executable defined named function,
           without the ``non-executable wrapper''."
   :long
   (xdoc::topstring
@@ -36,9 +36,18 @@
     " set to @('t'),
      the submitted body (once translated) must be wrapped as above.")
    (xdoc::p
+    "It is also possible to use @(tsee defun) to introduce
+     program-mode functions with @(':non-executable') set to @(':program'),
+     in which case the body must be wrapped as above.
+     (These @(tsee defun)s are introduced via @(tsee defproxy).)")
+   (xdoc::p
     "This utility returns
-     the unwrapped body of a logic-mode non-executable function @('fn'),
-     by removing the wrapper shown above.")
+     the unwrapped body of a logic-mode or program-mode
+     defined non-executable function @('fn'),
+     by removing the wrapper shown above.
+     Here, `defined' means that the function has
+     an @('unnormalized-body') property,
+     which is retrieved and unwrapped.")
    (xdoc::p
     "See @(tsee unwrapped-nonexec-body+) for
      a logic-friendly variant of this utility."))

@@ -36,7 +36,9 @@
      is its @('unnormalized-body') property.
      If a function is not defined, this property is @('nil').
      Some program-mode functions may be defined
-     but not have an @('unnormalized-body') property.")
+     but not have an @('unnormalized-body') property.
+     If a function does not have an @('unnormalized-body') property,
+     this utility returns @('nil').")
    (xdoc::p
     "See @(tsee ubody+) for a logic-friendly variant of this utility."))
   (cond ((symbolp fn) (getpropc fn 'unnormalized-body nil wrld))

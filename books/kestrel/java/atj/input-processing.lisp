@@ -14,6 +14,7 @@
 (include-book "primitives")
 (include-book "test-structures")
 
+(include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
@@ -134,10 +135,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-targets ((targets true-listp) deep guards ctx state)
-  :returns (mv erp
-               (result "Always @('nil').")
-               state)
-  :verify-guards nil
+  :returns (mv erp (result null) state)
   :short "Process the @('fn1'), ..., @('fnp') inputs."
   :long
   (xdoc::topstring
@@ -163,7 +161,7 @@
                     (eq guards t))) (value nil))
        (target-prims (intersection-eq targets *atj-primitive-fns*))
        ((when (null target-prims)) (value nil)))
-    (er-soft+ t nil
+    (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
                and the :GUARDS input is T, ~
                ~@0."
@@ -175,10 +173,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-java-package ((java-package) ctx state)
-  :returns (mv erp
-               (nothing "Always @('nil').")
-               state)
-  :verify-guards nil
+  :returns (mv erp (nothing null) state)
   :short "Process the @(':java-package') input."
   (b* (((er &) (ensure-string-or-nil$ java-package
                                       "The :JAVA-PACKAGE input"
@@ -195,7 +190,8 @@
                   "The :JAVA-PACKAGE input ~x0 must differ from ~
                    the name of the Java package of AIJ ~x1."
                   java-package *aij-package*)))
-    (value nil)))
+    (value nil))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-string-or-nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,9 +203,8 @@
 
 (define atj-process-java-class (java-class ctx state)
   :returns (mv erp
-               (java-class$ "A @(tsee stringp).")
+               (java-class$ (implies (not erp) (stringp java-class$)))
                state)
-  :verify-guards nil
   :short "Process the @(':java-class') input."
   (b* (((er &) (ensure-string-or-nil$ java-class
                                       "The :JAVA-CLASS input"
@@ -222,43 +217,223 @@
                    consisting of only ASCII characters."
                   java-class))
        (name (or java-class *atj-default-java-class*)))
-    (value name)))
+    (value name))
+  :prepwork ((local (in-theory (enable acl2::ensure-string-or-nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-ensure-terms-quoted-constants
-  ((qcs pseudo-term-listp "@('qc1'), @('qc2'), etc.")
-   (fn symbolp "The @('fn') in @('(fn qc1 qc2 ...)'); just for error messages.")
-   (term "One of the test terms @('termj'); just for error messages.")
-   ctx
-   state)
-  :returns (mv erp (nothing null) state)
-  :short "Cause an error if
-          any argument of the call @('(fn qc1 qc2 ...)')
-          to which a test term translates
-          is not a quoted constant."
-  (b* (((when (endp qcs)) (value nil))
-       (qc (car qcs))
-       ((unless (quotep qc))
+(define atj-process-test-input ((input pseudo-termp)
+                                (type atj-typep)
+                                (fn symbolp "Just for error messages.")
+                                (call pseudo-termp "Just for error messages.")
+                                (deep$ booleanp)
+                                (guards$ booleanp)
+                                ctx
+                                state)
+  :returns (mv erp
+               (test-input atj-test-value-p)
+               state)
+  :short "Process the input of a test for a function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is some sub-term @('in') of a term @('(fn ... in ...)')
+     specified in the @(':tests') input.
+     The requirements on @('in'), as expained in the user documentation,
+     depend on the @(':deep') and @(':guards') inputs,
+     as well as on the ATJ type assigned to
+     the parameter of @('fn') that corresponds to @('in'):
+     these three values are passed as inputs to this function,
+     which checks these requirements, thus validating @('in').
+     If the checks succeed, we turn @('in') into
+     the corresponding test value.
+     Note that these checks imply that @('in') is ground."))
+  (b* ((irrelevant (atj-test-value-avalue :irrelevant)))
+    (if (or deep$
+            (not guards$)
+            (not (eq type :jint)))
+        (if (quotep input)
+            (value (atj-test-value-avalue (unquote-term input)))
+          (er-soft+ ctx t irrelevant
+                    "The term ~x0 that is an argument of ~
+                     the function call (~x1 ...) that translates ~
+                     the test term ~x2 in the :TESTS input, ~
+                     must be a quoted constant."))
+      (b* ((err-msg (msg "The term ~x0 that is an argument of ~
+                          the function call (~x1 ...) that translates ~
+                          the test term ~x2 in the :TESTS input, ~
+                          must be a call (INT-VALUE X) where X is ~
+                          a signed 32-bit integer."
+                         input fn call))
+           ((unless (ffn-symb-p input 'int-value))
+            (er-soft+ ctx t irrelevant "~@0" err-msg))
+           (int-value-args (fargs input))
+           ((unless (= (len int-value-args) 1))
+            (er-soft+ ctx t irrelevant "~@0" err-msg))
+           (int-value-arg (car int-value-args))
+           ((unless (quotep int-value-arg))
+            (er-soft+ ctx t irrelevant "~@0" err-msg))
+           (int (unquote-term int-value-arg))
+           ((unless (sbyte32p int))
+            (er-soft+ ctx t irrelevant "~@0" err-msg)))
+        (value (atj-test-value-jvalue (int-value int)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-process-test-inputs ((inputs pseudo-term-listp)
+                                 (types atj-type-listp)
+                                 (fn symbolp "Just for error messages.")
+                                 (call pseudo-termp "Just for error messages.")
+                                 (deep$ booleanp)
+                                 (guards$ booleanp)
+                                 ctx
+                                 state)
+  :guard (= (len types) (len inputs))
+  :returns (mv erp
+               (test-inputs atj-test-value-listp)
+               state)
+  :short "Lift @(tsee atj-process-test-input) to lists."
+  :long
+  (xdoc::topstring-p
+   "This is used to process all the inputs of a test.")
+  (b* (((when (endp inputs)) (value nil))
+       ((mv erp test-input state)
+        (atj-process-test-input (car inputs)
+                                (car types)
+                                fn call
+                                deep$ guards$
+                                ctx state))
+       ((when erp) (mv t nil state))
+       ((er test-inputs) (atj-process-test-inputs (cdr inputs)
+                                                  (cdr types)
+                                                  fn call
+                                                  deep$ guards$
+                                                  ctx state)))
+    (value (cons test-input test-inputs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-process-test (name
+                          call
+                          (targets$ symbol-listp)
+                          (deep$ booleanp)
+                          (guards$ booleanp)
+                          ctx
+                          state)
+  :returns (mv erp
+               (test$ "An @(tsee atj-testp).")
+               state)
+  :mode :program ; because of TRANS-EVAL
+  :short "Process a test from the @(':tests') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first two arguments of this function are the two components
+     of a pair in the alist computed from @(':tests').
+     These two components are the name of the tests and the call of the tests.")
+   (xdoc::p
+    "We first ensure that the name is a non-empty string
+     consisting only of letters and digits.
+     Then we translate the term (ensuring that the translation succeeds),
+     and we ensure that it has the form @('(fn in1 in2 ...)'),
+     where @('fn') is one of the target functions.
+     We check that all the arguments of the function call
+     satisfy the needed requirements (via @(tsee atj-process-test-inputs)),
+     obtaining the corresponding input test values.
+     If the @(':guards') input is @('t'),
+     we ensure that the inputs satisfy the guard of the function.
+     We evaluate the call @('(fn in1 in2 ...)'), obtaining a result value.
+     If @(':deep') is @('nil') and @(':guards') is @('t'),
+     we ensure that the inputs will select an overloaded methods,
+     and we will obtain the corresponding output type
+     to contruct the appropriate kind of output test value.
+     We create and return an @(tsee atj-test) record."))
+  (b* (((er &) (ensure-string$ name
+                               (msg "The test name ~x0 in the :TESTS input"
+                                    name)
+                               t nil))
+       ((when (equal name ""))
+        (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
+                             cannot be the empty string." name))
+       ((unless (chars-in-charset-p (explode name) (alpha/digit-chars)))
+        (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
+                             must contain only letters and digits." name))
+       ((er (list term$ &))
+        (ensure-term$ call
+                      (msg "The test term ~x0 in the :TESTS input" call)
+                      t nil))
+       ((when (or (variablep term$)
+                  (fquotep term$)
+                  (flambda-applicationp term$)))
         (er-soft+ ctx t nil
-                  "The term ~x0 that is an argument of ~
-                   the function call (~x1 ...) that translates ~
-                   the test term ~x2 in the :TESTS input, ~
-                   must be a quoted constant."
-                  qc fn term)))
-    (atj-ensure-terms-quoted-constants (cdr qcs) fn term ctx state)))
+                  "The test term ~x0 in the :TESTS input ~
+                   must translate to ~
+                   the application of a named function." call))
+       (fn (ffn-symb term$))
+       ((er &) (ensure-member-of-list$
+                fn
+                targets$
+                (msg "among the target functions ~&0." targets$)
+                (msg "The function ~x0 called by ~
+                         the test term ~x1 in the :TESTS input"
+                     fn call)
+                t nil))
+       (inputs (fargs term$))
+       (fn-info (atj-get-function-type-info fn guards$ (w state)))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
+       ((er test-inputs)
+        (atj-process-test-inputs inputs
+                                 (atj-function-type->inputs main-fn-type)
+                                 fn
+                                 term$
+                                 deep$
+                                 guards$
+                                 ctx
+                                 state))
+       ((er &) (if guards$
+                   (b* ((guard (subcor-var (formals fn (w state))
+                                           inputs
+                                           (uguard fn (w state))))
+                        ((er (cons & guard-satisfied))
+                         (trans-eval guard ctx state nil)))
+                     (if (not guard-satisfied)
+                         (er-soft+ ctx t nil
+                                   "The test term ~x0 in the :TESTS input ~
+                                    must translate to a function call ~
+                                    where the guards are satisfied, ~
+                                    because the :GUARDS input is T." call)
+                       (value nil)))
+                 (value nil)))
+       ((er (cons & output)) (trans-eval term$ ctx state nil))
+       ((when (or deep$ (not guards$)))
+        (b* ((test-output (atj-test-value-avalue output)))
+          (value (atj-test name fn test-inputs test-output))))
+       (in-types (atj-test-values-to-types test-inputs))
+       (all-fn-types (cons main-fn-type other-fn-types))
+       (out-type? (atj-output-type-of-min-input-types in-types all-fn-types))
+       ((when (null out-type?))
+        (er-soft+ ctx t nil
+                  "The test term ~x0 in the :TESTS input ~
+                   does not have a corresponding Java overloaded method."
+                  call))
+       (test-output (if (eq out-type? :jint)
+                        (atj-test-value-jvalue output)
+                      (atj-test-value-avalue output))))
+    (value (atj-test name fn test-inputs test-output))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-tests (tests
                            (targets$ symbol-listp)
+                           (deep$ booleanp)
                            (guards$ booleanp)
                            ctx
                            state)
   :returns (mv erp
                (tests$ "An @(tsee atj-test-listp).")
                state)
-  :mode :program
+  :mode :program ; because of TRANS-EVAL
   :short "Process the @(':tests') input."
   :long
   (xdoc::topstring
@@ -266,20 +441,7 @@
     "After evaluating @(':tests')
      and ensuring that the result is a list of doublets,
      we convert it into an alist and we ensure that the keys are unique.
-     Then we process each pair in the alist.")
-   (xdoc::p
-    "For each pair in the alist,
-     we first ensure that the name is a non-empty string
-     consisting only of letters and digits.
-     Then we translate the term (ensuring that the translation succeeds),
-     and we ensure that it has the form @('(fn qc1 qc2 ...)'),
-     where @('fn') is one of the target functions
-     and @('qc1'), @('qc2'), etc. are quoted constants.
-     (Note that these checks imply that the term is ground,
-     so this condition does not need to be checked explicitly.)
-     We unquote @('qc1'), @('qc2'), etc., obtaining a list of argument values.
-     We evaluate the call @('(fn qc1 qc2 ...)'), obtaining a result value.
-     We create an @(tsee atj-test) aggregate for each test."))
+     Then we process each pair in the alist, via an auxiliary function."))
   (b* (((er (cons & tests)) (trans-eval tests ctx state nil))
        (description "The :TESTS input")
        ((er &) (ensure-doublet-list$ tests description t nil))
@@ -289,73 +451,28 @@
                      "The list ~x0 of names of the tests in the :TESTS input"
                      names))
        ((er &) (ensure-list-no-duplicates$ names description t nil)))
-    (atj-process-tests-aux alist targets$ guards$ ctx state))
+    (atj-process-tests-aux alist targets$ deep$ guards$ ctx state))
 
   :prepwork
   ((define atj-process-tests-aux ((tests-alist alistp)
                                   (targets$ symbol-listp)
+                                  (deep$ booleanp)
                                   (guards$ booleanp)
                                   ctx
                                   state)
      :returns (mv erp
                   tests$ ; ATJ-TEST-LISTP
                   state)
-     :mode :program
+     :mode :program ; because of TRANS-EVAL in ATJ-PROCESS-TEST
      :parents nil
      (b* (((when (endp tests-alist)) (value nil))
-          ((cons (cons name term) tests-alist) tests-alist)
-          ((er &) (ensure-string$ name
-                                  (msg "The test name ~x0 in the :TESTS input"
-                                       name)
-                                  t nil))
-          ((when (equal name ""))
-           (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
-                                cannot be the empty string." name))
-          ((unless (chars-in-charset-p (explode name) (alpha/digit-chars)))
-           (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
-                                must contain only letters and digits." name))
-          ((er (list term$ &))
-           (ensure-term$ term
-                         (msg "The test term ~x0 in the :TESTS input" term)
-                         t nil))
-          ((when (or (variablep term$)
-                     (fquotep term$)
-                     (flambda-applicationp term$)))
-           (er-soft+ ctx t nil
-                     "The test term ~x0 in the :TESTS input ~
-                      must translate to ~
-                      the application of a named function." term))
-          (fn (ffn-symb term$))
-          ((er &) (ensure-member-of-list$
-                   fn
-                   targets$
-                   (msg "among the target functions ~&0." targets$)
-                   (msg "The function ~x0 called by ~
-                         the test term ~x1 in the :TESTS input"
-                        fn term)
-                   t nil))
-          (qcs (fargs term$))
-          ((er &) (atj-ensure-terms-quoted-constants qcs fn term ctx state))
-          (args (unquote-term-list qcs))
-          ((er &) (if guards$
-                      (b* ((guard (subcor-var (formals fn (w state))
-                                              qcs
-                                              (uguard fn (w state))))
-                           ((er (cons & guard-satisfied))
-                            (trans-eval guard ctx state nil)))
-                        (if (not guard-satisfied)
-                            (er-soft+ ctx t nil
-                                      "The test term ~x0 in the :TESTS input ~
-                                       must translate to a function call ~
-                                       where the guards are satisfied, ~
-                                       because the :GUARDS input is T." term)
-                          (value nil)))
-                    (value nil)))
-          ((er (cons & res)) (trans-eval term$ ctx state nil))
-          (agg (atj-test name fn args res))
-          ((er aggs)
-           (atj-process-tests-aux tests-alist targets$ guards$ ctx state)))
-       (value (cons agg aggs))))))
+          ((cons (cons name call) tests-alist) tests-alist)
+          ((er test$)
+           (atj-process-test name call targets$ deep$ guards$ ctx state))
+          ((er tests$)
+           (atj-process-tests-aux tests-alist
+                                  targets$ deep$ guards$ ctx state)))
+       (value (cons test$ tests$))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,7 +492,6 @@
                         otherwise it is the path
                         of the generated test Java file.")
                state)
-  :mode :program
   :short "Process the @(':output-dir') input."
   (b* (((er &) (ensure-string$ output-dir "The :OUTPUT-DIR input" t nil))
        ((mv err/msg kind state) (oslib::file-kind output-dir))
@@ -425,7 +541,8 @@
                                "The output path ~x0 ~
                                 exists but is not a regular file." file-test)))
                  (value :this-is-irrelevant))))
-    (value (list file file-test))))
+    (value (list file file-test)))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -523,7 +640,6 @@
      and then it processes @('worklist-chk'),
      and it is during this processing (when @('gen?') is thus @('nil'))
      that @('collected-chk') gets populated."))
-  :verify-guards nil
 
   (define atj-collect-fns-in-term ((term pseudo-termp)
                                    (gen? booleanp)
@@ -533,13 +649,14 @@
                                    (collected-chk symbol-listp)
                                    (deep$ booleanp)
                                    (guards$ booleanp))
-    :returns (mv (new-worklist-gen "A @(tsee symbol-listp).")
-                 (new-worklist-chk "A @(tsee symbol-listp).")
+    :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
+                 (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
     (b* (((when (variablep term)) (mv worklist-gen worklist-chk nil))
          ((when (fquotep term)) (mv worklist-gen worklist-chk nil))
          (fn (ffn-symb term))
-         ((when (eq fn 'return-last))
+         ((when (and (eq fn 'return-last)
+                     (quotep (fargn term 1)))) ; this should be always true
           (b* ((1st-arg (fargn term 1)))
             (case (unquote 1st-arg)
               (acl2::mbe1-raw (if guards$
@@ -628,8 +745,8 @@
                                     (collected-chk symbol-listp)
                                     (deep$ booleanp)
                                     (guards$ booleanp))
-    :returns (mv (new-worklist-gen "A @(tsee symbol-listp).")
-                 (new-worklist-chk "A @(tsee symbol-listp).")
+    :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
+                 (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
     (b* (((when (endp terms)) (mv worklist-gen worklist-chk nil))
          ((mv worklist-gen worklist-chk unsuppported-return-last?)
@@ -649,7 +766,17 @@
                                 collected-gen
                                 collected-chk
                                 deep$
-                                guards$))))
+                                guards$)))
+
+  :prepwork
+  ((defrule returns-lemma
+     (implies (symbol-listp x)
+              (symbol-listp (remove1-equal a x)))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-collect-fns-in-term
+    :hints (("Goal" :expand (pseudo-termp term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -665,7 +792,7 @@
   :returns (mv erp
                (fns "A @(tsee symbol-listp).")
                state)
-  :mode :program
+  :mode :program ; until termination is proved (which will take a bit of work)
   :short "Worklist algorithm iteration."
   :long
   (xdoc::topstring
@@ -793,7 +920,7 @@
   :returns (mv erp
                (fns-to-translate "A @(tsee symbol-listp).")
                state)
-  :mode :program
+  :mode :program ; because of ATJ-WORKLIST-ITERATE
   :short "Collect the names of all the ACL2 functions to be translated to Java,
           checking that they satisfy all the necessary constraints."
   :long
@@ -836,8 +963,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-pkgs-to-translate ((verbose$ booleanp) state)
-  :returns (pkgs "A @(tsee string-listp).")
-  :verify-guards nil
+  :returns (pkgs string-listp)
   :short "Collect all the ACL2 packages to be translated to Java."
   :long
   (xdoc::topstring
@@ -847,7 +973,7 @@
     "For now we return all the current packages.
      In the future, it might be possible to reduce them
      to just the ones referenced by the functions to be translated to Java."))
-  (b* ((pkgs (known-packages state))
+  (b* ((pkgs (known-packages+ state))
        ((run-when verbose$)
         (cw "~%Known ACL2 packages:~%")
         (atj-show-pkgs pkgs)))
@@ -918,7 +1044,7 @@
                         @(tsee atj-process-tests), and
                         @('verbose$') is the @(':verbose') input.")
                state)
-  :mode :program
+  :mode :program ; because of ATJ-FNS-TO-TRANSLATE and ATJ-PROCESS-TESTS
   :short "Ensure that the inputs to @(tsee atj) are valid."
   :long
   (xdoc::topstring
@@ -954,7 +1080,7 @@
        ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
-       ((er tests$) (atj-process-tests tests targets guards ctx state))
+       ((er tests$) (atj-process-tests tests targets deep guards ctx state))
        ((er (list output-file$
                   output-file-test$)) (atj-process-output-dir
                                        output-dir java-class$ tests$ ctx state))

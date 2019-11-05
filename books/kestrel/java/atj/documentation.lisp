@@ -333,7 +333,9 @@
        Furthermore, if the @(':deep') input is @('nil'),
        the Java methods in the generated code
        have the argument and return types
-       specified via @(tsee def-atj-main-function-type),
+       specified via @(tsee def-atj-main-function-type)
+       and @(tsee def-atj-other-function-type)
+       (see the `Generated Java Code' section for more information),
        and the generated Java code may manipulate
        Java primitive values directly.")
      (xdoc::li
@@ -413,16 +415,29 @@
       @('((name1 term1) ... (nameq termq))'),
       where each @('namej') is a string consisting of only letters and digits,
       and each @('termj') is an untranslated ground term
-      whose translation is @('(fn qc1 qc2 ...)'),
+      whose translation is @('(fn in1 in2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
-      and each @('qc1'), @('qc2'), etc. is a quoted constant.
-      If @(':guards') is @('t'),
-      then the values of @('qc1'), @('qc2'), etc.
-      must satisfy the guard of @('fn').
-      All the @('namej') strings must be distinct.")
+      and each @('in') among @('in1'), @('in2')
+      satisfies the following conditions:")
+    (xdoc::ul
+     (xdoc::li
+      "If @(':deep') is @('t') or @(':guards') is @('nil'),
+       then @('in') must be a quoted constant.")
+     (xdoc::li
+      "If @(':deep') is @('nil') and @(':guards') is @('t'),
+       then requirements on @('in') depend on the type assigned,
+       via @(tsee def-atj-main-function-type),
+       to the input of @('fn') corresponding to @('in'):
+       if the type is @(':a...'),
+       then @('in') must be a quoted constant;
+       if the type is @(':jint'),
+       then @('in') must be a term @('(java::int-value <int>)')
+       where @('<int>') is a quoted signed 32-bit integer."))
+    (xdoc::p
+     "All the @('namej') strings must be distinct.")
     (xdoc::p
      "Each doublet @('(namej termj)') specifies a test,
-      in which the result of @('(fn qc1 qc2 ...)') calculated by ACL2
+      in which the result of @('(fn in1 in2 ...)') calculated by ACL2
       is compared with the result of the same call
       calculated via the generated Java code for @('fn').
       These tests can be run via additional generated Java code
@@ -430,12 +445,10 @@
     (xdoc::p
      "Note that the @(':tests') input is evaluated.")
     (xdoc::p
-     "Currently there is no support for generating tests for
-      Java methods with Java primitive argument or return types
-      (which may be generated only if
-      @(':deep') is @('nil') and @(':guards') is @('t'));
-      attempting to generate these tests may result in a Java compilation error.
-      Support will be added soon."))
+     "Test inputs of the form @('(java::int-value <int>)')
+      can be used only for ACL2 functions that have the ATJ type @(':jint')
+      assigned to the corresponding argument
+      via @(tsee def-atj-main-function-type)."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
@@ -503,8 +516,8 @@
 
    (xdoc::p
     "In the shallow embedding approach,
-     the Java class contains one public static method
-     for each function among @('fn1'), ..., @('fnp'),
+     the Java class contains public static methods
+     for the functions among @('fn1'), ..., @('fnp'),
      the functions that they transitively call
      (except for the functions in @(tsee *atj-primitive-fns*),
      when @(':deep') is @('nil') and @(':guards') is @('t'))
@@ -512,11 +525,15 @@
      (the latter are just wrappers of the native implementations).
      Each method has the same number of parameters as the ACL2 function.
      If @(':guards') is @('nil'),
-     each method has @('Acl2Value') as argument and return types;
-     if @(':guards') is @('t'),
-     each method has argument and return types
-     determined from the types assigned to the corresponding ACL2 function
-     via @(tsee def-atj-main-function-type).
+     there is exactly one method for each ACL2 function,
+     and that method has @('Acl2Value') as argument and return types.
+     If @(':guards') is @('t'),
+     for each ACL2 function there are as many overloaded methods
+     as the number of function types associated to the function
+     via @(tsee def-atj-main-function-type)
+     and @(tsee def-atj-other-function-type):
+     each of these function types determines the argument and return types
+     of the corresponding overloaded method.
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.

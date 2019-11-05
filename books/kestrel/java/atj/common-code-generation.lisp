@@ -319,7 +319,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
     :parents nil
     (b* (((unless (mbt (consp conspair)))
-          (mv nil (jexpr-name "irrelevant") jvar-value-index))
+          (mv nil (jexpr-name "this-is-irrelevant") jvar-value-index))
          ((mv car-block
               car-expr
               jvar-value-index) (atj-gen-value (car conspair)
@@ -383,7 +383,9 @@
                                        jvar-value-index))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             value)
-                     (mv nil (jexpr-name "irrelevant") jvar-value-index))))
+                     (mv nil
+                         (jexpr-name "this-is-irrelevant")
+                         jvar-value-index))))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-CONS decreases:
     :measure (two-nats-measure (acl2-count value) 1))
@@ -414,7 +416,12 @@
                                                        jvar-value-index)))
              (mv (append first-block rest-block)
                  (cons first-expr rest-jexrps)
-                 jvar-value-index)))))
+                 jvar-value-index))))
+  ///
+
+  (defret len-of-atj-gen-values.exprs
+    (equal (len exprs)
+           (len values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,7 +441,7 @@
   (define atj-gen-cons-flat ((conspair consp))
     :returns (expr jexprp)
     :parents nil
-    (b* (((unless (mbt (consp conspair))) (jexpr-name "irrelevant"))
+    (b* (((unless (mbt (consp conspair))) (jexpr-name "this-is-irrelevant"))
          (car-expr (atj-gen-value-flat (car conspair)))
          (cdr-expr (atj-gen-value-flat (cdr conspair))))
       (jexpr-smethod *aij-type-cons*
@@ -455,7 +462,7 @@
           ((consp value) (atj-gen-cons-flat value))
           (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
                             value)
-                     (jexpr-name "irrelevant"))))
+                     (jexpr-name "this-is-irrelevant"))))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-CONS decreases:
     :measure (two-nats-measure (acl2-count value) 1))
@@ -463,6 +470,19 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-value-flat))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-values-flat ((values true-listp))
+  :returns (exprs jexpr-listp)
+  :short "Lift @(tsee atj-gen-value-flat) to lists."
+  (cond ((endp values) nil)
+        (t (cons (atj-gen-value-flat (car values))
+                 (atj-gen-values-flat (cdr values)))))
+  ///
+
+  (defret len-of-atj-gen-values-flat
+    (equal (len exprs) (len values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

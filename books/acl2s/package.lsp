@@ -206,6 +206,9 @@
       ffn-symb
       fargn
       fcons-term*
+      lambda$
+      apply$
+      collect$
       
       => ;sig
       _  ;range

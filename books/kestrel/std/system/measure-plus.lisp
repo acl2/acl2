@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "measure")
 (include-book "irecursivep-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,6 +27,10 @@
     and includes a run-time check (which should always succeed) on the result
     that allows us to prove the return type theorem
     without strengthening the guard on @('wrld').
+    This utility also includes a run-time check (which should always succeed)
+    on the form of the @('justification') property of the function
+    that allows us to verify the guards
+    without strengthening the guard of @('wrld').
     Furthermore, this utility causes an error if called on a symbol
     that does not name a recursive logic-mode function;
     the reason for ensuring logic-mode is that

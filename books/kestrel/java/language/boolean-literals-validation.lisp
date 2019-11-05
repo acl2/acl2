@@ -40,16 +40,16 @@
     "This defines a boolean literal as a string at the leaves of
      a terminated tree rooted at the @('boolean-literal') nonterminal."))
   (exists (tree)
-          (and (ttree-with-root-p tree "boolean-literal")
+          (and (abnf-tree-with-root-p tree "boolean-literal")
                (equal (abnf::tree->string tree)
                       x)))
-  :guard-hints (("Goal" :in-theory (enable ttree-with-root-p))))
+  :guard-hints (("Goal" :in-theory (enable abnf-tree-with-root-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define boolean-literal-tree ((literal boolean-literal-p))
   :returns
-  (tree (ttree-with-root-p tree "boolean-literal")
+  (tree (abnf-tree-with-root-p tree "boolean-literal")
         :hints (("Goal"
                  :in-theory
                  (enable boolean-literal-p
@@ -105,7 +105,7 @@
     "This is proved via a lemma asserting that
      a terminated tree rooted at @('boolean-literal')
      has leaves that satisfy @(tsee boolean-literal-p).
-     The lemma is proved by exhaustively opening @(tsee ttree-with-root-p),
+     The lemma is proved by exhaustively opening @(tsee abnf-tree-with-root-p),
      which splits into two cases corresponding to
      the two alternatives of the @('boolean-literal') rule,
      thus prescribing the exact form of the tree in each case,
@@ -119,7 +119,7 @@
 
   :prep-lemmas
   ((defrule lemma
-     (implies (ttree-with-root-p tree "boolean-literal")
+     (implies (abnf-tree-with-root-p tree "boolean-literal")
               (boolean-literal-p (abnf::tree->string tree)))
      :rule-classes nil
      :expand ((:free (element)
@@ -127,7 +127,7 @@
               (:free (treess element)
                (abnf::tree-list-match-element-p
                 (car treess) element *grammar*)))
-     :enable (ttree-with-root-p
+     :enable (abnf-tree-with-root-p
               abnf::tree-match-element-p
               abnf::tree-list-match-repetition-p
               abnf::numrep-match-repeat-range-p

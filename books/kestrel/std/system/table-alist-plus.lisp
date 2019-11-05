@@ -32,5 +32,5 @@
     (if (alistp result)
         result
       (raise "Internal error: ~
-              the TABLE-ALIST property ~x0 of ~x1 is no an alist."
+              the TABLE-ALIST property ~x0 of ~x1 is not an alist."
              result name))))

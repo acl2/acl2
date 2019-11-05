@@ -15,116 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (measured-subset 'len (w state)) '(x))
-
-(assert-equal (measured-subset 'binary-append (w state)) '(x))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (measured-subset 'f (w state)) '(x)))
-
-(must-succeed*
- (defun f (x y z)
-   (declare (xargs :measure (nfix (- 10 y))))
-   (if (and (natp y) (< y 10))
-       (f x (1+ y) z)
-     (cons x z)))
- (assert-equal (measured-subset 'f (w state)) '(y)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (measured-subset+ 'len (w state)) '(x))
-
-(assert-equal (measured-subset+ 'binary-append (w state)) '(x))
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (measured-subset+ 'f (w state)) '(x)))
-
-(must-succeed*
- (defun f (x y z)
-   (declare (xargs :measure (nfix (- 10 y))))
-   (if (and (natp y) (< y 10))
-       (f x (1+ y) z)
-     (cons x z)))
- (assert-equal (measured-subset+ 'f (w state)) '(y)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (well-founded-relation 'len (w state)) 'o<)
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (well-founded-relation 'f (w state)) 'o<))
-
-(must-succeed*
- ;; well-founded relation:
- (defun o-p$ (x) (o-p x))
- (defun o<$ (x y) (o< x y))
- (defun id (x) x)
- (defthm o<$-is-well-founded-relation
-   (and (implies (o-p$ x) (o-p (id x)))
-        (implies (and (o-p$ x)
-                      (o-p$ y)
-                      (o<$ x y))
-                 (o< (id x) (id y))))
-   :rule-classes :well-founded-relation)
- ;; function using the well-founded relation just introduced:
- (defun f (x)
-   (declare (xargs :well-founded-relation o<$))
-   (if (zp x)
-       nil
-     (f (1- x))))
- ;; test:
- (assert-equal (well-founded-relation 'f (w state)) 'o<$))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (well-founded-relation+ 'len (w state)) 'o<)
-
-(must-succeed*
- (defun f (x)
-   (declare (xargs :measure (nfix (- 10 x))))
-   (if (and (natp x) (< x 10))
-       (f (1+ x))
-     nil))
- (assert-equal (well-founded-relation+ 'f (w state)) 'o<))
-
-(must-succeed*
- ;; well-founded relation:
- (defun o-p$ (x) (o-p x))
- (defun o<$ (x y) (o< x y))
- (defun id (x) x)
- (defthm o<$-is-well-founded-relation
-   (and (implies (o-p$ x) (o-p (id x)))
-        (implies (and (o-p$ x)
-                      (o-p$ y)
-                      (o<$ x y))
-                 (o< (id x) (id y))))
-   :rule-classes :well-founded-relation)
- ;; function using the well-founded relation just introduced:
- (defun f (x)
-   (declare (xargs :well-founded-relation o<$))
-   (if (zp x)
-       nil
-     (f (1- x))))
- ;; test:
- (assert-equal (well-founded-relation+ 'f (w state)) 'o<$))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (ruler-extenders 'len (w state)) '(mv-list return-last))
 
 (must-succeed*
@@ -510,22 +400,6 @@
                   (:rewrite :corollary (acl2-numberp (+ y x)))))
  (assert! (not (rune-enabledp '(:rewrite th . 1) state)))
  (assert! (not (rune-enabledp '(:rewrite th . 2) state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (string-listp (known-packages state)))
-
-(assert! (no-duplicatesp-equal (known-packages state)))
-
-(assert! (member-equal "ACL2" (known-packages state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (string-listp (known-packages+ state)))
-
-(assert! (no-duplicatesp-equal (known-packages+ state)))
-
-(assert! (member-equal "ACL2" (known-packages+ state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

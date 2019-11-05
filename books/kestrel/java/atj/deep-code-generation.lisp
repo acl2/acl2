@@ -14,7 +14,8 @@
 (include-book "pre-translation")
 
 (include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
-(include-book "kestrel/std/system/ubody" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
+(include-book "kestrel/std/system/ubody-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -364,7 +365,6 @@
                                    (verbose$ booleanp)
                                    (wrld plist-worldp))
   :returns (method jmethodp)
-  :verify-guards nil
   :short "Generate a Java method that builds
           a deeply embedded ACL2 function definition."
   :long
@@ -398,8 +398,8 @@
        (jvar-function "function")
        (jvar-formals "formals")
        (jvar-body "body")
-       (formals (formals fn wrld))
-       (body (ubody fn wrld))
+       (formals (formals+ fn wrld))
+       (body (ubody+ fn wrld))
        (in-types (repeat (len formals) :avalue)) ; actually irrelevant
        (out-type :avalue) ; actually irrelevant
        ((mv formals body)
@@ -448,7 +448,6 @@
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :returns (methods jmethod-listp)
-  :verify-guards nil
   :short "Lift @(tsee atj-gen-deep-fndef-method) to lists."
   (if (endp fns)
       nil
@@ -547,7 +546,6 @@
                                  (verbose$ booleanp)
                                  (wrld plist-worldp))
   :returns (class jclassp)
-  :verify-guards nil
   :short "Generate the main (i.e. non-test) Java class declaration,
           in the deep embedding approach."
   :long
@@ -596,13 +594,12 @@
 
 (define atj-gen-deep-main-cunit ((guards$ booleanp)
                                  (java-package$ maybe-stringp)
-                                 (java-class$ maybe-stringp)
+                                 (java-class$ stringp)
                                  (pkgs string-listp)
                                  (fns-to-translate symbol-listp)
                                  (verbose$ booleanp)
                                  (wrld plist-worldp))
   :returns (cunit jcunitp)
-  :verify-guards nil
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
   (b* ((class (atj-gen-deep-main-class

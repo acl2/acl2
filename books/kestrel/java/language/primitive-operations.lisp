@@ -40,8 +40,10 @@
     "We formalize the Java boolean and integer operations
      [JLS:4.2.5] [JLS:4.2.2].
      Floating-point operations [JLS:4.2.4]
-     and primitive conversions [JLS:5.1.2-4]
-     will be formalized eventually.")
+     will be formalized eventually.
+     Primitive conversions [JLS:5.1.2-4] are formalized "
+    (xdoc::seeurl "primitive-conversions" "here")
+    ".")
    (xdoc::p
     "We formalize the primitive operations
      as ACL2 functions over the ACL2 types of primitive values.

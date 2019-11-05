@@ -34,6 +34,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         conjoin
                          cons-pos-alistp
                          define-sk
                          defxdoc+
@@ -58,12 +59,14 @@
                          fcons-term
                          fcons-term*
                          ffn-symb
+                         ffn-symb-p
                          flambda-applicationp
                          flambdap
                          flatten
                          fmt-hard-right-margin
                          fmt-soft-right-margin
                          formals
+                         formals+
                          fquotep
                          function-namep
                          implicate
@@ -72,7 +75,7 @@
                          index-of
                          integers-from-to
                          irecursivep
-                         known-packages
+                         known-packages+
                          lambda-body
                          lambda-formals
                          logext
@@ -91,10 +94,12 @@
                          packn-pos
                          partition-rest-and-keyword-args
                          patbind-fun
+                         patbind-run-unless
                          patbind-run-when
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-lambdap
                          pseudo-termfn-listp
                          pseudo-termfnp
                          pure-raw-p
@@ -107,11 +112,13 @@
                          remove-trivial-vars
                          remove-unused-vars
                          sbyte16
+                         sbyte16p
                          sbyte32
                          sbyte32p
                          sbyte64
                          sbyte64p
                          sbyte8
+                         sbyte8p
                          sort-symbol-listp
                          str-fix
                          string-downcase
@@ -131,7 +138,9 @@
                          tuplep
                          typed-tuplep
                          ubody
+                         ubody+
                          ubyte16
+                         ubyte16p
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          uguard

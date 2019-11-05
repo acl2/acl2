@@ -1050,21 +1050,6 @@
 
   nil)
 
-(defvar *local-user-stobj-lst*
-
-; This variable contains a list of user-defined stobjs that are locally bound
-; by stobj-let or with-local-stobj.  It may contain duplicates, because of
-; nested bindings.  We could eliminate duplicates by extending it using
-; add-to-set-eq and union-eq instead of cons and append, but repeated binding
-; may be relatively rare, so the cost of repeated linear searches probably
-; would dwarf the cost of the consing.  Of course, there is a linear search
-; every time trans-eval is called; see the intersection-eq call in
-; chk-user-stobj-alist, which is called by user-stobj-alist-safe, which is
-; called by ev-for-trans-eval.  But trans-eval calls should be relatively rare,
-; too.
-
-  nil)
-
 ; The following SPECIAL VARIABLE, *wormholep*, when non-nil, means that we
 ; are within a wormhole and are obliged to undo every change visited upon
 ; *the-live-state*.  Clearly, we can undo some of them, e.g., f-put-globals, by
@@ -13430,7 +13415,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     recompress-global-enabled-structure ; get-acl2-array-property
     ev-w ; *the-live-state*
     verbose-pstack ; *verbose-pstk*
-    user-stobj-alist-safe ; chk-user-stobj-alist
     comp-fn ; compile-uncompiled-defuns
     #+acl2-infix fmt-ppr
     acl2-raw-eval ; eval
@@ -21062,7 +21046,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     coerce-object-to-state
     create-state
     user-stobj-alist
-    user-stobj-alist-safe
 
     f-put-ld-specials
 
@@ -28689,3 +28672,25 @@ Lisp definition."
 
 (defmacro print-cl-cache (&optional i j)
   `(print-cl-cache-fn ,i ,j))
+
+; We include definitions here of count-keys (from Sol Swords) and thus also
+; hons-remove-assoc (from community book
+; books/std/alists/hons-remove-assoc.lisp) in support of hash-table fields of
+; stobjs.
+
+(defun hons-remove-assoc (k x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (if (and (consp (car x))
+             (not (equal k (caar x))))
+        (cons (car x) (hons-remove-assoc k (cdr x)))
+      (hons-remove-assoc k (cdr x)))))
+
+(defun count-keys (al)
+  (declare (xargs :guard t))
+  (if (atom al)
+      0
+    (if (consp (car al))
+        (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
+      (count-keys (cdr al)))))

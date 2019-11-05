@@ -164,6 +164,8 @@
      (mv x state)))
  :expected :hard)
 
+(assert-event (equal (bar foo) 23))
+
 (defun test6 (a state)
   (declare (xargs :mode :program :stobjs state))
   (with-local-stobj
@@ -172,13 +174,15 @@
            (trans-eval-test1 a foo state)
            (mv x state))))
 
-; Before Oct. 2019, the following form caused a raw Lisp error from attempting
-; to run trans-eval on term mentioning a local stobj.  Now however it merely
-; causes an ACL2 hard error.
-(must-fail (test6 100 state)
-           :expected :hard)
+; We now allow trans-eval involving stobjs even when there is a local binding
+; of the stobj.  But trans-eval references the global stobj.
+(make-event (mv-let (x state)
+              (test6 100 state)
+              (declare (ignore x))
+              (value '(value-triple t))))
 
-(assert-event (equal (bar foo) 23))
+; Check that global stobj was updated:
+(assert-event (equal (bar foo) '(3 . 23)))
 
 ; The following test is new in Oct. 2019, to check that we do allow trans-eval
 ; under with-local-stobj when the form in question doesn't involve the local
@@ -313,3 +317,87 @@
 (assert-event (equal (test-wls3 '(adjka 202)) '(adjka 202)))
 
 (thm (equal (test-wls3 x) x))
+
+;;; Here are the two examples from :doc trans-eval-and-locally-bound-stobjs,
+;;; slightly modified by using the following macro so that they can go into a
+;;; book.
+
+(defmacro my-eval (form)
+; This little utility lets us evaluate arbitrary forms in a book.
+  `(make-event
+    (er-progn
+     (trans-eval ',form 'top state nil)
+     (value '(value-triple t)))))
+
+;;; First, the with-local-stobj example....
+
+(defstobj st fld)
+
+(defun f (x state)
+  (declare (xargs :stobjs state :mode :program))
+  (with-local-stobj
+    st
+    (mv-let (state local-fld st)
+      (mv-let (erp val state)
+        (trans-eval `(update-fld ',x st) 'f state nil)
+        (declare (ignore erp val))
+        (mv state (fld st) st))
+      (mv state local-fld))))
+
+; The following returns (<state> NIL).  Thus, the return value of local-fld
+; indicated above, which is the value of the fld of the locally-bound st, is
+; nil: trans-eval did not update the locally-bound stobj!
+(make-event
+ (mv-let (state local-fld)
+   (f 3 state)
+   (value `(assert-event (equal ',local-fld nil)))))
+
+; On the other hand the global stobj, st, was indeed updated by the call of f
+; just above.
+(assert-event (equal (fld st) 3))
+
+;;; Here is another such example, this time using nested-stobjs instead of tsee
+;;; with-local-stobj.
+
+(defstobj sub1 sub1-fld1)
+(defstobj top1 (top1-fld :type sub1))
+
+(defun g (x top1 state)
+  (declare (xargs :stobjs (top1 state) :mode :program))
+  (stobj-let
+   ((sub1 (top1-fld top1))) ; bindings
+   (sub1 state)             ; producer variables
+   (mv-let (erp val state)  ; producer
+
+; NOTE: The reference to sub1 inside the following trans-eval call is actually
+; a reference to the global sub1 from the user-stobj-alist, not to the sub1
+; bound by stobj-let above.  Thus, this trans-eval call updates the global
+; stobj, sub1, not the locally bound sub1 that is a field of top1.
+
+           (trans-eval `(update-sub1-fld1 ',x sub1) 'g state t)
+           (declare (ignore erp val))
+           (mv sub1 state))
+   (mv top1 state)          ; consumer
+  ))
+
+(my-eval (g 7 top1 state))
+; The global stobj, sub1, has been updated by the call of g just above.
+(assert-event (equal (sub1-fld1 sub1) 7))
+
+(my-eval (g 8 top1 state))
+; The global stobj, sub1, has been updated by the call of g just above.
+(assert-event (equal (sub1-fld1 sub1) 8))
+
+; Obtain the sub1 field of top1.
+(defun get-sub1-of-top1 (top1)
+  (declare (xargs :stobjs top1 :mode :program))
+  (stobj-let
+   ((sub1 (top1-fld top1)))  ; bindings
+   (val)                     ; producer variable
+   (sub1-fld1 sub1)          ; producer
+   val                       ; consumer
+  ))
+
+; The calls of g above did not update the locally bound sub1.
+; That is, they did not update the sub1 field of top1.
+(assert-event (equal (get-sub1-of-top1 top1) nil))

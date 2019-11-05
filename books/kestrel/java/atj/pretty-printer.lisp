@@ -176,18 +176,23 @@
    :string (msg "\"~@0\"" (print-jchars (explode lit.value)))
    :null "null"))
 
+(define print-primitive-type ((ptype primitive-typep))
+  :returns (part msgp)
+  (primitive-type-case ptype
+                       :boolean "boolean"
+                       :char "char"
+                       :byte "byte"
+                       :short "short"
+                       :int "int"
+                       :long "long"
+                       :float "float"
+                       :double "double"))
+
 (define print-jtype ((type jtypep))
   :returns (part msgp)
   :short "Pretty-print a Java type."
   (jtype-case type
-              :boolean "boolean"
-              :char "char"
-              :byte "byte"
-              :short "short"
-              :int "int"
-              :long "long"
-              :float "float"
-              :double "double"
+              :prim (print-primitive-type type.type)
               :class type.name
               :array (msg "~@0[]" (print-jtype type.comp)))
   :measure (jtype-count type))
@@ -596,7 +601,7 @@
 
 (define print-jlines-to-channel ((lines msg-listp) (channel symbolp) state)
   :returns state
-  :mode :program
+  :mode :program ; because of FMT1!
   :short "Write pretty-printed lines to an output channel."
   (cond ((endp lines) state)
         (t (b* (((mv & state) (fmt1! "~@0"
@@ -608,7 +613,7 @@
 
 (define print-to-jfile ((lines msg-listp) (filename stringp) state)
   :returns state
-  :mode :program
+  :mode :program ; because of FMT1! in PRINT-JLINES-TO-CHANNEL
   :short "Write pretty-printed lines to a file."
   (b* (((mv channel state) (open-output-channel! filename :character state))
        (state (print-jlines-to-channel lines channel state))

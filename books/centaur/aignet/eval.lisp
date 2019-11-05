@@ -34,6 +34,10 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
+
 ;; (local (include-book "data-structures/list-defthms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable nth update-nth
@@ -238,6 +242,19 @@ literal:</p>
   (fty::deffixequiv aignet-vals->invals-iter :args ((aignet aignet)))
   (fty::deffixequiv aignet-vals->invals$inline :args ((aignet aignet)))
 
+  (defthm len-of-aignet-vals->invals-iter
+    (implies (and (<= (num-ins aignet) (len invals))
+                  (<= (nfix n) (num-ins aignet)))
+             (equal (len (aignet-vals->invals-iter n invals vals aignet))
+                    (len invals)))
+    :hints(("Goal" :in-theory (enable aignet-vals->invals-iter))))
+
+  (defthm len-of-aignet-vals->invals
+    (implies (<= (num-ins aignet) (len invals))
+             (equal (len (aignet-vals->invals invals vals aignet))
+                    (len invals)))
+    :hints(("Goal" :in-theory (enable aignet-vals->invals))))
+
   (defiteration aignet-invals->vals (invals vals aignet)
     (declare (xargs :stobjs (vals aignet invals)
                     :guard (and (<= (num-fanins aignet) (bits-length vals))
@@ -323,6 +340,19 @@ literal:</p>
   (fty::deffixequiv aignet-invals->vals-iter :args ((aignet aignet)))
   (fty::deffixequiv aignet-invals->vals$inline :args ((aignet aignet)))
 
+  (defthm aignet-invals->vals-iter-of-take
+    (implies (and (<= (stype-count :pi aignet) (nfix k))
+                  (<= (nfix n) (stype-count :pi aignet)))
+             (equal (aignet-invals->vals-iter n (take k invals) vals aignet)
+                    (aignet-invals->vals-iter n invals vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-invals->vals-iter))))
+
+  (defthm aignet-invals->vals-of-take
+    (implies (<= (stype-count :pi aignet) (nfix k))
+             (equal (aignet-invals->vals (take k invals) vals aignet)
+                    (aignet-invals->vals invals vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-invals->vals))))
+
   (defiteration aignet-vals->regvals (regvals vals aignet)
     (declare (xargs :stobjs (vals aignet regvals)
                     :guard (and (<= (num-fanins aignet) (bits-length vals))
@@ -360,6 +390,20 @@ literal:</p>
 
   (fty::deffixequiv aignet-vals->regvals-iter :args ((aignet aignet)))
   (fty::deffixequiv aignet-vals->regvals$inline :args ((aignet aignet)))
+
+  (defthm len-of-aignet-vals->regvals-iter
+    (implies (and (<= (num-regs aignet) (len regvals))
+                  (<= (nfix n) (num-regs aignet)))
+             (equal (len (aignet-vals->regvals-iter n regvals vals aignet))
+                    (len regvals)))
+    :hints(("Goal" :in-theory (enable aignet-vals->regvals-iter))))
+
+  (defthm len-of-aignet-vals->regvals
+    (implies (<= (num-regs aignet) (len regvals))
+             (equal (len (aignet-vals->regvals regvals vals aignet))
+                    (len regvals)))
+    :hints(("Goal" :in-theory (enable aignet-vals->regvals))))
+
 
   (defiteration aignet-regvals->vals (regvals vals aignet)
     (declare (xargs :stobjs (vals aignet regvals)
@@ -457,6 +501,33 @@ literal:</p>
               (fanin-count aignet)
               (len (aignet-regvals->vals regvals vals aignet))))
     :rule-classes :linear)
+
+  (defcong bits-equiv equal (aignet-invals->vals-iter n invals vals aignet) 2
+    :hints(("Goal" :in-theory (enable aignet-invals->vals-iter))))
+
+  (defcong bits-equiv equal (aignet-invals->vals invals vals aignet) 1
+    :hints(("Goal" :in-theory (enable aignet-invals->vals))))
+
+  (defcong bits-equiv equal (aignet-regvals->vals-iter n regvals vals aignet) 2
+    :hints(("Goal" :in-theory (enable aignet-regvals->vals-iter))))
+
+  (defcong bits-equiv equal (aignet-regvals->vals regvals vals aignet) 1
+    :hints(("Goal" :in-theory (enable aignet-regvals->vals))))
+
+  
+
+  (defthm aignet-regvals->vals-iter-of-take
+    (implies (and (<= (stype-count :reg aignet) (nfix k))
+                  (<= (nfix n) (stype-count :reg aignet)))
+             (equal (aignet-regvals->vals-iter n (take k regvals) vals aignet)
+                    (aignet-regvals->vals-iter n regvals vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-regvals->vals-iter))))
+
+  (defthm aignet-regvals->vals-of-take
+    (implies (<= (stype-count :reg aignet) (nfix k))
+             (equal (aignet-regvals->vals (take k regvals) vals aignet)
+                    (aignet-regvals->vals regvals vals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-regvals->vals))))
 
   (defcong bits-equiv equal
     (aignet-vals->invals-iter n invals vals aignet) 3
@@ -842,7 +913,17 @@ literal:</p>
                      regvals aignet)
            (lit-eval lit invals regvals aignet))
     :hints(("Goal" :expand ((:free (invals regvals)
-                             (lit-eval lit invals regvals aignet)))))))
+                             (lit-eval lit invals regvals aignet))))))
+
+  (local (defthm true-listp-of-aignet-eval-iter
+           (implies (true-listp vals)
+                    (true-listp (aignet-eval-iter n vals aignet)))
+           :hints(("Goal" :in-theory (e/d (aignet-eval-iter)
+                                          (aignet-eval-lit))))))
+
+  (defthm true-listp-of-aignet-eval
+    (implies (true-listp vals)
+             (true-listp (aignet-eval vals aignet)))))
 
 
 (define aignet-record-vals ((vals)
@@ -860,8 +941,6 @@ literal:</p>
   ///
   (defret len-of-aignet-record-vals
     (equal (len new-vals) (num-fanins aignet)))
-
-  (local (include-book "std/lists/nth" :dir :system))
 
   (local (defthm true-listp-when-bit-listp-rw
            (implies (bit-listp x) (true-listp x))))
@@ -903,8 +982,344 @@ literal:</p>
   (defret nth-of-aignet-record-vals
     (implies (< (nfix n) (num-fanins aignet))
              (equal (nth n new-vals)
-                    (id-eval n invals regvals aignet)))))
+                    (id-eval n invals regvals aignet))))
 
+  (defret true-listp-of-<fn>
+    (true-listp new-vals)
+    :rule-classes :type-prescription)
+
+  (defret len-of-<fn>
+    (equal (len new-vals)
+           (num-fanins aignet)))
+
+  (defthmd aignet-eval-in-terms-of-aignet-record-vals
+    (bits-equiv (aignet-eval vals aignet)
+                (append (aignet-record-vals nil
+                                            (aignet-vals->invals nil vals aignet)
+                                            (aignet-vals->regvals nil vals aignet)
+                                            aignet)
+                        (nthcdr (num-fanins aignet) vals)))
+    :hints(("Goal" :in-theory (e/d (bits-equiv) (nthcdr)))))
+
+
+  (defthm aignet-vals->invals-of-aignet-record-vals
+    (bits-equiv (aignet-vals->invals nil (aignet-record-vals vals invals regvals aignet) aignet)
+                (take (num-ins aignet) invals))
+    :hints(("Goal" :in-theory (enable bits-equiv))))
+
+  (defthm aignet-vals->regvals-of-aignet-record-vals
+    (bits-equiv (aignet-vals->regvals nil (aignet-record-vals vals invals regvals aignet) aignet)
+                (take (num-regs aignet) regvals))
+    :hints(("Goal" :in-theory (enable bits-equiv))))
+
+  (defcong bits-equiv equal (aignet-record-vals vals invals regvals aignet) 2)
+  (defcong bits-equiv equal (aignet-record-vals vals invals regvals aignet) 3)
+
+  (defthm aignet-record-vals-of-take-invals
+    (implies (<= (stype-count :pi aignet) (nfix k))
+             (equal (aignet-record-vals vals (take k invals) regvals aignet)
+                    (aignet-record-vals vals invals regvals aignet))))
+
+  (defthm aignet-record-vals-of-take-regvals
+    (implies (<= (stype-count :reg aignet) (nfix k))
+             (equal (aignet-record-vals vals invals (take k regvals) aignet)
+                    (aignet-record-vals vals invals regvals aignet)))))
+
+
+(local (defthm bit-list-fix-of-true-list-fix
+         (Equal (bit-list-fix (true-list-fix x))
+                (bit-list-fix x))
+         :hints(("Goal" :in-theory (enable bit-list-fix)))))
+              
+
+(local (defthm nth-of-bit-list-fix
+         (implies (< (nfix n) (len x))
+                  (equal (nth n (bit-list-fix x))
+                         (bfix (nth n x))))
+         :hints(("Goal" :in-theory (enable bit-list-fix nth)))))
+
+(define aignet-val-okp ((n natp) vals aignet)
+  :guard (and (<= (num-fanins aignet) (bits-length vals))
+              (id-existsp n aignet))
+  :guard-hints(("Goal" :in-theory (enable aignet-idp)))
+  (b* ((slot0 (id->slot n 0 aignet))
+       (type (snode->type slot0)))
+    (aignet-case
+      type
+      :gate (b* ((f0 (snode->fanin slot0))
+                 (slot1 (id->slot n 1 aignet))
+                 (f1 (snode->fanin slot1))
+                 (xor (snode->regp slot1))
+                 (v0 (aignet-eval-lit f0 vals))
+                 (v1 (aignet-eval-lit f1 vals))
+                 (val (if (eql xor 1)
+                          (b-xor v0 v1)
+                        (b-and v0 v1))))
+              (eql (get-bit n vals) val))
+      :const (eql (get-bit n vals) 0)
+      :in t))
+  ///
+
+  (local (defthm bit-list-fix-equal-cons
+           (equal (equal (cons x y) (bit-list-fix z))
+                  (and (consp z)
+                       (equal x (bfix (car z)))
+                       (equal y (bit-list-fix (cdr z)))))
+           :hints(("Goal" :in-theory (enable bit-list-fix)))))
+
+  (local (in-theory (disable take)))
+
+  (local (defthm nth-when-take-bit-list-equiv
+           (implies (and (equal (bit-list-fix (take n x))
+                                (bit-list-fix (take n y)))
+                         (< (nfix k) (nfix n))
+                         (equal ans (nth k y))
+                         (syntaxp (not (equal ans `(nth ,k ,x)))))
+                    (bit-equiv (nth k x) ans))
+           :hints (("goal" :use ((:instance nth-of-bit-list-fix
+                                  (n k) (x (take n x)))
+                                 (:instance nth-of-bit-list-fix
+                                  (n k) (x (take n y))))
+                    :in-theory (disable nth-of-bit-list-fix)))))
+
+  (local (in-theory (disable acl2::nth-when-zp
+                             acl2::nth-when-too-large-cheap
+                             lookup-id-in-bounds-when-positive
+                             lookup-id-out-of-bounds)))
+
+  (defthm aignet-val-okp-correct
+    (b* ((invals (aignet-vals->invals nil vals aignet))
+         (regvals (aignet-vals->regvals nil vals aignet))
+         (vals-spec (aignet-record-vals nil invals regvals aignet)))
+      (implies (and (equal (bit-list-fix (take n vals-spec))
+                           (bit-list-fix (take n vals)))
+                    (< (nfix n) (num-fanins aignet)))
+               (iff (aignet-val-okp n vals aignet)
+                    (bit-equiv (nth n vals-spec)
+                               (nth n vals)))))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (invals regvals) (id-eval n invals regvals aignet)))
+                   :in-theory (enable eval-and-of-lits
+                                      eval-xor-of-lits
+                                      lit-eval))))))
+
+(define aignet-vals-p-aux ((n natp) vals aignet)
+  :guard (and (<= (num-fanins aignet) (bits-length vals))
+              (<= n (num-fanins aignet)))
+  :guard-hints(("Goal" :in-theory (enable aignet-idp)))
+  :measure (nfix (- (num-fanins aignet) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
+                   :exec (eql (num-fanins aignet) n)))
+        t))
+    (and (aignet-val-okp n vals aignet)
+         (aignet-vals-p-aux (1+ (lnfix n)) vals aignet)))
+  ///
+  (local (defthm bit-list-fix-equal-cons
+           (equal (equal (cons x y) (bit-list-fix z))
+                  (and (consp z)
+                       (equal x (bfix (car z)))
+                       (equal y (bit-list-fix (cdr z)))))
+           :hints(("Goal" :in-theory (enable bit-list-fix)))))
+
+  (local (in-theory (enable aignet-idp)))
+  (local (in-theory (disable take)))
+
+  (local (defthm nth-without-early-out
+           (equal (nth n x)
+                  (if (zp n)
+                      (car x)
+                    (nth (1- n) (cdr x))))
+           :hints(("Goal" :in-theory (enable nth)))
+           :rule-classes :definition))
+
+  (local (defthmd take-of-n-plus-1-redef
+           (implies (natp n)
+                    (equal (take (+ 1 n) x)
+                           (append (take n x)
+                                   (list (nth n x)))))
+           :hints(("Goal" :in-theory (e/d (take)
+                                          (nth))))))
+
+  (local (defthm take-of-n-plus-1-special
+           (equal (take (+ 1 (nfix n)) x)
+                  (append (take n x)
+                          (list (nth n x))))
+           :hints(("Goal" :in-theory (enable take-of-n-plus-1-redef)))))
+
+
+  (local (defthm nth-when-take-bit-list-equiv
+           (implies (and (< (nfix k) (nfix n))
+                         (equal (bit-list-fix (take n x))
+                                (bit-list-fix y))
+                         (equal ans (nth k y))
+                         (syntaxp (not (equal ans `(nth ,k ,x)))))
+                    (bit-equiv (nth k x) ans))
+           :hints (("goal" :use ((:instance nth-of-bit-list-fix
+                                  (n k) (x (take n x)))
+                                 (:instance nth-of-bit-list-fix
+                                  (n k) (x y)))
+                    :in-theory (disable nth-of-bit-list-fix)))))
+
+  (local (in-theory (disable nth-when-take-bit-list-equiv)))
+
+  (local (defthm nth-when-take-bit-list-equiv-special
+           (let ((n (+ 1 (fanin-count aignet))))
+             (implies (and (equal (bit-list-fix (take n x))
+                                  (bit-list-fix y))
+                           (< (nfix k) (nfix n))
+                           (equal ans (nth k y))
+                           (syntaxp (not (equal ans `(nth ,k ,x)))))
+                      (bit-equiv (nth k x) ans)))
+           :hints (("Goal" :use ((:instance nth-when-take-bit-list-equiv
+                                  (n (+ 1 (fanin-count aignet)))))))))
+
+  (local (defthm nthcdr-append-of-len
+           (equal (nthcdr (len x) (append x y))
+                  y)))
+
+  (local (defthm nthcdr-of-append-same-length
+           (implies (equal (len x) (nfix n))
+                    (equal (nthcdr n (append x y))
+                           y))))
+
+
+  (local (defthm my-nth-of-append
+           (equal (nth n (append x y))
+                  (if (< (nfix n) (len x))
+                      (nth n x)
+                    (nth (- (nfix n) (len x)) y)))))
+
+  (local (defthm take-of-bit-list-fix
+           (implies (<= (nfix n) (len x))
+                    (equal (take n (bit-list-fix x))
+                           (bit-list-fix (take n x))))
+           :hints(("Goal" :in-theory (enable take bit-list-fix)))))
+
+  (local (defthmd take-when-take-of-greater
+           (implies (and (equal (bit-list-fix (take n x)) (bit-list-fix (take n y)))
+                         (<= (nfix m) (nfix n))
+                         ;; dumb hyp to stop loop below
+                         (equal (nfix m) (len y)))
+                    (bit-list-equiv (take m x)
+                                    (take m y)))
+           :hints (("goal" :use ((:instance take-of-bit-list-fix
+                                  (n m) (x (take n x)))
+                                 (:instance take-of-bit-list-fix
+                                  (n m) (x (take n y))))
+                    :in-theory (disable take-of-bit-list-fix)))))
+
+  (local (in-theory (disable acl2::zp-when-integerp
+                             nth-without-early-out
+                             acl2::nth-of-append
+                             bit-list-fix-when-bit-listp)))
+  ;; (local (in-theory (disable acl2::nfix-when-natp)))
+
+  (defthm aignet-vals-p-aux-correct
+    (b* ((invals (aignet-vals->invals nil vals aignet))
+         (regvals (aignet-vals->regvals nil vals aignet))
+         (vals-spec (aignet-record-vals nil invals regvals aignet)))
+      (implies (equal (bit-list-fix (take n vals-spec))
+                      (bit-list-fix (take n vals)))
+               (iff (aignet-vals-p-aux n vals aignet)
+                    (equal (bit-list-fix (take (num-fanins aignet) vals-spec))
+                           (bit-list-fix (take (num-fanins aignet) vals))))))
+    :hints (("goal" :induct (aignet-vals-p-aux n vals aignet)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable take-when-take-of-greater))))))
+
+
+(defrefinement bit-list-equiv bits-equiv
+  :hints(("Goal" :in-theory (e/d (bits-equiv) (nth-of-bit-list-fix))
+          :use ((:instance nth-of-bit-list-fix
+                 (n (acl2::bits-equiv-witness x y)))
+                (:instance nth-of-bit-list-fix
+                 (n (acl2::bits-equiv-witness x y))
+                 (x y))))))
+
+(defrefinement list-equiv bit-list-equiv
+  :hints(("Goal" :in-theory (e/d (list-equiv)
+                                 (bit-list-fix-of-true-list-fix))
+          :use ((:instance bit-list-fix-of-true-list-fix (x x))
+                (:instance bit-list-fix-of-true-list-fix (x y))))))
+
+
+
+(local (defthmd equal-of-len
+         (implies (syntaxp (quotep n))
+                  (equal (equal (len x) n)
+                         (cond ((equal n 0) (atom x))
+                               ((zp n) nil)
+                               ((consp x) (equal (len (cdr x)) (1- n)))
+                               (t nil))))))
+
+(local (defun bit-list-equiv-when-bits-equiv-of-true-lists-ind (x y)
+         (if (atom x)
+             y
+           (bit-list-equiv-when-bits-equiv-of-true-lists-ind (cdr x) (cdr y)))))
+
+(local (defthm bit-list-equiv-when-bits-equiv-of-true-lists
+         (implies (and (bits-equiv x y)
+                       (true-listp x)
+                       (true-listp y)
+                       (equal (len x) (len y)))
+                  (equal (equal (bit-list-fix x) (bit-list-fix y)) t))
+         :hints (("goal" :induct (bit-list-equiv-when-bits-equiv-of-true-lists-ind x y)
+                  :in-theory (enable (:i acl2::fast-list-equiv)
+                                     equal-of-len)
+                  :expand ((bit-list-fix x)
+                           (bit-list-fix y))))))
+                       
+
+
+
+(define aignet-vals-p (vals aignet)
+  :guard-hints (("goal" :in-theory (disable take)
+                 :cases ((aignet-vals-p-aux 0 vals aignet))
+                 :do-not-induct t))
+  (and (<= (num-fanins aignet) (bits-length vals))
+       (mbe :logic (non-exec (bits-equiv (aignet-record-vals nil
+                                                             (aignet-vals->invals nil vals aignet)
+                                                             (aignet-vals->regvals nil vals aignet)
+                                                             aignet)
+                                         (take (num-fanins aignet) vals)))
+            :exec (aignet-vals-p-aux 0 vals aignet)))
+  ///
+  (local (defthmd nth-take-when-bits-equiv
+           (implies (and (bits-equiv (take m x) y)
+                         (< (nfix n) (nfix m)))
+                    (bit-equiv (nth n x) (nth n y)))
+           :hints (("goal" :use ((:instance acl2::nth-of-take
+                                  (i n) (n m) (l x)))
+                    :in-theory (disable acl2::nth-of-take)
+                    :do-not-induct t))))
+
+  (defthmd nth-when-aignet-vals-p
+    (implies (and (aignet-vals-p vals aignet)
+                  (aignet-idp n aignet))
+             (bit-equiv (nth n vals)
+                        (id-eval n
+                                 (aignet-vals->invals nil vals aignet)
+                                 (aignet-vals->regvals nil vals aignet)
+                                 aignet)))
+    :hints(("Goal" :in-theory (e/d (aignet-idp) (take))
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (nth-take-when-bits-equiv)
+                                  (take acl2::nth-of-take))))))
+
+  (local (defcong bits-equiv bits-equiv (take n x) 2
+           :hints ((and stable-under-simplificationp
+                        `(:expand (,(car (last clause))))))))
+
+  (defthm aignet-vals-p-of-aignet-eval
+    (implies (<= (num-fanins aignet) (len vals))
+             (aignet-vals-p (aignet-eval vals aignet) aignet))
+    :hints(("Goal" :in-theory (e/d (aignet-eval-in-terms-of-aignet-record-vals)
+                                   (take)))))
+
+  (defthm aignet-vals-p-of-aignet-record-vals
+    (aignet-vals-p (aignet-record-vals vals invals regvals aignet) aignet)))
 
 
 
@@ -958,14 +1373,6 @@ literal:</p>
                     (true-listp (copy-bitarr-aux bitarr vals)))))
 
   (in-theory (disable copy-bitarr-aux))
-
-  (local (include-book "std/lists/nth" :dir :system))
-
-  (local (defthm nth-of-bit-list-fix
-           (implies (< (nfix n) (len lst))
-                    (equal (nth n (bit-list-fix lst))
-                           (bfix (nth n lst))))
-           :hints(("Goal" :in-theory (enable nth bit-list-fix)))))
 
   (define copy-bitarr (bitarr vals)
     (b* ((vals (resize-bits (bits-length bitarr) vals)))

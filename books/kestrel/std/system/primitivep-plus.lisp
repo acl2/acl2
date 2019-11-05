@@ -10,12 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "function-namep")
 (include-book "primitivep")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define primitivep+ ((fn (function-namep fn wrld)) (wrld plist-worldp))
+(define primitivep+ ((fn symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (std/system/function-queries)
   :short (xdoc::topstring
@@ -25,8 +24,11 @@
   (xdoc::topstring
    (xdoc::p
     "This returns the same result as @(tsee primitivep),
-     but it has a stronger guard.
-     The guard requires an extra @(see world) argument,
+     but it causes an error if called on a symbol
+     that does not name a function.
+     This check requires an extra @(see world) argument
+     (compared to @(tsee primitivep)),
      which is usually available when doing system programming."))
-  (declare (ignore wrld))
-  (primitivep fn))
+  (if (not (function-symbolp fn wrld))
+      (raise "The symbol ~x0 does not name a function." fn)
+    (primitivep fn)))
