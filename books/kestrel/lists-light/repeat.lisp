@@ -145,3 +145,10 @@
          (and (true-listp y)
               (equal 1 (len y))
               (equal x (car y)))))
+
+(defthm last-of-repeat
+  (equal (last (repeat n x))
+         (if (zp n)
+             nil
+           (list x)))
+  :hints (("Goal" :in-theory (enable repeat))))

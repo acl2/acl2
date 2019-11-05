@@ -151,3 +151,11 @@
                               (true-list-fix x2))
                        (equal y1 y2))))
   :hints (("Goal" :in-theory (enable equal-of-append))))
+
+;; Improved to match std
+(defthm last-of-append
+  (equal (last (append x y))
+         (if (consp y)
+             (last y)
+           (append (last x) y)))
+  :hints (("Goal" :in-theory (enable last append))))
