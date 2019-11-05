@@ -768,10 +768,7 @@
                                 deep$
                                 guards$)))
 
-  :prepwork
-  ((defrule returns-lemma
-     (implies (symbol-listp x)
-              (symbol-listp (remove1-equal a x)))))
+  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
 
   :verify-guards nil ; done below
   ///
