@@ -53,7 +53,8 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepGuarde
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowUnguardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowGuardedTests
 
-# test the Java code that manipulates Java primitive values:
+# test the Java code that manipulates Java primitive values
+# (without timings because they are very fast, all print as 0.000):
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimitivesShallowGuardedTests
 
 # printed only if all the tests succeed:
