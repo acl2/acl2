@@ -86,3 +86,15 @@
        (and (member-equal a x)
             (not (member-equal a y))))
   :hints (("Goal" :in-theory (enable set-difference-equal no-duplicatesp-equal))))
+
+(defthm member-equal-of-remove-equal
+  (iff (member-equal a (remove-equal b x))
+       (if (equal a b)
+           nil
+         (member-equal a x)))
+  :hints (("Goal" :in-theory (enable member-equal remove-equal))))
+
+;; Disabled since consp is so common.
+(defthmd consp-when-member-equal
+  (implies (member-equal a x) ;note that a is a free var
+	   (consp x)))
