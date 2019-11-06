@@ -205,7 +205,7 @@
               :predec "--"
               :uplus "+"
               :uminus "-"
-              :bitcompl "~"
+              :bitcompl "~~" ; a single ~ is interpreted as a directive
               :logcompl "!"))
 
 (define print-jbinop ((binop jbinopp))
