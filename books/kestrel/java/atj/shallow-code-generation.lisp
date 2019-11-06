@@ -1785,8 +1785,9 @@
                   :strictfp? nil
                   :result (jresult-type (atj-type-to-jtype out-type))
                   :name method-name
-                  :params (atj-gen-paramlist method-param-names
-                                             (atj-types-to-jtypes in-types))
+                  :params (atj-gen-paramlist
+                           method-param-names
+                           (atj-type-list-to-jtype-list in-types))
                   :throws (list *aij-class-eval-exc*)
                   :body method-body)))
 
@@ -1982,8 +1983,9 @@
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
-       (method-params (atj-gen-paramlist (symbol-name-lst formals)
-                                         (atj-types-to-jtypes in-types)))
+       (method-params (atj-gen-paramlist
+                       (symbol-name-lst formals)
+                       (atj-type-list-to-jtype-list in-types)))
        ((mv body-block body-expr &)
         (atj-gen-shallow-term body
                               "$result" 1
@@ -2281,8 +2283,9 @@
                 differs from the arity ~x2 of ~x1."
                (len in-types) fn (len method-param-names))
         (ec-call (jmethod-fix :this-is-irrelevant)))
-       (method-params (atj-gen-paramlist method-param-names
-                                         (atj-types-to-jtypes in-types)))
+       (method-params (atj-gen-paramlist
+                       method-param-names
+                       (atj-type-list-to-jtype-list in-types)))
        (class (atj-get-pkg-class-name fn-pkg pkg-class-names))
        (method-body (jblock-return
                      (jexpr-smethod (jtype-class class)

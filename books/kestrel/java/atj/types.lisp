@@ -615,6 +615,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist atj-jtype-list-listp (x)
+  :short "Recognize true lists of true lists of ATJ Java types."
+  (atj-jtype-listp x)
+  :true-listp t
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-maybe-jtypep (x)
   :returns (yes/no booleanp)
   :short "Recognize the ATJ Java types and @('nil')."
@@ -986,17 +994,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-types-to-jtypes ((types atj-type-listp))
+(define atj-type-list-to-jtype-list ((types atj-type-listp))
   :returns (jtypes atj-jtype-listp :hyp :guard)
   :short "Lift @(tsee atj-type-to-jtype) to lists."
   (cond ((endp types) nil)
         (t (cons (atj-type-to-jtype (car types))
-                 (atj-types-to-jtypes (cdr types)))))
+                 (atj-type-list-to-jtype-list (cdr types)))))
   ///
 
-  (defret len-of-atj-types-to-jtypes
+  (defret len-of-atj-type-list-to-jtype-list
     (equal (len jtypes)
            (len types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-list-to-jtype-list-list ((typess atj-type-list-listp))
+  :returns (jtypess atj-jtype-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-type-list-to-jtype-list) to lists."
+  (cond ((endp typess) nil)
+        (t (cons (atj-type-list-to-jtype-list (car typess))
+                 (atj-type-list-list-to-jtype-list-list (cdr typess)))))
+  ///
+
+  (defret len-of-atj-type-list-to-jtype-list-list
+    (equal (len jtypess)
+           (len typess))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1637,7 +1659,7 @@
 
 (defsection def-atj-main-function-type
   :short (xdoc::topstring
-          "Macro to prove and record the main input and output "
+          "Macro to prove and record the primary input and output "
           (xdoc::seetopic "atj-types" "types")
           " of an ACL2 function.")
   :long
@@ -1716,15 +1738,15 @@
 
 (define atj-check-other-function-type ((new-in-types atj-type-listp)
                                        (old-fn-types atj-function-type-listp)
-                                       (all-in-typess atj-type-list-listp))
+                                       (all-in-jtypess atj-jtype-list-listp))
   :returns (yes/no booleanp)
   :short "Check the new input types
           passed to @(tsee def-atj-other-function-type)
-          against the existing other function types."
+          against the existing secondary function types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The main and other input types attached to a function
+    "The primary and secondary input types attached to a function
      are used to generate overloaded methods for the function.
      It must be possible, at compile time, to always resolve the method,
      based on the most specific argument types.
@@ -1734,7 +1756,7 @@
      as explained below.")
    (xdoc::p
     "For example, consider a binary function @('f')
-     with two function types whose input portions are
+     with two function types whose inputs are
      @('(:arational :ainteger)') and @('(:ainteger :arational)').
      These will give rise to two overloaded methods for @('f'),
      one with argument types @('Acl2Rational') and @('Acl2Integer'),
@@ -1742,7 +1764,7 @@
      Consider a method call whose actual argument types
      are @('Acl2Integer') and @('Acl2Integer'):
      if only those two overloaded methods are available,
-     then there is not a most specific one based just on the types.
+     then there is no most specific method that is based just on the types.
      However, if a third overloaded method were available
      with @('Acl2Integer') and @('Acl2Integer') as argument types,
      that would be the most specific method to call.
@@ -1751,13 +1773,14 @@
    (xdoc::p
     "Generalizing from this example,
      we want the set of all function input types
-     to be closed under greatest lower bounds.
+     to be closed under greatest lower bounds
+     (w.r.t. the Java type partial order).
      This way, if some tuple of actual arguments
      fits two different overloaded methods,
      it will also fit the method corresponding to the greatest lower bound;
      therefore, there will be always a ``minimum'' method
      that will be selected at compile time and called at run time.
-     However, recall that @(tsee atj-maybe-type-jmeet) may produce @('nil'):
+     However, recall that @(tsee atj-maybe-jtype-meet) may produce @('nil'):
      if the greatest lower bound contains a @('nil') component,
      the closure requirement does not apply,
      because it means that some types are incompatible
@@ -1765,9 +1788,9 @@
    (xdoc::p
     "Besides the closure property just explained,
      we also ensure that the proposed new input types
-     differ from all the existing other input types.
+     differ from all the existing secondary input types.
      We maintain the uniqueness, for each function,
-     of the (main and other) input types in the table,
+     of the (primary and secondary) input types in the table,
      so that there is exactly one overloaded method for each input type tuple.
      Redundant calls of @(tsee def-atj-other-function-type)
      are handled before calling this function.")
@@ -1775,14 +1798,15 @@
     "The @('new-in-types') and @('new-out-type') parameters of this function
      consist of the new proposed input and output types.
      The @('old-fn-types') parameter
-     consists of all the existing other function types
+     consists of all the existing secondary function types
      already in the table, which we @(tsee cdr) through
      and compare against @('new-in-types') and @('new-out-type').
-     The @('all-in-typess') parameter of this function
-     consists of all the tuples of other input types in the table,
+     The @('all-in-jtypess') parameter of this function
+     consists of all the tuples of existing secondary input types in the table,
      plus @('new-in-types');
      this stays constant, we do not @(tsee cdr) through it
      because we need the whole collection to check the closure property.
+     These are actually all Java types, counterparts of the ATJ types.
      We include @('new-in-types') because the new proposed input types
      contribute to the closure properties:
      they will be in the table if all the checks succeed;
@@ -1790,9 +1814,9 @@
      and we are trying to add @(':ainteger'),
      their greatest lower bound is @(':ainteger'),
      which will be in the table.
-     The main function type is not included
-     in @('old-fn-types') or @('all-in-typess'),
-     because the main input types are always checked
+     The primary function type is not included
+     in @('old-fn-types') or @('all-in-jtypess'),
+     because the primary input types are always checked
      to be strictly wider than @('new-in-types'),
      in @(tsee def-atj-other-function-type-fn)."))
   (b* (((when (endp old-fn-types)) t)
@@ -1800,24 +1824,31 @@
        (old-in-types (atj-function-type->inputs old-fn-type))
        ((when (equal new-in-types old-in-types))
         (raise "The proposed input types ~x0 must differ from ~
-                the existing main and other input types for the function, ~
+                the existing secondary input types ~
+                for the function, ~
                 but they are equal to some of these existing types."
                new-in-types))
-       (glb (atj-maybe-type-list-jmeet new-in-types old-in-types))
+       (old-in-jtypes (atj-type-list-to-jtype-list old-in-types))
+       (new-in-jtypes (atj-type-list-to-jtype-list new-in-types))
+       (glb (atj-maybe-jtype-list-meet old-in-jtypes new-in-jtypes))
        ((unless (or (member-eq nil glb)
-                    (member-equal glb all-in-typess)))
-        (raise "The proposed input types ~x0 ~
-                and the existing main or other input types ~x1, ~
-                according to the Java-based partial order, ~
-                have a greatest lower bound ~x2 ~
-                that is currently not in the table. ~
+                    (member-equal glb all-in-jtypess)))
+        (raise "The Java counterparts ~x0 of the proposed input types ~x1 ~
+                and the Java counterparts ~x2 of ~
+                some existing secondary input types ~x3, ~
+                have a greatest lower bound ~x4 ~
+                that is not the Java counterpart ~
+                of any types currently in the table ~
+                or of the proposed input types. ~
                 This may cause ambiguities in resolving method overloading. ~
-                Consider adding the types ~x2 first, ~
-                and then the types ~x0."
-               new-in-types old-in-types glb)))
+                Consider adding types whose Java counterparts are ~x4 first, ~
+                and then the proposed input types ~x1."
+               new-in-jtypes new-in-types
+               old-in-jtypes old-in-types
+               glb)))
     (atj-check-other-function-type new-in-types
                                    (cdr old-fn-types)
-                                   all-in-typess)))
+                                   all-in-jtypess)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1835,22 +1866,23 @@
      the guard and input types imply the output type,
      as well as an event to record the function type in the table.")
    (xdoc::p
-    "It is an error if the function does not have a main type already;
+    "It is an error if the function does not have a primary type already;
      that is, @(tsee def-atj-main-function-type) must be called
      before calling @(tsee def-atj-other-function-type).")
    (xdoc::p
     "The proposed input types must be narrower,
      according to the ACL2-based partial order,
-     than the main input types;
-     otherwise, there would be no advantage in adding these other input types,
+     than the primary input types;
+     otherwise, there would be no advantage
+     in adding these secondary input types,
      and in generating overloaded method corresponding to these types.
      The proposed output type must be narrower than or the same as
-     the main output types,
+     the primary output types,
      also according to the ACL2-based partial order:
-     since the main output type is proved under the guard assumption only,
-     while the other output type is proved with additional type hypotheses,
-     it does not make sense that the other output type
-     is wider than, or unrelated to, the main output type;
+     since the primary output type is proved under the guard assumption only,
+     while the secondary output type is proved with additional type hypotheses,
+     it does not make sense that the secondary output type
+     is wider than, or unrelated to, the primary output type;
      this situation probably signals the misstatement of some types
      to either @(tsee def-atj-main-function-type)
      or @(tsee def-atj-other-function-type).")
@@ -1865,11 +1897,11 @@
    (xdoc::p
     "We may add additional sanity checks in the future,
      e.g. that if the new input types are narrower than or equal to
-     some already existing other types,
+     some already existing secondary types,
      then the output types must satisfy that relation too.
      The reason is analogous to the one discussed above
-     to motivate the check against the main output type;
-     but here we are talking about the other output types."))
+     to motivate the check against the primary output type;
+     but here we are talking about the secondary output types."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
@@ -1883,7 +1915,7 @@
         (raise "The third input, ~x0, must be a type." out-type))
        (fn-info? (atj-get-function-type-info-from-table fn wrld))
        ((unless fn-info?)
-        (raise "The function ~x0 does not have a main function type yet. ~
+        (raise "The function ~x0 does not have a primary function type yet. ~
                 Use DEF-ATJ-MAIN-FUNCTION-TYPE to define it, ~
                 and then try again this DEF-ATJ-OTHER-FUNCTION-TYPE."
                fn))
@@ -1893,23 +1925,24 @@
        ((unless (atj-type-list-a< in-types main-in-types))
         (raise "The proposed inputs types ~x0 must be strictly narrower, ~
                 according to the ACL2-based partial ordering, ~
-                than the main input types ~x1."
+                than the primary input types ~x1."
                in-types main-in-types))
        ((unless (atj-type-a<= out-type main-out-type))
         (raise "The proposed output type ~x0 must be ~
                 narrower than or equal to, ~
                 according to the ACL2-based partial ordering, ~
-                the main output type ~x1."
+                the primary output type ~x1."
                out-type main-out-type))
        (other-fn-types (atj-function-type-info->others fn-info?))
        (new-fn-type (make-atj-function-type :inputs in-types :output out-type))
        ((when (member-equal new-fn-type other-fn-types))
         `(value-triple :redundant))
-       (other-in-typess (atj-function-type-list->inputs other-fn-types))
-       (all-in-typess (cons in-types other-in-typess))
+       (other-in-types (atj-function-type-list->inputs other-fn-types))
+       (all-in-jtypess (atj-type-list-list-to-jtype-list-list
+                        (cons in-types other-in-types)))
        (- (atj-check-other-function-type in-types
                                          other-fn-types
-                                         all-in-typess))
+                                         all-in-jtypess))
        (thm (atj-other-function-type-theorem fn formals in-types out-type wrld))
        (new-fn-info (change-atj-function-type-info
                      fn-info? :others (cons new-fn-type other-fn-types))))
@@ -1923,7 +1956,7 @@
 
 (defsection def-atj-other-function-type
   :short (xdoc::topstring
-          "Macro to prove and record that other input and output "
+          "Macro to prove and record secondary input and output "
           (xdoc::seetopic "atj-types" "types")
           " of an ACL2 function.")
   :long
@@ -1959,9 +1992,10 @@
      and @('fn-types') are the secondary function types of the called function.
      The goal here is to see if the argument types match
      any secondary function type,
-     in the sense that the input types of the secondary function type
-     are greater than or equal to, according to the Java-based partial order,
-     the types of the actual arguments.
+     in the sense that the Java counterparts
+     of the input types of the secondary function type
+     are greater than or equal to the Java counterparts
+     of the types of the actual arguments.
      If no such secondary function type is found, we return @('nil').
      If instead some exist, we select the minimum one,
      which should always exist because of the closure property
@@ -1971,26 +2005,30 @@
      the returned output type (if any) tells us
      the result type of the overloaded method
      that will be resolved at compile time."))
-  (atj-output-type-of-min-input-types-aux in-types fn-types nil nil)
+  (atj-output-type-of-min-input-types-aux (atj-type-list-to-jtype-list in-types)
+                                          fn-types
+                                          nil
+                                          nil)
 
   :prepwork
   ((define atj-output-type-of-min-input-types-aux
-     ((in-types atj-type-listp)
+     ((in-jtypes atj-jtype-listp)
       (fn-types atj-function-type-listp)
-      (current-min-in-types atj-type-listp)
+      (current-min-in-jtypes atj-jtype-listp)
       (current-out-type? atj-maybe-typep))
      :returns (out-type? atj-maybe-typep :hyp :guard)
      (b* (((when (endp fn-types)) current-out-type?)
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
-          ((mv current-min-in-types current-out-type?)
-           (if (and (atj-maybe-type-list-j<= in-types fn-in-types)
+          (fn-in-jtypes (atj-type-list-to-jtype-list fn-in-types))
+          ((mv current-min-in-jtypes current-out-type?)
+           (if (and (atj-maybe-jtype-list-<= in-jtypes fn-in-jtypes)
                     (or (null current-out-type?)
-                        (atj-maybe-type-list-j< fn-in-types
-                                                current-min-in-types)))
-               (mv fn-in-types (atj-function-type->output fn-type))
-             (mv current-min-in-types current-out-type?))))
-       (atj-output-type-of-min-input-types-aux in-types
+                        (atj-maybe-jtype-list-< fn-in-jtypes
+                                                current-min-in-jtypes)))
+               (mv fn-in-jtypes (atj-function-type->output fn-type))
+             (mv current-min-in-jtypes current-out-type?))))
+       (atj-output-type-of-min-input-types-aux in-jtypes
                                                (cdr fn-types)
-                                               current-min-in-types
+                                               current-min-in-jtypes
                                                current-out-type?)))))
