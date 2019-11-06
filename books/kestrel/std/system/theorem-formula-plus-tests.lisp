@@ -10,16 +10,17 @@
 
 (in-package "ACL2")
 
-(include-book "guard-verified-p")
-(include-book "guard-verified-p-plus")
-(include-book "theorem-formula")
 (include-book "theorem-formula-plus")
+
+(include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/system/theorem-queries
-  :parents (std/system)
-  :short "Utilities to query theorems."
-  :long
-  (xdoc::topstring-p
-   "These utilities retrieve properties of theorems in the @(see world)."))
+(assert-equal (thm-formula+ 'car-cdr-elim (w state))
+              '(implies (consp x)
+                        (equal (cons (car x) (cdr x)) x)))
+
+(must-succeed*
+ (defthm th (acl2-numberp (- x)))
+ (assert-equal (thm-formula+ 'th (w state)) '(acl2-numberp (unary-- x))))

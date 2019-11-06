@@ -61,6 +61,8 @@
 (include-book "kestrel/std/system/ruler-extenders-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
+(include-book "kestrel/std/system/theorem-formula" :dir :system)
+(include-book "kestrel/std/system/theorem-formula-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-name-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-namep" :dir :system)
 (include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
@@ -121,49 +123,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define thm-formula ((thm symbolp) (wrld plist-worldp))
-  :returns (formula "A @(tsee pseudo-termp).")
-  :parents (world-queries)
-  :short "Formula of a named theorem."
-  :long
-  "<p>
-   This is a specialization of @(tsee formula) to named theorems,
-   for which the second argument of @(tsee formula) is immaterial.
-   Since @(tsee formula) is in program mode only because of
-   the code that handles the cases in which the first argument
-   is not the name of a theorem,
-   we avoid calling @(tsee formula) and instead replicate
-   the code that handles the case in which
-   the first argument is the name of a theorem;
-   thus, this utility is in logic mode and guard-verified.
-   </p>
-   <p>
-   See @(tsee thm-formula+) for a logic-friendly variant of this utility.
-   </p>"
-  (getpropc thm 'theorem nil wrld))
-
-(define thm-formula+ ((thm (theorem-namep thm wrld))
-                      (wrld plist-worldp))
-  :returns (formula pseudo-termp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee thm-formula)."
-  :long
-  "<p>
-   This returns the same result as @(tsee thm-formula),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (thm-formula thm wrld)))
-    (if (pseudo-termp result)
-        result
-      (raise "Internal error: ~
-              the FORMULA property ~x0 of ~x1 is not a pseudo-term."
-             result thm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

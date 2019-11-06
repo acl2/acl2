@@ -15,26 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (thm-formula 'car-cdr-elim (w state))
-              '(implies (consp x)
-                        (equal (cons (car x) (cdr x)) x)))
-
-(must-succeed*
- (defthm th (acl2-numberp (- x)))
- (assert-equal (thm-formula 'th (w state)) '(acl2-numberp (unary-- x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (thm-formula+ 'car-cdr-elim (w state))
-              '(implies (consp x)
-                        (equal (cons (car x) (cdr x)) x)))
-
-(must-succeed*
- (defthm th (acl2-numberp (- x)))
- (assert-equal (thm-formula+ 'th (w state)) '(acl2-numberp (unary-- x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (classes 'car-cdr-elim (w state)) '((:elim)))
 
 (must-succeed*
