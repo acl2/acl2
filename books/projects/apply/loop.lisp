@@ -159,7 +159,7 @@
 
 (defthm member-equal-until$
   (IFF (MEMBER-EQUAL NEWV (UNTIL$ Q LST))
-       (and (member-equal newv lst) 
+       (and (member-equal newv lst)
             (< (mempos newv lst)
                (len (until$ q lst))))))
 
@@ -197,7 +197,7 @@
 
 ; -----------------------------------------------------------------
 
-; Universal Quantifier Instantiation Machinery 
+; Universal Quantifier Instantiation Machinery
 ;  -- Deducing Properties of Elements from Properties of Lists
 
 ; A crucial part of reasoning about loop$ guards is deducing properties of the
@@ -344,21 +344,24 @@
 ; We need to know that the legacy quantifiers hold on constructors of the lists
 ; we target.
 
-(defthm true-listp-make-list
-  (implies (true-listp ac)
-           (true-listp (make-list-ac n x ac))))
+(defthm true-listp-make-list-ac
+; Originally an implication and only a rewrite rule, this was changed to be
+; redundant with the corresponding lemma in community book
+; data-structures/list-defthms.lisp.
+  (equal (true-listp (make-list-ac n val ac))
+         (true-listp ac))
+  :rule-classes
+  ((:rewrite)
+   (:type-prescription :corollary
+    (implies (true-listp ac)
+             (true-listp (make-list-ac n val ac))))))
 
 (defthm integer-listp-make-list-ac
   (implies (and (integer-listp ac)
                 (integerp x))
            (integer-listp (make-list-ac n x ac))))
 
-(defthm integer-listp-make-list
-  (implies (and (integerp i)
-                (integer-listp ac))
-           (integer-listp (make-list-ac n i ac))))
-
-(defthm acl2-number-listp-make-list
+(defthm acl2-number-listp-make-list-ac
   (implies (and (acl2-numberp i)
                 (acl2-number-listp ac))
            (acl2-number-listp (make-list-ac n i ac))))
@@ -646,7 +649,7 @@
                         (tuple (cons lst1 (cons lst2 (cons lst3 rest))))
                         (n 2)))))
 
-(defthm rational-listp-make-list
+(defthm rational-listp-make-list-ac
   (implies (and (rationalp init)
                 (rational-listp ac))
            (rational-listp (make-list-ac n init ac))))
