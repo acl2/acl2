@@ -32,9 +32,7 @@
   (xdoc::topstring
    (xdoc::p
     "In order to make the generated Java code more efficient and idiomatic,
-     ATJ uses types that correspond to
-     both ACL2 types (in the sense of sets of ACL2 values)
-     and Java types.
+     ATJ uses types that correspond to both ACL2 predicates and Java types.
      These ATJ types are used only when
      @(':deep') is @('nil') and @(':guards') is @('t').")
    (xdoc::p
@@ -206,12 +204,12 @@
      More types will be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
-     (i) an ACL2 type (see @(tsee atj-type-to-atype)) and
+     (i) an ACL2 predicate (see @(tsee atj-type-to-pred)) and
      (ii) a Java type (see @(tsee atj-type-to-jtype)).
      The initial @('a') and @('j') in their names
      does not mean that they denote either ACL2 types or Java types,
-     but just that the ones starting with @('a') denote ACL2's ``natural'' types
-     while the one starting with @('j') denotes Java's ``natural'' types.")))
+     but just that the ones starting with @('a') denote ACL2 built-in types
+     while the ones starting with @('j') denote Java built-in types.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,14 +280,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-to-atype ((x atj-typep))
+(define atj-type-to-pred ((x atj-typep))
   :returns (atype pseudo-termfnp)
-  :short "ACL2 type denoted by an ATJ type."
+  :short "ACL2 predicate denoted by an ATJ type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ACL2 type is the predicate that recognizes
-     the set of values of the type.")
+    "The predicate recognizes the values of the type.")
    (xdoc::p
     "The predicates for the @(':a...') types are straightforward.
      The predicate for the @(':jint') type is @(tsee int-value-p),
@@ -308,15 +305,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-a<= ((sub atj-typep) (sup atj-typep))
+(define atj-type-<= ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
   :short "Partial order over ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
     "The ATJ types form a partial order,
-     based on the inclusion of the ACL2 types they denote;
-     this denotation is defined by @(tsee atj-type-to-atype).")
+     based on the inclusion of the ACL2 predicates they denote;
+     this denotation is defined by @(tsee atj-type-to-pred).")
    (xdoc::p
     "The ordering on the @('a...') types is straightforward.
      The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
@@ -328,7 +325,7 @@
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
      i.e. reflexive, anti-symmetric, and transitive.
-     We also prove that @(tsee atj-type-to-atype) is monotonic,
+     We also prove that @(tsee atj-type-to-pred) is monotonic,
      i.e. that for each subtype/supertype pair
      each value satisfying the subtype's predicate
      also satisfies the supertype's predicate;
@@ -339,12 +336,12 @@
    (xdoc::p
     "It is also not difficult to see that,
      besides being order-presering (i.e. monotonic),
-     @(tsee atj-type-to-atype) is also order-reflecting:
-     if @('(atj-type-to-atype x)') is included in @('(atj-type-to-atype y)'),
-     then @('(atj-type-a<= x y)') holds;
+     @(tsee atj-type-to-pred) is also order-reflecting:
+     if @('(atj-type-to-pred x)') is included in @('(atj-type-to-pred y)'),
+     then @('(atj-type-<= x y)') holds;
      we may prove this explicitly at some point.
      Being both order-preserving and order-reflecting,
-     @(tsee atj-type-to-atype) is an order embedding."))
+     @(tsee atj-type-to-pred) is an order embedding."))
   (case sub
     (:ainteger (and (member-eq sup '(:ainteger :arational :anumber :avalue)) t))
     (:arational (and (member-eq sup '(:arational :anumber :avalue)) t))
@@ -357,52 +354,52 @@
     (:jint (and (member-eq sup '(:jint :acons :avalue)) t)))
   ///
 
-  (defrule atj-type-a<=-reflexive
+  (defrule atj-type-<=-reflexive
     (implies (atj-typep x)
-             (atj-type-a<= x x)))
+             (atj-type-<= x x)))
 
-  (defrule atj-type-a<=-antisymmetric
+  (defrule atj-type-<=-antisymmetric
     (implies (and (atj-typep x)
                   (atj-typep y)
-                  (atj-type-a<= x y)
-                  (atj-type-a<= y x))
+                  (atj-type-<= x y)
+                  (atj-type-<= y x))
              (equal x y))
     :rule-classes nil)
 
-  (defrule atj-type-a<=-transitive
+  (defrule atj-type-<=-transitive
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-a<= x y)
-                  (atj-type-a<= y z))
-             (atj-type-a<= x z))
+                  (atj-type-<= x y)
+                  (atj-type-<= y z))
+             (atj-type-<= x z))
     :rule-classes nil)
 
   ;; monotonicity theorem for (SUB, SUP) if SUB <= SUP, otherwise NIL:
-  (define atj-type-to-atype-gen-mono-thm ((sub atj-typep) (sup atj-typep))
-    (if (atj-type-a<= sub sup)
-        `((defthm ,(packn (list 'atj-type-to-atype-thm- sub '- sup))
-            (implies (,(atj-type-to-atype sub) val)
-                     (,(atj-type-to-atype sup) val))
+  (define atj-type-to-pred-gen-mono-thm ((sub atj-typep) (sup atj-typep))
+    (if (atj-type-<= sub sup)
+        `((defthm ,(packn (list 'atj-type-to-pred-thm- sub '- sup))
+            (implies (,(atj-type-to-pred sub) val)
+                     (,(atj-type-to-pred sup) val))
             :rule-classes nil))
       nil))
 
   ;; monotonicity theorems for all (SUB, SUP) with SUP' in SUPS:
-  (define atj-type-to-atype-gen-mono-thms-1 ((sub atj-typep)
-                                             (sups atj-type-listp))
+  (define atj-type-to-pred-gen-mono-thms-1 ((sub atj-typep)
+                                            (sups atj-type-listp))
     (cond ((endp sups) nil)
-          (t (append (atj-type-to-atype-gen-mono-thm sub (car sups))
-                     (atj-type-to-atype-gen-mono-thms-1 sub (cdr sups))))))
+          (t (append (atj-type-to-pred-gen-mono-thm sub (car sups))
+                     (atj-type-to-pred-gen-mono-thms-1 sub (cdr sups))))))
 
   ;; monotonicity theorems for all (SUB, SUP) with SUB in SUBS and SUP in SUPS:
-  (define atj-type-to-atype-gen-mono-thms-2 ((subs atj-type-listp)
-                                             (sups atj-type-listp))
+  (define atj-type-to-pred-gen-mono-thms-2 ((subs atj-type-listp)
+                                            (sups atj-type-listp))
     (cond ((endp subs) nil)
-          (t (append (atj-type-to-atype-gen-mono-thms-1 (car subs) sups)
-                     (atj-type-to-atype-gen-mono-thms-2 (cdr subs) sups)))))
+          (t (append (atj-type-to-pred-gen-mono-thms-1 (car subs) sups)
+                     (atj-type-to-pred-gen-mono-thms-2 (cdr subs) sups)))))
 
   ;; monotonicity theorems for all pairs of types:
-  (define atj-type-to-atype-gen-mono-thms ()
+  (define atj-type-to-pred-gen-mono-thms ()
     (b* ((types '(:ainteger
                   :arational
                   :anumber
@@ -415,33 +412,33 @@
       `(encapsulate
          ()
          (set-ignore-ok t)
-         ,@(atj-type-to-atype-gen-mono-thms-2 types types))))
+         ,@(atj-type-to-pred-gen-mono-thms-2 types types))))
 
   ;; macro to generate the monotonicity theorems:
-  (defmacro atj-type-to-atype-mono ()
-    `(make-event (atj-type-to-atype-gen-mono-thms)))
+  (defmacro atj-type-to-pred-mono ()
+    `(make-event (atj-type-to-pred-gen-mono-thms)))
 
   ;; generate the monotonicity theorems:
-  (atj-type-to-atype-mono))
+  (atj-type-to-pred-mono))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-a< ((sub atj-typep) (sup atj-typep))
+(define atj-type-< ((sub atj-typep) (sup atj-typep))
   :returns (yes/no booleanp)
-  :short "Irreflexive kernel (i.e. strict version) of @(tsee atj-type-a<=)."
-  (and (atj-type-a<= sub sup)
+  :short "Irreflexive kernel (i.e. strict version) of @(tsee atj-type-<=)."
+  (and (atj-type-<= sub sup)
        (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-ajoin ((x atj-typep) (y atj-typep))
+(define atj-type-join ((x atj-typep) (y atj-typep))
   :returns (lub atj-typep :hyp :guard)
   :short "Least upper bound of two ATJ types."
   :long
   (xdoc::topstring
    (xdoc::p
     "ATJ types form a join semilattice,
-     with the partial order @(tsee atj-type-a<=).")
+     with the partial order @(tsee atj-type-<=).")
    (xdoc::p
     "To validate this definition of least upper bound,
      we prove that the this operation indeed returns an upper bound
@@ -488,27 +485,27 @@
              (t :avalue))))
   ///
 
-  (defrule atj-type-ajoin-upper-bound
+  (defrule atj-type-join-upper-bound
     (implies (and (atj-typep x)
                   (atj-typep y))
-             (and (atj-type-a<= x (atj-type-ajoin x y))
-                  (atj-type-a<= y (atj-type-ajoin x y))))
-    :enable atj-type-a<=)
+             (and (atj-type-<= x (atj-type-join x y))
+                  (atj-type-<= y (atj-type-join x y))))
+    :enable atj-type-<=)
 
-  (defrule atj-type-ajoin-least
+  (defrule atj-type-join-least
     (implies (and (atj-typep x)
                   (atj-typep y)
                   (atj-typep z)
-                  (atj-type-a<= x z)
-                  (atj-type-a<= y z))
-             (atj-type-a<= (atj-type-ajoin x y) z))
-    :enable atj-type-a<=))
+                  (atj-type-<= x z)
+                  (atj-type-<= y z))
+             (atj-type-<= (atj-type-join x y) z))
+    :enable atj-type-<=))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-a<= ((sub atj-type-listp) (sup atj-type-listp))
+(define atj-type-list-<= ((sub atj-type-listp) (sup atj-type-listp))
   :returns (yes/no booleanp)
-  :short "Lift @(tsee atj-type-a<=) to lists."
+  :short "Lift @(tsee atj-type-<=) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -522,42 +519,42 @@
      i.e. reflexive, anti-symmetric, and transitive."))
   (cond ((endp sub) t)
         ((endp sup) nil)
-        (t (and (atj-type-a<= (car sub) (car sup))
-                (atj-type-list-a<= (cdr sub) (cdr sup)))))
+        (t (and (atj-type-<= (car sub) (car sup))
+                (atj-type-list-<= (cdr sub) (cdr sup)))))
   ///
 
-  (defrule atj-type-list-a<=-reflexive
+  (defrule atj-type-list-<=-reflexive
     (implies (atj-type-listp x)
-             (atj-type-list-a<= x x)))
+             (atj-type-list-<= x x)))
 
-  (defrule atj-type-list-a<=-antisymmetric
+  (defrule atj-type-list-<=-antisymmetric
     (implies (and (atj-type-listp x)
                   (atj-type-listp y)
-                  (atj-type-list-a<= x y)
-                  (atj-type-list-a<= y x))
+                  (atj-type-list-<= x y)
+                  (atj-type-list-<= y x))
              (equal x y))
     :rule-classes nil
-    :hints ('(:use (:instance atj-type-a<=-antisymmetric
+    :hints ('(:use (:instance atj-type-<=-antisymmetric
                     (x (car x)) (y (car y))))))
 
-  (defrule atj-type-list-a<=-transitive
+  (defrule atj-type-list-<=-transitive
     (implies (and (atj-type-listp x)
                   (atj-type-listp y)
                   (atj-type-listp z)
-                  (atj-type-list-a<= x y)
-                  (atj-type-list-a<= y z))
-             (atj-type-list-a<= x z))
+                  (atj-type-list-<= x y)
+                  (atj-type-list-<= y z))
+             (atj-type-list-<= x z))
     :rule-classes nil
-    :hints ('(:use (:instance atj-type-a<=-transitive
+    :hints ('(:use (:instance atj-type-<=-transitive
                     (x (car x)) (y (car y)) (z (car z)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-a< ((sub atj-type-listp) (sup atj-type-listp))
+(define atj-type-list-< ((sub atj-type-listp) (sup atj-type-listp))
   :returns (yes/no booleanp)
   :short "Irreflexive kernel (i.e. strict version)
-          of @(tsee atj-type-list-a<=)."
-  (and (atj-type-list-a<= sub sup)
+          of @(tsee atj-type-list-<=)."
+  (and (atj-type-list-<= sub sup)
        (not (equal sub sup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1210,7 +1207,7 @@
   (b* ((thm-name (packn-pos (list 'atj- fn '-input- formal '- type)
                             (pkg-witness (symbol-package-name fn))))
        (thm-formula (implicate guard
-                               `(,(atj-type-to-atype type) ,formal))))
+                               `(,(atj-type-to-pred type) ,formal))))
     `(local
       (defthm ,thm-name
         ,(untranslate thm-formula t wrld)
@@ -1264,7 +1261,7 @@
   (b* ((thm-name (packn-pos (list 'atj- fn '-output- type)
                             (pkg-witness (symbol-package-name fn))))
        (thm-formula (implicate guard
-                               `(,(atj-type-to-atype type)
+                               `(,(atj-type-to-pred type)
                                  (,fn ,@formals)))))
     `(local
       (defthm ,thm-name
@@ -1390,7 +1387,7 @@
                             (pkg-witness (symbol-package-name fn))))
        (guard (guard fn nil wrld))
        (type-hyps (atj-other-function-type-theorem-aux formals in-types))
-       (concl `(,(atj-type-to-atype out-type) (,fn ,@formals)))
+       (concl `(,(atj-type-to-pred out-type) (,fn ,@formals)))
        (thm-formula (implicate (conjoin (cons guard type-hyps)) concl)))
     `(local
       (defthm ,thm-name
@@ -1403,10 +1400,10 @@
      :guard (= (len formals) (len in-types))
      :returns (terms pseudo-term-listp
                      :hyp :guard
-                     :hints (("Goal" :in-theory (enable atj-type-to-atype))))
+                     :hints (("Goal" :in-theory (enable atj-type-to-pred))))
      :parents nil
      (cond ((endp formals) nil)
-           (t (cons `(,(atj-type-to-atype (car in-types)) ,(car formals))
+           (t (cons `(,(atj-type-to-pred (car in-types)) ,(car formals))
                     (atj-other-function-type-theorem-aux (cdr formals)
                                                          (cdr in-types))))))))
 
@@ -1598,12 +1595,12 @@
        (main-fn-type (atj-function-type-info->main fn-info?))
        (main-in-types (atj-function-type->inputs main-fn-type))
        (main-out-type (atj-function-type->output main-fn-type))
-       ((unless (atj-type-list-a< in-types main-in-types))
+       ((unless (atj-type-list-< in-types main-in-types))
         (raise "The proposed inputs types ~x0 must be strictly narrower, ~
                 according to the ACL2-based partial ordering, ~
                 than the primary input types ~x1."
                in-types main-in-types))
-       ((unless (atj-type-a<= out-type main-out-type))
+       ((unless (atj-type-<= out-type main-out-type))
         (raise "The proposed output type ~x0 must be ~
                 narrower than or equal to, ~
                 according to the ACL2-based partial ordering, ~

@@ -812,7 +812,7 @@
      the type of the formal argument,
      ATJ adds Java code to convert from the former type to the latter type.
      Note that being a subtype in Java is not the same as
-     satisfying @(tsee atj-type-a<=),
+     satisfying @(tsee atj-type-<=),
      which only corresponds to subtyping (i.e. inclusion) in ACL2.")
    (xdoc::p
     "This code generation function does that.
@@ -832,7 +832,7 @@
      so there is not need for casts.
      To convert between the AIJ types,
      if the source type is a subtype of or the same type as
-     the destination type (checked via @(tsee atj-type-a<=)),
+     the destination type (checked via @(tsee atj-type-<=)),
      we leave the expression unchanged;
      otherwise, we insert a cast to the destination type,
      which is expected to always succeed
@@ -845,7 +845,7 @@
              (jexpr-cast (atj-type-to-jtype dst-type) acl2-value-expr))))
         ((eq dst-type :jint)
          (atj-convert-expr-from-value-to-jint expr))
-        ((atj-type-a<= src-type dst-type) expr)
+        ((atj-type-<= src-type dst-type) expr)
         (t (jexpr-cast (atj-type-to-jtype dst-type) expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
