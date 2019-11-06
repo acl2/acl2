@@ -60,3 +60,10 @@
                     (DONT-RW-SYNTAXP-AUX b))))
     :hints (("Goal"
              :in-theory (e/d (dont-rw-syntaxp) ())))))
+
+
+
+(defthm make-fast-alist-def
+  (equal (make-fast-alist (cons (cons x y) rest))
+         (hons-acons x y
+                     (make-fast-alist rest))))

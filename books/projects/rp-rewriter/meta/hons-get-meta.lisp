@@ -48,7 +48,7 @@
 
 (include-book "../eval-functions")
 
-(include-book "../add-meta-rule-formula-checks")
+(include-book "../meta-rule-macros")
 
 (local
  (include-book "../proofs/measure-lemmas"))
@@ -215,20 +215,19 @@
    assoc-eq-vals-meta))
 
 (local
- (defthm pseudo-termp2-hons-get-falist
+ (defthm rp-termp-hons-get-falist
    (implies (and (falist-syntaxp falist)
                  (consp (hons-get key falist)))
-            (pseudo-termp2 (cdr (hons-get key falist))))))
+            (rp-termp (cdr (hons-get key falist))))))
 
 (local
  (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
-                     (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
-                     (:REWRITE PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                     (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
                      (:DEFINITION TRUE-LISTP)
                      (:DEFINITION SUBSETP-EQUAL)
                      (:DEFINITION MEMBER-EQUAL)
                      (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                     (:REWRITE PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
+                     (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                      (:REWRITE
                       ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                      (:REWRITE DEFAULT-CDR)
@@ -248,40 +247,38 @@
 
    (local
     (defthm lemma1
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (is-falist (ex-from-rp term)))
                (falist-consistent-aux (cadr (cadr (ex-from-rp term)))
                                       (caddr (ex-from-rp term))))))
    (local
     (defthm lemma2
-      (implies (and (pseudo-termp2 term)
+      (implies (and (rp-termp term)
                     (is-falist (ex-from-rp term)))
-               (pseudo-termp2
+               (rp-termp
                 (caddr (ex-from-rp term))))))
 
-   (defthm pseudo-termp2-resolve-assoc-eq-val-rec
-     (implies (and ;(pseudo-termp2 key)
-               (pseudo-termp2 alist))
-              (pseudo-termp2 (resolve-assoc-eq-val-rec key alist)))
+   (defthm rp-termp-resolve-assoc-eq-val-rec
+     (implies (and ;(rp-termp key)
+               (rp-termp alist))
+              (rp-termp (resolve-assoc-eq-val-rec key alist)))
      :hints (("Goal"
               :induct (resolve-assoc-eq-val-rec key alist)
               :do-not-induct t
               :in-theory (e/d (resolve-assoc-eq-val-rec)
                               ((:DEFINITION ACL2::APPLY$-BADGEP)
-                               (:REWRITE PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
-                               (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                                (:DEFINITION TRUE-LISTP)
-                               (:TYPE-PRESCRIPTION PSEUDO-TERMP2)
-                               (:REWRITE PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                               (:TYPE-PRESCRIPTION RP-TERMP)
+                               (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
                                (:REWRITE DEFAULT-CDR)
-                               (:REWRITE IS-IF-PSEUDO-TERMP2)
+                               (:REWRITE IS-IF-RP-TERMP)
                                (:REWRITE DEFAULT-CAR)
                                (:TYPE-PRESCRIPTION ACL2::APPLY$-BADGEP))))))
 
-   (defthm pseudo-termp2-hons-get-meta
-     (implies (and (pseudo-termp2 term)
-                   (all-falist-consistent term))
-              (pseudo-termp2 (mv-nth 0 (hons-get-meta term))))
+   (defthm rp-termp-hons-get-meta
+     (implies (and (rp-termp term))
+              (rp-termp (mv-nth 0 (hons-get-meta term))))
      :hints (("goal"
               :do-not-induct t
               :use ((:instance falist-consistent-implies-falist-syntaxp
@@ -290,26 +287,26 @@
               :in-theory (e/d (hons-get-meta)
                               (hons-get
                                (:DEFINITION ACL2::APPLY$-BADGEP)
-                               (:REWRITE PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                               (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
                                (:DEFINITION SUBSETP-EQUAL)
                                (:DEFINITION MEMBER-EQUAL)
-                               (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
-                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)(:REWRITE
-                                                                            ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))))
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:REWRITE
+                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))))
 
-   (defthm pseudo-termp2-resolve-assoc-eq-vals-rec
-     (implies (and (pseudo-termp2 keys)
-                   (pseudo-termp2 alist))
-              (pseudo-termp2 (resolve-assoc-eq-vals-rec keys alist)))
+   (defthm rp-termp-resolve-assoc-eq-vals-rec
+     (implies (and (rp-termp keys)
+                   (rp-termp alist))
+              (rp-termp (resolve-assoc-eq-vals-rec keys alist)))
      :hints (("Goal"
               :do-not-induct t
               :induct (resolve-assoc-eq-vals-rec keys alist)
               :in-theory (e/d (RESOLVE-ASSOC-EQ-VALS-REC) ()))))
 
    (local
-    (defthm pseudo-termp2-hons-get-list-values-term-1
+    (defthm rp-termp-hons-get-list-values-term-1
       (implies (and (falist-syntaxp falist))
-               (pseudo-termp2 (hons-get-list-values-term
+               (rp-termp (hons-get-list-values-term
                                keys
                                falist)))
       :otf-flg t
@@ -318,20 +315,20 @@
 
    (local
     (defthm lemma3-lemma
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (case-match term
                       (('assoc-eq-vals ('quote &) falist)
                        (b* ((falist (ex-from-rp falist)))
                          (case-match falist
                            (('falist ('quote &) &) t) (& nil))))
                       (& nil)))
-               (all-falist-consistent (EX-FROM-RP (CADDR TERM))))))
+               (rp-termp (EX-FROM-RP (CADDR TERM))))))
 
    
    (local
     (defthm lemma3
-      (implies (and (all-falist-consistent term)
-                    (pseudo-termp2 term)
+      (implies (and 
+                    (rp-termp term)
                     (case-match term
                       (('assoc-eq-vals ('quote &) falist)
                        (b* ((falist (ex-from-rp falist)))
@@ -346,38 +343,31 @@
                                (lemma3-lemma
                                 (:DEFINITION FALIST-SYNTAXP)
                                 (:TYPE-PRESCRIPTION O<)
-                                (:TYPE-PRESCRIPTION PSEUDO-TERMP2)
+                                (:TYPE-PRESCRIPTION RP-TERMP)
                                 (:REWRITE ACL2::O-P-O-INFP-CAR)
-                                (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP2)
+                                
                                 (:TYPE-PRESCRIPTION O-P)
                                 (:REWRITE DEFAULT-CDR)
-                                (:REWRITE DEFAULT-CAR)
-                                (:REWRITE
-                                 ALL-FALIST-CONSISTENT-LST-CDR-TERM-LEMMA)
-                                (:REWRITE
-                                 CDR-TERM-IS-ALL-FALIST-CONSISTENT-LST)
-                                (:REWRITE PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)))))))
+                                (:REWRITE DEFAULT-CAR)))))))
 
    (local
-    (defthm pseudo-termp2-hons-get-list-values-term-main
+    (defthm rp-termp-hons-get-list-values-term-main
       (implies
-       (and (all-falist-consistent term)
-            (pseudo-termp2 term)
+       (and (rp-termp term)
             (case-match term
               (('assoc-eq-vals ('quote &) falist)
                (b* ((falist (ex-from-rp falist)))
                  (case-match falist
                    (('falist ('quote &) &) t) (& nil))))
               (& nil)))
-       (pseudo-termp2
+       (rp-termp
         (hons-get-list-values-term (cadr (cadr term))
                                    (cadr (cadr (ex-from-rp (caddr term)))))))
       :hints (("goal" :in-theory (enable hons-get-list-values-term)))))
 
-   (defthm pseudo-termp2-assoc-eq-vals-meta
-     (implies (and (pseudo-termp2 term)
-                   (all-falist-consistent term))
-              (pseudo-termp2 (mv-nth 0 (assoc-eq-vals-meta term))))
+   (defthm rp-termp-assoc-eq-vals-meta
+     (implies (and (rp-termp term))
+              (rp-termp (mv-nth 0 (assoc-eq-vals-meta term))))
      :hints (("Goal"
               :in-theory (e/d ( assoc-eq-vals-meta) ()))))))
 
@@ -388,65 +378,70 @@
     (defthm falist-consistent-implies-for-fast-alist
       (implies
        (and (falist-consistent-aux falist term)
-            (all-falist-consistent term))
-       (all-falist-consistent-lst (strip-cdrs falist)))
+            (rp-termp term))
+       (rp-term-listp (strip-cdrs falist)))
       :hints (("Goal" :in-theory (enable falist-consistent-aux)))))
 
    (local
     (defthm lemma1
-      (implies (ALL-FALIST-CONSISTENT-LST (STRIP-CDRS FALIST))
-               (ALL-FALIST-CONSISTENT
+      (implies (and (rp-term-listp (STRIP-CDRS FALIST))
+                    (consp falist)
+                    (HONS-ASSOC-EQUAL key FALIST))
+               (rp-termp
                 (CDR (HONS-ASSOC-EQUAL key FALIST))))))
 
    (local
+    (defthm lemma1-2
+      (implies (CONSP (HONS-ASSOC-EQUAL key FALIST))
+               (consp falist))))
+
+   (local
     (defthm lemma2
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (is-falist term))
-               (all-falist-consistent-lst
+               (rp-term-listp
                 (strip-cdrs (cadr (cadr term)))))
       :hints (("goal"
                :in-theory (e/d () (ex-from-rp))))))
 
    (local
     (defthm lemma3
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (is-falist (ex-from-rp term)))
-               (all-falist-consistent-lst
+               (rp-term-listp
                 (strip-cdrs (cadr (cadr (ex-from-rp term))))))
       :hints (("goal"
                :in-theory (e/d () (ex-from-rp))))))
 
    (defthm all-falist-consistent-resolve-assoc-eq-val-rec
-     (implies (and ;(pseudo-termp2 key)
-               (all-falist-consistent alist))
-              (all-falist-consistent (resolve-assoc-eq-val-rec key alist)))
+     (implies (and ;(rp-termp key)
+               (rp-termp alist))
+              (rp-termp (resolve-assoc-eq-val-rec key alist)))
      :hints (("Goal"
               :in-theory (e/d (resolve-assoc-eq-val-rec)
                               ((:REWRITE DEFAULT-CAR)
                                (:REWRITE DEFAULT-CDR)
-                               (:REWRITE
-                                CDR-TERM-IS-ALL-FALIST-CONSISTENT-LST)
+                               
                                (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
                                (:TYPE-PRESCRIPTION QUOTEP))))))
 
    (defthm all-falist-consistent-resolve-assoc-eq-vals-rec
      (implies (and
-               (all-falist-consistent keys)
-               (all-falist-consistent alist))
-              (all-falist-consistent (resolve-assoc-eq-vals-rec keys alist)))
+               (rp-termp keys)
+               (rp-termp alist))
+              (rp-termp (resolve-assoc-eq-vals-rec keys alist)))
      :hints (("Goal"
               :in-theory (e/d (resolve-assoc-eq-vals-rec)
                               ((:REWRITE DEFAULT-CAR)
                                (:REWRITE DEFAULT-CDR)
-                               (:REWRITE
-                                CDR-TERM-IS-ALL-FALIST-CONSISTENT-LST)
+                               
                                (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
                                (:TYPE-PRESCRIPTION QUOTEP))))))
 
    (local
     (defthm hons-get-list-values-term-returns-all-falist-consistent
-      (implies (all-falist-consistent-lst (strip-cdrs falist))
-               (all-falist-consistent
+      (implies (rp-term-listp (strip-cdrs falist))
+               (rp-termp
                 (hons-get-list-values-term keys falist)))
       :otf-flg t
       :hints (("Goal"
@@ -456,25 +451,25 @@
    (local
     (defthm all-falist-consistent-hons-get-list-values-term
       (implies (and (is-honsed-assoc-eq-values term)
-                    (all-falist-consistent term))
-               (all-falist-consistent
+                    (rp-termp term))
+               (rp-termp
                 (hons-get-list-values-term (cadr (cadr term))
                                            (cadr (cadr (caddr term))))))
       :hints (("goal"
                :in-theory (enable is-honsed-assoc-eq-values
 
-                                  all-falist-consistent)))))
+                                  rp-termp)))))
 
    (defthm all-falist-consistent-assoc-eq-vals-meta
-     (implies (and (pseudo-termp2 term)
-                   (all-falist-consistent term))
-              (all-falist-consistent (mv-nth 0 (assoc-eq-vals-meta term))))
+     (implies (and (rp-termp term)
+                   )
+              (rp-termp (mv-nth 0 (assoc-eq-vals-meta term))))
      :hints (("Goal"
               :in-theory (e/d ( assoc-eq-vals-meta) ()))))
 
    (defthm all-falist-consistent-hons-get-meta
-     (implies (and (all-falist-consistent term))
-              (all-falist-consistent (mv-nth 0 (hons-get-meta term))))
+     (implies (and (rp-termp term))
+              (rp-termp (mv-nth 0 (hons-get-meta term))))
      :hints (("goal"
               :in-theory (e/d (hons-get-meta) ()))))))
 
@@ -491,35 +486,31 @@
 
    (local
     (defthm resolve-assoc-eq-val-rec-correct
-      (implies (and ;(pseudo-termp2 alist)
+      (implies (and ;(rp-termp alist)
                 (rp-evl-meta-extract-global-facts)
                 (hons-get-meta-formula-checks state))
                (equal (rp-evl (resolve-assoc-eq-val-rec key alist) a)
                       (assoc-eq-val key (rp-evl alist a))))
       :hints (("Goal" :in-theory (e/d (assoc-eq-val)
                                       ((:REWRITE
-                                        PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                                        RP-TERMP-IMPLIES-CDR-LISTP)
                                        (:REWRITE
-                                        PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
-                                       (:REWRITE
-                                        PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                                        RP-TERMP-IMPLIES-SUBTERMS)
                                        (:REWRITE DEFAULT-CDR)))))))
 
    (local
     (defthm resolve-assoc-eq-vals-rec-correct
-      (implies (and ;(pseudo-termp2 alist)
-;(pseudo-termp2 keys)
+      (implies (and ;(rp-termp alist)
+;(rp-termp keys)
                 (rp-evl-meta-extract-global-facts)
                 (hons-get-meta-formula-checks state))
                (equal (rp-evl (resolve-assoc-eq-vals-rec keys alist) a)
                       (assoc-eq-vals (rp-evl keys a) (rp-evl alist a))))
       :hints (("Goal" :in-theory (e/d (assoc-eq-vals)
                                       ((:REWRITE
-                                        PSEUDO-TERM-LISTP2-IS-TRUE-LISTP)
+                                        RP-TERMP-IMPLIES-CDR-LISTP)
                                        (:REWRITE
-                                        PSEUDO-TERMP2-IMPLIES-CDR-LISTP)
-                                       (:REWRITE
-                                        PSEUDO-TERMP2-IMPLIES-SUBTERMS)
+                                        RP-TERMP-IMPLIES-SUBTERMS)
                                        (:REWRITE DEFAULT-CDR)))))))
 
    (local
@@ -536,7 +527,7 @@
 
    (local
     (defthm lemma4
-      (implies (and (all-falist-consistent term)
+      (implies (and (rp-termp term)
                     (is-falist (ex-from-rp term)))
                (falist-consistent-aux (cadr (cadr (ex-from-rp term)))
                                       (caddr (ex-from-rp term))))))
@@ -589,7 +580,7 @@
 
    (local
     (defthm lemma12
-      (implies (and (ALL-FALIST-CONSISTENT term)
+      (implies (and (rp-termp term)
                     (is-falist term))
                (ALISTP (RP-EVL (CADDR term) A)))))
 
@@ -640,7 +631,7 @@
                :in-theory (e/d () (hons-get))))))
 
    (defthm rp-evl-of-hons-get-rp-meta
-     (implies (and (all-falist-consistent term)
+     (implies (and (rp-termp term)
                    (rp-evl-meta-extract-global-facts)
                    (hons-get-meta-formula-checks state))
               (equal (rp-evl (mv-nth 0 (hons-get-meta term)) a)
@@ -678,7 +669,7 @@
     (defthm hons-get-is-resolve-assoc-eq-value-rec-not-consp
       (implies
        (and (falist-consistent-aux falist term)
-            (pseudo-termp2 term)
+            (rp-termp term)
             (not (hons-get key falist)))
        (equal (assoc-eq-val key (rp-evl term a))
               nil))))
@@ -695,7 +686,7 @@
    (local
     (defthm rp-evl-of-hons-get-list-values-term-lemma
       (implies (and (falist-consistent-aux falist term)
-                    (pseudo-termp2 term)
+                    (rp-termp term)
                     (rp-evl-meta-extract-global-facts)
                     (hons-get-meta-formula-checks state))
                (equal (rp-evl (hons-get-list-values-term keys falist) a)
@@ -712,7 +703,7 @@
                      assoc-eq-val))))))
 
    (defthm falist-consistent-aux-lemma1
-     (implies (and (all-falist-consistent term)
+     (implies (and (rp-termp term)
                    (case-match term
                      (('assoc-eq-vals ('quote &) falist)
                       (b* ((falist (ex-from-rp falist)))
@@ -726,14 +717,14 @@
 
    (local
     (defthm lemma15
-      (implies (and (pseudo-termp2 term)
+      (implies (and (rp-termp term)
                     (case-match term
                       (('assoc-eq-vals ('quote &) falist)
                        (b* ((falist (ex-from-rp falist)))
                          (case-match falist
                            (('falist ('quote &) &) t) (& nil))))
                       (& nil)))
-               (PSEUDO-TERMP2 (CADDR (EX-FROM-RP (CADDR TERM)))))
+               (RP-TERMP (CADDR (EX-FROM-RP (CADDR TERM)))))
       :hints (("Goal"
                :use ((:instance EXTRACT-FROM-RP-PSEUDO-TERM-LISTP
                                 (term (CADDR TERM))))
@@ -741,8 +732,8 @@
                                (EXTRACT-FROM-RP-PSEUDO-TERM-LISTP))))))
 
    (defthm rp-evl-of-assoc-eq-vals-meta
-     (implies (and (all-falist-consistent term)
-                   (pseudo-termp2 term)
+     (implies (and (rp-termp term)
+                   (rp-termp term)
                    (rp-evl-meta-extract-global-facts)
                    (hons-get-meta-formula-checks state))
               (equal (rp-evl (mv-nth 0 (assoc-eq-vals-meta term)) a)
@@ -808,7 +799,7 @@
    (local
     (defthm lemma3
       (IMPLIES
-       (and (all-falist-consistent term)
+       (and (rp-termp term)
             (is-falist term))
        (FALIST-CONSISTENT-AUX (CADR (CADR term))
                               (CADDR term)))))
@@ -835,7 +826,7 @@
 
    (defthm valid-sc-hons-get-rp-meta
      (implies (and (valid-sc term a)
-                   (all-falist-consistent term))
+                   (rp-termp term))
               (valid-sc (mv-nth 0 (hons-get-meta term)) a))
      :hints (("Goal"
               :use ((:instance valid-sc-hons-get-rp-meta-lemma
@@ -857,7 +848,7 @@
 
    (defthm valid-sc-assoc-eq-vals-meta
      (implies (and (valid-sc term a)
-                   (all-falist-consistent term))
+                   (rp-termp term))
               (valid-sc (mv-nth 0 (assoc-eq-vals-meta term)) a))
      :hints (("Goal"
               :use ((:instance valid-sc-hons-get-list-values-term-lemma
@@ -866,7 +857,7 @@
                                (term-alist (CAdDR (EX-FROM-RP (CADDR TERM))))))
               :in-theory (e/d (assoc-eq-vals-meta is-if is-rp) ()))))))
 
-(local
+#|(local
  (encapsulate
    nil
 
@@ -944,7 +935,7 @@
                                 (keys (CADR (CADR TERM)))
                                 (falist (CADR (CADR (EX-FROM-RP (CADDR TERM)))))
                                 (term-alist (CAdDR (EX-FROM-RP (CADDR TERM))))))
-              :in-theory (e/d (assoc-eq-vals-meta) ()))))))
+              :in-theory (e/d (assoc-eq-vals-meta) ()))))))||#
 
 (local
  (defthm dont-rw-syntaxp-hons-get-meta
@@ -975,10 +966,8 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (PSEUDO-TERMP2
+                           (RP-TERMP
                             hons-get-meta
-                            PSEUDO-TERM-LISTP2
-                            RP-SYNTAXP
                             VALID-SC)))))
 
 (defthm assoc-eq-vals-meta-is-valid-rp-meta-rulep
@@ -994,10 +983,8 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (PSEUDO-TERMP2
+                           (RP-TERMP
                             assoc-eq-vals-meta
-                            PSEUDO-TERM-LISTP2
-                            RP-SYNTAXP
                             VALID-SC)))))
 
 (rp::add-meta-rules

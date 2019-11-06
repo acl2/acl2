@@ -478,6 +478,30 @@
   :hints (("Goal"
            :in-theory (e/d (cons-count) ()))))
 
+(defthm m-measure-lemma12
+      (implies (and (consp (ex-from-rp term))
+                    (Not (equal (car (ex-from-rp term))
+                           'rp))
+                    (consp (cdr (ex-from-rp term)))
+                    (consp (cddr (ex-from-rp term)))
+                    (consp (cdddr (ex-from-rp term)))
+                    (not (cddddr (ex-from-rp term))))
+               (o< (cons-count (cadddr (ex-from-rp term)))
+                   (cons-count term)))
+      :hints (("goal"
+               :in-theory (e/d (cons-count ex-from-rp
+                                           is-rp) ()))))
+
+
+(defthm measure-lemma-cadr-ex-from-rp
+   (implies (and (consp (ex-from-rp term))
+                 (consp (cdr (ex-from-rp term))))
+            (o< (cons-count (cadr (ex-from-rp term)))
+                (cons-count term)))
+   :hints (("goal"
+	    :in-theory (e/d (ex-from-rp cons-count) ()))))
+
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defun cons-countw (x val)
@@ -719,6 +743,8 @@
     equality-measure-lemma8
     m-measure-lemma10
     m-measure-lemma11
+    m-measure-lemma12
+    measure-lemma-cadr-ex-from-rp
 
     cons-count-atom
     cons-count-cons

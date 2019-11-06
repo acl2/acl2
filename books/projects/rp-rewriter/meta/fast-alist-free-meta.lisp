@@ -48,7 +48,7 @@
 
 (include-book "../eval-functions")
 
-(include-book "../add-meta-rule-formula-checks")
+(include-book "../meta-rule-macros")
 
 (defund fast-alist-free-meta (term)
   (declare (xargs :guard t))
@@ -80,18 +80,11 @@
             :in-theory (e/d (fast-alist-free-meta is-rp is-if) ())))))
 
 (local
- (defthm pseudo-termp2-fast-alist-free-rp-meta
-   (implies (pseudo-termp2 term)
-            (pseudo-termp2 (mv-nth 0 (fast-alist-free-meta term))))
+ (defthm rp-termp-fast-alist-free-rp-meta
+   (implies (rp-termp term)
+            (rp-termp (mv-nth 0 (fast-alist-free-meta term))))
    :hints (("Goal" :in-theory (enable fast-alist-free-meta)))))
 
-(local
- (defthm valid-falist-fast-alist-free-meta
-   (implies (all-falist-consistent term)
-            (all-falist-consistent
-             (mv-nth 0 (fast-alist-free-meta term))))
-   :hints (("goal" :in-theory (enable
-                               fast-alist-free-meta)))))
 
 (local
  (defthm rp-evl-of-fast-alist-free-meta
@@ -103,12 +96,6 @@
    :hints (("Goal"
             :in-theory (e/d (fast-alist-free-meta) ())))))
 
-(local
- (defthm rp-syntaxp-fast-alist-free-rp-meta
-   (implies (rp-syntaxp term)
-            (rp-syntaxp (mv-nth 0 (fast-alist-free-meta term))))
-   :hints (("goal"
-            :in-theory (e/d (fast-alist-free-meta) ())))))
 
 
 (local
@@ -133,10 +120,10 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (PSEUDO-TERMP2
+                           (RP-TERMP
                             fast-alist-free-meta
-                            PSEUDO-TERM-LISTP2
-                            RP-SYNTAXP
+                            RP-TERM-LISTP
+                            
                             VALID-SC)))))
 
 

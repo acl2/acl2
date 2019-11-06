@@ -41,7 +41,7 @@
 (include-book "proofs/guards")
 
 (include-book "cl-correct")
-(include-book "add-meta-rule-formula-checks")
+(include-book "meta-rule-macros")
 (include-book "misc")
 
 (include-book "user-lemmas")

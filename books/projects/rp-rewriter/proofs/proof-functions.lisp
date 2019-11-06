@@ -59,8 +59,8 @@
   ;; i.e, (if first-element side-condition t)
   (declare (xargs :guard (and (alistp lst)
                               (alistp a)
-                              (pseudo-term-list-listp2 (strip-cars lst))
-                              (pseudo-term-list-listp2 (strip-cdrs lst)))))
+                              (rp-term-list-listp (strip-cars lst))
+                              (rp-term-list-listp (strip-cdrs lst)))))
   (if (atom lst)
       t
     (and (implies (eval-and-all (caar lst) a)
@@ -116,8 +116,8 @@
      (declare (xargs
                :verify-guards nil
                :measure (cons-count term)
-               :guard (and (pseudo-termp2 term)
-                           (pseudo-term-listp2 context))))
+               :guard (and (rp-termp term)
+                           (rp-term-listp context))))
      (cond
       ((or (atom term)
            (quotep term))
@@ -142,8 +142,8 @@
    (defun ext-side-conditions-subterms (subterms context)
      (declare (xargs
                :measure (cons-count subterms)
-               :guard (and (pseudo-term-listp2 subterms)
-                           (pseudo-term-listp2 context))))
+               :guard (and (rp-term-listp subterms)
+                           (rp-term-listp context))))
      (if (atom subterms)
          nil
        (append (ext-side-conditions (car subterms) context)
@@ -236,8 +236,8 @@
      (declare (xargs :mode :logic
                      :measure (cons-count term2)
                      :verify-guards nil
-                     :guard (and (pseudo-termp2 term1)
-                                 (pseudo-termp2 term2))))
+                     :guard (and (rp-termp term1)
+                                 (rp-termp term2))))
      ;; term1 should be term, term2 should be rule-lhs
      (let* ((term1 (ex-from-rp term1))
             (term1 (extract-from-synp term1))
@@ -263,8 +263,8 @@
      (declare (xargs :mode :logic
                      :measure (cons-count subterm2)
                      :verify-guards nil
-                     :guard (and (pseudo-term-listp2 subterm1)
-                                 (pseudo-term-listp2 subterm2))))
+                     :guard (and (rp-term-listp subterm1)
+                                 (rp-term-listp subterm2))))
      (if (or (atom subterm1)
              (atom subterm2))
          (equal subterm1 subterm2)
@@ -396,8 +396,6 @@
        (not (consp (cddr x)))))
 
 (defun valid-termp (term context a)
-  (and (pseudo-termp2 term)
-       (rp-syntaxp term)
-       (all-falist-consistent term)
+  (and (rp-termp term)
        (eval-and-all context a)
        (valid-sc term a)))

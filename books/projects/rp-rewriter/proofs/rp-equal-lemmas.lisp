@@ -265,32 +265,32 @@
   :hints (("Goal" :in-theory (enable is-synp))))
 
 (defthm is-rp-pseudo-termp
-  (implies (and (pseudo-termp2 term)
+  (implies (and (rp-termp term)
                 (or (is-rp term)
                     (is-rp-loose term)))
-           (pseudo-termp2 (caddr term)))
+           (rp-termp (caddr term)))
   :hints (("Goal" :in-theory (enable is-rp
                                      is-rp-loose))))
 
-(defthm pseudo-termp2-should-term-be-in-cons-lhs
+(defthm rp-termp-should-term-be-in-cons-lhs
   (implies (and (should-term-be-in-cons lhs term)
-                (pseudo-termp2 lhs))
-           (and (pseudo-termp2 (cadr lhs))
-                (pseudo-termp2 (car lhs))
-                (pseudo-termp2 (caddr lhs))))
+                (rp-termp lhs))
+           (and (rp-termp (cadr lhs))
+                (rp-termp (car lhs))
+                (rp-termp (caddr lhs))))
   :hints (("Goal" :in-theory (enable should-term-be-in-cons))))
 
-(defthm pseudo-termp2-should-term-be-in-cons-term
-  (implies (and (pseudo-termp2 term))
-           (and (pseudo-termp2 (cadr (put-term-in-cons term)))
-                (pseudo-termp2 (car (put-term-in-cons term)))
-                (pseudo-termp2 (caddr (put-term-in-cons term)))))
+(defthm rp-termp-should-term-be-in-cons-term
+  (implies (and (rp-termp term))
+           (and (rp-termp (cadr (put-term-in-cons term)))
+                (rp-termp (car (put-term-in-cons term)))
+                (rp-termp (caddr (put-term-in-cons term)))))
   :hints (("Goal" :in-theory (enable put-term-in-cons))))
 
-(defthm pseudo-termp2-ex-from-rp
-  (implies (pseudo-termp2 term)
-           (and (pseudo-termp2 (ex-from-rp term))
-                (pseudo-termp2 (ex-from-rp-loose term))))
+(defthm rp-termp-ex-from-rp
+  (implies (rp-termp term)
+           (and (rp-termp (ex-from-rp term))
+                (rp-termp (ex-from-rp-loose term))))
   :hints (("Goal"
            :in-theory (e/d (ex-from-rp-loose
                             ex-from-rp
@@ -302,8 +302,8 @@
   nil
   (local
    (defthm pseudo-termp-and-rp-evl-list
-     (implies (and (pseudo-termp2 term1)
-                   (pseudo-termp2 term2)
+     (implies (and (rp-termp term1)
+                   (rp-termp term2)
                    (consp term1)
                    (consp term2)
                    (not (quotep term1))
@@ -334,7 +334,7 @@
      (implies (quotep term)
               (equal (unquote term)
                      (rp-evl term a)))))
-  (local
+  #|(local
    (defthm lemma3
      (implies (and (not (equal (caddr term2) term2))
                    (not (is-rp-loose (caddr term2)))
@@ -343,21 +343,21 @@
                    (equal (car (caddr term2)) 'quote)
                    (consp (cdr (caddr term2)))
                    (not (cddr (caddr term2)))
-                   (pseudo-termp2 term2))
+                   (rp-termp term2))
               (equal (cadr (caddr term2))
                      (rp-evl term2 a)))
      :instructions (:promote (:dive 1)
                              (:rewrite lemma2)
                              :top
-                             :bash :s)))
+                             :bash :s)))||#
 
   (local
    (in-theory (disable rp-evl-of-variable)))
 
   (defthm-rp-equal
     (defthm rp-evl-of-rp-equal
-      (implies (and (pseudo-termp2 term1)
-                    (pseudo-termp2 term2)
+      (implies (and (rp-termp term1)
+                    (rp-termp term2)
                     (rp-equal term1 term2))
                (equal (equal (rp-evl term1 a)
                              (rp-evl term2 a))
@@ -366,8 +366,8 @@
 
     (defthm rp-evl-of-rp-equal-subterms
       (implies (and (rp-equal-subterms subterm1 subterm2)
-                    (pseudo-term-listp2 subterm1)
-                    (pseudo-term-listp2 subterm2))
+                    (rp-term-listp subterm1)
+                    (rp-term-listp subterm2))
                (equal (equal (rp-evl-lst subterm1 a)
                              (rp-evl-lst subterm2 a))
                       t))
@@ -375,8 +375,8 @@
 
   (defthm-rp-equal-loose
     (defthm rp-evl-of-rp-equal-loose
-      (implies (and (pseudo-termp2 term1)
-                    (pseudo-termp2 term2)
+      (implies (and (rp-termp term1)
+                    (rp-termp term2)
                     (rp-equal-loose term1 term2))
                (equal (equal (rp-evl term1 a)
                              (rp-evl term2 a))
@@ -385,8 +385,8 @@
 
     (defthm rp-evl-of-rp-equal-loosesubterms
       (implies (and (rp-equal-loose-subterms subterm1 subterm2)
-                    (pseudo-term-listp2 subterm1)
-                    (pseudo-term-listp2 subterm2))
+                    (rp-term-listp subterm1)
+                    (rp-term-listp subterm2))
                (equal (equal (rp-evl-lst subterm1 a)
                              (rp-evl-lst subterm2 a))
                       t))
@@ -647,10 +647,10 @@
 
   (local
    (defthm lemma5
-     (implies (and (pseudo-termp2 term1)
+     (implies (and (rp-termp term1)
                    (syntaxp (and (equal term1 'term1)
                                  (equal term2 'term2)))
-                   (pseudo-termp2 term2))
+                   (rp-termp term2))
               (equal (equal (rp-evl term1 a)
                             (rp-evl term2 a))
                      (equal (rp-evl (EX-FROM-SYNP (EX-FROM-RP TERM1)) a)
@@ -666,10 +666,10 @@
 
   (local
    (defthm lemma7
-     (implies (and (pseudo-termp2 term)
+     (implies (and (rp-termp term)
                    (quotep term)
                    (consp (unquote term)))
-              (pseudo-term-listp2 (cdr (put-term-in-cons term))))
+              (rp-term-listp (cdr (put-term-in-cons term))))
      :hints (("Goal" :in-theory (enable put-term-in-cons)))))
 
   (local
@@ -713,16 +713,16 @@
   (local
    (defthm lemma9
      (implies (and (should-term-be-in-cons lhs term)
-                   (pseudo-termp2 lhs))
-              (pseudo-term-listp2 (cdr lhs)))
+                   (rp-termp lhs))
+              (rp-term-listp (cdr lhs)))
      :hints (("Goal" :in-theory (enable should-term-be-in-cons)))))
 
   (local
    (defthm lemma10
      (implies (and (consp term)
                    (not (EQUAL (CAR TERM) 'QUOTE))
-                   (pseudo-termp2 term))
-              (pseudo-term-listp2 (cdr term)))))
+                   (rp-termp term))
+              (rp-term-listp (cdr term)))))
 
   (local
    (defthm lemma11
@@ -756,18 +756,18 @@
   (local
    (defthm lemma12-1
      (implies (and
-               (PSEUDO-TERMP2 term1)
+               (RP-TERMP term1)
                (is-cons term1))
-              (PSEUDO-TERMP2 (CADDR term1)))
+              (RP-TERMP (CADDR term1)))
      :hints (("Goal" :in-theory (enable is-cons  )))))
 
   (local
    (defthm lemma12-2
      (implies (and
-               (PSEUDO-TERMP2 term)
+               (RP-TERMP term)
                (QUOTEP TERM)
                (CONSP (UNQUOTE TERM)))
-              (PSEUDO-TERMP2 (CADDR (PUT-TERM-IN-CONS term))))
+              (RP-TERMP (CADDR (PUT-TERM-IN-CONS term))))
      :hints (("Goal"  :in-theory (enable PUT-TERM-IN-CONS  )))))
 
   (local
@@ -781,8 +781,8 @@
 
   (defthm-rp-equal2
     (defthm rp-evl-of-rp-equal2
-      (implies (and (pseudo-termp2 term1)
-                    (pseudo-termp2 term2)
+      (implies (and (rp-termp term1)
+                    (rp-termp term2)
                     (rp-equal2 term1 term2))
                (equal (equal (rp-evl term1 a)
                              (rp-evl term2 a))
@@ -791,15 +791,15 @@
 
     (defthm rp-evl-of-rp-equal2-subterms
       (implies (and (rp-equal2-subterms subterm1 subterm2)
-                    (pseudo-term-listp2 subterm1)
-                    (pseudo-term-listp2 subterm2))
+                    (rp-term-listp subterm1)
+                    (rp-term-listp subterm2))
                (equal (equal (rp-evl-lst subterm1 a)
                              (rp-evl-lst subterm2 a))
                       t))
       :flag rp-equal2-subterms)))
 
 (defthm rp-equal2-of-ex-from-rp
-  (implies (pseudo-termp2 term)
+  (implies (rp-termp term)
            (equal (rp-equal2 term1 (ex-from-rp term2))
                   (rp-equal2 term1 term2)))
   :hints (("Goal" :in-theory (disable ex-from-synp)

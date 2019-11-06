@@ -116,8 +116,7 @@
                                      context-from-rp) ())))))
 
   (defthmd valid-sc-single-step
-    (implies (and (pseudo-termp2 term)
-                  (rp-syntaxp term)
+    (implies (and (rp-termp term)
                   (is-rp term))
              (equal (valid-sc term a)
                     (and (rp-evl `(,(cadr (cadr term)) ,(caddr term))  a)

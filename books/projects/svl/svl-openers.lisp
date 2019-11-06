@@ -24,807 +24,891 @@
 ; Original author: Mertcan Temel <mert@utexas.edu>
 
 
-;; Opener rules for functions defined in svl.lisp
-
 (in-package "SVL")
 
-(include-book "svl")
+(include-book "svl-run")
 
-(defun hons-get-wrapper (key alist)
-  (hons-get  key alist))
-
-(in-theory (enable (:e hons-get)
-                   (:e fast-alist-free)
-                   (:e hons-acons)))
-
-(in-theory (enable (:e svl-run-add-to-queue)))
-
-(defun start-env-wrapper (names vals)
-  (start-env names vals))
-
-(defun initialize-wires-wrapper (env-wires module.wires)
-  (svl-run-initialize-wires env-wires module.wires))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error svl-run-cycle_opener-error
-    (svl-run-cycle module-name inputs delayed-env svl-modules)
-    :vars-to-avoid (delayed-env svl-modules))
-
-  (rp::defthm-lambda
-   svl-run-cycle-opener
-   (implies
-    (and (hons-get-val module-name svl-modules)
-         (well-ranked-module module-name svl-modules))
-    (equal (svl-run-cycle module-name inputs delayed-env svl-modules)
-           (b* ((- (cw "- Using rw-rule svl-run-cycle-opener for module ~p0 ~%" module-name))
-                ((svl-module module) (hons-get-val  module-name svl-modules))
-                ;; create the initial queue of occurances.
-                ((mv queue queue-mem)
-                 (svl-run-add-to-queue
-                  (hons-get-val  ':initial module.listeners)
-                  nil
-                  (* 4 (len module.occs))))
-                ;; initialize unassigned wires to don't care with respect to
-                ;; their size.
-                #|(- (cw "initing the env now ~%"))||#
-                (env-wires (start-env-wrapper module.inputs inputs))
-                #|(- (cw "initing the wires now ~%"))||#
-                ;;(env-wires (initialize-wires-wrapper env-wires module.wires))
-                (env-wires
-                 (svl-run-add-delayed-ins env-wires delayed-env module.delayed-inputs))
-                ;; run the queue.
-                ((mv env-wires next-delayed-env.modules)
-                 (svl-run-queue queue queue-mem delayed-env nil
-                                env-wires module.occs module.listeners
-                                svl-modules
-                                *big-num*))
-                (next-delayed-env (make-svl-env
-                                   :wires (hons-gets-fast-alist
-                                           module.delayed-inputs
-                                           env-wires)
-                                   :modules next-delayed-env.modules))
-                (outputs (svl-get-outputs module.outputs module.wires env-wires))
-                (- (fast-alist-free env-wires)))
-             (mv outputs next-delayed-env))))
-   :hints (("Goal"
-            :do-not-induct t
-            :expand (svl-run-cycle MODULE-NAME inputs DELAYED-ENV svl-modules)
-            :in-theory (e/d ()
-                            (WELL-RANKED-MODULE
-                             SVL-RUN-CYCLE_OPENER-ERROR
-                             hons-get
-                             FAST-ALIST-FREE
-                             EQUAL-OF-SVL-ENV
-                             SVL-ENV->MODULES-OF-SVL-ENV
-                             SVL-ENV->WIRES-OF-SVL-ENV
-                             SVL-ENV->WIRES-OF-SVL-ENV))))))
-(encapsulate
-  nil
+(progn
 
   (def-rw-opener-error
-    start-env_opener-error
-    (start-env names vals))
-
-  (def-rw-opener-error
-    start-env-wrapper_opener-error
-    (start-env-wrapper names vals))
-
-  (defthm start-env-opener-nil
-    (implies (or (atom x)
-                 (atom y))
-             (equal (start-env x y)
-                    nil))
+    svl-start-env-opener-error
+    (svl-start-env wires vals))
+  
+  (defthm svl-start-env-cons-1
+    (equal (svl-start-env (cons `(,wire-name) rest-wires)
+                           (cons val rest-vals))
+           (hons-acons wire-name
+                       val
+                       (svl-start-env rest-wires rest-vals)))
     :hints (("Goal"
-             :expand (start-env x y)
+             :expand (svl-start-env (cons `(,wire-name) rest-wires)
+                                     (cons val rest-vals))
              :in-theory (e/d () ()))))
 
-  (defthm start-env-opener
-    (equal (start-env (cons a b) (cons x y))
-           (hons-acons a x (start-env b y)))
+  (defthm svl-start-env-nil
+    (and (equal (svl-start-env nil vals)
+                nil)
+         (equal (svl-start-env wires nil)
+                nil))
     :hints (("Goal"
-             :expand (start-env (cons a b) (cons x y))
-             :in-theory (e/d () ()))))
+             :in-theory (e/d (svl-start-env) ()))))
 
-  (defthm start-env-opener-with-svex-env-p
-    (equal (start-env (cons a b) (cons x y))
-           (hons-acons a x (start-env b y)))
+  (defthm svl-start-env-cons-2
+    (equal (svl-start-env (cons `(,wire-name ,size . ,start)
+                                 rest-wires)
+                           (cons val rest-vals))
+           (hons-acons wire-name
+                       (bits val start size )
+                       (svl-start-env rest-wires rest-vals)))
     :hints (("Goal"
-             :expand (start-env (cons a b) (cons x y))
-             :in-theory (e/d () ()))))
-
-  (defthm start-env-wrapper-def
-    (implies (and (sv::svarlist-p names)
-                  (sv::4veclist-p vals))
-             (equal (start-env-wrapper names vals)
-                    (start-env names vals))))
-
-  (defthm start-env-returns-svex-env-p
-    (implies (and (sv::4veclist-p vals)
-                  (sv::svarlist-p names))
-             (svex-env-p (start-env names vals)))
-    :hints (("Goal"
-             :in-theory (e/d (start-env) ()))))
-
-  (rp-attach-sc start-env-wrapper-def
-                start-env-returns-svex-env-p))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    hons-gets-vals_opener-error
-    (hons-gets-vals keys alists) :vars-to-avoid (alist))
-
-  (defthm hons-gets-vals-opener-nil
-    (equal (hons-gets-vals nil alist)
-           nil))
-
-  (defthm hons-gets-vals-opener
-    (equal (hons-gets-vals (cons car-keys cdr-keys) alist)
-           (cons (hons-get-val car-keys alist)
-                 (hons-gets-vals cdr-keys
-                                 alist)))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run-occ_opener-error
-    (svl-run-occ occ-name occ rest-queue queue-mem
-                 delayed-env next-delayed-env.modules env-wires
-                 listeners svl-modules)
-    :vars-to-avoid (delayed-env next-delayed-env.modules
-                                env-wires listeners svl-modules))
-
-  (defun add-to-assign-queue-aux (occ-name listeners rest-queue queue-mem)
-    (declare (xargs :guard t))
-    (svl-run-add-to-queue
-     (cdr (hons-get occ-name listeners)) ;;occ-listeners
-     rest-queue
-     (hons-acons occ-name nil queue-mem) ;;queue-mem
-     ))
-
-  (rp::defthm-lambda
-   svl-run-occ-assign-opener
-   (equal (svl-run-occ occ-name (cons ':assign occ-rest) rest-queue queue-mem
-                       delayed-env next-delayed-env.modules env-wires
-                       listeners svl-modules)
-          (b* (((mv rest-queue queue-mem)
-                (add-to-assign-queue-aux occ-name listeners rest-queue
-                                         queue-mem)))
-            #|(svl-run-add-to-queue
-            (cdr (hons-get occ-name listeners)) ;;occ-listeners
-            rest-queue
-            (hons-acons occ-name nil queue-mem) ;;queue-mem
-            )||#
-            (mv (svl-run-save-assign-result
-                 (svex-eval2 (occ-assign->svex2 occ-rest)
-                                env-wires)
-                 (occ-assign->outputs2 occ-rest)
-                 env-wires) ;;env-wires
-                rest-queue queue-mem next-delayed-env.modules)))
-   :hints (("Goal"
-            :Expand ((svl-run-occ occ-name (cons ':assign occ-rest) rest-queue queue-mem
-                                  delayed-env next-delayed-env.modules env-wires
-                                  listeners svl-modules))
-            :in-theory (e/d (occ-kind)
-                            (hons-get
-                             HONS-ACONS
-                             CONS-EQUAL)))))
-
-  (defun add-to-module-queue-aux (occ-name listeners rest-queue queue-mem)
-    (declare (xargs :guard t))
-    (svl-run-add-to-queue (cdr (hons-get occ-name listeners)) rest-queue
-                          (hons-acons occ-name nil queue-mem)))
-
-  (defun module-get-delayed-env-aux (occ-name delayed-env)
-    (declare (xargs :guard (svl-env-p delayed-env)))
-    (b* ((occ-delayed-env (hons-get occ-name (svl-env->modules delayed-env))))
-      (if occ-delayed-env (cdr occ-delayed-env) '(nil nil))))
-
-
-  (rp::defthm-lambda
-   svl-run-occ-module-opener
-   (equal (svl-run-occ occ-name (cons ':module occ-rest) rest-queue  queue-mem
-                       delayed-env next-delayed-env.modules env-wires
-                       listeners svl-modules)
-          (b* (((mv occ.inputs occ.outputs occ.name)
-                (occ-module2 occ-rest))
-               ((mv outputs module-next-delayed-env)
-                (svl-run-cycle occ.name
-                               (svl-run-get-module-occ-inputs env-wires occ.inputs)
-                               (module-get-delayed-env-aux occ-name delayed-env)
-                               svl-modules))
-               ((mv rest-queue queue-mem)
-                (add-to-module-queue-aux occ-name listeners rest-queue queue-mem)))
-            (mv (svl-run-save-module-result env-wires
-                                            outputs
-                                            occ.outputs)
-                rest-queue queue-mem
-                (if (not (equal module-next-delayed-env '(nil nil)))
-                    (hons-acons occ-name module-next-delayed-env next-delayed-env.modules)
-                  next-delayed-env.modules))))
-   :hints (("Goal"
-            :Expand ((svl-run-occ occ-name (cons ':module occ-rest) rest-queue  queue-mem
-                                  delayed-env next-delayed-env.modules env-wires
-                                  listeners svl-modules))
-            :in-theory (e/d (occ-kind)
-                            (hons-get
-                             HONS-ACONS
-                             CONS-EQUAL))))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run-this-queue_opener-error
-    (svl-run-this-queue queue queue-mem delayed-env next-delayed-env.modules
-                        env-wires occs listeners svl-modules limit)
-    :vars-to-avoid (delayed-env next-delayed-env.modules
-                                env-wires
-                                occs listeners svl-modules))
-
-  (defthm svl-run-this-queue-opener-empty-queue-limit-reached
-    (implies (consp queue)
-             (equal (svl-run-this-queue queue
-                                        queue-mem delayed-env
-                                        next-delayed-env.modules env-wires occs listeners
-                                        svl-modules 0)
-                    (progn$
-                     (hard-error
-                      'svl-run-this-queue
-                      "Limit Reached! Possibly a combinational loop between modules. ~%"
-                      nil)
-                     (mv env-wires nil queue-mem
-                         next-delayed-env.modules))))
-    :hints (("Goal"
-             :expand (svl-run-this-queue queue
-                                         queue-mem delayed-env
-                                         next-delayed-env.modules env-wires occs listeners
-                                         svl-modules 0)
-             :in-theory (e/d () ()))))
-
-  (defthm svl-run-this-queue-opener-empty-queue
-    (equal (svl-run-this-queue nil
-                               queue-mem delayed-env
-                               next-delayed-env.modules env-wires occs listeners
-                               svl-modules limit)
-           (mv env-wires  nil  queue-mem next-delayed-env.modules))
-    :hints (("Goal"
-             :expand ((svl-run-this-queue nil
-                                          queue-mem delayed-env
-                                          next-delayed-env.modules env-wires occs listeners
-                                          svl-modules limit))
-             :in-theory (e/d () ()))))
-
-  (rp::defthm-lambda
-   svl-run-this-queue-opener-unempty-queue-occ-not-found
-   (implies (and (not (zp limit))
-                 (not (hons-get queue-first occs)))
-            (equal (svl-run-this-queue (cons queue-first queue-rest)
-                                       queue-mem delayed-env
-                                       next-delayed-env.modules env-wires occs listeners
-                                       svl-modules limit)
-                   (b* (((mv env-wires ?rest-queue queue-mem next-delayed-env.modules)
-                         (svl-run-this-queue
-                          queue-rest queue-mem delayed-env next-delayed-env.modules  env-wires occs listeners
-                          svl-modules (1- limit))))
-                     (progn$
-                      (hard-error
-                       'svl-run-this-queue
-                       "The occ found in the queue does not exist in the occ list ~%"
-                       nil)
-                      (mv env-wires nil queue-mem
-                          next-delayed-env.modules)))))
-   :hints (("Goal"
-            :expand ((svl-run-this-queue (cons queue-first queue-rest)
-                                         queue-mem delayed-env
-                                         next-delayed-env.modules env-wires occs listeners
-                                         svl-modules limit))
-            :in-theory (e/d () ()))))
-
-  (rp::defthm-lambda
-   svl-run-this-queue-opener-unempty-queue
-   (implies
-    (and (not (zp limit))
-         (hons-get queue-first occs))
-    (equal (svl-run-this-queue (cons queue-first queue-rest)
-                               queue-mem delayed-env
-                               next-delayed-env.modules env-wires occs listeners
-                               svl-modules limit)
-           (b* (((mv env-wires rest-queue queue-mem next-delayed-env.modules)
-                 (svl-run-this-queue
-                  queue-rest queue-mem delayed-env next-delayed-env.modules  env-wires occs listeners
-                  svl-modules (1- limit))))
-             (svl-run-occ queue-first (hons-get-val queue-first occs) rest-queue queue-mem
-                          delayed-env next-delayed-env.modules
-                          env-wires listeners svl-modules))))
-   :hints (("Goal"
-            :expand ((svl-run-this-queue (cons queue-first queue-rest)
-                                         queue-mem delayed-env
-                                         next-delayed-env.modules env-wires occs listeners
-                                         svl-modules limit))
-            :in-theory (e/d () ())))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run-queue_opener-error
-    (svl-run-queue queue queue-mem delayed-env
-                   next-delayed-env.modules env-wires occs
-                   listeners svl-modules limit)
-    :vars-to-avoid (delayed-env next-delayed-env.modules
-                                env-wires
-                                occs listeners svl-modules))
-  (defthm svl-run-queue-limit-reached
-    (implies (consp queue)
-             (equal (svl-run-queue queue queue-mem delayed-env next-delayed-env.modules
-                                   env-wires occs listeners svl-modules 0)
-                    (progn$
-                     (hard-error
-                      'svl-run-queue
-                      "Limit Reached! Possibly a combinational loop between modules. ~%"
-                      nil)
-                     (mv env-wires next-delayed-env.modules))))
-    :hints (("Goal"
-             :expand (svl-run-queue queue queue-mem delayed-env next-delayed-env.modules
-                                    env-wires occs listeners svl-modules 0)
-             :in-theory (e/d () ()))))
-
-  (defthm svl-run-queue-empty-queue
-    (equal (svl-run-queue nil queue-mem delayed-env next-delayed-env.modules
-                          env-wires occs listeners svl-modules limit)
-           (progn$ (fast-alist-free queue-mem)
-                   (mv env-wires next-delayed-env.modules)))
-    :hints (("Goal"
-             :expand (svl-run-queue nil queue-mem delayed-env next-delayed-env.modules
-                                    env-wires occs listeners svl-modules limit)
-             :in-theory (e/d () ()))))
-
-  (rp::defthm-lambda
-   svl-run-queue-unempty-queue
-   (implies
-    (and (not (zp limit))
-         (consp queue))
-    (equal (svl-run-queue queue queue-mem delayed-env next-delayed-env.modules
-                          env-wires occs listeners svl-modules limit)
-           (b* (((mv env-wires new-queue queue-mem next-delayed-env.modules)
-                 (svl-run-this-queue queue queue-mem delayed-env
-                                     next-delayed-env.modules env-wires occs
-                                     listeners svl-modules (1- limit))))
-
-             (svl-run-queue new-queue queue-mem delayed-env
-                            next-delayed-env.modules env-wires occs
-                            listeners svl-modules (1- limit)))))
-   :hints (("Goal"
-            :expand (svl-run-queue queue queue-mem delayed-env next-delayed-env.modules
-                                   env-wires occs listeners svl-modules limit)
-            :in-theory (e/d ()
-                            (CONS-EQUAL))))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run_opener-error
-    (svl-run module-name inputs svl-design)
-    :vars-to-avoid (svl-design))
-
-  (rp::defthm-lambda
-   svl-run-opener
-   (equal (svl-run module-name inputs svl-design)
-          (b* (((mv res next-delayed-env)
-                (svl-run-cycle module-name
-                               inputs
-                               (make-svl-env)
-                               svl-design))
-               (- (svl-free-env module-name next-delayed-env svl-design 1000000)))
-            (mv (fast-alist-free res)
-                next-delayed-env)))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run-add-delayed-ins_opener-error
-    (svl-run-add-delayed-ins env-wires delayed-env occ-delayed-ins)
-    :vars-to-avoid
-    (env-wires delayed-env))
-
-  (defthm svl-run-add-delayed-ins-no-delayed-input
-    (equal (svl-run-add-delayed-ins env-wires delayed-env nil)
-           env-wires)
-    :hints (("Goal"
-             :expand (svl-run-add-delayed-ins env-wires delayed-env nil)
-             :in-theory (e/d () ()))))
-
-  (rp::defthm-lambda
-   svl-run-add-delayed-ins-cons
-   (equal (svl-run-add-delayed-ins env-wires delayed-env (cons first rest))
-          (b* ((prev-val (hons-get-val first (svl-env->wires delayed-env)))
-               ((unless prev-val)
-                (svl-run-add-delayed-ins env-wires delayed-env rest)))
-            (svl-run-add-delayed-ins (hons-acons `(:var ,first
-                                                        . 1)
-                                                 prev-val
-                                                 env-wires)
-                                     delayed-env
-                                     rest)))
-   :hints (("Goal"
-            :expand (svl-run-add-delayed-ins env-wires delayed-env (cons first rest))
-            :in-theory (e/d () ())))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run-initialize-wires_opener-error
-    (svl-run-initialize-wires env-wires wires))
-
-  (def-rw-opener-error
-    initialize-wires-wrapper_opener-error
-    (initialize-wires-wrapper env-wires wires))
-
-  (defthm svl-run-initialize-wires-opener-nil
-    (equal (svl-run-initialize-wires env-wires nil)
-           env-wires)
-    :hints (("Goal"
-             :expand (svl-run-initialize-wires env-wires nil)
-             :in-theory (e/d () ()))))
-
-  (defthm svl-run-initialize-wires-opener-cons
-    (equal (svl-run-initialize-wires env-wires (cons wire rest))
-           (if (hons-get  (wire-name wire) env-wires)
-               (svl-run-initialize-wires env-wires rest)
-             (hons-acons
-              (wire-name wire)
-              (4vec-part-select 0 (ifix (wire-size wire))
-                                '(-1 . 0))
-              (svl-run-initialize-wires env-wires rest))))
-    :hints (("Goal"
-             :expand (svl-run-initialize-wires env-wires (cons wire rest))
-             :in-theory (e/d (HONS-ASSOC-EQUAL hons-get ) ()))))
-
-  (defthm svl-run-initialize-wires-is-svex-env-p
-    (implies (and (svex-env-p env-wires)
-                  (wire-list-p module.wires))
-             (svex-env-p (svl-run-initialize-wires env-wires module.wires))))
-
-  (defthm initialize-wires-wrapper-def
-    (implies (and (svex-env-p env-wires)
-                  (wire-list-p module.wires))
-             (equal (initialize-wires-wrapper env-wires module.wires)
-                    (svl-run-initialize-wires env-wires module.wires))))
-
-  (rp-attach-sc initialize-wires-wrapper-def
-                svl-run-initialize-wires-is-svex-env-p))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-run-save-module-result_opener-error
-    (svl-run-save-module-result env-wires occ-res-vals occ-outs)
-    :vars-to-avoid (env-wires))
-
-  (defthm svl-run-save-module-result-opener-0
-    (equal (svl-run-save-module-result env-wires occ-res-vals (cons first rest))
-           (b* ((wire (wire-fix (cdr first)))
-                (new-val (if (consp occ-res-vals) (car occ-res-vals) '(-1 . 0))))
-             (svl-run-save-module-result
-              (svl-update-wire wire new-val env-wires)
-              (cdr occ-res-vals)
-              rest)))
-    :hints (("Goal"
-             :expand (svl-run-save-module-result env-wires occ-res-vals (cons first rest))
-             :in-theory (e/d () ()))))
-
-  (defthm svl-run-save-module-result-opener
-    (equal (svl-run-save-module-result env-wires (cons first-vals rest-vals) (cons first rest))
-           (b* ((wire (wire-fix (cdr first)))
-                (new-val first-vals))
-             (svl-run-save-module-result
-              (svl-update-wire wire new-val env-wires)
-              rest-vals
-              rest)))
-    :hints (("Goal"
-             :expand (svl-run-save-module-result env-wires (cons first-vals rest-vals) (cons first rest))
-             :in-theory (e/d () ()))))
-
-  (defthm svl-run-svl-run-save-module-result-opener-nil
-    (equal (svl-run-save-module-result env-wires occ-res-alist nil)
-           env-wires)
-    :hints (("Goal"
-             :expand (svl-run-save-module-result env-wires occ-res-alist nil)
+             :expand (svl-start-env (cons `(,wire-name ,size . ,start)
+                                           rest-wires)
+                                     (cons val rest-vals))
              :in-theory (e/d () ())))))
 
-(encapsulate
-  nil
+(progn
 
   (def-rw-opener-error
-    svl-run-get-module-occ-inputs_opener-error
-    (svl-run-get-module-occ-inputs env-wires occ-ins)
+    svl-retrieve-values-opener-error
+    (svl-retrieve-values wires env-wires)
     :vars-to-avoid (env-wires))
-
-  (defthm
-    svl-run-get-module-occ-inputs-opener-nil
-    (equal (svl-run-get-module-occ-inputs env-wires  nil)
+  
+  (defthm svl-retrieve-values-nil
+    (equal (svl-retrieve-values nil env-wires)
            nil)
     :hints (("Goal"
-             :expand (svl-run-get-module-occ-inputs env-wires  nil)
+             :in-theory (e/d (svl-retrieve-values) ()))))
+
+  (defthm svl-retrieve-values-cons-1
+    (equal (svl-retrieve-values (cons `(,wire-name) rest) env-wires)
+           (cons (entry-4vec-fix (hons-get wire-name env-wires))
+                 (svl-retrieve-values rest env-wires)))
+    #|(if (hons-get wire-name env-wires)
+    (cdr (hons-get wire-name env-wires)) ;
+    (sv::4vec-x))||#
+    :hints (("Goal"
+             :expand (svl-retrieve-values (cons `(,wire-name) rest) env-wires)
              :in-theory (e/d () ()))))
 
-  (rp::defthm-lambda
-   svl-run-get-module-occ-inputs-opener
-   (equal (svl-run-get-module-occ-inputs env-wires (cons first rest))
-          (b* ((wire (wire-fix (cdr first)))
-               (val (hons-get (wire-name wire) env-wires)))
-            (cons (if val
-                      (if (wire-start wire)
-                          (bits (cdr val) (wire-start wire) (wire-size wire) )
-                        (cdr val))
-                    '(-1 . 0))
-                  (svl-run-get-module-occ-inputs env-wires rest))))
-   :hints (("Goal"
-            :expand (svl-run-get-module-occ-inputs
-                     env-wires  (cons first rest))
-            :in-theory (e/d () ())))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    make-fast-alist_opener-error
-    (make-fast-alist alist))
-
-  (defthm make-alist-def-nil
-    (equal (make-fast-alist nil)
-           nil))
-
-  (defthm make-fast-alist-def
-    (equal (make-fast-alist (cons (cons a b) rest))
-           (hons-acons a b (make-fast-alist rest))))
-
-  (defthm make-fast-alist-ignore-def
-    (implies (syntaxp (and (consp x)
-                           (equal (car x) 'falist)))
-             (equal (make-fast-alist x)
-                    x))))
-
-(encapsulate
-  nil
-
-  #|(def-rw-opener-error
-    mv-nth_opener-error
-    (mv-nth n term))||#
-
-  (defthm mv-nth-def-1
-    (implies (not (zp n))
-             (equal (mv-nth n (cons a b))
-                    (mv-nth (1- n) b)))
+  (defthm svl-retrieve-values-cons-2
+    (equal (svl-retrieve-values (cons `(,wire-name ,w . ,s) rest) env-wires)
+           (cons (bits (entry-4vec-fix (hons-get wire-name env-wires)) s w )
+                 (svl-retrieve-values rest env-wires)))
+    #|(if (hons-get wire-name env-wires)
+    (cdr (hons-get wire-name env-wires)) ;
+    (sv::4vec-x))||#
     :hints (("Goal"
-             :expand (mv-nth n (cons a b))
-             :in-theory (e/d () ()))))
+             :expand (svl-retrieve-values (cons `(,wire-name ,w . ,s) rest) env-wires)
+             :in-theory (e/d ()
+                             (entry-4vec-fix))))))
 
-  (defthm mv-nth-def-0
-    (equal (mv-nth 0 (cons a b))
-           a)
-    :hints (("Goal"
-             :expand (mv-nth 0 (cons a b))
-             :in-theory (e/d () ()))))
+#|
+(defthm save-lhs-to-env-wires-nil
+  (equal (save-lhs-to-env-wires val nil env-wires)
+         env-wires)
+  :hints (("Goal"
+           :expand (save-lhs-to-env-wires val nil env-wires)
+           :in-theory (e/d () ()))))
 
-  (defthm mv-nth-def-nil
-    (equal (mv-nth n nil)
-           nil)
-    :hints (("Goal"
-             :expand (mv-nth n nil)
-             :in-theory (e/d () ())))))
-
-(encapsulate
-  nil
-  (def-rw-opener-error
-    hons-gets-fast-alist_opener-error
-    (hons-gets-fast-alist keys fast-alist)
-    :vars-to-avoid (fast-alist))
-
-  (defthm hons-gets-fast-alist-opener-cons
-    (equal (hons-gets-fast-alist (cons f r) fast-alist)
-           (hons-acons f
-                       (if (hons-get f fast-alist)
-                           (hons-get-val f fast-alist)
-                         (sv::4vec-x))
-                       (hons-gets-fast-alist r fast-alist)))
-    :hints (("Goal"
-             :in-theory (e/d (hons-gets-fast-alist) ()))))
-
-  (defthm hons-gets-fast-alist-opener-nil
-    (equal (hons-gets-fast-alist nil fast-alist)
-           nil)
-    :hints (("Goal"
-             :in-theory (e/d (hons-gets-fast-alist) ())))))
-
-(encapsulate
-  nil
-
-  (def-rw-opener-error
-    svl-get-outputs_opener-error
-    (svl-get-outputs sigs wires alist)
-    :vars-to-avoid (alist))
-
-  (defthm svl-get-outputs-nil
-    (equal (svl-get-outputs nil wires alist)
-           nil)
-    :hints (("Goal"
-             :in-theory (e/d (svl-get-outputs) ()))))
-
-  (rp::defthm-lambda
-   svl-get-outputs-opener
-   (equal (svl-get-outputs (cons sig rest) wires alist)
-          (b*  ((res (hons-get sig alist))
-                ((unless res)
-                 (cons (sv::4vec-x)
-                       (svl-get-outputs rest wires alist)))
-                (wire (assoc-equal sig wires)))
-            (cons (if (and (cadr wire) res)
-                      (bits (cdr res) 0 (cadr wire) )
-                    (cdr res))
-                  (svl-get-outputs rest wires alist))))
-   :hints (("goal"
-            :in-theory (e/d (svl-get-outputs) ())))))
-
-(encapsulate
-  nil
-  (def-rw-opener-error
-    svl-run-save-assign-result_opener-error
-    (svl-run-save-assign-result result occ-outs env-wires)
-    :vars-to-avoid (env-wires))
-
-  (defthm svl-run-save-assign-result-nil
-    (equal (svl-run-save-assign-result result nil env-wires)
-           env-wires)
-    :hints (("goal"
-             :expand (svl-run-save-assign-result result nil env-wires)
-             :in-theory (e/d () ()))))
-
-  (defthm svl-run-save-assign-result-cons
-    (equal (svl-run-save-assign-result result (cons wire rest) env-wires)
-           (b* ((size (if (wire-size wire) (wire-size wire) 1))
-                (env-wires (svl-update-wire wire result env-wires)))
-             (svl-run-save-assign-result (4vec-rsh size result)
+(defthm save-lhs-to-env-wires-cons-1
+  (implies (and (posp w))
+           (equal (save-lhs-to-env-wires val (cons (cons w :z) rest) env-wires)
+                  (save-lhs-to-env-wires (4vec-rsh w val)
                                          rest
                                          env-wires)))
-    :hints (("goal"
-             :in-theory (e/d (svl-run-save-assign-result) ()))))
+  :hints (("Goal"
+           :expand (save-lhs-to-env-wires val (cons (cons w :z) rest) env-wires)
+           :in-theory (e/d (SV::LHRANGE->ATOM
+                            SV::LHRANGE->W
+                            SV::LHATOM-VAR->NAME) ()))))
 
-  (defthm svl-run-save-assign-result-cons-2
-    (equal (svl-run-save-assign-result result (cons wire nil) env-wires)
-           (b* ((env-wires (svl-update-wire wire result env-wires)))
-             env-wires))
-    :hints (("goal"
-             :in-theory (e/d (svl-run-save-assign-result) ())))))
+(defthm save-lhs-to-env-wires-cons-2
+  (implies t
+           (equal (save-lhs-to-env-wires val (cons :z rest) env-wires)
+                  (save-lhs-to-env-wires (4vec-rsh 1 val)
+                                         rest
+                                         env-wires)))
+  :hints (("Goal"
+           :expand (save-lhs-to-env-wires val (cons :z rest) env-wires)
+           :in-theory (e/d (SV::LHRANGE->ATOM
+                            SV::LHRANGE->W
+                            SV::LHATOM-VAR->NAME) ()))))
+
+(defthm save-lhs-to-env-wires-cons-3
+  (implies (and (posp w))
+           (equal (save-lhs-to-env-wires val
+                                         (cons (cons w atom) rest)
+                                         env-wires)
+                  (save-lhs-to-env-wires (4vec-rsh w val)
+                                         rest
+                                         env-wires)))
+  :hints (("Goal"
+           :expand (save-lhs-to-env-wires val (cons :z rest) env-wires)
+           :in-theory (e/d (SV::LHRANGE->ATOM
+                            SV::LHRANGE->W
+                            SV::LHATOM-VAR->NAME) ()))))
+||#
+
+(progn
+
+  (def-rw-opener-error
+    save-wires-to-env-wires-opener-error
+    (save-wires-to-env-wires val wires env-wires)
+    :vars-to-avoid (env-wires))
+  
+  (defthm save-wires-to-env-wires-cons-1
+    (equal (save-wires-to-env-wires val (cons `(,wire-name) rest) env-wires)
+           (hons-acons wire-name val env-wires))
+    :hints (("Goal"
+             :Expand (save-wires-to-env-wires val (cons `(,wire-name) rest) env-wires)
+             :in-theory (e/d () ()))))
+
+  (defthm save-wires-to-env-wires-nil
+    (equal (save-wires-to-env-wires val nil env-wires)
+           env-wires)
+    :hints (("Goal"
+             :expand (save-wires-to-env-wires val nil env-wires)
+             :in-theory (e/d () ()))))
+
+  (defthm save-wires-to-env-wires-cons-2
+    (equal (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) rest) env-wires)
+           (hons-acons
+            wire-name
+            (sbits s w val (entry-4vec-fix (hons-get wire-name env-wires)))
+            (save-wires-to-env-wires (4vec-rsh w val)
+                                     rest
+                                     env-wires)))
+    :hints (("Goal"
+             :Expand (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) rest) env-wires)
+             :in-theory (e/d () ()))))
+
+  (defthm save-wires-to-env-wires-cons-3
+    (equal (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) nil) env-wires)
+           (hons-acons
+            wire-name
+            (sbits s w val (entry-4vec-fix (hons-get wire-name env-wires)))
+            env-wires))
+    :hints (("Goal"
+             :Expand (save-wires-to-env-wires val (cons `(,wire-name ,w . ,s) rest) env-wires)
+             :in-theory (e/d () ())))))
+
+
+
+(progn
+  (defthm svex-env-append-opener-cons
+    (equal (svex-env-append (cons x rest) lst2)
+           (hons-acons (car x) (cdr x)
+                       (svex-env-append rest lst2)))
+    :hints (("Goal"
+             :in-theory (e/d (svex-env-append) ()))))
+
+  (defthm svex-env-append-opener-nil
+    (equal (svex-env-append nil lst2)
+           lst2)
+    :hints (("Goal"
+             :in-theory (e/d (svex-env-append) ())))))
+
+(progn
+  (defthm create-next-env-for-wires-opener-nil
+    (equal (create-next-env-for-wires nil env-wires)
+           nil)
+    :hints (("Goal"
+             :in-theory (e/d (create-next-env-for-wires) ()))))
+
+  (defthm create-next-env-for-wires-opener-cons
+    (equal (create-next-env-for-wires (cons x rest) env-wires)
+           (acons x
+                  (entry-4vec-fix (hons-get (sv::change-svar x :delay 0)
+                                            env-wires))
+                  (create-next-env-for-wires rest env-wires)))
+    :hints (("Goal"
+             :in-theory (e/d (create-next-env-for-wires) ())))))
+
+(progn
+
+  (def-rw-opener-error
+    svl-save-mod-outputs-opener-error
+    (svl-save-mod-outputs vals wire-list-list env-wires)
+    :vars-to-avoid (env-wires))
+  
+  (defthm svl-save-mod-outputs-nil
+    (and (equal (svl-save-mod-outputs nil wire-list-list env-wires)
+                env-wires)
+         (equal (svl-save-mod-outputs vals nil env-wires)
+                env-wires))
+    :hints (("Goal"
+             :in-theory (e/d (svl-save-mod-outputs) ()))))
+
+  (defthm svl-save-mod-outputs-cons
+    (equal (svl-save-mod-outputs (cons val1 rest-vals)
+                                  (cons wires rest-wires)
+                                  env-wires)
+           (b* ((env-wires (save-wires-to-env-wires val1
+                                                    wires
+                                                    env-wires)))
+             (svl-save-mod-outputs rest-vals
+                                    rest-wires
+                                    env-wires)))
+    :hints (("Goal"
+             :in-theory (e/d (svl-save-mod-outputs) ())))))
+
+
+(encapsulate
+  nil
+  (local
+   (in-theory (enable SVL-MODULE-ALIST-P
+                      SVL-OCC-P
+                      SVL-MODULE-P)))
+  
+  (define svl-get-module-rank$ ((modname sv::modname-p)
+                                 (modules svl-module-alist-p))
+    (b* ((module (assoc-equal modname modules)))
+      (if module
+          (nfix (cdr (std::da-nth 0 (cdr module))))
+        0)))
+
+  (define svl-get-max-occ-rank$ ((occs svl-occ-alist-p)
+                                  (modules svl-module-alist-p))
+    (cond ((atom occs)
+           0)
+          ((equal (car (cdar occs)) ':assign)
+           (svl-get-max-occ-rank$ (cdr occs)
+                                   modules))
+          (t (max (svl-get-module-rank$ (STD::DA-NTH 2 (CDR  (cdar occs))) modules)
+                  (svl-get-max-occ-rank$ (cdr occs) modules)))))
+
+  (define svl-well-ranked-module$ ((modname sv::modname-p)
+                                    (modules svl-module-alist-p)) 
+    (and (assoc-equal modname modules)
+         (> (svl-get-module-rank$ modname modules)
+            (svl-get-max-occ-rank$ (CDR (STD::DA-NTH 4
+                                                      (cdr (assoc-equal modname modules))))
+                                    modules)))))
+
+(memoize 'svl-well-ranked-module$)
 
 (encapsulate
   nil
 
+  (local
+   (defthm svl-get-module-rank$-is-svl-get-module-rank
+     (implies (and (sv::modname-p modname)
+                   (svl-module-alist-p modules))
+              (equal (svl-get-module-rank$ modname modules)
+                     (svl-get-module-rank modname modules)))
+     :hints (("Goal"
+              :in-theory (e/d (svl-get-module-rank$
+                               svl-get-module-rank
+                               SVL-MODULE->RANK) ())))))
+
+  (local
+   (defthm svl-get-max-occ-rank$-is-svl-get-max-occ-rank
+     (implies (and (svl-occ-alist-p occs)
+                   (svl-module-alist-p modules))
+              (equal (svl-get-max-occ-rank$ occs modules)
+                     (svl-get-max-occ-rank occs modules)))
+     :hints (("Goal"
+              :do-not-induct t
+              :induct (svl-get-max-occ-rank$ occs modules)
+              :in-theory (e/d (svl-get-max-occ-rank$
+                               SVL-OCC-KIND
+                               SV::MODNAME-FIX
+                               SVL-OCC-MODULE->NAME
+                               SV::MODNAME-P
+                               SVL-OCC-ALIST-P
+                               SVL-OCC-P
+                               svl-get-max-occ-rank) ())))))
+
+  (local
+   (defthm SVL-MODULE-P-implies
+     (implies (SVL-MODULE-P x)
+              (svl-occ-alist-p (CDR (CADR (CDDDR x)))))
+     :hints (("Goal"
+              :in-theory (e/d (SVL-MODULE-P) ())))))
+
+  (local
+   (defthm lemma1
+     (implies (and (svl-module-alist-p modules)
+                   (ASSOC-EQUAL MODNAME MODULES))
+              (SVL-MODULE-P  (cdr  (ASSOC-EQUAL MODNAME MODULES))))))
+
+  (defthm svl-well-ranked-module-is-svl-well-ranked-module$
+    (implies (and (sv::modname-p modname)
+                  (svl-module-alist-p modules))
+             (equal
+              (svl-well-ranked-module modname modules)
+              (svl-well-ranked-module$ modname modules)))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (svl-well-ranked-module
+                              SVL-MODULE->OCCS
+                              svl-well-ranked-module$)
+                             ())))))
+
+(def-rw-opener-error
+  svl-run-phase-opener-error
+  (svl-run-phase modname inputs delayed-env modules)
+  :vars-to-avoid (modules))
+
+(def-rw-opener-error
+  svl-run-phase-occs-opener-error
+  (svl-run-phase-occs occs env-wires delayed-env modules)
+  :vars-to-avoid (modules
+                  env-wires
+                  delayed-env))
+
+(acl2::defines
+ svl-run-phase$
+ :flag-defthm-macro defthm-svl-run-phase$
+ (define svl-run-phase$ (modname
+                          inputs
+                          delayed-env
+                          modules)
+   :verify-guards nil
+   :flag svl-run-phase$
+   :measure (acl2::nat-list-measure
+             (list (svl-get-module-rank$ modname; (sv::modname-fix modname)
+                                          modules;(svl-module-alist-fix modules)
+                                          )
+                   (cons-count modname;(sv::modname-fix modname)
+                               )))
+   :hints (("Goal"
+            :in-theory (e/d (rp::measure-lemmas
+                             SVL-GET-MAX-OCC-RANK$
+                             SVL-WELL-RANKED-MODULE$) ())))
+
+   (cond ((not (svl-well-ranked-module$ modname modules)) ;; for termination
+          (mv nil (make-svl-env)))
+         (t
+          (b* ((x (cdr (assoc-equal modname modules)))
+               (env-wires (svl-start-env (CDR (STD::DA-NTH 1 X)) inputs))
+               (env-wires
+                (svex-env-append (svl-env->wires delayed-env)
+                                 env-wires))
+                #|(svl-run-add-delayed-ins env-wires delayed-env
+                                         (CDR (STD::DA-NTH 2 X)))||#
+               ((mv env-wires next-delayed-env.modules)
+                (svl-run-phase-occs$ (CDR (STD::DA-NTH 4 X))
+                                      env-wires
+                                      (svl-env->modules delayed-env)
+                                      modules))
+               (out-vals (svl-retrieve-values (CDR (STD::DA-NTH 3 X))
+                                               env-wires))
+               (next-delayed-env (make-svl-env
+                                  :wires (create-next-env-for-wires
+                                          (CDR (STD::DA-NTH 2 X))
+                                          env-wires)
+                                  :modules next-delayed-env.modules))
+               (- (fast-alist-free env-wires)))
+            (mv out-vals
+                next-delayed-env)))))
+
+ (define svl-run-phase-occs$ (occs
+                               env-wires
+                               delayed-env-alist
+                               modules)
+   :measure (acl2::nat-list-measure
+             (list (svl-get-max-occ-rank$ occs;(svl-occ-alist-fix occs)
+                                           modules;(svl-module-alist-fix modules)
+                                           )
+                   (cons-count occs;(svl-occ-alist-fix occs)
+                               )))
+   :flag svl-run-phase-occs$
+   (let ((occ-name (caar occs))
+         (occ (cdar occs)))
+     (cond ((atom occs)
+            (mv env-wires nil))
+           ((equal (car occ) ':assign)
+            (b* ((env-wires (hons-acons (STD::DA-NTH 0 (CDR occ))
+                                        (svex-eval-wog (std::da-nth 1 (cdr occ))
+                                                    env-wires)
+                                        env-wires)))
+              (svl-run-phase-occs$ (cdr occs)
+                                    env-wires
+                                    delayed-env-alist
+                                    modules)))
+           (t (b* ((mod-input-vals (svexlist-eval-wog (STD::DA-NTH 0 (CDR occ))
+                                                   env-wires))
+                   (mod.delayed-env (entry-svl-env-fix (hons-get occ-name delayed-env-alist)))
+
+                   ((mv mod-output-vals mod-delayed-env)
+                    (svl-run-phase$ (std::da-nth 2 (cdr occ))
+                                     mod-input-vals
+                                     mod.delayed-env
+                                     modules))
+                   (env-wires (svl-save-mod-outputs mod-output-vals
+                                                     (STD::DA-NTH 1 (CDR occ))
+                                                     env-wires))
+                   ((mv env-wires rest-delayed-env)
+                    (svl-run-phase-occs$ (cdr occs)
+                                          env-wires
+                                          delayed-env-alist
+                                          modules)))
+                (mv env-wires
+                    (if (not (equal mod-delayed-env (make-svl-env)))
+                        (hons-acons occ-name
+                                    mod-delayed-env
+                                    rest-delayed-env)
+                      rest-delayed-env)))))))
+ ///
+
+
+ (local
+  (defthm SVL-OCC-kind-redef
+    (implies (and (SVL-OCC-P x))
+             (equal (svl-occ-kind x)
+                    (car x)))
+    :hints (("Goal"
+             :in-theory (e/d (svl-occ-module->inputs
+                              SVL-OCC-KIND
+                              SVL-OCC-P) ())))))
+
+ (local
+  (defthm SVL-OCC-MODULE->INPUTS-redef
+    (implies (and (SVL-OCC-P x)
+                  (not (EQUAL (SVL-OCC-KIND X) :assign)))
+             (equal (svl-occ-module->inputs x)
+                    (STD::DA-NTH 0 (CDR X))))
+    :hints (("Goal"
+             :in-theory (e/d (svl-occ-module->inputs
+                              SVL-OCC-KIND
+                              SVL-OCC-P) ())))))
+
+ (local
+  (defthm SVL-OCC-MODULE->name-redef
+    (implies (and (SVL-OCC-P x)
+                  (not (EQUAL (SVL-OCC-KIND X) :assign)))
+             (equal (SVL-OCC-MODULE->NAME x)
+                    (STD::DA-NTH 2 (CDR X))))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-OCC-MODULE->NAME
+                              SVL-OCC-KIND
+                              SVL-OCC-P) ())))))
+
+ (local
+  (defthm lemma1
+    (implies (and (consp occs)
+                  (NOT (EQUAL (CADR (CAR OCCS)) :ASSIGN))
+                  (SVL-OCC-ALIST-P OCCS))
+             (and (SVEXLIST-P (CADDR (CAR OCCS)))
+                  (SV::MODNAME-P (CAR (CDDDDR (CAR OCCS))))))
+    :hints (("Goal"
+             :expand (SVL-OCC-ALIST-P OCCS)
+             :do-not-induct t
+             :in-theory (e/d (SVL-OCC-ALIST-P
+                              SVL-OCC-P) ())))))
+
+ (local
+  (defthm lemma2
+    (implies (and (consp occs)
+                  (EQUAL (CADR (CAR OCCS)) :ASSIGN)
+                  (SVL-OCC-ALIST-P OCCS))
+             (and (SVEX-P (CADDDR (CAR OCCS)))
+                  ))
+    :hints (("Goal"
+             :expand (SVL-OCC-ALIST-P OCCS)
+             :do-not-induct t
+             :in-theory (e/d (SVL-OCC-ALIST-P
+                              SVL-OCC-P) ())))))
+
+ (local
+  (defthm SVL-OCC-MODULE->outputs-redef
+    (implies (and (SVL-OCC-P x)
+                  (not (EQUAL (SVL-OCC-KIND X) :assign)))
+             (equal (svl-occ-module->outputs x)
+                    (STD::DA-NTH 1 (CDR X))))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-OCC-MODULE->OUTPUTS
+                              SVL-OCC-KIND
+                              SVL-OCC-P) ())))))
+
+ (local
+  (defthm SVL-OCC-ASSIGN-redef
+    (implies (and (SVL-OCC-P x)
+                  (EQUAL (SVL-OCC-KIND X) :assign))
+             (and (equal (SVL-OCC-ASSIGN->OUTPUT x)
+                         (STD::DA-NTH 0 (CDR X)))
+                  (equal (SVL-OCC-ASSIGN->svex x)
+                         (STD::DA-NTH 1 (CDR X)))))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-OCC-ASSIGN->OUTPUT
+                              SVL-OCC-ASSIGN->svex
+                              SVL-OCC-KIND
+                              SVL-OCC-P) ())))))
+
+ (defthm wire-list-fix-def
+   (implies (wire-list-p x)
+            (equal (wire-list-fix x)
+                   x)))
+
+ (local
+  (defthm SVL-MODULE->OUTPUTS-redef
+    (implies (SVL-MODULE-P x)
+             (equal (SVL-MODULE->OUTPUTS x)
+                    (CDR (STD::DA-NTH 3 X))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (SVL-MODULE->OUTPUTS
+                              SVL-MODULE-P) ())))))
+
+ (local
+  (defthm SVL-MODULE->occs-redef
+    (implies (SVL-MODULE-P x)
+             (equal (SVL-MODULE->occs x)
+                    (CDR (STD::DA-NTH 4 X))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (SVL-MODULE->occs
+                              SVL-MODULE-P) ())))))
+
+ (local
+  (defthm SVL-MODULE->inputs-redef
+    (implies (SVL-MODULE-P x)
+             (equal (SVL-MODULE->inputs x)
+                    (CDR (STD::DA-NTH 1 X))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (SVL-MODULE->inputs
+                              SVL-MODULE-P) ())))))
+
+ (local
+  (defthm SVL-MODULE->delayed-inputs-redef
+    (implies (SVL-MODULE-P x)
+             (equal (SVL-MODULE->delayed-inputs x)
+                    (CDR (STD::DA-NTH 2 X))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (SVL-MODULE->delayed-inputs
+                              SVL-MODULE-P) ())))))
+
+ (local
+  (defthm SVL-WELL-RANKED-MODULE$-implies
+    (implies (SVL-WELL-RANKED-MODULE$ x y)
+             (assoc-equal x y))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-WELL-RANKED-MODULE$) ())))))
+
+ (local
+  (defthm SVL-MODULE-P-of-assoc-equal
+    (implies (and (SVL-MODULE-ALIST-P MODULES)
+                  (ASSOC-EQUAL MODNAME MODULES))
+             (SVL-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (ASSOC-EQUAL MODNAME MODULES)
+             :in-theory (e/d (SVL-WELL-RANKED-MODULE$
+                              SVL-MODULE-ALIST-P) ())))))
+
+ (local
+  (defthm lemma3
+    (implies (SVL-MODULE-P module)
+             (and (SVL-OCC-ALIST-P (CDR (CADR (CDDDR module))))
+                  (WIRE-LIST-P (CDR (Cadr module)))))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-MODULE-P) ())))))
+
+ (local
+  (defthm lemma4
+    (implies (and (SVL-OCC-ALIST-P OCCS)
+                  (EQUAL (CADR (CAR OCCS)) :ASSIGN))
+             (SV::SVAR-P (CADDR (CAR OCCS))))
+    :hints (("Goal"
+             :expand (SVL-OCC-ALIST-P OCCS)
+             :in-theory (e/d (SVL-OCC-P) ())))))
+
+ (local
+  (defthm lemma5
+    (implies (and (CONSP OCCS)
+                  (NOT (EQUAL (CADR (CAR OCCS)) :ASSIGN))
+                  (SVL-OCC-ALIST-P OCCS))
+             (WIRE-LIST-LISTP (CADDDR (CAR OCCS))))
+    :hints (("Goal"
+             :expand (SVL-OCC-ALIST-P OCCS)
+             :in-theory (e/d (SVL-OCC-P) ())))))
+                  
+
+ (defthm-svl-run-phase$
+   (defthm svl-run-phase-is-svl-run-phase$
+     (implies (and (sv::modname-p modname)
+                   (sv::4veclist-p inputs)
+                   (svl-env-p delayed-env)
+                   (svl-module-alist-p modules))
+              (equal (svl-run-phase modname inputs delayed-env modules)
+                     (svl-run-phase$ modname inputs delayed-env modules)))
+     :flag svl-run-phase$)
+
+   (defthm svl-run-phase-occs-is-svl-run-phase-occs$
+     (implies (and (svl-occ-alist-p occs)
+                   (sv::svex-env-p env-wires)
+                   (svl-env-alist-p delayed-env-alist)
+                   (svl-module-alist-p modules))
+              (equal (svl-run-phase-occs occs env-wires delayed-env-alist modules)
+                     (svl-run-phase-occs$ occs env-wires delayed-env-alist modules)))
+     :flag svl-run-phase-occs$)
+   :hints (("Goal"
+            :expand ((SVL-RUN-PHASE-OCCS OCCS
+                                          ENV-WIRES DELAYED-ENV-ALIST MODULES)
+                     (SVL-RUN-PHASE-OCCS$ OCCS
+                                           ENV-WIRES DELAYED-ENV-ALIST MODULES)
+                     (SVL-RUN-PHASE MODNAME INPUTS DELAYED-ENV MODULES)
+                     )
+            :in-theory (e/d (svexlist-eval-wog-is-svexlist-eval
+                             svl-run-phase
+                             svl-run-phase$
+                             SVL-RUN-PHASE-OCCS$
+                             svl-run-phase-occs) ())))))
+
+
+
+(progn
   (def-rw-opener-error
-    svl-update-wire_opener-error
-    (svl-update-wire wire new-val env-wires)
+    svl-run-phase$-opener-error
+    (svl-run-phase$ modname inputs
+                     delayed-env
+                     modules)
+    :vars-to-avoid (modules))
+
+  (rp::defthm-lambda
+   svl-run-phase$-opener
+   (implies
+    (svl-well-ranked-module$ modname modules)
+    (equal (svl-run-phase$ modname inputs
+                            delayed-env
+                            modules)
+           (b* ((x (cdr (assoc-equal modname modules)))
+                (- (cw "Using svl-run-phase$-opener for ~p0 ~%"
+                       modname))
+                (env-wires (svex-env-append
+                            (svl-env->wires delayed-env)
+                            (svl-start-env (CDR (STD::DA-NTH 1 X)) inputs)
+                                        ;delayed-env
+                                        ;(CDR (STD::DA-NTH 2 X))
+                                        ))
+                ((mv env-wires next-delayed-env.modules)
+                 (svl-run-phase-occs$ (CDR (STD::DA-NTH 4 X))
+                                       env-wires
+                                       (svl-env->modules delayed-env)
+                                       modules))
+                (out-vals (svl-retrieve-values (CDR (STD::DA-NTH 3 X))
+                                                env-wires))
+                (next-delayed-env (make-svl-env
+                                   :wires (create-next-env-for-wires
+                                           (CDR (STD::DA-NTH 2 X))
+                                           env-wires)
+                                   :modules next-delayed-env.modules))
+                (- (fast-alist-free env-wires)))
+             (mv out-vals
+                 next-delayed-env))))
+   :hints (("Goal"
+            :expand (svl-run-phase$ modname inputs
+                                     delayed-env
+                                     modules)
+            :in-theory (e/d () ())))))
+
+(progn
+  (def-rw-opener-error
+    svl-run-phase-occs$-opener-error
+    (svl-run-phase-occs$ occs env-wires delayed-env-alist modules)
     :vars-to-avoid (env-wires))
 
-  (defthm
-   svl-update-wire-def
-   (equal (svl-update-wire `(,wire.name ,wire.size . ,wire.start)  new-val env-wires)
-          (b* ()
-            (hons-acons wire.name (sbits wire.start wire.size
-                                         new-val
-                                         (if (hons-get wire.name env-wires)
-                                             (cdr (hons-get wire.name
-                                                            env-wires))
-                                           '(-1 . 0)))
-                        env-wires)))
+  (defthm svl-run-phase-occs$-opener-nil
+    (equal (svl-run-phase-occs$ nil env-wires delayed-env-alist modules)
+           (mv env-wires nil))
+    :hints (("Goal"
+             :expand (svl-run-phase-occs$ nil env-wires delayed-env-alist modules)
+             :in-theory (e/d () ()))))
+
+  (defthm svl-run-phase-occs$-opener-cons-assign
+    (equal (svl-run-phase-occs$
+            (cons (cons occ-name (cons ':assign cdr-occ)) rest)
+            env-wires delayed-env-alist modules)
+           (b* ((env-wires (hons-acons (std::da-nth 0 cdr-occ)
+                                       (svex-eval-wog (std::da-nth 1 cdr-occ)
+                                                   env-wires)
+                                       env-wires)))
+             (svl-run-phase-occs$ rest
+                                   env-wires
+                                   delayed-env-alist
+                                   modules)))
+    :hints (("Goal"
+             :expand (svl-run-phase-occs$
+                      (cons (cons occ-name (cons ':assign cdr-occ)) rest)
+                      env-wires delayed-env-alist modules)
+             :in-theory (e/d () ()))))
+
+  (defthm-lambda svl-run-phase-occs$-opener-cons-module
+    (equal (svl-run-phase-occs$
+            (cons (cons occ-name (cons ':module cdr-occ)) rest)
+            env-wires delayed-env-alist modules)
+           (b* (((mv mod-output-vals mod-delayed-env)
+                 (svl-run-phase$ (std::da-nth 2 cdr-occ)
+                                  (svexlist-eval-wog (STD::DA-NTH 0 cdr-occ)
+                                                env-wires)
+                                  (entry-svl-env-fix (hons-get occ-name delayed-env-alist))
+                                  modules))
+                ((mv env-wires rest-delayed-env)
+                 (svl-run-phase-occs$ rest
+                                       (svl-save-mod-outputs mod-output-vals
+                                                  (std::da-nth 1 cdr-occ)
+                                                  env-wires)
+                                       delayed-env-alist
+                                       modules)))
+             (mv env-wires
+                 (if (not (equal mod-delayed-env (make-svl-env)))
+                     (hons-acons occ-name
+                                 mod-delayed-env
+                                 rest-delayed-env)
+                   rest-delayed-env))))
+    :hints (("Goal"
+             :expand (svl-run-phase-occs$
+                      (cons (cons occ-name (cons ':module cdr-occ)) rest)
+                      env-wires delayed-env-alist modules)
+             :in-theory (e/d () ())))))
+
+
+
+(progn
+  (def-rw-opener-error
+    pairlis3-opener-error
+    (pairlis3 x y))
+
+  (defthm pairlis3-opener-done
+    (implies (or (atom x)
+                 (atom y))
+             (equal (pairlis3 x y)
+                    nil))
+    :hints (("Goal"
+             :in-theory (e/d (pairlis3) ()))))
+
+  (defthm pairlis3-opener-cons
+    (equal (pairlis3 (cons x rest1)
+                     (cons y rest2))
+           (acons x y (pairlis3 rest1 rest2)))
+    :hints (("Goal"
+             :in-theory (e/d (pairlis3) ())))))
+
+(progn
+  (def-rw-opener-error
+    svl-run-save-output-opener-error
+    (svl-run-save-output out-alist out-bind-alist))
+
+  (defthm svl-run-save-output-opener-nil
+    (equal (svl-run-save-output out-alist nil)
+           (mv nil nil))
+    :hints (("Goal"
+             :in-theory (e/d (svl-run-save-output) ()))))
+
+  (rp::defthm-lambda
+   svl-run-save-output-opener-cons
+   (equal (svl-run-save-output out-alist
+                                (cons x rest))
+          (b* (((mv rest-outputs rest-out-bind-alist)
+                (svl-run-save-output out-alist rest))
+               (this x)
+               (key (car this))
+               (val (cdr this))
+               ((when (atom val))
+                (mv rest-outputs rest-out-bind-alist))
+               ((when (s-equal (car val) '_))
+                (mv rest-outputs (acons key (cdr val) rest-out-bind-alist)))
+               ((mv signame pos1 pos2)
+                (svl-run-simplify-signame key))
+               (out-entry (assoc-equal signame out-alist))
+               ((unless out-entry)
+                (progn$ (cw "Warning \"~p0\" is not an output signal. ~%" signame)
+                        (mv rest-outputs (acons key (cdr val) rest-out-bind-alist))))        
+               (out-val (cdr out-entry)) 
+               ((unless (and (natp pos1)
+                             (natp pos2)))
+                (mv (acons (car val) out-val rest-outputs)
+                    (acons key (cdr val) rest-out-bind-alist)))
+               ((mv start size) (if (> pos1 pos2)
+                                    (mv pos2 (nfix (+ pos1 (- pos2) 1)))
+                                  (mv pos1 (nfix (+ pos2 (- pos1) 1))))))
+            (mv (acons (car val) (bits out-val start size) rest-outputs)
+                (acons key (cdr val) rest-out-bind-alist))))
    :hints (("Goal"
-            :in-theory (e/d (svl-update-wire) ()))))
+            :in-theory (e/d (svl-run-save-output) ())))))
 
-  (defthm svl-update-wire-def-2
-    (equal (svl-update-wire `(,wire.name)  new-val env-wires)
-           (hons-acons wire.name new-val env-wires))
+
+(progn
+  (def-rw-opener-error
+    svl-run-aux-opener-error
+    (svl-run-aux modname inputs out-wires out-bind-alist delayed-env modules)
+    :vars-to-avoid (modules delayed-env))
+
+
+  (defthm svl-run-aux-opener-nil
+    (equal (svl-run-aux modname nil out-wires out-bind-alist
+                         delayed-env modules)
+           nil)
     :hints (("Goal"
-             :in-theory (e/d (svl-update-wire) ()))))
+             :in-theory (e/d (svl-run-aux) ()))))
+  
+  (rp::defthm-lambda
+   svl-run-aux-opener-cons
+   (equal (svl-run-aux modname (cons x y) out-wires out-bind-alist
+                        delayed-env modules)
+          (b* (((mv out-vals next-delayed-env)
+                (svl-run-phase modname x delayed-env modules))
+               (out-alist (pairlis3 out-wires out-vals))
+               ((mv outputs out-bind-alist) (svl-run-save-output out-alist out-bind-alist))
+               (rest (svl-run-aux modname y out-wires out-bind-alist next-delayed-env modules)))
+            (append outputs rest)))
+   :hints (("Goal"
+            :in-theory (e/d (svl-run-aux) ())))))
 
-  (defthmd
-    svl-update-wire-def-on-svex-env-p
-    (implies (and (svex-env-p env-wires)
-                  (4vec-p new-val)
-                  (sv::svar-p wire.name))
-             (equal (svl-update-wire `(,wire.name ,wire.size . ,wire.start)  new-val env-wires)
-                    (hons-acons wire.name (sbits wire.start wire.size
-                                                 new-val
-                                                 (if (hons-get wire.name
-                                                               env-wires)
-                                                     (hons-get-val wire.name
-                                                                   env-wires)
-                                                   '(-1 . 0)))
-                                env-wires)))
+
+
+(progn
+  (def-rw-opener-error
+    svl-run-opener-error
+    (svl-run modname inputs-env ins-bind-alist out-bind-alist modules)
+    :vars-to-avoid (modules))
+
+  (rp::defthm-lambda
+   svl-run-def-opener
+   (equal (svl-run modname
+                    inputs-env
+                    ins-bind-alist
+                    out-bind-alist
+                    modules)
+          (b* ((module (assoc-equal modname modules))
+               ((unless module)
+                (hard-error 'svl-run
+                            "Module ~p0 cannot be found! ~%"
+                            (list (cons #\0 modname))))
+               (module (cdr module))
+               (input-wires (svl-module->inputs module))
+               (output-wires (strip-cars (svl-module->outputs module)))
+               (inputs-unbound (svl-generate-inputs ins-bind-alist input-wires))
+               ((unless (svex-list-listp inputs-unbound))
+                (hard-error 'svl-run
+                            "Something went wrong while parsing inputs... ~p0 ~%"
+                            (list (cons #\0 inputs-unbound))))
+               ;; everything up to here uses only constants (only executable counterparts)
+               (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
+            (svl-run-aux modname inputs output-wires out-bind-alist
+                          (make-svl-env) modules)))
+   :hints (("Goal"
+            :in-theory (e/d (svl-run) ())))))
+
+
+(progn
+  (def-rw-opener-error
+    svexlist-list-eval-wog-opener-error
+    (svexlist-list-eval-wog x env)
+    :vars-to-avoid (env))
+
+  (defthm svexlist-list-eval-wog-opener-nil
+    (equal (svexlist-list-eval-wog nil env)
+           nil)
     :hints (("Goal"
-             :in-theory (e/d (svl-update-wire) ()))))
+             :in-theory (e/d (svexlist-list-eval-wog) ()))))
 
-  (defthmd svl-update-wire-def-on-svex-env-p-side-cond
-    (implies (and (svex-env-p env-wires)
-                  (4vec-p new-val)
-                  (sv::svar-p wire.name))
-             (svex-env-p (hons-acons wire.name
-                                     (sbits wire.start wire.size
-                                            new-val
-                                            (if (hons-get wire.name
-                                                          env-wires)
-                                                (hons-get-val wire.name
-                                                              env-wires)
-                                              '(-1 . 0)))
-                                     env-wires))))
-
-  (rp-attach-sc svl-update-wire-def-on-svex-env-p
-                svl-update-wire-def-on-svex-env-p-side-cond)
-
-  (defthmd svl-update-wire-def-2-on-svex-env-p
-    (implies (and (svex-env-p env-wires)
-                  (4vec-p new-val)
-                  (sv::svar-p wire.name))
-             (equal (svl-update-wire `(,wire.name)  new-val env-wires)
-                    (hons-acons wire.name new-val env-wires))))
-
-  (defthmd svl-update-wire-def-2-on-svex-env-p-side-cond
-    (implies (and (svex-env-p env-wires)
-                  (4vec-p new-val)
-                  (sv::svar-p wire.name))
-             (svex-env-p (hons-acons wire.name new-val env-wires))))
-
-  (rp-attach-sc svl-update-wire-def-2-on-svex-env-p
-                svl-update-wire-def-2-on-svex-env-p-side-cond)
-
-  ;; becasue we want to make sure that the ones with the hypotheses are used only.
-  #|(in-theory (disable svl-update-wire-def
-                      svl-update-wire-def-2))||#)
-
-;; (in-theory (enable svl-run-cycle_opener-error
-;;                    start-env_opener-error
-;;                    svl-run-this-queue_opener-error
-;;                    hons-gets-vals_opener-error
-;;                    svl-run-occ_opener-error
-;;                    svl-run-add-delayed-ins_opener-error
-;;                    svl-run-get-module-occ-inputs
-;;                    svl-run-initialize-wires_opener-error
-;;                    svl-run-save-module-result_opener-error
-;;                    make-fast-alist_opener-error
-;;                    hons-gets-fast-alist_opener-error
-;;                    svl-get-outputs_opener-error
-;;                    svl-run-save-assign-result_opener-error
-;;                    initialize-wires-wrapper_opener-error
-;;                    start-env-wrapper_opener-error
-;;                    svl-update-wire_opener-error
-;;                    svl-run-get-module-occ-inputs_opener-error
-;;                    svl-run-queue_opener-error
-;;                    mv-nth_opener-error
-;;                    svl-run_opener-error))
-
-(defthm GET-MAX-OCC-RANK-opener-cons
-  (equal (get-max-occ-rank (cons first rest) svl-design)
-         (MAX (GET-MAX-OCC-RANK rest
-                                svl-design)
-              (GET-OCC-RANK (cdr first)
-                            svl-design)))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (get-max-occ-rank) ()))))
-
-(defthm GET-MAX-OCC-RANK-opener-nil
-  (equal (get-max-occ-rank nil svl-design)
-         0)
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (get-max-occ-rank) ()))))
-
-(in-theory (enable GET-OCC-RANK
-                   GET-MODULE-RANK))
+  (defthm svexlist-list-eval-wog-opener-cons
+    (equal (svexlist-list-eval-wog (cons x rest) env)
+           (cons (svexlist-eval-wog x env)
+                 (svexlist-list-eval-wog rest env)))
+    :hints (("Goal"
+             :in-theory (e/d (svexlist-list-eval-wog) ())))))

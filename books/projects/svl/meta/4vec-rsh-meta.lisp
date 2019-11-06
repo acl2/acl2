@@ -32,6 +32,9 @@
  (in-theory (enable bits-sbits-no-syntaxp)))
 
 (local
+ (in-theory (disable 4vec-zero-ext-is-bits)))
+
+(local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
 (local
@@ -74,7 +77,6 @@
         (hard-error '4vec-rsh-of-meta "error" nil)
         (mv term nil)))))
 
-
 (encapsulate
   nil
 
@@ -96,21 +98,9 @@
  (encapsulate
    nil
 
-   (defthm pseudo-termp2-of-4vec-rsh-of-meta
-     (implies (rp::pseudo-termp2 term)
-              (rp::pseudo-termp2 (mv-nth 0 (4vec-rsh-of-meta term))))
-     :hints (("Goal"
-              :in-theory (e/d (4vec-rsh-of-meta) ()))))
-
-   (defthm rp-syntaxp-of-4vec-rsh-of-meta
-     (implies (rp::rp-syntaxp term)
-              (rp::rp-syntaxp (mv-nth 0 (4vec-rsh-of-meta term))))
-     :hints (("Goal"
-              :in-theory (e/d (4vec-rsh-of-meta) ()))))
-
-   (defthm all-falist-consistent-of-4vec-rsh-of-meta
-     (implies (rp::all-falist-consistent term)
-              (rp::all-falist-consistent (mv-nth 0 (4vec-rsh-of-meta term))))
+   (defthm rp-termp-of-4vec-rsh-of-meta
+     (implies (rp::rp-termp term)
+              (rp::rp-termp (mv-nth 0 (4vec-rsh-of-meta term))))
      :hints (("Goal"
               :in-theory (e/d (4vec-rsh-of-meta) ()))))
 
@@ -148,7 +138,6 @@
                       (rp-evl (rp::ex-from-rp (caddr term)) a)))
       :hints (("Goal"
                :in-theory (e/d (rp-evl-of-ex-from-rp) ())))))
-
 
    (local
     (defthm eval-of-4vec-rsh-when-4vec-rsh-of-formula-checks
@@ -221,8 +210,6 @@
                              rp::is-if
                              rp::is-rp) ())))))
 
-
-
 (defthm valid-rp-meta-rulep-4vec-rsh-of-formula-checks
   (implies (and (rp-evl-meta-extract-global-facts)
                 (4vec-rsh-of-formula-checks state))
@@ -236,9 +223,7 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-                           (rp::PSEUDO-TERMP2
-                            rp::PSEUDO-TERM-LISTP2
-                            rp::RP-SYNTAXP
+                           (rp::RP-TERMP
                             rp::VALID-SC)))))
 
 (rp::add-meta-rules 4vec-rsh-of-formula-checks

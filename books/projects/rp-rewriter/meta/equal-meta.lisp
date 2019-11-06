@@ -48,7 +48,7 @@
 
 (include-book "../eval-functions")
 
-(include-book "../add-meta-rule-formula-checks")
+(include-book "../meta-rule-macros")
 
 (local
  (include-book "../proofs/measure-lemmas"))
@@ -114,8 +114,8 @@
 
 (local
  (defthm rp-valid-termp-rp-equal-meta
-   (implies (rp-valid-termp term)
-            (rp-valid-termp (mv-nth 0 (rp-equal-meta term))))
+   (implies (rp-termp term)
+            (rp-termp (mv-nth 0 (rp-equal-meta term))))
    :hints (("Goal"
             :in-theory (e/d (rp-equal-meta) ())))))
 
@@ -130,7 +130,7 @@
 
 (local
  (defthm rp-evl-of-rp-equal-meta
-   (implies (pseudo-termp2 term)
+   (implies (rp-termp term)
             (equal (rp-evl (mv-nth 0 (rp-equal-meta term)) a)
                    (rp-evl term a)))
    :hints (("Goal"
@@ -163,10 +163,9 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (PSEUDO-TERMP2
+                           (RP-TERMP
                             rp-equal-meta
-                            PSEUDO-TERM-LISTP2
-                            RP-SYNTAXP
+                            RP-TERMP
                             VALID-SC)))))
 (rp::add-meta-rules
  rp-equal-meta-formula-checks

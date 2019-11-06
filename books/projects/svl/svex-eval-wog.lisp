@@ -1,5 +1,3 @@
-;; Alternative definitions for svex-eval without any guards down to 4vec functions
-
 ; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2019 Centaur Technology
 ;
@@ -26,6 +24,8 @@
 ; Original author: Mertcan Temel <mert@utexas.edu>
 
 
+;; Alternative definitions for svex-eval without any guards down to 4vec functions
+
 (in-package "SVL")
 
 (include-book "centaur/sv/svex/eval" :dir :system)
@@ -33,7 +33,7 @@
 (include-book "projects/rp-rewriter/top" :dir :system)
 (include-book "macros")
 
-(define svex-kind2 (x)
+(define svex-kind-wog (x)
   :returns kind
   :inline t
   :guard-hints
@@ -52,23 +52,27 @@
          :quote)
         (t :call)))
 
-(defthm svex-kind2-is-svex-kind
-  (equal (svex-kind2 x)
+(defthm svex-kind-wog-is-svex-kind
+  (equal (svex-kind-wog x)
          (svex-kind x))
   :hints (("Goal"
-           :in-theory (e/d (svex-kind2
+           :in-theory (e/d (svex-kind-wog
                             svex-kind) ()))))
 
-(define svex-env-fastlookup2 (var env)
-  :inline t
-  (let* ((look (hons-get var env)))
+
+(local
+ (in-theory (enable hons-get)))
+
+(define svex-env-fastlookup-wog (var env)
+  (let* ((look (mbe :logic (hons-assoc-equal var env)
+                    :exec (hons-get var env))))
     (if look (cdr look) (sv::4vec-x)))
   :returns (res 4vec-p :hyp (sv::svex-env-p env))
   ///
-  (defthm SVEX-ENV-FASTLOOKUP2-is-SVEX-ENV-FASTLOOKUP
+  (defthmd svex-env-fastlookup-wog-is-svex-env-fastlookup
     (implies (and (svex-env-p env)
                   (sv::svar-p var))
-             (equal (SVEX-ENV-FASTLOOKUP2 var env)
+             (equal (SVEX-ENV-FASTLOOKUP-WOG var env)
                     (sv::SVEX-ENV-FASTLOOKUP var env)))
     :hints (("Goal"
              :expand (sv::SVEX-ENV-FASTLOOKUP var env)
@@ -77,7 +81,7 @@
                               svex-env-p
                               4VEC-FIX) ())))))
 
-(define 4vec-fix2 (x)
+(define 4vec-fix-wog (x)
   (if (consp x)
       (4vec (ifix (car x))
             (ifix (cdr x)))
@@ -88,11 +92,11 @@
   ((local
     (in-theory (enable 4vec-p 4vec))))
   ///
-  (defthm 4vec-fix2-is-4vec-fix
-    (equal (4vec-fix2 x)
+  (defthm 4vec-fix-wog-is-4vec-fix
+    (equal (4vec-fix-wog x)
            (4vec-fix x))
     :hints (("Goal"
-             :in-theory (e/d (4vec-fix2
+             :in-theory (e/d (4vec-fix-wog
                               4vec-fix) ())))))
 
 (defun svex-apply-collect-args2 (n max argsvar)
@@ -101,7 +105,7 @@
          (max (nfix max)))
     (if (zp (- max n))
         nil
-      (cons (list '4vec-fix2 (cons 'nth (cons n (cons argsvar 'nil))))
+      (cons (list '4vec-fix-wog (cons 'nth (cons n (cons argsvar 'nil))))
             (svex-apply-collect-args2 (+ 1 n) max argsvar)))))
 
 (defun svex-apply-cases-fn2 (argsvar optable)
@@ -127,7 +131,7 @@
    (cons fn
          (svex-apply-cases-fn2 args sv::*svex-op-table*))))
 
-(define svex-apply2 (fn (args true-listp))
+(define svex-apply-wog (fn (args true-listp))
   :returns
   (sv::result 4vec-p
               "result of applying the function.")
@@ -136,15 +140,15 @@
   (let* ((fn (fnsym-fix fn)))
     (svex-apply-cases2 fn args)))
 
-(defthm svex-apply2-is-svex-apply
-  (equal (svex-apply2 fn args)
+(defthm svex-apply-wog-is-svex-apply
+  (equal (svex-apply-wog fn args)
          (sv::svex-apply fn args))
   :hints (("Goal"
            :expand ((:free (index)
                            (NTH index (SV::4VECLIST-FIX ARGS)))
                     (:free (index)
                            (NTH index (SV::4VECLIST-FIX (cdr ARGS)))))
-           :in-theory (e/d (svex-apply2
+           :in-theory (e/d (svex-apply-wog
                             SV::4VECLIST-FIX
                             nth
                             4VECLIST-NTH-SAFE
@@ -157,13 +161,13 @@
                             (:TYPE-PRESCRIPTION INTEGER-LISTP))))))
 
 (acl2::defines
- svex-eval2
- :flag svex-eval2-flag
- :flag-defthm-macro defthm-svex-eval2
+ svex-eval-wog
+ :flag svex-eval-wog-flag
+ :flag-defthm-macro defthm-svex-eval-wog
  :verify-guards nil
  :flag-local nil
 
- (define svex-eval2 (x env)
+ (define svex-eval-wog (x env)
    :measure (cons-count x)
    :hints (("Goal"
             :in-theory (e/d (rp::measure-lemmas
@@ -174,19 +178,19 @@
                            (sv::svex-p x))
                  :hints ((and stable-under-simplificationp
                               '(:expand ((4vec-p x))))))
-   (let* ((x.kind (svex-kind2 x)))
+   (let* ((x.kind (svex-kind-wog x)))
      (case
        x.kind
        (:quote (cond ((atom x) x)
                      ((atom (cdr x)) (sv::4vec-x))
                      (t (cadr x))))
-       (:var (svex-env-fastlookup2 x env))
+       (:var (svex-env-fastlookup-wog x env))
        (otherwise
         (b* ((x.fn (car x))
              (x.args (cdr x)))
-          (svex-apply2 x.fn (svexlist-eval2 x.args env)))))))
+          (svex-apply-wog x.fn (svexlist-eval-wog x.args env)))))))
 
- (define svexlist-eval2 (args env)
+ (define svexlist-eval-wog (args env)
    :returns (vals sv::4veclist-p "Values of the expressions in @('x') under
     this environment."
                   :hyp (and (sv::svex-env-p env)
@@ -195,8 +199,8 @@
    :flag list
    (if (atom args)
        nil
-     (cons (svex-eval2 (car args) env)
-           (svexlist-eval2 (cdr args) env)))
+     (cons (svex-eval-wog (car args) env)
+           (svexlist-eval-wog (cdr args) env)))
    ///
    (acl2::more-returns
     (vals true-listp)))
@@ -225,9 +229,9 @@
  ///
 
  (local (defthm consp-of-svexlist-eval
-          (equal (consp (svexlist-eval2 x env))
+          (equal (consp (svexlist-eval-wog x env))
                  (consp x))
-          :hints (("goal" :expand ((svexlist-eval2 x env))))))
+          :hints (("goal" :expand ((svexlist-eval-wog x env))))))
 
  (local (defthm upper-lower-of-3vec-fix
           (implies (and (sv::3vec-p x)
@@ -274,34 +278,35 @@
                           -1))
           :hints(("Goal" :in-theory (enable 4vec-bitor sv::3vec-bitor)))))
 
- (verify-guards svex-eval2
+ (verify-guards svex-eval-wog
    :hints ((and stable-under-simplificationp
-                '(:in-theory (e/d (svex-apply2 len nth SVEX-KIND)
-                                  (svex-eval2))
-                             :expand ((svexlist-eval2 (svex-call->args x) env)
-                                      (svexlist-eval2 (cdr (svex-call->args x)) env)
-                                      (svexlist-eval2 (cddr (svex-call->args x)) env))))))
+                '(:in-theory (e/d (svex-apply-wog len nth SVEX-KIND)
+                                  (svex-eval-wog))
+                             :expand ((svexlist-eval-wog (svex-call->args x) env)
+                                      (svexlist-eval-wog (cdr (svex-call->args x)) env)
+                                      (svexlist-eval-wog (cddr (svex-call->args x)) env))))))
 
  #|(memoize 'svex-eval :condition '(eq (svex-kind x) :call))||#)
 
-(defthm-svex-eval2
-  (defthmd svex-eval2-is-svex-eval
+(defthm-svex-eval-wog
+  (defthmd svex-eval-wog-is-svex-eval
     (implies (and (svex-p x)
                   (svex-env-p env))
-             (equal (svex-eval2 x env)
+             (equal (svex-eval-wog x env)
                     (svex-eval x env)))
     :flag expr)
-  (defthmd svexlist-eval2-is-svexlist-eval
+  (defthmd svexlist-eval-wog-is-svexlist-eval
     (implies (and (sv::svexlist-p args)
                   (svex-env-p env))
-             (equal (svexlist-eval2 args env)
+             (equal (svexlist-eval-wog args env)
                     (svexlist-eval args env)))
     :flag list)
   :hints (("goal"
            :in-theory (e/d (svex-call->fn
                             svex-kind
-                            svex-eval2
-                            svexlist-eval2
+                            svex-eval-wog
+                            svex-env-fastlookup-wog-is-svex-env-fastlookup
+                            svexlist-eval-wog
                             svex-p
                             sv::svar-p
                             svex-eval
@@ -309,10 +314,36 @@
                             sv::svex-quote->val
                             svex-call->args) ()))))
 
-(defthm svex-eval-is-svex-eval2
+(defthm svex-eval-is-svex-eval-wog
   (implies (and (svex-p x)
                 (svex-env-p env))
            (equal (svex-eval x env)
-                  (svex-eval2 x env)))
+                  (svex-eval-wog x env)))
   :hints (("Goal"
-           :in-theory (e/d (svex-eval2-is-svex-eval) ()))))
+           :in-theory (e/d (svex-eval-wog-is-svex-eval) ()))))
+
+
+
+(progn
+  (define 4vec-list-listp (x)
+    :enabled t
+    (if (atom x)
+        (equal x nil)
+      (and (sv::4veclist-p (car x))
+           (4vec-list-listp (cdr x)))))
+
+  (define svex-list-listp (x)
+    :enabled t
+    (if (atom x)
+        (equal x nil)
+      (and (sv::svexlist-p (car x))
+           (svex-list-listp (cdr x)))))
+  
+  (define svexlist-list-eval-wog (x env)
+    :returns (res 4vec-list-listp
+                  :hyp (and (sv::svex-env-p env)
+                            (svex-list-listp x)))
+    (if (atom x)
+        nil
+      (cons (svexlist-eval-wog (car x) env)
+            (svexlist-list-eval-wog (cdr x) env)))))

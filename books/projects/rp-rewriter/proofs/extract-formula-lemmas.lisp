@@ -37,7 +37,6 @@
 ; Mertcan Temel         <mert@utexas.edu>
 
 
-
 (in-package "RP")
 (include-book "../extract-formula")
 
@@ -50,6 +49,28 @@
  ;;LOCAL FUNCITONS FOR LOCAL LEMMAS
  (encapsulate
    nil
+
+   (local
+    (in-theory (disable (:DEFINITION RP-TERMP)
+                        (:DEFINITION VALID-SC)
+                        (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                        (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+                        (:DEFINITION FALIST-CONSISTENT)
+                        (:REWRITE DEFAULT-CDR)
+                        (:REWRITE ACL2::O-P-O-INFP-CAR)
+                        (:REWRITE IS-IF-RP-TERMP)
+                        (:REWRITE DEFAULT-CAR)
+                        (:REWRITE RP-TERMP-CADDR)
+                        (:REWRITE IS-RP-PSEUDO-TERMP)
+                        (:REWRITE RP-TERMP-CADDDR)
+                        (:TYPE-PRESCRIPTION O-P)
+                        (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                        (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
+                        (:REWRITE RP-EVL-OF-RP-EQUAL)
+                        (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+                        (:REWRITE RP-TERMP-CADR)
+                        (:TYPE-PRESCRIPTION IS-RP$INLINE))))
+   
    (defmacro valid-rulep-with-a (rule a)
      `(valid-rulep-sk-body ,rule ,a))
 
@@ -374,7 +395,7 @@
 
   (local
    (defthm ex-from-rp-lemma100
-     (implies (and (rp-syntaxp term)
+     (implies (and (rp-termp term)
                    (not (is-rp term)))
               (equal (ex-from-rp (cons (car term) rest))
                      (cons (car term) rest)))
@@ -384,7 +405,7 @@
 
   (local
    (defthm context-from-rp-lemma1
-     (implies (and (rp-syntaxp term)
+     (implies (and (rp-termp term)
                    (not (is-rp term)))
               (equal (context-from-rp (cons (car term) rest) context)
                      context))
@@ -393,7 +414,7 @@
                                is-rp) ())))))
   (local
    (defthm lemma10
-     (implies (and (rp-syntaxp term)
+     (implies (and (rp-termp term)
                    (not (is-rp term)))
               (not (equal (car term) 'rp)))))
 
@@ -404,7 +425,7 @@
                                      (ATTACH-SC-LST (CDR TERM)
                                                     SC-TYPE SC-TERM)))))
           (implies (and (not (is-rp term))
-                        (rp-syntaxp term))
+                        (rp-termp term))
                    (not (IS-rp (CONS (CAR TERM)
                                      (ATTACH-SC-LST (CDR TERM)
                                                     SC-TYPE SC-TERM))))))
@@ -427,6 +448,7 @@
               (AND (SYMBOLP SC-TYPE)
                    (NOT (BOOLEANP SC-TYPE))
                    (NOT (EQUAL SC-TYPE 'QUOTE))
+                   (NOT (EQUAL SC-TYPE 'falist))
                    (NOT (EQUAL SC-TYPE 'RP))))
      :rule-classes :forward-chaining
      :hints (("Goal"
@@ -457,14 +479,14 @@
               :in-theory (e/d (is-rp)
                               (EX-FROM-RP-LEMMA1))))))
 
-  (local
+  #|(local
    (defthm lemma15
      (implies (and (RP-SYNTAXP TERM)
                    (NOT (EQUAL (CAR TERM) 'QUOTE)))
               (RP-SYNTAXP-LST (CDR TERM)))
      :hints (("Goal"
               :cases ((is-rp term))
-              :in-theory (e/d (is-rp) ())))))
+              :in-theory (e/d (is-rp) ())))))||#
 
   (local
    (defthm lemma16
@@ -477,7 +499,7 @@
   (local
    (defthm lemma17
      (implies (and (eval-and-all (context-from-rp term nil) a)
-                   (rp-syntaxp term)
+                   (rp-termp term)
                    (not (is-rp sc-term))
                    (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM))
                    (rp-evl `(,sc-type ,sc-term) a))
@@ -514,7 +536,7 @@
                                       A)
                    (VALID-SC TERM A)
                    (not (is-rp sc-term))
-                   (RP-SYNTAXP TERM)
+                   (rp-termp TERM)
 ;   (NOT (EQUAL (CAR TERM) 'IF))
 ;  (NOT (INCLUDE-FNC-SUBTERMS (CDR TERM) 'IF))
                    (IS-RP (LIST 'RP
@@ -561,7 +583,7 @@
                                                  SC-TYPE SC-TERM)
                                   A)
                (VALID-SC SC-TERM A)
-               (RP-SYNTAXP SC-TERM)
+               (rp-termp SC-TERM)
 ;   (NOT (EQUAL (CAR SC-TERM) 'IF))
 ;   (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM)
 ;                             'IF))
@@ -625,7 +647,7 @@
                                                  SC-TYPE SC-TERM)
                                   A)
                (VALID-SC SC-TERM A)
-               (RP-SYNTAXP SC-TERM)
+               (rp-termp SC-TERM)
                (NOT (EQUAL (CAR SC-TERM) 'IF))
 ; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM)
 ;                           'IF))
@@ -673,7 +695,7 @@
      (IMPLIES (AND (CONSP SC-TERM)
                    ;;(EQUAL (CAR SC-TERM) 'IF)
                    (VALID-SC SC-TERM A)
-                   (RP-SYNTAXP SC-TERM)
+                   (rp-termp SC-TERM)
                    (IS-RP (LIST 'RP
                                 (LIST 'QUOTE SC-TYPE)
                                 SC-TERM))
@@ -696,7 +718,7 @@
   (defthm-attach-sc
     (defthm valid-sc-attach-sc
       (implies (and (valid-sc term a)
-                    (rp-syntaxp term)
+                    (rp-termp term)
 ;          (not (include-fnc term 'if)) ;; RHS should not have any if
                     (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM))
                     (not (is-rp sc-term))
@@ -706,7 +728,7 @@
 
     (defthm valid-sc-subterms-attach-sc-lst
       (implies (and (valid-sc-subterms lst a)
-                    (rp-syntaxp-lst lst)
+                    (rp-term-listp lst)
 ;         (not (include-fnc-subterms lst 'if))
                     (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM))
                     (not (is-rp sc-term))
@@ -721,6 +743,12 @@
                               EVAL-AND-ALL
                               CONTEXT-FROM-RP)
                              (VALID-SC-EX-FROM-RP-2
+                              (:REWRITE LEMMA10)
+                              (:DEFINITION FALIST-CONSISTENT)
+                              (:REWRITE MEASURE-LEMMA1)
+                              (:REWRITE MEASURE-LEMMA1-2)
+                              (:REWRITE DEFAULT-CDR)
+                              (:REWRITE DEFAULT-CAR)
                               RP-EVL-lst-of-cons))))))
 
 (defthm-attach-sc
@@ -736,7 +764,7 @@
              (not (include-fnc-subterms
                    (attach-sc-lst lst sc-type sc-term) fn)))
     :flag attach-sc-lst))
-
+#|
 (defthm-attach-sc
   (defthm rp-syntaxp-attach-sc
     (implies (and (rp-syntaxp term)
@@ -759,17 +787,46 @@
                                     SC-TYPE SC-TERM)
                      (ATTACH-SC-LST (CDDR TERM)
                                     SC-TYPE SC-TERM))
+           :in-theory (e/d (is-rp) ()))))||#
+
+
+(defthm dummy-is-rp-lemma
+  (implies (IS-RP (LIST 'RP (LIST 'QUOTE SC-TYPE) sc-term))
+           (IS-RP (LIST 'RP (LIST 'QUOTE SC-TYPE) y)))
+  :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
 
-(defthm-attach-sc
-  (defthm pseudo-termp2-attach-sc
-    (implies (pseudo-termp2 term)
-             (pseudo-termp2 (attach-sc term sc-type sc-term)))
-    :flag attach-sc)
-  (defthm pseudo-term-listp2-attach-sc-lst
-    (implies (pseudo-term-listp2 lst)
-             (pseudo-term-listp2 (attach-sc-lst lst sc-type sc-term)))
-    :flag attach-sc-lst))
+(defthm-rp-termp
+  (defthm rp-termp-attach-sc
+    (implies (and (rp-termp term)
+                  (not (include-fnc term 'falist))
+                  (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM)))
+             (rp-termp (attach-sc term sc-type sc-term)))
+    :flag rp-termp)
+  (defthm rp-term-listp-attach-sc-lst
+    (implies (and (rp-term-listp lst)
+                  (not (include-fnc-subterms lst 'falist))
+                  (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM)))
+             (rp-term-listp (attach-sc-lst lst sc-type sc-term)))
+    :flag rp-term-listp)
+  :otf-flg t
+  :hints (("Goal"
+           :expand ((ATTACH-SC TERM SC-TYPE SC-TERM)
+                    (ATTACH-SC-LST NIL SC-TYPE SC-TERM)
+                    (ATTACH-SC SC-TERM SC-TYPE SC-TERM)
+                    (ATTACH-SC-LST LST SC-TYPE SC-TERM))
+           :in-theory (e/d (is-rp)
+                           ((:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE DEFAULT-CAR)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:REWRITE IS-IF-RP-TERMP))))))
 
 (make-flag get-vars1 :defthm-macro-name defthm-get-vars)
 
@@ -826,8 +883,8 @@
   (defthm valid-sc-of-attach-sc-list-to-rhs
     (implies (and (not (include-fnc-subterms sc-list 'rp))
                   (eval-and-all sc-list a)
-                  (rp-syntaxp rhs)
-;(not (include-fnc rhs 'if))
+                  (rp-termp rhs)
+                  (not (include-fnc rhs 'falist))
                   (valid-sc rhs a))
              (valid-sc (attach-sc-list-to-rhs rhs sc-list) a)))
 
@@ -837,13 +894,10 @@
              (not (include-fnc (attach-sc-list-to-rhs rhs sc-list)
                                fn))))
 
-  (defthm rp-syntaxp-attach-sc-list-to-rhs
-    (implies (rp-syntaxp rhs)
-             (rp-syntaxp (attach-sc-list-to-rhs rhs sc-list))))
-
-  (defthm pseudo-termp2-attach-sc-list-to-rhs
-    (implies (pseudo-termp2 rhs)
-             (pseudo-termp2 (attach-sc-list-to-rhs rhs sc-list))))
+  (defthm rp-termp-attach-sc-list-to-rhs
+    (implies (and (rp-termp rhs)
+                  (not (include-fnc rhs 'falist)))
+             (rp-termp (attach-sc-list-to-rhs rhs sc-list))))
 
   (defthm get-vars1-attach-sc-list-to-rhs
     (equal (get-vars1 (attach-sc-list-to-rhs rhs sc-list) acc)
@@ -878,27 +932,36 @@
               (rule-syntaxp (attach-sc-to-rule rule sc-formula)))
      :hints (("Goal"
               :in-theory (e/d () (get-vars1
-                                  PSEUDO-TERM-LISTP2
+                                  RP-TERM-LISTP
                                   IS-RP-PSEUDO-TERMP
-                                  PSEUDO-TERM-LISTP2-IS-TRUE-LISTP
-                                  PSEUDO-TERMP2-IMPLIES-CDR-LISTP
-                                  PSEUDO-TERMP2-SHOULD-TERM-BE-IN-CONS-LHS
+                                  RP-TERM-LISTP-IS-TRUE-LISTP
+                                  RP-TERMP-IMPLIES-CDR-LISTP
+                                  RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS
                                   DEFAULT-CAR
                                   NOT-INCLUDE-RP
                                   DEFAULT-CDR
                                   TRUE-LISTP
-                                  IS-IF-PSEUDO-TERMP2)))))
+                                  (:DEFINITION ALWAYS$)
+                                  (:DEFINITION SUBSETP-EQUAL)
+                                  (:DEFINITION MEMBER-EQUAL)
+                                  (:REWRITE ACL2::PLAIN-UQI-INTEGER-LISTP)
+                                  (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
+                                  (:DEFINITION ACL2::APPLY$-BADGEP)
+                                  (:REWRITE
+                                   ACL2::INTEGER-LISTP-IMPLIES-ALWAYS$-INTEGERP)
+                                  (:DEFINITION INTEGER-LISTP)
+                                  IS-IF-RP-TERMP)))))
 
    (local
     (defthm rule-syntaxp-implies-m
       (implies (rule-syntaxp rule)
                (AND (WEAK-CUSTOM-REWRITE-RULE-P RULE)
-                    (PSEUDO-TERMP2 (RP-HYPm RULE))
-                    (PSEUDO-TERMP2 (RP-LHSm RULE))
-                    (PSEUDO-TERMP2 (RP-RHSm RULE))
+                    (RP-TERMP (RP-HYPm RULE))
+                    (RP-TERMP (RP-LHSm RULE))
+                    (RP-TERMP (RP-RHSm RULE))
                     (NOT (INCLUDE-FNC (RP-LHSm RULE) 'RP))
                     (NOT (INCLUDE-FNC (RP-HYPm RULE) 'RP))
-                    (RP-SYNTAXP (RP-RHSm RULE))
+                    (rp-termp (RP-RHSm RULE))
                     (NOT (INCLUDE-FNC (RP-RHSm RULE) 'FALIST))
                     (NOT (INCLUDE-FNC (RP-HYPm RULE) 'FALIST))
                     (NOT (INCLUDE-FNC (RP-LHSm RULE) 'IF))
@@ -906,13 +969,29 @@
                     (NO-FREE-VARIABLEP RULE)))
       :rule-classes :forward-chaining
       :hints (("Goal"
-               :in-theory (e/d (rule-syntaxp) ())))))
+               :in-theory '(rule-syntaxp quotep
+                                         RP-HYP
+                                         RP-LHS
+                                         RP-RHS)))))
 
    (local
     (defthm rp-evl-and-eval-and-all
       (implies (and (subsetp x y)
                     (eval-and-all y a))
-               (eval-and-all x a))))
+               (eval-and-all x a))
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               ((:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                                (:DEFINITION TRUE-LISTP)
+                                (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                                (:DEFINITION ALWAYS$)
+                                (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                                (:DEFINITION RP-TERMP)
+                                (:REWRITE
+                                 ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                                (:DEFINITION TRUE-LIST-LISTP)
+                                (:DEFINITION FALIST-CONSISTENT)
+                                (:DEFINITION FALIST-CONSISTENT-AUX)))))))
 
    (local
     (defthm rp-evl-and-subset-if-to-and-lists
@@ -945,9 +1024,26 @@
                                (:TYPE-PRESCRIPTION INCLUDE-FNC)
                                EX-FROM-RP
                                (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
-                               (:DEFINITION PSEUDO-TERMP2)
+                               (:DEFINITION RP-TERMP)
                                (:DEFINITION EVAL-AND-ALL)
-                               get-vars1)))))))
+                               get-vars1
+                               (:DEFINITION SUBSETP-EQUAL)
+                               (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                               (:DEFINITION MEMBER-EQUAL)
+                               (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:DEFINITION TRUE-LISTP)
+                               (:DEFINITION RP-TERM-LISTP)
+                               (:REWRITE
+                                ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                               (:DEFINITION TRUE-LIST-LISTP)
+                               (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:REWRITE ACL2::APPLY$-PRIMITIVE)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               (:REWRITE DEFAULT-CAR)
+                               (:DEFINITION VALID-SC)
+                               (:META ACL2::APPLY$-PRIM-META-FN-CORRECT))))))))
 
 (local
  (defthm valid-rulep-attach-sc-to-rule
@@ -1047,12 +1143,74 @@
                             (rule-syntaxp
                              valid-rulep))))))
 
+
+(progn
+  (local
+   (defthm valid-rulesp-try-to-add-rule-fnc-lemma-1
+     (equal (valid-rulep-sk-body (change custom-rewrite-rule
+                                         rule
+                                         :rule-fnc x)
+                                 a)
+            (valid-rulep-sk-body rule a))))
+
+
+  (local
+   (defthm valid-rulesp-try-to-add-rule-fnc-lemma-2
+     (implies (valid-rulep-sk rule)
+              (valid-rulep-sk (change custom-rewrite-rule
+                                      rule
+                                      :rule-fnc x)))
+     :otf-flg t
+     :hints (("goal"
+              :expand (valid-rulep-sk (list* (car rule)
+                                             (cadr rule)
+                                             x (cdddr rule)))
+              :use ((:instance valid-rulep-sk-necc
+                               (a (list* (car rule)
+                                         (cadr rule)
+                                         x (cdddr rule)))))
+              :in-theory (e/d ()
+                              (rule-syntaxp
+                               valid-rulep-sk
+                               valid-rulep-sk-body))))))
+
+
+  (local
+   (defthm valid-rulesp-try-to-add-rule-fnc-lemma-3
+     (implies (valid-rulep rule)
+              (valid-rulep (change custom-rewrite-rule
+                                   rule
+                                   :rule-fnc x)))
+     :otf-flg t
+     :hints (("goal"
+              :in-theory (e/d (valid-rulep-sk-necc)
+                              (valid-rulep-sk))))))
+
+  (defthm valid-rulesp-try-to-add-rule-fnc
+    (implies (valid-rulesp rules)
+             (valid-rulesp (try-to-add-rule-fnc rules rule-fnc-alist)))
+    :hints (("goal"
+             :in-theory (e/d (try-to-add-rule-fnc
+                              len)
+                             (rule-syntaxp
+                              weak-custom-rewrite-rule-p
+                              valid-rulep
+                              check-if-def-rule-should-be-saved
+                              custom-rewrite-with-meta-extract
+                              update-rules-with-sc))))))
+
 (defthm valid-rulesp-get-rules
   (implies (rp-evl-meta-extract-global-facts :state state)
-           (valid-rulesp (get-rule-list runes sc-alist new-synps state)))
+           (valid-rulesp (get-rule-list runes sc-alist new-synps rule-fnc-alist
+                                        state)))
   :hints (("Goal"
+           :do-not-induct t
+           :induct (get-rule-list runes sc-alist new-synps rule-fnc-alist
+                                        state)
            :in-theory (e/d ()
                            (rule-syntaxp
+                            WEAK-CUSTOM-REWRITE-RULE-P
+                            ACL2::EQUAL-LEN-1
                             check-if-def-rule-should-be-saved
                             custom-rewrite-with-meta-extract
                             update-rules-with-sc)))))
@@ -1102,5 +1260,6 @@
                             rule-list-to-alist
                             get-rule-list
                             table-alist)))))
-(defthm SYMBOL-ALISTP-GET-ENABLED-EXEC-RULES
-  (symbol-alistp (GET-ENABLED-EXEC-RULES runes)))
+
+(defthm symbol-alistp-get-enabled-exec-rules
+  (symbol-alistp (get-enabled-exec-rules runes)))

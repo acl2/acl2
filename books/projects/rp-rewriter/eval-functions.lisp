@@ -175,7 +175,7 @@
              (defun ,eval-and-all (lst a)
                ;; necessary for the context argument.
                ;; Anding all the context should be in the hypothesis of the main theorem.
-               (declare (xargs :guard (and (pseudo-term-listp2 lst)
+               (declare (xargs :guard (and (rp-term-listp lst)
                                            (alistp a))))
                (if (atom lst)
                    t
@@ -285,11 +285,11 @@
                     (and
                      #|(implies (,valid-sc-fnc term a)
                      (,valid-sc-fnc (mv-nth 0 res) a))||#
-                     (implies (rp-valid-termp term)
+                     (implies (rp-termp term)
                               (,sk-fnc-name term (mv-nth 0 res))))
                   (and #|(implies (,valid-sc-fnc term a)
                    (,valid-sc-fnc res a))||#
-                   (implies (rp-valid-termp term)
+                   (implies (rp-termp term)
                             (,sk-fnc-name term res)))))))))
 
          ;(table rp-rw 'meta-valid-fn ',fnc-name)

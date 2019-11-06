@@ -47,18 +47,11 @@
 
 
 (defthm pseudo-termp-rp-ex-counterpart
-  (implies (pseudo-termp2 term)
-           (pseudo-termp2
+  (implies (rp-termp term)
+           (rp-termp
             (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state))))
   :hints (("Goal" :in-theory (enable rp-ex-counterpart))))
 
-(defthm valid-falist-rp-ex-counterpart
-  (implies
-   (all-falist-consistent term)
-   (all-falist-consistent
-    (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state))))
-  :hints (("Goal" :in-theory (disable is-falist
-                                      falist-consistent))))
 
 (defthm rp-ex-counterpart-return-rp-statep
   (implies (rp-statep rp-state)
@@ -79,23 +72,17 @@
            :in-theory (e/d (
                             rp-ex-counterpart) ()))))
 
-(defthm rp-syntaxp-rp-ex-counterpart
-  (implies (rp-syntaxp term)
-           (rp-syntaxp (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state))))
-  :hints (("Goal"
-           :in-theory (e/d (rp-ex-counterpart
-                            is-rp) ()))))
 
 (local
  (defthm lemma1
-   (implies (and (pseudo-term-listp2 subterms)
+   (implies (and (rp-term-listp subterms)
                  (quote-listp subterms))
             (equal (RP-EVL-LST subterms A)
                    (UNQUOTE-ALL subterms)))))
 
 (defthm rp-evl-of-rp-ex-counterpart
   (implies
-   (and (pseudo-termp2 term)
+   (and (rp-termp term)
         (rp-evl-meta-extract-global-facts :state state)
         (symbol-alistp exc-rules))
    (equal (rp-evl
@@ -108,7 +95,7 @@
  ;;; CORRECTNESS LEMMA
 (defthmd rp-evl-of-rp-ex-counterpart-
 (implies
-(and (pseudo-termp2 term)
+(and (rp-termp term)
 (symbol-alistp exc-rules))
 (equal (rp-evl
 (mv-nth 0 (rp-ex-counterpart term exc-rules stat state)) a)

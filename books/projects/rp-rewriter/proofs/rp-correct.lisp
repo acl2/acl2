@@ -46,9 +46,72 @@
 (local (include-book "apply-bindings-lemmas"))
 (local (include-book "match-lhs-lemmas"))
 (local (include-book "rp-rw-lemmas"))
+(local (include-book "extract-formula-lemmas"))
 
 (in-theory (disable rp-iff-flag rp-lhs rp-rhs rp-hyp))
 
+
+
+(encapsulate
+  nil
+
+
+  (defthm attach-sc-from-context-returns-context-syntaxp
+    (implies (context-syntaxp context)
+             (context-syntaxp (mv-nth 0 (attach-sc-from-context context term))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+  
+  (defthm eval-of-context-from-attach-sc-from-context-returns
+    (implies (eval-and-all context a)
+             (eval-and-all (mv-nth 0 (attach-sc-from-context context term)) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm VALID-SC-SUBTERMS-from-attach-sc-from-context-returns
+    (implies (VALID-SC-SUBTERMS context a)
+             (VALID-SC-SUBTERMS (mv-nth 0 (attach-sc-from-context context term)) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm eval-of-term-from-attach-sc-from-context-returns
+    (implies (and (eval-and-all context a))
+             (equal (rp-evl (mv-nth 1 (attach-sc-from-context context term)) a)
+                    (rp-evl term a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  (defthm valid-sc-term-from-attach-sc-from-context-returns
+    (implies (and (eval-and-all context a)
+                  (rp-termp term)
+                  (valid-sc term a))
+             (valid-sc (mv-nth 1 (attach-sc-from-context context term)) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context is-if
+                                                     is-rp) ()))))
+
+  (defthm rp-termp-attach-sc-from-context
+    (implies (and (rp-termp term)
+                  (context-syntaxp context))
+             (rp-termp (mv-nth 1 (attach-sc-from-context context term))))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (attach-sc-from-context context term)
+             :in-theory (e/d (attach-sc-from-context) ()))))
+
+  
+
+  )
 
 (local
  (encapsulate
@@ -59,11 +122,11 @@
                     (consp (cdr term))
                     (consp (cddr term))
                     (not (equal (car term) 'quote))
-                    (pseudo-termp2 term))
-               (and (pseudo-termp2 (caddr term))
-                    (pseudo-termp2 (cadr term))))))
+                    (rp-termp term))
+               (and (rp-termp (caddr term))
+                    (rp-termp (cadr term))))))
 
-   (local
+   #|(local
     (defthm lemma2
       (implies (and (consp term)
                     (consp (cdr term))
@@ -71,9 +134,9 @@
                     (not (equal (car term) 'quote))
                     (all-falist-consistent term))
                (and (all-falist-consistent (caddr term))
-                    (all-falist-consistent (cadr term))))))
+                    (all-falist-consistent (cadr term))))))||#
 
-   (local
+   #|(local
     (defthm lemma3
       (implies (and (consp term)
                     (consp (cdr term))
@@ -83,7 +146,7 @@
                (and (rp-syntaxp (caddr term))
                     (rp-syntaxp (cadr term))))
       :hints (("Goal"
-               :in-theory (e/d (is-rp) ())))))
+               :in-theory (e/d (is-rp) ())))))||#
 
    (local
     (defthm lemma4
@@ -99,19 +162,22 @@
                :in-theory (e/d (is-if is-rp) ())))))
 
    (defthm rp-rw-aux-is-correct-lemma
-     (implies (and (valid-termp term nil a)
+     (implies (and (rp-termp term)
+                   (valid-sc term a)
                    (not (include-fnc term 'rp))
                    (alistp a)
                    (rp-evl-meta-extract-global-facts :state state)
                    (valid-rp-meta-rule-listp meta-rules state)
                    (rp-meta-valid-syntax-listp meta-rules state)
                    (symbol-alistp exc-rules)
+                   ;;(rp-syntaxp term)
                    (valid-rules-alistp rules-alist))
               (iff (rp-evl
                     (mv-nth 0 (rp-rw-aux term rules-alist exc-rules meta-rules rp-state state)) a)
                    (rp-evl term a)))
      :hints (("Goal"
               :do-not-induct t
+              :do-not '(preprocess fertilize)
               :use ((:instance rp-evl-and-side-cond-consistent-of-rp-rw
                                (term term #|(REMOVE-RETURN-LAST TERM)||#)
                                (dont-rw nil)
@@ -125,24 +191,39 @@
                                (limit (NTH *RW-STEP-LIMIT* RP-STATE))
                                (iff-flg t))
                     (:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term (CADDR term #|(REMOVE-RETURN-LAST TERM)||#))
+                               (term (MV-NTH
+                                      1
+                                      (ATTACH-SC-FROM-CONTEXT
+                                       (RP-EXTRACT-CONTEXT
+                                        (MV-NTH 0
+                                                (RP-RW (CADR TERM)
+                                                       NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                       RULES-ALIST
+                                                       EXC-RULES META-RULES T RP-STATE STATE)))
+                                       (CADDR TERM))))
                                (dont-rw nil)
-                               (context (RP-EXTRACT-CONTEXT
-                                         (MV-NTH 0
-                                                 (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
-                                                        NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
-                                                        RULES-ALIST EXC-RULES
-                                                        meta-rules T rp-state STATE))))
+                               (context (MV-NTH
+                                         0
+                                         (ATTACH-SC-FROM-CONTEXT
+                                          (RP-EXTRACT-CONTEXT
+                                           (MV-NTH 0
+                                                   (RP-RW (CADR TERM)
+                                                          NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                          RULES-ALIST
+                                                          EXC-RULES META-RULES T RP-STATE STATE)))
+                                          (CADDR TERM))))
                                (limit (NTH *RW-STEP-LIMIT* RP-STATE))
                                (iff-flg t)
                                (rp-state (MV-NTH 1
-                                             (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
-                                                    NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
-                                                    RULES-ALIST EXC-RULES
-                                                    meta-rules T rp-state STATE)))))
+                                                 (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
+                                                        NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                        RULES-ALIST EXC-RULES
+                                                        meta-rules T rp-state
+                                                        STATE)))))
+              :expand ((:free (x y) (iff x y))) 
 ;:expand ((:free (context) (CONTEXT-SYNTAXP context)))
               :in-theory (e/d (;rp-evl-of-remove-from-last
-                               context-syntaxp-implies
+                               ;;context-syntaxp-implies
                                )
                               (rp-rw
                                valid-sc
@@ -152,34 +233,70 @@
                                EVAL-AND-ALL
                                rp-evl-and-side-cond-consistent-of-rp-rw
 
-                               ALL-FALIST-CONSISTENT
-                               ALL-FALIST-CONSISTENT-LST
+                               (:DEFINITION VALID-SC-SUBTERMS)
+                               (:REWRITE VALID-SC-CONS)
+                               (:TYPE-PRESCRIPTION RP-TERMP)
+                               (:TYPE-PRESCRIPTION VALID-SC)
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:TYPE-PRESCRIPTION ALISTP)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:DEFINITION SUBSETP-EQUAL)
+                               (:REWRITE VALID-SC-CADR)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               (:DEFINITION RP-EXTRACT-CONTEXT)
+                               (:REWRITE EX-FROM-SYNP-LEMMA1)
+                               (:REWRITE
+                                CHECK-IF-RELIEVED-WITH-RP-IS-CORRECT)
+                               (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
+                               (:DEFINITION BINARY-APPEND)
+                               (:TYPE-PRESCRIPTION RP-EXTRACT-CONTEXT)
+                               (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                               (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                               (:TYPE-PRESCRIPTION FALIST-CONSISTENT)
+                               (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                               (:TYPE-PRESCRIPTION VALID-RULES-ALISTP)
+                               (:TYPE-PRESCRIPTION VALID-RP-META-RULE-LISTP)
+                               (:TYPE-PRESCRIPTION SYMBOL-ALISTP)
+                               (:TYPE-PRESCRIPTION
+                                RP-META-VALID-SYNTAX-LISTP)
+                               (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
+                               
+                               
+                               rp-termp
                                CONTEXT-SYNTAXP
                                INCLUDE-FNC
-                               PSEUDO-TERMP2
+                               RP-TERMP
                                TRUE-LISTP
-                               
-                               ;remove-return-last
+
+;remove-return-last
                                beta-search-reduce)))))))
 
-(defthmd no-rp-no-falist-term-implies-valid-termp
+#|(defthmd no-rp-no-falist-term-implies-valid-termp
   (implies (valid-term-syntaxp term)
-           (valid-termp term nil a))
+           (valid-termp term  a))
   :hints (("Goal"
            :in-theory (e/d (EXT-SIDE-CONDITIONS ALL-FALIST-CONSISTENT
-                                                is-falist is-rp) ()))))
+                                                is-falist is-rp) ()))))||#
+
+
+
+
 
 (encapsulate
   nil
-  (local
+  #|(local
    (defthm lemma1
      (implies (valid-term-syntaxp term)
               (not (include-fnc term 'rp)))
      :hints (("Goal"
-              :in-theory (e/d (valid-term-syntaxp) ())))))
+              :in-theory (e/d (valid-term-syntaxp) ())))))||#
 
   (defthmd rp-rw-aux-is-correct
-    (implies (and (valid-term-syntaxp term)
+    (implies (and (rp-termp term)
+                  (not (Include-fnc term 'rp))
                   (symbol-alistp exc-rules)
                   (alistp a)
                   (rp-evl-meta-extract-global-facts :state state)
@@ -190,11 +307,68 @@
                   (rp-evl term a)))
     :hints (("Goal"
              :do-not-induct t
-             :in-theory (e/d (no-rp-no-falist-term-implies-valid-termp)
+             :in-theory (e/d (#|no-rp-no-falist-term-implies-valid-termp||#)
                              (rp-rw
                               rp-rw-aux
                               valid-rules-alistp
-                              valid-term-syntaxp
+                              #|valid-term-syntaxp||#
                               valid-termp
                               remove-return-last
                               beta-search-reduce))))))
+
+
+
+(defthm rp-meta-rule-recs-p-implies-WEAK-RP-META-RULE-REC-P
+  (implies (rp-meta-rule-recs-p meta-rules state)
+           (weak-rp-meta-rule-recs-p meta-rules))
+  :hints (("Goal"
+           :induct (weak-rp-meta-rule-recs-p meta-rules)
+           :in-theory (e/d (weak-rp-meta-rule-recs-p
+                            rp-meta-rule-recs-p) ()))))
+
+(defthm remove-disabled-meta-rules-returns-rp-meta-rule-recs-p
+  (implies (rp-meta-rule-recs-p meta-rules state)
+           (rp-meta-rule-recs-p
+            (remove-disabled-meta-rules meta-rules
+                                        disabled-meta-rules)
+            state))
+  :hints (("Goal"
+           :in-theory (e/d (rp-meta-rule-recs-p
+                            remove-disabled-meta-rules) ()))))
+
+(defthm remove-disabled-meta-rules-returns-valid-rp-meta-rule-listp
+  (implies (valid-rp-meta-rule-listp meta-rules state)
+           (valid-rp-meta-rule-listp
+            (remove-disabled-meta-rules meta-rules
+                                        disabled-meta-rules)
+            state))
+  :hints (("Goal"
+           :in-theory (e/d (valid-rp-meta-rule-listp
+                            remove-disabled-meta-rules)
+                           ((:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:REWRITE NOT-INCLUDE-RP)
+                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                            (:REWRITE VALID-SC-CONS))))))
+
+(defthm remove-disabled-meta-rules-returns-RP-META-VALID-SYNTAX-LISTP
+  (implies (RP-META-VALID-SYNTAX-LISTP meta-rules state)
+           (RP-META-VALID-SYNTAX-LISTP
+            (remove-disabled-meta-rules meta-rules
+                                        disabled-meta-rules)
+            state))
+  :hints (("Goal"
+           :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP
+                            remove-disabled-meta-rules) ()))))
+
+(defthm rp-statep-of-rp-rw-aux
+  (implies (rp-statep rp-state)
+           (rp-statep (mv-nth 1 (rp-rw-aux term rules-alist exc-rules
+                                           meta-rules rp-state state))))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ((:DEFINITION RP-RW)
+                            (:DEFINITION RP-STATEP)
+                            (:DEFINITION QUOTEP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION TRUE-LISTP))))))

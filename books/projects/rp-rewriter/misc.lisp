@@ -256,12 +256,14 @@ Try using (rp::update-rp-brr t rp::rp-state) and
 (defmacro rp-thm (term &key
                        extra-rules
                        (untranslate 't)
-                       (disable-opener-error 'nil)
+                       #|(disable-opener-error 'nil)||#
                        (new-synps 'nil)
+                       (disable-meta-rules 'nil)
+                       (enable-meta-rules 'nil)
                        (in-theory 'nil))
   `(encapsulate
      nil
-     (make-event
+     #|(make-event
       (b* ((opener-error-rules-alist (table-alist 'rw-opener-error-rules
                                                   (w state)))
            (?opener-error-rules
@@ -269,19 +271,34 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                                                                            x)))
            (opener-error-rules (set-difference$ opener-error-rules ,disable-opener-error)))
         `(local
-          (in-theory (enable . ,opener-error-rules)))))
+          (in-theory (enable . ,opener-error-rules)))))||#
 
-     (set-not-simplified-action :warning)
+     ;;(set-not-simplified-action :warning)
 
      ,@(if in-theory
            `((local
               (in-theory ,in-theory)))
          'nil)
 
+      ;; ,@(if ',in-theory
+      ;;                `((local
+      ;;                   (in-theory ,',in-theory)))
+      ;;              'nil)
+
+      ,@(if enable-meta-rules
+            `((local
+               (enable-meta-rules ,@enable-meta-rules)))
+          'nil)
+      
+      ,@(if disable-meta-rules
+            `((local
+               (disable-meta-rules ,@disable-meta-rules)))
+          'nil)
+
      (make-event
       (b* ((- (check-if-clause-processor-up-to-date (w state)))
            ((mv err term & state)
-            (acl2::translate1 ,term t nil nil 'top-level (w state) state))
+            (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
            (term (beta-search-reduce term 1000))
            (runes (append (let ((world (w state))) (current-theory :here))
@@ -290,6 +307,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
            (rules-alist (get-rules runes state :new-synps new-synps))
            (rp-state (rp-state-new-run rp-state))
+           (old-not-simplified-action (not-simplified-action rp-state))
+           (rp-state (update-not-simplified-action :warning rp-state))
            (meta-rules  (make-fast-alist (cdr (assoc-equal 'meta-rules-list (table-alist
                                                                              'rp-rw (w state))))))
 
@@ -306,7 +325,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
            (state (fms "~p0~%"
                        (list
                         (cons #\0 rw))
-                       *standard-co* state (evisc-tuple 8 10 nil nil))))
+                       *standard-co* state (evisc-tuple 8 10 nil nil)))
+           (rp-state (update-not-simplified-action old-not-simplified-action rp-state)))
         (mv nil `(value-triple :none) state rp-state)))))
 
 
@@ -336,6 +356,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                          (rule-classes ':rewrite)
                         ; (use-opener-error-rules 't)
                          (new-synps 'nil)
+                         (disable-meta-rules 'nil)
+                         (enable-meta-rules 'nil)
                          (in-theory 'nil))
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
@@ -355,7 +377,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
           (loop$ for x in opener-error-rules-alist when (cdr x) collect (car
                                                                          x)))||#
          )
-      ,(if (or ;use-opener-error-rules
+      ,(if (or disable-meta-rules
+               enable-meta-rules
                in-theory)
            ``(encapsulate
                nil
@@ -363,6 +386,17 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                ;;       `((local
                ;;          (in-theory (enable . ,opener-error-rules))))
                ;;     'nil)
+
+               ,@(if ',enable-meta-rules
+                     `((local
+                        (enable-meta-rules ,@',enable-meta-rules)))
+                   'nil)
+               
+               ,@(if ',disable-meta-rules
+                     `((local
+                        (disable-meta-rules ,@',disable-meta-rules)))
+                   'nil)
+               
                ,@(if ',in-theory
                      `((local
                         (in-theory ,',in-theory)))
@@ -416,5 +450,26 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                `((,macro-name nil))
              nil)))))
 
+(encapsulate
+  nil
 
+  (defun preserve-current-theory-step1 (event)
+    `(make-event
+      (b* ((?current-theory (let ((world (w state))) (current-theory :here))))
+        `(progn ,',event
+                (table preserve-current-theory 'a ',current-theory)))))
 
+  (defun preserve-current-theory-step2 ()
+    `(make-event
+      (b* ((old-current-theory (cdr (assoc-equal 'a (table-alist
+                                                     'preserve-current-theory
+                                                     (w state))))))
+        `(in-theory ',old-current-theory))))
+
+  (defmacro preserve-current-theory (event)
+    `(with-output
+       :off (warning event  prove  observation)
+       :gag-mode :goals
+       (progn
+         ,(preserve-current-theory-step1 event)
+         ,(preserve-current-theory-step2)))))

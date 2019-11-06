@@ -48,8 +48,26 @@
 (local
  (include-book "proofs/rp-equal-lemmas"))
 
+(include-book "rp-rewriter")
+
+;;(include-book "create-rule-fnc")
 
 (include-book "std/strings/suffixp" :dir :system)
+
+
+(defund get-rune-name (fn  state)
+  (declare (xargs :guard (and (symbolp fn))
+                  :stobjs (state)
+                  :verify-guards t))
+  (b* ((mappings
+        (getpropc fn 'acl2::runic-mapping-pairs
+                  nil (w state)))
+       ((when (atom mappings))
+        fn)
+       (mapping (car mappings)))
+    (if (consp mapping)
+        (cdr mapping)
+      fn)))
 
 (defun custom-rewrite-from-formula (formula)
   (declare (xargs :guard t))
@@ -88,9 +106,9 @@
            (hard-error 'side-condition-check
                        "Side condition rule cannot be found ~%" nil))
        (or
-           (not (include-fnc formula 'rp))
-           (hard-error 'side-condition-check
-                       "Rule cannot have any instances of rp ~%" nil))
+        (not (include-fnc formula 'rp))
+        (hard-error 'side-condition-check
+                    "Rule cannot have any instances of rp ~%" nil))
        (or (not (include-fnc sc-formula 'rp))
            (hard-error 'side-condition-check
                        "Side-condition rule cannot have any instances of rp ~%"
@@ -152,19 +170,6 @@
             (new-terms (not-to-equal-nil-list new-terms)))
          new-terms)))))
 
-(defund get-rune-name (fn  state)
-  (declare (xargs :guard (and (symbolp fn))
-                  :stobjs (state)
-                  :verify-guards t))
-  (b* ((mappings
-        (getpropc fn 'acl2::runic-mapping-pairs
-                  nil (w state)))
-       ((when (atom mappings))
-        fn)
-       (mapping (car mappings)))
-    (if (consp mapping)
-        (cdr mapping)
-      fn)))
 
 (defund formulas-to-rules (rune rule-new-synp formulas)
   (declare (xargs :guard t))
@@ -202,44 +207,7 @@
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp formulas)))
 
-(encapsulate
-  nil
-  (local
-   (include-book "proofs/measure-lemmas"))
-  (local
-   (use-measure-lemmas t))
-  (mutual-recursion
-   (defun attach-sc (term sc-type sc-term)
-     (declare (xargs :guard t
-                     :measure (cons-count term)))
-     (cond
-      ((atom term)
-       (if (equal term sc-term)
-           `(rp ',sc-type ,term)
-         term))
-      ((or (eq (car term) 'quote))
-       term)
-      ((eq (car term) 'if)
-       (if (equal term sc-term)
-           `(rp ',sc-type ,term)
-         (progn$
-          (and (subtermp term sc-term)
-               (hard-error 'attach-sc
-                           "We do not support side-conditions nested under if statements yet! ~%" nil))
-          term)))
-      ((equal term sc-term)
-       `(rp ',sc-type ,(cons (car term)
-                             (attach-sc-lst (cdr term) sc-type sc-term))))
-      (t (cons (car term)
-               (attach-sc-lst (cdr term) sc-type sc-term)))))
 
-   (defun attach-sc-lst (lst sc-type sc-term)
-     (declare (xargs :guard t
-                     :measure (cons-count lst)))
-     (if (atom lst)
-         lst
-       (cons (attach-sc (car lst) sc-type sc-term)
-             (attach-sc-lst (cdr lst) sc-type sc-term))))))
 
 (defun attach-sc-list-to-rhs (rhs sc-list)
   "input is rhs of the rule and a list of formulas representing the
@@ -300,8 +268,8 @@
       rule
     (b* ((sc-formula (meta-extract-formula (car sc-rule-names) state))
 ;(sc-formula (beta-search-reduce sc-formula 1000)) ;; for psuedo-termp2
-         ((when (or (not (pseudo-termp2 sc-formula))
-                    (include-fnc sc-formula 'rp)))
+         ((when (or (include-fnc sc-formula 'rp)
+                    (not (rp-termp sc-formula))))
           (progn$
            (hard-error
             'side-cond-attaching
@@ -320,7 +288,7 @@
 (verify-guards update-rule-with-sc-aux
   :hints (("Goal"
            :in-theory (e/d () (rule-syntaxp
-                               pseudo-termp2)))))
+                               rp-termp)))))
 
 (defun symbol-symbol-alistp (alist)
   (declare (xargs :guard t))
@@ -388,7 +356,7 @@
            ;; that next test fails.  if rule-name exist on the rhs, then it is
            ;; a recursive function. We do not want to have that definition rule
            ;; in the rewriter becasue it would be opened up nonstop.
-           (if (pseudo-termp2 rhs);;for guard
+           (if (rp-termp rhs);;for guard
                (not (include-fnc rhs rule-name))
              nil))))
 
@@ -406,13 +374,32 @@
   :hints (("Goal"
            :in-theory (e/d () (rule-syntaxp)))))
 
-(defun get-rule-list (runes sc-alist new-synps state)
+(define try-to-add-rule-fnc (rules rule-fnc-alist)
+  :guard-hints (("Goal"
+           :in-theory (e/d (weak-custom-rewrite-rule-p) ())))
+  (if (and (equal (len rules) 1)
+           (weak-custom-rewrite-rule-p (car rules)))
+      (b* ((rune (rp-rune (car rules)))
+           (rule-name (case-match rune ((& n) n)))
+           ((Unless rule-name) rules)
+           (entry (hons-get rule-name rule-fnc-alist)))
+        (if (consp entry)
+            (list (change custom-rewrite-rule
+                          (car rules)
+                          :rule-fnc
+                          (cdr entry)))
+          rules))
+    rules))
+
+(defun get-rule-list (runes sc-alist new-synps rule-fnc-alist state)
   (declare (xargs :guard (and (symbol-symbol-alistp sc-alist)
                               (alistp new-synps))
                   :guard-hints
                   (("Goal"
                     :in-theory (e/d () (rule-syntaxp
                                         update-rules-with-sc
+                                        MAKE-FORMULA-BETTER
+                                        CUSTOM-REWRITE-WITH-META-EXTRACT
                                         ))))
                   :stobjs (state)
                   :verify-guards t))
@@ -424,7 +411,7 @@
           (progn$
            (cw "WARNING! Problem reading the rune name. Skipping ~p0 ~%"
                rune)
-           (get-rule-list (cdr runes) sc-alist new-synps state)))
+           (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))
          ;; if the current rune is just a name, then treat that as a rewrite
          ;; rule for only the following tests.
          (rule-type (case-match rune ((type & . &) type) (& ':rewrite)))
@@ -434,23 +421,25 @@
                          (acl2::recursivep rule-name nil (w state)))
                      ;;(check-if-def-rule-should-be-saved rule-name state)
                      ))
-          (get-rule-list (cdr runes) sc-alist new-synps state))
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
          ((when (and (equal rule-type ':type-prescription)
                      (or (equal (mv-nth 0 (get-rune-name rule-name state))
                                 ':definition)
                          (acl2::recursivep rule-name nil (w state)))))
-          (get-rule-list (cdr runes) sc-alist new-synps state))
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
          ((when (and (not (equal rule-type ':rewrite))
                      (not (equal rule-type ':definition))
                      (not (equal rule-type ':type-prescription))))
-          (get-rule-list (cdr runes) sc-alist new-synps state))
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
          (rule-new-synp (cdr (assoc-equal rule-name new-synps)))
-         (rules (custom-rewrite-with-meta-extract rule-name rule-new-synp state))
+         (rules (custom-rewrite-with-meta-extract rule-name rule-new-synp
+                                                  state))
+         (rules (try-to-add-rule-fnc rules rule-fnc-alist))
          ((when (not (rule-list-syntaxp rules)))
           (or (cw "Warning a problem with rule-list ~p0 ~%" rules)
-              (get-rule-list (cdr runes) sc-alist new-synps state)))
+              (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))
          (rules (update-rules-with-sc rules sc-alist state)))
-      (append rules (get-rule-list (cdr runes) sc-alist new-synps state)))))
+      (append rules (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))))
 
 (defun to-fast-alist (alist)
   (declare (xargs :guard t))
@@ -485,12 +474,18 @@
         (hard-error 'get-rules
                     "Table is broken. Side condition alist is damaged ~%"
                     nil))
-       (rule-list (get-rule-list runes sc-alist new-synps state))
+       (rule-fnc-alist (make-fast-alist (table-alist 'rw-fncs (w state))))
+       (rule-list (get-rule-list runes
+                                 sc-alist
+                                 new-synps
+                                 rule-fnc-alist
+                                 state))
        ((when (not (weak-custom-rewrite-rule-listp rule-list)))
         (hard-error
          'get-rules
          "Something is wrong with the rewrite rule list format"
          nil))
+       (- (fast-alist-free rule-fnc-alist))
        (rules-alist (rule-list-to-alist rule-list)))
     (to-fast-alist rules-alist)))
 
@@ -520,4 +515,3 @@
              (?sc-alist (put-assoc ',rule-name val sc-alist)))
           `(table rp-sc ',',rule-name ',val))
       (value-triple :rule-attaching-failed))))
-
