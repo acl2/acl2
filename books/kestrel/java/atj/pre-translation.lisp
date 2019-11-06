@@ -548,7 +548,7 @@
      may produce different types,
      and so in this case we re-wrap those terms
      with the least upper bound of the two types,
-     according to the ACL2-based partial order on ATJ types.
+     according to the partial order on ATJ types.
      The case of a term of the form @('(if a a b)')
      is treated a little differently,
      but there is no substantial difference.
