@@ -55,6 +55,18 @@
 
 (java::def-atj-main-function-type test-int-ior (:jint :jint) :jint)
 
+(java::def-atj-main-function-type test-int-eq (:jint :jint) :jboolean)
+
+(java::def-atj-main-function-type test-int-neq (:jint :jint) :jboolean)
+
+(java::def-atj-main-function-type test-int-less (:jint :jint) :jboolean)
+
+(java::def-atj-main-function-type test-int-lesseq (:jint :jint) :jboolean)
+
+(java::def-atj-main-function-type test-int-great (:jint :jint) :jboolean)
+
+(java::def-atj-main-function-type test-int-greateq (:jint :jint) :jboolean)
+
 (java::def-atj-main-function-type test-int-int-shiftl (:jint :jint) :jint)
 
 (java::def-atj-main-function-type test-int-int-shiftr (:jint :jint) :jint)
@@ -94,6 +106,12 @@
            test-int-and
            test-int-xor
            test-int-ior
+           test-int-eq
+           test-int-neq
+           test-int-less
+           test-int-lesseq
+           test-int-great
+           test-int-greateq
            test-int-int-shiftl
            test-int-int-shiftr
            test-int-int-ushiftr

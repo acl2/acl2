@@ -149,6 +149,12 @@
     int-and
     int-xor
     int-ior
+    int-eq
+    int-neq
+    int-less
+    int-lesseq
+    int-great
+    int-greateq
     int-int-shiftl
     int-int-shiftr
     int-int-ushiftr))
@@ -205,6 +211,18 @@
   (def-atj-main-function-type int-xor (:jint :jint) :jint)
 
   (def-atj-main-function-type int-ior (:jint :jint) :jint)
+
+  (def-atj-main-function-type int-eq (:jint :jint) :jboolean)
+
+  (def-atj-main-function-type int-neq (:jint :jint) :jboolean)
+
+  (def-atj-main-function-type int-less (:jint :jint) :jboolean)
+
+  (def-atj-main-function-type int-lesseq (:jint :jint) :jboolean)
+
+  (def-atj-main-function-type int-great (:jint :jint) :jboolean)
+
+  (def-atj-main-function-type int-greateq (:jint :jint) :jboolean)
 
   (def-atj-main-function-type int-int-shiftl (:jint :jint) :jint)
 
