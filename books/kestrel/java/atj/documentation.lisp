@@ -430,6 +430,9 @@
        to the input of @('fn') corresponding to @('in'):
        if the type is @(':a...'),
        then @('in') must be a quoted constant;
+       if the type is @(':jboolean'),
+       then @('in') must be a term @('(java::boolean-value <boolean>)')
+       where @('<boolean>') is a quoted boolean (i.e. @('t') or @('nil')).
        if the type is @(':jint'),
        then @('in') must be a term @('(java::int-value <int>)')
        where @('<int>') is a quoted signed 32-bit integer."))
@@ -445,8 +448,10 @@
     (xdoc::p
      "Note that the @(':tests') input is evaluated.")
     (xdoc::p
-     "Test inputs of the form @('(java::int-value <int>)')
-      can be used only for ACL2 functions that have the ATJ type @(':jint')
+     "Test inputs of the form
+      @('(java::boolean-value <boolean>)') or @('(java::int-value <int>)')
+      can be used only for ACL2 functions that have
+      the ATJ type @(':jboolean') or @(':jint')
       assigned to the corresponding argument
       via @(tsee def-atj-main-function-type)."))
 

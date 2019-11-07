@@ -27,6 +27,35 @@
 ; Thus, here we introduce wrappers for such functions,
 ; which are the ones that we want to test here.
 
+(defun test-boolean-not (x)
+  (declare (xargs :guard (java::boolean-value-p x)))
+  (java::boolean-not x))
+
+(defun test-boolean-and (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-and x y))
+
+(defun test-boolean-xor (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-xor x y))
+
+(defun test-boolean-ior (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-ior x y))
+
+(defun test-boolean-eq (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-eq x y))
+
+(defun test-boolean-neq (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-neq x y))
+
 (defun test-int-plus (x)
   (declare (xargs :guard (java::int-value-p x)))
   (java::int-plus x))
@@ -40,54 +69,78 @@
   (java::int-not x))
 
 (defun test-int-add (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-add x y))
 
 (defun test-int-sub (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-sub x y))
 
 (defun test-int-mul (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-mul x y))
 
 (defun test-int-div (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y)
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y)
                               (not (equal (java::int-value->int y) 0)))))
   (java::int-div x y))
 
 (defun test-int-rem (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y)
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y)
                               (not (equal (java::int-value->int y) 0)))))
   (java::int-rem x y))
 
 (defun test-int-and (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-and x y))
 
 (defun test-int-xor (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-xor x y))
 
 (defun test-int-ior (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-ior x y))
 
 (defun test-int-int-shiftl (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-int-shiftl x y))
 
 (defun test-int-int-shiftr (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-int-shiftr x y))
 
 (defun test-int-int-ushiftr (x y)
-  (declare (xargs :guard (and (java::int-value-p x) (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
   (java::int-int-ushiftr x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; More functions over (ACL2 representations of) Java primitive values.
+
+(defun f-boolean (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-and (java::boolean-xor x y)
+                     (java::boolean-ior x y)))
+
+(defun g-boolean (x y z)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y)
+                              (java::boolean-value-p z))))
+  (java::boolean-eq (java::boolean-not x)
+                    (java::boolean-neq y z)))
 
 (defun f-int (x y)
   (declare (xargs :guard (and (java::int-value-p x)
@@ -113,7 +166,55 @@
 ; Tests for the functions above, when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
-  '(;; int unary plus:
+  '(;; boolean negation:
+    ("BooleanNotT" (test-boolean-not (java::boolean-value t)))
+    ("BooleanNotF" (test-boolean-not (java::boolean-value nil)))
+    ;; boolean conjunction:
+    ("BooleanAndTT" (test-boolean-and (java::boolean-value t)
+                                      (java::boolean-value t)))
+    ("BooleanAndTF" (test-boolean-and (java::boolean-value t)
+                                      (java::boolean-value nil)))
+    ("BooleanAndFT" (test-boolean-and (java::boolean-value nil)
+                                      (java::boolean-value t)))
+    ("BooleanAndFF" (test-boolean-and (java::boolean-value nil)
+                                      (java::boolean-value nil)))
+    ;; boolean exclusive disjunction:
+    ("BooleanXorTT" (test-boolean-xor (java::boolean-value t)
+                                      (java::boolean-value t)))
+    ("BooleanXorTF" (test-boolean-xor (java::boolean-value t)
+                                      (java::boolean-value nil)))
+    ("BooleanXorFT" (test-boolean-xor (java::boolean-value nil)
+                                      (java::boolean-value t)))
+    ("BooleanXorFF" (test-boolean-xor (java::boolean-value nil)
+                                      (java::boolean-value nil)))
+    ;; boolean inclusive disjunction:
+    ("BooleanIorTT" (test-boolean-ior (java::boolean-value t)
+                                      (java::boolean-value t)))
+    ("BooleanIorTF" (test-boolean-ior (java::boolean-value t)
+                                      (java::boolean-value nil)))
+    ("BooleanIorFT" (test-boolean-ior (java::boolean-value nil)
+                                      (java::boolean-value t)))
+    ("BooleanIorFF" (test-boolean-ior (java::boolean-value nil)
+                                      (java::boolean-value nil)))
+    ;; boolean equality:
+    ("BooleanEqTT" (test-boolean-eq (java::boolean-value t)
+                                    (java::boolean-value t)))
+    ("BooleanEqTF" (test-boolean-eq (java::boolean-value t)
+                                    (java::boolean-value nil)))
+    ("BooleanEqFT" (test-boolean-eq (java::boolean-value nil)
+                                    (java::boolean-value t)))
+    ("BooleanEqFF" (test-boolean-eq (java::boolean-value nil)
+                                    (java::boolean-value nil)))
+    ;; boolean non-equality:
+    ("BooleanNeqTT" (test-boolean-neq (java::boolean-value t)
+                                      (java::boolean-value t)))
+    ("BooleanNeqTF" (test-boolean-neq (java::boolean-value t)
+                                      (java::boolean-value nil)))
+    ("BooleanNeqFT" (test-boolean-neq (java::boolean-value nil)
+                                      (java::boolean-value t)))
+    ("BooleanNeqFF" (test-boolean-neq (java::boolean-value nil)
+                                      (java::boolean-value nil)))
+    ;; int unary plus:
     ("IntPlus0" (test-int-plus (java::int-value 0)))
     ("IntPlus1" (test-int-plus (java::int-value 1)))
     ("IntPlus2" (test-int-plus (java::int-value 875753)))
@@ -222,7 +323,41 @@
                                             (java::int-value -8882289)))))
 
 (defconst *shallow-guarded-more-tests*
-  '(;; F-INT:
+  '(;; F-BOOLEAN:
+    ("FbooleanTT" (f-boolean (java::boolean-value t)
+                             (java::boolean-value t)))
+    ("FbooleanTF" (f-boolean (java::boolean-value t)
+                             (java::boolean-value nil)))
+    ("FbooleanFT" (f-boolean (java::boolean-value nil)
+                             (java::boolean-value t)))
+    ("FbooleanFF" (f-boolean (java::boolean-value nil)
+                             (java::boolean-value nil)))
+    ;; G-BOOLEAN:
+    ("GbooleanTTT" (g-boolean (java::boolean-value t)
+                              (java::boolean-value t)
+                              (java::boolean-value t)))
+    ("GbooleanTTF" (g-boolean (java::boolean-value t)
+                              (java::boolean-value t)
+                              (java::boolean-value nil)))
+    ("GbooleanTFT" (g-boolean (java::boolean-value t)
+                              (java::boolean-value nil)
+                              (java::boolean-value t)))
+    ("GbooleanTFF" (g-boolean (java::boolean-value t)
+                              (java::boolean-value nil)
+                              (java::boolean-value nil)))
+    ("GbooleanFTT" (g-boolean (java::boolean-value nil)
+                              (java::boolean-value t)
+                              (java::boolean-value t)))
+    ("GbooleanFTF" (g-boolean (java::boolean-value nil)
+                              (java::boolean-value t)
+                              (java::boolean-value nil)))
+    ("GbooleanFFT" (g-boolean (java::boolean-value nil)
+                              (java::boolean-value nil)
+                              (java::boolean-value t)))
+    ("GbooleanFFF" (g-boolean (java::boolean-value nil)
+                              (java::boolean-value nil)
+                              (java::boolean-value nil)))
+    ;; F-INT:
     ("Fint0" (f-int (java::int-value 8)
                     (java::int-value 15)))
     ("Fint1" (f-int (java::int-value -280)

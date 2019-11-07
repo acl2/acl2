@@ -718,27 +718,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-convert-expr-from-jint-to-value ((expr jexprp))
+(define atj-convert-expr-from-jboolean-to-cons ((expr jexprp))
   :returns (new-expr jexprp)
-  :short "Convert a Java expression from type @('int') to type @('Acl2Value')."
+  :short "Convert a Java expression from type @('boolean')
+          to type @('Acl2ConsValue')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-adapt-expr-to-type),
+     when the source ATJ type is @(':jboolean')
+     and the destination ATJ type is @(':acons') or @(':avalue').
+     In our ACL2 model of Java,
+     Java @('boolean') values are represented as
+     values satisfying @(tsee boolean-value-p):
+     we convert the Java @('boolean') returned by the expression
+     to the Java @('Acl2ConsValue') that represents
+     the ACL2 representation of the Java @('boolean') value.")
+   (xdoc::p
+    "The representation is explicated and checked "
+    (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
+    ". We create an @('Acl2Symbol') (@('t') or @('nil')) from the @('boolean'),
+     and then a list of length 2 (as two @('Acl2ConsPair')s)
+     whose first element is the @('Acl2Symbol') for the keyword @(':boolean')
+     and whose second element is the @('Acl2Symbol').")
+   (xdoc::p
+    "Note: this code assumes that
+     the class where the generated expression occurs
+     includes static final fields @('T') and @('NIL'),
+     with the usual meaning:
+     this is almost certainly the case,
+     namely if the ACL2 package corresponding to the class
+     imports @('t') and @('nil') from the Lisp package,
+     but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
+  (b* ((acl2-symbol-t/nil-expr (jexpr-paren (jexpr-cond expr
+                                                        (jexpr-name "T")
+                                                        (jexpr-name "NIL"))))
+       (acl2-symbol-nil-expr (jexpr-name "NIL"))
+       (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
+                                            "make"
+                                            (list acl2-symbol-t/nil-expr
+                                                  acl2-symbol-nil-expr)))
+       (acl2-keyword-boolean-expr (jexpr-smethod *aij-type-symbol*
+                                                 "makeKeyword"
+                                                 (list
+                                                  (jexpr-literal-string
+                                                   "BOOLEAN"))))
+       (acl2-outer-cons-expr (jexpr-smethod *aij-type-cons*
+                                            "make"
+                                            (list acl2-keyword-boolean-expr
+                                                  acl2-inner-cons-expr))))
+    acl2-outer-cons-expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-expr-from-jint-to-cons ((expr jexprp))
+  :returns (new-expr jexprp)
+  :short "Convert a Java expression from type @('int')
+          to type @('Acl2ConsValue')."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
      when the source ATJ type is @(':jint')
-     and the destination ATJ type is @(':avalue').
+     and the destination ATJ type is @(':acons') or @(':avalue').
      In ACL2, Java @('int') values are represented as
      values satisfying @(tsee int-value-p):
-     this function converts the Java @('int') returned by the expression
-     to the Java @('Acl2Value') that represents
+     we convert the Java @('int') returned by the expression
+     to the Java @('Acl2ConsValue') that represents
      the ACL2 representation of the Java @('int') value.")
    (xdoc::p
     "The representation is explicated and checked "
-    (xdoc::seetopic "atj-java-int-value-representation-check" "here")
+    (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
     ". We create an @('Acl2Integer') from the @('int'),
      and then a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol') for the keyword @(':int')
-     and whose second element is the @('Acl2Integer')."))
+     and whose second element is the @('Acl2Integer').")
+   (xdoc::p
+    "Note: this code assumes that
+     the class where the generated expression occurs
+     includes static final field @('NIL'),
+     with the usual meaning:
+     this is almost certainly the case,
+     namely if the ACL2 package corresponding to the class
+     imports @('nil') from the Lisp package,
+     but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
   (b* ((acl2-integer-expr (jexpr-smethod *aij-type-int*
                                          "make"
                                          (list expr)))
@@ -759,18 +822,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-convert-expr-from-value-to-jint ((expr jexprp))
+(define atj-convert-expr-from-value-to-jboolean ((expr jexprp))
   :returns (new-expr jexprp)
-  :short "Convert a Java expression from type @('Acl2Value') to type @('int')."
+  :short "Convert a Java expression from type @('Acl2Value')
+          to type @('boolean')."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is @(':avalue')
+     when the source ATJ type is @(':acons') or @(':avalue')
+     and the destination ATJ type is @(':jboolean').
+     In our ACL2 model of Java,
+     Java @('boolean') values are represented as
+     values satisfying @(tsee boolean-value-p):
+     we convert the Java @('Acl2Value') returned by the expression
+     to the Java @('boolean') that is represented by
+     the @('Acl2Value') in ACL2.")
+   (xdoc::p
+    "Assuming guard verification,
+     the argument of this function should always be
+     an expression that returns an @('Acl2Value') with the right representation,
+     i.e. the representation explicated and checked "
+    (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
+    ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
+     get its @(tsee cdr),
+     cast that to @('Acl2ConsPair'),
+     get its @(tsee car),
+     cast it to @('Acl2Symbol'),
+     and turn that into a @('boolean')
+     based on whether it is @('t') or not.")
+   (xdoc::p
+    "Note: this code assumes that
+     the class where the generated expression occurs
+     includes static final field @('NIL'),
+     with the usual meaning:
+     this is almost certainly the case,
+     namely if the ACL2 package corresponding to the class
+     imports @('nil') from the Lisp package,
+     but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
+  (b* ((acl2-outer-cons-expr (jexpr-paren (jexpr-cast *aij-type-cons* expr)))
+       (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
+       (acl2-inner-cons-expr (jexpr-paren
+                              (jexpr-cast *aij-type-cons* acl2-cdr-expr)))
+       (acl2-car-expr (jexpr-imethod acl2-inner-cons-expr "getCar" nil))
+       (acl2-symbol-expr (jexpr-paren
+                          (jexpr-cast *aij-type-symbol* acl2-car-expr))))
+    (jexpr-paren (jexpr-binary (jbinop-eq)
+                               acl2-symbol-expr
+                               (jexpr-name "NIL")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-expr-from-value-to-jint ((expr jexprp))
+  :returns (new-expr jexprp)
+  :short "Convert a Java expression from type @('Acl2Value')
+          to type @('int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-adapt-expr-to-type),
+     when the source ATJ type is @(':acons') or @(':avalue')
      and the destination ATJ type is @(':jint').
-     In ACL2, Java @('int') values are represented as
+     In our ACL2 model of Java,
+     Java @('int') values are represented as
      values satisfying @(tsee int-value-p):
-     this function converts the Java @('Acl2Value') returned by the expression
+     we convert the Java @('Acl2Value') returned by the expression
      to the Java @('int') that is represented by
      the @('Acl2Value') in ACL2.")
    (xdoc::p
@@ -778,7 +894,7 @@
      the argument of this function should always be
      an expression that returns an @('Acl2Value') with the right representation,
      i.e. the representation explicated and checked "
-    (xdoc::seetopic "atj-java-int-value-representation-check" "here")
+    (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
     ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
      get its @(tsee cdr),
      cast that to @('Acl2ConsPair'),
@@ -808,12 +924,9 @@
      shallowly embedded ACL2 calls of named functions.
      As explained " (xdoc::seetopic "atj-types" "here") ",
      when the type of an actual argument of a function call
-     is not the same as or a subtype (in Java) of
+     is not the same as or a subtype (according to Java subtyping) of
      the type of the formal argument,
-     ATJ adds Java code to convert from the former type to the latter type.
-     Note that being a subtype in Java is not the same as
-     satisfying @(tsee atj-type-<=),
-     which only corresponds to subtyping (i.e. inclusion) in ACL2.")
+     ATJ adds Java code to convert from the former type to the latter type.")
    (xdoc::p
     "This code generation function does that.
      The input Java expression is the one generated for the actual argument,
@@ -821,30 +934,54 @@
      The input @('dst-type') (for `destination type')
      is the type of the corresponding formal argument.")
    (xdoc::p
-    "To convert from @(':jint') to any other type
-     we first convert to @(':avalue')
-     via @(tsee atj-convert-expr-from-jint-to-value),
-     and then we cast to the other type
-     (unless the other type is already @(':avalue')).
-     To convert to @(':jint') from any other type,
-     we use @(tsee atj-convert-expr-from-value-to-jint);
-     note that any other type is a subtype of @('Acl2Value') in Java,
-     so there is not need for casts.
-     To convert between the AIJ types,
+    "A conversion from @(':jboolean') or @(':jint') to another type
+     is possible only if the other type is @(':acons') or @(':avalue');
+     otherwise, the assumption of guard verification must be violated somehow.
+     A conversion to @(':jboolean') or @(':jint') from another type
+     is possible only if the other type is @(':acons') or @(':avalue');
+     otherwise, the assumption of guard verification must be violated somehow.
+     To convert between the AIJ class types,
      if the source type is a subtype of or the same type as
-     the destination type (checked via @(tsee atj-type-<=)),
+     the destination type
+     (checked via @(tsee atj-type-<=),
+     which is consistent with @(tsee atj-jtype-<=) for the AIJ class types),
      we leave the expression unchanged;
      otherwise, we insert a cast to the destination type,
      which is expected to always succeed
      under the assumption of guard verification."))
   (cond ((eq src-type dst-type) expr)
+        ((eq src-type :jboolean)
+         (if (member-eq dst-type '(:acons :avalue))
+             (atj-convert-expr-from-jboolean-to-cons expr)
+           (prog2$ (raise "Internal error: ~
+                           attempting to convert the Java expression ~x0 ~
+                           from type ~x1 to type ~x2."
+                          expr src-type dst-type)
+                   expr)))
         ((eq src-type :jint)
-         (b* ((acl2-value-expr (atj-convert-expr-from-jint-to-value expr)))
-           (if (eq dst-type :avalue)
-               acl2-value-expr
-             (jexpr-cast (atj-type-to-jtype dst-type) acl2-value-expr))))
+         (if (member-eq dst-type '(:acons :avalue))
+             (atj-convert-expr-from-jint-to-cons expr)
+           (prog2$ (raise "Internal error: ~
+                           attempting to convert the Java expression ~x0 ~
+                           from type ~x1 to type ~x2."
+                          expr src-type dst-type)
+                   expr)))
+        ((eq dst-type :jboolean)
+         (if (member-eq src-type '(:acons :avalue))
+             (atj-convert-expr-from-value-to-jboolean expr)
+           (prog2$ (raise "Internal error: ~
+                           attempting to convert the Java expression ~x0 ~
+                           from type ~x1 to type ~x2."
+                          expr src-type dst-type)
+                   expr)))
         ((eq dst-type :jint)
-         (atj-convert-expr-from-value-to-jint expr))
+         (if (member-eq src-type '(:acons :avalue))
+             (atj-convert-expr-from-value-to-jint expr)
+           (prog2$ (raise "Internal error: ~
+                           attempting to convert the Java expression ~x0 ~
+                           from type ~x1 to type ~x2."
+                          expr src-type dst-type)
+                   expr)))
         ((atj-type-<= src-type dst-type) expr)
         (t (jexpr-cast (atj-type-to-jtype dst-type) expr))))
 
@@ -1139,7 +1276,102 @@
                                   (acl2-count second))
                                1))
 
-  (define atj-gen-shallow-intvalapp ((arg pseudo-termp)
+  (define atj-gen-shallow-primconstrapp ((fn (member-eq
+                                              fn *atj-primitive-constructors*))
+                                         (arg pseudo-termp)
+                                         (src-type atj-typep)
+                                         (dst-type atj-typep)
+                                         (jvar-result-base stringp)
+                                         (jvar-result-index posp)
+                                         (pkg-class-names string-string-alistp)
+                                         (fn-method-names symbol-string-alistp)
+                                         (curr-pkg stringp)
+                                         (qpairs cons-pos-alistp)
+                                         (wrld plist-worldp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded
+            ACL2 application of a Java primitive constructor."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions @(tsee boolean-value) and @(tsee int-value)
+       are treated specially.
+       If the argument is a quoted constant,
+       the function application is translated
+       to the constant Java expression corresponding to the quoted constant.
+       If the argument is not a quoted constant,
+       we first translate it to a Java expression in the general way,
+       which will have the type required by the primitive constructor;
+       we then wrap the expression with code
+       to convert it to the appropriate Java primitive type.
+       In all cases, we convert the resulting expression, as needed,
+       to match the destination type.")
+     (xdoc::p
+      "Note that we are dealing with annotated terms,
+       so the argument of the constructor must be unwrapped
+       to be examined."))
+    (b* (((mv arg & &) (atj-type-unwrap-term arg))
+         ((unless arg) ; for termination proof
+          (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+      (if (quotep arg)
+          (cond ((eq fn 'boolean-value)
+                 (b* ((boolean (unquote-term arg))
+                      ((unless (booleanp boolean))
+                       (prog2$
+                        (raise "Internal error: BOOLEAN-VALUE applied to ~x0."
+                               boolean)
+                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                      (expr (atj-gen-jboolean boolean))
+                      (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+                   (mv nil expr jvar-result-index)))
+                ((eq fn 'int-value)
+                 (b* ((int (unquote-term arg))
+                      ((unless (signed-byte-p 32 int))
+                       (prog2$
+                        (raise "Internal error: INT-VALUE applied to ~x0."
+                               int)
+                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                      (expr (atj-gen-jint int))
+                      (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+                   (mv nil expr jvar-result-index)))
+                (t (mv (impossible)
+                       (jexpr-name "irrelevant")
+                       jvar-result-index)))
+        (b* (((mv arg-block
+                  arg-expr
+                  jvar-result-index) (atj-gen-shallow-term arg
+                                                           jvar-result-base
+                                                           jvar-result-index
+                                                           pkg-class-names
+                                                           fn-method-names
+                                                           curr-pkg
+                                                           qpairs
+                                                           t ; GUARDS$
+                                                           wrld))
+             (expr (cond ((eq fn 'boolean-value)
+                          (atj-adapt-expr-to-type arg-expr :asymbol src-type))
+                         ((eq fn 'int-value)
+                          (atj-adapt-expr-to-type arg-expr :ainteger src-type))
+                         (t (prog2$ (impossible)
+                                    (jexpr-name "irrelevant"))))))
+          (mv arg-block
+              (atj-adapt-expr-to-type expr src-type dst-type)
+              jvar-result-index))))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count arg)
+                               1))
+
+  (define atj-gen-shallow-primunapp ((fn (member-eq fn *atj-primitive-unops*))
+                                     (operand pseudo-termp)
                                      (src-type atj-typep)
                                      (dst-type atj-typep)
                                      (jvar-result-base stringp)
@@ -1154,7 +1386,8 @@
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 (@tsee int-val) application."
+    :short "Generate a shallowly embedded
+            ACL2 application of a Java primitive unary operation."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1162,98 +1395,11 @@
        only if @(':guards') is @('t').")
      (xdoc::p
       "If the @(':guards') input is @('t'),
-       the function @(tsee int-value) is treated specially.
-       If the argument is a quoted natural number,
-       the function application is translated
-       to the corresponding Java integer literal;
-       the assumption of guard verification ensures that
-       the literal is not too large.
-       If the argument is a quoted negative integer,
-       the function application is translated to a Java unary minus expression
-       whose argument is the literal corresponding to the negation of @('x');
-       the assumption of guard verification ensures that
-       the literal is not too large.
-       If the argument is not a quoted integer,
-       we translate it to a Java expression,
-       which will have the type @(':ainteger') required by @(tsee int-value);
-       we then wrap the expression with code
-       to convert it to the Java type @('int').")
-     (xdoc::p
-      "Note that we are dealing with annotated terms,
-       so the argument of @(tsee int-value) must be unwrapped
-       to be examined."))
-    (b* (((mv arg & &) (atj-type-unwrap-term arg))
-         ((unless arg) ; for termination proof
-          (mv nil (jexpr-name "dummy") jvar-result-index)))
-      (if (and (quotep arg)
-               (integerp (unquote arg)))
-          (b* ((int (unquote-term arg))
-               (expr (if (>= int 0)
-                         (jexpr-literal-integer-decimal int)
-                       (jexpr-unary (junop-uminus)
-                                    (jexpr-literal-integer-decimal
-                                     (- int)))))
-               (expr (atj-adapt-expr-to-type expr :jint dst-type)))
-            (mv nil
-                (atj-adapt-expr-to-type expr src-type dst-type)
-                jvar-result-index))
-        (b* (((mv arg-block
-                  arg-expr
-                  jvar-result-index) (atj-gen-shallow-term arg
-                                                           jvar-result-base
-                                                           jvar-result-index
-                                                           pkg-class-names
-                                                           fn-method-names
-                                                           curr-pkg
-                                                           qpairs
-                                                           t ; GUARDS$
-                                                           wrld))
-             (expr (atj-adapt-expr-to-type arg-expr :ainteger :jint)))
-          (mv arg-block
-              (atj-adapt-expr-to-type expr src-type dst-type)
-              jvar-result-index))))
-    ;; 2nd component is non-0
-    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg)
-                               1))
-
-  (define atj-gen-shallow-intunapp ((fn (member-eq fn *atj-primitive-unops*))
-                                    (operand pseudo-termp)
-                                    (src-type atj-typep)
-                                    (dst-type atj-typep)
-                                    (jvar-result-base stringp)
-                                    (jvar-result-index posp)
-                                    (pkg-class-names string-string-alistp)
-                                    (fn-method-names symbol-string-alistp)
-                                    (curr-pkg stringp)
-                                    (qpairs cons-pos-alistp)
-                                    (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 application of a function
-            that models a Java @('int') unary operation."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This code generation function is called
-       only if @(':guards') is @('t').")
-     (xdoc::p
-      "If the @(':guards') input is @('t'),
-       the functions that model Java @('int') binary operations
+       the functions that model Java primitive unary operations
        (i.e. @(tsee int-minus) etc.) are treated specially.
-       (For now we only consider some of them;
-       more will be considered in the future.)
        We generate Java code to compute the operand,
-       which will have the Java type @('int') required by
-       @(tsee int-minus) and the other ACL2 functions.
-       Then we convert that to @(':jint') if needed,
-       via @('atj-adapt-expr-to-type').
-       Finally, we generate a Java unary expression
+       and generate a Java unary expression
        whose operator corresponds to the function.
-       The type of the function application is @(':jint').
        We parenthesize the Java expression
        to avoid errors due to operator precedences
        when expressions are nested;
@@ -1272,6 +1418,7 @@
                                                        t ; GUARDS$
                                                        wrld))
          (unop (case fn
+                 (boolean-not (junop-logcompl))
                  (int-plus (junop-uplus))
                  (int-minus (junop-uminus))
                  (int-not (junop-bitcompl))))
@@ -1285,25 +1432,25 @@
     :measure (two-nats-measure (acl2-count operand)
                                1))
 
-  (define atj-gen-shallow-intbinapp ((fn (member-eq fn *atj-primitive-binops*))
-                                     (left pseudo-termp)
-                                     (right pseudo-termp)
-                                     (src-type atj-typep)
-                                     (dst-type atj-typep)
-                                     (jvar-result-base stringp)
-                                     (jvar-result-index posp)
-                                     (pkg-class-names string-string-alistp)
-                                     (fn-method-names symbol-string-alistp)
-                                     (curr-pkg stringp)
-                                     (qpairs cons-pos-alistp)
-                                     (wrld plist-worldp))
+  (define atj-gen-shallow-primbinapp ((fn (member-eq fn *atj-primitive-binops*))
+                                      (left pseudo-termp)
+                                      (right pseudo-termp)
+                                      (src-type atj-typep)
+                                      (dst-type atj-typep)
+                                      (jvar-result-base stringp)
+                                      (jvar-result-index posp)
+                                      (pkg-class-names string-string-alistp)
+                                      (fn-method-names symbol-string-alistp)
+                                      (curr-pkg stringp)
+                                      (qpairs cons-pos-alistp)
+                                      (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 application of a function
-            that models a Java @('int') binary operation."
+    :short "Generate a shallowly embedded
+            ACL2 application of a Java primitive binary operation."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1313,16 +1460,9 @@
       "If the @(':guards') input is @('t'),
        the functions that model Java @('int') binary operations
        (i.e. @(tsee int-add) etc.) are treated specially.
-       (For now we only consider some of them;
-       more will be considered in the future.)
        We generate Java code to compute the left and right operands,
-       which will have the Java type @('int') required by
-       @(tsee int-add) and the other ACL2 functions.
-       Then we convert those to @(':jint') if needed,
-       via @('atj-adapt-expr-to-type').
-       Finally, we generate a Java binary expression
+       and generate a Java binary expression
        whose operator corresponds to the function.
-       The type of the function application is @(':jint').
        We parenthesize the Java expression
        to avoid errors due to operator precedences
        when expressions are nested;
@@ -1352,14 +1492,19 @@
                                                        t ; GUARDS$
                                                        wrld))
          (binop (case fn
+                  (boolean-and (jbinop-and))
+                  (boolean-xor (jbinop-xor))
+                  (boolean-ior (jbinop-ior))
+                  (boolean-eq (jbinop-eq))
+                  (boolean-neq (jbinop-ne))
                   (int-add (jbinop-add))
                   (int-sub (jbinop-sub))
                   (int-mul (jbinop-mul))
                   (int-div (jbinop-div))
                   (int-rem (jbinop-rem))
-                  (int-and (jbinop-bitand))
-                  (int-xor (jbinop-bitxor))
-                  (int-ior (jbinop-bitior))
+                  (int-and (jbinop-and))
+                  (int-xor (jbinop-xor))
+                  (int-ior (jbinop-ior))
                   (int-int-shiftl (jbinop-shl))
                   (int-int-shiftr (jbinop-sshr))
                   (int-int-ushiftr (jbinop-ushr))))
@@ -1409,13 +1554,8 @@
        see @(tsee atj-type-annotate-term).")
      (xdoc::p
       "If @(':guards') is @('t'),
-       calls of @(tsee int-value) are handled via a separate function.
-       We only pass @('dst-type') to this separate function,
-       because @('src-type') is always @(':jint'),
-       i.e. the output type of @(tsee int-value).")
-     (xdoc::p
-      "If @(':guards') is @('t'),
-       calls of ACL2 functions that model Java @('int') operations
+       calls of ACL2 functions that model
+       Java primitive constructors and operations
        are handled via separate functions.")
      (xdoc::p
       "In all other cases, in which the call is always strict,
@@ -1423,7 +1563,7 @@
        Calls of lambda expression are handled by a separate function.
        If the function is a named one,
        we generate a call of the method that corresponds to the ACL2 function,
-       and we wrap into a Java conversion if needed.
+       and we wrap that into a Java conversion if needed.
        (We treat the Java abstract syntax somewhat improperly here,
        by using a generic method call with a possibly qualified method name,
        which should be therefore a static method call;
@@ -1463,38 +1603,24 @@
                                      guards$
                                      wrld))))
          ((when (and guards$
-                     (eq fn 'int-value)
+                     (member-eq fn *atj-primitive-constructors*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-intvalapp (car args)
-                                     src-type
-                                     dst-type
-                                     jvar-result-base
-                                     jvar-result-index
-                                     pkg-class-names
-                                     fn-method-names
-                                     curr-pkg
-                                     qpairs
-                                     wrld))
+          (atj-gen-shallow-primconstrapp fn
+                                         (car args)
+                                         src-type
+                                         dst-type
+                                         jvar-result-base
+                                         jvar-result-index
+                                         pkg-class-names
+                                         fn-method-names
+                                         curr-pkg
+                                         qpairs
+                                         wrld))
          ((when (and guards$
                      (member-eq fn *atj-primitive-unops*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-intunapp fn
-                                    (car args)
-                                    src-type
-                                    dst-type
-                                    jvar-result-base
-                                    jvar-result-index
-                                    pkg-class-names
-                                    fn-method-names
-                                    curr-pkg
-                                    qpairs
-                                    wrld))
-         ((when (and guards$
-                     (member-eq fn *atj-primitive-binops*)
-                     (int= (len args) 2))) ; should be always true
-          (atj-gen-shallow-intbinapp fn
-                                     (first args)
-                                     (second args)
+          (atj-gen-shallow-primunapp fn
+                                     (car args)
                                      src-type
                                      dst-type
                                      jvar-result-base
@@ -1504,6 +1630,21 @@
                                      curr-pkg
                                      qpairs
                                      wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-primitive-binops*)
+                     (int= (len args) 2))) ; should be always true
+          (atj-gen-shallow-primbinapp fn
+                                      (first args)
+                                      (second args)
+                                      src-type
+                                      dst-type
+                                      jvar-result-base
+                                      jvar-result-index
+                                      pkg-class-names
+                                      fn-method-names
+                                      curr-pkg
+                                      qpairs
+                                      wrld))
          ((mv arg-blocks
               arg-exprs
               jvar-result-index) (atj-gen-shallow-terms args
@@ -2783,6 +2924,7 @@
                      :body body-class)
         pkg-class-names
         fn-method-names))
+
   :prepwork
 
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))

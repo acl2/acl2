@@ -182,6 +182,7 @@
    :asymbol
    :acons
    :avalue
+   :jboolean
    :jint)
   :short "Recognize ATJ types."
   :long
@@ -197,7 +198,7 @@
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
      whose names start with @('a') for `ACL2',
-     as well as a type for the Java primitive type @('int'),
+     as well as type for the Java primitive types @('boolean') and @('int'),
      whose name starts with @('j') for `Java'.
      More types will be added in the future.")
    (xdoc::p
@@ -287,8 +288,10 @@
     "The predicate recognizes the values of the type.")
    (xdoc::p
     "The predicates for the @(':a...') types are straightforward.
-     The predicate for the @(':jint') type is @(tsee int-value-p),
-     i.e. the model of Java @('int') values in the Java language formalization.
+     The predicates for the @(':jboolean') and @('int') types
+     are @(tsee boolean-value-p) and @(tsee int-value-p),
+     which recognize the models of @('boolean') and @('int') values
+     in our Java language formalization.
      Also see " (xdoc::seetopic "atj-primitives" "here") "."))
   (case x
     (:acharacter 'characterp)
@@ -299,7 +302,9 @@
     (:anumber 'acl2-numberp)
     (:acons 'consp)
     (:avalue '(lambda (_) 't))
-    (:jint 'int-value-p)))
+    (:jboolean 'boolean-value-p)
+    (:jint 'int-value-p)
+    (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -314,11 +319,16 @@
      this denotation is defined by @(tsee atj-type-to-pred).")
    (xdoc::p
     "The ordering on the @('a...') types is straightforward.
-     The ATJ type @(':jint') denotes the ACL2 type @(tsee int-value-p),
+     The ATJ types @(':jboolean') and @(':jint')
+     denote the ACL2 types @(tsee boolean-value-p) and @(tsee int-value-p),
      whose representation is always a @(tsee cons)
      (satisfying additional properties; see "
     (xdoc::seetopic "atj-primitives" "here")
-    "); thus, @(':jint') is below @(':acons') in the partial order.")
+    "); thus, @(':jboolean') and @(':jint')
+     are below @(':acons') in the partial order.
+     The types @(':jboolean') and @(':jint')
+     are unrelated to each other in the partial order,
+     because @(tsee boolean-value-p) and @(tsee int-value-p) are disjoint.")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -349,7 +359,9 @@
     (:asymbol (and (member-eq sup '(:asymbol :avalue)) t))
     (:acons (and (member-eq sup '(:acons :avalue)) t))
     (:avalue (eq sup :avalue))
-    (:jint (and (member-eq sup '(:jint :acons :avalue)) t)))
+    (:jboolean (and (member-eq sup '(:jboolean :acons :avalue)) t))
+    (:jint (and (member-eq sup '(:jint :acons :avalue)) t))
+    (otherwise (impossible)))
   ///
 
   (defrule atj-type-<=-reflexive
@@ -406,6 +418,7 @@
                   :asymbol
                   :acons
                   :avalue
+                  :jboolean
                   :jint)))
       `(encapsulate
          ()
@@ -474,13 +487,18 @@
                 ((:ainteger :arational :anumber) :anumber)
                 (t :avalue)))
     (:acons (case y
-              ((:acons :jint) :acons)
+              ((:acons :jboolean :jint) :acons)
               (t :avalue)))
     (:avalue :avalue)
+    (:jboolean (case y
+                 (:jboolean :jboolean)
+                 ((:jint :acons) :acons)
+                 (t :avalue)))
     (:jint (case y
              (:jint :jint)
-             (:acons :acons)
-             (t :avalue))))
+             ((:jboolean :acons) :acons)
+             (t :avalue)))
+    (otherwise (impossible)))
   ///
 
   (defrule atj-type-join-upper-bound
@@ -564,7 +582,8 @@
   (xdoc::topstring
    (xdoc::p
     "The @(':a...') types denote the corresponding AIJ class types.
-     The @(':jint') type denotes the Java primitive type @('int')."))
+     The @(':jboolean') and @(':jint') types denote
+     the Java primitive type @('boolean') and @('int')."))
   (case type
     (:acharacter *aij-type-char*)
     (:astring *aij-type-string*)
@@ -574,7 +593,9 @@
     (:anumber *aij-type-number*)
     (:acons *aij-type-cons*)
     (:avalue *aij-type-value*)
-    (:jint (jtype-int))))
+    (:jboolean (jtype-boolean))
+    (:jint (jtype-int))
+    (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

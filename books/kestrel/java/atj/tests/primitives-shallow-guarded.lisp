@@ -16,6 +16,23 @@
 
 ; Specialize the input and output types of the tested functions.
 
+(java::def-atj-main-function-type test-boolean-not (:jboolean) :jboolean)
+
+(java::def-atj-main-function-type test-boolean-and
+                                  (:jboolean :jboolean) :jboolean)
+
+(java::def-atj-main-function-type test-boolean-xor
+                                  (:jboolean :jboolean) :jboolean)
+
+(java::def-atj-main-function-type test-boolean-ior
+                                  (:jboolean :jboolean) :jboolean)
+
+(java::def-atj-main-function-type test-boolean-eq
+                                  (:jboolean :jboolean) :jboolean)
+
+(java::def-atj-main-function-type test-boolean-neq
+                                  (:jboolean :jboolean) :jboolean)
+
 (java::def-atj-main-function-type test-int-plus (:jint) :jint)
 
 (java::def-atj-main-function-type test-int-minus (:jint) :jint)
@@ -44,6 +61,12 @@
 
 (java::def-atj-main-function-type test-int-int-ushiftr (:jint :jint) :jint)
 
+(java::def-atj-main-function-type f-boolean
+                                  (:jboolean :jboolean) :jboolean)
+
+(java::def-atj-main-function-type g-boolean
+                                  (:jboolean :jboolean :jboolean) :jboolean)
+
 (java::def-atj-main-function-type f-int (:jint :jint) :jint)
 
 (java::def-atj-main-function-type g-int (:jint :jint :jint) :jint)
@@ -54,7 +77,13 @@
 
 ; Generate Java code for the tested functions, with testing code.
 
-(java::atj test-int-plus
+(java::atj test-boolean-not
+           test-boolean-and
+           test-boolean-xor
+           test-boolean-ior
+           test-boolean-eq
+           test-boolean-neq
+           test-int-plus
            test-int-minus
            test-int-not
            test-int-add
@@ -68,6 +97,8 @@
            test-int-int-shiftl
            test-int-int-shiftr
            test-int-int-ushiftr
+           f-boolean
+           g-boolean
            f-int
            g-int
            h-int
