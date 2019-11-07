@@ -718,29 +718,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-convert-expr-from-jboolean-to-cons ((expr jexprp))
+(define atj-adapt-expr-from-jprim-to-cons ((expr jexprp)
+                                           (type (member-eq
+                                                  type '(:jboolean :jint))))
   :returns (new-expr jexprp)
-  :short "Convert a Java expression from type @('boolean')
-          to type @('Acl2ConsValue')."
+  :short "Adapt a Java expression
+          from a Java primitive type to type @('Acl2ConsValue')."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is @(':jboolean')
+     when the source ATJ type is @(':jboolean') or @(':jint')
      and the destination ATJ type is @(':acons') or @(':avalue').
      In our ACL2 model of Java,
-     Java @('boolean') values are represented as
-     values satisfying @(tsee boolean-value-p):
-     we convert the Java @('boolean') returned by the expression
+     Java primitive values are represented as
+     values satisfying @(tsee boolean-value-p), @(tsee int-value-p), etc.
+     (8 predicates, one per Java primitive type).
+     We convert the Java primitive type returned by the expression
      to the Java @('Acl2ConsValue') that represents
-     the ACL2 representation of the Java @('boolean') value.")
+     the ACL2 representation of the Java primitive value.")
    (xdoc::p
     "The representation is explicated and checked "
     (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
-    ". We create an @('Acl2Symbol') (@('t') or @('nil')) from the @('boolean'),
-     and then a list of length 2 (as two @('Acl2ConsPair')s)
-     whose first element is the @('Acl2Symbol') for the keyword @(':boolean')
-     and whose second element is the @('Acl2Symbol').")
+    ". We first create the ``core'' expression from the initial expression:
+     this core expression is
+     an @('Acl2Symbol') (@('t') or @('nil')) for @(':jboolean'),
+     or an @('Acl2Integer') for @(':jint').
+     Then we create a list of length 2 (as two @('Acl2ConsPair')s)
+     whose first element is the @('Acl2Symbol')
+     for the keyword @(':boolean') or @(':int'),
+     and whose second element is the aforementioned core expression.")
    (xdoc::p
     "Note: this code assumes that
      the class where the generated expression occurs
@@ -750,19 +757,27 @@
      namely if the ACL2 package corresponding to the class
      imports @('t') and @('nil') from the Lisp package,
      but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
-  (b* ((acl2-symbol-t/nil-expr (jexpr-paren (jexpr-cond expr
-                                                        (jexpr-name "T")
-                                                        (jexpr-name "NIL"))))
+  (b* ((acl2-core-expr (case type
+                         (:jboolean (jexpr-paren
+                                     (jexpr-cond expr
+                                                 (jexpr-name "T")
+                                                 (jexpr-name "NIL"))))
+                         (:jint (jexpr-smethod *aij-type-int*
+                                               "make"
+                                               (list expr)))))
        (acl2-symbol-nil-expr (jexpr-name "NIL"))
        (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
                                             "make"
-                                            (list acl2-symbol-t/nil-expr
+                                            (list acl2-core-expr
                                                   acl2-symbol-nil-expr)))
+       (acl2-keyword-name (case type
+                            (:jboolean "BOOLEAN")
+                            (:jint "INT")))
        (acl2-keyword-boolean-expr (jexpr-smethod *aij-type-symbol*
                                                  "makeKeyword"
                                                  (list
                                                   (jexpr-literal-string
-                                                   "BOOLEAN"))))
+                                                   acl2-keyword-name))))
        (acl2-outer-cons-expr (jexpr-smethod *aij-type-cons*
                                             "make"
                                             (list acl2-keyword-boolean-expr
@@ -771,73 +786,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-convert-expr-from-jint-to-cons ((expr jexprp))
+(define atj-adapt-expr-from-value-to-jprim ((expr jexprp)
+                                            (type (member-eq
+                                                   type '(:jboolean :jint))))
   :returns (new-expr jexprp)
-  :short "Convert a Java expression from type @('int')
-          to type @('Acl2ConsValue')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is @(':jint')
-     and the destination ATJ type is @(':acons') or @(':avalue').
-     In ACL2, Java @('int') values are represented as
-     values satisfying @(tsee int-value-p):
-     we convert the Java @('int') returned by the expression
-     to the Java @('Acl2ConsValue') that represents
-     the ACL2 representation of the Java @('int') value.")
-   (xdoc::p
-    "The representation is explicated and checked "
-    (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
-    ". We create an @('Acl2Integer') from the @('int'),
-     and then a list of length 2 (as two @('Acl2ConsPair')s)
-     whose first element is the @('Acl2Symbol') for the keyword @(':int')
-     and whose second element is the @('Acl2Integer').")
-   (xdoc::p
-    "Note: this code assumes that
-     the class where the generated expression occurs
-     includes static final field @('NIL'),
-     with the usual meaning:
-     this is almost certainly the case,
-     namely if the ACL2 package corresponding to the class
-     imports @('nil') from the Lisp package,
-     but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
-  (b* ((acl2-integer-expr (jexpr-smethod *aij-type-int*
-                                         "make"
-                                         (list expr)))
-       (acl2-symbol-nil-expr (jexpr-name "NIL"))
-       (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
-                                            "make"
-                                            (list acl2-integer-expr
-                                                  acl2-symbol-nil-expr)))
-       (acl2-keyword-int-expr (jexpr-smethod *aij-type-symbol*
-                                             "makeKeyword"
-                                             (list
-                                              (jexpr-literal-string "INT"))))
-       (acl2-outer-cons-expr (jexpr-smethod *aij-type-cons*
-                                            "make"
-                                            (list acl2-keyword-int-expr
-                                                  acl2-inner-cons-expr))))
-    acl2-outer-cons-expr))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-convert-expr-from-value-to-jboolean ((expr jexprp))
-  :returns (new-expr jexprp)
-  :short "Convert a Java expression from type @('Acl2Value')
-          to type @('boolean')."
+  :short "Adapt a Java expression
+          from type @('Acl2Value') to a Java primitive type."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
      when the source ATJ type is @(':acons') or @(':avalue')
-     and the destination ATJ type is @(':jboolean').
-     In our ACL2 model of Java,
-     Java @('boolean') values are represented as
-     values satisfying @(tsee boolean-value-p):
-     we convert the Java @('Acl2Value') returned by the expression
-     to the Java @('boolean') that is represented by
-     the @('Acl2Value') in ACL2.")
+     and the destination ATJ type is @(':jboolean') or @(':jint').
+     This makes the inverse adaptation
+     of the one made by @(tsee atj-adapt-expr-from-jprim-to-cons):
+     see that function for a discussion of
+     the Java representation of the ACL2 representation
+     of the Java primitive values.")
    (xdoc::p
     "Assuming guard verification,
      the argument of this function should always be
@@ -847,10 +812,13 @@
     ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
      get its @(tsee cdr),
      cast that to @('Acl2ConsPair'),
-     get its @(tsee car),
-     cast it to @('Acl2Symbol'),
+     and get its @(tsee car),
+     which is then further adapted as follows:
+     for @(':jboolean'), we cast it to @('Acl2Symbol'),
      and turn that into a @('boolean')
-     based on whether it is @('t') or not.")
+     based on whether it is @('t') or not;
+     for @(':jint'), we cast it to @('Acl2Integer'),
+     and get its numeric value as an @('int').")
    (xdoc::p
     "Note: this code assumes that
      the class where the generated expression occurs
@@ -864,51 +832,19 @@
        (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
        (acl2-inner-cons-expr (jexpr-paren
                               (jexpr-cast *aij-type-cons* acl2-cdr-expr)))
-       (acl2-car-expr (jexpr-imethod acl2-inner-cons-expr "getCar" nil))
-       (acl2-symbol-expr (jexpr-paren
-                          (jexpr-cast *aij-type-symbol* acl2-car-expr))))
-    (jexpr-paren (jexpr-binary (jbinop-eq)
-                               acl2-symbol-expr
-                               (jexpr-name "NIL")))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-convert-expr-from-value-to-jint ((expr jexprp))
-  :returns (new-expr jexprp)
-  :short "Convert a Java expression from type @('Acl2Value')
-          to type @('int')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is @(':acons') or @(':avalue')
-     and the destination ATJ type is @(':jint').
-     In our ACL2 model of Java,
-     Java @('int') values are represented as
-     values satisfying @(tsee int-value-p):
-     we convert the Java @('Acl2Value') returned by the expression
-     to the Java @('int') that is represented by
-     the @('Acl2Value') in ACL2.")
-   (xdoc::p
-    "Assuming guard verification,
-     the argument of this function should always be
-     an expression that returns an @('Acl2Value') with the right representation,
-     i.e. the representation explicated and checked "
-    (xdoc::seetopic "atj-java-primitive-values-representation-check" "here")
-    ". We cast the @('Acl2Value') to a @('Acl2ConsPair'),
-     get its @(tsee cdr),
-     cast that to @('Acl2ConsPair'),
-     get its @(tsee car),
-     cast it to @('Acl2Integer'),
-     and get its numeric value as an @('int')."))
-  (b* ((acl2-outer-cons-expr (jexpr-paren (jexpr-cast *aij-type-cons* expr)))
-       (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
-       (acl2-inner-cons-expr (jexpr-paren
-                              (jexpr-cast *aij-type-cons* acl2-cdr-expr)))
-       (acl2-car-expr (jexpr-imethod acl2-inner-cons-expr "getCar" nil))
-       (acl2-integer-expr (jexpr-paren
-                           (jexpr-cast *aij-type-int* acl2-car-expr))))
-    (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+       (acl2-car-expr (jexpr-imethod acl2-inner-cons-expr "getCar" nil)))
+    (case type
+      (:jboolean
+       (b* ((acl2-symbol-expr (jexpr-paren
+                               (jexpr-cast *aij-type-symbol* acl2-car-expr))))
+         (jexpr-paren (jexpr-binary (jbinop-eq)
+                                    acl2-symbol-expr
+                                    (jexpr-name "NIL")))))
+      (:jint
+       (b* ((acl2-integer-expr (jexpr-paren
+                                (jexpr-cast *aij-type-int* acl2-car-expr))))
+         (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+      (t (prog2$ (impossible) (jexpr-fix expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -950,33 +886,17 @@
      which is expected to always succeed
      under the assumption of guard verification."))
   (cond ((eq src-type dst-type) expr)
-        ((eq src-type :jboolean)
+        ((member-eq src-type '(:jboolean :jint))
          (if (member-eq dst-type '(:acons :avalue))
-             (atj-convert-expr-from-jboolean-to-cons expr)
+             (atj-adapt-expr-from-jprim-to-cons expr src-type)
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((eq src-type :jint)
-         (if (member-eq dst-type '(:acons :avalue))
-             (atj-convert-expr-from-jint-to-cons expr)
-           (prog2$ (raise "Internal error: ~
-                           attempting to convert the Java expression ~x0 ~
-                           from type ~x1 to type ~x2."
-                          expr src-type dst-type)
-                   expr)))
-        ((eq dst-type :jboolean)
+        ((member-eq dst-type '(:jboolean :jint))
          (if (member-eq src-type '(:acons :avalue))
-             (atj-convert-expr-from-value-to-jboolean expr)
-           (prog2$ (raise "Internal error: ~
-                           attempting to convert the Java expression ~x0 ~
-                           from type ~x1 to type ~x2."
-                          expr src-type dst-type)
-                   expr)))
-        ((eq dst-type :jint)
-         (if (member-eq src-type '(:acons :avalue))
-             (atj-convert-expr-from-value-to-jint expr)
+             (atj-adapt-expr-from-value-to-jprim expr dst-type)
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
