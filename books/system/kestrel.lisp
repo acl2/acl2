@@ -1,6 +1,6 @@
 ; Kestrel's Contributions to the ACL2 System Code
 ;
-; Copyright (C) 2016-2017
+; Copyright (C) 2016-2019
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -136,3 +136,19 @@
 (include-book "subcor-var") ; for subcor-var1
 
 (verify-termination fsubcor-var) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination lookup-brr-stack)
+
+(verify-termination get-brr-global)
+
+(verify-termination get-brr-local)
+
+(verify-termination ens-maybe-brr)
+
+; The above four forms ensure that the expansion of the disabledp macro is in
+; logic mode.
+
+; For verify-guards, we need to add a suitable guard to lookup-brr-stack, and
+; perhaps to the other three functions above as well.
