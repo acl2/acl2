@@ -85,6 +85,7 @@
            (subsetp-equal x (cons a y)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
+;; Disabled since it can be expensive
 (defthmd subsetp-equal-of-cons-arg2-irrel
   (implies (not (member-equal a x))
            (equal (subsetp-equal x (cons a y))
@@ -131,6 +132,12 @@
          (and (subsetp-equal x z)
               (subsetp-equal y z)))
   :hints (("Goal" :in-theory (enable union-equal subsetp-equal))))
+
+(defthm subsetp-equal-of-union-equal-arg2
+  (implies (or (subsetp-equal x y)
+               (subsetp-equal x z))
+           (subsetp-equal x (union-equal y z)))
+  :hints (("Goal" :in-theory (enable subsetp-equal union-equal))))
 
 (defthm subsetp-equal-of-union-equal-arg2-same
   (subsetp-equal x (union-equal x y)))
@@ -255,3 +262,23 @@
 (defthm subsetp-equal-of-set-difference-equal-arg1
   (implies (subsetp-equal x z)
 	   (subsetp-equal (set-difference-equal x y) z)))
+
+(defthm subsetp-equal-of-intersection-equal-arg1
+  (implies (or (subsetp-equal x z)
+               (subsetp-equal y z))
+           (subsetp-equal (intersection-equal x y) z))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal))))
+
+(defthm subsetp-equal-of-intersection-equal-arg1-same-1
+  (subsetp-equal (intersection-equal x y) x))
+
+(defthm subsetp-equal-of-intersection-equal-arg1-same-2
+  (subsetp-equal (intersection-equal x y) y))
+
+(defthm subsetp-equal-of-cons-and-cons-same
+  (implies (subsetp-equal x y)
+           (subsetp-equal (cons a x) (cons a y))))
+
+(defthm subsetp-equal-of-cons-and-cons
+  (equal (subsetp-equal (cons a x) (cons a y))
+         (subsetp-equal (remove-equal a x) (remove-equal a y))))
