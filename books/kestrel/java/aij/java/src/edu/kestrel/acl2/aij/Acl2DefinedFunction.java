@@ -68,16 +68,14 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * Returns the number of parameters of this defined function.
      *
      * @return The number of parameters of this defined function.
-     * @throws IllegalStateException If this defined function
-     *                               has no actual definition yet.
+     * If the function is not defined yet, -1 is returned.
      */
     @Override
     int getArity() {
         if (this.definiens == null)
-            throw new IllegalStateException
-                    ("Attempting to retrieve the arity of function "
-                            + this.getName() + ", which is not defined yet.");
-        return this.definiens.getArity();
+            return -1;
+        else
+            return this.definiens.getArity();
     }
 
     /**

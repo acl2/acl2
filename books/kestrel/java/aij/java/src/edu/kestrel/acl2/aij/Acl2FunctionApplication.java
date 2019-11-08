@@ -63,6 +63,9 @@ public final class Acl2FunctionApplication extends Acl2Term {
         for (int i = 0; i < arguments.length; ++i)
             arguments[i].validateFunctionCalls();
         int arity = function.getArity();
+        if (arity == -1)
+            throw new IllegalStateException
+                    ("The function " + function + " has no definition yet.");
         if (arity != arguments.length)
             throw new IllegalStateException
                     ("The function " + function + ", which has arity " + arity

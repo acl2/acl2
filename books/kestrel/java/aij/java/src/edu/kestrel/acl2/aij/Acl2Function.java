@@ -35,8 +35,8 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Returns the number of parameters of this function.
      *
      * @return The number of parameters of this function.
-     * @throws IllegalStateException If this is a defined function
-     *                               without an actual definition yet.
+     * If the function is a defined one but it has no definition yet,
+     * -1 is returned.
      */
     abstract int getArity();
 
