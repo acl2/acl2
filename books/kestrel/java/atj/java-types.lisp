@@ -44,7 +44,7 @@
      (integers, rationals, numbers,
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
-     as well as the Java primitive types @('boolean') and @('int').
+     as well as the Java primitive types @('boolean'), @('int'), and @('long').
      These correspond to the ATJ types (see @(tsee atj-typep).")
    (xdoc::p
     "For brevity, we call these types `ATJ Java types',
@@ -58,7 +58,8 @@
                              *aij-type-cons*
                              *aij-type-value*
                              (jtype-boolean)
-                             (jtype-int)))
+                             (jtype-int)
+                             (jtype-long)))
        t)
   ///
 
@@ -137,13 +138,13 @@
    (xdoc::p
     "The ordering over the AIJ class types is straightforward,
      according to the class hierarchy.
-     The @('boolean') and @('int') types are unrelated to class types:
+     The Java primitive types are unrelated to class types:
      they are neither larger nor smaller than any class type.
      (Boxing conversions are not relevant here,
-     because we consider the plain @('boolean') and @('int') types,
-     not @('java.lang.Boolean') and @('java.lang.Integer').)
-     Furthermore, @('boolean') and @('int')
-     are unrelated to each other [JLS:4.10.1].")
+     because we consider the plain primitive types like @('int'),
+     not the corresponding class types like @('java.lang.Integer').)
+     Furthermore, @('boolean') is unrelated to @('int') and @('long'),
+     while @('int') is a subtype of @('long') [JLS:4.10.1].")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -181,7 +182,10 @@
               t))
         ((equal sub *aij-type-value*) (equal sup *aij-type-value*))
         ((equal sub (jtype-boolean)) (equal sup (jtype-boolean)))
-        ((equal sub (jtype-int)) (equal sup (jtype-int)))
+        ((equal sub (jtype-int)) (and (member-equal sup (list (jtype-int)
+                                                              (jtype-long)))
+                                      t))
+        ((equal sub (jtype-long)) (equal sup (jtype-long)))
         (t (impossible)))
   :guard-hints (("Goal" :in-theory (enable atj-jtypep)))
   ///
@@ -324,12 +328,18 @@
         ((equal x *aij-type-value*)
          (cond ((equal y (jtype-boolean)) nil)
                ((equal y (jtype-int)) nil)
+               ((equal y (jtype-long)) nil)
                (t y)))
         ((equal x (jtype-boolean))
          (cond ((equal y (jtype-boolean)) (jtype-boolean))
                (t nil)))
         ((equal x (jtype-int))
-         (cond ((equal y (jtype-int)) (jtype-int))
+         (cond ((member-equal y (list (jtype-int)
+                                      (jtype-long))) (jtype-int))
+               (t nil)))
+        ((equal x (jtype-long))
+         (cond ((equal y (jtype-long)) (jtype-long))
+               ((equal y (jtype-int)) (jtype-int))
                (t nil)))
         ((equal x nil) nil)
         (t (impossible)))

@@ -220,6 +220,7 @@
     (:avalue "AV")
     (:jboolean "JZ")
     (:jint "JI")
+    (:jlong "JL")
     (otherwise (impossible)))
   ///
 
@@ -248,6 +249,7 @@
         ((equal id "AV") :avalue)
         ((equal id "JZ") :jboolean)
         ((equal id "JI") :jint)
+        ((equal id "JL") :jlong)
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
             :avalue))) ; irrelevant

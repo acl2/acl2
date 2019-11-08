@@ -720,7 +720,9 @@
 
 (define atj-adapt-expr-from-jprim-to-cons ((expr jexprp)
                                            (type (member-eq
-                                                  type '(:jboolean :jint))))
+                                                  type '(:jboolean
+                                                         :jint
+                                                         :jlong))))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from a Java primitive type to type @('Acl2ConsValue')."
@@ -728,13 +730,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is @(':jboolean') or @(':jint')
+     when the source ATJ type is a @(':j...') type
      and the destination ATJ type is @(':acons') or @(':avalue').
      In our ACL2 model of Java,
      Java primitive values are represented as
      values satisfying @(tsee boolean-value-p), @(tsee int-value-p), etc.
      (8 predicates, one per Java primitive type).
-     We convert the Java primitive type returned by the expression
+     We convert from the Java primitive type returned by the expression
      to the Java @('Acl2ConsValue') that represents
      the ACL2 representation of the Java primitive value.")
    (xdoc::p
@@ -743,10 +745,10 @@
     ". We first create the ``core'' expression from the initial expression:
      this core expression is
      an @('Acl2Symbol') (@('t') or @('nil')) for @(':jboolean'),
-     or an @('Acl2Integer') for @(':jint').
+     or an @('Acl2Integer') for @(':jint') or @(':jlong').
      Then we create a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol')
-     for the keyword @(':boolean') or @(':int'),
+     for the keyword for the primitive type,
      and whose second element is the aforementioned core expression.")
    (xdoc::p
     "Note: this code assumes that
@@ -762,9 +764,9 @@
                                      (jexpr-cond expr
                                                  (jexpr-name "T")
                                                  (jexpr-name "NIL"))))
-                         (:jint (jexpr-smethod *aij-type-int*
-                                               "make"
-                                               (list expr)))))
+                         ((:jint :jlong) (jexpr-smethod *aij-type-int*
+                                                        "make"
+                                                        (list expr)))))
        (acl2-symbol-nil-expr (jexpr-name "NIL"))
        (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
                                             "make"
@@ -772,7 +774,8 @@
                                                   acl2-symbol-nil-expr)))
        (acl2-keyword-name (case type
                             (:jboolean "BOOLEAN")
-                            (:jint "INT")))
+                            (:jint "INT")
+                            (:jlong "LONG")))
        (acl2-keyword-boolean-expr (jexpr-smethod *aij-type-symbol*
                                                  "makeKeyword"
                                                  (list
@@ -788,7 +791,9 @@
 
 (define atj-adapt-expr-from-value-to-jprim ((expr jexprp)
                                             (type (member-eq
-                                                   type '(:jboolean :jint))))
+                                                   type '(:jboolean
+                                                          :jint
+                                                          :jlong))))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from type @('Acl2Value') to a Java primitive type."
@@ -797,8 +802,8 @@
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
      when the source ATJ type is @(':acons') or @(':avalue')
-     and the destination ATJ type is @(':jboolean') or @(':jint').
-     This makes the inverse adaptation
+     and the destination ATJ type is a @(':j...') type.
+     This performs the inverse adaptation
      of the one made by @(tsee atj-adapt-expr-from-jprim-to-cons):
      see that function for a discussion of
      the Java representation of the ACL2 representation
@@ -817,8 +822,9 @@
      for @(':jboolean'), we cast it to @('Acl2Symbol'),
      and turn that into a @('boolean')
      based on whether it is @('t') or not;
-     for @(':jint'), we cast it to @('Acl2Integer'),
-     and get its numeric value as an @('int').")
+     for @(':jint') and @(':jlong'), we cast it to @('Acl2Integer'),
+     and get its numeric value
+     as an @('int') for @(':jint') or as a @('long') for @(':jlong').")
    (xdoc::p
     "Note: this code assumes that
      the class where the generated expression occurs
@@ -844,6 +850,10 @@
        (b* ((acl2-integer-expr (jexpr-paren
                                 (jexpr-cast *aij-type-int* acl2-car-expr))))
          (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+      (:jlong
+       (b* ((acl2-integer-expr (jexpr-paren
+                                (jexpr-cast *aij-type-int* acl2-car-expr))))
+         (jexpr-imethod acl2-integer-expr "getJavaLong" nil)))
       (t (prog2$ (impossible) (jexpr-fix expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -870,23 +880,22 @@
      The input @('dst-type') (for `destination type')
      is the type of the corresponding formal argument.")
    (xdoc::p
-    "A conversion from @(':jboolean') or @(':jint') to another type
+    "A conversion from a @(':j...') type to another type
      is possible only if the other type is @(':acons') or @(':avalue');
      otherwise, the assumption of guard verification must be violated somehow.
-     A conversion to @(':jboolean') or @(':jint') from another type
+     A conversion to a @(':j...') type from another type
      is possible only if the other type is @(':acons') or @(':avalue');
      otherwise, the assumption of guard verification must be violated somehow.
      To convert between the AIJ class types,
      if the source type is a subtype of or the same type as
      the destination type
-     (checked via @(tsee atj-type-<=),
-     which is consistent with @(tsee atj-jtype-<=) for the AIJ class types),
+     (which can be checked via @(tsee atj-type-<=),
      we leave the expression unchanged;
      otherwise, we insert a cast to the destination type,
      which is expected to always succeed
      under the assumption of guard verification."))
   (cond ((eq src-type dst-type) expr)
-        ((member-eq src-type '(:jboolean :jint))
+        ((member-eq src-type '(:jboolean :jint :jlong))
          (if (member-eq dst-type '(:acons :avalue))
              (atj-adapt-expr-from-jprim-to-cons expr src-type)
            (prog2$ (raise "Internal error: ~
@@ -894,7 +903,7 @@
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq dst-type '(:jboolean :jint))
+        ((member-eq dst-type '(:jboolean :jint :jlong))
          (if (member-eq src-type '(:acons :avalue))
              (atj-adapt-expr-from-value-to-jprim expr dst-type)
            (prog2$ (raise "Internal error: ~
@@ -1222,14 +1231,15 @@
        only if @(':guards') is @('t').")
      (xdoc::p
       "If the @(':guards') input is @('t'),
-       the functions @(tsee boolean-value) and @(tsee int-value)
+       the functions that model the construction of Java primtive values
+       (i.e. @(tsee boolean-value) etc.)
        are treated specially.
        If the argument is a quoted constant,
        the function application is translated
-       to the constant Java expression corresponding to the quoted constant.
+       to the constant Java primitive expression
+       whose value is the quoted constant.
        If the argument is not a quoted constant,
-       we first translate it to a Java expression in the general way,
-       which will have the type required by the primitive constructor;
+       we first translate it to a Java expression in the general way;
        we then wrap the expression with code
        to convert it to the appropriate Java primitive type.
        In all cases, we convert the resulting expression, as needed,
@@ -1262,6 +1272,16 @@
                       (expr (atj-gen-jint int))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
                    (mv nil expr jvar-result-index)))
+                ((eq fn 'long-value)
+                 (b* ((long (unquote-term arg))
+                      ((unless (signed-byte-p 64 long))
+                       (prog2$
+                        (raise "Internal error: LONG-VALUE applied to ~x0."
+                               long)
+                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                      (expr (atj-gen-jlong long))
+                      (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+                   (mv nil expr jvar-result-index)))
                 (t (mv (impossible)
                        (jexpr-name "irrelevant")
                        jvar-result-index)))
@@ -1278,7 +1298,7 @@
                                                            wrld))
              (expr (cond ((eq fn 'boolean-value)
                           (atj-adapt-expr-to-type arg-expr :asymbol src-type))
-                         ((eq fn 'int-value)
+                         ((member-eq fn '(int-value long-value))
                           (atj-adapt-expr-to-type arg-expr :ainteger src-type))
                          (t (prog2$ (impossible)
                                     (jexpr-name "irrelevant"))))))
@@ -1340,8 +1360,11 @@
          (unop (case fn
                  (boolean-not (junop-logcompl))
                  (int-plus (junop-uplus))
+                 (long-plus (junop-uplus))
                  (int-minus (junop-uminus))
-                 (int-not (junop-bitcompl))))
+                 (long-minus (junop-uminus))
+                 (int-not (junop-bitcompl))
+                 (long-not (junop-bitcompl))))
          (expr (jexpr-paren (jexpr-unary unop operand-expr)))
          (block operand-block))
       (mv block
@@ -1378,7 +1401,7 @@
        only if @(':guards') is @('t').")
      (xdoc::p
       "If the @(':guards') input is @('t'),
-       the functions that model Java @('int') binary operations
+       the functions that model Java primitive binary operations
        (i.e. @(tsee int-add) etc.) are treated specially.
        We generate Java code to compute the left and right operands,
        and generate a Java binary expression
@@ -1418,22 +1441,45 @@
                   (boolean-eq (jbinop-eq))
                   (boolean-neq (jbinop-ne))
                   (int-add (jbinop-add))
+                  (long-add (jbinop-add))
                   (int-sub (jbinop-sub))
+                  (long-sub (jbinop-sub))
                   (int-mul (jbinop-mul))
+                  (long-mul (jbinop-mul))
                   (int-div (jbinop-div))
+                  (long-div (jbinop-div))
                   (int-rem (jbinop-rem))
+                  (long-rem (jbinop-rem))
                   (int-and (jbinop-and))
+                  (long-and (jbinop-and))
                   (int-xor (jbinop-xor))
+                  (long-xor (jbinop-xor))
                   (int-ior (jbinop-ior))
+                  (long-ior (jbinop-ior))
                   (int-eq (jbinop-eq))
+                  (long-eq (jbinop-eq))
                   (int-neq (jbinop-ne))
+                  (long-neq (jbinop-ne))
                   (int-less (jbinop-lt))
+                  (long-less (jbinop-lt))
                   (int-lesseq (jbinop-le))
+                  (long-lesseq (jbinop-le))
                   (int-great (jbinop-gt))
+                  (long-great (jbinop-gt))
                   (int-greateq (jbinop-ge))
+                  (long-greateq (jbinop-ge))
                   (int-int-shiftl (jbinop-shl))
+                  (long-long-shiftl (jbinop-shl))
+                  (long-int-shiftl (jbinop-shl))
+                  (int-long-shiftl (jbinop-shl))
                   (int-int-shiftr (jbinop-sshr))
-                  (int-int-ushiftr (jbinop-ushr))))
+                  (long-long-shiftr (jbinop-sshr))
+                  (long-int-shiftr (jbinop-sshr))
+                  (int-long-shiftr (jbinop-sshr))
+                  (int-int-ushiftr (jbinop-ushr))
+                  (long-long-ushiftr (jbinop-ushr))
+                  (long-int-ushiftr (jbinop-ushr))
+                  (int-long-ushiftr (jbinop-ushr))))
          (expr (jexpr-paren (jexpr-binary binop left-expr right-expr)))
          (block (append left-block right-block)))
       (mv block

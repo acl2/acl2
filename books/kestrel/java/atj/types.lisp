@@ -183,7 +183,8 @@
    :acons
    :avalue
    :jboolean
-   :jint)
+   :jint
+   :jlong)
   :short "Recognize ATJ types."
   :long
   (xdoc::topstring
@@ -198,8 +199,9 @@
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
      whose names start with @('a') for `ACL2',
-     as well as type for the Java primitive types @('boolean') and @('int'),
-     whose name starts with @('j') for `Java'.
+     as well as type for the Java primitive types
+     @('boolean'), @('int'), and @('long'),
+     whose names starts with @('j') for `Java'.
      More types will be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
@@ -280,7 +282,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-to-pred ((x atj-typep))
-  :returns (atype pseudo-termfnp)
+  :returns (pred pseudo-termfnp)
   :short "ACL2 predicate denoted by an ATJ type."
   :long
   (xdoc::topstring
@@ -288,9 +290,8 @@
     "The predicate recognizes the values of the type.")
    (xdoc::p
     "The predicates for the @(':a...') types are straightforward.
-     The predicates for the @(':jboolean') and @('int') types
-     are @(tsee boolean-value-p) and @(tsee int-value-p),
-     which recognize the models of @('boolean') and @('int') values
+     The predicates for the @(':j...') types are
+     the recognizers of the corresponding Java primitive types
      in our Java language formalization.
      Also see " (xdoc::seetopic "atj-primitives" "here") "."))
   (case x
@@ -304,6 +305,7 @@
     (:avalue '(lambda (_) 't))
     (:jboolean 'boolean-value-p)
     (:jint 'int-value-p)
+    (:jlong 'long-value-p)
     (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -319,16 +321,13 @@
      this denotation is defined by @(tsee atj-type-to-pred).")
    (xdoc::p
     "The ordering on the @('a...') types is straightforward.
-     The ATJ types @(':jboolean') and @(':jint')
-     denote the ACL2 types @(tsee boolean-value-p) and @(tsee int-value-p),
-     whose representation is always a @(tsee cons)
+     The @(':j...') types denote ACL2 predicates
+     satisfied only by @(tsee cons)es
      (satisfying additional properties; see "
     (xdoc::seetopic "atj-primitives" "here")
-    "); thus, @(':jboolean') and @(':jint')
-     are below @(':acons') in the partial order.
-     The types @(':jboolean') and @(':jint')
-     are unrelated to each other in the partial order,
-     because @(tsee boolean-value-p) and @(tsee int-value-p) are disjoint.")
+    "); thus, the @(':j...') types are below @(':acons') in the partial order.
+     The @('j...') types are unrelated to each other in the partial order,
+     because the corresponding predicates are disjoint.")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -361,6 +360,7 @@
     (:avalue (eq sup :avalue))
     (:jboolean (and (member-eq sup '(:jboolean :acons :avalue)) t))
     (:jint (and (member-eq sup '(:jint :acons :avalue)) t))
+    (:jlong (and (member-eq sup '(:jlong :acons :avalue)) t))
     (otherwise (impossible)))
   ///
 
@@ -419,7 +419,8 @@
                   :acons
                   :avalue
                   :jboolean
-                  :jint)))
+                  :jint
+                  :jlong)))
       `(encapsulate
          ()
          (set-ignore-ok t)
@@ -487,17 +488,21 @@
                 ((:ainteger :arational :anumber) :anumber)
                 (t :avalue)))
     (:acons (case y
-              ((:acons :jboolean :jint) :acons)
+              ((:acons :jboolean :jint :jlong) :acons)
               (t :avalue)))
     (:avalue :avalue)
     (:jboolean (case y
                  (:jboolean :jboolean)
-                 ((:jint :acons) :acons)
+                 ((:jint :jlong :acons) :acons)
                  (t :avalue)))
     (:jint (case y
              (:jint :jint)
-             ((:jboolean :acons) :acons)
+             ((:jboolean :jlong :acons) :acons)
              (t :avalue)))
+    (:jlong (case y
+              (:jlong :jlong)
+              ((:jboolean :jint :acons) :acons)
+              (t :avalue)))
     (otherwise (impossible)))
   ///
 
@@ -582,8 +587,7 @@
   (xdoc::topstring
    (xdoc::p
     "The @(':a...') types denote the corresponding AIJ class types.
-     The @(':jboolean') and @(':jint') types denote
-     the Java primitive type @('boolean') and @('int')."))
+     The @(':j...') types denote the corresponding Java primitive types."))
   (case type
     (:acharacter *aij-type-char*)
     (:astring *aij-type-string*)
@@ -595,6 +599,7 @@
     (:avalue *aij-type-value*)
     (:jboolean (jtype-boolean))
     (:jint (jtype-int))
+    (:jlong (jtype-long))
     (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

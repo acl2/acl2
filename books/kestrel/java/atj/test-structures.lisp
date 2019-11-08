@@ -38,8 +38,8 @@
      (xdoc::seetopic "atj-types" "types")
      " whose names start with @('a'), e.g. @(':ainteger').")
     (xdoc::li
-     "Java @('boolean') and @('int') values,
-      which correspond to the ATJ types @(':jboolean') and @(':jint').
+     "Java primitive values,
+      which correspond to the ATJ @(':j...') types.
       These values are used only in the shallow embedding with guards.
       As support for more Java primitive types is added to ATJ,
       this category of values will be extended."))
@@ -50,10 +50,11 @@
      So we introduce a type for these two kinds of values.
      The @('a') values may be anything,
      while the @('j') values are restricted to (our model of)
-     Java @('boolean')s and @('int')s."))
+     Java primitive values."))
   (:avalue ((get acl2::any)))
   (:jvalue-boolean ((get boolean-value)))
-  (:jvalue-int ((get int-value))))
+  (:jvalue-int ((get int-value)))
+  (:jvalue-long ((get long-value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,7 +64,8 @@
   (atj-test-value-case test-value
                        :avalue (atj-type-of-value test-value.get)
                        :jvalue-boolean :jboolean
-                       :jvalue-int :jint))
+                       :jvalue-int :jint
+                       :jvalue-long :jlong))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

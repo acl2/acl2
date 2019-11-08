@@ -113,7 +113,7 @@
      and returns the @('new-jvar-value-index') result.")
    (xdoc::p
     "For @('j') test values, we use
-     @(tsee atj-gen-jboolean) and @(tsee atj-gen-jint).")
+     @(tsee atj-gen-jboolean) and similar functions.")
    (xdoc::p
     "In both cases, we also return the ATJ type of the expression.
      In the shallow embedding, this will determined the Java type
@@ -133,7 +133,11 @@
    :jvalue-int (mv nil
                    (atj-gen-jint (int-value->int tvalue.get))
                    :jint
-                 jvar-value-index)))
+                 jvar-value-index)
+   :jvalue-long (mv nil
+                    (atj-gen-jlong (long-value->int tvalue.get))
+                    :jlong
+                  jvar-value-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -260,8 +264,9 @@
             &) (atj-gen-test-value test.output "value" jvar-value-index))
        (res-type (cond ((eq ares-type :jboolean) (jtype-boolean))
                        ((eq ares-type :jint) (jtype-int))
+                       ((eq ares-type :jlong) (jtype-long))
                        (t *aij-type-value*)))
-       (cmp-res-expr (if (member-eq ares-type '(:jboolean :jint))
+       (cmp-res-expr (if (member-eq ares-type '(:jboolean :jint :jlong))
                          (jexpr-binary (jbinop-eq)
                                        (jexpr-name "resultAcl2")
                                        (jexpr-name "resultJava"))

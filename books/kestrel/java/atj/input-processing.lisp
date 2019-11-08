@@ -251,7 +251,7 @@
   (b* ((irrelevant (atj-test-value-avalue :irrelevant)))
     (if (or deep$
             (not guards$)
-            (not (member-eq type '(:jboolean :jint))))
+            (not (member-eq type '(:jboolean :jint :jlong))))
         (if (quotep input)
             (value (atj-test-value-avalue (unquote-term input)))
           (er-soft+ ctx t irrelevant
@@ -262,7 +262,8 @@
                     input fn call))
       (b* ((constructor (case type
                           (:jboolean 'boolean-value)
-                          (:jint 'int-value)))
+                          (:jint 'int-value)
+                          (:jlong 'long-value)))
            (err-msg (msg "The term ~x0 that is an argument of ~
                           the function call (~x1 ...) that translates ~
                           the test term ~x2 in the :TESTS input, ~
@@ -273,7 +274,8 @@
                          constructor
                          (case type
                            (:jboolean "a boolean")
-                           (:jint "a signed 32-bit integer"))))
+                           (:jint "a signed 32-bit integer")
+                           (:jlong "a signed 64-bit integer"))))
            ((unless (ffn-symb-p input constructor))
             (er-soft+ ctx t irrelevant "~@0" err-msg))
            (args (fargs input))
@@ -285,12 +287,14 @@
            (val (unquote-term arg))
            ((unless (case type
                       (:jboolean (booleanp val))
-                      (:jint (sbyte32p val))))
+                      (:jint (sbyte32p val))
+                      (:jlong (sbyte64p val))))
             (er-soft+ ctx t irrelevant "~@0" err-msg)))
         (value
          (case type
            (:jboolean (atj-test-value-jvalue-boolean (boolean-value val)))
-           (:jint (atj-test-value-jvalue-int (int-value val)))))))))
+           (:jint (atj-test-value-jvalue-int (int-value val)))
+           (:jlong (atj-test-value-jvalue-long (long-value val)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,6 +439,8 @@
                            (atj-test-value-jvalue-boolean output))
                           ((eq out-type? :jint)
                            (atj-test-value-jvalue-int output))
+                          ((eq out-type? :jlong)
+                           (atj-test-value-jvalue-long output))
                           (t (atj-test-value-avalue output)))))
     (value (atj-test name fn test-inputs test-output))))
 
