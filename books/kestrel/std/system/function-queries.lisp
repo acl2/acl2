@@ -14,6 +14,8 @@
 (include-book "definedp")
 (include-book "definedp-plus")
 (include-book "formals-plus")
+(include-book "fundef-disabledp")
+(include-book "fundef-enabledp")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
 (include-book "irecursivep")

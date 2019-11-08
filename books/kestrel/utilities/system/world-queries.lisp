@@ -28,6 +28,8 @@
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/fundef-disabledp" :dir :system)
+(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
@@ -59,6 +61,8 @@
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders-plus" :dir :system)
+(include-book "kestrel/std/system/rune-disabledp" :dir :system)
+(include-book "kestrel/std/system/rune-enabledp" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-formula" :dir :system)
@@ -290,36 +294,6 @@
                           (default-ruler-extenders wrld))))
     (termination-machine
      (list fn) (ubody fn wrld) nil nil ruler-extenders)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define fundef-disabledp ((fn (function-namep fn (w state))) state)
-  :returns (yes/no "A @(tsee booleanp).")
-  :mode :program
-  :parents (world-queries)
-  :short "Check if the definition of a named function is disabled."
-  (if (member-equal `(:definition ,fn) (disabledp fn)) t nil))
-
-(define fundef-enabledp ((fn (function-namep fn (w state))) state)
-  :returns (yes/no "A @(tsee booleanp).")
-  :mode :program
-  :parents (world-queries)
-  :short "Check if the definition of a named function is enabled."
-  (not (fundef-disabledp fn state)))
-
-(define rune-disabledp ((rune (runep rune (w state))) state)
-  :returns (yes/no "A @(tsee booleanp).")
-  :mode :program
-  :parents (world-queries)
-  :short "Check if a @(see rune) is disabled."
-  (if (member-equal rune (disabledp (cadr rune))) t nil))
-
-(define rune-enabledp ((rune (runep rune (w state))) state)
-  :returns (yes/no "A @(tsee booleanp).")
-  :mode :program
-  :parents (world-queries)
-  :short "Check if a @(see rune) is enabled."
-  (not (rune-disabledp rune state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

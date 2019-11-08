@@ -25,6 +25,8 @@
 (include-book "remove-progn")
 (include-book "remove-trivial-vars")
 (include-book "remove-unused-vars")
+(include-book "rune-disabledp")
+(include-book "rune-enabledp")
 (include-book "table-alist-plus")
 (include-book "term-function-recognizers")
 (include-book "theorem-queries")
