@@ -27,6 +27,7 @@
 (include-book "remove-unused-vars")
 (include-book "table-alist-plus")
 (include-book "term-function-recognizers")
+(include-book "theorem-queries")
 (include-book "unquote-term")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

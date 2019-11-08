@@ -208,7 +208,7 @@
      For the ATJ types that correspond to AIJ's public classes,
      the first letter is @('A') and the second letter is from the class name.
      For the Java primitive types,
-     the first letter is @('J') and the second letter is from the Java type."))
+     the first letter is @('J') and the second letter is from [JVMS:4.3.2]."))
   (case type
     (:ainteger "AI")
     (:arational "AR")
@@ -218,7 +218,10 @@
     (:asymbol "AY")
     (:acons "AP")
     (:avalue "AV")
-    (:jint "JI"))
+    (:jboolean "JZ")
+    (:jint "JI")
+    (:jlong "JL")
+    (otherwise (impossible)))
   ///
 
   (defrule atj-type-id-injective
@@ -244,7 +247,9 @@
         ((equal id "AY") :asymbol)
         ((equal id "AP") :acons)
         ((equal id "AV") :avalue)
+        ((equal id "JZ") :jboolean)
         ((equal id "JI") :jint)
+        ((equal id "JL") :jlong)
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
             :avalue))) ; irrelevant

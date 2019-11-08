@@ -81,6 +81,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-jboolean ((boolean booleanp))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('boolean')
+          from an ACL2 boolean."
+  (if boolean
+      (jexpr-literal-true)
+    (jexpr-literal-false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-jint ((integer (signed-byte-p 32 integer)))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('int')

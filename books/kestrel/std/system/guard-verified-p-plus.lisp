@@ -17,7 +17,7 @@
 
 (define guard-verified-p+ ((fn/thm symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
-  :parents (std/system/function-queries)
+  :parents (std/system/function-queries std/system/theorem-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
           " variant of @(tsee guard-verified-p).")

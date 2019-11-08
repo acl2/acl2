@@ -31,16 +31,16 @@ import java.util.Map;
  * e.g. as optimized implementations of ACL2 built-in functions.
  * <p>
  * These native functions are implemented in the {@code exec...} static methods,
- * which are public so that these implementations is available to
- * code external to AIJ.
+ * which are public so that these implementations
+ * are available to code external to AIJ.
  * These methods operate on ACL2 values
  * in the same way as the corresponding ACL2 functions.
  * The methods that take {@link Acl2Value} arguments
  * operate on all the ACL2 values, regardless of guards:
  * in other words, they run as if guard checking were off,
- * i.e. they run "in the logic" as the ACL2 documentation says sometimes.
- * Some of these methods have overloaded variants that operate
- * on narrower types that are contained in the guards:
+ * i.e. they run "in the logic", as the ACL2 documentation says sometimes.
+ * Some of these methods have overloaded variants
+ * that operate on narrower types that are contained in the guards:
  * these can be used when guards are satisfied,
  * and may be more efficient;
  * some also return narrower result types.
@@ -61,12 +61,20 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     //////////////////////////////////////// private members:
 
     /**
-     * Constructs a native function with the given name.
+     * Arity of this native function.
+     * This is always non-negative.
+     */
+    private final int arity;
+
+    /**
+     * Constructs a native function with the given name and arity.
      *
      * @param name Name of the native function.
+     * @param arity Arity of the native function.
      */
-    private Acl2NativeFunction(Acl2Symbol name) {
+    private Acl2NativeFunction(Acl2Symbol name, int arity) {
         super(name);
+        this.arity = arity;
     }
 
     /**
@@ -131,17 +139,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Characterp() {
-            super(Acl2Symbol.CHARACTERP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.CHARACTERP, 1);
         }
 
         /**
@@ -165,17 +163,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Stringp() {
-            super(Acl2Symbol.STRINGP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.STRINGP, 1);
         }
 
         /**
@@ -199,17 +187,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Symbolp() {
-            super(Acl2Symbol.SYMBOLP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.SYMBOLP, 1);
         }
 
         /**
@@ -233,17 +211,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Integerp() {
-            super(Acl2Symbol.INTEGERP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.INTEGERP, 1);
         }
 
         /**
@@ -267,17 +235,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Rationalp() {
-            super(Acl2Symbol.RATIONALP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.RATIONALP, 1);
         }
 
         /**
@@ -301,17 +259,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private ComplexRationalp() {
-            super(Acl2Symbol.COMPLEX_RATIONALP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.COMPLEX_RATIONALP, 1);
         }
 
         /**
@@ -335,17 +283,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Acl2Numberp() {
-            super(Acl2Symbol.ACL2_NUMBERP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.ACL2_NUMBERP, 1);
         }
 
         /**
@@ -369,17 +307,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Consp() {
-            super(Acl2Symbol.CONSP);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.CONSP, 1);
         }
 
         /**
@@ -403,17 +331,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private CharCode() {
-            super(Acl2Symbol.CHAR_CODE);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.CHAR_CODE, 1);
         }
 
         /**
@@ -437,17 +355,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private CodeChar() {
-            super(Acl2Symbol.CODE_CHAR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.CODE_CHAR, 1);
         }
 
         /**
@@ -471,17 +379,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Coerce() {
-            super(Acl2Symbol.COERCE);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.COERCE, 2);
         }
 
         /**
@@ -507,17 +405,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private InternInPackageOfSymbol() {
-            super(Acl2Symbol.INTERN_IN_PACKAGE_OF_SYMBOL);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.INTERN_IN_PACKAGE_OF_SYMBOL, 2);
         }
 
         /**
@@ -542,17 +430,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private SymbolPackageName() {
-            super(Acl2Symbol.SYMBOL_PACKAGE_NAME);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.SYMBOL_PACKAGE_NAME, 1);
         }
 
         /**
@@ -576,17 +454,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private SymbolName() {
-            super(Acl2Symbol.SYMBOL_NAME);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.SYMBOL_NAME, 1);
         }
 
         /**
@@ -610,17 +478,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private PkgImports() {
-            super(Acl2Symbol.PKG_IMPORTS);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.PKG_IMPORTS, 1);
         }
 
         /**
@@ -652,17 +510,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private PkgWitness() {
-            super(Acl2Symbol.PKG_WITNESS);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.PKG_WITNESS, 1);
         }
 
         /**
@@ -692,17 +540,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private UnaryMinus() {
-            super(Acl2Symbol.UNARY_MINUS);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.UNARY_MINUS, 1);
         }
 
         /**
@@ -726,17 +564,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private UnarySlash() {
-            super(Acl2Symbol.UNARY_SLASH);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.UNARY_SLASH, 1);
         }
 
         /**
@@ -760,17 +588,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private BinaryPlus() {
-            super(Acl2Symbol.BINARY_PLUS);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.BINARY_PLUS, 2);
         }
 
         /**
@@ -794,17 +612,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private BinaryStar() {
-            super(Acl2Symbol.BINARY_STAR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.BINARY_STAR, 2);
         }
 
         /**
@@ -828,17 +636,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private LessThan() {
-            super(Acl2Symbol.LESS_THAN);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.LESS_THAN, 2);
         }
 
         /**
@@ -862,17 +660,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Complex() {
-            super(Acl2Symbol.COMPLEX);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.COMPLEX, 2);
         }
 
         /**
@@ -896,17 +684,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private RealPart() {
-            super(Acl2Symbol.REALPART);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.REALPART, 1);
         }
 
         /**
@@ -930,17 +708,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private ImagPart() {
-            super(Acl2Symbol.IMAGPART);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.IMAGPART, 1);
         }
 
         /**
@@ -964,17 +732,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Numerator() {
-            super(Acl2Symbol.NUMERATOR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.NUMERATOR, 1);
         }
 
         /**
@@ -998,17 +756,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Denominator() {
-            super(Acl2Symbol.DENOMINATOR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.DENOMINATOR, 1);
         }
 
         /**
@@ -1032,17 +780,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Cons() {
-            super(Acl2Symbol.CONS);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.CONS, 2);
         }
 
         /**
@@ -1066,17 +804,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Car() {
-            super(Acl2Symbol.CAR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.CAR, 1);
         }
 
         /**
@@ -1100,17 +828,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Cdr() {
-            super(Acl2Symbol.CDR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 1.
-         */
-        @Override
-        int getArity() {
-            return 1;
+            super(Acl2Symbol.CDR, 1);
         }
 
         /**
@@ -1134,17 +852,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Equal() {
-            super(Acl2Symbol.EQUAL);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.EQUAL, 2);
         }
 
         /**
@@ -1169,17 +877,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private BadAtomLessThanOrEqualTo() {
-            super(Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.BAD_ATOM_LESS_THAN_OR_EQUAL_TO, 2);
         }
 
         /**
@@ -1215,17 +913,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private If() {
-            super(Acl2Symbol.IF);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 3.
-         */
-        @Override
-        int getArity() {
-            return 3;
+            super(Acl2Symbol.IF, 3);
         }
 
         /**
@@ -1269,17 +957,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Constructs this native function.
          */
         private Or() {
-            super(Acl2Symbol.OR);
-        }
-
-        /**
-         * Returns the number of parameters of this native function.
-         *
-         * @return The number 2.
-         */
-        @Override
-        int getArity() {
-            return 2;
+            super(Acl2Symbol.OR, 2);
         }
 
         /**
@@ -1320,6 +998,13 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     }
 
     //////////////////////////////////////// package-private members:
+
+    /**
+     * Returns the number of parameters of this native function.
+      */
+    int getArity() {
+        return arity;
+    }
 
     /**
      * Checks if this native function is the {@code if} ACL2 primitive function.
