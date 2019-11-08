@@ -718,11 +718,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-adapt-expr-from-jprim-to-cons ((expr jexprp)
-                                           (type (member-eq
-                                                  type '(:jboolean
-                                                         :jint
-                                                         :jlong))))
+(define atj-adapt-expr-from-jprim-to-cons
+  ((expr jexprp)
+   (type (member-eq type '(:jboolean :jint :jlong)))
+   (pkg-class-names string-string-alistp)
+   (curr-pkg stringp))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from a Java primitive type to type @('Acl2ConsValue')."
@@ -749,25 +749,19 @@
      Then we create a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol')
      for the keyword for the primitive type,
-     and whose second element is the aforementioned core expression.")
-   (xdoc::p
-    "Note: this code assumes that
-     the class where the generated expression occurs
-     includes static final fields @('T') and @('NIL'),
-     with the usual meaning:
-     this is almost certainly the case,
-     namely if the ACL2 package corresponding to the class
-     imports @('t') and @('nil') from the Lisp package,
-     but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
-  (b* ((acl2-core-expr (case type
+     and whose second element is the aforementioned core expression."))
+  (b* ((acl2-symbol-t-expr (atj-gen-shallow-symbol
+                            t pkg-class-names curr-pkg))
+       (acl2-symbol-nil-expr (atj-gen-shallow-symbol
+                              nil pkg-class-names curr-pkg))
+       (acl2-core-expr (case type
                          (:jboolean (jexpr-paren
                                      (jexpr-cond expr
-                                                 (jexpr-name "T")
-                                                 (jexpr-name "NIL"))))
+                                                 acl2-symbol-t-expr
+                                                 acl2-symbol-nil-expr)))
                          ((:jint :jlong) (jexpr-smethod *aij-type-int*
                                                         "make"
                                                         (list expr)))))
-       (acl2-symbol-nil-expr (jexpr-name "NIL"))
        (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
                                             "make"
                                             (list acl2-core-expr
@@ -789,11 +783,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-adapt-expr-from-value-to-jprim ((expr jexprp)
-                                            (type (member-eq
-                                                   type '(:jboolean
-                                                          :jint
-                                                          :jlong))))
+(define atj-adapt-expr-from-value-to-jprim
+  ((expr jexprp)
+   (type (member-eq type '(:jboolean :jint :jlong)))
+   (pkg-class-names string-string-alistp)
+   (curr-pkg stringp))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from type @('Acl2Value') to a Java primitive type."
@@ -824,17 +818,10 @@
      based on whether it is @('t') or not;
      for @(':jint') and @(':jlong'), we cast it to @('Acl2Integer'),
      and get its numeric value
-     as an @('int') for @(':jint') or as a @('long') for @(':jlong').")
-   (xdoc::p
-    "Note: this code assumes that
-     the class where the generated expression occurs
-     includes static final field @('NIL'),
-     with the usual meaning:
-     this is almost certainly the case,
-     namely if the ACL2 package corresponding to the class
-     imports @('nil') from the Lisp package,
-     but for robustness this code should use @(tsee atj-gen-shallow-symbol)."))
-  (b* ((acl2-outer-cons-expr (jexpr-paren (jexpr-cast *aij-type-cons* expr)))
+     as an @('int') for @(':jint') or as a @('long') for @(':jlong')."))
+  (b* ((acl2-symbol-nil-expr (atj-gen-shallow-symbol
+                              nil pkg-class-names curr-pkg))
+       (acl2-outer-cons-expr (jexpr-paren (jexpr-cast *aij-type-cons* expr)))
        (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
        (acl2-inner-cons-expr (jexpr-paren
                               (jexpr-cast *aij-type-cons* acl2-cdr-expr)))
@@ -845,7 +832,7 @@
                                (jexpr-cast *aij-type-symbol* acl2-car-expr))))
          (jexpr-paren (jexpr-binary (jbinop-eq)
                                     acl2-symbol-expr
-                                    (jexpr-name "NIL")))))
+                                    acl2-symbol-nil-expr))))
       (:jint
        (b* ((acl2-integer-expr (jexpr-paren
                                 (jexpr-cast *aij-type-int* acl2-car-expr))))
@@ -860,7 +847,9 @@
 
 (define atj-adapt-expr-to-type ((expr jexprp)
                                 (src-type atj-typep)
-                                (dst-type atj-typep))
+                                (dst-type atj-typep)
+                                (pkg-class-names string-string-alistp)
+                                (curr-pkg stringp))
   :returns (new-expr jexprp :hyp (jexprp expr))
   :short "Adapt a Java expression from a source type to a destination type."
   :long
@@ -897,7 +886,8 @@
   (cond ((eq src-type dst-type) expr)
         ((member-eq src-type '(:jboolean :jint :jlong))
          (if (member-eq dst-type '(:acons :avalue))
-             (atj-adapt-expr-from-jprim-to-cons expr src-type)
+             (atj-adapt-expr-from-jprim-to-cons
+              expr src-type pkg-class-names curr-pkg)
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
@@ -905,7 +895,8 @@
                    expr)))
         ((member-eq dst-type '(:jboolean :jint :jlong))
          (if (member-eq src-type '(:acons :avalue))
-             (atj-adapt-expr-from-value-to-jprim expr dst-type)
+             (atj-adapt-expr-from-value-to-jprim
+              expr dst-type pkg-class-names curr-pkg)
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
@@ -918,7 +909,9 @@
 
 (define atj-adapt-exprs-to-types ((exprs jexpr-listp)
                                   (src-types atj-type-listp)
-                                  (dst-types atj-type-listp))
+                                  (dst-types atj-type-listp)
+                                  (pkg-class-names string-string-alistp)
+                                  (curr-pkg stringp))
   :guard (and (= (len exprs) (len src-types))
               (= (len exprs) (len dst-types)))
   :returns (new-exprs jexpr-listp :hyp (jexpr-listp exprs))
@@ -930,10 +923,14 @@
   (cond ((endp exprs) nil)
         (t (cons (atj-adapt-expr-to-type (car exprs)
                                          (car src-types)
-                                         (car dst-types))
+                                         (car dst-types)
+                                         pkg-class-names
+                                         curr-pkg)
                  (atj-adapt-exprs-to-types (cdr exprs)
                                            (cdr src-types)
-                                           (cdr dst-types))))))
+                                           (cdr dst-types)
+                                           pkg-class-names
+                                           curr-pkg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1087,7 +1084,8 @@
           (b* ((block test-block)
                (expr (jexpr-cond (jexpr-binary (jbinop-ne)
                                                test-expr
-                                               (jexpr-name "NIL"))
+                                               (atj-gen-shallow-symbol
+                                                nil pkg-class-names curr-pkg))
                                  then-expr
                                  else-expr)))
             (mv block
@@ -1102,7 +1100,8 @@
          (if-block (jblock-ifelse
                     (jexpr-binary (jbinop-ne)
                                   test-expr
-                                  (jexpr-name "NIL"))
+                                  (atj-gen-shallow-symbol
+                                   nil pkg-class-names curr-pkg))
                     (append then-block
                             (jblock-asg-name jvar-result then-expr))
                     (append else-block
@@ -1188,7 +1187,8 @@
          (if-block (jblock-if
                     (jexpr-binary (jbinop-eq)
                                   (jexpr-name jvar-result)
-                                  (jexpr-name "NIL"))
+                                  (atj-gen-shallow-symbol
+                                   nil pkg-class-names curr-pkg))
                     (append second-block
                             (jblock-asg-name jvar-result second-expr))))
          (block (append first-block
@@ -1260,7 +1260,8 @@
                                boolean)
                         (mv nil (jexpr-name "irrelevant") jvar-result-index)))
                       (expr (atj-gen-jboolean boolean))
-                      (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+                      (expr (atj-adapt-expr-to-type
+                             expr src-type dst-type pkg-class-names curr-pkg)))
                    (mv nil expr jvar-result-index)))
                 ((eq fn 'int-value)
                  (b* ((int (unquote-term arg))
@@ -1270,7 +1271,8 @@
                                int)
                         (mv nil (jexpr-name "irrelevant") jvar-result-index)))
                       (expr (atj-gen-jint int))
-                      (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+                      (expr (atj-adapt-expr-to-type
+                             expr src-type dst-type pkg-class-names curr-pkg)))
                    (mv nil expr jvar-result-index)))
                 ((eq fn 'long-value)
                  (b* ((long (unquote-term arg))
@@ -1280,7 +1282,8 @@
                                long)
                         (mv nil (jexpr-name "irrelevant") jvar-result-index)))
                       (expr (atj-gen-jlong long))
-                      (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+                      (expr (atj-adapt-expr-to-type
+                             expr src-type dst-type pkg-class-names curr-pkg)))
                    (mv nil expr jvar-result-index)))
                 (t (mv (impossible)
                        (jexpr-name "irrelevant")
@@ -1296,14 +1299,18 @@
                                                            qpairs
                                                            t ; GUARDS$
                                                            wrld))
-             (expr (cond ((eq fn 'boolean-value)
-                          (atj-adapt-expr-to-type arg-expr :asymbol src-type))
-                         ((member-eq fn '(int-value long-value))
-                          (atj-adapt-expr-to-type arg-expr :ainteger src-type))
-                         (t (prog2$ (impossible)
-                                    (jexpr-name "irrelevant"))))))
+             (expr (cond
+                    ((eq fn 'boolean-value)
+                     (atj-adapt-expr-to-type
+                      arg-expr :asymbol src-type pkg-class-names curr-pkg))
+                    ((member-eq fn '(int-value long-value))
+                     (atj-adapt-expr-to-type
+                      arg-expr :ainteger src-type pkg-class-names curr-pkg))
+                    (t (prog2$ (impossible)
+                               (jexpr-name "irrelevant"))))))
           (mv arg-block
-              (atj-adapt-expr-to-type expr src-type dst-type)
+              (atj-adapt-expr-to-type
+               expr src-type dst-type pkg-class-names curr-pkg)
               jvar-result-index))))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -1368,7 +1375,8 @@
          (expr (jexpr-paren (jexpr-unary unop operand-expr)))
          (block operand-block))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type
+           expr src-type dst-type pkg-class-names curr-pkg)
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -1483,7 +1491,8 @@
          (expr (jexpr-paren (jexpr-binary binop left-expr right-expr)))
          (block (append left-block right-block)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type
+           expr src-type dst-type pkg-class-names curr-pkg)
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -1635,7 +1644,8 @@
                                               fn-method-names
                                               curr-pkg)
                       arg-exprs))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr (atj-adapt-expr-to-type
+                      expr src-type dst-type pkg-class-names curr-pkg)))
             (mv (flatten arg-blocks)
                 expr
                 jvar-result-index)))
@@ -1708,7 +1718,8 @@
                                                        guards$
                                                        wrld)))
       (mv (append let-block body-block)
-          (atj-adapt-expr-to-type body-expr src-type dst-type)
+          (atj-adapt-expr-to-type
+           body-expr src-type dst-type pkg-class-names curr-pkg)
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -1754,7 +1765,8 @@
           (b* (((mv var &) (atj-unmark-var term))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr (atj-adapt-expr-to-type
+                      expr src-type dst-type pkg-class-names curr-pkg)))
             (mv nil expr jvar-result-index)))
          ((when (fquotep term))
           (b* ((value (unquote-term term))
@@ -1762,7 +1774,8 @@
                                             qpairs
                                             pkg-class-names
                                             curr-pkg))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr (atj-adapt-expr-to-type
+                      expr src-type dst-type pkg-class-names curr-pkg)))
             (mv nil expr jvar-result-index))))
       (atj-gen-shallow-fnapp (ffn-symb term)
                              (fargs term)
