@@ -36,17 +36,18 @@
    (xdoc::p
     "ABNF is a standardized formal grammar notation
      used in several Internet syntax specifications,
-     e.g.
-     <a href=\"https://www.rfc-editor.org/info/rfc3986\">URI</a>,
-     <a href=\"https://www.rfc-editor.org/info/rfc7230\">HTTP</a>,
-     <a href=\"https://www.rfc-editor.org/info/rfc5322\">IMF</a>,
-     <a href=\"https://www.rfc-editor.org/info/rfc5321\">SMTP</a>,
-     <a href=\"https://www.rfc-editor.org/info/rfc3501\">IMAP</a>, and
-     <a href=\"https://www.rfc-editor.org/info/rfc7159\">JSON</a>.
-     ABNF is specified by
-     <a href=\"https://www.rfc-editor.org/info/rfc5234\">RFC 5234</a> and
-     <a href=\"https://www.rfc-editor.org/info/rfc7405\">RFC 7405</a>;
-     the latter updates two portions of the former.
+     e.g. "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "URI") ", "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "HTTP") ", "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5322" "IMF") ", "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5321" "SMTP") ", "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3501" "IMAP") ", and "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7159" "JSON")
+    ". ABNF is specified by "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc5234" "RFC 5234")
+    " and "
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc7405" "RFC 7405")
+    "; the latter updates two portions of the former.
      The syntax of ABNF is specified in ABNF itself.")
 
    (xdoc::p
@@ -79,17 +80,21 @@
      as nouns or parenthetically.")
 
    (xdoc::p
-    "The <a href=\"https://www.kestrel.edu/home/people/coglio/vstte18.pdf\"
-     >VSTTE 2018 paper
-     ``A Formalization of the ABNF Notation
-     and a Verified Parser of ABNF Grammars''</a>
-     by Alessandro Coglio
+    "The "
+    (xdoc::ahref
+     "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
+     "VSTTE 2018 paper
+      ``A Formalization of the ABNF Notation
+      and a Verified Parser of ABNF Grammars''")
+    " by Alessandro Coglio
      provides an overview
      of the formalization of the ABNF notation
      and of the verified parser
      (but not of the operations on ABNF grammars).
      The differences between the paper and the ABNF library
-     are described <see topic='@(url differences-with-paper)'>here</see>."))
+     are described "
+    (xdoc::seetopic "differences-with-paper" "here")
+    "."))
 
   :order-subtopics t)
 
@@ -118,8 +123,9 @@
       measures,
       hints,
       keyed options for documentation (e.g. @(':short')),
-      and some keyed options for
-      <see topic='@(url fty::fty)'>FTY</see> types (e.g. @(':pred')).")
+      and some keyed options for "
+     (xdoc::seetopic "fty::fty" "FTY")
+     " types (e.g. @(':pred')).")
 
     (xdoc::li
      "The paper uses
