@@ -6493,8 +6493,8 @@
                 #+hons 'eql #-hons 'equal
                 test)
            ,@(and size `(:size ,size))
-           ,@(and rehash-size `(:rehash-size ,rehash-size))
-           ,@(and rehash-threshold `(:rehash-threshold ,rehash-threshold)))))
+           ,@(and rehash-size `(:rehash-size ,(float rehash-size)))
+           ,@(and rehash-threshold `(:rehash-threshold ,(float rehash-threshold))))))
 
 (defmacro get-stobj-scalar-field (elt-type fld)
 
