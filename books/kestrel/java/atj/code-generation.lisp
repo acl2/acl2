@@ -130,6 +130,18 @@
                        (atj-gen-jboolean (boolean-value->bool tvalue.get))
                        :jboolean
                      jvar-value-index)
+   :jvalue-char (mv nil
+                    (atj-gen-jchar (char-value->nat tvalue.get))
+                    :jchar
+                 jvar-value-index)
+   :jvalue-byte (mv nil
+                    (atj-gen-jbyte (byte-value->int tvalue.get))
+                    :jbyte
+                  jvar-value-index)
+   :jvalue-short (mv nil
+                     (atj-gen-jshort (short-value->int tvalue.get))
+                     :jshort
+                   jvar-value-index)
    :jvalue-int (mv nil
                    (atj-gen-jint (int-value->int tvalue.get))
                    :jint
@@ -263,10 +275,18 @@
             ares-type
             &) (atj-gen-test-value test.output "value" jvar-value-index))
        (res-type (cond ((eq ares-type :jboolean) (jtype-boolean))
+                       ((eq ares-type :jchar) (jtype-char))
+                       ((eq ares-type :jbyte) (jtype-byte))
+                       ((eq ares-type :jshort) (jtype-short))
                        ((eq ares-type :jint) (jtype-int))
                        ((eq ares-type :jlong) (jtype-long))
                        (t *aij-type-value*)))
-       (cmp-res-expr (if (member-eq ares-type '(:jboolean :jint :jlong))
+       (cmp-res-expr (if (member-eq ares-type '(:jboolean
+                                                :jchar
+                                                :jbyte
+                                                :jshort
+                                                :jint
+                                                :jlong))
                          (jexpr-binary (jbinop-eq)
                                        (jexpr-name "resultAcl2")
                                        (jexpr-name "resultJava"))

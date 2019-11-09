@@ -251,7 +251,8 @@
   (b* ((irrelevant (atj-test-value-avalue :irrelevant)))
     (if (or deep$
             (not guards$)
-            (not (member-eq type '(:jboolean :jint :jlong))))
+            (not (member-eq type
+                            '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
         (if (quotep input)
             (value (atj-test-value-avalue (unquote-term input)))
           (er-soft+ ctx t irrelevant
@@ -262,6 +263,9 @@
                     input fn call))
       (b* ((constructor (case type
                           (:jboolean 'boolean-value)
+                          (:jchar 'char-value)
+                          (:jbyte 'byte-value)
+                          (:jshort 'short-value)
                           (:jint 'int-value)
                           (:jlong 'long-value)))
            (err-msg (msg "The term ~x0 that is an argument of ~
@@ -274,6 +278,9 @@
                          constructor
                          (case type
                            (:jboolean "a boolean")
+                           (:jchar "an unsigned 16-bit integer")
+                           (:jbyte "a signed 8-bit integer")
+                           (:jshort "a signed 16-bit integer")
                            (:jint "a signed 32-bit integer")
                            (:jlong "a signed 64-bit integer"))))
            ((unless (ffn-symb-p input constructor))
@@ -287,12 +294,18 @@
            (val (unquote-term arg))
            ((unless (case type
                       (:jboolean (booleanp val))
+                      (:jchar (ubyte16p val))
+                      (:jbyte (sbyte8p val))
+                      (:jshort (sbyte16p val))
                       (:jint (sbyte32p val))
                       (:jlong (sbyte64p val))))
             (er-soft+ ctx t irrelevant "~@0" err-msg)))
         (value
          (case type
            (:jboolean (atj-test-value-jvalue-boolean (boolean-value val)))
+           (:jchar (atj-test-value-jvalue-char (char-value val)))
+           (:jbyte (atj-test-value-jvalue-byte (byte-value val)))
+           (:jshort (atj-test-value-jvalue-short (short-value val)))
            (:jint (atj-test-value-jvalue-int (int-value val)))
            (:jlong (atj-test-value-jvalue-long (long-value val)))))))))
 
@@ -437,6 +450,12 @@
                   call))
        (test-output (cond ((eq out-type? :jboolean)
                            (atj-test-value-jvalue-boolean output))
+                          ((eq out-type? :jchar)
+                           (atj-test-value-jvalue-char output))
+                          ((eq out-type? :jbyte)
+                           (atj-test-value-jvalue-byte output))
+                          ((eq out-type? :jshort)
+                           (atj-test-value-jvalue-short output))
                           ((eq out-type? :jint)
                            (atj-test-value-jvalue-int output))
                           ((eq out-type? :jlong)
@@ -790,7 +809,8 @@
                                 deep$
                                 guards$)))
 
-  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
+  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
+             (local (in-theory (disable member-equal acl2::member-of-cons))))
 
   :verify-guards nil ; done below
   ///

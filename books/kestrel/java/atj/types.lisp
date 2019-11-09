@@ -183,6 +183,9 @@
    :acons
    :avalue
    :jboolean
+   :jchar
+   :jbyte
+   :jshort
    :jint
    :jlong)
   :short "Recognize ATJ types."
@@ -200,9 +203,8 @@
      @(tsee cons) pairs, and all values),
      whose names start with @('a') for `ACL2',
      as well as type for the Java primitive types
-     @('boolean'), @('int'), and @('long'),
-     whose names starts with @('j') for `Java'.
-     More types will be added in the future.")
+     except @('float') and @('double').
+     More types may be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
      (i) an ACL2 predicate (see @(tsee atj-type-to-pred)) and
@@ -304,6 +306,9 @@
     (:acons 'consp)
     (:avalue '(lambda (_) 't))
     (:jboolean 'boolean-value-p)
+    (:jchar 'char-value-p)
+    (:jbyte 'byte-value-p)
+    (:jshort 'short-value-p)
     (:jint 'int-value-p)
     (:jlong 'long-value-p)
     (otherwise (impossible))))
@@ -359,6 +364,9 @@
     (:acons (and (member-eq sup '(:acons :avalue)) t))
     (:avalue (eq sup :avalue))
     (:jboolean (and (member-eq sup '(:jboolean :acons :avalue)) t))
+    (:jchar (and (member-eq sup '(:jchar :acons :avalue)) t))
+    (:jbyte (and (member-eq sup '(:jbyte :acons :avalue)) t))
+    (:jshort (and (member-eq sup '(:jshort :acons :avalue)) t))
     (:jint (and (member-eq sup '(:jint :acons :avalue)) t))
     (:jlong (and (member-eq sup '(:jlong :acons :avalue)) t))
     (otherwise (impossible)))
@@ -419,6 +427,9 @@
                   :acons
                   :avalue
                   :jboolean
+                  :jchar
+                  :jbyte
+                  :jshort
                   :jint
                   :jlong)))
       `(encapsulate
@@ -488,20 +499,32 @@
                 ((:ainteger :arational :anumber) :anumber)
                 (t :avalue)))
     (:acons (case y
-              ((:acons :jboolean :jint :jlong) :acons)
+              ((:acons :jboolean :jchar :jbyte :jshort :jint :jlong) :acons)
               (t :avalue)))
     (:avalue :avalue)
     (:jboolean (case y
                  (:jboolean :jboolean)
-                 ((:jint :jlong :acons) :acons)
+                 ((:jchar :jbyte :jshort :jint :jlong :acons) :acons)
+                 (t :avalue)))
+    (:jchar (case y
+                 (:jchar :jchar)
+                 ((:jboolean :jbyte :jshort :jint :jlong :acons) :acons)
+                 (t :avalue)))
+    (:jbyte (case y
+                 (:jbyte :jbyte)
+                 ((:jboolean :jchar :jshort :jint :jlong :acons) :acons)
+                 (t :avalue)))
+    (:jshort (case y
+                 (:jshort :jshort)
+                 ((:jboolean :jchar :jbyte :jint :jlong :acons) :acons)
                  (t :avalue)))
     (:jint (case y
              (:jint :jint)
-             ((:jboolean :jlong :acons) :acons)
+             ((:jboolean :jchar :jbyte :jshort :jlong :acons) :acons)
              (t :avalue)))
     (:jlong (case y
               (:jlong :jlong)
-              ((:jboolean :jint :acons) :acons)
+              ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
               (t :avalue)))
     (otherwise (impossible)))
   ///
@@ -598,6 +621,9 @@
     (:acons *aij-type-cons*)
     (:avalue *aij-type-value*)
     (:jboolean (jtype-boolean))
+    (:jchar (jtype-char))
+    (:jbyte (jtype-byte))
+    (:jshort (jtype-short))
     (:jint (jtype-int))
     (:jlong (jtype-long))
     (otherwise (impossible))))

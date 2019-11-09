@@ -16,6 +16,8 @@
 
 ; Specialize the input and output types of the tested functions.
 
+;; boolean operations:
+
 (java::def-atj-main-function-type test-boolean-not (:jboolean) :jboolean)
 
 (java::def-atj-main-function-type test-boolean-and
@@ -32,6 +34,8 @@
 
 (java::def-atj-main-function-type test-boolean-neq
                                   (:jboolean :jboolean) :jboolean)
+
+;; integer operations:
 
 (java::def-atj-main-function-type test-int-plus (:jint) :jint)
 
@@ -131,6 +135,54 @@
 (java::def-atj-main-function-type g-boolean
                                   (:jboolean :jboolean :jboolean) :jboolean)
 
+;; widening conversions:
+
+(java::def-atj-main-function-type test-byte-to-short (:jbyte) :jshort)
+
+(java::def-atj-main-function-type test-byte-to-int (:jbyte) :jint)
+
+(java::def-atj-main-function-type test-byte-to-long (:jbyte) :jlong)
+
+(java::def-atj-main-function-type test-short-to-int (:jshort) :jint)
+
+(java::def-atj-main-function-type test-short-to-long (:jshort) :jlong)
+
+(java::def-atj-main-function-type test-int-to-long (:jint) :jlong)
+
+(java::def-atj-main-function-type test-char-to-int (:jchar) :jint)
+
+(java::def-atj-main-function-type test-char-to-long (:jchar) :jlong)
+
+;; narrowing conversions:
+
+(java::def-atj-main-function-type test-short-to-byte (:jshort) :jbyte)
+
+(java::def-atj-main-function-type test-int-to-byte (:jint) :jbyte)
+
+(java::def-atj-main-function-type test-long-to-byte (:jlong) :jbyte)
+
+(java::def-atj-main-function-type test-char-to-byte (:jchar) :jbyte)
+
+(java::def-atj-main-function-type test-int-to-short (:jint) :jshort)
+
+(java::def-atj-main-function-type test-long-to-short (:jlong) :jshort)
+
+(java::def-atj-main-function-type test-char-to-short (:jchar) :jshort)
+
+(java::def-atj-main-function-type test-long-to-int (:jlong) :jint)
+
+(java::def-atj-main-function-type test-short-to-char (:jshort) :jchar)
+
+(java::def-atj-main-function-type test-int-to-char (:jint) :jchar)
+
+(java::def-atj-main-function-type test-long-to-char (:jlong) :jchar)
+
+;; widening and narrowing conversions:
+
+(java::def-atj-main-function-type test-byte-to-char (:jbyte) :jchar)
+
+;; other functions:
+
 (java::def-atj-main-function-type f-int (:jint :jint) :jint)
 
 (java::def-atj-main-function-type g-int (:jint :jint :jint) :jint)
@@ -142,6 +194,8 @@
 (java::def-atj-main-function-type g-long (:jlong :jlong :jlong) :jlong)
 
 (java::def-atj-main-function-type h-long (:jlong) :jlong)
+
+(java::def-atj-main-function-type f-conv (:jbyte :jshort :jlong) :jint)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,6 +253,26 @@
            test-long-long-ushiftr
            test-long-int-ushiftr
            test-int-long-ushiftr
+           test-byte-to-short
+           test-byte-to-int
+           test-byte-to-long
+           test-short-to-int
+           test-short-to-long
+           test-int-to-long
+           test-char-to-int
+           test-char-to-long
+           test-short-to-byte
+           test-int-to-byte
+           test-long-to-byte
+           test-char-to-byte
+           test-int-to-short
+           test-long-to-short
+           test-char-to-short
+           test-long-to-int
+           test-short-to-char
+           test-int-to-char
+           test-long-to-char
+           test-byte-to-char
            f-boolean
            g-boolean
            f-int
@@ -207,6 +281,7 @@
            f-long
            g-long
            h-long
+           f-conv
            :deep nil
            :guards t
            :java-class "PrimitivesShallowGuarded"

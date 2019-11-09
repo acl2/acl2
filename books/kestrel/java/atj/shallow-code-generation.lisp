@@ -720,7 +720,7 @@
 
 (define atj-adapt-expr-from-jprim-to-cons
   ((expr jexprp)
-   (type (member-eq type '(:jboolean :jint :jlong)))
+   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong)))
    (pkg-class-names string-string-alistp)
    (curr-pkg stringp))
   :returns (new-expr jexprp)
@@ -734,8 +734,7 @@
      and the destination ATJ type is @(':acons') or @(':avalue').
      In our ACL2 model of Java,
      Java primitive values are represented as
-     values satisfying @(tsee boolean-value-p), @(tsee int-value-p), etc.
-     (8 predicates, one per Java primitive type).
+     values satisfying @(tsee int-value-p) and analogous predicates.
      We convert from the Java primitive type returned by the expression
      to the Java @('Acl2ConsValue') that represents
      the ACL2 representation of the Java primitive value.")
@@ -745,7 +744,7 @@
     ". We first create the ``core'' expression from the initial expression:
      this core expression is
      an @('Acl2Symbol') (@('t') or @('nil')) for @(':jboolean'),
-     or an @('Acl2Integer') for @(':jint') or @(':jlong').
+     or an @('Acl2Integer') for the other @(':j...') types.
      Then we create a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol')
      for the keyword for the primitive type,
@@ -759,17 +758,21 @@
                                      (jexpr-cond expr
                                                  acl2-symbol-t-expr
                                                  acl2-symbol-nil-expr)))
-                         ((:jint :jlong) (jexpr-smethod *aij-type-int*
-                                                        "make"
-                                                        (list expr)))))
+                         (t (jexpr-smethod *aij-type-int*
+                                           "make"
+                                           (list expr)))))
        (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
                                             "make"
                                             (list acl2-core-expr
                                                   acl2-symbol-nil-expr)))
        (acl2-keyword-name (case type
                             (:jboolean "BOOLEAN")
+                            (:jchar "CHAR")
+                            (:jbyte "BYTE")
+                            (:jshort "SHORT")
                             (:jint "INT")
-                            (:jlong "LONG")))
+                            (:jlong "LONG")
+                            (t (impossible))))
        (acl2-keyword-boolean-expr (jexpr-smethod *aij-type-symbol*
                                                  "makeKeyword"
                                                  (list
@@ -785,7 +788,7 @@
 
 (define atj-adapt-expr-from-value-to-jprim
   ((expr jexprp)
-   (type (member-eq type '(:jboolean :jint :jlong)))
+   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong)))
    (pkg-class-names string-string-alistp)
    (curr-pkg stringp))
   :returns (new-expr jexprp)
@@ -813,12 +816,20 @@
      cast that to @('Acl2ConsPair'),
      and get its @(tsee car),
      which is then further adapted as follows:
-     for @(':jboolean'), we cast it to @('Acl2Symbol'),
+     for @(':jboolean'),
+     we cast it to @('Acl2Symbol'),
      and turn that into a @('boolean')
      based on whether it is @('t') or not;
-     for @(':jint') and @(':jlong'), we cast it to @('Acl2Integer'),
-     and get its numeric value
-     as an @('int') for @(':jint') or as a @('long') for @(':jlong')."))
+     for @(':jchar'), @(':jbyte'), and @(':jshort'),
+     we cast it to @('Acl2Integer'),
+     get its numeric value as an @('int'),
+     and cast it to @('char'), @('byte'), or @('short');
+     for @(':jint'),
+     we cast it to @('Acl2Integer'),
+     and get its numeric value as @('int');
+     for @(':jlong'),
+     we cast it to @('Acl2Integer'),
+     and get its numeric value as @('long')."))
   (b* ((acl2-symbol-nil-expr (atj-gen-shallow-symbol
                               nil pkg-class-names curr-pkg))
        (acl2-outer-cons-expr (jexpr-paren (jexpr-cast *aij-type-cons* expr)))
@@ -833,6 +844,21 @@
          (jexpr-paren (jexpr-binary (jbinop-eq)
                                     acl2-symbol-expr
                                     acl2-symbol-nil-expr))))
+      (:jchar
+       (b* ((acl2-integer-expr (jexpr-paren
+                                (jexpr-cast *aij-type-int* acl2-car-expr)))
+            (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+         (jexpr-paren (jexpr-cast (jtype-char) int-expr))))
+      (:jbyte
+       (b* ((acl2-integer-expr (jexpr-paren
+                                (jexpr-cast *aij-type-int* acl2-car-expr)))
+            (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+         (jexpr-paren (jexpr-cast (jtype-byte) int-expr))))
+      (:jshort
+       (b* ((acl2-integer-expr (jexpr-paren
+                                (jexpr-cast *aij-type-int* acl2-car-expr)))
+            (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+         (jexpr-paren (jexpr-cast (jtype-short) int-expr))))
       (:jint
        (b* ((acl2-integer-expr (jexpr-paren
                                 (jexpr-cast *aij-type-int* acl2-car-expr))))
@@ -884,7 +910,7 @@
      which is expected to always succeed
      under the assumption of guard verification."))
   (cond ((eq src-type dst-type) expr)
-        ((member-eq src-type '(:jboolean :jint :jlong))
+        ((member-eq src-type '(:jboolean :jchar :jbyte :jshort :jint :jlong))
          (if (member-eq dst-type '(:acons :avalue))
              (atj-adapt-expr-from-jprim-to-cons
               expr src-type pkg-class-names curr-pkg)
@@ -893,7 +919,7 @@
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq dst-type '(:jboolean :jint :jlong))
+        ((member-eq dst-type '(:jboolean :jchar :jbyte :jshort :jint :jlong))
          (if (member-eq src-type '(:acons :avalue))
              (atj-adapt-expr-from-value-to-jprim
               expr dst-type pkg-class-names curr-pkg)
@@ -1263,9 +1289,42 @@
                       (expr (atj-adapt-expr-to-type
                              expr src-type dst-type pkg-class-names curr-pkg)))
                    (mv nil expr jvar-result-index)))
+                ((eq fn 'char-value)
+                 (b* ((char (unquote-term arg))
+                      ((unless (ubyte16p char))
+                       (prog2$
+                        (raise "Internal error: CHAR-VALUE applied to ~x0."
+                               char)
+                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                      (expr (atj-gen-jchar char))
+                      (expr (atj-adapt-expr-to-type
+                             expr src-type dst-type pkg-class-names curr-pkg)))
+                   (mv nil expr jvar-result-index)))
+                ((eq fn 'byte-value)
+                 (b* ((byte (unquote-term arg))
+                      ((unless (sbyte8p byte))
+                       (prog2$
+                        (raise "Internal error: BYTE-VALUE applied to ~x0."
+                               byte)
+                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                      (expr (atj-gen-jbyte byte))
+                      (expr (atj-adapt-expr-to-type
+                             expr src-type dst-type pkg-class-names curr-pkg)))
+                   (mv nil expr jvar-result-index)))
+                ((eq fn 'short-value)
+                 (b* ((short (unquote-term arg))
+                      ((unless (sbyte16p short))
+                       (prog2$
+                        (raise "Internal error: SHORT-VALUE applied to ~x0."
+                               short)
+                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                      (expr (atj-gen-jshort short))
+                      (expr (atj-adapt-expr-to-type
+                             expr src-type dst-type pkg-class-names curr-pkg)))
+                   (mv nil expr jvar-result-index)))
                 ((eq fn 'int-value)
                  (b* ((int (unquote-term arg))
-                      ((unless (signed-byte-p 32 int))
+                      ((unless (sbyte32p int))
                        (prog2$
                         (raise "Internal error: INT-VALUE applied to ~x0."
                                int)
@@ -1276,7 +1335,7 @@
                    (mv nil expr jvar-result-index)))
                 ((eq fn 'long-value)
                  (b* ((long (unquote-term arg))
-                      ((unless (signed-byte-p 64 long))
+                      ((unless (sbyte64p long))
                        (prog2$
                         (raise "Internal error: LONG-VALUE applied to ~x0."
                                long)
@@ -1303,7 +1362,11 @@
                     ((eq fn 'boolean-value)
                      (atj-adapt-expr-to-type
                       arg-expr :asymbol src-type pkg-class-names curr-pkg))
-                    ((member-eq fn '(int-value long-value))
+                    ((member-eq fn '(char-value
+                                     byte-value
+                                     short-value
+                                     int-value
+                                     long-value))
                      (atj-adapt-expr-to-type
                       arg-expr :ainteger src-type pkg-class-names curr-pkg))
                     (t (prog2$ (impossible)
@@ -1352,7 +1415,12 @@
        when expressions are nested;
        in the future we should take precedences into account
        to avoid unnecessary parentheses and make the code more readable
-       (it may be actually better to handle this in the pretty-printer)."))
+       (it may be actually better to handle this in the pretty-printer).
+       For the primitive conversions, we generate a cast to the target type:
+       for widening conversions, this is unnecessary,
+       but for now we use this simple scheme
+       that may also emphasize clarity in the code;
+       we may revisit this decision in the future."))
     (b* (((mv operand-block
               operand-expr
               jvar-result-index) (atj-gen-shallow-term operand
@@ -1364,15 +1432,44 @@
                                                        qpairs
                                                        t ; GUARDS$
                                                        wrld))
-         (unop (case fn
-                 (boolean-not (junop-logcompl))
-                 (int-plus (junop-uplus))
-                 (long-plus (junop-uplus))
-                 (int-minus (junop-uminus))
-                 (long-minus (junop-uminus))
-                 (int-not (junop-bitcompl))
-                 (long-not (junop-bitcompl))))
-         (expr (jexpr-paren (jexpr-unary unop operand-expr)))
+         (expr (if (member-eq fn '(boolean-not
+                                   int-plus
+                                   long-plus
+                                   int-minus
+                                   long-minus
+                                   int-not
+                                   long-not))
+                   (b* ((unop (case fn
+                                (boolean-not (junop-logcompl))
+                                (int-plus (junop-uplus))
+                                (long-plus (junop-uplus))
+                                (int-minus (junop-uminus))
+                                (long-minus (junop-uminus))
+                                (int-not (junop-bitcompl))
+                                (long-not (junop-bitcompl)))))
+                     (jexpr-paren (jexpr-unary unop operand-expr)))
+                 (b* ((jtype (case fn
+                               (byte-to-short (jtype-short))
+                               (byte-to-int (jtype-int))
+                               (byte-to-long (jtype-long))
+                               (short-to-int (jtype-int))
+                               (short-to-long (jtype-long))
+                               (int-to-long (jtype-long))
+                               (char-to-int (jtype-int))
+                               (char-to-long (jtype-long))
+                               (short-to-byte (jtype-byte))
+                               (int-to-byte (jtype-byte))
+                               (long-to-byte (jtype-byte))
+                               (char-to-byte (jtype-byte))
+                               (int-to-short (jtype-short))
+                               (long-to-short (jtype-short))
+                               (char-to-short (jtype-short))
+                               (long-to-int (jtype-int))
+                               (short-to-char (jtype-char))
+                               (int-to-char (jtype-char))
+                               (long-to-char (jtype-char))
+                               (byte-to-char (jtype-char)))))
+                   (jexpr-paren (jexpr-cast jtype operand-expr)))))
          (block operand-block))
       (mv block
           (atj-adapt-expr-to-type

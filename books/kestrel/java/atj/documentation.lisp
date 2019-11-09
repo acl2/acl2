@@ -433,6 +433,15 @@
        if the type is @(':jboolean'),
        then @('in') must be a term @('(java::boolean-value <boolean>)')
        where @('<boolean>') is a quoted boolean (i.e. @('t') or @('nil'));
+       if the type is @(':jchar'),
+       then @('in') must be a term @('(java::char-value <char>)')
+       where @('<char>') is a quoted unsigned 16-bit integer;
+       if the type is @(':jbyte'),
+       then @('in') must be a term @('(java::byte-value <byte>)')
+       where @('<byte>') is a quoted signed 8-bit integer;
+       if the type is @(':jshort'),
+       then @('in') must be a term @('(java::short-value <short>)')
+       where @('<short>') is a quoted signed 16-bit integer;
        if the type is @(':jint'),
        then @('in') must be a term @('(java::int-value <int>)')
        where @('<int>') is a quoted signed 32-bit integer;
@@ -451,11 +460,21 @@
     (xdoc::p
      "Note that the @(':tests') input is evaluated.")
     (xdoc::p
-     "Test inputs of the form @('(java::boolean-value <boolean>)')
-      or @('(java::int-value <int>)')
-      or @('(java::long-value <long>)')
+     "Test inputs of the form
+      @('(java::boolean-value <boolean>)'),
+      @('(java::char-value <char>)'),
+      @('(java::byte-value <byte>)'),
+      @('(java::short-value <short>)'),
+      @('(java::int-value <int>)'), or
+      @('(java::long-value <long>)')
       can be used only for ACL2 functions that have
-      the ATJ type @(':jboolean') or @(':jint') or @(':jlong')
+      the ATJ type
+      @(':jboolean'),
+      @(':jchar'),
+      @(':jbyte'),
+      @(':jshort'),
+      @(':jint'), or
+      @(':jlong')
       assigned to the corresponding argument
       via @(tsee def-atj-main-function-type)."))
 

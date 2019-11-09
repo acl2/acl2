@@ -58,6 +58,9 @@
                              *aij-type-cons*
                              *aij-type-value*
                              (jtype-boolean)
+                             (jtype-char)
+                             (jtype-byte)
+                             (jtype-short)
                              (jtype-int)
                              (jtype-long)))
        t)
@@ -143,8 +146,8 @@
      (Boxing conversions are not relevant here,
      because we consider the plain primitive types like @('int'),
      not the corresponding class types like @('java.lang.Integer').)
-     Furthermore, @('boolean') is unrelated to @('int') and @('long'),
-     while @('int') is a subtype of @('long') [JLS:4.10.1].")
+     The ordering over the primitive types is
+     according to the subtype relation [JLS:4.10.1].")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -182,6 +185,19 @@
               t))
         ((equal sub *aij-type-value*) (equal sup *aij-type-value*))
         ((equal sub (jtype-boolean)) (equal sup (jtype-boolean)))
+        ((equal sub (jtype-char)) (and (member-equal sup (list (jtype-char)
+                                                               (jtype-int)
+                                                               (jtype-long)))
+                                       t))
+        ((equal sub (jtype-byte)) (and (member-equal sup (list (jtype-byte)
+                                                               (jtype-short)
+                                                               (jtype-int)
+                                                               (jtype-long)))
+                                       t))
+        ((equal sub (jtype-short)) (and (member-equal sup (list (jtype-short)
+                                                                (jtype-int)
+                                                                (jtype-long)))
+                                        t))
         ((equal sub (jtype-int)) (and (member-equal sup (list (jtype-int)
                                                               (jtype-long)))
                                       t))
@@ -224,8 +240,8 @@
      the greatest lower bound of two ATJ Java types,
      with respect to the Java subtype relation @(tsee atj-jtype-<=).
      However, the ATJ Java types with this partial order
-     do not quite form a meet semilattice, because there is
-     no lower bound of @('int') and any of the AIJ class types.")
+     do not quite form a meet semilattice, because there are no lower bounds
+     of both the primitive types and the AIJ class types.")
    (xdoc::p
     "Thus, we extend the partial order
      to the set of ATJ Java types plus @('nil'),
@@ -326,20 +342,46 @@
                                       *aij-type-value*)) *aij-type-cons*)
                (t nil)))
         ((equal x *aij-type-value*)
-         (cond ((equal y (jtype-boolean)) nil)
-               ((equal y (jtype-int)) nil)
-               ((equal y (jtype-long)) nil)
+         (cond ((member-equal y (list (jtype-boolean)
+                                      (jtype-char)
+                                      (jtype-byte)
+                                      (jtype-short)
+                                      (jtype-int)
+                                      (jtype-long))) nil)
                (t y)))
         ((equal x (jtype-boolean))
          (cond ((equal y (jtype-boolean)) (jtype-boolean))
                (t nil)))
+        ((equal x (jtype-char))
+         (cond ((member-equal y (list (jtype-char)
+                                      (jtype-int)
+                                      (jtype-long))) (jtype-char))
+               (t nil)))
+        ((equal x (jtype-byte))
+         (cond ((member-equal y (list (jtype-byte)
+                                      (jtype-short)
+                                      (jtype-int)
+                                      (jtype-long))) (jtype-byte))
+               (t nil)))
+        ((equal x (jtype-short))
+         (cond ((member-equal y (list (jtype-short)
+                                      (jtype-int)
+                                      (jtype-long))) (jtype-short))
+               ((equal y (jtype-byte)) (jtype-byte))
+               (t nil)))
         ((equal x (jtype-int))
          (cond ((member-equal y (list (jtype-int)
                                       (jtype-long))) (jtype-int))
+               ((member-equal y (list (jtype-char)
+                                      (jtype-byte)
+                                      (jtype-short))) y)
                (t nil)))
         ((equal x (jtype-long))
          (cond ((equal y (jtype-long)) (jtype-long))
-               ((equal y (jtype-int)) (jtype-int))
+               ((member-equal y (list (jtype-char)
+                                      (jtype-byte)
+                                      (jtype-short)
+                                      (jtype-int))) y)
                (t nil)))
         ((equal x nil) nil)
         (t (impossible)))

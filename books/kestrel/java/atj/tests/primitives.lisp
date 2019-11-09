@@ -27,6 +27,8 @@
 ; Thus, here we introduce wrappers for such functions,
 ; which are the ones that we want to test here.
 
+;; boolean operations:
+
 (defun test-boolean-not (x)
   (declare (xargs :guard (java::boolean-value-p x)))
   (java::boolean-not x))
@@ -55,6 +57,8 @@
   (declare (xargs :guard (and (java::boolean-value-p x)
                               (java::boolean-value-p y))))
   (java::boolean-neq x y))
+
+;; integer operations:
 
 (defun test-int-plus (x)
   (declare (xargs :guard (java::int-value-p x)))
@@ -284,6 +288,92 @@
                               (java::long-value-p y))))
   (java::int-long-ushiftr x y))
 
+;; widening conversions:
+
+(defun test-byte-to-short (x)
+  (declare (xargs :guard (java::byte-value-p x)))
+  (java::byte-to-short x))
+
+(defun test-byte-to-int (x)
+  (declare (xargs :guard (java::byte-value-p x)))
+  (java::byte-to-int x))
+
+(defun test-byte-to-long (x)
+  (declare (xargs :guard (java::byte-value-p x)))
+  (java::byte-to-long x))
+
+(defun test-short-to-int (x)
+  (declare (xargs :guard (java::short-value-p x)))
+  (java::short-to-int x))
+
+(defun test-short-to-long (x)
+  (declare (xargs :guard (java::short-value-p x)))
+  (java::short-to-long x))
+
+(defun test-int-to-long (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-to-long x))
+
+(defun test-char-to-int (x)
+  (declare (xargs :guard (java::char-value-p x)))
+  (java::char-to-int x))
+
+(defun test-char-to-long (x)
+  (declare (xargs :guard (java::char-value-p x)))
+  (java::char-to-long x))
+
+;; narrowing conversions:
+
+(defun test-short-to-byte (x)
+  (declare (xargs :guard (java::short-value-p x)))
+  (java::short-to-byte x))
+
+(defun test-int-to-byte (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-to-byte x))
+
+(defun test-long-to-byte (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-to-byte x))
+
+(defun test-char-to-byte (x)
+  (declare (xargs :guard (java::char-value-p x)))
+  (java::char-to-byte x))
+
+(defun test-int-to-short (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-to-short x))
+
+(defun test-long-to-short (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-to-short x))
+
+(defun test-char-to-short (x)
+  (declare (xargs :guard (java::char-value-p x)))
+  (java::char-to-short x))
+
+(defun test-long-to-int (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-to-int x))
+
+(defun test-short-to-char (x)
+  (declare (xargs :guard (java::short-value-p x)))
+  (java::short-to-char x))
+
+(defun test-int-to-char (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-to-char x))
+
+(defun test-long-to-char (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-to-char x))
+
+;; widening and narrowing conversions:
+
+(defun test-byte-to-char (x)
+  (declare (xargs :guard (java::byte-value-p x)))
+  (java::byte-to-char x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; More functions over (ACL2 representations of) Java primitive values.
@@ -338,6 +428,14 @@
   (declare (xargs :guard (and (java::long-value-p x))))
   (java::long-xor (java::long-div x (java::long-value 119))
                   (java::long-rem x (java::long-value -373))))
+
+(defun f-conv (x y z)
+  (declare (xargs :guard (and (java::byte-value-p x)
+                              (java::short-value-p y)
+                              (java::long-value-p z))))
+  (java::int-mul (java::int-add (java::byte-to-int x)
+                                (java::short-to-int y))
+                 (java::long-to-int z)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -819,7 +917,143 @@
     ("IntLongUshiftr3" (test-int-long-ushiftr (java::int-value -2)
                                               (java::long-value 3)))
     ("IntLongUshiftr4" (test-int-long-ushiftr (java::int-value 2372792)
-                                              (java::long-value -8882289)))))
+                                              (java::long-value -8882289)))
+    ;; byte to short widening conversion:
+    ("ByteToShort0" (test-byte-to-short (java::byte-value 0)))
+    ("ByteToShort1" (test-byte-to-short (java::byte-value -100)))
+    ("ByteToShort2" (test-byte-to-short (java::byte-value 100)))
+    ;; byte to int widening conversion:
+    ("ByteToInt0" (test-byte-to-int (java::byte-value 0)))
+    ("ByteToInt1" (test-byte-to-int (java::byte-value -100)))
+    ("ByteToInt2" (test-byte-to-int (java::byte-value 100)))
+    ;; byte to long widening conversion:
+    ("ByteToLong0" (test-byte-to-long (java::byte-value 0)))
+    ("ByteToLong1" (test-byte-to-long (java::byte-value -100)))
+    ("ByteToLong2" (test-byte-to-long (java::byte-value 100)))
+    ;; short to int widening conversion:
+    ("ShortToInt0" (test-short-to-int (java::short-value 0)))
+    ("ShortToInt1" (test-short-to-int (java::short-value -100)))
+    ("ShortToInt2" (test-short-to-int (java::short-value 100)))
+    ("ShortToInt3" (test-short-to-int (java::short-value -10000)))
+    ("ShortToInt4" (test-short-to-int (java::short-value 10000)))
+    ;; short to long widening conversion:
+    ("ShortToLong0" (test-short-to-long (java::short-value 0)))
+    ("ShortToLong1" (test-short-to-long (java::short-value -100)))
+    ("ShortToLong2" (test-short-to-long (java::short-value 100)))
+    ("ShortToLong3" (test-short-to-long (java::short-value -10000)))
+    ("ShortToLong4" (test-short-to-long (java::short-value 10000)))
+    ;; int to long widening conversion:
+    ("IntToLong0" (test-int-to-long (java::int-value 0)))
+    ("IntToLong1" (test-int-to-long (java::int-value -100)))
+    ("IntToLong2" (test-int-to-long (java::int-value 100)))
+    ("IntToLong3" (test-int-to-long (java::int-value -10000)))
+    ("IntToLong4" (test-int-to-long (java::int-value 10000)))
+    ("IntToLong5" (test-int-to-long (java::int-value -10000000)))
+    ("IntToLong6" (test-int-to-long (java::int-value 10000000)))
+    ;; char to int widening conversion:
+    ("CharToInt0" (test-char-to-int (java::char-value 0)))
+    ("CharToInt1" (test-char-to-int (java::char-value 37)))
+    ("CharToInt2" (test-char-to-int (java::char-value 100)))
+    ("CharToInt3" (test-char-to-int (java::char-value 637)))
+    ("CharToInt4" (test-char-to-int (java::char-value 10000)))
+    ;; char to long widening conversion:
+    ("CharToLong0" (test-char-to-long (java::char-value 0)))
+    ("CharToLong1" (test-char-to-long (java::char-value 37)))
+    ("CharToLong2" (test-char-to-long (java::char-value 100)))
+    ("CharToLong3" (test-char-to-long (java::char-value 637)))
+    ("CharToLong4" (test-char-to-long (java::char-value 10000)))
+    ;; short to byte narrowing conversion:
+    ("ShortToByte0" (test-short-to-byte (java::short-value 0)))
+    ("ShortToByte1" (test-short-to-byte (java::short-value -100)))
+    ("ShortToByte2" (test-short-to-byte (java::short-value 100)))
+    ("ShortToByte3" (test-short-to-byte (java::short-value -10000)))
+    ("ShortToByte4" (test-short-to-byte (java::short-value 10000)))
+    ;; int to byte narrowing conversion:
+    ("IntToByte0" (test-int-to-byte (java::int-value 0)))
+    ("IntToByte1" (test-int-to-byte (java::int-value -100)))
+    ("IntToByte2" (test-int-to-byte (java::int-value 100)))
+    ("IntToByte3" (test-int-to-byte (java::int-value -10000)))
+    ("IntToByte4" (test-int-to-byte (java::int-value 10000)))
+    ("IntToByte5" (test-int-to-byte (java::int-value -10000000)))
+    ("IntToByte6" (test-int-to-byte (java::int-value 10000000)))
+    ;; long to byte narrowing conversion:
+    ("LongToByte0" (test-long-to-byte (java::long-value 0)))
+    ("LongToByte1" (test-long-to-byte (java::long-value -100)))
+    ("LongToByte2" (test-long-to-byte (java::long-value 100)))
+    ("LongToByte3" (test-long-to-byte (java::long-value -10000)))
+    ("LongToByte4" (test-long-to-byte (java::long-value 10000)))
+    ("LongToByte5" (test-long-to-byte (java::long-value -10000000)))
+    ("LongToByte6" (test-long-to-byte (java::long-value 10000000)))
+    ("LongToByte7" (test-long-to-byte (java::long-value -100000000000)))
+    ("LongToByte8" (test-long-to-byte (java::long-value 100000000000)))
+    ;; char to byte narrowing conversion:
+    ("CharToByte0" (test-char-to-byte (java::char-value 0)))
+    ("CharToByte1" (test-char-to-byte (java::char-value 37)))
+    ("CharToByte2" (test-char-to-byte (java::char-value 100)))
+    ("CharToByte3" (test-char-to-byte (java::char-value 637)))
+    ("CharToByte4" (test-char-to-byte (java::char-value 10000)))
+    ;; int to short narrowing conversion:
+    ("IntToShort0" (test-int-to-short (java::int-value 0)))
+    ("IntToShort1" (test-int-to-short (java::int-value -100)))
+    ("IntToShort2" (test-int-to-short (java::int-value 100)))
+    ("IntToShort3" (test-int-to-short (java::int-value -10000)))
+    ("IntToShort4" (test-int-to-short (java::int-value 10000)))
+    ("IntToShort5" (test-int-to-short (java::int-value -10000000)))
+    ("IntToShort6" (test-int-to-short (java::int-value 10000000)))
+    ;; long to short narrowing conversion:
+    ("LongToShort0" (test-long-to-short (java::long-value 0)))
+    ("LongToShort1" (test-long-to-short (java::long-value -100)))
+    ("LongToShort2" (test-long-to-short (java::long-value 100)))
+    ("LongToShort3" (test-long-to-short (java::long-value -10000)))
+    ("LongToShort4" (test-long-to-short (java::long-value 10000)))
+    ("LongToShort5" (test-long-to-short (java::long-value -10000000)))
+    ("LongToShort6" (test-long-to-short (java::long-value 10000000)))
+    ("LongToShort7" (test-long-to-short (java::long-value -100000000000)))
+    ("LongToShort8" (test-long-to-short (java::long-value 100000000000)))
+    ;; char to short narrowing conversion:
+    ("CharToShort0" (test-char-to-short (java::char-value 0)))
+    ("CharToShort1" (test-char-to-short (java::char-value 37)))
+    ("CharToShort2" (test-char-to-short (java::char-value 100)))
+    ("CharToShort3" (test-char-to-short (java::char-value 637)))
+    ("CharToShort4" (test-char-to-short (java::char-value 10000)))
+    ;; long to int narrowing conversion:
+    ("LongToInt0" (test-long-to-int (java::long-value 0)))
+    ("LongToInt1" (test-long-to-int (java::long-value -100)))
+    ("LongToInt2" (test-long-to-int (java::long-value 100)))
+    ("LongToInt3" (test-long-to-int (java::long-value -10000)))
+    ("LongToInt4" (test-long-to-int (java::long-value 10000)))
+    ("LongToInt5" (test-long-to-int (java::long-value -10000000)))
+    ("LongToInt6" (test-long-to-int (java::long-value 10000000)))
+    ("LongToInt7" (test-long-to-int (java::long-value -100000000000)))
+    ("LongToInt8" (test-long-to-int (java::long-value 100000000000)))
+    ;; short to char narrowing conversion:
+    ("ShortToChar0" (test-short-to-char (java::short-value 0)))
+    ("ShortToChar1" (test-short-to-char (java::short-value -100)))
+    ("ShortToChar2" (test-short-to-char (java::short-value 100)))
+    ("ShortToChar3" (test-short-to-char (java::short-value -10000)))
+    ("ShortToChar4" (test-short-to-char (java::short-value 10000)))
+    ;; int to char narrowing conversion:
+    ("IntToChar0" (test-int-to-char (java::int-value 0)))
+    ("IntToChar1" (test-int-to-char (java::int-value -100)))
+    ("IntToChar2" (test-int-to-char (java::int-value 100)))
+    ("IntToChar3" (test-int-to-char (java::int-value -10000)))
+    ("IntToChar4" (test-int-to-char (java::int-value 10000)))
+    ("IntToChar5" (test-int-to-char (java::int-value -10000000)))
+    ("IntToChar6" (test-int-to-char (java::int-value 10000000)))
+    ;; long to char narrowing conversion:
+    ("LongToChar0" (test-long-to-char (java::long-value 0)))
+    ("LongToChar1" (test-long-to-char (java::long-value -100)))
+    ("LongToChar2" (test-long-to-char (java::long-value 100)))
+    ("LongToChar3" (test-long-to-char (java::long-value -10000)))
+    ("LongToChar4" (test-long-to-char (java::long-value 10000)))
+    ("LongToChar5" (test-long-to-char (java::long-value -10000000)))
+    ("LongToChar6" (test-long-to-char (java::long-value 10000000)))
+    ("LongToChar7" (test-long-to-char (java::long-value -100000000000)))
+    ("LongToChar8" (test-long-to-char (java::long-value 100000000000)))
+    ;; byte to char widening and narrowing conversion:
+    ("ByteToChar0" (test-byte-to-char (java::byte-value 0)))
+    ("ByteToChar1" (test-byte-to-char (java::byte-value -100)))
+    ("ByteToChar2" (test-byte-to-char (java::byte-value 100)))))
 
 (defconst *shallow-guarded-more-tests*
   '(;; F-BOOLEAN:
@@ -889,7 +1123,11 @@
                       (java::long-value 90000)))
     ;; H-LONG:
     ("Hlong0" (h-long (java::long-value 64738)))
-    ("Hlong1" (h-long (java::long-value -64738)))))
+    ("Hlong1" (h-long (java::long-value -64738)))
+    ;; F-CONV
+    ("Fconv0" (f-conv (java::byte-value 84)
+                      (java::short-value 11887)
+                      (java::long-value -29493203747628)))))
 
 (defconst *shallow-guarded-tests*
   (append *shallow-guarded-basic-tests*

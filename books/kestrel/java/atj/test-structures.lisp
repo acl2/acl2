@@ -53,6 +53,9 @@
      Java primitive values."))
   (:avalue ((get acl2::any)))
   (:jvalue-boolean ((get boolean-value)))
+  (:jvalue-char ((get char-value)))
+  (:jvalue-byte ((get byte-value)))
+  (:jvalue-short ((get short-value)))
   (:jvalue-int ((get int-value)))
   (:jvalue-long ((get long-value))))
 
@@ -64,6 +67,9 @@
   (atj-test-value-case test-value
                        :avalue (atj-type-of-value test-value.get)
                        :jvalue-boolean :jboolean
+                       :jvalue-char :jchar
+                       :jvalue-byte :jbyte
+                       :jvalue-short :jshort
                        :jvalue-int :jint
                        :jvalue-long :jlong))
 

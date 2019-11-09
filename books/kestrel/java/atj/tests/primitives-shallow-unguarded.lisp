@@ -69,6 +69,26 @@
            test-long-long-ushiftr
            test-long-int-ushiftr
            test-int-long-ushiftr
+           test-byte-to-short
+           test-byte-to-int
+           test-byte-to-long
+           test-short-to-int
+           test-short-to-long
+           test-int-to-long
+           test-char-to-int
+           test-char-to-long
+           test-short-to-byte
+           test-int-to-byte
+           test-long-to-byte
+           test-char-to-byte
+           test-int-to-short
+           test-long-to-short
+           test-char-to-short
+           test-long-to-int
+           test-short-to-char
+           test-int-to-char
+           test-long-to-char
+           test-byte-to-char
            f-boolean
            g-boolean
            f-int
@@ -77,6 +97,7 @@
            f-long
            g-long
            h-long
+           f-conv
            :deep nil
            :guards nil
            :java-class "PrimitivesShallowUnguarded")

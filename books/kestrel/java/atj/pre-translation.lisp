@@ -219,8 +219,11 @@
     (:acons "AP")
     (:avalue "AV")
     (:jboolean "JZ")
+    (:jchar "JC")
+    (:jbyte "JB")
+    (:jshort "JS")
     (:jint "JI")
-    (:jlong "JL")
+    (:jlong "JJ")
     (otherwise (impossible)))
   ///
 
@@ -248,8 +251,11 @@
         ((equal id "AP") :acons)
         ((equal id "AV") :avalue)
         ((equal id "JZ") :jboolean)
+        ((equal id "JC") :jchar)
+        ((equal id "JB") :jbyte)
+        ((equal id "JS") :jshort)
         ((equal id "JI") :jint)
-        ((equal id "JL") :jlong)
+        ((equal id "JJ") :jlong)
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
             :avalue))) ; irrelevant
