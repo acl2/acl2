@@ -34,3 +34,8 @@
          (append (reverse x)
                  (list a)))
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm consp-of-reverse
+  (equal (consp (reverse x))
+         (consp x))
+  :hints (("Goal" :in-theory (enable reverse))))
