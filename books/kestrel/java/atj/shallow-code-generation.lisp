@@ -2926,7 +2926,14 @@
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
      which must be eventually passed to the functions that generate
-     the Java test class."))
+     the Java test class.")
+   (xdoc::p
+    "We initialize the symbols of the @(tsee atj-qconstants) structure
+     with @('t') and @('nil'),
+     because their Java representations are sometimes generated
+     (by @(tsee atj-adapt-expr-from-jprim-to-cons))
+     even when these two symbols are not used in any of the ACL2 functions
+     that are translated to Java."))
   (b* (((run-when verbose$)
         (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
@@ -2945,7 +2952,7 @@
                                      :numbers nil
                                      :chars nil
                                      :strings nil
-                                     :symbols nil
+                                     :symbols (list t nil)
                                      :pairs nil
                                      :next-index 1))
        ((mv methods-by-pkg qconsts)
