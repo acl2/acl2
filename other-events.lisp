@@ -4610,13 +4610,13 @@
                                      (consp (cadr (member-eq :expansion?
                                                              form))))))
 
-; We avoid this check when redefinition is active.  Consider the following
-; example.  In the first pass of encapsulate there are no calls of make-event
-; so the resulting expansion-alist is empty.  But in the second pass,
-; process-embedded-events is called with make-event-chk = t, which would result
-; in the error below when (foo) is evaluated (because no make-event expansion
-; was saved for (foo) in the first pass) -- except, we avoid this check when
-; redefinition is active.
+; We avoid this check when redefinition is active, and here's why.  Consider
+; the following example.  In the first pass of encapsulate there are no calls
+; of make-event so the resulting expansion-alist is empty.  But in the second
+; pass, process-embedded-events is called with make-event-chk = t, which
+; *would* result in the error below when (foo) is evaluated (because no
+; make-event expansion was saved for (foo) in the first pass) -- except, we
+; avoid this check when redefinition is active.
 
 ;   (redef!)
 ;   (encapsulate ()
@@ -4635,9 +4635,7 @@
 
 ; Because of the progn wrapper, chk-embedded-event-form is called on the
 ; make-event call with make-event-chk = nil.  So even if we were to avoid the
-; redefinition check below, we would not get an error here.  If you change
-; anything here, consider changing the comment about redefinition in
-; encapsulate-pass-2 and associated code.
+; redefinition check below, we would not get an error here.
 
                        (not (ld-redefinition-action state)))
                   (er soft ctx
@@ -6674,39 +6672,84 @@
                      partial-encapsulate."
                     (strip-cars insigs)
                     exported-names))
-               ((and expansion-alist
-                     (not only-pass-p)
 
-; To see why we avoid this error when (ld-redefinition-action state), see the
-; comment about redefinition in chk-embedded-event-form.  If you change
-; anything here, consider changing that comment and associated code.
+; At one time we added a case here to cause an error here when expansion-alist
+; is non-nil and only-pass-p is nil (with an exception made for when
+; redefinition is active).  Our expectation was that in this case, the
+; expansion-alist created by the first pass makes it impossible to create an
+; expansion-alist in the second pass.  However, Pete Manolios sent us an
+; example in October, 2019 that turned out to show this expectation to be
+; incorrect.  Here is a slightly simplified version of his example.
 
-; Note that when (not only-pass-p), we don't expect a non-nil expansion-alist.
-; Consider here the first example from the aforementioned comment in
-; chk-embedded-event-form.
+;   (make-event 
+;    '(encapsulate
+;       nil
+;       (defun f (x) x)
+;       (make-event
+;        (pprogn (princ$ 1 (standard-co state) state)
+;                (value '(value-triple nil))))))
+;
+;   (encapsulate
+;     nil
+;     (defun g (x) x) ; probably any non-redundant event here is OK
+;     (make-event 
+;      '(encapsulate
+;         nil
+;         (defun f (x) x)
+;         (make-event
+;          (pprogn (princ$ 2 (standard-co state) state)
+;                  (value '(value-triple nil)))))))
 
-;   (redef!)
-;   (encapsulate ()
-;     (defmacro foo () '(make-event '(defun f (x) x)))
-;     (local (defmacro foo () '(defun f (x) (cons x x))))
-;     (foo))
+; In the first pass, the inner encapsulate in the second top-level encapsulate
+; is not seen to be redundant, because the make-event isn't yet expanded.  In
+; the second pass, however, the make-event has been expanded everywhere so we
+; can see the redundancy with the first top-level encapsulate by tracing
+; redundant-encapsulatep:
 
-; Then after evaluating this event, we get the "expansion" by evaluating
-; (access-command-tuple-last-make-event-expansion (cddr (car (w state)))) with
-; a result of nil, which is not the usual way to record expansions; for
-; example, (make-event '(defun g (x) x)) similarly gives us an expansion of
-; (DEFUN G (X) X).  There could be surprises, therefore, when using
-; redefinition, perhaps involving redundancy checking.  We have decided not to
-; complicate this function and its caller by trying to store an expansion-alist
-; in the (not only-pass-p) case, our justification being a warning in
-; :doc ld-redefinition-action.
+#||
+1> (REDUNDANT-ENCAPSULATEP
+        NIL
+        ((DEFUN F (X) X)
+         (RECORD-EXPANSION
+              (MAKE-EVENT (PPROGN (PRINC$ 2 (STANDARD-CO STATE) STATE)
+                                  (VALUE '(VALUE-TRIPLE NIL))))
+              (VALUE-TRIPLE NIL)))
+        (ENCAPSULATE
+             NIL (DEFUN F (X) X)
+             (RECORD-EXPANSION
+                  (MAKE-EVENT (PPROGN (PRINC$ 2 (STANDARD-CO STATE) STATE)
+                                      (VALUE '(VALUE-TRIPLE NIL))))
+                  (VALUE-TRIPLE NIL)))
+        |current-acl2-world|)
+<1 (REDUNDANT-ENCAPSULATEP
+        (ENCAPSULATE
+             NIL (DEFUN F (X) X)
+             (RECORD-EXPANSION
+                  (MAKE-EVENT (PPROGN (PRINC$ 1 (STANDARD-CO STATE) STATE)
+                                      (VALUE '(VALUE-TRIPLE NIL))))
+                  (VALUE-TRIPLE NIL))))
+||#
 
-                     (not (ld-redefinition-action state)))
-                (value (er hard ctx
-                           "Implementation error: Unexpected expansion-alist ~
-                            ~x0 for second pass of encapsulate.  Please ~
-                            contact the ACL2 implementors."
-                           expansion-alist)))
+; That redundancy is stored in the expansion-alist produced by the second pass
+; of the inner encapsulate.
+
+; We have decided to ignore the expansion-alist from the second pass, rather
+; than (for example) replacing original expansions.  After all, when we do the
+; second pass of an encapsulate, we use the expansion-alist from the first
+; pass.  What we want is that every later execution of the encapsulate with
+; ld-skip-proofsp = 'include-book, whether from include-book or a superior
+; encapsulate, will use the same expansion-alist as was used during the
+; original second pass of the encapsulate: and again, that's the
+; expansion-alist from the first pass.  Of course, ACL2 won't see the
+; redundancy of the encapsulate during that later execution with
+; ld-skip-proofsp = 'include-book, just as it did't see that redundancy during
+; the original second pass of the encapsulate.  Of course, ACL2 will likely
+; (always?) see that its sub-events that change the world are redundant.
+
+; Note that here we are only talking about the (not only-pass-p) case.  If the
+; second pass is the only pass, we simply process the events that we are given
+; and we handle the resulting expansion-alist in the normal way.
+
                ((null insigs)
                 (value (if only-pass-p
                            expansion-alist
