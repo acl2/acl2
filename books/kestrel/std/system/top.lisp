@@ -12,7 +12,6 @@
 
 (include-book "all-free-bound-vars")
 (include-book "all-vars-open")
-(include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "dumb-occur-var-open")
 (include-book "event-name-queries")
@@ -21,10 +20,6 @@
 (include-book "known-packages-plus")
 (include-book "logic-friendly")
 (include-book "macro-queries")
-(include-book "remove-mbe")
-(include-book "remove-progn")
-(include-book "remove-trivial-vars")
-(include-book "remove-unused-vars")
 (include-book "rune-disabledp")
 (include-book "rune-enabledp")
 (include-book "table-alist-plus")
