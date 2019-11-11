@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines dumb-occur-var-open
+  :parents (std/system)
   :short "Check if a variable occurs free in a term
           that may contain non-closed (i.e. open) lambda expressions."
   :long
@@ -36,7 +37,9 @@
      because in that case the variable is bound in the lambda expression.
      Otherwise, it examines the body of the lambda expression.
      This is the standard treatment of lambda expressions
-     in languages where lambda expressions are not necessarily closed."))
+     in languages where lambda expressions are not necessarily closed.")
+   (xdoc::@def "dumb-occur-var-open")
+   (xdoc::@def "dumb-occur-var-open-lst"))
 
   (define dumb-occur-var-open ((var symbolp) (term pseudo-termp))
     :returns (yes/no booleanp)
