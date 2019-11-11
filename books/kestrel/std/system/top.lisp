@@ -24,6 +24,7 @@
 (include-book "rune-enabledp")
 (include-book "table-alist-plus")
 (include-book "term-function-recognizers")
+(include-book "term-transformations")
 (include-book "theorem-queries")
 (include-book "unquote-term")
 
