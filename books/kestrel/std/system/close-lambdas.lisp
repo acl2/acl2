@@ -48,7 +48,6 @@
 
   (define close-lambdas ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))
-    :verify-guards nil
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
          (fn (ffn-symb term))
@@ -68,4 +67,8 @@
                         :hyp (pseudo-term-listp terms))
     (cond ((endp terms) nil)
           (t (cons (close-lambdas (car terms))
-                   (close-lambdas-lst (cdr terms)))))))
+                   (close-lambdas-lst (cdr terms))))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards close-lambdas))
