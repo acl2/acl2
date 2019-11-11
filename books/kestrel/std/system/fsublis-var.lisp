@@ -29,7 +29,7 @@
   (define fsublis-var ((alist (and (symbol-alistp alist)
                                    (pseudo-term-listp (strip-cdrs alist))))
                        (term pseudo-termp))
-    :returns (new-term "A @(tsee pseudo-termp).")
+    :returns (new-term pseudo-termp :hyp :guard)
     (cond ((variablep term) (b* ((pair (assoc-eq term alist)))
                               (cond (pair (cdr pair))
                                     (t term))))
@@ -41,7 +41,19 @@
   (define fsublis-var-lst ((alist (and (symbol-alistp alist)
                                        (pseudo-term-listp (strip-cdrs alist))))
                            (terms pseudo-term-listp))
-    :returns (new-terms "A @(tsee pseudo-term-listp).")
+    :returns (new-terms (and (pseudo-term-listp new-terms)
+                             (equal (len new-terms)
+                                    (len terms)))
+                        :hyp :guard)
     (cond ((endp terms) nil)
           (t (cons (fsublis-var alist (car terms))
-                   (fsublis-var-lst alist (cdr terms)))))))
+                   (fsublis-var-lst alist (cdr terms))))))
+
+  :returns-hints ('(:expand (:free (x y) (pseudo-termp (cons x y)))))
+
+  :prepwork
+  ((local
+    (defthm returns-lemma
+      (implies (and (symbol-alistp alist)
+                    (pseudo-term-listp (strip-cdrs alist)))
+               (pseudo-termp (cdr (assoc-equal key alist))))))))
