@@ -35,6 +35,7 @@
 (include-book "centaur/meta/pseudo-rewrite-rule" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "arith-base") ;; for unequiv
+(include-book "rule-types")
 (local (include-book "std/lists/append" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 ;; (include-book "def-fgl-rewrite")
@@ -44,6 +45,9 @@
                            pseudo-term-listp
                            acl2::pseudo-termp-opener)))
 
+;; get theorem about append of rulelists
+(local (fty::deflist fgl-rulelist :elt-type fgl-rule :true-listp t))
+
 (defevaluator rules-ev rules-ev-list
   ((equal x y) (iff x y) (if x y z) (implies x y) (not x) (typespec-check ts x)
    (unequiv x y))
@@ -51,55 +55,6 @@
 
 (acl2::def-meta-extract rules-ev rules-ev-list)
 (acl2::def-ev-pseudo-term-fty-support rules-ev rules-ev-list)
-
-
-(fty::deftagsum fgl-rune
-  (:rewrite (name))
-  (:definition (name))
-  (:formula ((name pseudo-fnsym-p)))
-  (:primitive ((name pseudo-fnsym-p)))
-  (:meta    ((name pseudo-fnsym-p)))
-  :layout :list)
-
-(fty::deflist fgl-runelist :elt-type fgl-rune :true-listp t)
-
-(fty::deftagsum fgl-rule
-  (:rewrite ((rune fgl-rune-p)
-             (rule cmr::rewrite-p))
-   :extra-binder-names (hyps lhs rhs equiv)
-   :layout :fulltree)
-  (:primitive ((name pseudo-fnsym-p)) :layout :list)
-  (:meta      ((name pseudo-fnsym-p)) :layout :list))
-
-(fty::deflist fgl-rulelist :elt-type fgl-rule :true-listp t)
-
-(define fgl-rule->rune ((x fgl-rule-p))
-  :returns (rune fgl-rune-p
-                 :hints((and stable-under-simplificationp
-                             '(:in-theory (enable fgl-rule-fix fgl-rune-p)))))
-  (fgl-rule-case x
-    :rewrite x.rune
-    :otherwise (fgl-rule-fix x)))
-
-(define fgl-rule-rewrite->hyps ((x fgl-rule-p))
-  :guard (fgl-rule-case x :rewrite)
-  :enabled t
-  (cmr::rewrite->hyps (fgl-rule-rewrite->rule x)))
-
-(define fgl-rule-rewrite->lhs ((x fgl-rule-p))
-  :guard (fgl-rule-case x :rewrite)
-  :enabled t
-  (cmr::rewrite->lhs (fgl-rule-rewrite->rule x)))
-
-(define fgl-rule-rewrite->rhs ((x fgl-rule-p))
-  :guard (fgl-rule-case x :rewrite)
-  :enabled t
-  (cmr::rewrite->rhs (fgl-rule-rewrite->rule x)))
-
-(define fgl-rule-rewrite->equiv ((x fgl-rule-p))
-  :guard (fgl-rule-case x :rewrite)
-  :enabled t
-  (cmr::rewrite->equiv (fgl-rule-rewrite->rule x)))
 
 
 (define fgl-rule-term ((x fgl-rule-p))

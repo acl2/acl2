@@ -544,6 +544,17 @@
                                      minor-stack-bfrlist)
            :do-not-induct t))))
 
+(local
+ (defthm major-stack-bfrlist-of-stack$a-set-term
+      (equal (major-stack-bfrlist (stack$a-set-term obj stack))
+             (major-stack-bfrlist stack))
+      :hints(("Goal" :in-theory (enable stack$a-set-term
+                                        major-stack-bfrlist
+                                        major-frame-bfrlist
+                                        minor-frame-bfrlist)
+              :expand ((minor-stack-bfrlist (major-frame->minor-stack (car stack))))
+              :do-not-induct t))))
+
 (local (defthm assoc-when-nonnil
          (implies v
                   (equal (assoc v a)
@@ -612,6 +623,7 @@
                                                               (interp-st->user-scratch interp-st))
                                                   interp-st))
        (interp-st (interp-st-set-bindings (variable-g-bindings vars) interp-st))
+       (interp-st (interp-st-set-term goal interp-st))
        ((acl2::hintcontext-bind ((init-interp-st interp-st)
                                  (init-interp-state state))))
        ((mv ans-interp interp-st state)

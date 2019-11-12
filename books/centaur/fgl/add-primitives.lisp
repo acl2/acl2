@@ -45,13 +45,14 @@
 
 
 
-(defun def-fgl-meta-fn (name body formula-check-fn prepwork)
+(defun def-fgl-meta-base (name body formula-check-fn prepwork)
   (declare (Xargs :mode :program))
   (acl2::template-subst
-   '(define <metafn> ((call fgl-object-p)
+   '(define <metafn> ((origfn pseudo-fnsym-p)
+                      (args fgl-objectlist-p)
                       (interp-st interp-st-bfrs-ok)
                       state)
-      :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
+      :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
       :returns (mv successp
                    rhs
                    bindings
@@ -69,16 +70,17 @@
                       <formula-check>
                       (equal (w st) (w state))
                       (interp-st-bfrs-ok interp-st)
-                      (interp-st-bfr-listp (fgl-object-bfrlist call))
+                      (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
                       (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                               (interp-st->constraint interp-st)
                                               (interp-st->logicman interp-st))
                       (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                               (interp-st->pathcond interp-st)
-                                              (interp-st->logicman interp-st)))
+                                              (interp-st->logicman interp-st))
+                      (pseudo-fnsym-p origfn))
                  (fgl-ev-context-equiv-forall-extensions
                   contexts
-                  (fgl-object-eval call env (interp-st->logicman interp-st))
+                  (fgl-ev (cons origfn (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st)))) nil)
                   rhs
                   (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
 
@@ -92,10 +94,27 @@
                  (<prepwork> . ,prepwork))
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
+(defun def-fgl-meta-fn (name fn formals body formula-check-fn prepwork)
+  (declare (Xargs :mode :program))
+  `(progn
+     ,(def-fgl-meta-base name
+        `(if (and (eq (pseudo-fnsym-fix origfn) ',fn)
+                  (eql (len args) ,(len formals)))
+             (b* (((list . ,formals) (fgl-objectlist-fix args)))
+               ,body)
+           (mv nil nil nil interp-st state))
+        formula-check-fn prepwork)
+     (add-fgl-meta ,fn ,name)))
 
-(defmacro def-fgl-meta (name body &key (formula-check) (prepwork))
-  (def-fgl-meta-fn name body formula-check prepwork))
 
+(defmacro def-fgl-meta (name body &key (formula-check) (prepwork) (origfn) (formals ':none))
+  (if origfn
+      (if (eq formals :none)
+          `(make-event
+            (b* ((formals (getpropc ',origfn 'formals nil (w state))))
+              (def-fgl-meta-fn ',name ',origfn formals ',body ',formula-check ',prepwork)))
+        (def-fgl-meta-fn name origfn formals body formula-check prepwork))
+    (def-fgl-meta-base name body formula-check prepwork)))
 
 (defun def-fgl-primitive-fn (fn formals body name-override formula-check-fn updates-state prepwork)
   (declare (Xargs :mode :program))
@@ -104,25 +123,24 @@
                     (concatenate 'string "FGL-" (symbol-name fn) "-PRIMITIVE")
                     'fgl-package))))
     (acl2::template-subst
-     '(define <primfn> ((call fgl-object-p)
-                                 (interp-st interp-st-bfrs-ok)
-                                 state)
-        :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
+     '(define <primfn> ((origfn pseudo-fnsym-p)
+                        (args fgl-objectlist-p)
+                        (interp-st interp-st-bfrs-ok)
+                        state)
+        :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
         :returns (mv successp
                      ans
                      new-interp-st
                      new-state)
         :prepwork <prepwork>
-        (fgl-object-case call
-          :g-apply (if (and (eq call.fn '<fn>)
-                            (eql (len call.args) <arity>))
-                       (b* (((list <formals>) (fgl-objectlist-fix call.args)))
-                         (:@ (not :updates-state)
-                          (b* (((mv successp ans interp-st) <body>))
-                            (mv successp ans interp-st state)))
-                         (:@ :updates-state <body>))
-                     (mv nil nil interp-st state))
-          :otherwise (mv nil nil interp-st state))
+        (if (and (eq (pseudo-fnsym-fix origfn) '<fn>)
+                 (eql (len args) <arity>))
+            (b* (((list <formals>) (fgl-objectlist-fix args)))
+              (:@ (not :updates-state)
+               (b* (((mv successp ans interp-st) <body>))
+                 (mv successp ans interp-st state)))
+              (:@ :updates-state <body>))
+          (mv nil nil interp-st state))
         ///
         <thms>
 
@@ -133,7 +151,7 @@
                         <formula-check>
                         (equal (w st) (w state))
                         (interp-st-bfrs-ok interp-st)
-                        (interp-st-bfr-listp (fgl-object-bfrlist call))
+                        (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
                         (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                 (interp-st->constraint interp-st)
                                                 (interp-st->logicman interp-st))
@@ -143,7 +161,7 @@
                    (equal (fgl-ev-context-fix contexts
                                               (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                           (fgl-ev-context-fix contexts
-                                              (fgl-object-eval call env (interp-st->logicman interp-st))))))
+                                              (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st))))))
 
         (table fgl-primitives '<primfn> '<fn>)
         (add-fgl-primitive <fn> <primfn>)
@@ -168,23 +186,15 @@
                     (concatenate 'string "FGL-" (symbol-name fn) "-PRIMITIVE")
                     'fgl-package))))
     (acl2::template-subst
-     '(progn
-        (def-fgl-meta <primfn>
-          (fgl-object-case call
-            :g-apply (if (and (eq call.fn '<fn>)
-                              (eql (len call.args) <arity>))
-                         (b* (((list <formals>) (fgl-objectlist-fix call.args))
-                              (:@ (not :updates-state)
-                               ((mv successp ans interp-st) <body>))
-                              (:@ :updates-state
-                               ((mv successp ans interp-st state) <body>)))
-                           (mv successp 'x `((x . ,ans)) interp-st state))
-                       (mv nil nil nil interp-st state))
-            :otherwise (mv nil nil nil interp-st state))
-          :prepwork <prepwork>
-          <formula-check>)
-
-        (add-fgl-meta <fn> <primfn>))
+     '(def-fgl-meta <primfn>
+        (b* ((:@ (not :updates-state)
+              ((mv successp ans interp-st) <body>))
+             (:@ :updates-state
+              ((mv successp ans interp-st state) <body>)))
+          (mv successp 'x `((x . ,ans)) interp-st state))
+        :origfn <fn> :formals <formals>
+        :prepwork <prepwork>
+        <formula-check>)
      :splice-alist `((<formals> . ,formals)
                      (<formula-check> . 
                                       ,(and formula-check-fn
@@ -287,19 +297,9 @@
       `((otherwise ,last))
     (b* ((fn (caar table)))
       (cons (acl2::template-subst
-             '(<fn> (<fn> call interp-st state))
-             :atom-alist `((<fn> . ,fn)))
-            (fgl-primitive-fncall-entries (cdr table) last)))))
-
-(defun fgl-binder-fncall-entries (table last)
-  (Declare (Xargs :mode :program))
-  (if (atom table)
-      `((otherwise ,last))
-    (b* ((fn (caar table)))
-      (cons (acl2::template-subst
              '(<fn> (<fn> origfn args interp-st state))
              :atom-alist `((<fn> . ,fn)))
-            (fgl-binder-fncall-entries (cdr table) last)))))
+            (fgl-primitive-fncall-entries (cdr table) last)))))
 
 (defun formula-check-thms (name table)
   (if (atom table)
@@ -337,10 +337,11 @@
         ;;         (table-alist 'fgl-primitives (w state)))))
 
         (define <prefix>-primitive-fncall ((primfn pseudo-fnsym-p)
-                                           (call fgl-object-p)
+                                           (origfn pseudo-fnsym-p)
+                                           (args fgl-objectlist-p)
                                            (interp-st interp-st-bfrs-ok)
                                            state)
-          :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
+          :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
           :returns (mv successp ans new-interp-st new-state)
           :ignore-ok t
           (case (pseudo-fnsym-fix primfn)
@@ -355,7 +356,7 @@
                           (<prefix>-formula-checks st)
                           (equal (w st) (w state))
                           (interp-st-bfrs-ok interp-st)
-                          (interp-st-bfr-listp (fgl-object-bfrlist call))
+                          (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
                           (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->constraint interp-st)
                                                   (interp-st->logicman interp-st))
@@ -365,14 +366,15 @@
                      (equal (fgl-ev-context-fix contexts
                                                 (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                             (fgl-ev-context-fix contexts
-                                                (fgl-object-eval call env (interp-st->logicman interp-st))))))
+                                                (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st))))))
           (fty::deffixequiv <prefix>-primitive-fncall))
 
         (define <prefix>-meta-fncall ((metafn pseudo-fnsym-p)
-                                      (call fgl-object-p)
+                                      (origfn pseudo-fnsym-p)
+                                      (args fgl-objectlist-p)
                                       (interp-st interp-st-bfrs-ok)
                                       state)
-          :guard (interp-st-bfr-listp (fgl-object-bfrlist call))
+          :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
           :returns (mv successp rhs bindings new-interp-st new-state)
           :ignore-ok t
           (case (pseudo-fnsym-fix metafn)
@@ -387,16 +389,17 @@
                           (<prefix>-formula-checks st)
                           (equal (w st) (w state))
                           (interp-st-bfrs-ok interp-st)
-                          (interp-st-bfr-listp (fgl-object-bfrlist call))
+                          (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
                           (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->constraint interp-st)
                                                   (interp-st->logicman interp-st))
                           (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                   (interp-st->pathcond interp-st)
-                                                  (interp-st->logicman interp-st)))
+                                                  (interp-st->logicman interp-st))
+                          (pseudo-fnsym-p origfn))
                      (fgl-ev-context-equiv-forall-extensions
                       contexts
-                      (fgl-object-eval call env (interp-st->logicman interp-st))
+                      (fgl-ev (cons origfn (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st)))) nil)
                       rhs
                       (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
           (fty::deffixequiv <prefix>-meta-fncall))
@@ -484,8 +487,8 @@
                    ;; (<formula-check-thms> . ,formula-check-thms)
                    (<prim-entries> . ,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld) '(mv nil nil interp-st state)))
                    (<meta-entries> . ,(fgl-primitive-fncall-entries (table-alist 'fgl-metafns wrld) '(mv nil nil nil interp-st state)))
-                   (<bind-entries> . ,(fgl-binder-fncall-entries (table-alist 'fgl-binderfns wrld)
-                                                                 '(mv nil nil nil nil interp-st state)))
+                   (<bind-entries> . ,(fgl-primitive-fncall-entries (table-alist 'fgl-binderfns wrld)
+                                                                    '(mv nil nil nil nil interp-st state)))
                    ;; (<all-formulas> . ,all-formulas)
                    (<formula-check-thms> . ,formula-check-thms)
                    (<formula-check-fns> . ,formula-check-fns))

@@ -370,6 +370,13 @@
              (stack-scratch-len stack)
              len))
 
+(define interp-st-full-scratch-len (interp-st)
+  :enabled t :hooks nil
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (len)
+             (stack-full-scratch-len stack)
+             len))
+
 (define interp-st-pop-frame (interp-st)
   :enabled t :hooks nil
   :inline t
@@ -414,7 +421,7 @@
 (define interp-st-nth-scratch ((n natp) interp-st)
   :enabled t :hooks nil
   :inline t
-  :guard (< n (interp-st-scratch-len interp-st))
+  :guard (< n (interp-st-full-scratch-len interp-st))
   (stobj-let ((stack (interp-st->stack interp-st)))
              (obj)
              (stack-nth-scratch n stack)
@@ -449,7 +456,7 @@
           (define interp-st-nth-scratch-<kind> ((n natp) interp-st)
             :enabled t :hooks nil
             :inline t
-            :guard (and (< n (interp-st-scratch-len interp-st))
+            :guard (and (< n (interp-st-full-scratch-len interp-st))
                         (scratchobj-case (interp-st-nth-scratch n interp-st) :<kind>))
             (stobj-let ((stack (interp-st->stack interp-st)))
                        (obj)
@@ -533,21 +540,40 @@
                (stack-set-minor-bindings bindings stack))
              interp-st))
 
-(define interp-st-set-debug (debug interp-st)
+(define interp-st-set-rule ((rule maybe-fgl-generic-rule-p) interp-st)
   :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
-             (stack-set-debug debug stack)
+             (stack-set-rule rule stack)
              interp-st))
 
-(define interp-st-set-minor-debug (debug interp-st)
+(define interp-st-set-phase ((phase acl2::maybe-natp) interp-st)
   :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
-             (stack-set-minor-debug debug stack)
+             (stack-set-phase phase stack)
              interp-st))
+
+
+(define interp-st-set-term ((term pseudo-termp) interp-st)
+  :enabled t :hooks nil
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-set-term term stack)
+             interp-st))
+
+(define interp-st-set-term-index ((term-index acl2::maybe-natp) interp-st)
+  :enabled t :hooks nil
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-set-term-index term-index stack)
+             interp-st))
+
+
 
 
 (define interp-st-decrement-reclimit (interp-st)

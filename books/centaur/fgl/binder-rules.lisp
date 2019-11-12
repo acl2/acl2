@@ -42,79 +42,9 @@
                            acl2::pseudo-termp-opener
                            w)))
 
+;; get theorems from locally included books
+(local (fty::deflist fgl-binder-rulelist :elt-type fgl-binder-rule :true-listp t))
 
-(fty::deftagsum fgl-binder-rune
-  (:brewrite (name))
-  (:bformula ((name pseudo-fnsym-p)))
-  (:bmeta ((name pseudo-fnsym-p)))
-  :layout :list)
-
-(fty::deflist fgl-binder-runelist :elt-type fgl-binder-rune :true-listp t)
-
-(fty::deftagsum fgl-binder-rule
-  (:brewrite ((rune fgl-binder-rune-p)
-              (lhs-fn pseudo-fnsym-p)
-              (lhs-args pseudo-term-listp)
-              (hyps pseudo-term-listp)
-              (rhs pseudo-termp)
-              (equiv pseudo-fnsym-p)
-              (r-equiv pseudo-fnsym-p))
-   :layout :fulltree)
-  (:bmeta      ((name pseudo-fnsym-p)) :layout :list))
-
-(fty::deflist fgl-binder-rulelist :elt-type fgl-binder-rule :true-listp t)
-
-(define fgl-binder-rule->rune ((x fgl-binder-rule-p))
-  :returns (rune fgl-binder-rune-p
-                 :hints((and stable-under-simplificationp
-                             '(:in-theory (enable fgl-binder-rule-fix fgl-binder-rune-p)))))
-  (fgl-binder-rule-case x
-    :brewrite x.rune
-    :bmeta (fgl-binder-rule-fix x)))
-
-(fty::deftranssum fgl-generic-rune
-  (fgl-binder-rune
-   fgl-rune))
-
-(fty::deftranssum fgl-generic-rule
-  (fgl-binder-rule
-   fgl-rule))
-
-(defthmd tag-when-fgl-generic-rule-p
-  (implies (fgl-generic-rule-p x)
-           (and (implies (member (tag x) '(:brewrite :bmeta))
-                         (equal (fgl-binder-rule-kind x) (tag x)))
-                (implies (not (member (tag x) '(:brewrite :bmeta)))
-                         (equal (fgl-rule-kind x) (tag x)))))
-  :hints(("Goal" :in-theory (enable fgl-binder-rule-kind
-                                    fgl-rule-kind
-                                    fgl-generic-rule-p
-                                    fgl-rule-p
-                                    fgl-binder-rule-p
-                                    tag))))
-
-(defthmd fgl-generic-rune-p-when-fgl-generic-rule-p
-  (implies (and (fgl-generic-rule-p x)
-                (not (member (tag x) '(:brewrite :rewrite))))
-           (fgl-generic-rune-p x))
-  :hints(("Goal" :in-theory (enable fgl-generic-rule-p
-                                    fgl-generic-rune-p
-                                    fgl-rule-p
-                                    fgl-rune-p
-                                    fgl-binder-rule-p
-                                    fgl-binder-rune-p
-                                    tag))))
-
-(define fgl-generic-rule->rune ((x fgl-generic-rule-p))
-  :returns (rune fgl-generic-rune-p)
-  :prepwork ((local (in-theory (enable tag-when-fgl-generic-rule-p
-                                       fgl-generic-rune-p-when-fgl-generic-rule-p))))
-  ;; :guard-hints (("goal" :in-theory (enable fgl-generic-rule-fix fgl-generic-rule-p)))
-  (b* ((x (fgl-generic-rule-fix x)))
-    (case (tag x)
-      (:rewrite (fgl-rule-rewrite->rune x))
-      (:brewrite (fgl-binder-rule-brewrite->rune x))
-      (otherwise x))))
 
 (local
  (defthm symbol-listp-when-pseudo-var-list-p

@@ -89,7 +89,8 @@
 (define stack-import-minor-frame ((x minor-frame-p)
                                   stack)
   :guard-hints (("goal" :in-theory (enable stack$a-set-minor-bindings
-                                           stack$a-set-minor-debug
+                                           stack$a-set-term
+                                           stack$a-set-term-index
                                            stack$a-scratch-len
                                            stack-pop-n-scratch
                                            stack-push-scratch-list)))
@@ -102,7 +103,8 @@
                                                  (cdr stack)))))
        :exec (b* (((minor-frame x))
                   (stack (stack-set-minor-bindings x.bindings stack))
-                  (stack (stack-set-minor-debug x.debug stack))
+                  (stack (stack-set-term x.term stack))
+                  (stack (stack-set-term-index x.term-index stack))
                   (stack (stack-pop-n-scratch (stack-scratch-len stack) stack)))
                (stack-push-scratch-list x.scratch stack))))
 
@@ -167,7 +169,8 @@
 (define stack-import-major-frame ((x major-frame-p)
                                   stack)
   :guard-hints (("goal" :in-theory (enable stack$a-set-bindings
-                                           stack$a-set-debug
+                                           stack$a-set-rule
+                                           stack$a-set-phase
                                            stack-pop-n-minor-frames
                                            stack-import-minor-frames
                                            stack$a-minor-frames)))
@@ -183,7 +186,8 @@
                                                (cdr stack))))
        :exec (b* (((major-frame x))
                   (stack (stack-set-bindings x.bindings stack))
-                  (stack (stack-set-debug x.debug stack))
+                  (stack (stack-set-rule x.rule stack))
+                  (stack (stack-set-phase x.phase stack))
                   (stack (stack-pop-n-minor-frames (1- (stack-minor-frames stack)) stack)))
                (stack-import-minor-frames x.minor-stack stack))))
 

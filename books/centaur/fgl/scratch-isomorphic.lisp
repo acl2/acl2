@@ -92,13 +92,14 @@
 
   (defcong minor-frame-scratch-isomorphic scratchlist-isomorphic (minor-frame->scratch x) 1)
 
-  (defcong scratchlist-isomorphic minor-frame-scratch-isomorphic (minor-frame bindings scratch debug) 2)
+  (defcong scratchlist-isomorphic minor-frame-scratch-isomorphic (minor-frame bindings scratch term term-index) 2)
 
   (defthm minor-frame-scratch-isomorphic-normalize-minor-frame
     (implies (syntaxp (not (and (Equal bindings ''nil)
-                                (equal debug ''nil))))
-             (minor-frame-scratch-isomorphic (minor-frame bindings scratch debug)
-                                             (minor-frame nil scratch nil)))))
+                                (equal term ''nil)
+                                (equal term-index ''nil))))
+             (minor-frame-scratch-isomorphic (minor-frame bindings scratch term term-index)
+                                             (minor-frame nil scratch nil nil)))))
 
 (define minor-stack-scratch-isomorphic ((x minor-stack-p) (y minor-stack-p))
   (and (minor-frame-scratch-isomorphic (car x) (car y))
@@ -133,13 +134,14 @@
 
   (defcong major-frame-scratch-isomorphic minor-stack-scratch-isomorphic (major-frame->minor-stack x) 1)
 
-  (defcong minor-stack-scratch-isomorphic major-frame-scratch-isomorphic (major-frame bindings debug minor-stack) 3)
+  (defcong minor-stack-scratch-isomorphic major-frame-scratch-isomorphic (major-frame bindings rule phase minor-stack) 4)
 
   (defthm major-frame-scratch-isomorphic-normalize-major-frame
     (implies (syntaxp (not (and (Equal bindings ''nil)
-                                (equal debug ''nil))))
-             (major-frame-scratch-isomorphic (major-frame bindings debug minor-stack)
-                                             (major-frame nil nil minor-stack)))))
+                                (equal rule ''nil)
+                                (equal phase ''nil))))
+             (major-frame-scratch-isomorphic (major-frame bindings rule phase minor-stack)
+                                             (major-frame nil nil nil minor-stack)))))
 
 (define major-stack-scratch-isomorphic ((x major-stack-p) (y major-stack-p))
   (and (major-frame-scratch-isomorphic (car x) (car y))
@@ -187,8 +189,20 @@
   :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
 
 (defcong major-stack-scratch-isomorphic
-  major-stack-scratch-isomorphic (stack$a-set-debug debug stack) 2
-  :hints(("Goal" :in-theory (enable stack$a-set-debug))))
+  major-stack-scratch-isomorphic (stack$a-set-rule rule stack) 2
+  :hints(("Goal" :in-theory (enable stack$a-set-rule))))
+
+(defcong major-stack-scratch-isomorphic
+  major-stack-scratch-isomorphic (stack$a-set-phase phase stack) 2
+  :hints(("Goal" :in-theory (enable stack$a-set-phase))))
+
+(defcong major-stack-scratch-isomorphic
+  major-stack-scratch-isomorphic (stack$a-set-term term stack) 2
+  :hints(("Goal" :in-theory (enable stack$a-set-term))))
+
+(defcong major-stack-scratch-isomorphic
+  major-stack-scratch-isomorphic (stack$a-set-term-index term-index stack) 2
+  :hints(("Goal" :in-theory (enable stack$a-set-term-index))))
 
 (defcong scratchlist-isomorphic scratchlist-isomorphic (update-nth n obj x) 3
   :hints(("Goal" :in-theory (enable update-nth))))
@@ -209,10 +223,25 @@
          (stack$a-pop-frame stack))
   :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-bindings))))
 
-(defthm stack$a-pop-frame-of-stack$a-set-debug
-  (equal (stack$a-pop-frame (stack$a-set-debug obj stack))
+(defthm stack$a-pop-frame-of-stack$a-set-rule
+  (equal (stack$a-pop-frame (stack$a-set-rule obj stack))
          (stack$a-pop-frame stack))
-  :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-debug))))
+  :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-rule))))
+
+(defthm stack$a-pop-frame-of-stack$a-set-phase
+  (equal (stack$a-pop-frame (stack$a-set-phase obj stack))
+         (stack$a-pop-frame stack))
+  :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-phase))))
+
+(defthm stack$a-pop-frame-of-stack$a-set-term
+  (equal (stack$a-pop-frame (stack$a-set-term obj stack))
+         (stack$a-pop-frame stack))
+  :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-term))))
+
+(defthm stack$a-pop-frame-of-stack$a-set-term-index
+  (equal (stack$a-pop-frame (stack$a-set-term-index obj stack))
+         (stack$a-pop-frame stack))
+  :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-term-index))))
 
 (defthm stack$a-pop-frame-of-stack$a-push-frame
   (equal (stack$a-pop-frame (stack$a-push-frame stack))
@@ -224,10 +253,15 @@
          (stack$a-pop-minor-frame stack))
   :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-set-minor-bindings))))
 
-(defthm stack$a-pop-minor-frame-of-stack$a-set-minor-debug
-  (equal (stack$a-pop-minor-frame (stack$a-set-minor-debug obj stack))
+(defthm stack$a-pop-minor-frame-of-stack$a-set-term
+  (equal (stack$a-pop-minor-frame (stack$a-set-term obj stack))
          (stack$a-pop-minor-frame stack))
-  :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-set-minor-debug))))
+  :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-set-term))))
+
+(defthm stack$a-pop-minor-frame-of-stack$a-set-term-index
+  (equal (stack$a-pop-minor-frame (stack$a-set-term-index obj stack))
+         (stack$a-pop-minor-frame stack))
+  :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-set-term-index))))
 
 (defthm stack$a-pop-minor-frame-of-stack$a-push-minor-frame
   (equal (stack$a-pop-minor-frame (stack$a-push-minor-frame stack))
@@ -246,11 +280,33 @@
   :hints(("Goal" :in-theory (enable stack$a-set-bindings major-stack-scratch-isomorphic
                                     major-frame-scratch-isomorphic))))
 
-(defthm major-stack-scratch-isomorphic-of-set-debug
-  (major-stack-scratch-isomorphic (stack$a-set-debug debug stack)
+(defthm major-stack-scratch-isomorphic-of-set-rule
+  (major-stack-scratch-isomorphic (stack$a-set-rule rule stack)
                                   stack)
-  :hints(("Goal" :in-theory (enable stack$a-set-debug major-stack-scratch-isomorphic
+  :hints(("Goal" :in-theory (enable stack$a-set-rule major-stack-scratch-isomorphic
                                     major-frame-scratch-isomorphic))))
+
+(defthm major-stack-scratch-isomorphic-of-set-phase
+  (major-stack-scratch-isomorphic (stack$a-set-phase phase stack)
+                                  stack)
+  :hints(("Goal" :in-theory (enable stack$a-set-phase major-stack-scratch-isomorphic
+                                    major-frame-scratch-isomorphic))))
+
+(defthm major-stack-scratch-isomorphic-of-set-term
+  (major-stack-scratch-isomorphic (stack$a-set-term term stack)
+                                  stack)
+  :hints(("Goal" :in-theory (enable stack$a-set-term major-stack-scratch-isomorphic
+                                    major-frame-scratch-isomorphic
+                                    minor-stack-scratch-isomorphic
+                                    minor-frame-scratch-isomorphic))))
+
+(defthm major-stack-scratch-isomorphic-of-set-term-index
+  (major-stack-scratch-isomorphic (stack$a-set-term-index term-index stack)
+                                  stack)
+  :hints(("Goal" :in-theory (enable stack$a-set-term-index major-stack-scratch-isomorphic
+                                    major-frame-scratch-isomorphic
+                                    minor-stack-scratch-isomorphic
+                                    minor-frame-scratch-isomorphic))))
 
 (defthm major-stack-scratch-isomorphic-of-add-minor-bindings
   (major-stack-scratch-isomorphic (stack$a-add-minor-bindings bindings stack) stack)

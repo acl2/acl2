@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "fgl-object")
+(include-book "rule-types")
 (include-book "constraint-inst")
 
 (local (include-book "scratchobj"))
@@ -150,12 +151,20 @@ passed into a function or bound to a different variable in a lambda.</p>
   :short "A list of scratch objects (type @(see scratchobj)) representing arguments
           to future function calls, etc.")
 
+(fty::defoption maybe-fgl-generic-rule fgl-generic-rule-p)
+
+
 (fty::defprod minor-frame
   :parents (fgl-stack)
   :short "A minor stack frame representing a lambda body scope."
   ((bindings fgl-object-bindings-p "The full list of bindings for locally bound variables.")
    (scratch scratchlist-p "The current scratch list.")
-   (debug "Debug info identifying the lambda from which this frame arose.")))
+   (term pseudo-termp
+               "Debug info identifying the lambda call from which this frame arose,
+                nil if top level of the current rule")
+   (term-index acl2::maybe-natp "Depth-first index of the term we're currently looking at within
+                     debug-term"
+               :rule-classes :type-prescription)))
 
 (fty::deflist minor-stack :elt-type minor-frame :true-listp t :non-emptyp t
   :parents (fgl-stack)
@@ -174,7 +183,9 @@ passed into a function or bound to a different variable in a lambda.</p>
     :short "A major stack frame representing an entirely new namespace such as
             a function definition or rewrite rule."
     ((bindings fgl-object-bindings-p "Top-level variable bindings of the scope.")
-     (debug "Debug info identifying the rule being applied and the current phase of its application.")
+     (rule maybe-fgl-generic-rule-p "Rule applied to make this stack frame.")
+     (phase acl2::maybe-natp :rule-classes :type-prescription
+            "Hyp number or RHS when greater")
      (minor-stack minor-stack-p :default ',(list (make-minor-frame))
                   "The minor stack representing the current nesting of lambdas within the scope."))))
 
@@ -262,10 +273,16 @@ passed into a function or bound to a different variable in a lambda.</p>
                                                                      frame.bindings))
                            (cdr x)))))
 
-(define stack$a-set-debug (debug
+(define stack$a-set-rule ((rule maybe-fgl-generic-rule-p)
+                          (x major-stack-p))
+  :returns (stack major-stack-p)
+  (major-stack-fix (cons (change-major-frame (car x) :rule rule)
+                         (cdr x))))
+
+(define stack$a-set-phase ((phase acl2::maybe-natp)
                            (x major-stack-p))
   :returns (stack major-stack-p)
-  (major-stack-fix (cons (change-major-frame (car x) :debug debug)
+  (major-stack-fix (cons (change-major-frame (car x) :phase phase)
                          (cdr x))))
 
 
@@ -296,13 +313,23 @@ passed into a function or bound to a different variable in a lambda.</p>
                            (cdr x)))))
 
 
-(define stack$a-set-minor-debug ((debug)
-                                 (x major-stack-p))
+(define stack$a-set-term ((term pseudo-termp)
+                          (x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame jframe) (car x))
        (nframe (car jframe.minor-stack)))
     (major-stack-fix (cons (change-major-frame jframe :minor-stack
-                                               (cons (change-minor-frame nframe :debug debug)
+                                               (cons (change-minor-frame nframe :term term)
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
+(define stack$a-set-term-index ((term-index acl2::maybe-natp)
+                                (x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       (nframe (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe :term-index term-index)
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
@@ -344,12 +371,22 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 
 
-(define stack$a-debug ((x major-stack-p))
-  (major-frame->debug (car x)))
+(define stack$a-rule ((x major-stack-p))
+  :returns (rule maybe-fgl-generic-rule-p)
+  (major-frame->rule (car x)))
+
+(define stack$a-phase ((x major-stack-p))
+  :returns (phase acl2::maybe-natp :rule-classes :type-prescription)
+  (major-frame->phase (car x)))
 
 
-(define stack$a-minor-debug ((x major-stack-p))
-  (minor-frame->debug (car (major-frame->minor-stack (car x)))))
+(define stack$a-term ((x major-stack-p))
+  :returns (term pseudo-termp)
+  (minor-frame->term (car (major-frame->minor-stack (car x)))))
+
+(define stack$a-term-index ((x major-stack-p))
+  :returns (term-index acl2::maybe-natp :rule-classes :type-prescription)
+  (minor-frame->term-index (car (major-frame->minor-stack (car x)))))
 
 
 (define stack$a-scratch-len ((x major-stack-p))
@@ -362,12 +399,67 @@ passed into a function or bound to a different variable in a lambda.</p>
   :returns (obj scratchobj-p)
   (scratchobj-fix (car (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
 
+
+
+
+(define minor-stack-scratch-len ((x minor-stack-p))
+  :ruler-extenders (binary-+)
+  :returns (len natp :rule-classes :type-prescription)
+  (+ (len (minor-frame->scratch (car x)))
+     (if (consp (cdr x))
+         (minor-stack-scratch-len (cdr x))
+       0)))
+
+(define major-stack-scratch-len ((x major-stack-p))
+  :ruler-extenders (binary-+)
+  :returns (len natp :rule-classes :type-prescription)
+  (+ (minor-stack-scratch-len (major-frame->minor-stack (car x)))
+     (if (consp (cdr x))
+         (major-stack-scratch-len (cdr x))
+       0)))
+
+(define stack$a-full-scratch-len ((x major-stack-p))
+  (major-stack-scratch-len x))
+
+(define minor-stack-nth-scratch ((n natp) (x minor-stack-p))
+  :guard (< n (minor-stack-scratch-len x))
+  :prepwork ((local (in-theory (enable minor-stack-scratch-len))))
+  :measure (len x)
+  :returns (obj scratchobj-p)
+  (b* ((scratch (minor-frame->scratch (car x)))
+       (len (len scratch)))
+    (if (< (lnfix n) len)
+        (scratchobj-fix (nth n scratch))
+      (if (mbt (consp (cdr x)))
+          (minor-stack-nth-scratch (- (lnfix n) len) (cdr x))
+        (scratchobj-fix nil)))))
+
+(define major-stack-nth-scratch ((n natp) (x major-stack-p))
+  :guard (< n (major-stack-scratch-len x))
+  :prepwork ((local (in-theory (enable major-stack-scratch-len))))
+  :measure (len x)
+  :returns (obj scratchobj-p)
+  (b* ((minor-stack (major-frame->minor-stack (car x)))
+       (len (minor-stack-scratch-len minor-stack)))
+    (if (mbe :logic (or (< (lnfix n) len) (atom (cdr x)))
+             :exec (< (lnfix n) len))
+        (minor-stack-nth-scratch n minor-stack)
+      (major-stack-nth-scratch (- (lnfix n) len) (cdr x)))))
+
 (define stack$a-nth-scratch ((n natp)
                              (x major-stack-p))
-  :guard (< n (stack$a-scratch-len x))
-  :guard-hints (("goal" :in-theory (enable stack$a-scratch-len)))
+  :guard (< n (stack$a-full-scratch-len x))
+  :guard-hints (("goal" :in-theory (enable stack$a-full-scratch-len)))
   :returns (obj scratchobj-p)
-  (scratchobj-fix (nth n (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
+  (major-stack-nth-scratch n x))
+
+(define stack$a-nth-scratch-kind ((n natp)
+                                  (x major-stack-p))
+  :guard (< n (stack$a-full-scratch-len x))
+  :guard-hints (("goal" :in-theory (enable stack$a-full-scratch-len)))
+  (scratchobj-kind (major-stack-nth-scratch n x)))
+
+
 
 
 (define stack$a-pop-scratch ((x major-stack-p))
@@ -448,9 +540,9 @@ passed into a function or bound to a different variable in a lambda.</p>
 
              (define stack$a-nth-scratch-<kind> ((n natp)
                                                  (x major-stack-p))
-               :guard (and (< n (stack$a-scratch-len x))
+               :guard (and (< n (stack$a-full-scratch-len x))
                            (scratchobj-case (stack$a-nth-scratch n x) :<kind>))
-               :guard-hints (("goal" :in-theory (enable stack$a-scratch-len
+               :guard-hints (("goal" :in-theory (enable stack$a-full-scratch-len
                                                         stack$a-nth-scratch)))
                :returns (obj <pred>)
                :enabled t
@@ -540,7 +632,6 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 
 
-
 ;; BOZO Unfortunately scratchobj-bfrlist is the constructor for the bfrlist
 ;; kind of scratchobj so we use an unconventional name.
 (define scratchobj->bfrlist ((x scratchobj-p))
@@ -615,7 +706,7 @@ passed into a function or bound to a different variable in a lambda.</p>
             (scratchlist-bfrlist x.scratch)))
   ///
   (defthm minor-frame-bfrlist-of-minor-frame
-    (equal (minor-frame-bfrlist (minor-frame bindings scratch debug))
+    (equal (minor-frame-bfrlist (minor-frame bindings scratch term term-index))
            (append (fgl-object-bindings-bfrlist bindings)
                    (scratchlist-bfrlist scratch))))
 
@@ -654,7 +745,7 @@ passed into a function or bound to a different variable in a lambda.</p>
             (minor-stack-bfrlist x.minor-stack)))
   ///
   (defthm major-frame-bfrlist-of-major-frame
-    (equal (major-frame-bfrlist (major-frame bindings debug minor-stack))
+    (equal (major-frame-bfrlist (major-frame bindings rule phase minor-stack))
            (append (fgl-object-bindings-bfrlist bindings)
                    (minor-stack-bfrlist minor-stack))))
 

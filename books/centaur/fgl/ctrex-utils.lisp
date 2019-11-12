@@ -523,6 +523,42 @@
                                                    ,(acl2::hq alist))))))
       :flag fgl-unify-term/gobj-if-fn
       :rule-classes :linear)
+    (defthm fgl-object-count-of-fgl-unify-term/gobj-if1
+      (b* (((mv flag new-alist)
+            (fgl-unify-term/gobj-if1 pat-test pat-then pat-else x-test x-then x-else alist)))
+        (implies (and flag
+                      (not (hons-assoc-equal k alist))
+                      (hons-assoc-equal k new-alist))
+                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (max (fgl-object-count x-test)
+                          (max (fgl-object-count x-then)
+                               (fgl-object-count x-else))))))
+      :hints ((acl2::use-termhint
+               `(:expand ((fgl-unify-term/gobj-if1 ,(acl2::hq pat-test)
+                                                   ,(acl2::hq pat-then)
+                                                   ,(acl2::hq pat-else)
+                                                   ,(acl2::hq x-test)
+                                                   ,(acl2::hq x-then)
+                                                   ,(acl2::hq x-else)
+                                                   ,(acl2::hq alist))))))
+      :flag fgl-unify-term/gobj-if1-fn
+      :rule-classes :linear)
+    (defthm fgl-object-count-of-fgl-unify-term/gobj-fn/args
+      (b* (((mv flag new-alist)
+            (fgl-unify-term/gobj-fn/args pat-fn pat-args x-fn x-args alist)))
+        (implies (and flag
+                      (not (hons-assoc-equal k alist))
+                      (hons-assoc-equal k new-alist))
+                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (fgl-objectlist-count x-args))))
+      :hints ((acl2::use-termhint
+               `(:expand ((fgl-unify-term/gobj-fn/args ,(acl2::hq pat-fn)
+                                                       ,(acl2::hq pat-args)
+                                                       ,(acl2::hq x-fn)
+                                                       ,(acl2::hq x-args)
+                                                       ,(acl2::hq alist))))))
+      :flag fgl-unify-term/gobj-fn/args-fn
+      :rule-classes :linear)
     (defthm fgl-object-count-of-fgl-unify-term/gobj-list
       (b* (((mv flag new-alist)
             (fgl-unify-term/gobj-list pat x alist)))

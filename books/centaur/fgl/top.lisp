@@ -44,7 +44,6 @@
 (include-book "def-fgl-thm")
 (include-book "centaur/aignet/transform-utils" :dir :system)
 (local (in-theory (disable w)))
-
 ;; ----------------------------------------------------------------------
 ;; Install FGL primitives:  This event collects the primitives defined in
 ;; primitives, fgarrays, and fast-alists and defines a new function
@@ -105,7 +104,6 @@
 
 (fancy-ev-add-primitive interp-st->user-scratch$inline t)
 
-(fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 (def-fancy-ev-primitives counterex-primitives)
 
@@ -222,22 +220,86 @@ be a string or message identifying the particular SAT check.</p>"
              (stack-extract stack)
              stk))
 
-(define major-stack->debug ((x major-stack-p))
-  :measure (len x)
-  :ruler-extenders (cons)
-  (cons (major-frame->debug (car x))
-        (and (consp (cdr x))
-             (major-stack->debug (cdr x)))))
 
-(define major-stack->debugframes-aux ((n natp) (x major-stack-p))
-  :measure (len x)
-  :ruler-extenders (cons)
-  (cons (cons (lnfix n) (major-frame->debug (car x)))
-        (and (consp (cdr x))
-             (major-stack->debugframes-aux (1+ (lnfix n)) (cdr x)))))
+(defines fgl-minor-frame-subterm-index->term
+  :ruler-extenders :all
+  (define fgl-minor-frame-subterm-index->term ((n natp) (x pseudo-termp))
+    :guard (< n (fgl-minor-frame-subterm-count x))
+    :measure (pseudo-term-count x)
+    :returns (subterm pseudo-termp)
+    :guard-hints (("goal" :expand ((fgl-minor-frame-subterm-count x)
+                                   (fgl-minor-frame-subtermlist-count x))))
+    :guard-debug t
+    (if (zp n)
+        (pseudo-term-fix x)
+      (if (mbt (pseudo-term-case x :fncall))
+          (fgl-minor-frame-subtermlist-index->term (1- n) (pseudo-term-call->args x))
+        nil)))
+  (define fgl-minor-frame-subtermlist-index->term ((n natp) (x pseudo-term-listp))
+    :measure (pseudo-term-list-count x)
+    :guard (< n (fgl-minor-frame-subtermlist-count x))
+    :returns (subterm pseudo-termp)
+    (if (mbt (consp x))
+        (b* ((count (fgl-minor-frame-subterm-count (car x))))
+          (if (< (lnfix n) count)
+              (fgl-minor-frame-subterm-index->term n (car x))
+            (fgl-minor-frame-subtermlist-index->term (- (lnfix n) count) (cdr x))))
+      nil)))
 
-(define major-stack->debugframes ((x major-stack-p))
-  (major-stack->debugframes-aux 0 x))
+
+(define fgl-minor-frame-subterm-bindinglist-count ((x cmr::bindinglist-p))
+  :returns (count natp :rule-classes :type-prescription)
+  :hooks nil
+  (b* (((when (atom x)) 0)
+       ((cmr::binding x1) (car x)))
+    (+ (fgl-minor-frame-subtermlist-count x1.args)
+       (fgl-minor-frame-subterm-bindinglist-count (cdr x)))))
+
+(define fgl-minor-frame-subterm-bindinglist-index->term ((n natp) (x cmr::bindinglist-p))
+  :returns (subterm pseudo-termp)
+  :guard (< n (fgl-minor-frame-subterm-bindinglist-count x))
+  :guard-hints (("goal" :expand ((fgl-minor-frame-subterm-bindinglist-count x))))
+  :measure (len x)
+  :hooks nil
+  (b* (((unless (mbt (consp x))) nil)
+       ((cmr::binding x1) (car x))
+       (count (fgl-minor-frame-subtermlist-count x1.args)))
+    (if (< (lnfix n) count)
+        (fgl-minor-frame-subtermlist-index->term n x1.args)
+      (fgl-minor-frame-subterm-bindinglist-index->term (- (lnfix n) count) (cdr x)))))
+
+
+(define fgl-minor-frame-subterm-count-top ((x pseudo-termp))
+  :returns (count natp :rule-classes :type-prescription)
+  (pseudo-term-case x
+    :lambda (b* (((mv bindings body) (lambda-nest-to-bindinglist x)))
+              (+ 1
+                 (fgl-minor-frame-subterm-bindinglist-count bindings)
+                 (fgl-minor-frame-subterm-count body)))
+    :otherwise (fgl-minor-frame-subterm-count x)))
+
+(define fgl-minor-frame-subterm-index->term-top ((n natp) (x pseudo-termp))
+  :guard (< n (fgl-minor-frame-subterm-count-top x))
+  :returns (subterm pseudo-termp)
+  :guard-hints (("goal" :expand ((fgl-minor-frame-subterm-count-top x))))
+  (if (zp n)
+      (pseudo-term-fix x)
+    (pseudo-term-case x
+      :lambda (b* (((mv bindings body) (lambda-nest-to-bindinglist x))
+                   (count (fgl-minor-frame-subterm-bindinglist-count bindings)))
+                (if (< (lnfix n) (+ 1 count))
+                    (fgl-minor-frame-subterm-bindinglist-index->term (1- n) bindings)
+                  (fgl-minor-frame-subterm-index->term (- (lnfix n) (1+ count)) body)))
+      :otherwise (fgl-minor-frame-subterm-index->term n x))))
+
+
+(define minor-frame->debug ((x minor-frame-p))
+  (b* (((minor-frame x)))
+    (list :term x.term
+          :subterm (and x.term-index
+                        (< x.term-index (fgl-minor-frame-subterm-count-top x.term))
+                        (fgl-minor-frame-subterm-index->term-top x.term-index x.term)))))
+
 
 (define minor-stack->debug ((x minor-stack-p))
   :measure (len x)
@@ -255,6 +317,31 @@ be a string or message identifying the particular SAT check.</p>"
 
 (define minor-stack->debugframes ((x minor-stack-p))
   (minor-stack->debugframes-aux 0 x))
+
+
+(define major-frame->debug ((x major-frame-p))
+  (b* (((major-frame x)))
+    (list :rule (and x.rule (fgl-generic-rule->rune x.rule))
+          :phase x.phase
+          :minor-frames (minor-stack->debugframes x.minor-stack))))
+
+(define major-stack->debug ((x major-stack-p))
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (major-frame->debug (car x))
+        (and (consp (cdr x))
+             (major-stack->debug (cdr x)))))
+
+(define major-stack->debugframes-aux ((n natp) (x major-stack-p))
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (cons (lnfix n) (major-frame->debug (car x)))
+        (and (consp (cdr x))
+             (major-stack->debugframes-aux (1+ (lnfix n)) (cdr x)))))
+
+(define major-stack->debugframes ((x major-stack-p))
+  (major-stack->debugframes-aux 0 x))
+
 
 (define interp-st-extract-bvar-db (interp-st)
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))

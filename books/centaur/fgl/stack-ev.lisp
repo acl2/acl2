@@ -246,9 +246,9 @@
   :prepwork ((local (in-theory (enable minor-frame-bfrlist))))
   :returns (ev minor-frame-p)
   (b* (((minor-frame x)))
-    (make-minor-frame
+    (change-minor-frame
+     x
      :bindings (fgl-object-bindings-concretize x.bindings env)
-     :debug x.debug
      :scratch (fgl-scratchlist-concretize x.scratch env)))
   ///
   (defthm fgl-minor-frame-concretize-of-logicman-extension
@@ -287,9 +287,9 @@
   :prepwork ((local (in-theory (enable major-frame-bfrlist))))
   :returns (ev major-frame-p)
   (b* (((major-frame x)))
-    (make-major-frame
+    (change-major-frame
+     x
      :bindings (fgl-object-bindings-concretize x.bindings env)
-     :debug x.debug
      :minor-stack (fgl-minor-stack-concretize x.minor-stack env)))
   ///
   (defthm fgl-major-frame-concretize-of-logicman-extension
@@ -374,10 +374,25 @@
            (stack$a-push-frame (fgl-major-stack-concretize stack env)))
     :hints(("Goal" :in-theory (enable stack$a-push-frame))))
 
-  (defthm fgl-major-stack-concretize-of-stack$a-set-debug
-    (equal (fgl-major-stack-concretize (stack$a-set-debug obj stack) env)
-           (stack$a-set-debug obj (fgl-major-stack-concretize stack env)))
-    :hints(("Goal" :in-theory (enable stack$a-set-debug))))
+  (defthm fgl-major-stack-concretize-of-stack$a-set-rule
+    (equal (fgl-major-stack-concretize (stack$a-set-rule obj stack) env)
+           (stack$a-set-rule obj (fgl-major-stack-concretize stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-rule))))
+
+  (defthm fgl-major-stack-concretize-of-stack$a-set-phase
+    (equal (fgl-major-stack-concretize (stack$a-set-phase obj stack) env)
+           (stack$a-set-phase obj (fgl-major-stack-concretize stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-phase))))
+
+  (defthm fgl-major-stack-concretize-of-stack$a-set-term
+    (equal (fgl-major-stack-concretize (stack$a-set-term obj stack) env)
+           (stack$a-set-term obj (fgl-major-stack-concretize stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-term))))
+
+  (defthm fgl-major-stack-concretize-of-stack$a-set-term-index
+    (equal (fgl-major-stack-concretize (stack$a-set-term-index obj stack) env)
+           (stack$a-set-term-index obj (fgl-major-stack-concretize stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-term-index))))
 
   (defthm fgl-object-bindings-concretize-of-append
     (equal (fgl-object-bindings-concretize (append a b) env)
@@ -396,11 +411,6 @@
     (equal (fgl-major-stack-concretize (stack$a-pop-minor-frame stack) env)
            (stack$a-pop-minor-frame (fgl-major-stack-concretize stack env)))
     :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame))))
-
-  (defthm fgl-major-stack-concretize-of-stack$a-set-minor-debug
-    (equal (fgl-major-stack-concretize (stack$a-set-minor-debug obj stack) env)
-           (stack$a-set-minor-debug obj (fgl-major-stack-concretize stack env)))
-    :hints(("Goal" :in-theory (enable stack$a-set-minor-debug))))
 
   (defthm fgl-major-stack-concretize-of-stack$a-set-minor-bindings
     (equal (fgl-major-stack-concretize (stack$a-set-minor-bindings bindings stack) env)

@@ -202,23 +202,16 @@
     
 
 (def-fgl-meta logapp-expand
-  (fgl-object-case call
-    :g-apply (b* (((unless (and (eq call.fn 'logapp)
-                                (eql (len call.args) 3)))
-                   (mv nil nil nil interp-st state))
-                  ((list n x y) call.args)
-                  ((unless (fgl-object-case n :g-concrete))
-                   (mv nil nil nil interp-st state))
-                  (n (g-concrete->val n))
-                  ((unless (posp n))
-                   (mv t '(ifix y) `((y . ,y)) interp-st state)))
-               (mv t (nest-logconses-for-logapp n)
-                   `((x . ,x) (y . ,y))
-                   interp-st state))
-    :otherwise (mv nil nil nil interp-st state))
+  (b* (((unless (fgl-object-case n :g-concrete))
+        (mv nil nil nil interp-st state))
+       (n (g-concrete->val n))
+       ((unless (posp n))
+        (mv t '(ifix y) `((y . ,y)) interp-st state)))
+    (mv t (nest-logconses-for-logapp n)
+        `((x . ,x) (y . ,y))
+        interp-st state))
+  :origfn logapp :formals (n x y)
   :formula-check bitops-formula-checks)
-
-(add-fgl-meta logapp logapp-expand)
 
 ;; (LOCAL (FGL::INSTALL-FGL-PRIMITIVES FGL::BITOPS-PRIMITIVES))
 ;; (LOCAL (FGL::INSTALL-FGL-METAFNS FGL::BITOPS-METAFNS))
@@ -278,23 +271,16 @@
                   (equal (logtail n x) (ifix x)))))
 
 (def-fgl-meta logtail-expand
-  (fgl-object-case call
-    :g-apply (b* (((unless (and (eq call.fn 'acl2::logtail$inline)
-                                (eql (len call.args) 2)))
-                   (mv nil nil nil interp-st state))
-                  ((list n x) call.args)
-                  ((unless (fgl-object-case n :g-concrete))
-                   (mv nil nil nil interp-st state))
-                  (n (g-concrete->val n))
-                  ((unless (posp n))
-                   (mv t '(ifix x) `((x . ,x)) interp-st state)))
-               (mv t (nest-intcdrs n 'x)
-                   `((x . ,x))
-                   interp-st state))
-    :otherwise (mv nil nil nil interp-st state))
+  (b* (((unless (fgl-object-case n :g-concrete))
+        (mv nil nil nil interp-st state))
+       (n (g-concrete->val n))
+       ((unless (posp n))
+        (mv t '(ifix x) `((x . ,x)) interp-st state)))
+    (mv t (nest-intcdrs n 'x)
+        `((x . ,x))
+        interp-st state))
+  :origfn acl2::logtail$inline :formals (n x)
   :formula-check bitops-formula-checks)
-                
-(add-fgl-meta acl2::logtail$inline logtail-expand)
 
 
 (define tail-bits ((n natp) x)

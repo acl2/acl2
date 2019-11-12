@@ -346,6 +346,18 @@
      :endif)))
 
 
+(local (defthmd equal-of-len
+         (implies (syntaxp (quotep n))
+                  (equal (equal (len x) n)
+                         (cond ((eql n 0) (not (consp x)))
+                               ((zp n) nil)
+                               ((consp x) (equal (len (cdr x)) (1- n)))
+                               (t nil))))))
+
+(local (in-theory (disable pseudo-termp
+                           pseudo-term-listp
+                           acl2::pseudo-termp-opener)))
+
 (acl2::process-ifdefs
  (with-output :off (prove)
    (defines fgl-unify-term/gobj
@@ -358,21 +370,26 @@
                                  acl2::consp-when-member-equal-of-atom-listp
                                  acl2::consp-of-car-when-alistp
                                  acl2::subsetp-member)))
+      (local (defthm and*-rem-second-boolean
+               (implies (booleanp a)
+                        (equal (and* a t) a))
+               :hints(("Goal" :in-theory (enable and*)))))
       (ifndef "DEFS_ONLY"
         (local (in-theory (disable acl2::consp-of-node-list-fix-x-normalize-const)))
         :endif))
      (define fgl-unify-term/gobj ((pat pseudo-termp)
-                                   (x fgl-object-p)
+                                  (x fgl-object-p)
                                    (alist fgl-object-bindings-p)
                                    &optional ((bfrstate bfrstate-p) 'bfrstate))
        :guard (bfr-listp (fgl-object-bfrlist x) bfrstate)
        :returns (mv flag
                     (new-alist fgl-object-bindings-p))
-       :measure (pseudo-term-count pat)
+       :measure (two-nats-measure (pseudo-term-count pat) 0)
        :hints ((and stable-under-simplificationp
                     '(:expand ((pseudo-term-count pat)
                                (pseudo-term-list-count (pseudo-term-call->args pat))
-                               (pseudo-term-list-count (cdr (pseudo-term-call->args pat)))))))
+                               (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))
+                      :in-theory (enable equal-of-len))))
        :verify-guards nil
        (b* ((alist (fgl-object-bindings-fix alist))
             (x (fgl-object-fix x))
@@ -392,16 +409,10 @@
                         ((when (and** (eq fn 'if)
                                       (eql (len pat.args) 3)
                                       (fgl-object-kind-eq x.kind :g-ite)))
-                         (b* (((g-ite x))
-                              ((mv ok alist1)
-                               (fgl-unify-term/gobj-if (first pat.args) (second pat.args) (third pat.args)
-                                                        x.test x.then x.else alist))
-                              ((when ok) (mv ok alist1))
-                              ((mv bool-ok bool-fix) (gobj-syntactic-boolean-fix x.test))
-                              ((unless bool-ok) (mv nil nil))
-                              (neg-test (gobj-syntactic-boolean-negate bool-fix)))
-                           (fgl-unify-term/gobj-if (first pat.args) (second pat.args) (third pat.args)
-                                                    neg-test x.else x.then alist)))
+                         (b* (((g-ite x)))
+                           (fgl-unify-term/gobj-if
+                            (first pat.args) (second pat.args) (third pat.args)
+                            x.test x.then x.else alist)))
 
                         ((when (and** (or** (eq fn 'intcons)
                                             (eq fn 'intcons*))
@@ -438,22 +449,8 @@
 
                         ((when (fgl-object-kind-eq x.kind :g-apply))
                          (b* (((g-apply x)))
-                           (if (eq x.fn fn)
-                               (if (eq fn 'equal)
-                                   ;; Special case for EQUAL -- try both ways!
-                                   (b* (((unless (eql (len pat.args) 2))
-                                         (mv nil nil))
-                                        ((mv ok alist1) (fgl-unify-term/gobj-commutative-args
-                                                        (first pat.args) (second pat.args)
-                                                        (first x.args) (second x.args)
-                                                        alist))
-                                        ((when ok) (mv ok alist1)))
-                                     (fgl-unify-term/gobj-commutative-args
-                                      (first pat.args) (second pat.args)
-                                      (second x.args) (first x.args)
-                                      alist))
-                                 (fgl-unify-term/gobj-list pat.args x.args alist))
-                             (mv nil nil))))
+                           (fgl-unify-term/gobj-fn/args
+                            pat.fn pat.args x.fn x.args alist)))
                         ((when (fgl-object-kind-eq x.kind :g-cons))
                          (b* (((g-cons x))
                               ((unless (and (eq fn 'cons)
@@ -466,6 +463,47 @@
            ;; don't support unifying with lambdas
            :otherwise (mv nil nil))))
 
+     
+
+     (define fgl-unify-term/gobj-fn/args ((pat-fn pseudo-fnsym-p)
+                                          (pat-args pseudo-term-listp)
+                                          (x-fn pseudo-fnsym-p)
+                                          (x-args fgl-objectlist-p)
+                                          (alist fgl-object-bindings-p)
+                                          &optional ((bfrstate bfrstate-p) 'bfrstate))
+       :measure (two-nats-measure (pseudo-term-list-count pat-args) 1)
+       :returns (mv flag
+                    (new-alist fgl-object-bindings-p))
+       :guard (bfr-listp (fgl-objectlist-bfrlist x-args) bfrstate)
+       (b* ((pat-fn (pseudo-fnsym-fix pat-fn))
+            (pat-args (pseudo-term-list-fix pat-args))
+            (x-args (fgl-objectlist-fix x-args)))
+         (if (eq (pseudo-fnsym-fix x-fn) pat-fn)
+             (cond ((eq pat-fn 'equal)
+                    ;; Special case for EQUAL -- try both ways!
+                    (b* (((unless (eql (len pat-args) 2))
+                          (mv nil nil))
+                         ((mv ok alist1) (fgl-unify-term/gobj-commutative-args
+                                          (first pat-args) (second pat-args)
+                                          (first x-args) (second x-args)
+                                          alist))
+                         ((when ok) (mv ok alist1)))
+                      (fgl-unify-term/gobj-commutative-args
+                       (first pat-args) (second pat-args)
+                       (second x-args) (first x-args)
+                       alist)))
+                   ((eq pat-fn 'if)
+                    (b* (((unless (and (eql (len pat-args) 3)
+                                       (eql (len x-args) 3)))
+                          (mv nil nil)))
+                      (fgl-unify-term/gobj-if
+                       (first pat-args) (second pat-args) (third pat-args)
+                       (first x-args) (second x-args) (third x-args)
+                       alist)))
+                   (t (fgl-unify-term/gobj-list pat-args x-args alist)))
+           (mv nil nil))))
+
+
      (define fgl-unify-term/gobj-if ((pat-test pseudo-termp)
                                       (pat-then pseudo-termp)
                                       (pat-else pseudo-termp)
@@ -476,9 +514,40 @@
                                       &optional ((bfrstate bfrstate-p) 'bfrstate))
        :returns (mv flag
                     (new-alist fgl-object-bindings-p))
-       :measure (+ (pseudo-term-count pat-test)
-                   (pseudo-term-count pat-then)
-                   (pseudo-term-count pat-else))
+       :measure (two-nats-measure
+                 (+ (pseudo-term-count pat-test)
+                    (pseudo-term-count pat-then)
+                    (pseudo-term-count pat-else))
+                 1)
+       :guard (and (bfr-listp (fgl-object-bfrlist x-test))
+                   (bfr-listp (fgl-object-bfrlist x-then))
+                   (bfr-listp (fgl-object-bfrlist x-else)))
+
+       (b* (((mv ok alist1)
+             (fgl-unify-term/gobj-if1 pat-test pat-then pat-else
+                                     x-test x-then x-else alist))
+            ((when ok) (mv ok alist1))
+            ((mv bool-ok bool-fix) (gobj-syntactic-boolean-fix x-test))
+            ((unless bool-ok) (mv nil nil))
+            (neg-test (gobj-syntactic-boolean-negate bool-fix)))
+         (fgl-unify-term/gobj-if1 pat-test pat-then pat-else
+                                  neg-test x-else x-then alist)))
+
+     (define fgl-unify-term/gobj-if1 ((pat-test pseudo-termp)
+                                      (pat-then pseudo-termp)
+                                      (pat-else pseudo-termp)
+                                      (x-test fgl-object-p)
+                                      (x-then fgl-object-p)
+                                      (x-else fgl-object-p)
+                                      (alist fgl-object-bindings-p)
+                                      &optional ((bfrstate bfrstate-p) 'bfrstate))
+       :returns (mv flag
+                    (new-alist fgl-object-bindings-p))
+       :measure (two-nats-measure
+                 (+ (pseudo-term-count pat-test)
+                    (pseudo-term-count pat-then)
+                    (pseudo-term-count pat-else))
+                 0)
        :guard (and (bfr-listp (fgl-object-bfrlist x-test))
                    (bfr-listp (fgl-object-bfrlist x-then))
                    (bfr-listp (fgl-object-bfrlist x-else)))
@@ -497,8 +566,9 @@
                                                     &optional ((bfrstate bfrstate-p) 'bfrstate))
        :returns (mv flag
                     (new-alist fgl-object-bindings-p))
-       :measure (+ (pseudo-term-count pat1)
-                   (pseudo-term-count pat2))
+       :measure (two-nats-measure (+ (pseudo-term-count pat1)
+                                     (pseudo-term-count pat2))
+                                  0)
        :guard (and (bfr-listp (fgl-object-bfrlist x1))
                    (bfr-listp (fgl-object-bfrlist x2)))
        (b* (((mv ok alist) (fgl-unify-term/gobj pat1 x1 alist))
@@ -513,7 +583,8 @@
        :returns (mv flag
                     (new-alist fgl-object-bindings-p))
        :guard (bfr-listp (fgl-objectlist-bfrlist x))
-       :measure (pseudo-term-list-count pat)
+       :measure (two-nats-measure (pseudo-term-list-count pat)
+                                  0)
        (b* (((when (atom pat))
              (if (mbe :logic (atom x) :exec (eq x nil))
                  (mv t (fgl-object-bindings-fix alist))
@@ -524,8 +595,10 @@
             ((unless ok) (mv nil nil)))
          (fgl-unify-term/gobj-list (cdr pat) (cdr x) alist)))
      ///
-     (local (in-theory (disable (:d fgl-unify-term/gobj)
-                                (:d fgl-unify-term/gobj-list)))) 
+     (local
+      (make-event
+       `(in-theory (disable . ,(getpropc 'fgl-unify-term/gobj 'acl2::recursivep
+                                         nil (w state))))))
 
      (local (defthm member-scdr
               (implies (not (member k x))
@@ -606,21 +679,35 @@
                        (bfr-listp (fgl-object-bfrlist x-else)))
                   (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
          :hints ('(:expand (<call>)))
-         :fn fgl-unify-term/gobj-if))
+         :fn fgl-unify-term/gobj-if)
+       (defret bfr-listp-of-<fn>
+         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
+                       (bfr-listp (fgl-object-bfrlist x-test))
+                       (bfr-listp (fgl-object-bfrlist x-then))
+                       (bfr-listp (fgl-object-bfrlist x-else)))
+                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
+         :hints ('(:expand (<call>)))
+         :fn fgl-unify-term/gobj-if1)
+       (defret bfr-listp-of-<fn>
+         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
+                       (bfr-listp (fgl-objectlist-bfrlist x-args)))
+                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
+         :hints ('(:expand (<call>)))
+         :fn fgl-unify-term/gobj-fn/args))
        
      
 
      (ifndef "DEFS_ONLY"
        
-       (local
-        (defthmd equal-of-len
-          (implies (syntaxp (quotep n))
-                   (equal (Equal (len x) n)
-                          (cond ((eql n 0) (atom x))
-                                ((zp n) nil)
-                                (t (and (consp x)
-                                        (equal (len (cdr x)) (1- n)))))))
-          :hints(("Goal" :in-theory (enable len)))))
+       ;; (local
+       ;;  (defthmd equal-of-len
+       ;;    (implies (syntaxp (quotep n))
+       ;;             (equal (Equal (len x) n)
+       ;;                    (cond ((eql n 0) (atom x))
+       ;;                          ((zp n) nil)
+       ;;                          (t (and (consp x)
+       ;;                                  (equal (len (cdr x)) (1- n)))))))
+       ;;    :hints(("Goal" :in-theory (enable len)))))
 
        (defret-mutual <fn>-alist-lookup-when-present
          (defret <fn>-alist-lookup-when-present
@@ -652,7 +739,21 @@
                     (equal (hons-assoc-equal k new-alist)
                            (hons-assoc-equal k (fgl-object-bindings-fix alist))))
            :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if))
+           :fn fgl-unify-term/gobj-if)
+         (defret <fn>-alist-lookup-when-present
+           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
+                         flag)
+                    (equal (hons-assoc-equal k new-alist)
+                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-if1)
+         (defret <fn>-alist-lookup-when-present
+           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
+                         flag)
+                    (equal (hons-assoc-equal k new-alist)
+                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-fn/args))
 
        (defret-mutual <fn>-preserves-all-keys-bound
          (defret <fn>-preserves-all-keys-bound
@@ -681,7 +782,19 @@
                          flag)
                     (subsetp keys (alist-keys new-alist)))
            :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if))
+           :fn fgl-unify-term/gobj-if)
+         (defret <fn>-preserves-all-keys-bound
+           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
+                         flag)
+                    (subsetp keys (alist-keys new-alist)))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-if1)
+         (defret <fn>-preserves-all-keys-bound
+           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
+                         flag)
+                    (subsetp keys (alist-keys new-alist)))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-fn/args))
 
        (local (defthm termlist-vars-when-consp
                 (implies (consp x)
@@ -722,9 +835,25 @@
                     (and (subsetp (term-vars pat-test) (alist-keys new-alist))
                          (subsetp (term-vars pat-then) (alist-keys new-alist))
                          (subsetp (term-vars pat-else) (alist-keys new-alist))))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-if)
+         (defret all-keys-bound-of-<fn>
+           (implies flag
+                    (and (subsetp (term-vars pat-test) (alist-keys new-alist))
+                         (subsetp (term-vars pat-then) (alist-keys new-alist))
+                         (subsetp (term-vars pat-else) (alist-keys new-alist))))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-if1)
+         (defret all-keys-bound-of-<fn>
+           (implies flag
+                    (and (subsetp (termlist-vars pat-args) (alist-keys new-alist))))
            :hints ('(:expand ((:free (x) <call>)
-                              (termlist-vars pat))))
-           :fn fgl-unify-term/gobj-if))
+                              ;; (termlist-vars pat-args)
+                              ;; (termlist-vars (cdr pat-args))
+                              ;; (termlist-vars (cddr pat-args))
+                              )
+                     :in-theory (enable equal-of-len)))
+           :fn fgl-unify-term/gobj-fn/args))
 
        (defret-mutual <fn>-preserves-eval-when-all-keys-bound
          (defret <fn>-preserves-eval-when-all-keys-bound
@@ -763,7 +892,23 @@
                     (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
                            (fgl-ev term (fgl-object-bindings-eval alist env))))
            :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if))
+           :fn fgl-unify-term/gobj-if)
+         (defret <fn>-preserves-eval-when-all-keys-bound
+           (implies (and flag
+                         (subsetp (term-vars term)
+                                  (alist-keys (fgl-object-bindings-fix alist))))
+                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                           (fgl-ev term (fgl-object-bindings-eval alist env))))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-if1)
+         (defret <fn>-preserves-eval-when-all-keys-bound
+           (implies (and flag
+                         (subsetp (term-vars term)
+                                  (alist-keys (fgl-object-bindings-fix alist))))
+                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                           (fgl-ev term (fgl-object-bindings-eval alist env))))
+           :hints ('(:expand ((:free (x) <call>))))
+           :fn fgl-unify-term/gobj-fn/args))
 
        ;; (local (defthm not-of-g-object-fix
        ;;          (implies (not (fgl-object-fix x))
@@ -813,7 +958,36 @@
                                               gobj-syntactic-boolean-fix
                                               gobj-syntactic-booleanp)))
             :fn gobj-syntactic-boolean-fix)))
+
+       ;; (local (defthm fgl-objectlist-eval-when-consp
+       ;;          (implies (consp x)
+       ;;                   (equal (fgl-objectlist-eval x env)
+       ;;                          (cons (fgl-object-eval (car x) env)
+       ;;                                (fgl-objectlist-eval (cdr x) env))))
+       ;;          :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
+
+       (local (defthm ev-car-of-kwote-lst
+                (equal (fgl-ev (car (kwote-lst x)) a)
+                       (car x))
+                :hints(("Goal" :in-theory (enable kwote-lst)))))
+
+       (local (defthm cdr-of-kwote-lst
+                (equal (cdr (kwote-lst x))
+                       (kwote-lst (cdr x)))
+                :hints(("Goal" :in-theory (enable kwote-lst)))))
+
+       (local (defthm car-of-fgl-objectlist-eval
+                (equal (car (fgl-objectlist-eval x env))
+                       (fgl-object-eval (car x) env))
+                :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
+
+       (local (defthm cdr-of-fgl-objectlist-eval
+                (equal (cdr (fgl-objectlist-eval x env))
+                       (fgl-objectlist-eval (cdr x) env))
+                :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
        
+       (local (in-theory (disable kwote-lst)))
+
        (defret-mutual <fn>-correct
          (defret <fn>-correct
            (implies (and flag
@@ -902,7 +1076,33 @@
            :hints ('(:expand ((:free (x) <call>)
                               (fgl-objectlist-eval x env)
                               (fgl-objectlist-eval nil env))))
-           :fn fgl-unify-term/gobj-list))
+           :fn fgl-unify-term/gobj-list)
+         (defret <fn>-correct
+           (implies (and flag
+                         (equal bfrstate (logicman->bfrstate)))
+                    (equal (if (fgl-ev pat-test (fgl-object-bindings-eval new-alist env))
+                               (fgl-ev pat-then (fgl-object-bindings-eval new-alist env))
+                             (fgl-ev pat-else (fgl-object-bindings-eval new-alist env)))
+                           (if (fgl-object-eval x-test env)
+                               (fgl-object-eval x-then env)
+                             (fgl-object-eval x-else env))))
+           :hints ('(:expand (<call>)))
+           :fn fgl-unify-term/gobj-if1
+           :rule-classes nil)
+         (defret <fn>-correct
+           (implies (and flag
+                         (equal bfrstate (logicman->bfrstate)))
+                    (equal (fgl-ev (pseudo-term-fncall pat-fn pat-args)
+                                   (fgl-object-bindings-eval new-alist env))
+                           (fgl-ev (pseudo-term-fncall
+                                    x-fn
+                                    (kwote-lst (fgl-objectlist-eval x-args env)))
+                                   nil)))
+           :hints ('(:expand (<call>)
+                     :in-theory (enable kwote-lst
+                                        fgl-ev-of-fncall-args)))
+           :fn fgl-unify-term/gobj-fn/args
+           :rule-classes nil))
 
        ;; (defret-mutual depends-on-of-<fn>
        ;;   (defret depends-on-of-<fn> 
