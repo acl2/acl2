@@ -662,3 +662,22 @@
                 (svexl-eval-aux-wog x env))
                (- (fast-alist-free node-env)))
             res))))
+
+
+
+(defthm-svexl-node-eval
+  (defthmd svex-p-implies-svexl-node-p
+    (implies (svex-p x)
+             (svexl-node-p x))
+    :flag svexl-node-eval)
+  (defthmd svexlist-p-implies-svexl-nodelist-p
+    (implies (svexlist-p lst)
+             (svexl-nodelist-p lst))
+    :flag svexl-node-eval-lst)
+  :hints (("Goal"
+           :in-theory (e/d (svex-p
+                            svexlist-p
+                            svexl-nodelist-p
+                            svexl-node-p
+                            svexl-node-kind
+                            svex-kind) ()))))

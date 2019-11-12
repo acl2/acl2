@@ -205,7 +205,49 @@
     (:executable-counterpart bits)
     (:executable-counterpart rp::rp)
     (:executable-counterpart 4vec-concat$)
-    (:executable-counterpart 4vec-bitnot$)))
+    (:executable-counterpart 4vec-bitnot$)
+
+
+    (:executable-counterpart hons-get)
+    (:executable-counterpart hons-acons)
+    (:executable-counterpart fast-alist-free)
+    (:executable-counterpart svexl-eval-wog)
+    (:rewrite svexl-eval-is-svexl-eval-wog)
+    (:rewrite svexl-eval-wog-opener)
+    (:rewrite rp::svexl-eval-wog-opener_lambda-opener)
+    (:rewrite svexl-eval-aux-wog-nil)
+
+    (:rewrite RP::SVEXL-EVAL-AUX-WOG-CONS_LAMBDA-OPENER)
+    (:rewrite svexl-eval-aux-wog-cons)
+    (:rewrite svexl-eval-aux-is-svexl-eval-aux-wog)
+    (:executable-counterpart svexl-eval-aux-wog)
+    (:rewrite svexl-node-eval-wog-is-svexl-node-eval)
+    (:rewrite svexl-node-eval-lst-wog-svexl-node-eval-lst)
+    (:rewrite svexl-node-eval-lst-wog-of-nil)
+    (:rewrite svexl-node-eval-lst-wog-of-cons)
+    (:rewrite svexl-eval-node-of-call)
+    (:rewrite svexl-eval-node-of-quoted)
+    (:rewrite svexl-eval-node-of-node)
+    (:rewrite svexl-eval-node-of-var)
+    (:executable-counterpart svexl-node-kind-wog$inline)
+    (:executable-counterpart svexl-p)
+    (:executable-counterpart svex-p)
+    
+    (:rewrite svexlist-eval-wog-nil-def)
+    (:rewrite svexlist-eval-wog-cons-def)
+    (:rewrite svex-eval-wog-of-quoted)
+    (:executable-counterpart svex-kind-wog-is-quote)
+    (:rewrite svex-eval-wog-of-var)
+    (:definition svex-kind-wog-is-var)
+    (:executable-counterpart svex-kind-wog-is-var)
+    (:rewrite svex-env-fastlookup-wog-def)
+    (:rewrite svex-eval-wog_opener-error)
+
+    (:definition return-last)
+
+    CDR-CONS
+    car-cons 
+    ))
 
 (make-event
  `(deftheory svex-simplify-rules
