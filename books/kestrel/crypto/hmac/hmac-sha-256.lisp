@@ -18,7 +18,7 @@
 ;; See also tests in hmac-sha-256-tests-simple.lisp.
 
 (include-book "../sha-2/sha-256")
-(include-book "../..//bv-lists/bvxor-list")
+(include-book "../../bv-lists/bvxor-list")
 (local (include-book "../../lists-light/append"))
 (local (include-book "../../bv-lists/all-integerp-of-repeat"))
 

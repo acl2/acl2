@@ -81,10 +81,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jint ((integer (signed-byte-p 32 integer)))
+(define atj-gen-jboolean ((boolean booleanp))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('boolean')
+          from an ACL2 boolean."
+  (if boolean
+      (jexpr-literal-true)
+    (jexpr-literal-false)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jchar ((char ubyte16p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('char')
+          from an unsigned 16-bit ACL2 integer."
+  :long
+  (xdoc::topstring-p
+   "We generate a character literal if the character is below 256,
+    since currently our Java abstract syntax
+    only supports 8-bit character literals.
+    Otherwise, we cast the value to @('char').")
+  (if (< char 256)
+      (jexpr-literal-character (code-char char))
+    (jexpr-paren
+     (jexpr-cast (jtype-char) (jexpr-literal-integer-decimal char)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jint ((integer sbyte32p))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('int')
-          from a 32-bit signed ACL2 integer."
+          from a signed 32-bit ACL2 integer."
   (if (< integer 0)
       (jexpr-unary (junop-uminus)
                    (jexpr-literal-integer-decimal (- integer)))
@@ -92,10 +119,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jlong ((integer (signed-byte-p 64 integer)))
+(define atj-gen-jbyte ((byte sbyte8p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('byte')
+          from a signed 8-bit ACL2 integer."
+  (jexpr-paren (jexpr-cast (jtype-byte) (atj-gen-jint byte)))
+  :guard-hints (("Goal" :in-theory (enable sbyte8p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jshort ((short sbyte16p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('short')
+          from a signed 16-bit signed ACL2 integer."
+  (jexpr-paren (jexpr-cast (jtype-short) (atj-gen-jint short)))
+  :guard-hints (("Goal" :in-theory (enable sbyte16p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jlong ((integer sbyte64p))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('long')
-          from a 64-bit signed ACL2 integer."
+          from a signed 64-bit ACL2 integer."
   (if (< integer 0)
       (jexpr-unary (junop-uminus)
                    (jexpr-literal-integer-long-decimal (- integer)))
@@ -234,9 +279,9 @@
      However, if the integer is 0 or 1,
      we simply generate a reference to the respective Java static final fields
      in the @('Acl2Integer') class."))
-  (b* ((arg (cond ((signed-byte-p 32 integer)
+  (b* ((arg (cond ((sbyte32p integer)
                    (atj-gen-jint integer))
-                  ((signed-byte-p 64 integer)
+                  ((sbyte64p integer)
                    (atj-gen-jlong integer))
                   (t (atj-gen-jbigint integer)))))
     (jexpr-smethod *aij-type-int*
@@ -251,12 +296,12 @@
   (b* ((numerator (numerator rational))
        (denominator (denominator rational))
        ((mv numerator-arg denominator-arg)
-        (cond ((and (signed-byte-p 32 numerator)
-                    (signed-byte-p 32 denominator))
+        (cond ((and (sbyte32p numerator)
+                    (sbyte32p denominator))
                (mv (atj-gen-jint numerator)
                    (atj-gen-jint denominator)))
-              ((and (signed-byte-p 64 numerator)
-                    (signed-byte-p 64 denominator))
+              ((and (sbyte64p numerator)
+                    (sbyte64p denominator))
                (mv (atj-gen-jlong numerator)
                    (atj-gen-jlong denominator)))
               (t (mv (atj-gen-jbigint numerator)
@@ -274,12 +319,12 @@
   (b* ((realpart (realpart number))
        (imagpart (imagpart number))
        ((mv realpart-arg imagpart-arg)
-        (cond ((and (signed-byte-p 32 realpart)
-                    (signed-byte-p 32 imagpart))
+        (cond ((and (sbyte32p realpart)
+                    (sbyte32p imagpart))
                (mv (atj-gen-jint realpart)
                    (atj-gen-jint imagpart)))
-              ((and (signed-byte-p 64 realpart)
-                    (signed-byte-p 64 imagpart))
+              ((and (sbyte64p realpart)
+                    (sbyte64p imagpart))
                (mv (atj-gen-jlong realpart)
                    (atj-gen-jlong imagpart)))
               ((and (integerp realpart)

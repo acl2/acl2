@@ -208,7 +208,7 @@
      For the ATJ types that correspond to AIJ's public classes,
      the first letter is @('A') and the second letter is from the class name.
      For the Java primitive types,
-     the first letter is @('J') and the second letter is from the Java type."))
+     the first letter is @('J') and the second letter is from [JVMS:4.3.2]."))
   (case type
     (:ainteger "AI")
     (:arational "AR")
@@ -218,7 +218,13 @@
     (:asymbol "AY")
     (:acons "AP")
     (:avalue "AV")
-    (:jint "JI"))
+    (:jboolean "JZ")
+    (:jchar "JC")
+    (:jbyte "JB")
+    (:jshort "JS")
+    (:jint "JI")
+    (:jlong "JJ")
+    (otherwise (impossible)))
   ///
 
   (defrule atj-type-id-injective
@@ -244,7 +250,12 @@
         ((equal id "AY") :asymbol)
         ((equal id "AP") :acons)
         ((equal id "AV") :avalue)
+        ((equal id "JZ") :jboolean)
+        ((equal id "JC") :jchar)
+        ((equal id "JB") :jbyte)
+        ((equal id "JS") :jshort)
         ((equal id "JI") :jint)
+        ((equal id "JJ") :jlong)
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
             :avalue))) ; irrelevant
@@ -548,7 +559,7 @@
      may produce different types,
      and so in this case we re-wrap those terms
      with the least upper bound of the two types,
-     according to the ACL2-based partial order on ATJ types.
+     according to the partial order on ATJ types.
      The case of a term of the form @('(if a a b)')
      is treated a little differently,
      but there is no substantial difference.
@@ -641,7 +652,7 @@
                                                                guards$
                                                                wrld))
                      (type (or required-type?
-                               (atj-type-ajoin first-type second-type)))
+                               (atj-type-join first-type second-type)))
                      (first (if required-type?
                                 first
                               (atj-type-rewrap-term first first-type type)))
@@ -669,7 +680,7 @@
                                                            guards$
                                                            wrld))
                    (type (or required-type?
-                             (atj-type-ajoin then-type else-type)))
+                             (atj-type-join then-type else-type)))
                    (then (if required-type?
                              then
                            (atj-type-rewrap-term then then-type type)))

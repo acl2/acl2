@@ -10,4 +10,13 @@
              b*)
           acl2::*standard-acl2-imports*))
 
+; (Matt K. mod): Turning off waterfall-parallelism because on 11/8/2019,
+; a CCL build of ACL2(p) repeatedly caused the form
+;   (fty::defoption maybe-compass-pt compass-pt-p)
+; to get into an apparent infinite loop with this repeated message:
+;   Waiting for all proof threads to finish
+
+#+acl2-par
+(set-waterfall-parallelism nil)
+
 ; cert-flags: ? t :ttags :all

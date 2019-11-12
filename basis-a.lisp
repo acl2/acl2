@@ -6061,20 +6061,15 @@
              (:accessor
               (case key2
                 (:array (packn-pos (list root "I") root))
-;---<
                 (:hash-table (packn-pos (list root "-GET") root))
-;   >---
                 (otherwise root)))
              (:updater
               (case key2
                 (:array (packn-pos (list "UPDATE-" root "I") root))
-;---<
                 (:hash-table (packn-pos (list root "-PUT") root))
-;   >---
                 (otherwise (packn-pos (list "UPDATE-" root) root))))
              (:creator
               (packn-pos (list "CREATE-" root) root))
-;---<
              (:boundp
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-BOUNDP") root)))
@@ -6093,7 +6088,6 @@
              (:init
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-INIT") root)))
-;   >---
              (otherwise
               (er hard 'defstobj-fnname
                   "Implementation error (bad case); please contact the ACL2 ~
@@ -6162,13 +6156,10 @@
            (resizable (if (consp field-desc)
                           (cadr (assoc-keyword :resizable (cdr field-desc)))
                         nil))
-;---<
            (key2 (defstobj-fnname-key2 type))
-;   >---
            (fieldp-name (defstobj-fnname field :recognizer key2 renaming))
            (accessor-name (defstobj-fnname field :accessor key2 renaming))
            (updater-name (defstobj-fnname field :updater key2 renaming))
-;---<
            (boundp-name (defstobj-fnname field :boundp key2 renaming))
            (accessor?-name (defstobj-fnname field :accessor? key2
                              renaming))
@@ -6176,7 +6167,6 @@
            (count-name (defstobj-fnname field :count key2 renaming))
            (clear-name (defstobj-fnname field :clear key2 renaming))
            (init-name (defstobj-fnname field :init key2 renaming))
-;   >---
            (resize-name (defstobj-fnname field :resize key2 renaming))
            (length-name (defstobj-fnname field :length key2 renaming)))
       (cons (make defstobj-field-template
@@ -6191,16 +6181,13 @@
                   :length-name length-name
                   :resize-name resize-name
                   :resizable resizable
-;---<
                   :other
                   (list boundp-name
                         accessor?-name
                         remove-name
                         count-name
                         clear-name
-                        init-name)
-;   >---
-                  )
+                        init-name))
             (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
 
@@ -6368,10 +6355,13 @@
 (defmacro live-stobjp (name)
 
 ; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
-; object is a simple-vector.  in particular, a string is a vector but not a
-; simple-vector.
+; object is a vector, unless it is a string; nor is any ordinary ACL2 object a
+; hash table (unlike the raw Lisp representation of a single-field stobj whose
+; field is a hash table).
 
-  `(typep ,name 'simple-vector))
+  `(or (and (typep ,name 'vector)
+            (not (stringp ,name)))
+       (typep ,name 'hash-table)))
 
 (defconst *expt2-28* (expt 2 28))
 
@@ -6503,8 +6493,38 @@
                 #+hons 'eql #-hons 'equal
                 test)
            ,@(and size `(:size ,size))
-           ,@(and rehash-size `(:rehash-size ,rehash-size))
-           ,@(and rehash-threshold `(:rehash-threshold ,rehash-threshold)))))
+           ,@(and rehash-size `(:rehash-size ,(float rehash-size)))
+           ,@(and rehash-threshold `(:rehash-threshold ,(float rehash-threshold))))))
+
+(defmacro get-stobj-scalar-field (elt-type fld)
+
+; Warning: Keep this in sync with make-stobj-scalar-field.
+
+; Through Version_8.2, a scalar field of a stobj with non-trivial type was
+; represented as a 1-element array of that type.  This presumably had the
+; advantage of avoiding fixnum boxing in GCL for types contained in fixnum.  We
+; thus preserve this approach for GCL, but for other Lisps (which presumably do
+; not do GCL-style boxing) we avoid the extra indirection through the
+; one-element array.
+
+  #+gcl
+  `(aref (the (simple-array ,elt-type (1))
+              ,fld)
+         0)
+  #-gcl
+  `(the ,elt-type ,fld))
+
+(defmacro make-stobj-scalar-field (elt-type init)
+
+; Warning: Keep this in sync with get-stobj-scalar-field.  See the comments
+; there.
+
+  #+gcl
+  `(make-array$ 1
+                :element-type ',elt-type
+                :initial-element ',init)
+  #-gcl
+  `(the ,elt-type ',init))
 
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
@@ -6524,6 +6544,24 @@
             (init (access defstobj-field-template field-template :init))
             (arrayp (and (consp type) (eq (car type) 'array)))
             (array-etype0 (and arrayp (cadr type)))
+            (hashp (and (consp type) (eq (car type) 'hash-table)))
+            (hash-test (and hashp (cadr type)))
+            (single-fieldp
+
+; Warning: Keep this in sync with the binding of single-fieldp in
+; defstobj-raw-init.
+
+; We avoid some indirection by arranging that when there is a single field that
+; is an array or hash-table, the stobj is the entire structure.  If that
+; changes, for example to keep indirection for hash-tables, then consider
+; changing the definition of live-stobjp.
+
+             (and (or arrayp hashp)
+                  (= n 0)
+                  (null (cdr field-templates))))
+            (fld (if single-fieldp
+                     var
+                   `(svref ,var ,n)))
             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
                                               nil))
             (scalar-type
@@ -6565,9 +6603,6 @@
             (resizable (access defstobj-field-template
                                field-template
                                :resizable))
-;---<
-            (hashp (and (consp type) (eq (car type) 'hash-table)))
-            (hash-test (and hashp (cadr type)))
             (other (access defstobj-field-template
                            field-template
                            :other))
@@ -6576,11 +6611,8 @@
             (remove-name (nth 2 other))
             (count-name (nth 3 other))
             (clear-name (nth 4 other))
-            (init-name (nth 5 other))
-;   >---
-            )
+            (init-name (nth 5 other)))
        (cond
-;---<
         (hashp
          `((,accessor-name
             (k ,var)
@@ -6588,7 +6620,7 @@
             (values (gethash ,(if (eq hash-test 'hons-equal)
                                  '(hons-copy k)
                                'k)
-                            (the hash-table (svref ,var ,n)))))
+                             (the hash-table ,fld))))
            (,updater-name
             (k v ,var)
             ,@(and inline (list *stobj-inline-declare*))
@@ -6597,7 +6629,7 @@
               (setf (gethash ,(if (eq hash-test 'hons-equal)
                                   '(hons-copy k)
                                 'k)
-                             (the hash-table (svref ,var ,n)))
+                             (the hash-table ,fld))
                     v)
               ,var))
            (,boundp-name
@@ -6607,7 +6639,7 @@
                 (gethash ,(if (eq hash-test 'hons-equal)
                               '(hons-copy k)
                             'k)
-                         (the hash-table (svref ,var ,n)))
+                         (the hash-table ,fld))
               (declare (ignore val))
               (if boundp t nil)))
            (,accessor?-name
@@ -6618,7 +6650,7 @@
                 (gethash ,(if (eq hash-test 'hons-equal)
                               '(hons-copy k)
                             'k)
-                         (the hash-table (svref ,var ,n)))
+                         (the hash-table ,fld))
               (mv val (if boundp t nil))))
            (,remove-name
             (k ,var)
@@ -6629,33 +6661,32 @@
               (remhash ,(if (eq hash-test 'hons-equal)
                             '(hons-copy k)
                           'k)
-                       (the hash-table (svref ,var ,n)))
+                       (the hash-table ,fld))
               ,var))
            (,count-name
             (,var)
             ,@(and inline (list *stobj-inline-declare*))
-            (hash-table-count (the hash-table (svref ,var ,n))))
+            (hash-table-count (the hash-table ,fld)))
            (,clear-name
             (,var)
-            ,@(and inline (list *stobj-inline-declare*))
             (progn
               #+(and hons (not acl2-loop-only))
               (memoize-flush ,var)
-              (clrhash (the hash-table (svref ,var ,n)))
-              ,var))
+              (clrhash (the hash-table ,fld))
+              ,@(and (not single-fieldp)
+                     (list var))))
            (,init-name
             (ht-size rehash-size rehash-threshold ,var)
-            ,@(and inline (list *stobj-inline-declare*))
             (progn
               #+(and hons (not acl2-loop-only))
               (memoize-flush ,var)
-              (setf (svref ,var ,n)
+              (setf ,fld
                     (make-hash-table-with-defaults ',hash-test
                                                    ht-size
                                                    rehash-size
                                                    rehash-threshold))
-              ,var))))
-;   >---
+              ,@(and (not single-fieldp)
+                     (list var))))))
         (arrayp
          `((,length-name
             (,var)
@@ -6664,7 +6695,7 @@
                   `((declare (ignore ,var))
                     ,array-length)
                 `((the (and fixnum (integer 0 *))
-                       (length (svref ,var ,n))))))
+                       (length ,fld)))))
            (,resize-name
             (i ,var)
             ,@(if (not resizable)
@@ -6690,7 +6721,9 @@
                        (list (cons #\0 i)
                              (cons #\1 array-dimension-limit)))
                     (let* ((var ,var)
-                           (old (svref var ,n))
+                           (old ,(if single-fieldp
+                                     'var
+                                   `(svref var ,n)))
                            (min-index (min i (length old)))
                            (new (make-array$ i
 
@@ -6710,21 +6743,24 @@
                                              :element-type
                                              ',array-etype)))
                       #+hons (memoize-flush ,flush-var)
-                      (setf (svref var ,n)
-                            (,(pack2 'stobj-copy-array- fix-vref)
-                             old new 0 min-index))
-                      ,@(and stobj-creator
-                             `((when (< (length old) i)
-                                 (loop for j from (length old) to (1- i)
-                                       do (setf (svref new j)
-                                                (,stobj-creator))))))
-                      var)))))
+                      (prog1 (setf ,(if single-fieldp
+                                        'var
+                                      `(svref var ,n))
+                                   (,(pack2 'stobj-copy-array- fix-vref)
+                                    old new 0 min-index))
+                        ,@(and stobj-creator
+                               `((when (< (length old) i)
+                                   (loop for j from (length old) to (1- i)
+                                         do (setf (svref new j)
+                                                  (,stobj-creator)))))))
+                      ,@(and (not single-fieldp)
+                             '(var)))))))
            (,accessor-name
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the$ ,array-etype
-                  (,vref (the ,simple-type (svref ,var ,n))
+                  (,vref (the ,simple-type ,fld)
                          (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
@@ -6739,15 +6775,15 @@
 ; supporting *1* functions.
 
               (setf (,vref ,(if (eq simple-type t)
-                                `(svref ,var ,n)
-                              `(the ,simple-type (svref ,var ,n)))
+                                fld
+                              `(the ,simple-type ,fld))
                            (the (and fixnum (integer 0 *)) i))
                     (the$ ,array-etype v))
               ,var))))
         ((eq scalar-type t)
          `((,accessor-name (,var)
                            ,@(and inline (list *stobj-inline-declare*))
-                           (svref ,var ,n))
+                           ,fld)
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
@@ -6767,7 +6803,7 @@
 
 ;                           ,@(when stobj-creator '((break$))) ; see just above
 
-                            (setf (svref ,var ,n) v)
+                            (setf ,fld v)
                             ,var))))
         (t
          (assert$
@@ -6775,18 +6811,14 @@
           `((,accessor-name (,var)
                             ,@(and inline (list *stobj-inline-declare*))
                             (the$ ,scalar-type
-                                  (aref (the (simple-array ,scalar-type (1))
-                                             (svref ,var ,n))
-                                        0)))
+                                  (get-stobj-scalar-field ,scalar-type ,fld)))
             (,updater-name (v ,var)
                            ,@(and (not (eq scalar-type t))
                                   `((declare (type ,scalar-type v))))
                            ,@(and inline (list *stobj-inline-declare*))
                            (progn
                              #+hons (memoize-flush ,flush-var)
-                             (setf (aref (the (simple-array ,scalar-type (1))
-                                              (svref ,var ,n))
-                                         0)
+                             (setf (get-stobj-scalar-field ,scalar-type ,fld)
                                    (the$ ,scalar-type v))
                              ,var)))))))
      (defstobj-field-fns-raw-defs
@@ -6801,11 +6833,9 @@
    (t (let* ((field-template (car field-templates))
              (type (access defstobj-field-template field-template :type))
              (arrayp (and (consp type) (eq (car type) 'array)))
-;---<
              (hashp (and (consp type) (eq (car type) 'hash-table)))
              (hash-test (and hashp (cadr type)))
              (hash-init-size (and hashp (caddr type)))
-;   >---
              (array-etype0 (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
              (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
@@ -6845,23 +6875,19 @@
                                        :element-type ',array-etype
                                        :initial-element ',init)))
                 (defstobj-raw-init-fields (cdr field-templates))))
-;---<
          (hashp
           (cons `(make-hash-table-with-defaults ',hash-test
                                                 ,hash-init-size
                                                 nil
                                                 nil)
                 (defstobj-raw-init-fields (cdr field-templates))))
-;   >---
          ((eq type t)
           (cons (kwote init)
                 (defstobj-raw-init-fields (cdr field-templates))))
          (stobj-creator
           (cons `(,stobj-creator)
                 (defstobj-raw-init-fields (cdr field-templates))))
-         (t (cons `(make-array$ 1
-                                :element-type ',type
-                                :initial-element ',init)
+         (t (cons `(make-stobj-scalar-field ,type ,init)
                   (defstobj-raw-init-fields (cdr field-templates)))))))))
 
 (defun defstobj-raw-init-setf-forms (var index raw-init-fields acc)
@@ -6881,9 +6907,22 @@
 
   (let* ((field-templates (access defstobj-template template :field-templates))
          (raw-init-fields (defstobj-raw-init-fields field-templates))
-         (len (length field-templates)))
-    `(cond
-      ((< ,len call-arguments-limit)
+         (len (length field-templates))
+         (single-fieldp
+
+; Warning: Keep this binding in sync with the binding of single-fieldp in
+; defstobj-field-fns-raw-defs.
+
+          (and (= len 1)
+               (let ((type (access defstobj-field-template
+                                   (car field-templates)
+                                   :type)))
+                 (and (consp type)
+                      (member-eq (car type) '(array hash-table)))))))
+    (cond
+     (single-fieldp `,(car raw-init-fields))
+     (t `(cond
+          ((< ,len call-arguments-limit)
 
 ; This check is necessary because GCL complains when VECTOR is called on more
 ; than 64 arguments.  Actually, the other code -- where LIST is called instead
@@ -6892,11 +6931,11 @@
 ; least) been forgiving when LIST is called with too many arguments (as per
 ; call-arguments-limit).
 
-       (vector ,@raw-init-fields))
-      (t
-       (let ((v (make-array$ ,len)))
-         ,@(defstobj-raw-init-setf-forms 'v 0 raw-init-fields nil)
-         v)))))
+           (vector ,@raw-init-fields))
+          (t
+           (let ((v (make-array$ ,len)))
+             ,@(defstobj-raw-init-setf-forms 'v 0 raw-init-fields nil)
+             v)))))))
 
 (defun defstobj-component-recognizer-calls (field-templates n var ans)
 
@@ -7047,7 +7086,6 @@
                                 (and ,(translate-stobj-type-to-guard
                                        etype '(car x) wrld)
                                      (,recog-name (cdr x)))))))
-;---<
              ((and (consp type)
                    (eq (car type) 'hash-table))
               `(,recog-name (x)
@@ -7055,7 +7093,6 @@
                                             :verify-guards t)
                                      (ignore x))
                             t))
-;   >---
              (t (let ((type-term (translate-stobj-type-to-guard
                                   type 'x wrld)))
 

@@ -10,6 +10,8 @@
 
 (in-package "JAVA")
 
+(include-book "unicode")
+
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
 
@@ -225,8 +227,37 @@
      with more verbose arguments.")
    (xdoc::p
     "The tree is terminated,
-     i.e. it has Unicode characters at its leaves,
-     not rule names."))
+     i.e. it has natural numbers at its leaves,
+     not rule names.
+     These natural numbers are Java Unicode characters,
+     because the grammar satisfies @(tsee abnf::rulelist-in-termset-p)
+     for the set @('(integers-from-to 0 #xffff)')
+     as proved " (xdoc::seetopic "*grammar*" "here") ".
+     To prove that the string at the leaves satisfies @(tsee unicode-listp),
+     we proceed as follows:")
+   (xdoc::ol
+    (xdoc::li
+     "We disable @(tsee integers-from-to) and its executable counterpart,
+      so that @('(integers-from-to 0 #xffff)') does not get expanded.")
+    (xdoc::li
+     "We prove that membership in @('(integers-from-to 0 #xffff)')
+      is equivalent to @(tsee unicodep)
+      (via a library theorem that rewrites the membership assertion
+      into integer inequalities),
+      and then lift that to @(tsee list-in) and @(tsee unicode-listp).")
+    (xdoc::li
+     "We prove that @(tsee abnf-tree-with-root-p)
+      implies @(tsee abnf::string-parsablep),
+      and then @(tsee abnf::terminal-string-for-rules-p).")
+    (xdoc::li
+     "We combine the facts from the previous two steps
+      with the @(tsee abnf::rulelist-in-termset-p) theorem about the grammar
+      and with the ABNF library theorem
+      @(tsee abnf::terminal-strings-in-termset-when-rules-in-termset),
+      which relates the meta-syntactic property
+      @(tsee abnf::rulelist-in-termset-p)
+      with membership in the set of terminals,
+      to obtain the final theorem.")))
   (and
    (abnf::treep tree)
    (abnf::tree-terminatedp tree)
@@ -242,7 +273,58 @@
              (abnf::treep tree)))
 
   (defrule not-abnf-tree-with-root-p-of-nil
-    (not (abnf-tree-with-root-p nil rulename))))
+    (not (abnf-tree-with-root-p nil rulename)))
+
+  (local (in-theory (disable integers-from-to (:e integers-from-to))))
+
+  (defruledl in-of-integers-from-0-to-ffff-rewrite-to-unicodep
+    (equal (in x (integers-from-to 0 #xffff))
+           (unicodep x))
+    :enable unicodep
+    :prep-books
+    ((local
+      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))))
+
+  (defruledl list-of-integers-from-0-to-ffff-rewrite-to-unicode-listp
+    (implies (true-listp x)
+             (iff (list-in x (integers-from-to 0 #xffff))
+                  (unicode-listp x)))
+    :enable (in-of-integers-from-0-to-ffff-rewrite-to-unicodep))
+
+  (defruledl abnf-string-parsablep-when-tree-with-root-p
+    (implies (abnf-tree-with-root-p tree rulename)
+             (abnf::string-parsablep (abnf::tree->string tree)
+                                     (abnf::rulename rulename)
+                                     *grammar*))
+    :use ((:instance abnf::string-parsablep-suff
+           (tree tree)
+           (string (abnf::tree->string tree))
+           (rulename (abnf::rulename rulename))
+           (rules *grammar*)))
+    :enable abnf::parse-treep
+    :disable (abnf::not-parse-treep-when-not-string-parsablep))
+
+  (defruledl abnf-terminal-string-for-rules-p-when-tree-with-root-p
+    (implies (abnf-tree-with-root-p tree rulename)
+             (abnf::terminal-string-for-rules-p (abnf::tree->string tree)
+                                                *grammar*))
+    :use (:instance abnf::terminal-string-for-rules-p-suff
+          (rulename (abnf::rulename rulename))
+          (nats (abnf::tree->string tree))
+          (rules *grammar*))
+    :enable abnf-string-parsablep-when-tree-with-root-p)
+
+  (defrule unicode-listp-of-string-of-abnf-tree-with-root
+    (implies (abnf-tree-with-root-p tree rulename) ; free var RULENAME
+             (unicode-listp (abnf::tree->string tree)))
+    :use (:instance abnf::terminal-strings-in-termset-when-rules-in-termset
+          (nats (abnf::tree->string tree))
+          (rules *grammar*)
+          (termset (integers-from-to 0 #xffff)))
+    :enable (list-of-integers-from-0-to-ffff-rewrite-to-unicode-listp
+             abnf-terminal-string-for-rules-p-when-tree-with-root-p
+             unicode-only-*grammar*)
+    :disable abnf-tree-with-root-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,4 +338,8 @@
 
   (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
     (implies (abnf-tree-list-with-root-p trees rulename) ; free var RULENAME
-             (abnf::tree-listp trees))))
+             (abnf::tree-listp trees)))
+
+  (defrule unicode-listp-of-string-of-abnf-tree-list-with-root
+    (implies (abnf-tree-list-with-root-p trees rulename)
+             (unicode-listp (abnf::tree-list->string trees)))))

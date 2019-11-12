@@ -251,32 +251,63 @@
   (b* ((irrelevant (atj-test-value-avalue :irrelevant)))
     (if (or deep$
             (not guards$)
-            (not (eq type :jint)))
+            (not (member-eq type
+                            '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
         (if (quotep input)
             (value (atj-test-value-avalue (unquote-term input)))
           (er-soft+ ctx t irrelevant
                     "The term ~x0 that is an argument of ~
                      the function call (~x1 ...) that translates ~
                      the test term ~x2 in the :TESTS input, ~
-                     must be a quoted constant."))
-      (b* ((err-msg (msg "The term ~x0 that is an argument of ~
+                     must be a quoted constant."
+                    input fn call))
+      (b* ((constructor (case type
+                          (:jboolean 'boolean-value)
+                          (:jchar 'char-value)
+                          (:jbyte 'byte-value)
+                          (:jshort 'short-value)
+                          (:jint 'int-value)
+                          (:jlong 'long-value)))
+           (err-msg (msg "The term ~x0 that is an argument of ~
                           the function call (~x1 ...) that translates ~
                           the test term ~x2 in the :TESTS input, ~
-                          must be a call (INT-VALUE X) where X is ~
-                          a signed 32-bit integer."
-                         input fn call))
-           ((unless (ffn-symb-p input 'int-value))
+                          must be a call (~x3 X) where X is ~s4."
+                         input
+                         fn
+                         call
+                         constructor
+                         (case type
+                           (:jboolean "a boolean")
+                           (:jchar "an unsigned 16-bit integer")
+                           (:jbyte "a signed 8-bit integer")
+                           (:jshort "a signed 16-bit integer")
+                           (:jint "a signed 32-bit integer")
+                           (:jlong "a signed 64-bit integer"))))
+           ((unless (ffn-symb-p input constructor))
             (er-soft+ ctx t irrelevant "~@0" err-msg))
-           (int-value-args (fargs input))
-           ((unless (= (len int-value-args) 1))
+           (args (fargs input))
+           ((unless (= (len args) 1))
             (er-soft+ ctx t irrelevant "~@0" err-msg))
-           (int-value-arg (car int-value-args))
-           ((unless (quotep int-value-arg))
+           (arg (car args))
+           ((unless (quotep arg))
             (er-soft+ ctx t irrelevant "~@0" err-msg))
-           (int (unquote-term int-value-arg))
-           ((unless (sbyte32p int))
+           (val (unquote-term arg))
+           ((unless (case type
+                      (:jboolean (booleanp val))
+                      (:jchar (ubyte16p val))
+                      (:jbyte (sbyte8p val))
+                      (:jshort (sbyte16p val))
+                      (:jint (sbyte32p val))
+                      (:jlong (sbyte64p val))))
             (er-soft+ ctx t irrelevant "~@0" err-msg)))
-        (value (atj-test-value-jvalue (int-value int)))))))
+        (value
+         (case type
+           (:jboolean (atj-test-value-jvalue-boolean (boolean-value val)))
+           (:jchar (atj-test-value-jvalue-char (char-value val)))
+           (:jbyte (atj-test-value-jvalue-byte (byte-value val)))
+           (:jshort (atj-test-value-jvalue-short (short-value val)))
+           (:jint (atj-test-value-jvalue-int (int-value val)))
+           (:jlong (atj-test-value-jvalue-long (long-value val)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -417,9 +448,19 @@
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
-       (test-output (if (eq out-type? :jint)
-                        (atj-test-value-jvalue output)
-                      (atj-test-value-avalue output))))
+       (test-output (cond ((eq out-type? :jboolean)
+                           (atj-test-value-jvalue-boolean output))
+                          ((eq out-type? :jchar)
+                           (atj-test-value-jvalue-char output))
+                          ((eq out-type? :jbyte)
+                           (atj-test-value-jvalue-byte output))
+                          ((eq out-type? :jshort)
+                           (atj-test-value-jvalue-short output))
+                          ((eq out-type? :jint)
+                           (atj-test-value-jvalue-int output))
+                          ((eq out-type? :jlong)
+                           (atj-test-value-jvalue-long output))
+                          (t (atj-test-value-avalue output)))))
     (value (atj-test name fn test-inputs test-output))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -768,10 +809,8 @@
                                 deep$
                                 guards$)))
 
-  :prepwork
-  ((defrule returns-lemma
-     (implies (symbol-listp x)
-              (symbol-listp (remove1-equal a x)))))
+  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
+             (local (in-theory (disable member-equal acl2::member-of-cons))))
 
   :verify-guards nil ; done below
   ///

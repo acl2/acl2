@@ -112,8 +112,8 @@
      this is why this function has the @('jvar-value-...') arguments
      and returns the @('new-jvar-value-index') result.")
    (xdoc::p
-    "For @('j') test values, which currently are always Java @('int')s,
-     we generate Java integer literals or negations thereof.")
+    "For @('j') test values, we use
+     @(tsee atj-gen-jboolean) and similar functions.")
    (xdoc::p
     "In both cases, we also return the ATJ type of the expression.
      In the shallow embedding, this will determined the Java type
@@ -126,10 +126,30 @@
                  expr
                  (atj-type-of-value tvalue.get)
                  jvar-value-index))
-   :jvalue (mv nil
-               (atj-gen-jint (int-value->int tvalue.get))
-               :jint
-               jvar-value-index)))
+   :jvalue-boolean (mv nil
+                       (atj-gen-jboolean (boolean-value->bool tvalue.get))
+                       :jboolean
+                     jvar-value-index)
+   :jvalue-char (mv nil
+                    (atj-gen-jchar (char-value->nat tvalue.get))
+                    :jchar
+                 jvar-value-index)
+   :jvalue-byte (mv nil
+                    (atj-gen-jbyte (byte-value->int tvalue.get))
+                    :jbyte
+                  jvar-value-index)
+   :jvalue-short (mv nil
+                     (atj-gen-jshort (short-value->int tvalue.get))
+                     :jshort
+                   jvar-value-index)
+   :jvalue-int (mv nil
+                   (atj-gen-jint (int-value->int tvalue.get))
+                   :jint
+                 jvar-value-index)
+   :jvalue-long (mv nil
+                    (atj-gen-jlong (long-value->int tvalue.get))
+                    :jlong
+                  jvar-value-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,10 +274,19 @@
             ares-expr
             ares-type
             &) (atj-gen-test-value test.output "value" jvar-value-index))
-       (res-type (if (eq ares-type :jint)
-                     (jtype-int)
-                   *aij-type-value*))
-       (cmp-res-expr (if (eq ares-type :jint)
+       (res-type (cond ((eq ares-type :jboolean) (jtype-boolean))
+                       ((eq ares-type :jchar) (jtype-char))
+                       ((eq ares-type :jbyte) (jtype-byte))
+                       ((eq ares-type :jshort) (jtype-short))
+                       ((eq ares-type :jint) (jtype-int))
+                       ((eq ares-type :jlong) (jtype-long))
+                       (t *aij-type-value*)))
+       (cmp-res-expr (if (member-eq ares-type '(:jboolean
+                                                :jchar
+                                                :jbyte
+                                                :jshort
+                                                :jint
+                                                :jlong))
                          (jexpr-binary (jbinop-eq)
                                        (jexpr-name "resultAcl2")
                                        (jexpr-name "resultJava"))
@@ -326,7 +355,7 @@
                                             shallow-arg-jvars))))
            (jblock-locvar (jtype-long) "endTime" current-time-expr)
            (jblock-asg (jexpr-name "pass")
-                       (jexpr-binary (jbinop-logand)
+                       (jexpr-binary (jbinop-condand)
                                      (jexpr-name "pass")
                                      cmp-res-expr))
            (jblock-if n!=0-expr
@@ -343,7 +372,7 @@
                                    (jexpr-binary (jbinop-add)
                                                  (jexpr-name "sumTime")
                                                  (jexpr-name "time")))
-                       (jblock-if (jexpr-binary (jbinop-logor)
+                       (jblock-if (jexpr-binary (jbinop-condor)
                                                 (jexpr-binary (jbinop-eq)
                                                               (jexpr-name "i")
                                                               (jexpr-literal-0))

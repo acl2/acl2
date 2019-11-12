@@ -85,6 +85,7 @@
            (subsetp-equal x (cons a y)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
+;; Disabled since it can be expensive
 (defthmd subsetp-equal-of-cons-arg2-irrel
   (implies (not (member-equal a x))
            (equal (subsetp-equal x (cons a y))
@@ -96,7 +97,6 @@
   :hints (("Goal" :in-theory (enable subsetp-equal
                                      subsetp-equal-of-cons-arg2-irrel
                                      subsetp-equal-when-subsetp-equal-of-cdr))))
-
 
 (defthm subsetp-equal-of-add-to-set-equal-arg1
   (equal (subsetp-equal (add-to-set-equal a x) y)
@@ -127,15 +127,31 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable member-equal add-to-set-equal))))
 
-(defthm subsetp-equal-of-union-equal
+(defthm subsetp-equal-of-union-equal-arg1
   (equal (subsetp-equal (union-equal x y) z)
          (and (subsetp-equal x z)
               (subsetp-equal y z)))
   :hints (("Goal" :in-theory (enable union-equal subsetp-equal))))
 
+(defthm subsetp-equal-of-union-equal-arg2
+  (implies (or (subsetp-equal x y)
+               (subsetp-equal x z))
+           (subsetp-equal x (union-equal y z)))
+  :hints (("Goal" :in-theory (enable subsetp-equal union-equal))))
+
+(defthm subsetp-equal-of-union-equal-arg2-same
+  (subsetp-equal x (union-equal x y)))
+
+(defthm subsetp-equal-of-union-equal-arg2-same-alt
+  (subsetp-equal x (union-equal y x)))
+
 (defthm subsetp-equal-of-remove-equal-arg1
   (implies (subsetp-equal x y)
            (subsetp-equal (remove-equal a x) y))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
+
+(defthm subsetp-equal-of-remove-equal-arg1-same
+  (subsetp-equal (remove-equal a x) x)
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
 
 (defthmd subsetp-equal-of-remove-equal-arg1-irrel
@@ -151,9 +167,26 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
 
+(defthmd subsetp-equal-of-remove-equal-arg2-irrel
+  (implies (not (member-equal a x))
+	   (equal (subsetp-equal x (remove-equal a y))
+                  (subsetp-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
+
+(defthm subsetp-equal-of-remove-equal-arg2-irrel-cheap
+  (implies (not (member-equal a x))
+	   (equal (subsetp-equal x (remove-equal a y))
+                  (subsetp-equal x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :use (:instance subsetp-equal-of-remove-equal-arg2-irrel))))
+
 (defthm subsetp-equal-of-remove1-equal-arg1
   (implies (subsetp-equal x y)
            (subsetp-equal (remove1-equal a x) y))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove1-equal))))
+
+(defthm subsetp-equal-of-remove1-equal-arg1-same
+  (subsetp-equal (remove1-equal a x) x)
   :hints (("Goal" :in-theory (enable subsetp-equal remove1-equal))))
 
 (defthmd subsetp-equal-of-remove1-equal-arg1-irrel
@@ -204,7 +237,6 @@
            (subsetp-equal x (append y z)))
   :hints (("Goal" :in-theory (enable append subsetp-equal))))
 
-
 (defthm subsetp-equal-of-take-same
   (implies (and (natp n)
                 (< n (len x)))
@@ -223,3 +255,30 @@
   (implies (subsetp-equal x y)
            (subsetp-equal (nthcdr n x) y))
   :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm subsetp-equal-of-set-difference-equal-arg1-same
+  (subsetp-equal (set-difference-equal x y) x))
+
+(defthm subsetp-equal-of-set-difference-equal-arg1
+  (implies (subsetp-equal x z)
+	   (subsetp-equal (set-difference-equal x y) z)))
+
+(defthm subsetp-equal-of-intersection-equal-arg1
+  (implies (or (subsetp-equal x z)
+               (subsetp-equal y z))
+           (subsetp-equal (intersection-equal x y) z))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal))))
+
+(defthm subsetp-equal-of-intersection-equal-arg1-same-1
+  (subsetp-equal (intersection-equal x y) x))
+
+(defthm subsetp-equal-of-intersection-equal-arg1-same-2
+  (subsetp-equal (intersection-equal x y) y))
+
+(defthm subsetp-equal-of-cons-and-cons-same
+  (implies (subsetp-equal x y)
+           (subsetp-equal (cons a x) (cons a y))))
+
+(defthm subsetp-equal-of-cons-and-cons
+  (equal (subsetp-equal (cons a x) (cons a y))
+         (subsetp-equal (remove-equal a x) (remove-equal a y))))

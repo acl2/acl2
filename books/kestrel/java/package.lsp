@@ -69,6 +69,7 @@
                          formals+
                          fquotep
                          function-namep
+                         function-name-listp
                          implicate
                          implode
                          impossible

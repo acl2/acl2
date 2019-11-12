@@ -2110,10 +2110,7 @@
 ; we just pass that along.
 
                       '(nil))
-; The next form was originally conditionalized with #+acl2-extra-checks, but we
-; want to do this unconditionally.
-                     (latches ; optimization
-                      (actual-stobjs-out fn args w user-stobj-alist))
+                     (latches (actual-stobjs-out fn args w latches))
                      (t (stobjs-out fn w))))
               (val (catch 'raw-ev-fncall
                      (chk-raw-ev-fncall fn w aok)
@@ -2164,8 +2161,6 @@
                               (mv-refs (1- (length stobjs-out))))))))
                (mv nil
                    val
-; The next form was originally conditionalized with #+acl2-extra-checks, with
-; value latches when #-acl2-extra-checks; but we want this unconditionally.
                    (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
                                  val
                                  latches)))

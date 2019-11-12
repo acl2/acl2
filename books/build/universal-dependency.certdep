@@ -2,6 +2,5 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Recertification of many books may be required because of changes to the
-raw Lisp definition of defstobj, among other changes needed to support
-swap-stobjs.
+Recertification of many books may be required because of new changes to the
+raw Lisp implementations of defstobj and defabsstobj.

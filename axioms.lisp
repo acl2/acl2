@@ -3670,11 +3670,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *inline-suffix* "$INLINE") ; also see above defun-inline-form
 
-#-acl2-loop-only
+#-(or acl2-loop-only gcl)
 (declaim
 
 ; This declaim form avoids warnings that would otherwise be generated during
-; the boot-strap (in CCL, at least) by ec-call.
+; the boot-strap (in CCL, at least) by ec-call.  We don't bother in GCL because
+; the declaim form itself has caused a warning!
 
  (ftype function
         acl2_*1*_acl2::apply$
@@ -27843,7 +27844,13 @@ Lisp definition."
   (declare (ignore always))
   #-acl2-loop-only
   (let ((temp (svref *inside-absstobj-update* 0)))
-    (cond ((or (null temp)
+    (cond ((or (and (eq val :ignore)
+                    (or (ttag (w *the-live-state*))
+                        (er hard 'set-absstobj-debug
+                            "It is illegal to supply the value :ignore to ~
+                             set-absstobj-debug unless there is an active ~
+                             trust tag.")))
+               (null temp)
                (eql temp 0)
                (and always
                     (or (ttag (w *the-live-state*))
@@ -27854,14 +27861,17 @@ Lisp definition."
            (setf (aref *inside-absstobj-update* 0)
                  (cond ((eq val :reset)
                         (if (natp temp) 0 nil))
+                       ((eq val :ignore)
+                        :ignore)
                        (val nil)
                        (t 0))))
           (t (er hard 'set-absstobj-debug
-                 "It is illegal to call set-absstobj-debug in a context where ~
-                  an abstract stobj invariance violation has already occurred ~
-                  but not yet been processed.  You can overcome this ~
-                  restriction either by waiting for the top-level prompt, or ~
-                  by evaluating the following form: ~x0."
+                 "It is illegal to call set-absstobj-debug with value other ~
+                  than :ignore in a context where an abstract stobj ~
+                  invariance violation has already occurred but not yet been ~
+                  processed.  You can overcome this restriction either by ~
+                  waiting for the top-level prompt, or by evaluating the ~
+                  following form: ~x0."
                  `(set-abbstobj-debug ,(if (member-eq val '(nil :reset))
                                            nil
                                          t)

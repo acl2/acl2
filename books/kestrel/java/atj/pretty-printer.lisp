@@ -205,7 +205,7 @@
               :predec "--"
               :uplus "+"
               :uminus "-"
-              :bitcompl "~"
+              :bitcompl "~~" ; a single ~ is interpreted as a directive
               :logcompl "!"))
 
 (define print-jbinop ((binop jbinopp))
@@ -227,11 +227,11 @@
                :instanceof "instanceof"
                :eq "=="
                :ne "!="
-               :bitand "&"
-               :bitxor "^"
-               :bitior "|"
-               :logand "&&"
-               :logor "||"
+               :and "&"
+               :xor "^"
+               :ior "|"
+               :condand "&&"
+               :condor "||"
                :asg "="
                :asg-mul "*="
                :asg-div "/="

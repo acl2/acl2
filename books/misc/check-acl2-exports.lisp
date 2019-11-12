@@ -200,14 +200,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    SYMBOL-NAME-LST
-    MAYBE-FLUSH-AND-COMPRESS1
-    DUMB-OCCUR
-    DUMB-OCCUR-VAR
-    SWAP-STOBJS
-    TRANS-EVAL-DEFAULT-WARNING
-    TRANS-EVAL-NO-WARNING
-    COUNT-KEYS
   ))
 
 (defconst *special-ops*

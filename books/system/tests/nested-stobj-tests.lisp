@@ -35,8 +35,11 @@
      ,@defs
      (make-event
       (er-progn (trans-eval ',run 'top state t)
-                (assert-event ,check :on-skip-proofs t)
-                (value '(value-triple '(value-triple :success))))))))
+                (mv-let (erp val state)
+                  (trans-eval ',check 'top state t)
+                  (if (and (null erp) val)
+                      (value '(value-triple '(value-triple :success)))
+                    (er soft 'top "Check failed!"))))))))
 
 ; As promised in :doc stobj-let, we begin with an example from that :doc.
 
