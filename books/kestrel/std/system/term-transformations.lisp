@@ -12,6 +12,7 @@
 
 (include-book "close-lambdas")
 (include-book "fsublis-var")
+(include-book "remove-dead-if-branches")
 (include-book "remove-mbe")
 (include-book "remove-progn")
 (include-book "remove-trivial-vars")
