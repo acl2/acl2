@@ -16,6 +16,7 @@
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
+(include-book "kestrel/std/system/remove-dead-if-branches" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
@@ -39,13 +40,18 @@
     ", prior to generating Java code,
      ATJ performs an ACL2-to-ACL2 pre-translation.
      Currently, this pre-translation consists of the following steps.
-     The first two steps apply to both the deep and the shallow embedding;
+     The first three steps apply to both the deep and the shallow embedding;
      the others apply only to the shallow embedding.")
    (xdoc::ol
     (xdoc::li
      "We remove @(tsee return-last).
       See "
      (xdoc::seetopic "atj-pre-translation-remove-last" "here")
+     ".")
+    (xdoc::li
+     "We remove dead @(tsee if) branches.
+      See "
+     (xdoc::seetopic "atj-pre-translation-remove-dead-if-branches" "here")
      ".")
     (xdoc::li
      "We remove the unused lambda-bound variables.
@@ -113,6 +119,29 @@
                (remove-mbe-exec term)))
        (term (remove-progn term)))
     term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-pre-translation-remove-dead-if-branches
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          removal of dead @(tsee if) branches."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in both the deep and shallow embedding approach.")
+   (xdoc::p
+    "If the test of an @(tsee if) is @('t'),
+     we replace the @(tsee if) with the `then' branch;
+     if the test of an @(tsee if) is @('nil'),
+     we replace the @(tsee if) with the `else' branch.
+     Note that the previous translation step
+     may turn @(tsee mbt)s in @(tsee if) tests into @('t')s,
+     so it is appropriate for this pre-translation step
+     to come after the previous one.")
+   (xdoc::p
+    "We use the @(tsee remove-dead-if-branches) system utility.
+     No other code is needed to do this in ATJ.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1891,6 +1920,7 @@
     (xdoc::seetopic "atj-pre-translation" "here")
     "."))
   (b* ((body (atj-remove-return-last body guards$))
+       (body (remove-dead-if-branches body))
        (body (remove-unused-vars body))
        ((when deep$) (mv formals body))
        (body (remove-trivial-vars body))
