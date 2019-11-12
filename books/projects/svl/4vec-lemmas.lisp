@@ -364,24 +364,6 @@
                             -1
                             val))))
 
-  #|(local
-  (use-arithmetic-5 nil))||#
-  #|(defthmd expt-times-logapp
-  (implies (and (natp size1)
-  (natp size2)
-  (integerp a)
-  (integerp b))
-  (equal (* (expt 2 size1)
-  (logapp size2 a b))
-  (logapp (+ size1 size2)
-  (* (expt 2 size1) a)
-  b)))
-  :hints (("Goal"
-  :in-theory (e/d* (bitops::ihsext-inductions
-  bitops::ihsext-recursive-redefs
-
-  ) ()))))||#
-
   (LOCAL (USE-ARITHMETIC-5 NIL))
 
   (defthm 4vec-concat-of-4vec-concat
@@ -2327,7 +2309,6 @@
      (lognot x)))
 
   (local
-
    (defthm loghead-of-lognot
      (equal (loghead size (lognot x))
             (loghead size (lognot$ (loghead size x))))
@@ -2859,7 +2840,7 @@
                                 4VEC-BITNOT$)
                                ((:e tau-system)))))))
 
-  (defthm 4VEC-PART-SELECT-of-4vec-bitnot$-2
+  (defthm 4vec-part-select-of-4vec-bitnot$-2
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start)
@@ -3697,13 +3678,13 @@
   nil
   (local
    (defthm dummy-lemma1
-     (implies (and (or (NOT (EQUAL (LOGAPP amount num -1) -1))
-                       (NOT (EQUAL (LOGAPP amount num2 -1) -1)))
+     (implies (and (or (not (equal (logapp amount num -1) -1))
+                       (not (equal (logapp amount num2 -1) -1)))
                    (integerp num)
                    (integerp num2))
-              (NOT (EQUAL
-                    (LOGAPP amount (LOGAND num num2) -1) -1)))
-     :hints (("Goal"
+              (not (equal
+                    (logapp amount (logand num num2) -1) -1)))
+     :hints (("goal"
               :in-theory (e/d* (bitops::ihsext-inductions
                                 bitops::ihsext-recursive-redefs)
                                ())))))
@@ -3714,50 +3695,50 @@
           (> amount 1))
 
      (equal (4vec-part-select 0 1 (sv::4vec-reduction-and
-                                   (SV::4VEC-SIGN-EXT amount
+                                   (sv::4vec-sign-ext amount
                                                       term)))
             (sv::4vec-bitand
              (sv::4vec-part-select 0 1 term)
              (4vec-part-select 0 1 (sv::4vec-reduction-and
-                                    (SV::4VEC-SIGN-EXT (1- amount)
+                                    (sv::4vec-sign-ext (1- amount)
                                                        (4vec-rsh 1 term)))))))
-    :hints (("Goal"
+    :hints (("goal"
              :in-theory (e/d* (bitops::ihsext-inductions
                                bitops::ihsext-recursive-redefs
                                sv::4vec-sign-ext
                                acl2::logext
                                4vec-rsh
-                               4VEC-SHIFT-CORE
+                               4vec-shift-core
                                sv::4vec-reduction-and
                                sv::4vec-part-select
                                sv::4vec-bitand
                                sv::3vec-fix
-                               SV::4VEC-SIGN-EXT
-                               4VEC-CONCAT
-                               sv::3VEC-REDUCTION-AND
-                               3VEC-BITAND
-                               SV::BOOL->VEC
-                               SV::4VEC->LOWER)
+                               sv::4vec-sign-ext
+                               4vec-concat
+                               sv::3vec-reduction-and
+                               3vec-bitand
+                               sv::bool->vec
+                               sv::4vec->lower)
                               ((:e tau-system)
-                               (:TYPE-PRESCRIPTION ACL2::LOGCAR-TYPE)
-                               (:REWRITE ACL2::LOGHEAD-IDENTITY)
-                               (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP)
-                               (:DEFINITION ACL2::UNSIGNED-BYTE-P**)
-                               (:DEFINITION UNSIGNED-BYTE-P)
-                               (:REWRITE ACL2::UNSIGNED-BYTE-P-PLUS)
-                               (:DEFINITION INTEGER-RANGE-P)
-                               (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP)
-                               (:DEFINITION BITOPS::LOGNOT$)
-                               (:TYPE-PRESCRIPTION BITP)
-                               (:TYPE-PRESCRIPTION IFIX)
-                               (:TYPE-PRESCRIPTION O<)
-                               (:TYPE-PRESCRIPTION ACL2::LOGCDR-TYPE)
-                               (:TYPE-PRESCRIPTION ACL2::LOGCAR$INLINE)
-                               (:FORWARD-CHAINING
-                                ACL2::|a <= b & ~(a = b)  =>  a < b|)
-                               (:REWRITE DEFAULT-<-1)
-                               (:REWRITE DEFAULT-<-2)
-                               (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK)))))))
+                               (:type-prescription acl2::logcar-type)
+                               (:rewrite acl2::loghead-identity)
+                               (:type-prescription bitops::logcdr-natp)
+                               (:definition acl2::unsigned-byte-p**)
+                               (:definition unsigned-byte-p)
+                               (:rewrite acl2::unsigned-byte-p-plus)
+                               (:definition integer-range-p)
+                               (:rewrite bitops::logbitp-when-bitmaskp)
+                               (:definition bitops::lognot$)
+                               (:type-prescription bitp)
+                               (:type-prescription ifix)
+                               (:type-prescription o<)
+                               (:type-prescription acl2::logcdr-type)
+                               (:type-prescription acl2::logcar$inline)
+                               (:forward-chaining
+                                acl2::|a <= b & ~(a = b)  =>  a < b|)
+                               (:rewrite default-<-1)
+                               (:rewrite default-<-2)
+                               (:rewrite bitops::logand-with-negated-bitmask)))))))
 
 (defthm 4vec-part-select-of-4vec-reduction-and-when-amount=1
     (implies t

@@ -27,8 +27,6 @@
 
 (include-book "svex-eval-wog")
 
-
-
 (local
  (in-theory (enable hons-get)))
 
@@ -36,14 +34,14 @@
   svex-eval-wog_opener-error
   (svex-eval-wog x env))
 
-(rp::defthm-lambda
+(defthm
  svex-env-fastlookup-wog-def
  (implies (syntaxp (consp (rp::ex-from-rp env)))
           (equal (svex-env-fastlookup-wog var env)
                  (let* ((look (hons-get var env)))
                    (if look (cdr look) (sv::4vec-x)))))
  :hints (("Goal"
-          :in-theory (e/d (svex-env-fastlookup-wog) ())))) 
+          :in-theory (e/d (svex-env-fastlookup-wog) ()))))
 
 (encapsulate
   nil
@@ -77,12 +75,12 @@
   (defthm svex-eval-wog-of-quoted
     (implies (svex-kind-wog-is-quote x)
              (equal (svex-eval-wog x env)
-                    (COND ((ATOM X) X)
-                          ((ATOM (CDR X)) (SV::4VEC-X))
-                          (T (CADR X)))))
+                    (cond ((atom x) x)
+                          ((atom (cdr x)) (sv::4vec-x))
+                          (t (cadr x)))))
     :hints (("goal"
              :expand ((svex-eval-wog x env)
-                      (SVEX-EVAL-WOG NIL ENV))
+                      (svex-eval-wog nil env))
              :in-theory (e/d (sv::svex-quote->val
                               sv::4vec-p
                               svex-kind-wog
@@ -97,7 +95,7 @@
     (equal (svexlist-eval-wog (cons car-x cdr-x) env)
            (cons (svex-eval-wog car-x env)
                  (svexlist-eval-wog cdr-x
-                                 env)))
+                                    env)))
     :hints (("Goal"
              :in-theory (e/d (svexlist-eval-wog) ()))))
 
@@ -117,8 +115,8 @@
      (implies (eq (svex-kind-wog x) ':call)
               (equal (svex-eval-wog x env)
                      (svex-apply-wog (car x)
-                                  (svexlist-eval-wog (cdr x)
-                                                  env))))
+                                     (svexlist-eval-wog (cdr x)
+                                                        env))))
      :hints (("goal"
               :in-theory (e/d (
                                svex-eval-wog
@@ -129,7 +127,6 @@
 
                                svexlist-eval-wog)
                               (svex-apply-wog-is-svex-apply))))))
-
 
   (local
    (defun svex-apply-cases-rw-fn-aux1 (args)
@@ -149,7 +146,7 @@
              (args (caddr cur)))
           `(defthm ,(sa 'svex-apply-wog sv-fnc-name 'rw)
              (implies t #|(and ,@(pairlis$ (repeat (len args) 'sv::svex-p)
-                                       (pairlis$  args nil)))||#
+                      (pairlis$  args nil)))||#
                       (equal (svex-eval-wog (list ',sv-fnc-name ,@args) env)
                              (,fnc-name ,@(svex-apply-cases-rw-fn-aux1 args))))
              :hints (("Goal"

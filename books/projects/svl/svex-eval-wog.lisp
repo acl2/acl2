@@ -108,7 +108,7 @@
       (cons (list '4vec-fix-wog (cons 'nth (cons n (cons argsvar 'nil))))
             (svex-apply-collect-args2 (+ 1 n) max argsvar)))))
 
-(defun svex-apply-cases-fn2 (argsvar optable)
+(defun svex-apply-cases-fn-wog (argsvar optable)
   (b* (((when (atom optable))
         '((otherwise
            (or (acl2::raise
@@ -123,13 +123,13 @@
                                         argsvar))))
     (cons
      (cons sym (cons call 'nil))
-     (svex-apply-cases-fn2 argsvar (cdr optable)))))
+     (svex-apply-cases-fn-wog argsvar (cdr optable)))))
 
-(defmacro svex-apply-cases2 (fn args)
+(defmacro svex-apply-cases-wog (fn args)
   (cons
    'case
    (cons fn
-         (svex-apply-cases-fn2 args sv::*svex-op-table*))))
+         (svex-apply-cases-fn-wog args sv::*svex-op-table*))))
 
 (define svex-apply-wog (fn (args true-listp))
   :returns
@@ -138,7 +138,7 @@
   :long
   "documentation is available via :doc."
   (let* ((fn (fnsym-fix fn)))
-    (svex-apply-cases2 fn args)))
+    (svex-apply-cases-wog fn args)))
 
 (defthm svex-apply-wog-is-svex-apply
   (equal (svex-apply-wog fn args)

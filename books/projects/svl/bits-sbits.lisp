@@ -71,10 +71,14 @@
 
   (defthm 4vec-bitand$-of-bits-of-same-size
     (and
-     (implies (syntaxp (consp (rp::ex-from-rp val1)))
+     (implies (syntaxp (and (consp (rp::ex-from-rp val1))
+                           (not (equal (car (rp::ex-from-rp val1))
+                                       'svex-env-fastlookup-wog))))
               (equal (4vec-bitand$ size (bits val1 0 size) val2)
                      (4vec-bitand$ size val1 val2)))
-     (implies (syntaxp (consp (rp::ex-from-rp val2)))
+     (implies (syntaxp (and (consp (rp::ex-from-rp val2))
+                           (not (equal (car (rp::ex-from-rp val2))
+                                       'svex-env-fastlookup-wog))))
               (equal (4vec-bitand$ size val1 (bits val2 0 size))
                      (4vec-bitand$ size val1 val2))))
     :hints (("Goal"
@@ -86,25 +90,33 @@
 
   (defthm 4vec-bitor$-of-bits-of-same-size
     (and
-     (implies (syntaxp (consp (rp::ex-from-rp val1)))
+     (implies (syntaxp (and (consp (rp::ex-from-rp val1))
+                           (not (equal (car (rp::ex-from-rp val1))
+                                       'svex-env-fastlookup-wog))))
               (equal (4vec-bitor$ size (bits val1 0 size) val2)
                      (4vec-bitor$ size val1 val2)))
-     (implies (syntaxp (consp (rp::ex-from-rp val2)))
+     (implies (syntaxp (and (consp (rp::ex-from-rp val2))
+                           (not (equal (car (rp::ex-from-rp val2))
+                                       'svex-env-fastlookup-wog))))
               (equal (4vec-bitor$ size val1 (bits val2 0 size))
                      (4vec-bitor$ size val1 val2))))
     :hints (("Goal"
              :use ((:instance 4vec-bitor$-of-4vec-part-select-0-same-size))
              :in-theory (e/d (
                               bits
-                              4VEC-BITor$)
+                              4vec-bitor$)
                              ()))))
 
   (defthm 4vec-bitxor$-of-bits-of-same-size
     (and
-     (implies (syntaxp (consp (rp::ex-from-rp val1)))
+     (implies (syntaxp (and (consp (rp::ex-from-rp val1))
+                            (not (equal (car (rp::ex-from-rp val1))
+                                        'svex-env-fastlookup-wog))))
               (equal (4vec-bitxor$ size (bits val1 0 size) val2)
                      (4vec-bitxor$ size val1 val2)))
-     (implies (syntaxp (consp (rp::ex-from-rp val2)))
+     (implies (syntaxp (and (consp (rp::ex-from-rp val2))
+                            (not (equal (car (rp::ex-from-rp val2))
+                                        'svex-env-fastlookup-wog))))
               (equal (4vec-bitxor$ size val1 (bits val2 0 size))
                      (4vec-bitxor$ size val1 val2))))
     :hints (("Goal"
@@ -969,7 +981,7 @@
              :use ((:instance 4vec-part-select-of-4vec-part-select-2))
              :in-theory (e/d () ()))))
 
-  ;; this is yet to be covered by the meta function.
+  ;; this is yet to be covered by the meta function. (?)
   (defthm bits-of-bits-1
     (implies (and (natp start1)
                   (natp start2)
@@ -1703,21 +1715,7 @@
     bits-of-sbits-4-no-syntaxp
     bits-of-sbits-5-no-syntaxp))
 
-#|(defthm bits-of-4vec$-fncs
-(implies (and (natp bits-size)
-(natp size)
-(natp start)
-(<= (+ start bits-size) size))
-(and (equal (bits start bits-size (4vec-bitnot$ size val))
-(4vec-bitnot$ (- size (+ start bits-size))
-(4vec-rsh start val)))))
-:hints (("Goal"
-:cases ((= (+ start bits-size) size))
-:in-theory (e/d (bits
-4VEC-PART-SELECT
-4VEC-BITNOT
-4VEC-RSH
-4VEC-BITNOT$)
-(4vec-part-select-is-bits)))))||#
+
+
 
 

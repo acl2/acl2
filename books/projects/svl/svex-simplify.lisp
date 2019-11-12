@@ -32,122 +32,16 @@
 (include-book "meta/top")
 (include-book "xdoc/topics" :dir :system)
 
+(include-book "svex-simplify-rule-list")
+
 (in-theory (disable bitp natp))
 
-;; (defttag t)
-;; (set-register-invariant-risk nil)
-;; (defttag nil)
+(in-theory (disable acl2::natp-when-gte-0
+                    acl2::natp-when-integerp))
 
 (defrec svex-simplify-preloaded
   (enabled-exec-rules rules . meta-rules)
   t)
-
-#|(progn
-  (encapsulate
-    nil
-
-    (define merge-sets (set1 set2)
-      (declare (xargs :guard (true-listp set2)))
-      :returns (res true-listp :hyp (true-listp set2))
-      (if (atom set1)
-          set2
-        (merge-sets
-         (cdr set1)
-         (add-to-set (car set1) set2 :test 'equal))))
-
-    (local
-     (in-theory (enable svex-p
-                        SV::SVAR-P
-                        SVEX-KIND
-                        sv::svexlist-p)))
-
-    ;; returns a list of variables in an svex
-    (acl2::defines
-     get-svex-vars
-     (define get-svex-vars (svex)
-       (declare (xargs :guard (svex-p svex)
-                       :verify-guards nil
-                       :hints (("Goal"
-                                :in-theory (e/d (svex-kind) ())))))
-       (let* ((svex.kind (svex-kind svex)))
-         (case svex.kind
-           (:quote nil)
-           (:var (list svex))
-           (otherwise
-            (get-svex-vars-lst (cdr svex))))))
-     (define get-svex-vars-lst ((lst sv::svexlist-p))
-       :returns (res true-listp)
-       (if (atom lst)
-           nil
-         (merge-sets (get-svex-vars (car lst))
-                     (get-svex-vars-lst (cdr lst)))))
-     ///
-
-     (verify-guards get-svex-vars)))
-
-  (mutual-recursion
-   (defun to-string (val)
-     (declare (xargs :measure (+ (if (consp val) 1 -1) (cons-countw val 3))
-                     :guard t
-                     :hints (("Goal"
-                              :in-theory (e/d (rp::measure-lemmas cons-countw) ())))))
-     (cond
-      ((symbolp val)
-       (if (keywordp val)
-           (string-append ":" (symbol-name val))
-         (symbol-name val)))
-      ((stringp val)
-       (string-append "\"" (string-append val "\"")))
-      ((consp val)
-       (string-append "(" (string-append (to-string-lst val) ")")))
-      (t
-       (str::intstr (ifix val)))))
-
-   (defun to-string-lst (lst)
-     (declare (xargs :measure (cons-countw lst 3)
-                     :guard t))
-     (if (atom lst)
-         (if (equal lst nil)
-             ""
-           (string-append " . " (to-string lst)))
-
-       (string-append
-        (to-string (car lst))
-        (string-append
-         (if (consp (cdr lst)) " " "")
-         (to-string-lst (cdr lst)))))))
-
-  (define to-symbol (val)
-    (intern$ (to-string val) *PACKAGE-NAME*))
-
-  (progn
-    ;; creates a dummy environment with all the variables in svex binding them to
-    ;; a unique symbol.
-    (define create-dummy-svex-env-aux (vars)
-      (if (atom vars)
-          (mv ''nil nil nil 0)
-        (b* (((mv rest-term rest-falist rest-reverselist cnt)
-              (create-dummy-svex-env-aux (cdr vars)))
-             (cur-symbol (sa 'a cnt)) ;(to-symbol (car vars))
-             )
-          (mv `(cons (cons ',(car vars) (rp '4vec-p ,cur-symbol))
-                     ,rest-term)
-              (acons (car vars) `(rp '4vec-p ,cur-symbol)
-                     rest-falist)
-              (acons cur-symbol (car vars)
-                     rest-reverselist)
-              (1+ cnt)))))
-
-    (define create-dummy-svex-env (vars)
-      (b* (((mv term falist reverse-env ?cnt)
-            (create-dummy-svex-env-aux vars)))
-        (if t ;(> cnt 0)
-            (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term))
-                (make-fast-alist reverse-env)
-                t)
-          (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term)) ;`(rp 'svex-env-p ,term)
-              reverse-env
-              nil))))))||#
 
 (progn
   (define svex-simplify-preload (&key (runes '(let ((world (w state))) (current-theory :here)))
@@ -207,19 +101,19 @@
 
 
 (local
- (defthm rp-statep-UPDATE-NOT-SIMPLIFIED-ACTION
+ (defthm rp-statep-update-not-simplified-action
    (implies (and (force (rp::rp-statep rp::rp-state))
                  (force (symbolp flg)))
-            (RP::RP-STATEP
-             (RP::UPDATE-NOT-SIMPLIFIED-ACTION flg rp::rp-state)))))
+            (rp::rp-statep
+             (rp::update-not-simplified-action flg rp::rp-state)))))
 
 (local
  (defthm rp-statep-rp-state-new-run
    (implies (and (force (rp::rp-statep rp::rp-state)))
-            (RP::RP-STATEP
-             (RP::RP-STATE-NEW-RUN rp::rp-state)))
-   :hints (("Goal"
-            :in-theory (e/d (RP::RP-STATE-NEW-RUN) ())))))
+            (rp::rp-statep
+             (rp::rp-state-new-run rp::rp-state)))
+   :hints (("goal"
+            :in-theory (e/d (rp::rp-state-new-run) ())))))
 
 (local
  (defthm symbolp-not-simplified-action
@@ -299,99 +193,6 @@
     (mv rw rp::rp-state)))
 
 
-
-(in-theory (disable acl2::natp-when-gte-0
-                    acl2::natp-when-integerp))
-
-
-
-
-#|(define rw-svex-to-4vec ((svex svex-p)
-                         &KEY
-                         (state 'state)
-                         (rp::rp-state 'rp::rp-state)
-                         (hyp ''t) ;; "Have more context for variables."
-                         (runes '(let ((world (w state))) (current-theory :here))) ;; runes/rule-names to work with. Can
-                         ;; be overridden by svex-simplied-preloaded
-                         (svex-simplify-preloaded 'nil)
-                         ;; structure  creation for the rewriter. This value
-                         ;; can be created with (svex-simplify-preload)
-                         )
-  (declare (xargs ;:mode :program
-            :verify-guards nil
-            :stobjs (state rp::rp-state)
-            :guard (svex-simplify-preloaded-guard
-                    svex-simplify-preloaded state)))
-  ;; :guard (and (or (not created-rules)
-  ;;                 (and (consp created-rules)
-  ;;                      (symbol-alistp (cdr created-rules))
-  ;;                      (rp::rules-alistp (car created-rules)))))
-  :prepwork
-  ((local
-    (in-theory (disable rp::rules-alistp
-                        RP::RP-STATEP
-
-                        STATE-P
-                        TABLE-ALIST)))
-   (local
-    (include-book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system)))
-
-  (b* ((world (w state))
-       (- (if (mbe :exec t :logic (svex-p svex)) nil
-            (hard-error 'rw-svex-to-4vec  "Input is not an svex" nil)))
-       ;; this indirectly checks that all the meta rules added are also proved.
-       (- (rp::check-if-clause-processor-up-to-date world))
-       ;; find the variables in the svex
-       (vars (get-svex-vars svex))
-       ;; create the env and reverse-env (same as env but keys and vals swapped)
-       ((mv env-term reverse-env is-fast) (create-dummy-svex-env vars))
-       ;; get the list of runes/rule names
-
-       ((mv enabled-exec-rules
-            rules-alist
-            meta-rules)
-        (if svex-simplify-preloaded
-            (mv (access svex-simplify-preloaded
-                        svex-simplify-preloaded
-                        :enabled-exec-rules)
-                (access svex-simplify-preloaded
-                        svex-simplify-preloaded
-                        :rules)
-                (access svex-simplify-preloaded
-                        svex-simplify-preloaded
-                        :meta-rules))
-          (mv (rp::get-enabled-exec-rules runes)
-              (rp::get-rules runes state)
-              (let ((res
-                     (cdr (hons-assoc-equal 'rp::meta-rules-list
-                                            (table-alist 'rp::rp-rw (w
-                                                                     state))))))
-                (if (RP::RP-META-RULE-RECS-P res state)
-                    (make-fast-alist res)
-                  nil)))))
-
-       (old-not-simplified-action (rp::not-simplified-action rp::rp-state))
-       (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
-       ;; CREATE THE TERM TO BE REWRITTEN
-       (term (if (or (equal hyp ''t)
-                     (equal hyp 't))
-                 `(svex-eval-wog ',svex ,env-term)
-               `(implies ,hyp (svex-eval-wog ',svex ,env-term))))
-       ((mv rw rp::rp-state)
-        (rp::rp-rw-aux term
-                       rules-alist
-                       enabled-exec-rules
-                       meta-rules
-                       rp::rp-state
-                       state))
-       ;; restore rp-state setting
-       (rp::rp-state (rp::update-not-simplified-action
-                      old-not-simplified-action rp::rp-state))
-       (- (if svex-simplify-preloaded nil (fast-alist-free enabled-exec-rules)))
-       (- (if svex-simplify-preloaded nil (fast-alist-free rules-alist)))
-       (- (if svex-simplify-preloaded nil (fast-alist-free meta-rules)))
-       (- (fast-alist-free (cadr (cadr (caddr env-term))))))
-    (mv rw reverse-env is-fast rp::rp-state)))||#
 
 (define to-svex-fnc (term)
   :prepwork
