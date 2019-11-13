@@ -408,6 +408,8 @@
 
 (define svexl-eval ((x svexl-p)
                     (env sv::svex-env-p))
+  :returns (res sv::4vec-p :hyp (and (svexl-p x)
+                                     (sv::svex-env-p env)))
   (b* (((mv node-env res)
         (svexl-eval-aux x env))
        (- (fast-alist-free node-env)))

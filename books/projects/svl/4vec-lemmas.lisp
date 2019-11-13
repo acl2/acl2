@@ -53,14 +53,17 @@
   (include-book "ihs/quotient-remainder-lemmas" :dir :system)
   use-qr-lemmas))
 
-(defund 4vec-bitnot$ (size val)
+(define 4vec-bitnot$ ((size 4vec-p)
+                      (val 4vec-p))
+  :returns (res 4vec-p)
   (4vec-part-select 0 size (4vec-bitnot val)))
 
-(defund 4vec-bitnot$ (size val)
-  (4vec-part-select 0 size (4vec-bitnot val)))
 
 ;; no lemma exists for this yet...
-(defund 4vec-plus$ (size val1 val2)
+(define 4vec-plus$ ((size 4vec-p)
+                    (val1 4vec-p)
+                    (val2 4vec-p))
+  :returns (res 4vec-p)
   (4vec-part-select 0 size (4vec-plus val1 val2)))
 
 (defund 4vec-bitor$ (size val1 val2)

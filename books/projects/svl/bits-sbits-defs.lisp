@@ -37,8 +37,7 @@
    (size natp)
    (new-val sv::4vec-p)
    (old-val sv::4vec-p))
-  :returns (updated-val sv::4vec-p :hyp (and (sv::4vec-p new-val)
-                                             (sv::4vec-p old-val)))
+  :returns (updated-val sv::4vec-p)
 
   (sv::4vec-part-install start
                          size
@@ -54,9 +53,7 @@
   ((val sv::4vec-p)
    (start natp)
    (size natp))
-  :returns (result sv::4vec-p :hyp (and (natp start)
-                                        (natp size)
-                                        (sv::4vec-p val)))
+  :returns (result sv::4vec-p)
   :prepwork
   ((local
     (in-theory (enable sv::4vec-p))))
@@ -68,11 +65,11 @@
   (declare (ignorable size val))
   (sv::4vec-lsh (nfix size) val))||#
 
-(define 4vec-concat$ (size x y)
-  :verify-guards
-  nil
+(define 4vec-concat$ ((size 4vec-p)
+                      (x 4vec-p)
+                      (y 4vec-p))
+  :returns (res 4vec-p)
   (4vec-concat size x y))
-
 
 (encapsulate
   nil
