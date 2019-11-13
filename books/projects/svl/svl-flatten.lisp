@@ -1762,7 +1762,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
          (rhs-svex driver.value)
 
          ;;(- (cw "hons-copy of rhs-svex... ~%"))
-         (rhs-svex (hons-copy rhs-svex))
+         ;;(rhs-svex (hons-copy rhs-svex))
          ;;(- (cw "calculating the size of rhs-svex... ~%"))
          ;;(- (cw "rhs-svex size: ~p0 ~%" (rp::cons-count rhs-svex)))
 
@@ -1775,7 +1775,8 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
          (rhs-svex `(sv::partsel 0 ,lhs-w ,rhs-svex))
          ((mv rhs-svex rp::rp-state) (svex-simplify rhs-svex
                                                     :preloaded-rules svex-simplify-preloaded
-                                                    :runes nil))
+                                                    :runes nil
+                                                    :linearize :auto))
 
          ;;(- (cw "Calling svex->lhs ~%"))
 
@@ -3208,8 +3209,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                  dont-flatten))
 
        (svex-simplify-preloaded (svex-simplify-preload
-                                 :runes *svl-flatten-simplify-lemmas*
-                                 ))
+                                 :runes *svex-simplify-rules*))
        (- (cw "Starting to flatten modules and create SVL design... ~%"))
        ((mv modules rp::rp-state)
         (svl-flatten-mods dont-flatten sv-design.modalist

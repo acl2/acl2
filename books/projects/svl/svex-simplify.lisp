@@ -32,122 +32,16 @@
 (include-book "meta/top")
 (include-book "xdoc/topics" :dir :system)
 
+(include-book "svex-simplify-rule-list")
+
 (in-theory (disable bitp natp))
 
-;; (defttag t)
-;; (set-register-invariant-risk nil)
-;; (defttag nil)
+(in-theory (disable acl2::natp-when-gte-0
+                    acl2::natp-when-integerp))
 
 (defrec svex-simplify-preloaded
   (enabled-exec-rules rules . meta-rules)
   t)
-
-#|(progn
-  (encapsulate
-    nil
-
-    (define merge-sets (set1 set2)
-      (declare (xargs :guard (true-listp set2)))
-      :returns (res true-listp :hyp (true-listp set2))
-      (if (atom set1)
-          set2
-        (merge-sets
-         (cdr set1)
-         (add-to-set (car set1) set2 :test 'equal))))
-
-    (local
-     (in-theory (enable svex-p
-                        SV::SVAR-P
-                        SVEX-KIND
-                        sv::svexlist-p)))
-
-    ;; returns a list of variables in an svex
-    (acl2::defines
-     get-svex-vars
-     (define get-svex-vars (svex)
-       (declare (xargs :guard (svex-p svex)
-                       :verify-guards nil
-                       :hints (("Goal"
-                                :in-theory (e/d (svex-kind) ())))))
-       (let* ((svex.kind (svex-kind svex)))
-         (case svex.kind
-           (:quote nil)
-           (:var (list svex))
-           (otherwise
-            (get-svex-vars-lst (cdr svex))))))
-     (define get-svex-vars-lst ((lst sv::svexlist-p))
-       :returns (res true-listp)
-       (if (atom lst)
-           nil
-         (merge-sets (get-svex-vars (car lst))
-                     (get-svex-vars-lst (cdr lst)))))
-     ///
-
-     (verify-guards get-svex-vars)))
-
-  (mutual-recursion
-   (defun to-string (val)
-     (declare (xargs :measure (+ (if (consp val) 1 -1) (cons-countw val 3))
-                     :guard t
-                     :hints (("Goal"
-                              :in-theory (e/d (rp::measure-lemmas cons-countw) ())))))
-     (cond
-      ((symbolp val)
-       (if (keywordp val)
-           (string-append ":" (symbol-name val))
-         (symbol-name val)))
-      ((stringp val)
-       (string-append "\"" (string-append val "\"")))
-      ((consp val)
-       (string-append "(" (string-append (to-string-lst val) ")")))
-      (t
-       (str::intstr (ifix val)))))
-
-   (defun to-string-lst (lst)
-     (declare (xargs :measure (cons-countw lst 3)
-                     :guard t))
-     (if (atom lst)
-         (if (equal lst nil)
-             ""
-           (string-append " . " (to-string lst)))
-
-       (string-append
-        (to-string (car lst))
-        (string-append
-         (if (consp (cdr lst)) " " "")
-         (to-string-lst (cdr lst)))))))
-
-  (define to-symbol (val)
-    (intern$ (to-string val) *PACKAGE-NAME*))
-
-  (progn
-    ;; creates a dummy environment with all the variables in svex binding them to
-    ;; a unique symbol.
-    (define create-dummy-svex-env-aux (vars)
-      (if (atom vars)
-          (mv ''nil nil nil 0)
-        (b* (((mv rest-term rest-falist rest-reverselist cnt)
-              (create-dummy-svex-env-aux (cdr vars)))
-             (cur-symbol (sa 'a cnt)) ;(to-symbol (car vars))
-             )
-          (mv `(cons (cons ',(car vars) (rp '4vec-p ,cur-symbol))
-                     ,rest-term)
-              (acons (car vars) `(rp '4vec-p ,cur-symbol)
-                     rest-falist)
-              (acons cur-symbol (car vars)
-                     rest-reverselist)
-              (1+ cnt)))))
-
-    (define create-dummy-svex-env (vars)
-      (b* (((mv term falist reverse-env ?cnt)
-            (create-dummy-svex-env-aux vars)))
-        (if t ;(> cnt 0)
-            (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term))
-                (make-fast-alist reverse-env)
-                t)
-          (mv `(rp 'svex-env-p (falist ',(make-fast-alist falist) ,term)) ;`(rp 'svex-env-p ,term)
-              reverse-env
-              nil))))))||#
 
 (progn
   (define svex-simplify-preload (&key (runes '(let ((world (w state))) (current-theory :here)))
@@ -205,32 +99,361 @@
          nil)
       nil)))
 
-
 (local
- (defthm rp-statep-UPDATE-NOT-SIMPLIFIED-ACTION
+ (defthm rp-statep-update-not-simplified-action
    (implies (and (force (rp::rp-statep rp::rp-state))
                  (force (symbolp flg)))
-            (RP::RP-STATEP
-             (RP::UPDATE-NOT-SIMPLIFIED-ACTION flg rp::rp-state)))))
+            (rp::rp-statep
+             (rp::update-not-simplified-action flg rp::rp-state)))))
 
 (local
  (defthm rp-statep-rp-state-new-run
    (implies (and (force (rp::rp-statep rp::rp-state)))
-            (RP::RP-STATEP
-             (RP::RP-STATE-NEW-RUN rp::rp-state)))
-   :hints (("Goal"
-            :in-theory (e/d (RP::RP-STATE-NEW-RUN) ())))))
+            (rp::rp-statep
+             (rp::rp-state-new-run rp::rp-state)))
+   :hints (("goal"
+            :in-theory (e/d (rp::rp-state-new-run) ())))))
 
 (local
  (defthm symbolp-not-simplified-action
    (implies (rp::rp-statep rp::rp-state)
             (symbolp (rp::not-simplified-action rp::rp-state)))))
 
+(define to-svex-fnc (term)
+  :prepwork
+  ((local
+    (in-theory (enable svex-p
+                       svexl-node-p
+                       svexl-nodelist-p
+                       svexlist-p))))
+  :returns (mv
+            (err)
+            (res svex-p :hyp (or (atom term) (svexlist-p (cdr term)))))
+  (case-match term
+    
+    ;; (('svl::4vec-bitor$ size x y)   `(partsel 0 ,size (sv::bitor ,x ,y)))
+    ;; (('svl::4vec-bitand$ size x y)  `(partsel 0 ,size (sv::bitand ,x ,y)))
+    ;; (('svl::4vec-bitxor$ size x y)  `(partsel 0 ,size (sv::bitxor ,x ,y)))
+    (('svl::4vec-bitnot$ size x)  (mv nil `(partsel 0 ,size (sv::bitnot ,x))))
+    (('svl::4vec-plus$ size x y)  (mv nil `(partsel 0 ,size (+ ,x ,y))))
+    (('svl::bits val s w)         (mv nil (list 'sv::partsel s w val)))
+    (('svl::sbits s w new old)    (mv nil (list 'sv::partinst s w old new)))
+    (('svl::4vec-concat$ & & &)   (mv nil (cons 'sv::concat   (cdr term))))
+    (('sv::4vec-fix$inline &)     (mv nil (cons 'id            (cdr term))))
+    (('svl::4vec-fix-wog &)       (mv nil (cons 'id           (cdr term))))
+    (('sv::4vec-bit-extract & &)  (mv nil (cons 'sv::bitsel   (cdr term))))
+    (('sv::3vec-fix &)            (mv nil (cons 'sv::unfloat  (cdr term))))
+    (('4vec-bitnot &)             (mv nil (cons 'sv::bitnot   (cdr term))))
+    (('4vec-bitand & &)           (mv nil (cons 'sv::bitand   (cdr term))))
+    (('4vec-bitor & &)            (mv nil (cons 'sv::bitor    (cdr term))))
+    (('sv::4vec-bitxor & &)       (mv nil (cons 'sv::bitxor   (cdr term))))
+    (('sv::4vec-res & &)          (mv nil (cons 'sv::res      (cdr term))))
+    (('sv::4vec-resand & &)       (mv nil (cons 'sv::resand   (cdr term))))
+    (('sv::4vec-resor & &)        (mv nil (cons 'sv::resor    (cdr term))))
+    (('sv::4vec-override & &)     (mv nil (cons 'sv::override (cdr term))))
+    (('sv::4vec-onset &)          (mv nil (cons 'sv::onp      (cdr term))))
+    (('sv::4vec-offset &)         (mv nil (cons 'sv::offp     (cdr term))))
+    (('sv::4vec-reduction-and &)  (mv nil (cons 'sv::uand     (cdr term))))
+    (('sv::4vec-reduction-or &)   (mv nil (cons 'sv::uor      (cdr term))))
+    (('4vec-parity &)             (mv nil (cons 'sv::uxor     (cdr term))))
+    (('4vec-zero-ext & &)         (mv nil (cons 'sv::zerox    (cdr term))))
+    (('sv::4vec-sign-ext & &)     (mv nil (cons 'sv::signx    (cdr term))))
+    (('4vec-concat & & &)         (mv nil (cons 'concat       (cdr term))))
+    (('sv::4vec-rev-blocks & & &) (mv nil (cons 'sv::blkrev   (cdr term))))
+    (('4vec-rsh & &)              (mv nil (cons 'sv::rsh      (cdr term))))
+    (('4vec-lsh & &)              (mv nil (cons 'sv::lsh      (cdr term))))
+    (('4vec-plus & &)             (mv nil (cons '+            (cdr term))))
+    (('sv::4vec-minus & &)        (mv nil (cons 'sv::b-       (cdr term))))
+    (('sv::4vec-uminus & &)       (mv nil (cons 'sv::u-       (cdr term))))
+    (('sv::4vec-times & &)        (mv nil (cons '*            (cdr term))))
+    (('sv::4vec-quotient & &)     (mv nil (cons '/            (cdr term))))
+    (('sv::4vec-remainder & &)    (mv nil (cons 'sv::%        (cdr term))))
+    (('sv::4vec-xdet &)           (mv nil (cons 'sv::xdet     (cdr term))))
+    (('sv::4vec-countones &)      (mv nil (cons 'sv::countones(cdr term))))
+    (('sv::4vec-onehot &)         (mv nil (cons 'sv::onehot   (cdr term))))
+    (('sv::4vec-onehot0 &)        (mv nil (cons 'sv::onehot0  (cdr term))))
+    (('sv::4vec-< & &)            (mv nil (cons '<            (cdr term))))
+    (('4vec-== & &)               (mv nil (cons 'sv::==       (cdr term))))
+    (('sv::4vec-=== & &)          (mv nil (cons 'sv::===      (cdr term))))
+    (('sv::4vec-wildeq & &)       (mv nil (cons 'sv::==?      (cdr term))))
+    (('sv::4vec-wildeq-safe & &)  (mv nil (cons 'sv::safer-==?(cdr term))))
+    (('sv::4vec-symwildeq & &)    (mv nil (cons 'sv::==??     (cdr term))))
+    (('sv::4vec-clog2 &)          (mv nil (cons 'sv::clog2    (cdr term))))
+    (('sv::4vec-pow & &)          (mv nil (cons 'sv::pow      (cdr term))))
+    (('4vec-? & & &)              (mv nil (cons 'sv::?        (cdr term))))
+    (('4vec-?* & & &)             (mv nil (cons 'sv::?*       (cdr term))))
+    (('sv::4vec-bit? & & &)       (mv nil (cons 'sv::bit?     (cdr term))))
+    (('4vec-part-select & & &)    (mv nil (cons 'partsel      (cdr term))))
+    (('4vec-part-install & & & &) (mv nil (cons 'sv::partinst (cdr term))))
+
+    (& (progn$
+        (cw "cannot match ~p0 with ~p1 arguments to any ~
+  svex function. If you think this is a bug, consider changing ~
+  svl::to-svex-fnc. ~%"
+            (if (consp term) (car term) term) 
+            (1- (len term)))
+        (mv t '0))))
+  ///
+  (local
+   (in-theory (disable svex-p-implies-svexl-node-p
+                       svexlist-p-implies-svexl-nodelist-p)))
+  (std::more-returns
+   (res svexl-node-p :hyp (or (atom term) (svexl-nodelist-p (cdr term))))))
+
+(acl2::defines
+ 4vec-to-svex
+ :prepwork
+ ((local
+   (in-theory (e/d (svexl-node-p
+                    svex-p
+                    assoc-equal
+                    sv::svar-p
+                    sv::svex-kind
+                    rp::measure-lemmas)
+                   ((:rewrite rp::measure-lemma1)
+                    (:rewrite rp::measure-lemma1-2)
+                    (:rewrite sv::svexlist-p-when-subsetp-equal)
+                    (:definition subsetp-equal)
+                    (:rewrite
+                     acl2::member-equal-newvar-components-1)
+                    (:definition acl2::loop$-as)
+                    (:definition member-equal)
+                    (:rewrite
+                     sv::svexlist-p-of-cdr-when-svexlist-p)
+                    (:rewrite
+                     acl2::symbolp-of-car-when-symbol-listp)
+                    (:definition rp::rp-termp)))))
+
+  (local
+   (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
+
+  (local
+   (defthm ex-from-rp-is-nonnil
+     (implies (and (rp::rp-termp rp::term))
+              (rp::ex-from-rp rp::term))
+     :hints (("goal"
+              :induct (rp::ex-from-rp rp::term)
+              :in-theory (e/d (rp::ex-from-rp
+                               rp::is-rp) ())))))
+
+  (local
+   (defthm svex-p-to-svex-fnc-quote
+     (svex-p
+      (to-svex-fnc (cons 'quote x)))
+     :hints (("goal"
+              :in-theory (e/d (to-svex-fnc) ()))))))
+
+ (define 4vec-to-svex (term svexl-node-flg memoize-flg)
+   :guard t
+   :measure (rp::cons-count term)
+   :returns (mv (err)
+                (res))
+   (declare (ignorable memoize-flg))
+   (b* ((term (rp::ex-from-rp term)))
+     (cond ((atom term)
+            (if (svex-p term)
+                (mv nil term)
+              (progn$ (cw "Unexpected term ~p0 ~%" term)
+                      (mv t 0))))
+           ((and (quotep term)
+                 (consp (cdr term)))
+            (let ((ud (unquote term)))
+              (cond ((and (atom ud)
+                          (svexl-node-p ud))
+                     (mv nil ud))
+                    ((svex-p term)
+                     (mv nil term))
+                    (t
+                     (progn$
+                      (cw "Unexpected term ~p0 ~%" term)
+                      (mv t 0))))))
+           ((case-match term
+              (('svex-env-fastlookup-wog ('quote var) env)
+               (and (sv::svar-p var)
+                    (equal (rp::ex-from-rp env) 'svex-env)))
+              (('sv::svex-env-fastlookup ('quote var) env)
+               (and (sv::svar-p var)
+                    (equal (rp::ex-from-rp env) 'svex-env))))
+            (mv nil (unquote (cadr term))))
+           ((and svexl-node-flg
+                 (case-match term
+                   (('svex-env-fastlookup-wog ('quote var) env)
+                    (and (natp var)
+                         (equal (rp::ex-from-rp env) 'node-env)))
+                   (('sv::svex-env-fastlookup ('quote var) env)
+                    (and (natp var)
+                         (equal (rp::ex-from-rp env) 'node-env)))))
+            (mv nil `(:node ,(unquote (cadr term)))))
+           (t (b* ((fnc (car term))
+                   ((mv err1 args) (4vec-to-svex-lst (cdr term) svexl-node-flg
+                                                     memoize-flg))
+                   ((mv err2 res) (to-svex-fnc (cons fnc args))))
+                (mv (or err1 err2)
+                    res))))))
+
+ (define 4vec-to-svex-lst (lst svexl-node-flg memoize-flg)
+   :measure (rp::cons-count lst)
+   :returns (mv (err)
+                (res-lst))
+   (declare (ignorable memoize-flg))
+   (if (atom lst)
+       (mv nil nil)
+     (b* (((mv err1 res1) (4vec-to-svex (car lst) svexl-node-flg memoize-flg))
+          ((mv err2 res2) (4vec-to-svex-lst (cdr lst) svexl-node-flg memoize-flg)))
+       (mv (or err1 err2)
+           (cons res1 res2)))))
+
+ ///
+
+ (memoize '4vec-to-svex :condition 'memoize-flg)
+
+ (std::defret-mutual
+  svexl-node-p-of-4vec-to-svex
+  (std::defret svexl-node-p-of-4vec-to-svex
+               (and (svexl-node-p res)
+                    (implies (not svexl-node-flg)
+                             (svex-p res)))
+               :fn 4vec-to-svex)
+  (std::defret svexl-nodelist-p-of-4vec-to-svex-lst
+               (and (svexl-nodelist-p res-lst)
+                    (implies (not svexl-node-flg)
+                             (svexlist-p res-lst)))
+               :fn 4vec-to-svex-lst)
+  :hints (("Goal"
+           :expand ((4VEC-TO-SVEX-LST LST SVEXL-NODE-FLG MEMOIZE-FLG)
+                    (4VEC-TO-SVEX TERM SVEXL-NODE-FLG MEMOIZE-FLG)
+                    (4VEC-TO-SVEX TERM NIL MEMOIZE-FLG))
+           :in-theory
+           (e/d (
+                 )
+                (4vec-to-svex-lst
+                 4vec-to-svex
+                 
+                 (:rewrite default-cdr)
+                 (:REWRITE BITP-IMPLIES-NATP)
+                 (:TYPE-PRESCRIPTION LOGNOT)
+                 (:TYPE-PRESCRIPTION BITP)
+                 (:REWRITE DEFAULT-<-2)
+                 (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP)
+                 (:DEFINITION LOGNOT)
+                 (:REWRITE RP::RP-TERMP-CADR)
+                 (:TYPE-PRESCRIPTION RP::RP-TERMP)
+                 (:REWRITE INTEGERP-IMPLIES-4VECP)
+                 (:REWRITE RP::RP-TERMP-EX-FROM-RP)
+                 (:REWRITE SV::SVAR-P-OF-CAR-WHEN-SVARLIST-P)
+                 (:REWRITE NATP-IMPLIES-INTEGERP)
+                 (:REWRITE ACL2::O-P-O-INFP-CAR)
+                 (:REWRITE RP::RP-TERMP-EXTRACT-FROM-RP)
+                 (:rewrite
+                  acl2::booleanp-of-car-when-boolean-listp)
+                 (:rewrite
+                  acl2::boolean-listp-of-cdr-when-boolean-listp)
+                 (:rewrite sv::4vec-p-of-car-when-4veclist-p)
+                 (:rewrite
+                  svexl-nodelist-p-of-cdr-when-svexl-nodelist-p)
+                 (:rewrite
+                  sv::4veclist-p-of-cdr-when-4veclist-p)
+                 (:rewrite acl2::natp-of-car-when-nat-listp)
+                 (:definition rp::ex-from-rp)
+                 (:rewrite sv::svex-p-when-maybe-svex-p)
+                 (:rewrite
+                  acl2::nat-listp-of-cdr-when-nat-listp)
+                 (:rewrite default-car)))))))
+
+(progn
+  (define svexl-node-simplify ((node svexl-node-p)
+                               (preloaded-rules)
+                               (hyp)
+                               &key
+                               (state 'state)
+                               (rp::rp-state 'rp::rp-state))
+    :guard (and preloaded-rules
+                (svex-simplify-preloaded-guard preloaded-rules state))
+    :returns (mv (node-new svexl-node-p)
+                 (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
+                                                       rp::rp-state)))
+    :prepwork
+    ((local
+      (in-theory (e/d () (rp::rp-statep
+                          rp::rp-rw-aux))))
+     (local
+      (include-book "projects/rp-rewriter/proofs/rp-correct" :dir :system)))
+
+    (b* ((rules preloaded-rules)
+         ((mv enabled-exec-rules rules-alist meta-rules)
+          (mv (access svex-simplify-preloaded rules
+                      :enabled-exec-rules)
+              (access svex-simplify-preloaded rules
+                      :rules)
+              (access svex-simplify-preloaded rules
+                      :meta-rules)))
+         (hyp `(if (sv::svex-env-p svex-env) ,hyp 'nil))
+         (hyp `(if (node-env-p node-env) ,hyp 'nil))
+         (term `(implies ,hyp (svexl-node-eval ',node node-env svex-env)))
+         ((mv rw rp::rp-state) (rp::rp-rw-aux term rules-alist
+                                              enabled-exec-rules
+                                              meta-rules rp::rp-state
+                                              state))
+         (rw (case-match rw
+               (('implies & x) x)
+               (& rw)))
+         ((mv err node-new) (4vec-to-svex rw t nil))
+         (- (and err
+                 (hard-error
+                  'svexl-node-simplify
+                  "4vec-to-svex returned an error for the term: ~p0 ~%"
+                  (list (cons #\0 rw))))))
+      (mv node-new rp::rp-state)))
+
+  (define svex-simplify-linearize-aux ((svexl svexl-p)
+                                       (preloaded-rules)
+                                       (hyp)
+                                       &key
+                                       (state 'state)
+                                       (rp::rp-state 'rp::rp-state))
+    :returns (mv (svexl-new svexl-p :hyp (svexl-p svexl))
+                 (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
+                                                       rp::rp-state)))
+    :verify-guards nil
+    :guard (and preloaded-rules
+                (svex-simplify-preloaded-guard preloaded-rules state))
+    :prepwork
+    ((local
+      (in-theory (e/d (svexl-p)
+                      (rp::rp-statep
+                       rp::rp-rw-aux)))))
+    (if (atom svexl)
+        (mv nil rp::rp-state)
+      (b* ((node (cdar svexl))
+           ((mv node rp::rp-state)
+            (svexl-node-simplify node preloaded-rules hyp))
+           ((mv rest rp::rp-state)
+            (svex-simplify-linearize-aux (cdr svexl) preloaded-rules hyp)))
+        (mv (acons (caar svexl) node rest)
+            rp::rp-state)))
+    ///
+    (verify-guards svex-simplify-linearize-aux-fn))
+
+  (define svex-simplify-linearize ((svex svex-p)
+                                   (preloaded-rules)
+                                   (hyp)
+                                   &key
+                                   (state 'state)
+                                   (rp::rp-state 'rp::rp-state))
+    :guard (and preloaded-rules
+                (svex-simplify-preloaded-guard preloaded-rules state))
+    :returns (mv (svexl-new svexl-p :hyp (svex-p svex))
+                 (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
+                                                       rp::rp-state)))
+    (b* ((svexl (svex-to-svexl svex)))
+      (svex-simplify-linearize-aux svexl preloaded-rules hyp))))
+
 (define svex-simplify-to-4vec ((svex svex-p)
                                &key
                                (state 'state)
                                (rp::rp-state 'rp::rp-state)
                                (hyp ''t)
+                               (linearize 'nil)
                                (preloaded-rules 'nil)
                                (runes '(let ((world (w state))) (current-theory
                                                                  :here))))
@@ -267,7 +490,8 @@
                  (svex-simplify-preload :runes runes))))
 
        (hyp `(if (sv::svex-env-p svex-env) ,hyp 'nil))
-       (term `(implies ,hyp (svex-eval ',svex svex-env)))
+
+       (term `(implies ,hyp (svex-eval-wog ',svex svex-env)))
 
        ((unless (or preloaded-rules
                     (svex-simplify-preloaded-guard rules state)))
@@ -276,6 +500,13 @@
                      "Something is wrong with the rules. ~%"
                      nil)
          (mv term rp::rp-state)))
+       ((mv svexl rp::rp-state)
+        (if linearize
+            (svex-simplify-linearize svex rules hyp)
+          (mv nil rp::rp-state)))
+       (term (if linearize
+                 `(implies ,hyp (svexl-eval-wog ',svexl svex-env))
+               term))
 
        ((mv enabled-exec-rules rules-alist meta-rules)
         (mv (access svex-simplify-preloaded rules
@@ -284,7 +515,6 @@
                     :rules)
             (access svex-simplify-preloaded rules
                     :meta-rules)))
-
        ((mv rw rp::rp-state) (rp::rp-rw-aux term rules-alist
                                             enabled-exec-rules
                                             meta-rules rp::rp-state
@@ -298,259 +528,17 @@
                (svex-rw-free-preload rules state))))
     (mv rw rp::rp-state)))
 
-
-
-(in-theory (disable acl2::natp-when-gte-0
-                    acl2::natp-when-integerp))
-
-
-
-
-#|(define rw-svex-to-4vec ((svex svex-p)
-                         &KEY
-                         (state 'state)
-                         (rp::rp-state 'rp::rp-state)
-                         (hyp ''t) ;; "Have more context for variables."
-                         (runes '(let ((world (w state))) (current-theory :here))) ;; runes/rule-names to work with. Can
-                         ;; be overridden by svex-simplied-preloaded
-                         (svex-simplify-preloaded 'nil)
-                         ;; structure  creation for the rewriter. This value
-                         ;; can be created with (svex-simplify-preload)
-                         )
-  (declare (xargs ;:mode :program
-            :verify-guards nil
-            :stobjs (state rp::rp-state)
-            :guard (svex-simplify-preloaded-guard
-                    svex-simplify-preloaded state)))
-  ;; :guard (and (or (not created-rules)
-  ;;                 (and (consp created-rules)
-  ;;                      (symbol-alistp (cdr created-rules))
-  ;;                      (rp::rules-alistp (car created-rules)))))
-  :prepwork
-  ((local
-    (in-theory (disable rp::rules-alistp
-                        RP::RP-STATEP
-
-                        STATE-P
-                        TABLE-ALIST)))
-   (local
-    (include-book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system)))
-
-  (b* ((world (w state))
-       (- (if (mbe :exec t :logic (svex-p svex)) nil
-            (hard-error 'rw-svex-to-4vec  "Input is not an svex" nil)))
-       ;; this indirectly checks that all the meta rules added are also proved.
-       (- (rp::check-if-clause-processor-up-to-date world))
-       ;; find the variables in the svex
-       (vars (get-svex-vars svex))
-       ;; create the env and reverse-env (same as env but keys and vals swapped)
-       ((mv env-term reverse-env is-fast) (create-dummy-svex-env vars))
-       ;; get the list of runes/rule names
-
-       ((mv enabled-exec-rules
-            rules-alist
-            meta-rules)
-        (if svex-simplify-preloaded
-            (mv (access svex-simplify-preloaded
-                        svex-simplify-preloaded
-                        :enabled-exec-rules)
-                (access svex-simplify-preloaded
-                        svex-simplify-preloaded
-                        :rules)
-                (access svex-simplify-preloaded
-                        svex-simplify-preloaded
-                        :meta-rules))
-          (mv (rp::get-enabled-exec-rules runes)
-              (rp::get-rules runes state)
-              (let ((res
-                     (cdr (hons-assoc-equal 'rp::meta-rules-list
-                                            (table-alist 'rp::rp-rw (w
-                                                                     state))))))
-                (if (RP::RP-META-RULE-RECS-P res state)
-                    (make-fast-alist res)
-                  nil)))))
-
-       (old-not-simplified-action (rp::not-simplified-action rp::rp-state))
-       (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
-       ;; CREATE THE TERM TO BE REWRITTEN
-       (term (if (or (equal hyp ''t)
-                     (equal hyp 't))
-                 `(svex-eval-wog ',svex ,env-term)
-               `(implies ,hyp (svex-eval-wog ',svex ,env-term))))
-       ((mv rw rp::rp-state)
-        (rp::rp-rw-aux term
-                       rules-alist
-                       enabled-exec-rules
-                       meta-rules
-                       rp::rp-state
-                       state))
-       ;; restore rp-state setting
-       (rp::rp-state (rp::update-not-simplified-action
-                      old-not-simplified-action rp::rp-state))
-       (- (if svex-simplify-preloaded nil (fast-alist-free enabled-exec-rules)))
-       (- (if svex-simplify-preloaded nil (fast-alist-free rules-alist)))
-       (- (if svex-simplify-preloaded nil (fast-alist-free meta-rules)))
-       (- (fast-alist-free (cadr (cadr (caddr env-term))))))
-    (mv rw reverse-env is-fast rp::rp-state)))||#
-
-(define to-svex-fnc (term)
-  :prepwork
-  ((local
-    (in-theory (enable sv::svex-p
-                       svexlist-p))))
-  :returns (res sv::Svex-p :hyp (or (atom term) (sv::svexlist-p (cdr term))))
-  (case-match term
-    (('svl::4vec-bitnot$ size x)    `(partsel 0 ,size (sv::bitnot ,x)))
-    (('svl::4vec-plus$ size x y)    `(partsel 0 ,size (+ ,x ,y)))
-    ;; (('svl::4vec-bitor$ size x y)   `(partsel 0 ,size (sv::bitor ,x ,y)))
-    ;; (('svl::4vec-bitand$ size x y)  `(partsel 0 ,size (sv::bitand ,x ,y)))
-    ;; (('svl::4vec-bitxor$ size x y)  `(partsel 0 ,size (sv::bitxor ,x ,y)))
-
-    (('svl::bits val s w)        (list 'sv::partsel s w val))
-    (('svl::sbits s w new old)   (list 'sv::partinst s w old new))
-    (('svl::4vec-concat$ & & &)  (cons 'sv::concat   (cdr term)))
-
-    (('sv::4vec-fix$inline &)    (cons 'id            (cdr term)))
-    (('svl::4vec-fix-wog &)      (cons 'id           (cdr term)))
-    (('sv::4vec-bit-extract & &) (cons 'sv::bitsel   (cdr term)))
-    (('sv::3vec-fix &)           (cons 'sv::unfloat  (cdr term)))
-    (('4vec-bitnot &)            (cons 'sv::bitnot   (cdr term)))
-    (('4vec-bitand & &)          (cons 'sv::bitand   (cdr term)))
-    (('4vec-bitor & &)           (cons 'sv::bitor    (cdr term)))
-    (('sv::4vec-bitxor & &)      (cons 'sv::bitxor   (cdr term)))
-    (('sv::4vec-res & &)         (cons 'sv::res      (cdr term)))
-    (('sv::4vec-resand & &)      (cons 'sv::resand   (cdr term)))
-    (('sv::4vec-resor & &)       (cons 'sv::resor    (cdr term)))
-    (('sv::4vec-override & &)    (cons 'sv::override (cdr term)))
-    (('sv::4vec-onset &)         (cons 'sv::onp      (cdr term)))
-    (('sv::4vec-offset &)        (cons 'sv::offp     (cdr term)))
-    (('sv::4vec-reduction-and &) (cons 'sv::uand     (cdr term)))
-    (('sv::4vec-reduction-or &)  (cons 'sv::uor      (cdr term)))
-    (('4vec-parity &)            (cons 'sv::uxor     (cdr term)))
-    (('4vec-zero-ext & &)        (cons 'sv::zerox    (cdr term)))
-    (('sv::4vec-sign-ext & &)    (cons 'sv::signx    (cdr term)))
-    (('4vec-concat & & &)        (cons 'concat       (cdr term)))
-    (('sv::4vec-rev-blocks & & &)(cons 'sv::blkrev   (cdr term)))
-    (('4vec-rsh & &)             (cons 'sv::rsh      (cdr term)))
-    (('4vec-lsh & &)             (cons 'sv::lsh      (cdr term)))
-    (('4vec-plus & &)            (cons '+            (cdr term)))
-    (('sv::4vec-minus & &)       (cons 'sv::b-       (cdr term)))
-    (('sv::4vec-uminus & &)      (cons 'sv::u-       (cdr term)))
-    (('sv::4vec-times & &)       (cons '*            (cdr term)))
-    (('sv::4vec-quotient & &)    (cons '/            (cdr term)))
-    (('sv::4vec-remainder & &)   (cons 'sv::%        (cdr term)))
-    (('sv::4vec-xdet &)          (cons 'sv::xdet     (cdr term)))
-    (('sv::4vec-countones &)     (cons 'sv::countones(cdr term)))
-    (('sv::4vec-onehot &)        (cons 'sv::onehot   (cdr term)))
-    (('sv::4vec-onehot0 &)       (cons 'sv::onehot0  (cdr term)))
-    (('sv::4vec-< & &)           (cons '<            (cdr term)))
-    (('4vec-== & &)              (cons 'sv::==       (cdr term)))
-    (('sv::4vec-=== & &)         (cons 'sv::===      (cdr term)))
-    (('sv::4vec-wildeq & &)      (cons 'sv::==?      (cdr term)))
-    (('sv::4vec-wildeq-safe & &) (cons 'sv::safer-==?(cdr term)))
-    (('sv::4vec-symwildeq & &)   (cons 'sv::==??     (cdr term)))
-    (('sv::4vec-clog2 &)         (cons 'sv::clog2    (cdr term)))
-    (('sv::4vec-pow & &)         (cons 'sv::pow      (cdr term)))
-    (('4vec-? & & &)             (cons 'sv::?        (cdr term)))
-    (('4vec-?* & & &)            (cons 'sv::?*       (cdr term)))
-    (('sv::4vec-bit? & & &)      (cons 'sv::bit?     (cdr term)))
-    (('4vec-part-select & & &)   (cons 'partsel      (cdr term)))
-    (('4vec-part-install & & & &)(cons 'sv::partinst (cdr term)))
-
-    (& (progn$
-        (hard-error '4vec-to-svex "cannot match ~p0 with ~p1 arguments to any ~
-  svex function. If you think this is a bug, consider changing ~
-  svl::to-svex-fnc. ~%"
-                    (list (cons #\0 (if (consp term) (car term) term))
-                          (cons #\1 (1- (len term)))))
-        '0))))
-
-
-
-(acl2::defines
- 4vec-to-svex
- :prepwork ((local
-             (in-theory (e/d (sv::svex-p
-                              assoc-equal
-                              sv::svar-p
-                              sv::svex-kind
-                              rp::measure-lemmas)
-                             ((:REWRITE RP::MEASURE-LEMMA1)
-                              (:REWRITE RP::MEASURE-LEMMA1-2)
-                              (:REWRITE SV::SVEXLIST-P-WHEN-SUBSETP-EQUAL)
-                              (:DEFINITION SUBSETP-EQUAL)
-                              (:REWRITE
-                               ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                              (:DEFINITION ACL2::LOOP$-AS)
-                              (:DEFINITION MEMBER-EQUAL)
-                              (:REWRITE
-                               SV::SVEXLIST-P-OF-CDR-WHEN-SVEXLIST-P)
-                              (:REWRITE
-                               ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP)
-                              (:DEFINITION RP::RP-TERMP)))))
-
-            (local
-             (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
-
-            (local
-             (DEFTHM EX-FROM-RP-is-nonnil
-               (IMPLIES (AND (RP::RP-TERMP RP::TERM))
-                        (RP::EX-FROM-RP RP::TERM))
-               :hints (("Goal"
-                        :induct (RP::EX-FROM-RP RP::TERM)
-                        :in-theory (e/d (RP::EX-FROM-RP
-                                         rp::is-rp) ())))))
-
-            (local
-             (defthm SVEX-P-to-svex-fnc-quote
-               (svex-p
-                (to-svex-fnc (cons 'quote x)))
-               :hints (("Goal"
-                        :in-theory (e/d (to-svex-fnc) ()))))))
- (define 4vec-to-svex (term)
-   :guard t
-   :measure (rp::cons-count term)
-   :returns (res sv::svex-p)
-   (b* ((term (rp::ex-from-rp term)))
-     (cond ((atom term)
-            (if (sv::svex-p term)
-                term
-              (progn$ (hard-error '4vec-to-svex
-                                  "Unexpected term ~p0 ~%"
-                                  (list (cons #\0 term)))
-                      0)))
-           ((and (quotep term)
-                 (consp (cdr term)))
-            (let ((ud (unquote term)))
-              (cond ((and (atom ud)
-                          (sv::svex-p ud))
-                     ud)
-                    ((sv::svex-p term)
-                     term)
-                    (t
-                     (progn$ (hard-error '4vec-to-svex
-                                         "Unexpected term ~p0 ~%"
-                                         (list (cons #\0 term)))
-                             0)))))
-           ((case-match term
-              (('svex-env-fastlookup-wog ('quote var) env)
-               (and (sv::svar-p var)
-                    (equal (rp::ex-from-rp env) 'svex-env)))
-              (('sv::svex-env-fastlookup ('quote var) env)
-               (and (sv::svar-p var)
-                    (equal (rp::ex-from-rp env) 'svex-env))))
-            (unquote (cadr term)))
-           (t (b* ((fnc (car term))
-                   (args (4vec-to-svex-lst (cdr term))))
-                (to-svex-fnc (cons fnc args)))))))
-
- (define 4vec-to-svex-lst (lst)
-   :measure (rp::cons-count lst)
-   :returns (res-lst sv::svexlist-p)
-   (if (atom lst)
-       nil
-     (cons (4vec-to-svex (car lst) )
-           (4vec-to-svex-lst (cdr lst) )))))
+(define cons-count-compare ((term)
+                            (cnt natp))
+  (cond ((zp cnt) cnt)
+        ((atom term)
+         (- cnt 1))
+        (t 
+         (b* ((cnt (cons-count-compare (car term) cnt))
+              ((when (zp cnt)) cnt)
+              (cnt (cons-count-compare (cdr term) cnt)))
+           cnt))))
+         
 
 (define svex-simplify ((svex svex-p)
                        &KEY
@@ -563,21 +551,32 @@
                        (preloaded-rules 'nil) ;; Non-nil overrides rule
                        ;; structure  creation for the rewriter. This value
                        ;; can be created with (svex-simplify-preload)
+                       (linearize ':auto)
                        )
   :stobjs (state rp::rp-state)
-  :returns (mv (res sv::svex-p)
+  :returns (mv (res svex-p)
                (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
                                                      rp::rp-state)))
   :guard (svex-simplify-preloaded-guard preloaded-rules state)
-  (b* (((mv rw rp::rp-state)
+  (b* ((linearize (if (eq linearize ':auto)
+                      (zp (cons-count-compare svex 1024))
+                    linearize))
+       ((mv rw rp::rp-state)
         (svex-simplify-to-4vec svex
                                :state state
                                :hyp hyp
                                :runes runes
-                               :preloaded-rules preloaded-rules))
-       (svex-res (case-match rw
-                   (('implies & term) (4vec-to-svex term))
-                   (& (4vec-to-svex rw)))))
+                               :preloaded-rules preloaded-rules
+                               :linearize linearize))
+       ((mv err svex-res)
+        (case-match rw
+          (('implies & term) (4vec-to-svex term nil linearize))
+          (& (4vec-to-svex rw nil linearize))))
+       (- (and err
+               (hard-error
+                'svex-simplify
+                "4vec-to-svex returned an error for the term: ~p0 ~%"
+                (list (cons #\0 rw))))))
     (mv svex-res rp::rp-state)))
 
 (acl2::defxdoc svex-simplify
@@ -646,3 +645,16 @@ world. When you are finished, it is advisable to execute (svex-rw-free-preload
 svex-rw-free-preloaded state) in order to free the fast-alists created. </p>
 
 ")
+
+;; (trace$ (svex-simplify-linearize-fn :entry (car acl2::arglist)))
+
+;; (svex-simplify  #!SV'(bitor (bitand (bitor a b) (bitor (bitor a b)
+;;                                                        (bitor a b)))
+;;                             (bitor (bitor a b)
+;;                                    (bitor a b))))
+
+;; (svex-simplify  #!SV'(bitor (bitand (bitor a b) (bitor (bitor a b)
+;;                                                        (bitor a b)))
+;;                             (bitor (bitor a b)
+;;                                    (bitor a b)))
+;;                 :linearize t)
