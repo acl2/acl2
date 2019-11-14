@@ -13501,6 +13501,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-guards-fn1 ; to update *cl-cache*
     ev-fncall+-w
     extend-current-theory
+    defstobj-fn ; might be avoidable; see comment in that definition
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -27655,6 +27656,10 @@ Lisp definition."
   `(not (logicp ,fn ,wrld)))
 
 (defconst *stobjs-out-invalid*
+
+; Warning: keep this in sync with the comment about illegal functions to
+; memoize in :doc memoize.
+
   '(if return-last))
 
 (defun stobjs-out (fn w)

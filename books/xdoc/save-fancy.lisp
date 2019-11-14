@@ -573,11 +573,108 @@
                         dir-fix exit-status lines)))
     state))
 
+; The check done by check-xdoc-topics (and addition of functions below to
+; support it) was added by Matt K. in November 2019, to ease debugging of the
+; case that a non-standard character in the :long string can cause there to be
+; an empty page in the web-based manual.  (This actually happened when a stray
+; control-P wound up in the documentation for defstobj.)  Note that this check
+; is probably not complete, for example since preprocessing has not yet been
+; applied to the given topics.  Rather than try to get a clearer understanding
+; of the generation of web pages from xdoc source, I'm taking this conservative
+; approach.  Our first implementation did not allow tabs, but that uncovered 23
+; violations in the acl2+books manual, so for now at least we'll allow tabs.
+
+(defun standard+-string-p1 (x n)
+; Based on standard-string-p1 in the ACL2 source code.
+  (declare (xargs :guard (and (stringp x)
+                              (natp n)
+                              (<= n (length x)))))
+  (cond ((zp n) t)
+        (t (let ((n (1- n)))
+             (and (or (standard-char-p (char x n))
+                      (eql (char x n) #\Tab))
+                  (standard+-string-p1 x n))))))
+
+(defun standard+-string-p (x)
+  (declare (xargs :guard (stringp x)))
+  (standard+-string-p1 x (length x)))
+
+(defun non-standard+-char-position1 (x n)
+; Based on standard-string-p1 in the ACL2 source code.
+  (declare (xargs :guard (and (stringp x)
+                              (natp n)
+                              (<= n (length x)))))
+  (cond ((zp n) nil)
+        (t (let ((n (1- n)))
+             (if (or (standard-char-p (char x n))
+                     (eql x #\Tab))
+                 (non-standard+-char-position1 x n)
+               n)))))
+
+(defun non-standard+-char-position (x)
+  (declare (xargs :guard (stringp x)))
+  (non-standard+-char-position1 x (length x)))
+
+(defun check-xdoc-topics (topics msg-list)
+  (cond
+   ((endp topics)
+    (cond
+     (msg-list (er hard 'check-xdoc-topics
+                   "~|~%~*0"
+                   `("impossible"             ; when nothing to print
+                     "~@*."                   ; the last element
+                     "~@*; and~|~%"           ; the 2nd to last element
+                     "~@*;~|~%"               ; all other elements
+                     ,msg-list)))
+     (t nil)))
+   (t
+    (check-xdoc-topics
+     (cdr topics)
+     (let* ((topic (car topics))
+            (ap (alistp (car topics)))
+            (short (and ap (cdr (assoc-eq :short topic))))
+            (long (and ap (cdr (assoc-eq :long topic)))))
+       (cond
+        ((not ap) ; impossible?
+         (cons (msg "Topic is not an alist: ~x0"
+                    topic)
+               msg-list))
+        (t
+         (let* ((msg-list
+                 (cond
+                  ((and short
+                        (not (standard+-string-p short)))
+                   (let ((posn (non-standard+-char-position short)))
+                     (cons (msg "Found non-standard character, ~x0, in the ~
+                                 :short string of the topic named ~x1, at ~
+                                 position ~x2"
+                                (char short posn)
+                                (cdr (assoc-eq :name topic))
+                                posn)
+                           msg-list)))
+                  (t msg-list)))
+                (msg-list
+                 (cond
+                  ((and long
+                        (not (standard+-string-p long)))
+                   (let ((posn (non-standard+-char-position long)))
+                     (cons (msg "Found non-standard character, ~x0, in the ~
+                                 :long string of the topic named ~x1, at ~
+                                 position ~x2"
+                                (char long posn)
+                                (cdr (assoc-eq :name topic))
+                                posn)
+                           msg-list)))
+                  (t msg-list))))
+           msg-list))))))))
+
 (defun save-fancy (all-topics dir zip-p logo-image broken-links-limit state)
-  (b* ((state (f-put-global 'broken-links-limit broken-links-limit state))
-       (state (prepare-fancy-dir dir logo-image state))
-       (state (save-json-files all-topics dir state))
-       (state (if zip-p
-                  (run-fancy-zip dir state)
-                state)))
-    state))
+  (prog2$
+   (check-xdoc-topics all-topics nil)
+   (b* ((state (f-put-global 'broken-links-limit broken-links-limit state))
+        (state (prepare-fancy-dir dir logo-image state))
+        (state (save-json-files all-topics dir state))
+        (state (if zip-p
+                   (run-fancy-zip dir state)
+                 state)))
+     state)))
