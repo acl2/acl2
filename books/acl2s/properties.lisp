@@ -175,7 +175,7 @@ with the same hints and directives that defthm accepts.
 
 (defmacro property (&rest args)
   `(with-output
-    :off :all
+    :off :all :stack :push
     (make-event
      (b* (((list name? name prop kwd-alist)
            (parse-property ',args (w state)))
@@ -198,36 +198,36 @@ with the same hints and directives that defthm accepts.
              (with-time-limit
               ,testing-timeout
               (with-output
-               :on (error summary)
+               :stack :pop
                (test? ,prop)))
              (with-time-limit
               ,proof-timeout
               (with-output
-               :on (error summary)
+               :stack :pop
                (,prove ,@args)))))
           ((when proofs?)
            `(with-time-limit
              ,proof-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (,prove ,@args))))
           ((when (and testing? name?))
            `(with-time-limit
              ,testing-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (defthm-test-no-proof ,@args))))
           ((when testing?)
            `(with-time-limit
              ,testing-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (test? ,prop))))
           ((when name?)
            `(with-time-limit
              ,proof-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (defthmskipall ,@args)))))
        `(value-triple :passed)))))
 
