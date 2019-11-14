@@ -33,7 +33,7 @@
 (include-book "add-primitives")
 (include-book "primitives-stub")
 (include-book "sat-stub")
-
+(include-book "sat-binder-defs")
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
@@ -395,43 +395,7 @@
              (lbfr-p ans new-logicman))))
 
 
-(define sat-check-raw (ans config x)
-  (declare (ignore config))
-  (case ans
-    (:sat :sat)
-    (:unsat (if x :failed :unsat))
-    (t :failed))
-  ///
-  (disable-definition sat-check-raw)
-  (defthm sat-check-not-unsat
-    (implies x
-             (not (equal (sat-check-raw ans config x) :unsat))))
 
-  (defmacro sat-check-raw! (&rest args)
-    `(binder (sat-check-raw . ,args))))
-
-(define sat-check-with-witness-raw (ans config x)
-  (declare (ignore config))
-  (b* (((mv status ctrex) (non-exec ans)))
-    (case status
-      (:sat (if (implies ctrex x)
-                (mv :sat ctrex)
-              (mv :failed nil)))
-      (:unsat (mv (if x :failed :unsat) nil))
-      (t (mv :failed nil))))
-  ///
-  (disable-definition sat-check-with-witness-raw)
-  (defthm sat-check-with-witness-not-unsat
-    (implies x
-             (not (equal (mv-nth 0 (sat-check-with-witness-raw ans config x)) :unsat))))
-
-  (defthm sat-check-with-witness-correct
-    (implies (and (mv-nth 1 (sat-check-with-witness-raw ans config x))
-                  (not x))
-             (not (equal (mv-nth 0 (sat-check-with-witness-raw ans config x)) :sat))))
-
-  (defmacro sat-check-with-witness-raw! (&rest args)
-    `(binder (sat-check-with-witness-raw . ,args))))
 
 (def-formula-checks sat-formula-checks
   (sat-check-raw sat-check-with-witness-raw))
@@ -636,44 +600,7 @@
 
 
 
-(def-fgl-rewrite fgl-sat-check-impl
-  (equal (fgl-sat-check config x)
-         (b* ((xbool (if x t nil))
-              (status (sat-check-raw! status config xbool)))
-           (if (equal status :unsat) nil xbool)))
-  :hints(("Goal" :in-theory (enable sat-check-raw fgl-sat-check))))
-
-(define sat-check (ans config x)
-  :enabled t
-  (sat-check-raw ans config x)
-  ///
-  (disable-definition sat-check)
-  (defthm sat-check-impl
-    (implies (equal ans (sat-check-raw! ans1 config (if x t nil)))
-             (equal (sat-check ans config x) ans))
-    :hints(("Goal" :in-theory (enable sat-check-raw)))
-    :rule-classes nil)
-
-  (add-fgl-brewrite sat-check-impl)
-
-  (defmacro sat-check! (&rest args)
-    `(binder (sat-check . ,args))))
 
 
-(define sat-check-with-witness (ans config x)
-  :enabled t
-  (sat-check-with-witness-raw ans config x)
-  ///
-  (disable-definition sat-check-with-witness)
-  (defthm sat-check-with-witness-impl
-    (implies (equal ans (sat-check-with-witness-raw! ans1 config (if x t nil)))
-             (equal (sat-check-with-witness ans config x) ans))
-    :hints(("Goal" :in-theory (enable sat-check-with-witness-raw)))
-    :rule-classes nil)
-
-  (add-fgl-brewrite sat-check-with-witness-impl)
-
-  (defmacro sat-check-with-witness! (&rest args)
-    `(binder (sat-check-with-witness . ,args))))
 
 

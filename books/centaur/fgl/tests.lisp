@@ -712,3 +712,140 @@
        (er soft 'test-with-fgl-testbench "Didn't work? err: ~x0 debug-obj: ~x1" err (@ :fgl-interp-error-debug-obj))))
    (value '(value-triple :ok))))
 
+(include-book "greedy-max-sat")
+
+(include-book "centaur/bitops/merge" :dir :system)
+
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+
+(defun make-buggy-paddb-lanes (n)
+  (if (zp n)
+      nil
+    (let ((n (1- n)))
+      (cons `(let ((x1 (acl2::nth-slice8 ,n x))
+                   (y1 (acl2::nth-slice8 ,n y)))
+               (loghead 8 (+ (if (eql x1 ,n) (+ 1 x1) x1) y1)))
+            (make-buggy-paddb-lanes n)))))
+
+(make-event
+ `(defun buggy-paddb (x y)
+    (acl2::merge-8-u8s . ,(make-buggy-paddb-lanes 8))))
+
+
+(defun make-paddb-lanes (n)
+  (if (zp n)
+      nil
+    (let ((n (1- n)))
+      (cons `(let ((x1 (acl2::nth-slice8 ,n x))
+                   (y1 (acl2::nth-slice8 ,n y)))
+               (loghead 8 (+ x1 y1)))
+            (make-paddb-lanes n)))))
+
+(make-event
+ `(defun paddb (x y)
+    (acl2::merge-8-u8s . ,(make-paddb-lanes 8))))
+
+(defthm paddb-size
+  (unsigned-byte-p 64 (paddb x y)))
+
+(defthm buggy-paddb-size
+  (unsigned-byte-p 64 (buggy-paddb x y)))
+
+(local (in-theory (disable paddb buggy-paddb)))
+
+
+(defun all-nil (x)
+  (if (atom x)
+      t
+    (and (not (car x))
+         (all-nil (cdr x)))))
+
+  
+(define bytes-diff-list (n x y)
+  :verify-guards nil
+  (if (zp n)
+      nil
+    (cons (not (equal (loghead 8 x) (loghead 8 y)))
+          (bytes-diff-list (1- n) (logtail 8 x) (logtail 8 y))))
+  ///
+  (local (defthm loghead-of-8n-expand
+           (implies (and (not (zp n))
+                         (syntaxp (equal n 'n)))
+                    (equal (loghead (* 8 n) x)
+                           (logapp 8 x (loghead (+ -8 (* 8 n)) (logtail 8 x)))))
+           :hints ((acl2::logbitp-reasoning))))
+
+  (local (defthm equal-of-logapp
+           (equal (equal (logapp n x1 y1) (logapp n x2 y2))
+                  (and (equal (loghead n x1) (loghead n x2))
+                       (equal (ifix y1) (ifix y2))))
+           :hints ((acl2::logbitp-reasoning :prune-examples nil))))
+
+  (defthm bytes-diff-list-when-equal
+    (iff (all-nil (bytes-diff-list n x y))
+         (equal (loghead (* (nfix n) 8) x)
+                (loghead (* (nfix n) 8) y)))
+    :hints(("Goal" :in-theory (enable all-nil)))))
+
+
+(defthm non-indices-all-false-implies-cdr
+  (implies (non-indices-all-false nil x)
+           (non-indices-all-false nil (cdr x)))
+  :hints (("goal" :use ((:instance non-indices-all-false-necc
+                         (indices nil)
+                         (idx (+ 1 (nfix (non-indices-all-false-witness nil (cdr x)))))))
+           :expand ((non-indices-all-false nil (cdr x)))
+           :in-theory (disable non-indices-all-false-necc non-indices-all-false))))
+
+(defthm non-indices-all-false-implies-all-nil
+  (implies (non-indices-all-false nil x)
+           (all-nil x))
+  :hints (("goal" :induct (all-nil x)
+           :in-theory (e/d (all-nil) (non-indices-all-false
+                                      non-indices-all-false-necc)))
+          (and stable-under-simplificationp
+               '(:use ((:instance non-indices-all-false-necc
+                        (indices nil) (idx 0)))
+                 :expand ((nth 0 x))))))
+
+(defthm len-equal-0
+  (equal (equal (len x) 0)
+         (not (consp x))))
+
+(local (defthm all-nils-by-greedy-max-sat
+         (implies (not (greedy-max-sat ans x sat-config))
+                  (all-nil x))
+         :hints(("Goal" :in-theory (e/d (greedy-max-sat)
+                                        (non-indices-all-false))
+                 :expand ((numlist 0 1 (len x)))
+                 :do-not-induct t))))
+
+(define compare-paddbs (x y)
+  :verify-guards nil
+  (equal (paddb x y)
+         (buggy-paddb x y))
+  ///
+  (disable-definition compare-paddbs)
+  (def-fgl-rewrite compare-paddbs-impl
+    (equal (compare-paddbs x y)
+           (let ((ans (greedy-max-sat! ans (bytes-diff-list 8 (paddb x y) (buggy-paddb x y)) (make-fgl-ipasir-config))))
+             (if (not ans)
+                 t
+               (fgl-prog2 (cw "Ans: ~x0~%" ans)
+                          (abort-rewrite (compare-paddbs x y))))))
+    :hints (("goal" :use ((:instance all-nils-by-greedy-max-sat
+                           (x (bytes-diff-list 8 (paddb x y) (buggy-paddb x y)))
+                           (sat-config (make-fgl-ipasir-config))))
+             :in-theory (disable paddb buggy-paddb
+                                 all-nils-by-greedy-max-sat)))))
+
+
+
+
+(fgl::def-fgl-thm paddb-debug
+  (compare-paddbs x y))
+
+
+
+
