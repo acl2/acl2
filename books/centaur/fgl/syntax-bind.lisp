@@ -78,7 +78,7 @@ symbolically interpreting the term under the bindings in the equivalence
 context.</p>
 
 <p>An example application is to check whether the symbolic value of some term
-is syntactically an integer.  We can define @('(check-integer-fn var x)') to be
+is syntactically an integer.  We define @('(check-integerp var x)') to be
 @('(and (integerp x) var)') and associate this with a binding metafunction that
 returns T if @('x') is syntactically an integer.  Another application is to
 perform a SAT check and return the result (@(':unsat'), @(':sat'), or

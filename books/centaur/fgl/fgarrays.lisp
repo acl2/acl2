@@ -398,3 +398,14 @@
 
 
 (local (install-fgl-metafns fgarrayprims))
+
+
+(defxdoc fgl-array-support
+  :parents (fgl)
+  :short "Support for fast array lookups in FGL"
+  :long "<p> FGL supports a form of fast array lookup based on the @(see
+fgarray) abstract stobj.  The accessors and updaters for the fgarray abstract
+stobj have corresponding primitive implementations in FGL that operate on real
+fgarray objects stored in the FGL interpreter state.  As with FGL's support for
+fast alists (see @(see fgl-fast-alist-support)), some care must be taken to use
+these array objects in a single-threaded manner.</p>")

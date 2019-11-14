@@ -370,6 +370,64 @@
   `(make-event
     (def-ctrex-rule-fn ',name ',args (w state))))
 
+(defxdoc def-ctrex-rule
+  :parents (fgl-counterexamples)
+  :short "Define a rule that helps FGL derive term-level counterexamples from Boolean assignments."
+  :long "<p>This form defines an informal rule that FGL may use to help derive
+assignments for theorem variables from the Boolean assignments returned by SAT
+solvers.  During this process (see @(see fgl-counterexamples)), various FGL objects
+are assigned concrete values, and we use these values to derive further assignments.</p>
+
+<p>A counterexample rule tells how to derive a new assignment from some
+existing assignments.  An example:</p>
+
+@({
+ (def-ctrex-rule intcar-intcdr-ctrex-elim
+   :match ((car (intcar x))
+           (cdr (intcdr x)))
+   :assign (intcons car cdr)
+   :assigned-var x
+   :ruletype :elim)
+ })
+
+<p>The rule is stored under an arbitrary name, the first argument.  The rest of the arguments:</p>
+<ul>
+
+<li>@(':match') gives a list of bindings @('(var expr)').  When applying the
+rule, one or more of the @('expr') entries must be matched against an object
+with an existing assignment.  For example, to apply the above rule we must have
+an assignment of a value to some term matching @('(intcar x)'), @('(intcdr
+x)'), or both.</li>
+
+<li>@(':assigned-var') and @(':assign') respectively give the term to be
+assigned the value and the value.  In the above case, the subterm @('x') from
+that matched expressions is assigned the value @('(intcons car cdr)'), where
+@('car') and @('cdr') are the values assigned for the respective expressions.</li>
+
+<li>@(':ruletype') may be @(':elim') or @(':property'), signifying how the rule
+is intended to be used.  An @(':elim') rule should be applied once when as many
+of the match expressions as possible have been assigned values; at that point,
+we apply the rule and compute the final value for the subexpression.  A
+@(':property') rule may be applied to several different matching expressions in
+order to compute a value for the same subexpression.</li>
+
+</ul>
+
+<p>An example of a property rule:</p>
+
+@({
+ (def-ctrex-rule assoc-equal-ctrex-rule
+   :match ((pair (assoc-equal k x)))
+   :assign (put-assoc-equal k (cdr pair) x)
+   :assigned-var x
+   :ruletype :property)
+ })
+
+<p>This is a suitable property rule, but not an elim rule, because it may match
+many assignments to @('(assoc-equal k x)') for different @('k') in order to
+compute a value for @('x').</p>
+")
+
 
 (def-ctrex-rule intcar-intcdr-ctrex-elim
   :match ((car (intcar x))

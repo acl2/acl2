@@ -325,6 +325,7 @@
   `(logicman->mode ,logicman))
 
 (defsection lbfr-case
+  :parents (bfr)
   :short "Choose behavior based on the current @(see bfr) mode of a logicman."
   :long "<p>Same as @(see bfr-mode-case), but implicitly uses the bfr mode
 setting of a logicman stobj.  If no logicman is given as the first
@@ -340,6 +341,7 @@ argument (i.e., the first argument is a keyword), the variable named
     (lbfr-case-fn args)))
 
 (defsection lbfr-mode-is
+  :parents (bfr)
   :short "Check the current bfr-mode of a logicman stobj"
   :long "<p>Same as @(see bfr-mode-is), but gets the bfr mode object from a
 logicman stobj.  If no logicman argument is supplied, the variable named
@@ -909,6 +911,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (define bfr-eval ((x lbfr-p "A Boolean function object")
                   (env "The (Boolean) evaluation environment")
                   &optional ((logicman "The logic manager") 'logicman))
+  :parents (bfr)
   :short "Evaluate a BFR under an appropriate BDD/AIG environment."
   :long "<p>@('Bfr-eval') is the evaluator for Boolean function objects in FGL.</p>
 
@@ -1226,6 +1229,7 @@ registers are not used.</p>"
                     (bfr-lookup n env old)))))
 
 (define bfr-set-var ((n natp) val env &optional (logicman 'logicman))
+  :parents (bfr)
   :short "Set the @('n')th BFR variable to some value in an AIG/BDD environment."
   (lbfr-case :bdd (acl2::with-guard-checking
                    nil

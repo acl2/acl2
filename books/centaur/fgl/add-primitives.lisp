@@ -214,7 +214,7 @@
     (def-fgl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',updates-state ',prepwork)))
 
 
-(defun def-fgl-binder-meta-fn (name body formula-check-fn prepwork)
+(defun def-fgl-binder-meta-base (name body formula-check-fn prepwork)
   (declare (Xargs :mode :program))
   (acl2::template-subst
    '(define <metafn> ((fn pseudo-fnsym-p)
@@ -272,9 +272,26 @@
                  (<prepwork> . ,prepwork))
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
+(defun def-fgl-binder-meta-fn (name fn formals body formula-check-fn prepwork)
+  (declare (xargs :mode :program))
+  `(progn
+     ,(def-fgl-binder-meta-base name
+        `(if (and (eq (pseudo-fnsym-fix fn) ',fn)
+                  (eql (len args) ,(len formals)))
+             (b* (((list . ,formals) (fgl-objectlist-fix args)))
+               ,body)
+           (mv nil nil nil nil interp-st state))
+        formula-check-fn prepwork)
+     (add-fgl-binder-meta ,fn ,name)))
 
-(defmacro def-fgl-binder-meta (name body &key (formula-check) (prepwork))
-  (def-fgl-binder-meta-fn name body formula-check prepwork))
+(defmacro def-fgl-binder-meta (name body &key (formula-check) (prepwork) (origfn) (formals ':none))
+  (if origfn
+      (if (eq formals :none)
+          `(make-event
+            (b* ((formals (cdr (getpropc ',origfn 'formals nil (w state)))))
+              (def-fgl-binder-meta-fn ',name ',origfn formals ',body ',formula-check ',prepwork)))
+        (def-fgl-binder-meta-fn name origfn formals body formula-check prepwork))
+    (def-fgl-binder-meta-base name body formula-check prepwork)))
 
 
 

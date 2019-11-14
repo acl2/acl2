@@ -33,7 +33,32 @@
 (include-book "arith-base")
 (include-book "syntax-bind")
 
+(defxdoc fgl-syntactic-checker-binders
+  :short "Functions for checking syntactic properties of objects, and inferring
+          the logical properties that they imply"
+  :long "<p>These functions are useful for creating FGL rewrite rules that
+prescribe some behavior based on the syntax of the objects passed in.  See
+@(see binder) for background on the FGL binder facility, which these depend on.
+Each checker function, when encountered in the FGL interpreter, checks some
+syntactic property of its input.  Its logical definition reflects what it
+checks.  For example, @('(check-integerp ans x)') implies @('(integerp x)') in
+its logical formulation.  Under the FGL interpreter, when invoked as
+@('(binder (check-integerp x-intp x))') where @('x-intp') is an unbound
+variable, its meta rule checks whether @('x') can be syntactically determined
+to be an integer; if so, it returns T.</p>
+
+<p>Each of these checker functions also has a corresponding macro whose name is
+suffixed with @('!') and simply wraps the function invocation in @('(binder
+...)').</p>
+
+
+")
+
+(local (xdoc::set-default-parents fgl-syntactic-checker-binders))
+
 (define check-integerp (ans x)
+  :short "FGL binder that checks whether X is syntactically an integer."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (integerp x) ans t)
   ///
   (defthm check-integerp-implies-integerp
@@ -45,6 +70,8 @@
     `(binder (check-integerp . ,args))))
 
 (define check-natp (ans x)
+  :short "FGL binder that checks whether X is syntactically a natural number."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (natp x) ans t)
   ///
   (defthm check-natp-implies-natp
@@ -56,6 +83,9 @@
     `(binder (check-natp . ,args))))
 
 (define check-int-endp (ans (x integerp))
+  :short "FGL binder that checks whether X is syntactically a @('int-endp'), i.e.
+          either 0, -1, or not an integer."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (int-endp x) ans t)
   ///
   (defthm check-int-endp-fn-implies-int-endp
@@ -69,6 +99,8 @@
     `(binder (check-int-endp . ,args))))
 
 (define check-bitp (ans x)
+  :short "FGL binder that checks whether X is syntactically a bit."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (bitp x) ans t)
   ///
   (defthm check-bitp-implies-bitp
@@ -80,6 +112,8 @@
     `(binder (check-bitp . ,args))))
 
 (define check-signed-byte-p (ans n x)
+  :short "FGL binder that checks whether X is syntactically a signed integer of length at most @('n')."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (signed-byte-p n x) ans t)
   ///
   (defthm check-signed-byte-p-implies-signed-byte-p
@@ -93,6 +127,8 @@
     `(binder (check-signed-byte-p . ,args))))
 
 (define check-unsigned-byte-p (ans n x)
+  :short "FGL binder that checks whether X is syntactically an unsigned integer of length at most @('n')."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (unsigned-byte-p n x) ans t)
   ///
   (defthm check-unsigned-byte-p-implies-unsigned-byte-p
@@ -107,6 +143,8 @@
 
 
 (define check-non-integerp (ans x)
+  :short "FGL binder that checks whether X is syntactically a non-integer, i.e. known not to be an integer."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (not (integerp x))
        ans
        t)
@@ -120,6 +158,8 @@
     `(binder (check-non-integerp . ,args))))
 
 (define check-consp (ans x)
+  :short "FGL binder that checks whether X is syntactically cons."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (consp x)
        ans
        t)
@@ -133,6 +173,8 @@
     `(binder (check-consp . ,args))))
 
 (define check-non-consp (ans x)
+  :short "FGL binder that checks whether X is syntactically a non-cons."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (not (consp x))
        ans
        t)
@@ -146,6 +188,8 @@
     `(binder (check-non-consp . ,args))))
 
 (define check-booleanp (ans x)
+  :short "FGL binder that checks whether X is syntactically a Boolean."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (booleanp x)
        ans
        t)
@@ -159,6 +203,8 @@
     `(binder (check-booleanp . ,args))))
 
 (define check-non-booleanp (ans x)
+  :short "FGL binder that checks whether X is syntactically a non-Boolean."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (not (booleanp x))
        ans
        t)
@@ -174,6 +220,11 @@
 
 
 (define integer-length-bound ((ans acl2::maybe-natp) (x integerp))
+  :short "FGL binder that finds a bound for the integer-length of X if possible."
+  :long "<p>Logically, this function returns either NIL or a natural number
+greater than or equal to the integer length of @('x').  Its FGL binder meta
+rule checks whether @('x') is a symbolic integer and if so returns the count of
+its symbolic bits.</p>"
   :returns (bound acl2::maybe-natp :rule-classes :type-prescription)
   (and (natp ans)
        (<= (integer-length x) ans)
@@ -191,6 +242,8 @@
 
 
 (define check-equal (ans x y)
+  :short "FGL binder that checks whether X and Y are syntactically equal."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
   (and (equal x y)
        ans
        t)

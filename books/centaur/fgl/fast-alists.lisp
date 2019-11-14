@@ -244,3 +244,37 @@
 
 
 (local (install-fgl-metafns falprims))
+
+
+
+(defxdoc fgl-fast-alist-support
+  :parents (fgl)
+  :short "Support for hash-based fast alists in FGL"
+  :long "<p> FGL supports the use of fast alist primitives (see @(see
+acl2::fast-alists)) in its rewriter.  However, for accesses and updates to be
+fast, the user must ensure the following conditions are met:</p>
+
+<ul>
+
+<li>The keys of the alist are always concrete values.  (The values need not be
+concrete.)</li>
+
+<li>The alist must only be used in a single-threaded, imperative-style manner,
+just as with ACL2 fast alists.  For example, the following usage will cause a
+slow lookup to occur:</li>
+
+@({
+ (let* ((al1 (hons-acons 'a 'aa nil))
+        (al2 (hons-acons 'b 'bb al1)))
+     (hons-get 'a al1))
+ })
+
+<li>The alist must not be modified within an @('if') branch and then accessed
+outside that branch, unless care is taken to arrange the branch merging such
+that the keys of the alist remain concrete.</li>
+
+</ul>
+
+<p>For another approach to fast lookups in alists, see @(see fgl-array-support).</p>"
+  )
+

@@ -503,3 +503,40 @@
             (fgarray->alist :exec fgarray$c->alist :logic fgarray->alist$a)))
 
 
+(defxdoc fgarray
+  :parents (fgl-array-support)
+  :short "The abstract stobj interface on which FGL's array support is based"
+  :long "<p> An @('fgarray') is an abstract stobj whose logical form is an
+alist with natural number keys and whose implementation uses an array for fast
+lookups.  The fgarray interface is used in FGL for fast array access during rewriting.</p>
+
+<p>The supported interface functions are the following:</p>
+
+<ul>
+
+<li>@('(fgarray-get i fgarray)') gets the key/value pair associated with index
+@('i'), or @('nil') if it doesn't exist.  Logically equal to
+@('(hons-assoc-equal (nfix i) fgarray)').</li>
+
+<li>@('(fgarray-set i val fgarray)') sets the key @('i') to value @('val');
+logically equal to @('(cons (cons (nfix i) val) fgarray)').</li>
+
+<li>@('(fgarray-compress fgarray)') rearranges the alist representation so that
+the keys are in order with no duplicates.</li>
+
+<li>@('(fgarray-init size fgarray)') empties the fgarray and sets its backing
+array to the given size; logically equal to @('nil').</li>
+
+<li>@('(fgarray->alist fgarray)') returns the alist object of the fgarray.</li>
+</ul>
+
+<p>The stobj creator function is @('(create-fgarray)'), but as with all stobjs,
+this can only be invoked indirectly using @(see with-local-stobj).</p>
+
+<p>Implementation note: The implementation of the fgarray builds a real alist
+equal to the logical representation.  This is unnecessary for standalone use
+and is done so that FGL can ensure that the stobj storing the fgarray data is
+correctly in sync with the symbolic object representation.  Thus if all you
+want is a stobj array that is logically represented as an alist, it would be
+better to define a different abstract stobj without this feature.</p>")
+

@@ -39,9 +39,18 @@
 
 (fty::deffixequiv acl2::bool->bit$inline :args ((x booleanp)))
 
+(defxdoc fgl-bitvector
+  :parents (fgl-object)
+  :short "Bitvector representation in FGL"
+  :long "<p>The @(see g-integer) symbolic object kind in FGL uses a list of
+Boolean function objects (see @(see bfr)) representing the bits of the number.
+The representation is least-significant-bit first, sign-extended by the final
+bit.  See @(see bools->int) to convert between a concrete bitvector (list of
+Booleans) and an integer.</p>")
+
 ;; Get the integer value of a bitvector represented as a Boolean list.  LSB first.
 (define bools->int ((x boolean-listp))
-  :parents (fgl-object-eval)
+  :parents (fgl-object-eval fgl-bitvector)
   :short "Convert a list of Booleans into an integer."
   :long "<p>Produces a two's-complement integer from a list of bits,
 least-significant first.  The last element of the list determines the sign of
@@ -139,6 +148,7 @@ the value.  Some examples:</p>
       (eql x -1)))
 
 (define s-endp ((v true-listp))
+  :parents (fgl-bitvector)
   :short "Are we at the end of a signed bit vector?"
   :inline t
   ;; MBE just for a simpler logical definition
@@ -160,6 +170,7 @@ the value.  Some examples:</p>
 
 (define scdr ((v true-listp))
   :returns (cdr true-listp :rule-classes :type-prescription)
+  :parents (fgl-bitvector)
   :short "Like @(see logcdr) for signed bit vectors."
   :long "<p>For a signed bit vector, the final bit is the
 sign bit, which we must implicitly extend out to infinity.</p>"
@@ -244,6 +255,7 @@ sign bit, which we must implicitly extend out to infinity.</p>"
 
 
 (define first/rest/end ((x true-listp))
+  :parents (fgl-bitvector)
   :short "Deconstruct a signed bit vector."
   :enabled t
   (declare (xargs :guard t

@@ -508,7 +508,7 @@ where @('args') satisfies @('fgl-objectlist-p')</li>
 
 <li>@('status'), either @(':start'), @(':hyps'), @(':finish'), or @(':abort')</li>
 
-<li>@('val'), the return value from a successful rewrite</p>
+<li>@('val'), the return value from a successful rewrite</li>
 
 <li>@('failed-hyp'), the index of the hypothesis that failed or @('nil') if the
 rule application failed for some other reason</li>

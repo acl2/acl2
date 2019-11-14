@@ -52,7 +52,7 @@ aignet::aignet) package.</li>
 <li>Less functionality included in built-in primitives, but better able to be
 programmed using rewrite rules and user-provided extensions.</li>
 
-<li>Explicit representation of the entire interpreter state, potentially
+<li>Explicit representation of the entire interpreter state,
 allowing global simplifications (e.g. combinational-equivalence-preserving
 AIGNET transformations).</li>
 
@@ -97,9 +97,10 @@ of the usual ways of doing things in FGL are done differently in FGL.</p>
 <li>@(see fgl-debugging)</li>
 <li>@(see fgl-handling-if-then-elses)</li>
 <li>@(see fgl-interpreter-overview)</li>
-<li>@(see fgl-primitives)</li>
+<li>@(see fgl-primitive-and-meta-rules)</li>
 <li>@(see fgl-sat-check)</li>
 <li>@(see fgl-solving)</li>
+<li>@(see fgl-counterexamples)</li>
 </ul>
 ")
 
@@ -194,7 +195,26 @@ and rewrite other accessors to that -- e.g., use a rule like
 @('logbitp-const-index') to ensure that @('logbitp') calls are normalized
 correctly to @('(intcar (intcdr ...))') form.</p>
 
-<p>Check </p>
+<p>When taking the approach of normalizing typed variables to bit-blasted
+objects, it is important that the variable's correct type be assumed at each
+use of the variable.  That is, the assumption should be in a top-level
+hypothesis or else an @('if') test guarding each use of the variable (aside
+from the type assumption itself).  For example, the following probably
+works (depending what rules are installed):</p>
+ @({
+ (fgl-thm
+  (if (and (unsigned-byte-p 3 x) (unsigned-byte-p 3 y))
+      (equal (+ x y) (+ y x))
+     t))
+ })
+<p>But the following probably doesn't, or at least not by bitblasting:</p>
+@({
+ (fgl-thm
+  (if (not (equal (+ x y) (+ y x)))
+      (not (and (unsigned-byte-p 3 x) (unsigned-byte-p 3 y)))
+     t))
+ })
+
 
 
 ")
@@ -204,7 +224,8 @@ correctly to @('(intcar (intcdr ...))') form.</p>
   :short "Discussion of the logical justification for the @(see bind-var) feature."
   :long "<p>FGL's @(see bind-var) feature can be used to bind a free variable
 in a rewrite rule to some arbitrary value.  Here we discuss how the correctness
-of that feature may be formalized.</p>
+of that feature may be formalized.  Note we discuss this with respect to
+@('bind-var'), but it applies to binder functions generally.</p>
 
 <h3>Requirements and Basic Idea</h3>
 
@@ -226,7 +247,7 @@ values we want, because the unifying substitution contains all variables of the
 LHS, so extending the unifying substitution to include additional variables
 won't change the value of the LHS under that substitution.</p>
 
-<h3>Technical Problems and Solutions</h3>
+<h3>Technical Problem and Solutions</h3>
 <p>There is a technical problem with this when these free variables appear
 inside lambda bodies.  ACL2 term translation ensures that all lambdas bind all
 the free variables of their bodies -- when it translates a lambda that has free
@@ -522,6 +543,12 @@ that would normally be unsound.  This is allowable in this context because
 second argument is irrelevant.  It is allowable to bind anything to the
 variable if it is not yet bound **** </li>
 
+<li>For @('binder'), the argument must be a function call whose first argument
+is a variable, and that variable must be free in the current stack frame.  The
+rest of that function's arguments are recursively interpreted, and then binder
+rewrite/meta rules are applied to choose a binding for the free variable based
+on the rest of the arguments.</li>
+
 <li>For @('abort-rewrite'), the interpreter returns @('nil') and inserts a
 special error keyword in the interpreter state's @('errmsg') field, which will
 get caught when returning from the current major stack frame.</li>
@@ -587,14 +614,14 @@ g-concrete) kind, then try to execute the function using @(see
 magic-ev-fncall).  If it runs successfuly, return the result as a
 @('g-concrete') object.</li>
 
-<li>Otherwise try applying each of the rewrite rules enabled for that function
-in the @('fgl-rewrite-rules') table using @('fgl-rewrite-try-rule'); see @(see
-fgl-rewrite-rules).  If any of those rules succeeds, return the symbolic object
-produced by recursively interpreting the RHS of the rule under the unifying
-substitution.</li>
+<li>Otherwise try applying each of the rules enabled for that function in the
+@('fgl-rewrite-rules') table using @('fgl-rewrite-try-rule').  These may be
+rewrite, meta, or primitive rules. If any of those rules succeeds, return the
+symbolic object produced by recursively interpreting the RHS of the rule under
+the unifying substitution.</li>
 
 <li>Otherwise try executing a primitive associated with that function; see
-@(see fgl-primitives).  If successful, return the value from that primitive.</li>
+@(see fgl-primitive-and-meta-rules).  If successful, return the value from that primitive.</li>
 
 <li>Otherwise, if there exists a rule with rune @('(:definition fnname)'), or
 if there are rewrite/definition rules for that function listed in the
@@ -618,29 +645,40 @@ a new Boolean variable representing some term.</p>
 
 <h3>Applying Rewrite Rules</h3>
 
-<p>@('fGl-rewrite-try-rule') takes a rewrite rule object and a @('g-apply') FGL
-object.  It first tries to unify the LHS of the rule arguments with the input
-objects.  If successful, then it tries to relieve the hyps of the rule by
-calling @('fgl-interp-test') on each one and checking that the result
-is (syntactically) constant-true.  It also checks @('syntaxp') and
+<p>@('fgl-rewrite-try-rule') takes a rule, a function name, and a list of
+arguments which are FGL symbolic objects.  The rule may be a rewrite, meta, or
+primitive rule.  For a primitive rule, the primitive function indicated by the
+rule is run on the function and arguments, and we return the object it produces
+if successful.  For a meta rule, the metafunction indicated is run, and if
+successful we recursively interpret the term returned under the bindings
+returned.  For a rewrite rule, we first try to unify the LHS of the rule with
+the input function/arguments.  If successful, we then try to relieve the hyps
+of the rule by calling @('fgl-interp-test') on each one and checking that the
+result is (syntactically) constant-true.  We also check @('syntaxp') and
 @('bind-free') hyps, the latter of which might extend the unifying substitution
 with some free variable bindings.</p>
 
-<p>If the hypotheses are all relieved, then it recurs on the conclusion using
-@('fgl-interp-term') and returns the result unless there were errors recorded in
-the interpreter state.  If any errors exist, it returns failure; it also
-cancels the particular error produced by @('abort-rewrite'), so that the result
-of @('abort-rewrite') is simply to fail that particular rewrite rule
-attempt.</p>
+<p>If the hypotheses are all relieved, then we recurs on the conclusion using
+@('fgl-interp-term') and return the result unless there were errors recorded in
+the interpreter state.  Errors are passed up to the caller except for the
+special error produced by @('abort-rewrite'), which only causes the current
+rule application to fail.</p>
 
 <p>During this process, various helper functions are also called to support
 tracing (see @(see fgl-rewrite-tracing)) and accumulated-persistence-style
 profiling, but none of these are logically relevant.</p>
 
+<p>Application of binder rules is similar, but with slightly different logical
+contracts for the rules and very slightly different behavior.  For binder
+rules, we unify the argument list with the argument list of the LHS of the
+rule, omitting the initial argument of the LHS which must be the variable to be
+bound.  Binder rules also specify the equivalence context under which the RHS
+must be rewritten.</p>
+
 
 <h3>Simplifying IF Tests</h3>
 
-<p>@('fGl-interp-simplify-if-test') takes a symbolic object and attempts to
+<p>@('fgl-interp-simplify-if-test') takes a symbolic object and attempts to
 reduce it to an IFF-equivalent Boolean formula.  For some varieties of symbolic
 object, this is trivial: @(':g-concrete') objects' truth value is just the
 truth value of the quoted value, @('g-integer') and @('g-cons') objects are
@@ -673,7 +711,7 @@ Boolean variable.</p>
 
 <h3>Merging IF Branches</h3>
 
-<p>@('fGl-interp-merge-branches') takes a Boolean formula for an IF test and
+<p>@('fgl-interp-merge-branches') takes a Boolean formula for an IF test and
 symbolic objects for the then and else branch values, and returns a new
 symbolic object encapsulating the if-then-else.</p>
 
@@ -734,13 +772,13 @@ default attachment of @('interp-st-sat-check') is @(see fgl-sat-config).</p>
   :long "<p>FGL rewrite rules are really just ACL2 rewrite rules.  But this
 doesn't mean that any good ACL2 rewrite rule is a good FGL rewrite rule, or
 vice versa.  A particularly important difference is that @(see syntaxp) and
-@(see bind-free) forms receive <see topic='@(url fgl-object)'>GL symbolic
+@(see bind-free) forms receive <see topic='@(url fgl-object)'>FGL symbolic
 objects</see> as their inputs, rather than ACL2 terms.  FGL rewrite rules also
-allow a special form called @(see bind-var) which allows free variables to
-be bound as with @(see bind-free), but in the RHS of the rewrite rule rather
-than in the hyps.  They additionally support a form @(see abort-rewrite) which
-causes the application of the rule to be aborted when encountered in the RHS,
-similarly to if a hypothesis was not relieved.</p>
+allow special constructs @(see bind-var), @(see binder), and @(see syntax-bind)
+which allow free variables to be bound as with @(see bind-free), but in the RHS
+of the rewrite rule rather than in the hyps.  They additionally support a form
+@(see abort-rewrite) which causes the application of the rule to be aborted
+when encountered in the RHS, similarly to if a hypothesis was not relieved.</p>
 
 <h3>Creating and Removing FGL Rewrite Rules</h3>
 <p>An FGL rewrite rule is an ACL2 rewrite rule.  You can register an existing
@@ -1237,7 +1275,7 @@ from the ACL2 loop or within the raw Lisp break:</p>
  (f-put-global ':my-stack (fgl::interp-st-extract-stack fgl::interp-st) state)
 
  ;; From within a raw Lisp break, save the stack as a defparameter:
- (defparameter *my-stack* (fgl::interp-st-extract-stack fgl::*the-live-interp-st*))
+ (defparameter *my-stack* (fgl::interp-st-extract-stack (cdr (assoc 'fgl::interp-st *user-stobj-alist*)))
  })
 
 <p>Note: be sure NOT to do the latter when in a raw Lisp break resulting from a
@@ -1282,28 +1320,43 @@ other rules, happen during a top-level attempted application of the rule.</p>
 ")
 
 
-(defxdoc fgl-primitives
+(defxdoc fgl-primitive-and-meta-rules
   :parents (fgl)
   :short "Adding fast-executing primitive routines to FGL."
   :long "
 
 <p>FGL is geared toward doing most reasoning via rewrite rules.  But sometimes
 rewrite rules aren't fast enough or are otherwise inadequate for something we
-want to do.  Therefore, FGL supports adding \"primitives\", which are
-procedures that interpret a particular function.</p>
+want to do.  For these cases, FGL supports two kinds of custom reasoning
+procedures, \"metafunctions\" and \"primitives\".  Metafunctions are more
+general than primitives and we will mostly discuss them here.  A metafunction
+takes a function and argument list as input and produces a term and binding
+alist as output.  A primitive is a specialization of a metafunction that
+produces a symbolic object as output rather than a term and binding alist.
+When applying a metafunction, the term returned is symbolically interpreted
+under the returned bindings, whereas when applying a primitive the symbolic
+object is returned directly.</p>
 
-<p>A primitive for a function @('f') is a function that takes an argument list,
-interpreter state, and state, and returns a triple @('(successp ans
-interp-st)'), where successp is a flag indicating whether the answer is valid,
-and if so, @('ans') must be a symbolic object that evaluates to @('f') of the
-evaluation of the arguments.  The returned @('interp-st') must satisfy several
-constraints showing that it was not invalidly modified; usually, all a
-primitive should do with the @('interp-st') is build new gates onto the
-@('aignet') of its @('logicman') (see @(see fgl-internals)).</p>
+<p>A metafunction is a function that takes a function name @('f'), argument
+list (symbolic objects), interpreter state, and state, and returns @('(mv
+successp rhs-term bindings interp-st state)'), where successp is a flag
+indicating whether the answer is valid.  If so, @('rhs-term') must evaluate
+under the evaluation of @('bindings') to @('f') of the evaluations of the
+arguments.  The returned @('interp-st') must satisfy several constraints
+showing that it was not invalidly modified; usually, all a primitive should do
+with the @('interp-st') is build new gates onto the @('aignet') of its
+@('logicman') (see @(see fgl-internals)).  Primitives take the same inputs but
+return @('(mv successp obj interp-st state)'), where the evaluation of @('obj')
+must equal @('f') of the evaluations of the arguments.</p>
 
-<p>New primitives can be defined with the form @('def-fgl-primitive').  This is
-not enough to install the new primitives; rather, after the primitives are
-defined, they must be installed with @('install-fgl-primitives').</p>
+<p>New metafunctions can be defined with the form @('def-fgl-meta') and new
+primitives with @('def-fgl-primitive').  However, before the newly defined
+metafunctions/primitives may be used, they must be installed into the current
+metafunction and primitive dispatcher function using @('install-fgl-metafns).
+This creates a new function that wraps all existing metafunctions into a case
+statement, and attaches it to the stub @('fgl-meta-fncall-stub'); it creates a
+similar dispatcher function for primitives.</p>
+
 
 <h3>Example</h3>
 
@@ -1334,7 +1387,7 @@ primitive function, named @('fgl-intcar-primitive'), in the table
 @('fgl-primitives').</p>
 
 <p>To install the primitives listed in @('fgl-primitives'), use
-@('(install-fgl-primitives name)'), which defines a new function
+@('(install-fgl-metafns name)'), which defines a new function
 @('name-primitive-fncall') that takes a function symbol, argument list,
 interp-st, and state, and dispatches based on the function symbol to that
 function's primitive, if any (if not, it returns unsuccessful).  This function
@@ -1581,4 +1634,119 @@ there exists another triple that is missing from the list.</p>
 
 
 (defxdoc fgl-internals
-  :parents (fgl))
+  :parents (fgl)
+  :short "Description of FGL's interpreter state object."
+  :long
+"<p>The FGL interpreter state is a stobj containing, as the name suggests,
+essentially the entire state of the FGL interpreter.  We list and describe
+several of the major components of this object.</p>
+
+<ul>
+
+<li>@('stack'): a representation of the interpreter stack; see @(see
+fgl-stack).  This is a nested abstract stobj whose logical representation is a
+@(see major-stack) object but whose implementation uses arrays for efficiency.</li>
+
+<li>@('logicman'): a nested stobj containing several subfields geared toward
+Boolean logic: primarily an AIG (see @(see aignet::aignet)), an array of @(see
+ipasir::ipasir) incremental SAT solver objects, and the mappings between AIG
+literals and CNF literals for each of the ipasir instances.</li>
+
+<li>@('bvar-db'): a mapping between Boolean variable indices (AIG primary input
+numbers) and the symbolic objects they represent.  See @(see
+fgl-getting-bits-from-objects) for a discussion of how and when Boolean
+variables are derived from terms.</li>
+
+<li>@('pathcond'): a stack of Boolean constraints (AIG literals) representing
+the current path condition.  May or may not be used as a constraint on SAT
+checks.</li>
+
+</ul>
+
+")
+;; <li>@('constraint'): a stack of Boolean constraints (AIG literals) similar to
+;; the pathcond, but instead representing known-true constraints produced by
+;; constraint rules.</li>
+
+(defxdoc fgl-counterexamples
+  :parents (fgl)
+  :short "Generating counterexamples from SAT checks in FGL"
+  :long "<p>When FGL calls a SAT solver and it returns a satisfying assignment,
+what we actually have is an assignment for the Boolean variables associated
+with various symbolic objects in the Boolean variable database.  Often what we
+really want is an assignment to the original variables of the theorem, or to
+certain objects within our local context.  This topic discusses FGL's method of
+deriving a term-level counterexample from a Boolean-level counterexample.</p>
+
+<p>Note that what we are trying to do is not always possible! The underlying
+problem is undecidable, and it depends very much on the set of rules in use
+whether there might be interdependencies among the Boolean variables such that
+the satisfying assignment for the SAT problem can't be realized in terms of the
+theorem variables.  For example, if one Boolean variable is associated with
+@('(logbitp 0 x)') and assigned @('T') but another variable is associated with
+@('(intcar x)') and assigned @('NIL'), that assignment can't be realized
+because the two expressions are equal.  This topic as well as @(see
+fgl-getting-bits-from-objects) offer advice for avoiding these
+interdependencies and ensuring that term-level counterexamples may be easily
+derived from Boolean satisfying assignments.</p>
+
+<p>The input to our computation is essentially an assignment of Boolean values
+to various FGL objects, namely the ones associated with Boolean variables in
+the Boolean variable database.  More specifically, we have the @('bvar-db')
+mapping Boolean variables to FGL objects and an @('env'), the satisfying
+assignment for these Boolean variables; but we can view this as an assignment
+of values to FGL objects instead, since the names of the Boolean variables are
+interchangeable.</p>
+
+
+<h3>Sketch of Algorithm</h3>
+
+<p>We begin with an assignment @('a') of values to FGL objects, derived from the
+@('bvar-db') and @('env').  We want to extend this assignment so that
+eventually it includes values for all the theorem variables that are
+consistent, i.e. the evaluations of all the objects in @('a') match their
+associated values.</p>
+
+<p>The primary way of extending @('a') with new assignment pairs is to apply
+certain rules that say how we may derive new assignments from existing ones.
+These rules may be added by users.  The following example rules illustrate two
+common types:</p>
+
+@({
+ (def-ctrex-rule intcar-intcdr-ctrex-elim
+   :match ((car (intcar x))
+           (cdr (intcdr x)))
+   :assign (intcons car cdr)
+   :assigned-var x
+   :ruletype :elim)
+
+ (def-ctrex-rule assoc-equal-ctrex-rule
+   :match ((pair (assoc-equal k x)))
+   :assign (put-assoc-equal k (cdr pair) x)
+   :assigned-var x
+   :ruletype :property)
+ })
+
+<p>The first rule says that if we have an assignment of a value to some object
+matching @('(intcar x)') (that is, a @(':g-apply') FGL object whose function
+symbol is @('intcar')) and an assignment to some other object matching
+@('(intcdr x)') (that is, a @(':g-apply') object whose function symbol is
+@('intcdr') and whose argument is the same as that of the @('intcar') object),
+then we can derive a value for @('x') (the shared argument of the two objects),
+namely the @('intcons') of the two values.</p>
+
+<p>The second rule says that if we have an assignment of a value @('pair') to
+@('(assoc-equal k x)'), then we can modify @('x') to accomodate that by setting
+it to @('(put-assoc-equal k (cdr pair) x)').  The @(':property') ruletype, as
+distinguished from the @(':elim') ruletype of the previous rule, implies that
+this rule can be applied several times to update the assignment to a term
+@('x'); i.e. we can build up an alist given the values assigned to several
+different keys.</p>
+
+<p>Another method of adding pairs is to copy values on the basis of
+equivalences that are assumed.  That is, if @('(equiv x y)') is assigned @('T')
+and @('y') is assigned some value, then assign @('x') that same value.</p>
+
+
+
+")

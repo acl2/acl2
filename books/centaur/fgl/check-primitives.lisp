@@ -90,39 +90,32 @@
          :hints(("Goal" :in-theory (enable fgl-object-eval fgl-object-kind g-concrete->val)))))
 
 (def-fgl-binder-meta check-integerp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-integerp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (integerp arg.val)
-              :g-integer t
-              :g-apply (or (and (eq arg.fn 'ifix) (eql (len arg.args) 1))
-                           (eq arg.fn 'intcdr)
-                           (eq arg.fn 'intcons))
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (integerp arg.val)
+          :g-integer t
+          :g-apply (or (and (eq arg.fn 'ifix) (eql (len arg.args) 1))
+                       (eq arg.fn 'intcdr)
+                       (eq arg.fn 'intcons))
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
-  :prepwork ((local (in-theory (enable check-integerp)))))
+  :prepwork ((local (in-theory (enable check-integerp))))
+  :origfn check-integerp :formals (arg))
 
-(add-fgl-binder-meta check-integerp check-integerp-binder)
 
 
 
 
 (def-fgl-binder-meta check-natp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-natp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (natp arg.val)
-              :g-integer (eq (car (last arg.bits)) nil)
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (natp arg.val)
+          :g-integer (eq (car (last arg.bits)) nil)
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-natp :formals (arg)
   :prepwork ((local (in-theory (enable check-natp)))
              (local (defthm bools->int-less-than-0
                       (iff (< (bools->int x) 0)
@@ -133,25 +126,20 @@
                                (not (car (last (gobj-bfr-list-eval x env)))))
                       :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))))
 
-(add-fgl-binder-meta check-natp check-natp-binder)
-
 
 (def-fgl-binder-meta check-int-endp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-int-endp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (or (not (integerp arg.val))
-                              (int-endp arg.val))
-              :g-integer (or (atom arg.bits)
-                             (atom (cdr arg.bits)))
-              :g-boolean t
-              :g-cons t
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (or (not (integerp arg.val))
+                          (int-endp arg.val))
+          :g-integer (or (atom arg.bits)
+                         (atom (cdr arg.bits)))
+          :g-boolean t
+          :g-cons t
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-int-endp :formals (arg)
   :prepwork ((local (in-theory (enable check-int-endp)))
              (local (defthm int-endp-of-bools->int
                       (implies (atom (cdr x))
@@ -166,26 +154,21 @@
                                (int-endp x))
                       :hints(("Goal" :in-theory (enable int-endp)))))))
 
-(add-fgl-binder-meta check-int-endp check-int-endp-binder)
-
 
 (def-fgl-binder-meta check-bitp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-bitp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (bitp arg.val)
-              :g-integer (or (endp arg.bits)
-                             (and (endp (cdr arg.bits))
-                                  (not (car arg.bits)))
-                             (and (consp (cdr arg.bits))
-                                  (endp (cddr arg.bits))
-                                  (not (cadr arg.bits))))
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (bitp arg.val)
+          :g-integer (or (endp arg.bits)
+                         (and (endp (cdr arg.bits))
+                              (not (car arg.bits)))
+                         (and (consp (cdr arg.bits))
+                              (endp (cddr arg.bits))
+                              (not (cadr arg.bits))))
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-bitp :formals (arg)
   :prepwork ((local (in-theory (enable check-bitp)))
              (local (defthm bitp-of-bools->int
                       (implies (or (atom x)
@@ -209,28 +192,22 @@
                                (not (cadr (gobj-bfr-list-eval x env))))
                       :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))))
 
-(add-fgl-binder-meta check-bitp check-bitp-binder)
-
 
 
 (def-fgl-binder-meta check-signed-byte-p-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-signed-byte-p)
-           (eql (len args) 2))
-      (b* ((len (car args))
-           (arg (cadr args))
-           ((unless (fgl-object-case len :g-concrete))
-            (mv nil nil nil nil interp-st state))
-           (len (g-concrete->val len))
-           ((unless (posp len))
-            (mv t 'ans '((ans . nil)) nil interp-st state))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (signed-byte-p len arg.val)
-              :g-integer (<= (len arg.bits) len)
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* (((unless (fgl-object-case len :g-concrete))
+        (mv nil nil nil nil interp-st state))
+       (len (g-concrete->val len))
+       ((unless (posp len))
+        (mv t 'ans '((ans . nil)) nil interp-st state))
+       (ans
+        (fgl-object-case arg
+          :g-concrete (signed-byte-p len arg.val)
+          :g-integer (<= (len arg.bits) len)
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-signed-byte-p :formals (len arg)
   :prepwork ((local (in-theory (enable check-signed-byte-p)))
              (local (defun signed-byte-p-of-bools->int-ind (n x)
                       (if (or (zp n) (eql n 1))
@@ -250,28 +227,22 @@
                       (equal (len (gobj-bfr-list-eval x env))
                              (len x))))))
 
-(add-fgl-binder-meta check-signed-byte-p check-signed-byte-p-binder)
-
 
 (def-fgl-binder-meta check-unsigned-byte-p-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-unsigned-byte-p)
-           (eql (len args) 2))
-      (b* ((len (car args))
-           (arg (cadr args))
-           ((unless (fgl-object-case len :g-concrete))
-            (mv nil nil nil nil interp-st state))
-           (len (g-concrete->val len))
-           ((unless (natp len))
-            (mv t 'ans '((ans . nil)) nil interp-st state))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (unsigned-byte-p len arg.val)
-              :g-integer (and (<= (len arg.bits) (+ 1 len))
-                              (not (car (last arg.bits))))
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* (((unless (fgl-object-case len :g-concrete))
+        (mv nil nil nil nil interp-st state))
+       (len (g-concrete->val len))
+       ((unless (natp len))
+        (mv t 'ans '((ans . nil)) nil interp-st state))
+       (ans
+        (fgl-object-case arg
+          :g-concrete (unsigned-byte-p len arg.val)
+          :g-integer (and (<= (len arg.bits) (+ 1 len))
+                          (not (car (last arg.bits))))
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-unsigned-byte-p :formals (len arg)
   :prepwork ((local (in-theory (e/d (check-unsigned-byte-p)
                                     (unsigned-byte-p))))
              (local (defun unsigned-byte-p-of-bools->int-ind (n x)
@@ -293,117 +264,87 @@
                                (not (car (last (gobj-bfr-list-eval x env)))))
                       :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))))
 
-(add-fgl-binder-meta check-unsigned-byte-p check-unsigned-byte-p-binder)
-
 
 (def-fgl-binder-meta check-non-integerp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-non-integerp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (not (integerp arg.val))
-              :g-integer nil
-              :g-boolean t
-              :g-cons t
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (not (integerp arg.val))
+          :g-integer nil
+          :g-boolean t
+          :g-cons t
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-non-integerp :formals (arg)
   :prepwork ((local (in-theory (enable check-non-integerp)))))
-
-(add-fgl-binder-meta check-non-integerp check-non-integerp-binder)
 
 
 (def-fgl-binder-meta check-consp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-consp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (consp arg.val)
-              :g-integer nil
-              :g-boolean nil
-              :g-cons t
-              :g-apply (eq arg.fn 'cons)
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (consp arg.val)
+          :g-integer nil
+          :g-boolean nil
+          :g-cons t
+          :g-apply (eq arg.fn 'cons)
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-consp :formals (arg)
   :prepwork ((local (in-theory (enable check-consp)))))
 
-(add-fgl-binder-meta check-consp check-consp-binder)
-
 (def-fgl-binder-meta check-non-consp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-non-consp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (not (consp arg.val))
-              :g-integer t
-              :g-boolean t
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (not (consp arg.val))
+          :g-integer t
+          :g-boolean t
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-non-consp :formals (arg)
   :prepwork ((local (in-theory (enable check-non-consp)))))
-
-(add-fgl-binder-meta check-non-consp check-non-consp-binder)
 
 
 (def-fgl-binder-meta check-booleanp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-booleanp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (booleanp arg.val)
-              :g-boolean t
-              :g-apply (or (eq arg.fn 'equal)
-                           (eq arg.fn 'intcar)
-                           (eq arg.fn 'integerp))
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (booleanp arg.val)
+          :g-boolean t
+          :g-apply (or (eq arg.fn 'equal)
+                       (eq arg.fn 'intcar)
+                       (eq arg.fn 'integerp))
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-booleanp :formals (arg)
   :prepwork ((local (in-theory (enable check-booleanp)))))
 
-(add-fgl-binder-meta check-booleanp check-booleanp-binder)
-
 (def-fgl-binder-meta check-non-booleanp-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-non-booleanp)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (not (booleanp arg.val))
-              :g-integer t
-              :g-cons t
-              :otherwise nil)))
-        (mv t 'ans (if ans '((ans . t)) '((ans . nil))) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (not (booleanp arg.val))
+          :g-integer t
+          :g-cons t
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn check-non-booleanp :formals (arg)
   :prepwork ((local (in-theory (enable check-non-booleanp)))))
-
-(add-fgl-binder-meta check-non-booleanp check-non-booleanp-binder)
 
 (local (in-theory (enable fgl-object-p-when-integerp)))
 
 (def-fgl-binder-meta integer-length-bound-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'integer-length-bound)
-           (eql (len args) 1))
-      (b* ((arg (car args))
-           (ans
-            (fgl-object-case arg
-              :g-concrete (integer-length (ifix arg.val))
-              :g-boolean 0
-              :g-cons 0
-              :g-integer (max 0 (1- (len arg.bits)))
-              :otherwise nil)))
-        (mv t 'ans `((ans . ,ans)) nil interp-st state))
-    (mv nil nil nil nil interp-st state))
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (integer-length (ifix arg.val))
+          :g-boolean 0
+          :g-cons 0
+          :g-integer (max 0 (1- (len arg.bits)))
+          :otherwise nil)))
+    (mv t (kwote ans) nil nil interp-st state))
   :formula-check checks-formula-checks
+  :origfn integer-length-bound :formals (arg)
   :prepwork ((local (in-theory (enable integer-length-bound
                                        fgl-object-p-when-integerp
                                        fgl-object-kind-when-integerp
@@ -418,21 +359,14 @@
                                                         bitops::integer-length**)))
                       :rule-classes ((:linear :trigger-terms ((integer-length (bools->int x)))))))))
 
-(add-fgl-binder-meta integer-length-bound integer-length-bound-binder)
-
 
 
 
 (def-fgl-binder-meta check-equal-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'check-equal)
-           (eql (len args) 2))
-      (mv t 'ans (if (equal (fgl-object-fix (car args))
-                            (fgl-object-fix (cadr args)))
-                     '((ans . t))
-                   '((ans . nil)))
-          nil interp-st state)
-    (mv nil nil nil nil interp-st state))
+  (mv t  (if (equal (fgl-object-fix x)
+                    (fgl-object-fix y))
+             ''t ''nil)
+      nil nil interp-st state)
   :formula-check checks-formula-checks
+  :origfn check-equal :formals (x y)
   :prepwork ((local (in-theory (enable check-equal)))))
-
-(add-fgl-binder-meta check-equal check-equal-binder)

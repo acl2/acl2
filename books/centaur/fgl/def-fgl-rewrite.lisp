@@ -31,6 +31,8 @@
 (in-package "FGL")
 (include-book "binder-rules")
 
+(local (xdoc::set-default-parents fgl-rewrite-rules))
+
 ;; We want to add/remove runes from the fgl-rewrite-rules and
 ;; fgl-branch-merge-rules tables.  To do this properly, we need to know which
 ;; leading function symbols (for rewrite rules) and branch function symbols
@@ -314,36 +316,137 @@
                            world)))
 
 
+(defxdoc add-fgl-rewrites
+  :short "Enable some rewrite rules for use in FGL"
+  :long "<p>Adds the given rewrite rule runes to the @('fgl-rewrite-rules') table so
+that each such rule will be attempted when terms with its LHS's leading
+function symbol is encountered.  The exact form of the rule that is used
+depends on the invocation: if a name given is simply a symbol, then the formula
+of that theorem or function name is used.  If a name is instead a @(':rewrite')
+or @(':definition') rune, then the corresponding lemma is used.  A
+@(':formula') rune (which is not a valid ACL2 rune but is a valid FGL rune) is
+treated the same as a bare symbol.</p>")
+
+(defmacro add-fgl-rewrites (&rest names)
+  `(table fgl-rewrite-rules
+          nil
+          (add-fgl-rewrites-fn ',names (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
+          :clear))
+
+(defxdoc add-fgl-rewrite
+  :parents (add-fgl-rewrites)
+  :short "Alias for @('add-fgl-rewrites') that just takes one name.")
 
 (defmacro add-fgl-rewrite (name)
+  `(add-fgl-rewrites ,name))
+
+(defxdoc remove-fgl-rewrites
+  :short "Disable some rewrite rules' use in FGL."
+  :long "<p>Removes the given rewrite rule runes from the @('fgl-rewrite-rules') table
+so that they will not be used in FGL.  See @(see add-fgl-rewrites) for details on
+rewrite rule runes recognized in FGL.</p>")
+
+(defmacro remove-fgl-rewrites (&rest names)
   `(table fgl-rewrite-rules
           nil
-          (add-fgl-rewrite-fn ',name (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
+          (remove-fgl-rewrites-fn ',names (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
           :clear))
+
+(defxdoc remove-fgl-rewrite
+  :parents (remove-fgl-rewrites)
+  :short "Alias for @(see remove-fgl-rewrites) that just takes one name.")
 
 (defmacro remove-fgl-rewrite (name)
-  `(table fgl-rewrite-rules
+  `(remove-fgl-rewrites ,name))
+
+(defxdoc add-fgl-branch-merges
+  :short "Enable some rewrite rules's use for branch merging in FGL."
+  :long "<p>Adds the given rewrite rule runes to the @('fgl-branch-merge-rules) table so
+that they can be used to merge @('if') branches in FGL. See @(see
+add-fgl-rewrites) for details on rewrite rule runes recognized in FGL.  Each rule
+must have as its LHS a call of @('if') with a function call as its @('then')
+branch.</p>")
+
+
+(defmacro add-fgl-branch-merges (&rest names)
+  `(table fgl-branch-merge-rules
           nil
-          (remove-fgl-rewrite-fn ',name (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
+          (add-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
           :clear))
+
+(defxdoc add-fgl-branch-merge
+  :parents (add-fgl-branch-merges)
+  :short "Alias for @(see add-fgl-branch-merges) that just takes one name.")
 
 (defmacro add-fgl-branch-merge (name)
+  `(add-fgl-branch-merges ,name))
+
+(defxdoc remove-fgl-branch-merges
+  :short "Disable some rewrite rules' use for branch merging in FGL."
+  :long "<p>Removes the given rewrite rule runes from the
+@('fgl-branch-merge-rules) table so that they won't be used to merge @('if')
+branches in FGL. See @(see add-fgl-rewrites) for details on rewrite rule runes
+recognized in FGL.</p>")
+
+
+(defmacro remove-fgl-branch-merges (&rest names)
   `(table fgl-branch-merge-rules
           nil
-          (add-fgl-branch-merge-fn ',name (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
+          (remove-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
           :clear))
+
+(defxdoc remove-fgl-branch-merge
+  :parents (remove-fgl-branch-merges)
+  :short "Alias for @(see remove-fgl-branch-merges) that just takes one name.")
 
 (defmacro remove-fgl-branch-merge (name)
-  `(table fgl-branch-merge-rules
-          nil
-          (remove-fgl-branch-merge-fn ',name (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
-          :clear))
+  `(remove-fgl-branch-merges ,name))
 
-(defmacro add-fgl-brewrite (name)
+
+(defxdoc add-fgl-brewrites
+  :short "Enable some binder rewrite rules for use in FGL"
+  :long "<p>Adds the given binder rewrite rule runes to the
+@('fgl-binder-rules') table so that each such rule will be attempted when terms
+with its LHS's leading function symbol is encountered.  The exact form of the
+rule that is used depends on the invocation: if the name given is simply a
+symbol, then the formula of that theorem or function name is used.  If the name
+is instead a @(':rewrite') rune, then the corresponding lemma is used.  A
+@(':formula') rune (which is not a valid ACL2 rune but is a valid FGL rune) is
+treated the same as a bare symbol.</p>
+
+<p>The literal runes stored in the table are slightly different than the ones
+accepted as input: a formula rune is stored as @('(:bformula name)') whereas a
+rewrite rune is stored as @('(:brewrite name)').</p>")
+
+
+(defmacro add-fgl-brewrites (&rest names)
   `(table fgl-binder-rules
           nil
-          (add-fgl-brewrite-fn ',name (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
+          (add-fgl-brewrites-fn ',names (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
           :clear))
+
+(defxdoc add-fgl-brewrite
+  :parents (add-fgl-brewrites)
+  :short "Alias for @(see add-fgl-brewrites) that just takes one name.")
+
+(defmacro add-fgl-brewrite (name)
+  `(add-fgl-brewrites ,name))
+
+(defxdoc remove-fgl-brewrites
+  :short "Disable some binder rewrite rules' use in FGL."
+  :long "<p>Removes the given binder rewrite rule runes from the @('fgl-binder-rules')
+table so that they won't be used in FGL. See @(see add-fgl-brewrites) for details
+on binder rewrite rule runes recognized in FGL.</p>")
+
+(defmacro remove-fgl-brewrites (&rest names)
+  `(table fgl-binder-rules
+          nil
+          (remove-fgl-brewrites-fn ',names (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
+          :clear))
+
+(defxdoc remove-fgl-brewrite
+  :parents (remove-fgl-brewrites)
+  :short "Alias for @(see remove-fgl-brewrites) that just takes one name.")
 
 (defmacro remove-fgl-brewrite (name)
   `(table fgl-binder-rules
@@ -352,41 +455,7 @@
           :clear))
 
 
-(defmacro add-fgl-rewrites (&rest names)
-  `(table fgl-rewrite-rules
-          nil
-          (add-fgl-rewrites-fn ',names (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
-          :clear))
 
-(defmacro remove-fgl-rewrites (&rest names)
-  `(table fgl-rewrite-rules
-          nil
-          (remove-fgl-rewrites-fn ',names (make-fast-alist (table-alist 'fgl-rewrite-rules world)) world)
-          :clear))
-
-(defmacro add-fgl-branch-merges (&rest names)
-  `(table fgl-branch-merge-rules
-          nil
-          (add-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
-          :clear))
-
-(defmacro remove-fgl-branch-merges (&rest names)
-  `(table fgl-branch-merge-rules
-          nil
-          (remove-fgl-branch-merges-fn ',names (make-fast-alist (table-alist 'fgl-branch-merge-rules world)) world)
-          :clear))
-
-(defmacro add-fgl-brewrites (&rest names)
-  `(table fgl-binder-rules
-          nil
-          (add-fgl-brewrites-fn ',names (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
-          :clear))
-
-(defmacro remove-fgl-brewrites (&rest names)
-  `(table fgl-binder-rules
-          nil
-          (remove-fgl-brewrites-fn ',names (make-fast-alist (table-alist 'fgl-binder-rules world)) world)
-          :clear))
 
 (defmacro clean-fgl-rewrite-table ()
   `(table fgl-rewrite-rules
@@ -406,6 +475,20 @@
           (fast-alist-clean (make-fast-alist (table-alist 'fgl-binder-rules world)))
           :clear))
 
+(defxdoc add-fgl-primitive
+  :short "Register a primitive function for use in rewriting calls of a trigger
+          function in FGL."
+  :long "<p>This is invoked as follows:</p>
+@({
+ (add-fgl-primitive trigger-fn primitive-fn)
+ })
+
+<p>This invocation adds an entry in the @('fgl-rewrite-rules') table that
+allows @('primitive-fn') to be tried when symbolically interpreting
+@('trigger-fn') invocations.  For this to work, @('primitive-fn') must be
+defined as an FGL primitive and installed in the current attachment for
+@('fgl-primitive-fncall-stub') using the @('install-fgl-metafns') event.</p>")
+
 
 (defmacro add-fgl-primitive (trigger-fn primitive-fn)
   `(table fgl-rewrite-rules
@@ -415,6 +498,17 @@
                                           (make-fast-alist (table-alist 'fgl-rewrite-rules world))
                                           world)
           :clear))
+
+(defxdoc remove-fgl-primitive
+  :short "Deregister a primitive function for use in FGL."
+  :long "<p>This is invoked as follows:</p>
+@({
+ (remove-fgl-primitive trigger-fn primitive-fn)
+ })
+
+<p>This invocation removes the entry in the @('fgl-rewrite-rules') table that
+allows @('primitive-fn') to be used in symbolic interpretation of
+@('trigger-fn') invocations, preventing the use of @('primitive-fn').</p>")
 
 (defmacro remove-fgl-primitive (trigger-fn primitive-fn)
   `(table fgl-rewrite-rules
@@ -433,6 +527,20 @@
                                           world)
           :clear))
 
+(defxdoc add-fgl-meta
+  :short "Register a metafunction for use in rewriting calls of a trigger function
+          in FGL."
+  :long "<p>This is invoked as follows:</p>
+@({
+ (add-fgl-meta trigger-fn meta-fn)
+ })
+
+<p>This invocation adds an entry in the @('fgl-rewrite-rules') table that
+allows @('meta-fn') to be used in symbolic interpretation of @('trigger-fn')
+invocations.  For this to work, @('meta-fn') must be defined as an FGL
+metafunction and installed in the current attachment for
+@('fgl-meta-fncall-stub') using the @('install-fgl-metafns') event.</p>")
+
 (defmacro remove-fgl-meta (trigger-fn meta-fn)
   `(table fgl-rewrite-rules
           nil
@@ -441,6 +549,16 @@
                                      (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
           :clear))
 
+(defxdoc remove-fgl-meta
+  :short "Deregister a metafunction for use in FGL."
+  :long "<p>This is invoked as follows:</p>
+@({
+ (remove-fgl-meta trigger-fn meta-fn)
+ })
+
+<p>This invocation removes the entry in the @('fgl-rewrite-rules') table that
+allows @('meta-fn') to be used in symbolic interpretation of @('trigger-fn')
+invocations, preventing the use of @('meta-fn').</p>")
 
 (defmacro add-fgl-binder-meta (trigger-fn meta-fn)
   `(table fgl-binder-rules
@@ -450,6 +568,20 @@
                                          (make-fast-alist (table-alist 'fgl-binder-rules world)))
           :clear))
 
+(defxdoc add-fgl-binder-meta
+  :short "Register a metafunction for use in rewriting binder invocations of a
+          trigger function in FGL."
+  :long "<p>This is invoked as follows:</p>
+@({
+ (add-fgl-binder-meta trigger-fn meta-fn)
+ })
+
+<p>This invocation adds an entry in the @('fgl-binder-rules') table that allows
+@('meta-fn') to be used in symbolic interpretation of @('trigger-fn') binder
+invocations.  For this to work, @('meta-fn') must be defined as an FGL binder
+metafunction and installed in the current attachment for
+@('fgl-binder-fncall-stub') using the @('install-fgl-metafns') event.</p>")
+
 (defmacro remove-fgl-binder-meta (trigger-fn meta-fn)
   `(table fgl-binder-rules
           nil
@@ -458,10 +590,30 @@
                                      (make-fast-alist (table-alist 'fgl-binder-rules world)))
           :clear))
 
+(defxdoc remove-fgl-binder-meta
+  :short "Deregister a binder metafunction for use in FGL."
+  :long "<p>This is invoked as follows:</p>
+@({
+ (remove-fgl-binder-meta trigger-fn meta-fn)
+ })
 
+<p>This invocation removes the entry in the @('fgl-rewrite-rules') table that
+allows @('meta-fn') to be used in symbolic interpretation of @('trigger-fn')
+binder invocations, preventing the use of @('meta-fn').</p>")
+
+
+(defxdoc disable-definition
+  :short "Disable the use of the given formula in FGL rewriting."
+  :long "<p>This is actually just an alias for @('remove-fgl-rewrite').</p>")
 
 (defmacro disable-definition (fnname)
   `(remove-fgl-rewrite ,fnname))
+
+(defxdoc disable-execution
+  :short "Disable the use of concrete execution of a function in FGL rewriting."
+  :long "<p>This sets the entry for the given function in the @('fgl-fn-modes')
+table so that it can't be concretely executed when a call of that function on
+concrete values is encountered in FGL rewriting.</p>")
 
 (defmacro disable-execution (fnname)
   `(table fgl-fn-modes
@@ -469,17 +621,55 @@
           (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
             (change-fgl-function-mode mode :dont-concrete-exec t))))
 
+(defxdoc enable-execution
+  :short "Enable the use of concrete execution of a function in FGL rewriting."
+  :long "<p>This sets the entry for the given function in the @('fgl-fn-modes')
+table so that it can be concretely executed when a call of that function on
+concrete values is encountered in FGL rewriting.  This is the default setting,
+but use of this event can counteract previous uses of @(see
+disable-execution).</p>")
+
 (defmacro enable-execution (fnname)
   `(table fgl-fn-modes
           ',fnname
           (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
             (change-fgl-function-mode mode :dont-concrete-exec nil))))
 
+(defxdoc enable-split-ifs
+  :parents (fgl-handling-if-then-elses)
+  :short "Enable @('if') splitting for arguments of the given function in FGL rewriting."
+  :long "<p>This sets the entry for the given function in the @('fgl-fn-modes')
+table so that when a call of this function is encountered where one or more of
+the arguments' rewritten form is a @('g-ite') (if-then-else) object, then the
+FGL interpreter will split the interpretation of that function into cases, as
+follows:</p>
+
+@({
+ (f ... (if a b c) ...)
+ -->
+ (if a
+    (f ... b ...)
+  (f ... c ...))
+ })
+
+
+<p>See @(see fgl-handling-if-then-elses) for more discussion of the handling of
+@('g-ite') objects.</p>")
+
+
 (defmacro enable-split-ifs (fnname)
   `(table fgl-fn-modes
           ',fnname
           (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
             (change-fgl-function-mode mode :split-ifs t))))
+
+(defxdoc disable-split-ifs
+  :parents (fgl-handling-if-then-elses)
+  :short "Disable @('if') splitting for arguments to the given function in FGL rewriting."
+  :long "<p>This sets the entry for the given function in the @('fgl-fn-modes')
+table so that the FGL rewriter does not case-split on @('g-ite') arguments to
+that function.  This is the default setting, but use of this event can
+counteract previous uses of @(see enable-split-ifs).</p>")
 
 (defmacro disable-split-ifs (fnname)
   `(table fgl-fn-modes
