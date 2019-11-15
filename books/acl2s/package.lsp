@@ -209,6 +209,9 @@
       lambda$
       apply$
       collect$
+      hints
+      lemmas
+      flatten
       
       => ;sig
       _  ;range
