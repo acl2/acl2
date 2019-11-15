@@ -1053,4 +1053,5 @@
                             (i (numerator (* i (/ j))))
                             (j (denominator (* i (/ j))))))
            :in-theory (e/d (floor)
-                           (<=-of-denominator-of-*-of-/)))))
+                           (<=-of-denominator-of-*-of-/
+                            <-of-+-arg2-when-negative-constant)))))
