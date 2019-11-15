@@ -63,7 +63,10 @@
         (getpropc fn 'acl2::runic-mapping-pairs
                   nil (w state)))
        ((when (atom mappings))
-        fn)
+        (progn$ (hard-error 'get-rune-name
+                            " ~p0 does not seem to exist. ~%"
+                            (list (cons #\0 fn)))
+                fn))
        (mapping (car mappings)))
     (if (consp mapping)
         (cdr mapping)
@@ -200,10 +203,11 @@
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       ((when (or (not (pseudo-termp formula))
-                  (equal formula ''t)))
+       ((when (equal formula ''t))
+        nil)
+       ((when (not (pseudo-termp formula)))
         (hard-error 'custom-rewrite-with-meta-extract
-                    "Rule ~p0 does not seem to be valid. ~%"
+                    "Rule ~p0 does not seem to be pseudo-termp ~%"
                     (list (cons #\0 rule-name))))
        (formulas (make-formula-better formula))
        (rune (get-rune-name rule-name state)))
