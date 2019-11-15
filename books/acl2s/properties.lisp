@@ -5,6 +5,7 @@
 
 (in-package "ACL2S")
 (include-book "definec" :ttags :all)
+(include-book "std/lists/flatten" :dir :system)
 
 #|
 
@@ -189,9 +190,10 @@ with the same hints and directives that defthm accepts.
              (append (if name? nil *property-just-defthm-keywords*)
                      *property-core-keywords*)
              kwd-alist))
+          (flat-kwds (flatten other-kwds))
           (args (if name?
-                    (list* name prop other-kwds)
-                  (list* prop other-kwds)))
+                    (list* name prop flat-kwds)
+                  (list* prop flat-kwds)))
           ((when (and proofs? testing?))
            `(encapsulate
              ()
