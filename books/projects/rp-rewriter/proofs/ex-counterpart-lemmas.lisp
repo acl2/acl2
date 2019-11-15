@@ -59,8 +59,9 @@
                                                    state))))
   :hints (("Goal"
            :in-theory (e/d (rp-ex-counterpart
-                            INCREMENT-RW-STACK-SIZE
-                            RP-STAT-ADD-TO-RULES-USED-EX-CNT)
+                            rp-statep
+                            increment-rw-stack-size
+                            rp-stat-add-to-rules-used-ex-cnt)
                            ()))))
 
 (defthm valid-sc-rp-ex-counterpart

@@ -202,7 +202,9 @@
   (b* ((formula (meta-extract-formula rule-name state))
        ((when (or (not (pseudo-termp formula))
                   (equal formula ''t)))
-        nil)
+        (hard-error 'custom-rewrite-with-meta-extract
+                    "Rule ~p0 does not seem to be valid. ~%"
+                    (list (cons #\0 rule-name))))
        (formulas (make-formula-better formula))
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp formulas)))

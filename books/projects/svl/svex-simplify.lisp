@@ -104,7 +104,9 @@
    (implies (and (force (rp::rp-statep rp::rp-state))
                  (force (symbolp flg)))
             (rp::rp-statep
-             (rp::update-not-simplified-action flg rp::rp-state)))))
+             (rp::update-not-simplified-action flg rp::rp-state)))
+   :hints (("Goal"
+            :in-theory (e/d (rp::rp-statep) ())))))
 
 (local
  (defthm rp-statep-rp-state-new-run
@@ -112,12 +114,15 @@
             (rp::rp-statep
              (rp::rp-state-new-run rp::rp-state)))
    :hints (("goal"
-            :in-theory (e/d (rp::rp-state-new-run) ())))))
+            :in-theory (e/d (rp::rp-state-new-run
+                             rp::rp-statep) ())))))
 
 (local
  (defthm symbolp-not-simplified-action
    (implies (rp::rp-statep rp::rp-state)
-            (symbolp (rp::not-simplified-action rp::rp-state)))))
+            (symbolp (rp::not-simplified-action rp::rp-state)))
+   :hints (("Goal"
+            :in-theory (e/d (rp::rp-statep) ())))))
 
 (define to-svex-fnc (term)
   :prepwork
@@ -253,7 +258,7 @@
      (cond ((atom term)
             (if (svex-p term)
                 (mv nil term)
-              (progn$ (cw "Unexpected term ~p0 ~%" term)
+              (progn$ (cw "unexpected term ~p0 ~%" term)
                       (mv t 0))))
            ((and (quotep term)
                  (consp (cdr term)))
@@ -265,7 +270,7 @@
                      (mv nil term))
                     (t
                      (progn$
-                      (cw "Unexpected term ~p0 ~%" term)
+                      (cw "unexpected term ~p0 ~%" term)
                       (mv t 0))))))
            ((case-match term
               (('svex-env-fastlookup-wog ('quote var) env)
@@ -319,10 +324,10 @@
                     (implies (not svexl-node-flg)
                              (svexlist-p res-lst)))
                :fn 4vec-to-svex-lst)
-  :hints (("Goal"
-           :expand ((4VEC-TO-SVEX-LST LST SVEXL-NODE-FLG MEMOIZE-FLG)
-                    (4VEC-TO-SVEX TERM SVEXL-NODE-FLG MEMOIZE-FLG)
-                    (4VEC-TO-SVEX TERM NIL MEMOIZE-FLG))
+  :hints (("goal"
+           :expand ((4vec-to-svex-lst lst svexl-node-flg memoize-flg)
+                    (4vec-to-svex term svexl-node-flg memoize-flg)
+                    (4vec-to-svex term nil memoize-flg))
            :in-theory
            (e/d (
                  )
@@ -330,20 +335,20 @@
                  4vec-to-svex
                  
                  (:rewrite default-cdr)
-                 (:REWRITE BITP-IMPLIES-NATP)
-                 (:TYPE-PRESCRIPTION LOGNOT)
-                 (:TYPE-PRESCRIPTION BITP)
-                 (:REWRITE DEFAULT-<-2)
-                 (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP)
-                 (:DEFINITION LOGNOT)
-                 (:REWRITE RP::RP-TERMP-CADR)
-                 (:TYPE-PRESCRIPTION RP::RP-TERMP)
-                 (:REWRITE INTEGERP-IMPLIES-4VECP)
-                 (:REWRITE RP::RP-TERMP-EX-FROM-RP)
-                 (:REWRITE SV::SVAR-P-OF-CAR-WHEN-SVARLIST-P)
-                 (:REWRITE NATP-IMPLIES-INTEGERP)
-                 (:REWRITE ACL2::O-P-O-INFP-CAR)
-                 (:REWRITE RP::RP-TERMP-EXTRACT-FROM-RP)
+                 (:rewrite bitp-implies-natp)
+                 (:type-prescription lognot)
+                 (:type-prescription bitp)
+                 (:rewrite default-<-2)
+                 (:rewrite rp::atom-rp-termp-is-symbolp)
+                 (:definition lognot)
+                 (:rewrite rp::rp-termp-cadr)
+                 (:type-prescription rp::rp-termp)
+                 (:rewrite integerp-implies-4vecp)
+                 (:rewrite rp::rp-termp-ex-from-rp)
+                 (:rewrite sv::svar-p-of-car-when-svarlist-p)
+                 (:rewrite natp-implies-integerp)
+                 (:rewrite acl2::o-p-o-infp-car)
+                 (:rewrite rp::rp-termp-extract-from-rp)
                  (:rewrite
                   acl2::booleanp-of-car-when-boolean-listp)
                  (:rewrite
@@ -448,12 +453,23 @@
     (b* ((svexl (svex-to-svexl svex)))
       (svex-simplify-linearize-aux svexl preloaded-rules hyp))))
 
+(define cons-count-compare ((term)
+                            (cnt natp))
+  (cond ((zp cnt) cnt)
+        ((atom term)
+         (- cnt 1))
+        (t 
+         (b* ((cnt (cons-count-compare (car term) cnt))
+              ((when (zp cnt)) cnt)
+              (cnt (cons-count-compare (cdr term) cnt)))
+           cnt))))
+
 (define svex-simplify-to-4vec ((svex svex-p)
                                &key
                                (state 'state)
                                (rp::rp-state 'rp::rp-state)
                                (hyp ''t)
-                               (linearize 'nil)
+                               (linearize ':auto)
                                (preloaded-rules 'nil)
                                (runes '(let ((world (w state))) (current-theory
                                                                  :here))))
@@ -476,9 +492,17 @@
    (local
     (include-book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system)))
 
-  :guard (svex-simplify-preloaded-guard preloaded-rules state)
+  :guard (and (svex-simplify-preloaded-guard preloaded-rules state)
+              (or (rp::rp-termp hyp)
+                  (cw "Given hyp must satisfy rp::rp-termp ~%")))
 
   (b* ((world (w state))
+       (linearize (if (eq linearize ':auto)
+                      (zp (cons-count-compare svex 2048))
+                    linearize))
+
+       
+       
        ;; do not let rp-rewriter complain when simplified term is not ''t
        (tmp-rp-not-simplified-action (rp::not-simplified-action rp::rp-state))
        (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
@@ -528,16 +552,7 @@
                (svex-rw-free-preload rules state))))
     (mv rw rp::rp-state)))
 
-(define cons-count-compare ((term)
-                            (cnt natp))
-  (cond ((zp cnt) cnt)
-        ((atom term)
-         (- cnt 1))
-        (t 
-         (b* ((cnt (cons-count-compare (car term) cnt))
-              ((when (zp cnt)) cnt)
-              (cnt (cons-count-compare (cdr term) cnt)))
-           cnt))))
+
          
 
 (define svex-simplify ((svex svex-p)
@@ -545,8 +560,8 @@
                        (state 'state)
                        (rp::rp-state 'rp::rp-state)
                        (hyp ''t) ;; "Have more context for variables."
-                       (runes '(let ((world (w state))) (current-theory
-                                                         :here)))
+                       (runes '(let ((world (w state)))
+                                 (current-theory :here)))
                        ;; "if need to work with only certain rules other than current-theory"
                        (preloaded-rules 'nil) ;; Non-nil overrides rule
                        ;; structure  creation for the rewriter. This value
@@ -557,9 +572,11 @@
   :returns (mv (res svex-p)
                (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
                                                      rp::rp-state)))
-  :guard (svex-simplify-preloaded-guard preloaded-rules state)
+  :guard (and (svex-simplify-preloaded-guard preloaded-rules state)
+              (or (rp::rp-termp hyp)
+                  (cw "Given hyp must satisfy rp::rp-termp ~%")))
   (b* ((linearize (if (eq linearize ':auto)
-                      (zp (cons-count-compare svex 1024))
+                      (zp (cons-count-compare svex 2048))
                     linearize))
        ((mv rw rp::rp-state)
         (svex-simplify-to-4vec svex
