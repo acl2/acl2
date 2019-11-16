@@ -429,7 +429,8 @@ I commented out some disabled theorems that seem fine to me.
                 ; |(mod (+ x (mod a b)) y)|
                 mod-cancel-*-const
                 ; cancel-mod-+
-                reduce-additive-constant-<
+                ; reduce-additive-constant-<
+                ; reduce-additive-constant-equal
                 ash-to-floor
                 |(floor x 2)|
                 |(equal x (if a b c))|

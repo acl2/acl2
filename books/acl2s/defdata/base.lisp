@@ -390,13 +390,21 @@ on a per data definition basis or
       mag
       (- -1 mag))))
 
+(defconst *init-hash-num* 
+  (floor (* 61803095516164791237/100000000000000000000 (expt 2 64)) 1))
+
+(defun simple-hash (n range)
+  (declare (xargs :guard (and (natp n) (natp range))))
+  (let ((x (* n *init-hash-num*)))
+    (mod x (1+ range))))
+
 (defun nth-integer-between (n lo hi)
   (declare (xargs :guard (and (natp n)
                               (integerp lo)
                               (integerp hi)
                               (<= lo hi))))
-  (let ((range (nfix (- hi lo))))
-    (+ lo (mod n (1+ range)))))
+  (let ((range (- hi lo)))
+    (+ lo (simple-hash n range))))
 
 (defun integer-index (i)
   (declare (xargs :guard (integerp i)))
