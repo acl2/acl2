@@ -10,6 +10,7 @@
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
+(include-book "misc/meta-lemmas" :dir :system)
 
 ; Pete 9/14/2018: Useful for must-fail
 (include-book "misc/eval" :dir :system)
