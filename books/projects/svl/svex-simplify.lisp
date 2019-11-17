@@ -410,13 +410,13 @@
                   (list (cons #\0 rw))))))
       (mv node-new rp::rp-state)))
 
-  (define svex-simplify-linearize-aux ((svexl svexl-p)
+  (define svex-simplify-linearize-aux ((svexl-node-alist svexl-node-alist-p)
                                        (preloaded-rules)
                                        (hyp)
                                        &key
                                        (state 'state)
                                        (rp::rp-state 'rp::rp-state))
-    :returns (mv (svexl-new svexl-p :hyp (svexl-p svexl))
+    :returns (mv (svexl-new svexl-node-alist-p :hyp (svexl-node-alist-p svexl-node-alist))
                  (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
                                                        rp::rp-state)))
     :verify-guards nil
@@ -424,17 +424,17 @@
                 (svex-simplify-preloaded-guard preloaded-rules state))
     :prepwork
     ((local
-      (in-theory (e/d (svexl-p)
+      (in-theory (e/d (svexl-node-alist-p)
                       (rp::rp-statep
                        rp::rp-rw-aux)))))
-    (if (atom svexl)
+    (if (atom svexl-node-alist)
         (mv nil rp::rp-state)
-      (b* ((node (cdar svexl))
+      (b* ((node (cdar svexl-node-alist))
            ((mv node rp::rp-state)
             (svexl-node-simplify node preloaded-rules hyp))
            ((mv rest rp::rp-state)
-            (svex-simplify-linearize-aux (cdr svexl) preloaded-rules hyp)))
-        (mv (acons (caar svexl) node rest)
+            (svex-simplify-linearize-aux (cdr svexl-node-alist) preloaded-rules hyp)))
+        (mv (acons (caar svexl-node-alist) node rest)
             rp::rp-state)))
     ///
     (verify-guards svex-simplify-linearize-aux-fn))
@@ -447,11 +447,11 @@
                                    (rp::rp-state 'rp::rp-state))
     :guard (and preloaded-rules
                 (svex-simplify-preloaded-guard preloaded-rules state))
-    :returns (mv (svexl-new svexl-p :hyp (svex-p svex))
+    :returns (mv (svexl-new svexl-node-alist-p :hyp (svex-p svex))
                  (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep
                                                        rp::rp-state)))
-    (b* ((svexl (svex-to-svexl svex)))
-      (svex-simplify-linearize-aux svexl preloaded-rules hyp))))
+    (b* ((svexl-node-alist (svex-to-svexl svex)))
+      (svex-simplify-linearize-aux svexl-node-alist preloaded-rules hyp))))
 
 (define cons-count-compare ((term)
                             (cnt natp))
@@ -524,12 +524,12 @@
                      "Something is wrong with the rules. ~%"
                      nil)
          (mv term rp::rp-state)))
-       ((mv svexl rp::rp-state)
+       ((mv svexl-node-alist rp::rp-state)
         (if linearize
             (svex-simplify-linearize svex rules hyp)
           (mv nil rp::rp-state)))
        (term (if linearize
-                 `(implies ,hyp (svexl-eval-wog ',svexl svex-env))
+                 `(implies ,hyp (svexl-eval-wog ',svexl-node-alist svex-env))
                term))
 
        ((mv enabled-exec-rules rules-alist meta-rules)

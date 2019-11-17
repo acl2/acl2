@@ -38,6 +38,7 @@
 
 
 (include-book "svexl")
+(include-book "svexl-correct")
 
 (include-book "svex-eval-wog-openers")
 
