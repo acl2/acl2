@@ -455,14 +455,14 @@
 
 (local
  (defthm all-nodes-covered-subsetp-equal-svexl-node-eval-lemma
-   (IMPLIES (AND (SVEX-ENV-P ENV)
-                 (HONS-ASSOC-EQUAL x NODE-ENV)
-                 (suffixp NODE-ENV BIG)
-                 (well-numbered-list-P (STRIP-CARS BIG)))
-            (EQUAL (svex-env-fastlookup-wog x node-env)
-                   (svex-env-fastlookup-wog x BIG)))
+   (implies (and (svex-env-p env)
+                 (hons-assoc-equal x node-env)
+                 (suffixp node-env big)
+                 (well-numbered-list-p (strip-cars big)))
+            (equal (svex-env-fastlookup-wog x node-env)
+                   (svex-env-fastlookup-wog x big)))
    :otf-flg t
-   :hints (("Goal"
+   :hints (("goal"
             :do-not-induct t
             :in-theory (e/d (suffixp
                              suffixp-lemma1
@@ -485,14 +485,14 @@
                    (all-nodes-covered-lst lst node-env)
                    (suffixp node-env big)
                    (well-numbered-list-p (strip-cars big)))
-              (equal (svexl-node-eval-lst lst node-env env)
-                     (svexl-node-eval-lst lst big env)))
-     :flag svexl-node-eval-lst)
+              (equal (svexl-nodelist-eval lst node-env env)
+                     (svexl-nodelist-eval lst big env)))
+     :flag svexl-nodelist-eval)
    :hints (("goal"
-            :in-theory (e/d (svexl-node-eval-lst
+            :in-theory (e/d (svexl-nodelist-eval
                              svexl-node-eval)
-                            (svexl-node-eval-lst-wog-svexl-node-eval-lst
-                             svexl-node-eval-wog-is-svexl-node-eval))))))
+                            (svexl-nodelist-eval-svexl-nodelist-eval-wog
+                             svexl-node-eval-is-svexl-node-eval-wog))))))
 
 
 
@@ -510,12 +510,12 @@
                    (all-nodes-covered-lst lst node-env)
                    (suffixp node-env big))
               (all-nodes-covered-lst lst big))
-     :flag svexl-node-eval-lst)
+     :flag svexl-nodelist-eval)
    :hints (("goal"
-            :in-theory (e/d (svexl-node-eval-lst
+            :in-theory (e/d (svexl-nodelist-eval
                              svexl-node-eval)
-                            (svexl-node-eval-lst-wog-svexl-node-eval-lst
-                             svexl-node-eval-wog-is-svexl-node-eval))))))
+                            (svexl-nodelist-eval-svexl-nodelist-eval-wog
+                             svexl-node-eval-is-svexl-node-eval-wog))))))
 
 
 (local
@@ -554,18 +554,18 @@
      :flag svexlist-induct1)
    :otf-flg t
    :hints (("goal" 
-            :in-theory (e/d (svexl-node-eval-lst
+            :in-theory (e/d (svexl-nodelist-eval
                              suffixp
                              svexl-node-eval
                              svex-to-svexl-aux
                              svex-to-svexl-aux-lst)
-                            (svexl-node-eval-wog-is-svexl-node-eval
+                            (svexl-node-eval-is-svexl-node-eval-wog
                              svex-eval-is-svex-eval-wog
                              all-nodes-covered-subsetp-equal-svexl-nodelist-eval
                              nfix
                              natp
                              nodesdb-p
-                             svexl-node-eval-lst-wog-svexl-node-eval-lst))))))
+                             svexl-nodelist-eval-svexl-nodelist-eval-wog))))))
 
 
 (local
@@ -600,22 +600,22 @@
                 (and (svexl-and-node-env-inv svexl-res node-env-res env)
                      (well-numbered-list-p (strip-cars node-env-res))
                      (all-nodes-covered-lst new-node-lst node-env-res)
-                     (equal (svexl-node-eval-lst new-node-lst node-env-res env)
+                     (equal (svexl-nodelist-eval new-node-lst node-env-res env)
                             res))))
      :flag svexlist-induct1)
    :otf-flg t
    :hints (("goal"
-            :in-theory (e/d (svexl-node-eval-lst
+            :in-theory (e/d (svexl-nodelist-eval
                              svexl-node-eval
                              svex-to-svexl-aux
                              svex-to-svexl-aux-lst)
-                            (svexl-node-eval-wog-is-svexl-node-eval
+                            (svexl-node-eval-is-svexl-node-eval-wog
                              svex-eval-is-svex-eval-wog
                              nfix
                              all-nodes-covered-subsetp-equal-svexl-node-eval
                              natp
                              nodesdb-p
-                             svexl-node-eval-lst-wog-svexl-node-eval-lst)))
+                             svexl-nodelist-eval-svexl-nodelist-eval-wog)))
            ("subgoal *1/6"
             :use ((:instance all-nodes-covered-subsetp-equal-svexl-node-eval
                              (x (mv-nth 1
@@ -657,15 +657,15 @@
    (implies (and (svexl-node-alist-p svexl-node-alist)
                  (svex-env-p env)
                  (svexl-and-node-env-inv svexl-node-alist node-env env))
-            (equal (mv-nth 0 (svexl-eval-aux svexl-node-alist env))
+            (equal (svexl-eval-aux svexl-node-alist env)
                    node-env))
    :hints (("Goal"
             :induct (svexl-and-node-env-inv svexl-node-alist node-env env)
             :do-not-induct t
             :in-theory (e/d (svexl-eval-aux
                              equal-cons-1)
-                            (svexl-node-eval-wog-is-svexl-node-eval
-                             svexl-eval-aux-is-svexl-eval-aux-wog))))))    
+                            (svexl-node-eval-is-svexl-node-eval-wog
+                             svexl-eval-aux-is-svexl-eval-aux-wog))))))  
 
 
 (defthmd svexl-correct
@@ -698,7 +698,45 @@
                            (svexl-eval-is-svexl-eval-wog
                             svex-to-svexl-aux--svex-induct-1
                             svexl-eval-aux--svexl-and-node-env-inv
-                            svexl-node-eval-wog-is-svexl-node-eval
+                            svexl-node-eval-is-svexl-node-eval-wog
+                            return-cnt-of-svex-to-svexl-aux
+                            svexl-eval-aux-is-svexl-eval-aux-wog
+                            svex-eval-is-svex-eval-wog)))))
+
+(defthmd svexllist-correct
+  (implies (and (svexlist-p lst)
+                (svex-env-p env))
+           (equal (svexlist-eval lst env)
+                  (svexllist-eval (svexlist-to-svexllist lst) env)))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((svexlist-to-svexllist lst)
+                    (:free (x rest)
+                           (svexl-eval-aux (cons x rest) env)))
+           :use ((:instance svex-to-svexl-aux-lst--svexlist-induct1
+                            (reuse-stats (svex-to-svexl-get-stats-lst nil lst))
+                            (lst lst)
+                            (env env)
+                            (node-env nil)
+                            (svexl-node-alist nil)
+                            (nodesdb nil)
+                            (cnt 0))
+                 (:instance svexl-eval-aux--svexl-and-node-env-inv
+                            (svexl-node-alist (mv-nth 2
+                                           (svex-to-svexl-aux-lst lst (svex-to-svexl-get-stats-lst nil lst)
+                                                              nil nil 0)))
+                            (env env)
+                            (node-env (MV-NTH 3
+                                              (svexlist-induct1 lst (svex-to-svexl-get-stats-lst nil lst)
+                                                            nil nil nil env)))))
+           :in-theory (e/d (svexl-eval
+                            svexllist-eval)
+                           (svexl-eval-is-svexl-eval-wog
+                            svexl-nodelist-eval-svexl-nodelist-eval-wog
+                            svex-to-svexl-aux--svex-induct-1
+                            svex-to-svexl-aux-lst--svexlist-induct1
+                            svexl-eval-aux--svexl-and-node-env-inv
+                            svexl-node-eval-is-svexl-node-eval-wog
                             return-cnt-of-svex-to-svexl-aux
                             svexl-eval-aux-is-svexl-eval-aux-wog
                             svex-eval-is-svex-eval-wog)))))

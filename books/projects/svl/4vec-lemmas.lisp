@@ -3353,6 +3353,21 @@
                              sv::3vec-fix
                              ifix) ()))))
 
+(defthm 4vec-?*-test=1
+  (equal (4vec-?* 1 x y)
+         (4vec-fix x))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-?*
+                            SV::3VEC-?*) ()))))
+
+
+(defthm 4vec-?*-test=0
+  (equal (4vec-?* 0 x y)
+         (4vec-fix y))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-?*
+                            SV::3VEC-?*) ()))))
+
 (defthm 4vec-?-with-0
    (and (equal (sv::4vec-? 0 x y)
                (sv::4vec-fix y)))
@@ -3779,5 +3794,6 @@
            (sv::3vec-p x))
   :hints (("Goal"
            :in-theory (e/d (sv::3vec-p) ()))))
+
 
 

@@ -212,10 +212,10 @@
         (b* ((x.fn (car x))
              (x.args (cdr x))
              ((mv args args-dontrw)
-              (svexl-node-eval-wog-meta-lst x.args node-env-falist env-falist good-env-flg)))
+              (svexl-nodelist-eval-wog-meta x.args node-env-falist env-falist good-env-flg)))
           (svex-apply-wog-meta x.fn args args-dontrw))))))
 
- (define svexl-node-eval-wog-meta-lst (lst node-env-falist env-falist good-env-flg)
+ (define svexl-nodelist-eval-wog-meta (lst node-env-falist env-falist good-env-flg)
    :flag list
    :measure (cons-count lst)
    :returns (mv (res true-listp)
@@ -225,14 +225,14 @@
      (b* (((mv car-term car-dontrw)
            (svexl-node-eval-wog-meta (car lst) node-env-falist env-falist good-env-flg))
           ((mv rest rest-dontrw)
-           (svexl-node-eval-wog-meta-lst (cdr lst) node-env-falist env-falist good-env-flg)))
+           (svexl-nodelist-eval-wog-meta (cdr lst) node-env-falist env-falist good-env-flg)))
        (mv (cons car-term rest)
            (cons car-dontrw rest-dontrw)))))
 
  ///
 
  (acl2::more-returns
-  svexl-node-eval-wog-meta-lst
+  svexl-nodelist-eval-wog-meta
   (res-dontrw true-listp
               :hints (("Goal"
                        :induct (true-listp lst)
@@ -668,19 +668,19 @@
                        (and (equal env-term env-falist)
                             (equal node-env-term node-env-falist))))
                 (equal (rp-evl-lst
-                        (mv-nth 0 (svexl-node-eval-wog-meta-lst
+                        (mv-nth 0 (svexl-nodelist-eval-wog-meta
                                    lst node-env-falist env-falist good-env-flg))
                         a)
-                       (rp-evl `(svexl-node-eval-lst-wog
+                       (rp-evl `(svexl-nodelist-eval-wog
                                  ,(list 'quote lst) ,node-env-term ,env-term)
                                a)))
        :flag list)
      :hints (("goal"
               :in-theory (e/d (svex-eval-wog-meta-lst
                                svex-env-fastlookup-wog
-                               svexl-node-eval-wog-meta-LST
+                               svexl-nodelist-eval-wog-meta
                                svex-eval-wog-meta
-                               svexl-node-eval-lst-wog
+                               svexl-nodelist-eval-wog
                                SVEXL-NODE-KIND-WOG
                                SVEX-KIND
                                svexl-node-eval-wog-meta
@@ -849,12 +849,12 @@
                      (rp::rp-termp env-term)
                      (rp::rp-termp node-env-term))
                 (rp::rp-term-listp
-                 (mv-nth 0 (svexl-node-eval-wog-meta-lst lst node-env-falist env-falist good-env-flg))))
+                 (mv-nth 0 (svexl-nodelist-eval-wog-meta lst node-env-falist env-falist good-env-flg))))
        :flag list)
      :hints (("goal"
               :in-theory (e/d (svexl-node-kind
                                svexl-node-kind-wog
-                               svexl-node-eval-wog-meta-lst
+                               svexl-nodelist-eval-wog-meta
                                svexl-node-eval-wog-meta
                                rp::is-falist)
                               ()))))
@@ -1047,12 +1047,12 @@
                      (rp::valid-sc node-env-term a)
                      (rp::valid-sc env-term a))
                 (rp::valid-sc-subterms
-                 (mv-nth 0 (svexl-node-eval-wog-meta-lst lst node-env-falist env-falist good-env-flg)) a))
+                 (mv-nth 0 (svexl-nodelist-eval-wog-meta lst node-env-falist env-falist good-env-flg)) a))
        :flag list)
      :hints (("goal"
               :in-theory (e/d (svexl-node-kind
                                svexl-node-eval-wog-meta
-                               svexl-node-eval-wog-meta-lst
+                               svexl-nodelist-eval-wog-meta
                                rp::is-falist)
                               ()))))
 
