@@ -260,6 +260,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                        (new-synps 'nil)
                        (disable-meta-rules 'nil)
                        (enable-meta-rules 'nil)
+                       (rules-override 'nil)
                        (in-theory 'nil))
   `(encapsulate
      nil
@@ -301,8 +302,10 @@ Try using (rp::update-rp-brr t rp::rp-state) and
             (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
            (term (beta-search-reduce term 1000))
-           (runes (append (let ((world (w state))) (current-theory :here))
-                          ,extra-rules))
+           (runes ,(if rules-override
+                       rules-override
+                     `(append (let ((world (w state))) (current-theory :here))
+                          ,extra-rules)))
            (enabled-exec-rules (get-enabled-exec-rules runes))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
            (rules-alist (get-rules runes state :new-synps new-synps))
