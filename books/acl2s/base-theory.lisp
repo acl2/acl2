@@ -428,18 +428,18 @@ I commented out some disabled theorems that seem fine to me.
                 ; |(mod (+ x (- (mod a b))) y)|
                 ; |(mod (mod x y) z)|
                 ; |(mod (+ x (mod a b)) y)|
-                mod-cancel-*-const
+                ; mod-cancel-*-const
                 ; cancel-mod-+
-                ; reduce-additive-constant-<
+                 reduce-additive-constant-<
                 ; reduce-additive-constant-equal
                 ash-to-floor
                 |(floor x 2)|
-                |(equal x (if a b c))|
-                ; |(equal (if a b c) x)|
+                ; |(equal x (if a b c))|
+                 |(equal (if a b c) x)|
                 |(logior 1 x)|
                 mod-theorem-one-b
-                default-plus-2
-                default-minus
+                 default-plus-2
+                ; default-minus
 
 ;;                |(mod (- x) y)|
 ;;                mod-sums-cancel-1
@@ -594,6 +594,48 @@ I commented out some disabled theorems that seem fine to me.
 
 (defmacro != (x y)
   `(not (equal ,x ,y)))
+
+#|
+
+ Useful theorems about mod.
+
+|#
+
+(defthm mod-plus-simplify-a<n-+b
+  (implies (and (non-neg-rationalp a)
+                (< a n))
+           (equal (equal (+ a (mod b n)) b)
+                  (and (equal a 0)
+                       (equal (mod b n) b))))
+  :hints (("goal" :cases ((rationalp n)))))
+
+(defthm mod-plus-simplify-b<n-+b
+  (implies (and (acl2-numberp a)
+                (non-neg-rationalp b)
+                (< b n))
+           (equal (equal (+ a (mod b n)) b)
+                  (equal a 0))))
+
+(defthm mod-plus-simplify-a<n-+b+n
+  (implies (and (non-neg-rationalp a)
+                (< a n))
+           (equal (equal (+ a (mod b n))
+                         (+ n b))
+                  (and (equal a 0)
+                       (< b 0)
+                       (equal (mod b n) (+ b n))))))
+
+(defthm mod-plus-simplify-b<n-+b+n
+  (implies (and (non-neg-rationalp b)
+                (< b n))
+           (equal (equal (+ a (mod b n))
+                         (+ n b))
+                  (or (and (equal a 0)
+                           (< b 0)
+                           (equal (mod b n) (+ b n)))
+                      (and (equal a n)
+                           (<= 0 b)
+                           (equal (mod b n) b))))))
 
 #|
 Useful for testing defunc/definec errors
