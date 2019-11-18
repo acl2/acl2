@@ -17986,7 +17986,7 @@
 ; In this case, the default-names are the names the user intends us to use.
 
         (cond
-         ((not (no-duplicatesp default-names))
+         ((not (no-duplicatesp-eq default-names))
           (er soft ctx
               "The field descriptors are illegal because they require ~
                the use of the same name for two different functions.  ~
@@ -17997,7 +17997,7 @@
                :DOC defstobj."
               (duplicates default-names)))
          (t (value nil))))
-       ((not (no-duplicatesp default-names))
+       ((not (no-duplicatesp-eq default-names))
         (er soft ctx
             "The field descriptors are illegal because they require ~
              the use of the same default name for two different ~
@@ -18006,7 +18006,7 @@
              conflict occurs.  Only then may you use the :RENAMING ~
              option to rename the default names."
             (duplicates default-names)))
-       ((not (no-duplicatesp domain))
+       ((not (no-duplicatesp-eq domain))
         (er soft ctx
             "No two entries in the :RENAMING alist may mention the ~
              same target symbol.  Your alist, ~x0, contains ~
@@ -18129,6 +18129,20 @@
        (chk-all-but-new-name creator-name ctx 'function wrld state)
        (chk-acceptable-defstobj-renaming name field-descriptors renaming
                                          ctx state nil)
+       (cond ((and renaming
+
+; If renaming is nil, then the no-duplicates check is already made in
+; chk-acceptable-defstobj-renaming.  Note that we take advantage of renaming
+; being non-nil in the error message below.
+
+                   (not (no-duplicatesp-eq names)))
+              (er soft ctx
+                  "The field descriptors are illegal because they require the ~
+                   use of the same name for two different functions.  The ~
+                   duplicated name~#0~[ is~/s are~] ~&0.  You must change the ~
+                   supplied :RENAMING option so that no conflict occurs."
+                  (duplicates names)))
+             (t (value nil)))
 
 ; Note: We insist that all the names be new.  In addition to the
 ; obvious necessity for something like this, we note that this does
@@ -24816,6 +24830,10 @@
                      corresponding concrete stobj is non-memoizable.  See ~
                      :DOC defstobj."
                     str key conc abs)))))
+            ((member-eq key *stobjs-out-invalid*)
+             (er hard ctx
+                 "~@0~x1 is a primitive without a fixed output signature."
+                 str key))
             ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; See comment above for the case of 'state.

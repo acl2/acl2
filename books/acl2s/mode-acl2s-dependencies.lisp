@@ -38,6 +38,7 @@
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "centaur/misc/outer-local" :dir :system)
+(include-book "std/lists/flatten" :dir :system)
 
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
 

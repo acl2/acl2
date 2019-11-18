@@ -721,6 +721,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Toothbrush")
+
+   (xdoc::p
+    "Warnings have been eliminated when creating the file
+    @('books/system/toothbrush/defined-syms.lsp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
 
    (xdoc::p
@@ -789,6 +797,14 @@
 
    (xdoc::p
     "Some @(see xdoc) string processing has been made a bit more efficient.")
+
+   (xdoc::p
+    "It was possible for some web-based @(see xdoc) manual pages to be
+     mysteriously empty due to control characters in the source documentation.
+     It is now checked before saving a web-based manual that the :short
+     and :long strings, when supplied, consist solely of standard
+     characters (see @(see standard-char-p)), except that tabs are also
+     permitted.")
 
    ))
 

@@ -4384,10 +4384,10 @@
          (erp2 ; translation for formulas fails, so rely on previous error
           (mv erp term))
          (t (er-cmp ctx
-                    "The guards for the given formula cannot be verified it ~
-                     has the wrong syntactic form for evaluation, perhaps due ~
-                     to multiple-value or stobj restrictions.  See :DOC ~
-                     verify-guards.")))))
+                    "The guards for the given formula cannot be verified ~
+                     because it has the wrong syntactic form for evaluation, ~
+                     perhaps due to multiple-value or stobj restrictions.  ~
+                     See :DOC verify-guards.")))))
      (erp
       (er-cmp ctx
               "The guards for ~x0 cannot be verified because its formula has ~
@@ -4406,11 +4406,6 @@
                                                   wrld)))
      (t
       (value-cmp (cons :term term))))))
-
-(defun chk-acceptable-verify-guards-formula (name x ctx wrld state)
-  (cmp-to-error-triple
-   (chk-acceptable-verify-guards-formula-cmp name x ctx wrld
-                                             (default-state-vars t))))
 
 (defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
 

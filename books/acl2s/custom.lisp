@@ -113,54 +113,6 @@
 
 ;(logic)
 
-;;; When things have stabilized under simplification, enable non-linear
-;;; arithmetic for one round (goal being simplified) only.
-
-#!ACL2
-(defun my-nonlinearp-default-hint (stable-under-simplificationp hist pspv)
-  ;; (declare (xargs :guard (and (consp pspv)
-  ;;                 (consp (car pspv))
-  ;;                 (consp (caar pspv))
-  ;;                 (consp (cdaar pspv))
-  ;;                 (consp (cddaar pspv))
-  ;;                 (consp (cdr (cddaar pspv)))
-  ;;                 (consp (cddr (cddaar pspv)))
-  ;;                 (consp (cdddr (cddaar pspv)))
-  ;;                 (consp (cddddr (cddaar pspv))))))
-  (cond (stable-under-simplificationp
-         (if (not (access rewrite-constant
-                   (access prove-spec-var pspv :rewrite-constant)
-                   :nonlinearp))
-       (prog2$
-        nil ;;harshrc 14Jan2012- The following gives a nasty error when run inside of ld
-        ;; (observation-cw 'my-nonlinearp-default-hint 
-        ;;                 "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
-        '(:computed-hint-replacement t
-                     :nonlinearp t))
-           nil))
-        ((access rewrite-constant
-              (access prove-spec-var pspv :rewrite-constant)
-              :nonlinearp)
-         (if (and (consp hist)
-          (consp (car hist))
-          ;; Without this, we would loop forever.  But
-          ;; whenever I try to write an explanation, I get
-          ;; confused about why it works.  I stumbled across
-          ;; this by trial and error and observing the output
-          ;; of tracing.  Some day I should figure out what I
-          ;; am doing.
-          (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
-         (prog2$
-          nil ;;The following gives a nasty error when run inside of ld
-          ;; (observation-cw 'my-nonlinearp-default-hint 
-          ;;                 "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
-           '(:computed-hint-replacement t
-                        :nonlinearp nil))
-           nil))
-        (t
-         nil)))
-
-
 
 #|
 (defmacro acl2s-common-settings ()
