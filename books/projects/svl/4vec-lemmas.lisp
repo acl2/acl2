@@ -3797,3 +3797,10 @@
 
 
 
+(defthm remove-3vec-fix
+  (implies (integerp x)
+           (equal (sv::3vec-fix x)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (sv::3vec-fix
+                            4VEC-FIX) ()))))

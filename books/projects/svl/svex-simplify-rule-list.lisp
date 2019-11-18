@@ -251,10 +251,9 @@
 
     (:rewrite 4vec-?*-test=1)
     (:rewrite 4vec-?*-test=0)
-
-    cdr-cons
-    car-cons
-
+    (:rewrite remove-3vec-fix)
+    (:rewrite cdr-cons)
+    (:rewrite car-cons)
 
     (:executable-counterpart sv::4vec-fix$inline)
     (:executable-counterpart sv::4vec-bit-extract)
