@@ -3804,3 +3804,43 @@
   :hints (("Goal"
            :in-theory (e/d (sv::3vec-fix
                             4VEC-FIX) ()))))
+
+
+;; (local
+;;  (use-ihs-extensions t))
+;; (skip-proofs
+;;  (local
+;;   (defthm logand-of-expt-2-equal-to-0-lemma
+;;     (implies (natp size)
+;;              (equal (equal (LOGAND (* x (EXPT 2 SIZE))
+;;                                    (* y (EXPT 2 SIZE)))
+;;                            0)
+;;                     (equal (LOGAND x y)
+;;                            0)))
+;;     :hints (("Goal"
+;;              :in-theory (e/d* (bitops::ihsext-recursive-redefs
+;;                                bitops::ihsext-inductions)
+;;                               ()))))))
+
+;; (local
+;;  (use-ihs-logops-lemmas t))
+;; (local
+;;  (use-arithmetic-5 t))
+
+
+
+;; (defthm 4vec-reduction-or-with-concat-0
+;;   (implies (natp size)
+;;            (equal (sv::4vec-reduction-or (4vec-concat size 0 rest))
+;;                   (sv::4vec-reduction-or rest)))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (sv::4vec-reduction-or
+;;                              ;;bitops::ihsext-recursive-redefs
+;;                              ;;bitops::ihsext-inductions
+;;                              sv::3VEC-REDUCTION-OR
+;;                              SV::3VEC-FIX
+;;                              SV::4VEC->LOWER
+;;                              SV::4VEC->UPPER
+;;                              4vec-concat
+;;                              ) ()))))
