@@ -55,7 +55,7 @@
 (include-book "std/strings/suffixp" :dir :system)
 
 
-(defund get-rune-name (fn  state)
+(defund get-rune-name (fn state)
   (declare (xargs :guard (and (symbolp fn))
                   :stobjs (state)
                   :verify-guards t))
@@ -63,7 +63,10 @@
         (getpropc fn 'acl2::runic-mapping-pairs
                   nil (w state)))
        ((when (atom mappings))
-        fn)
+        (progn$ (hard-error 'get-rune-name
+                            " ~p0 does not seem to exist. ~%"
+                            (list (cons #\0 fn)))
+                fn))
        (mapping (car mappings)))
     (if (consp mapping)
         (cdr mapping)
@@ -200,9 +203,12 @@
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       ((when (or (not (pseudo-termp formula))
-                  (equal formula ''t)))
+       ((when (equal formula ''t))
         nil)
+       ((when (not (pseudo-termp formula)))
+        (hard-error 'custom-rewrite-with-meta-extract
+                    "Rule ~p0 does not seem to be pseudo-termp ~%"
+                    (list (cons #\0 rule-name))))
        (formulas (make-formula-better formula))
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp formulas)))
@@ -406,26 +412,28 @@
   (if (atom runes)
       nil
     (b* ((rune (car runes))
-         (rule-name (case-match rune ((& name . &) name) (& rune)))
+         ((mv rule-name given-rule-type)
+          (case-match rune
+            ((type name . &) (mv name type))
+            (& (mv rune nil))))
          ((when (not (symbolp rule-name)))
           (progn$
            (cw "WARNING! Problem reading the rune name. Skipping ~p0 ~%"
                rune)
            (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))
          ;; if the current rune is just a name, then treat that as a rewrite
-         ;; rule for only the following tests.
-         (rule-type (case-match rune ((type & . &) type) (& ':rewrite)))
+         ;; rule for only the following tests. 
+         (rule-type (mv-nth 0 (get-rune-name rule-name state)))
+         (rule-type (if (or (equal given-rule-type ':executable-counterpart)
+                            (equal given-rule-type ':e))
+                        :executable-counterpart
+                      rule-type))
          ((when (and (equal rule-type ':definition)
-                     (or (not (symbolp rule-name))
-                         (str::strsuffixp "P" (symbol-name rule-name))
-                         (acl2::recursivep rule-name nil (w state)))
-                     ;;(check-if-def-rule-should-be-saved rule-name state)
-                     ))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
-         ((when (and (equal rule-type ':type-prescription)
-                     (or (equal (mv-nth 0 (get-rune-name rule-name state))
-                                ':definition)
+                     (or (str::strsuffixp "P" (symbol-name rule-name))
                          (acl2::recursivep rule-name nil (w state)))))
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
+         ((when (and (equal given-rule-type ':type-prescription)
+                     (or (equal rule-type ':definition))))
           (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
          ((when (and (not (equal rule-type ':rewrite))
                      (not (equal rule-type ':definition))

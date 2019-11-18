@@ -16743,3 +16743,13 @@
                     (let ((str (nth 0 args))
                           (alist (nth 1 args)))
                       (fmx-cw-msg str alist))))
+
+(set-guard-msg add-invisible-fns
+               (msg "The call ~x0 is illegal, because the arguments are not ~
+                     all symbols.  See :DOC add-invisible-fns."
+                      (cons 'add-invisible-fns args)))
+
+(set-guard-msg remove-invisible-fns
+               (msg "The call ~x0 is illegal, because the arguments are not ~
+                     all symbols.  See :DOC remove-invisible-fns."
+                    (cons 'remove-invisible-fns args)))

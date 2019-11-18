@@ -229,36 +229,36 @@
                 nil)))
 
 (progn
-  (defthm VALID-RP-META-RULE-LISTP-opener-cons
-    (equal (VALID-RP-META-RULE-LISTP (cons rule1 rest) state)
-           (AND (VALID-RP-META-RULEP rule1 STATE)
-                (VALID-RP-META-RULE-LISTP rest STATE)))
-    :hints (("Goal"
-             :in-theory (e/d (VALID-RP-META-RULE-LISTP)
-                             (VALID-RP-META-RULEP)))))
+  (defthm valid-rp-meta-rule-listp-opener-cons
+    (equal (valid-rp-meta-rule-listp (cons rule1 rest) state)
+           (and (valid-rp-meta-rulep rule1 state)
+                (valid-rp-meta-rule-listp rest state)))
+    :hints (("goal"
+             :in-theory (e/d (valid-rp-meta-rule-listp)
+                             (valid-rp-meta-rulep)))))
 
-  (defthm VALID-RP-META-RULE-LISTP-opener-nil
-    (equal (VALID-RP-META-RULE-LISTP nil state)
+  (defthm valid-rp-meta-rule-listp-opener-nil
+    (equal (valid-rp-meta-rule-listp nil state)
            t)
-    :hints (("Goal"
-             :in-theory (e/d (VALID-RP-META-RULE-LISTP)
-                             (VALID-RP-META-RULEP)))))
+    :hints (("goal"
+             :in-theory (e/d (valid-rp-meta-rule-listp)
+                             (valid-rp-meta-rulep)))))
 
-  (defthm RP-META-VALID-SYNTAX-LISTP-opener-cons
-    (equal (RP-META-VALID-SYNTAX-LISTP (cons first rest) state)
-           (AND (RP-META-VALID-SYNTAXP-SK first STATE)
-                (RP-META-VALID-SYNTAX-LISTP rest
-                                            STATE)))
-    :hints (("Goal"
-             :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP)
-                             (RP-META-VALID-SYNTAXP-SK)))))
+  (defthm rp-meta-valid-syntax-listp-opener-cons
+    (equal (rp-meta-valid-syntax-listp (cons first rest) state)
+           (and (rp-meta-valid-syntaxp-sk first state)
+                (rp-meta-valid-syntax-listp rest
+                                            state)))
+    :hints (("goal"
+             :in-theory (e/d (rp-meta-valid-syntax-listp)
+                             (rp-meta-valid-syntaxp-sk)))))
 
-  (defthm RP-META-VALID-SYNTAX-LISTP-opener-nil
-    (equal (RP-META-VALID-SYNTAX-LISTP nil state)
+  (defthm rp-meta-valid-syntax-listp-opener-nil
+    (equal (rp-meta-valid-syntax-listp nil state)
            t)
-    :hints (("Goal"
-             :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP)
-                             (RP-META-VALID-SYNTAXP-SK))))))
+    :hints (("goal"
+             :in-theory (e/d (rp-meta-valid-syntax-listp)
+                             (rp-meta-valid-syntaxp-sk))))))
 
 
 (progn  

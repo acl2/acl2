@@ -13501,6 +13501,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-guards-fn1 ; to update *cl-cache*
     ev-fncall+-w
     extend-current-theory
+    defstobj-fn ; might be avoidable; see comment in that definition
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -22167,6 +22168,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (set-invisible-fns-table t)
 
 (defmacro add-invisible-fns (top-fn &rest unary-fns)
+
+; See call of (set-guard-msg add-invisible-fns ...) later in the sources.
+
+  (declare (xargs :guard (and (symbolp top-fn)
+                              (symbol-listp unary-fns))))
   `(table invisible-fns-table nil
           (let* ((tbl (table-alist 'invisible-fns-table world))
                  (macro-aliases (macro-aliases world))
@@ -22177,13 +22183,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (put-assoc-eq top-fn
                               (union-eq unary-fns (cdr old-entry))
                               tbl)
-              (prog2$ (cw "~%NOTE:  Add-invisible-fns did not change the ~
-                           invisible-fns-table.  Consider using :u or :ubt to ~
-                           undo this event.~%")
-                      tbl)))
+              tbl))
           :clear))
 
 (defmacro remove-invisible-fns (top-fn &rest unary-fns)
+
+; See call of (set-guard-msg remove-invisible-fns ...) later in the sources.
+
+  (declare (xargs :guard (and (symbolp top-fn)
+                              (symbol-listp unary-fns))))
   `(table invisible-fns-table nil
           (let* ((tbl (table-alist 'invisible-fns-table world))
                  (macro-aliases (macro-aliases world))
@@ -22195,10 +22203,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (if diff
                       (put-assoc-eq top-fn diff tbl)
                     (remove1-assoc-eq top-fn tbl)))
-              (prog2$ (cw "~%NOTE:  Remove-invisible-fns did not change the ~
-                           invisible-fns-table.  Consider using :u or :ubt to ~
-                           undo this event.~%")
-                      tbl)))
+              tbl))
           :clear))
 
 ; The following two definitions are included to help users transition from
@@ -27655,6 +27660,10 @@ Lisp definition."
   `(not (logicp ,fn ,wrld)))
 
 (defconst *stobjs-out-invalid*
+
+; Warning: keep this in sync with the comment about illegal functions to
+; memoize in :doc memoize.
+
   '(if return-last))
 
 (defun stobjs-out (fn w)

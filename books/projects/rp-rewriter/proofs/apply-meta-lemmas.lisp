@@ -252,7 +252,8 @@
   (implies (rp-statep rp-state)
            (rp-statep (mv-nth 3 (rp-rw-meta-rule term meta-rule rp-state state))))
   :hints (("Goal"
-           :in-theory (e/d (rp-stat-add-to-rules-used-meta-cnt) ()))))
+           :in-theory (e/d (rp-stat-add-to-rules-used-meta-cnt
+                            rp-statep) ()))))
 
 
 (defthm rp-statep-rp-rw-meta-rules

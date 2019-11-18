@@ -41,6 +41,9 @@
 (include-book "../rp-state-functions")
 (include-book "aux-function-lemmas")
 
+(local
+ (in-theory (enable rp-statep)))
+
 (defthm rp-state-push-to-try-to-rw-stack-is-rp-statep
   (implies (rp-statep rp-state)
            (rp-statep (mv-nth 1 (rp-state-push-to-try-to-rw-stack rule var-bindings

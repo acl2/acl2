@@ -3,7 +3,7 @@
  "portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
-(acl2::in-package "ACL2S")
+(in-package "ACL2S")
 
 (include-book "acl2s/ccg/ccg" :uncertified-okp nil :dir :system :ttags
               ((:ccg)) :load-compiled-file nil)
