@@ -429,6 +429,7 @@
                         :executable-counterpart
                       rule-type))
          ((when (and (equal rule-type ':definition)
+                     given-rule-type
                      (or (str::strsuffixp "P" (symbol-name rule-name))
                          (acl2::recursivep rule-name nil (w state)))))
           (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
