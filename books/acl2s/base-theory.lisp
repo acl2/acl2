@@ -424,27 +424,40 @@ I commented out some disabled theorems that seem fine to me.
 |#
 
 (in-theory
- #!acl2(disable ; |(mod (+ x y) z) where (<= 0 z)|
-                ; |(mod (+ x (- (mod a b))) y)|
-                ; |(mod (mod x y) z)|
-                ; |(mod (+ x (mod a b)) y)|
-                ; mod-cancel-*-const
-                ; cancel-mod-+
-                 reduce-additive-constant-<
-                ; reduce-additive-constant-equal
-                ash-to-floor
-                |(floor x 2)|
-                ; |(equal x (if a b c))|
-                 |(equal (if a b c) x)|
-                |(logior 1 x)|
-                mod-theorem-one-b
-                 default-plus-2
-                ; default-minus
+ #!acl2(disable
+        ;; |(mod (+ x y) z) where (<= 0 z)|
+        ;; |(mod (+ x (- (mod a b))) y)|
+        ;; |(mod (mod x y) z)|
+        ;; |(mod (+ x (mod a b)) y)|
+        ;; mod-cancel-*-const
+        ;; cancel-mod-+
+        reduce-additive-constant-<
+        ;; reduce-additive-constant-equal
+        ash-to-floor
+        |(floor x 2)|
+        |(equal x (if a b c))|
+        |(equal (if a b c) x)|
+        |(logior 1 x)|
+        |(mod (+ 1 x) y)|
+        mod-theorem-one-b
+        default-plus-2
+        ;; default-minus
+        ;;  |(mod (- x) y)|
+        ;;  mod-sums-cancel-1
+        ;;  |(equal (mod a n) (mod b n))|
+        ))
 
-;;                |(mod (- x) y)|
-;;                mod-sums-cancel-1
-;;                |(equal (mod a n) (mod b n))|
-                ))
+(defthm acl2s-default-mod-ratio
+  (implies (and (not (complex-rationalp x))
+                (syntaxp (not (acl2::proveably-real/rational
+                                     'y
+                                     (cons (cons 'y y) 'nil)
+                                     mfc state))))
+           (equal (mod x y)
+                  (if (real/rationalp y)
+                      (mod x y)
+                    (fix x))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthm numerator-1-decreases
   (implies (rationalp n)
@@ -1034,3 +1047,4 @@ Useful for testing defunc/definec errors
 (definec lendp (x :tl) :bool
   (atom x))
 
+(in-theory (disable acl2::default-mod-ratio))
