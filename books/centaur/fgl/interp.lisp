@@ -1233,10 +1233,35 @@
       '(unequiv)
     '(iff)))
 
-(define fgl-interp-arglist-equiv-contexts ((contexts equiv-contextsp))
+(define fgl-interp-lambda-arglist-equiv-contexts ((contexts equiv-contextsp))
   :returns (new-contexts equiv-contextsp)
   (and (member-eq 'unequiv (equiv-contexts-fix contexts))
        '(unequiv)))
+
+
+;; BOZO change this to derive argcontexts based on congruence rules!
+(define fgl-interp-arglist-equiv-contexts ((contexts equiv-contextsp)
+                                           (fn pseudo-fnsym-p)
+                                           (arity natp))
+  :returns (new-contexts equiv-argcontexts-p)
+  :ignore-ok t :irrelevant-formals-ok t
+  (and (member-eq 'unequiv (equiv-contexts-fix contexts))
+       t)
+  ///
+  (local (defthm nth-equiv-when-equal-length
+           (implies (equal (len x) (len y))
+                    (equal (acl2::nth-equiv x y)
+                           (acl2::list-equiv x y)))
+           :hints(("Goal" :in-theory (enable acl2::list-equiv acl2::nth-equiv-recursive true-list-fix
+                                             acl2::nth-equiv-ind len)
+                   :induct (acl2::nth-equiv x y)))))
+
+  (local (fty::deffixcong acl2::list-equiv equal (kwote-lst x) x
+           :hints(("Goal" :in-theory (enable true-list-fix)))))
+
+  (defret <fn>-correct
+    (fgl-ev-argcontext-congruence-correct-p contexts fn new-contexts arity)
+    :hints(("Goal" :in-theory (enable fgl-ev-argcontext-congruence-correct-p)))))
 
 
 (define fgl-interp-equiv-refinementp ((equiv pseudo-fnsym-p)
@@ -2636,7 +2661,7 @@
                  ;; unset so that it will start by being "incremented" to 0.
                  (interp-st (interp-st-set-term-index 0 interp-st))
                  ((interp-st-bind
-                   (equiv-contexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
+                   (equiv-contexts (fgl-interp-lambda-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
                   ((fgl-interp-recursive-call)
                    ;; replaces the top of stack with the bindings
                    (fgl-interp-bindinglist x-bindings interp-st state)))
@@ -2652,10 +2677,11 @@
                  ((when successp)
                   (fgl-interp-value ans))
 
-                 ((interp-st-bind
-                   (equiv-contexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
-                  ((fgl-interp-recursive-call args)
-                   (fgl-interp-arglist x.args interp-st state)))
+                 (argcontexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st)
+                                                                 x.fn (len x.args)))
+
+                 ((fgl-interp-recursive-call args)
+                  (fgl-interp-arglist x.args argcontexts interp-st state))
 
                  ;; ((when err)
                  ;;  (mv nil interp-st state))
@@ -2733,8 +2759,29 @@
                                      interp-st state))))
         
       (define fgl-interp-arglist ((args pseudo-term-listp)
-                                 (interp-st interp-st-bfrs-ok)
-                                 state)
+                                  (argcontexts equiv-argcontexts-p)
+                                  (interp-st interp-st-bfrs-ok)
+                                  state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020 (pseudo-term-list-binding-count args) 20)
+        :returns (mv
+                  (arg-objs fgl-objectlist-p)
+                  new-interp-st new-state)
+        (b* (((when (atom args)) (fgl-interp-value nil))
+             ((interp-st-bind
+               (equiv-contexts (equiv-argcontexts-first argcontexts)))
+              ((fgl-interp-recursive-call arg1)
+               (fgl-interp-term-equivs (car args) interp-st state)))
+             ;; ((when err) (mv nil interp-st state))
+             (interp-st (interp-st-push-scratch-fgl-obj arg1 interp-st))
+             ((fgl-interp-value rest)
+              (fgl-interp-arglist (cdr args) (equiv-argcontexts-rest argcontexts) interp-st state))
+             ((mv arg interp-st) (interp-st-pop-scratch-fgl-obj interp-st)))
+          (fgl-interp-value (cons arg rest))))
+
+      (define fgl-interp-lambda-arglist ((args pseudo-term-listp)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020 (pseudo-term-list-binding-count args) 20)
         :returns (mv
@@ -2746,7 +2793,7 @@
              ;; ((when err) (mv nil interp-st state))
              (interp-st (interp-st-push-scratch-fgl-obj arg1 interp-st))
              ((fgl-interp-value rest)
-              (fgl-interp-arglist (cdr args) interp-st state))
+              (fgl-interp-lambda-arglist (cdr args) interp-st state))
              ((mv arg interp-st) (interp-st-pop-scratch-fgl-obj interp-st)))
           (fgl-interp-value (cons arg rest))))
 
@@ -2761,7 +2808,7 @@
         (b* (((when (atom bindings)) (fgl-interp-value))
              ((cmr::binding x1) (car bindings))
              ((fgl-interp-recursive-call args)
-              (fgl-interp-arglist x1.args interp-st state))
+              (fgl-interp-lambda-arglist x1.args interp-st state))
              ;; ((when err) (mv interp-st state))
              (interp-st (interp-st-add-minor-bindings (pairlis$ x1.formals args) interp-st)))
           (fgl-interp-bindinglist (cdr bindings) interp-st state)))
@@ -3227,9 +3274,9 @@
              ;; increment term index for function and first arg
              (interp-st (interp-st-incr-term-index 2 interp-st))
              ((interp-st-bind
-               (equiv-contexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
+               (equiv-contexts (fgl-interp-lambda-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
               ((fgl-interp-recursive-call argvals)
-               (fgl-interp-arglist (cdr form.args) interp-st state)))
+               (fgl-interp-lambda-arglist (cdr form.args) interp-st state)))
              ((fgl-interp-recursive-call successp var-val)
               (fgl-rewrite-binder-fncall form.fn argvals interp-st state))
              ((unless successp)
@@ -4117,7 +4164,7 @@
              
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit)
-               (equiv-contexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
+               (equiv-contexts (fgl-interp-lambda-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
               ((fgl-interp-recursive-call args)
                (fgl-interp-merge-branch-args testbfr thenargs elseargs interp-st state)))
 
@@ -4538,10 +4585,33 @@
 (with-output
   :off (event)
   :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+  (std::defret-mutual len-of-fgl-interp-arglist
+    (defret len-of-fgl-interp-lambda-arglist
+      (equal (len arg-objs) (len args))
+      :fn fgl-interp-lambda-arglist)
+    :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world))
+    :mutual-recursion fgl-interp
+    :skip-others t))
+
+(with-output
+  :off (event)
+  :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
   (std::defret-mutual true-listp-of-fgl-interp-arglist
     (defret true-listp-of-fgl-interp-arglist
       (true-listp arg-objs)
       :fn fgl-interp-arglist
+      :rule-classes :type-prescription)
+    :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world))
+    :mutual-recursion fgl-interp
+    :skip-others t))
+
+(with-output
+  :off (event)
+  :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+  (std::defret-mutual true-listp-of-fgl-interp-lambda-arglist
+    (defret true-listp-of-fgl-interp-lambda-arglist
+      (true-listp arg-objs)
+      :fn fgl-interp-lambda-arglist
       :rule-classes :type-prescription)
     :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world))
     :mutual-recursion fgl-interp
@@ -7228,14 +7298,14 @@
     (b* (((pseudo-term-fncall x)))
       (implies (and (pseudo-term-case x :fncall)
                     (equal?-list-forall-extensions
-                     (fgl-interp-arglist-equiv-contexts contexts)
+                     (fgl-interp-lambda-arglist-equiv-contexts contexts)
                      args-obj x.args (append minor major1))
                     (fgl-ev-context-equiv
                      contexts obj (fgl-ev (cons x.fn (kwote-lst args-obj)) nil))
                     (eval-alist-extension-p major2 major1))
                (fgl-ev-context-equiv-forall-extensions
                 contexts obj x (append minor major2))))
-    :hints(("Goal" :in-theory (enable fgl-interp-arglist-equiv-contexts))))
+    :hints(("Goal" :in-theory (enable fgl-interp-lambda-arglist-equiv-contexts))))
 
   (defthm equal?-list-forall-extensions-of-args
     (implies (and (consp args)
@@ -7269,7 +7339,7 @@
                       (pseudo-term-case (car form.args) :var)
                       (equal free-var (pseudo-term-var->name (car form.args)))
                       (equal?-list-forall-extensions
-                       (fgl-interp-arglist-equiv-contexts contexts)
+                       (fgl-interp-lambda-arglist-equiv-contexts contexts)
                        arg-objs
                        (cdr form.args)
                        (append minor major1))
@@ -7289,7 +7359,7 @@
                   rhs-obj form (append minor (cons (cons free-var rhs-obj) major1)))))
       :hints(("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2
                                         fgl-ev-of-fncall-args
-                                        fgl-interp-arglist-equiv-contexts))
+                                        fgl-interp-lambda-arglist-equiv-contexts))
              (acl2::witness :ruleset context-equiv-forall)))
     )
                              
@@ -7467,7 +7537,7 @@
     (b* (((mv bindings body) (lambda-nest-to-bindinglist x)))
       (implies (and (pseudo-term-case x :lambda)
                     (equal?-bindinglist-forall-extensions
-                    (fgl-interp-arglist-equiv-contexts contexts)
+                    (fgl-interp-lambda-arglist-equiv-contexts contexts)
                     bindings-obj bindings minor-bindings major-bindings1)
                     (fgl-ev-context-equiv-forall-extensions
                      contexts obj
@@ -7476,7 +7546,7 @@
                     (alistp major-bindings1))
                (fgl-ev-context-equiv-forall-extensions
                 contexts obj x (append minor-bindings major-bindings2))))
-    :hints(("Goal" :in-theory (enable fgl-interp-arglist-equiv-contexts))))
+    :hints(("Goal" :in-theory (enable fgl-interp-lambda-arglist-equiv-contexts))))
 
   (defthm equal?-bindinglist-forall-extensions-append
     (implies (and (consp bindings)
@@ -8120,12 +8190,12 @@
           (fgl-ev-list-context-fix contexts (cdr x))))
   ///
   (local (defthm fgl-ev-list-context-fix-cases
-           (equal (fgl-ev-list-context-fix (fgl-interp-arglist-equiv-contexts contexts) x)
+           (equal (fgl-ev-list-context-fix (fgl-interp-lambda-arglist-equiv-contexts contexts) x)
                   (if (member 'unequiv (equiv-contexts-fix contexts))
                       (acl2::repeat (len x) (fgl-ev-context-fix '(unequiv) nil))
                     (true-list-fix x)))
            :hints(("Goal" :in-theory (enable len acl2::repeat true-list-fix
-                                             fgl-interp-arglist-equiv-contexts)))))
+                                             fgl-interp-lambda-arglist-equiv-contexts)))))
 
   (local (defthm fgl-ev-list-context-fix-of-nil
            (equal (fgl-ev-list-context-fix nil x)
@@ -8146,10 +8216,10 @@
              (ignore state))
     (not (mfc-ancestors mfc)))
 
-  (defthm fgl-interp-arglist-equiv-contexts-correct
+  (defthm fgl-interp-lambda-arglist-equiv-contexts-correct
     (implies (and
-              (equal (fgl-ev-list-context-fix (fgl-interp-arglist-equiv-contexts contexts) args1)
-                     (fgl-ev-list-context-fix (fgl-interp-arglist-equiv-contexts contexts) args2))
+              (equal (fgl-ev-list-context-fix (fgl-interp-lambda-arglist-equiv-contexts contexts) args1)
+                     (fgl-ev-list-context-fix (fgl-interp-lambda-arglist-equiv-contexts contexts) args2))
               (pseudo-fnsym-p fn)
               (syntaxp (empty-mfc-ancestors mfc state))
               (equal ans (fgl-ev-context-fix contexts (fgl-ev (cons fn (kwote-lst args2)) nil)))
@@ -8158,7 +8228,7 @@
                          (& t))))
              (equal (fgl-ev-context-fix contexts (fgl-ev (cons fn (kwote-lst args1)) nil))
                     ans))
-    :hints(("Goal" :in-theory (enable fgl-interp-arglist-equiv-contexts))))
+    :hints(("Goal" :in-theory (enable fgl-interp-lambda-arglist-equiv-contexts))))
 
   (defthm fgl-ev-list-context-fix-of-cons
     (equal (fgl-ev-list-context-fix contexts (cons a b))
@@ -8328,6 +8398,108 @@
                                          (fgl-ev-context-equiv-forall-extensions-necc))
                   :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
                          (ext eval-alist)))))))
+
+
+(local (defthm len-of-fgl-ev-list
+         (equal (len (fgl-ev-list x env))
+                (len x))
+         :hints(("Goal" :in-theory (enable len)))))
+
+
+(defsection fgl-ev-argcontexts-equiv-forall-extensions
+  (defun-sk fgl-ev-argcontexts-equiv-forall-extensions (contexts objs terms eval-alist)
+    (forall (ext)
+            (implies (eval-alist-extension-p ext eval-alist)
+                     (fgl-ev-argcontexts-equiv contexts (fgl-ev-list terms ext) objs)))
+    :rewrite :direct)
+
+  (in-theory (disable fgl-ev-argcontexts-equiv-forall-extensions
+                      fgl-ev-argcontexts-equiv-forall-extensions-necc))
+
+
+  (defthm fgl-interp-term-argcontexts-equiv-lemma
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (fgl-ev-argcontexts-equiv-forall-extensions
+                     (fgl-interp-arglist-equiv-contexts contexts x.fn (len x.args))
+                     objs x.args (append minor-bindings major-bindings1))
+                    (equal (len objs) (len x.args))
+                    (equal (fgl-ev-context-fix contexts
+                                               (fgl-ev (cons x.fn (kwote-lst objs)) nil))
+                           (fgl-ev-context-fix contexts result-obj))
+                    (eval-alist-extension-p major-bindings2 major-bindings1))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts result-obj x (append minor-bindings major-bindings2))))
+    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall-extensions-witnessing)
+            (and stable-under-simplificationp
+                 '(:use ((:instance fgl-ev-argcontext-congruence-correct-p-necc
+                          (ctx contexts)
+                          (arg-ctxs (fgl-interp-arglist-equiv-contexts contexts
+                                                                       (pseudo-term-fncall->fn x)
+                                                                       (len (pseudo-term-call->args x))))
+                          (fn (pseudo-term-fncall->fn x))
+                          (arity (len (pseudo-term-call->args x)))
+                          (args2 objs)
+                          (args1 (fgl-ev-list (pseudo-term-call->args x)
+                                              ext0)))
+                         (:instance fgl-ev-argcontexts-equiv-forall-extensions-necc
+                          (contexts (fgl-interp-arglist-equiv-contexts
+                                     contexts (pseudo-term-fncall->fn x) (len (pseudo-term-call->args x))))
+                          (terms (pseudo-term-call->args x))
+                          (eval-alist (append minor-bindings major-bindings1))
+                          (ext ext0)))
+                   :in-theory (e/d (fgl-ev-of-fncall-args
+                                    eval-alist-extension-p-transitive-append-2)
+                                   (fgl-ev-argcontext-congruence-correct-p-necc))))))
+
+  (defthm fgl-interp-arglist-argcontexts-equiv-lemma
+    (implies (and (fgl-ev-context-equiv-forall-extensions
+                   (equiv-argcontexts-first argcontexts)
+                   obj1 (car args)
+                   (append minor-bindings major-bindings1))
+                  (fgl-ev-argcontexts-equiv-forall-extensions
+                   (equiv-argcontexts-rest argcontexts)
+                   rest-objs (cdr args)
+                   (append minor-bindings major-bindings2))
+                  (consp args)
+                  (eval-alist-extension-p major-bindings2 major-bindings1))
+             (fgl-ev-argcontexts-equiv-forall-extensions
+              argcontexts
+              (cons obj1 rest-objs)
+              args (append minor-bindings major-bindings2)))
+    :hints (("goal" :expand ((fgl-ev-argcontexts-equiv-forall-extensions
+                              argcontexts
+                              (cons obj1 rest-objs)
+                              args (append minor-bindings major-bindings2)))
+             :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
+                    (contexts (equiv-argcontexts-first argcontexts))
+                    (obj obj1) (term (car args))
+                    (eval-alist (append minor-bindings major-bindings1))
+                    (ext (fgl-ev-argcontexts-equiv-forall-extensions-witness
+                          argcontexts
+                          (cons obj1 rest-objs)
+                          args (append minor-bindings major-bindings2))))
+                   (:instance fgl-ev-argcontexts-equiv-forall-extensions-necc
+                    (contexts (equiv-argcontexts-rest argcontexts))
+                    (objs rest-objs) (terms (cdr args))
+                    (eval-alist (append minor-bindings major-bindings2))
+                    (ext (fgl-ev-argcontexts-equiv-forall-extensions-witness
+                          argcontexts
+                          (cons obj1 rest-objs)
+                          args (append minor-bindings major-bindings2)))))
+             :in-theory (enable eval-alist-extension-p-transitive-append-2))))
+
+  (defthm fgl-ev-argcontexts-equiv-forall-extensions-empty
+    (implies (not (consp args))
+             (fgl-ev-argcontexts-equiv-forall-extensions argcontexts nil args eval-alist))
+    :hints(("Goal" :in-theory (enable fgl-ev-argcontexts-equiv-forall-extensions)))))
+
+(local (defthm len-of-fgl-objectlist-eval
+         (equal (len (fgl-objectlist-eval x env))
+                (len x))
+         :hints(("Goal" :in-theory (enable len fgl-objectlist-eval)))))
+                           
+
 
 (local
  (defsection-unique fgl-interp-correct
@@ -8865,6 +9037,13 @@
                 
 
                 ((:fnname fgl-interp-arglist)
+                 (:add-concl
+                  (fgl-ev-argcontexts-equiv-forall-extensions
+                   argcontexts
+                   (fgl-objectlist-eval arg-objs env new-logicman)
+                   args eval-alist)))
+
+                ((:fnname fgl-interp-lambda-arglist)
                  (:add-concl
                   (equal?-list-forall-extensions
                    (interp-st->equiv-contexts interp-st)
