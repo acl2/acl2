@@ -857,10 +857,10 @@
   (define compute-mandatory-prefix-for-three-byte-opcode
     ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
      (second-escape-byte :type (unsigned-byte 8)
-			 "Second byte of the three-byte opcode; either
-			 @('0x38') or @('0x3A')")
+                         "Second byte of the three-byte opcode; either
+                         @('0x38') or @('0x3A')")
      (opcode             :type (unsigned-byte 8)
-			 "Third byte of the three-byte opcode")
+                         "Third byte of the three-byte opcode")
      (prefixes           :type (unsigned-byte #.*prefixes-width*)))
 
     :inline t

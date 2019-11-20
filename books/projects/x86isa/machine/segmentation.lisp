@@ -464,7 +464,7 @@
 	       (lin-addrs "A @('nil')-terminated list of @(tsee i64p)s."))
   :parents (segmentation)
   :short "Translate a sequence of contiguous effective addresses
-	  to linear addresses."
+          to linear addresses."
   :long
   "<p>
    The contiguous effective addresses are
