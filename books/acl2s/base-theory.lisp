@@ -67,7 +67,14 @@
             intersection-equal))
 
 
-(include-book "arithmetic-5/top" :dir :system)
+; An attempt to control the order of arithmetic rules.
+(include-book
+  "arithmetic-5/lib/basic-ops/simple-equalities-and-inequalities"
+  :dir :system)
+(include-book "arithmetic-5/lib/basic-ops/simplify" :dir :system)
+(include-book "arithmetic-5/lib/basic-ops/building-blocks" :dir :system)
+(include-book "arithmetic-5/lib/floor-mod/floor-mod" :dir :system)
+(local (include-book "arithmetic-5/top" :dir :system))
 
 #|
 PETE: adding something like this might be useful.
@@ -423,6 +430,7 @@ I commented out some disabled theorems that seem fine to me.
 
 |#
 
+(local
 (in-theory
  #!acl2(disable
         ;; |(mod (+ x y) z) where (<= 0 z)|
@@ -430,22 +438,26 @@ I commented out some disabled theorems that seem fine to me.
         ;; |(mod (mod x y) z)|
         ;; |(mod (+ x (mod a b)) y)|
         ;; mod-cancel-*-const
-        ;; cancel-mod-+
-        reduce-additive-constant-<
-        ;; reduce-additive-constant-equal
+        cancel-floor-+
+        cancel-mod-+
+        prefer-positive-addends-<
+        prefer-positive-addends-equal
+        reduce-additive-constant-< 
+        reduce-additive-constant-equal
+        default-mod-ratio
         ash-to-floor
         |(floor x 2)|
         |(equal x (if a b c))|
         |(equal (if a b c) x)|
         |(logior 1 x)|
         |(mod (+ 1 x) y)|
-        mod-theorem-one-b
-        default-plus-2
+        ;; mod-theorem-one-b x
+        ;; default-plus-2 x
         ;; default-minus
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
-        ))
+        )))
 
 (defthm acl2s-default-mod-ratio
   (implies (and (not (complex-rationalp x))
@@ -459,31 +471,162 @@ I commented out some disabled theorems that seem fine to me.
                     (fix x))))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(defthm numerator-1-decreases
-  (implies (rationalp n)
-           (< (numerator (- n 1))
-              (numerator n)))
-  :hints (("goal"
-           :use ((:instance ACL2::|(* r (denominator r))|
-                            (acl2::r n))
-                 (:instance ACL2::|(* r (denominator r))|
-                            (acl2::r (- n 1)))
-                 )
-           :in-theory (disable ACL2::|(* r (denominator r))|)))
-  :rule-classes ((:linear) (:rewrite)))
+#!acl2
+(defthm acl2s::acl2s-cancel-floor-+
+  (implies
+   (and (real/rationalp (/ x y))
+        (syntaxp (in-term-order-+ x mfc state))
+        (bind-free
+         (find-cancelling-addends x y mfc state)
+         (addend))
+        (equal i (/ addend y))
+        (integerp i))
+   (equal (floor x y)
+          (+ (- i)
+             (floor (+ addend x)
+                    y))))
+  :hints (("goal" :by acl2::cancel-floor-+))
+  :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
-(defun posp-ind (n)
-  (if (or (zp n) (equal n 1))
-      n
-    (posp-ind (- n 1))))
+#!acl2
+(defthm acl2s::acl2s-cancel-mod-+
+  (implies
+   (and (acl2-numberp y)
+        (not (equal y 0))
+        (syntaxp (not (equal x ''0)))
+        (real/rationalp (/ x y))
+        (syntaxp (in-term-order-+ x mfc state))
+        (bind-free
+         (find-cancelling-addends x y mfc state)
+         (addend))
+        (equal i (/ addend y))
+        (integerp i))
+   (equal (mod x y)
+          (mod (+ addend x) y)))
+  :hints (("goal" :use ((:instance acl2::cancel-mod-+))
+           :in-theory (disable acl2::cancel-mod-+ acl2::cancel-floor-+)))
+  :otf-flg t
+  :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
-(defthm cancel-<-+-1
-  (equal (< (+ a b) a)
-         (< b 0)))
+#!acl2
+(defthm acl2s::acl2s-prefer-positive-addends-<
+  (implies
+   (and (syntaxp (in-term-order-+ lhs mfc state))
+        (syntaxp (in-term-order-+ rhs mfc state))
+        (syntaxp (or (equal (fn-symb lhs)
+                            'binary-+)
+                     (equal (fn-symb rhs)
+                            'binary-+)))
+        (bind-free
+         (find-negative-addend lhs rhs mfc state)
+         (x)))
+   (equal (< lhs rhs)
+          (< (+ x lhs)
+             (+ x rhs))))
+  :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
-(defthm cancel-<-+-2
-  (equal (< a (+ a b))
-         (< 0 b)))
+#!acl2
+(defthm acl2s::acl2s-prefer-positive-addends-<1
+  (implies
+   (and (syntaxp (in-term-order-+ lhs mfc state))
+        (syntaxp (in-term-order-+ rhs mfc state))
+        (syntaxp (or (equal (fn-symb lhs)
+                            'binary-+)
+                     (equal (fn-symb rhs)
+                            'binary-+)))
+        (bind-free
+         (find-negative-addend lhs rhs mfc state)
+         (x))
+        (equal yyy (- x)))
+   (equal (< lhs (+ yyy rhs))
+          (< (+ (- yyy) lhs) rhs)))
+  :rule-classes ((:rewrite :backchain-limit-lst 2)))
+
+#!acl2
+(defthm acl2s::acl2s-prefer-positive-addends-<2
+  (implies
+   (and (syntaxp (in-term-order-+ lhs mfc state))
+        (syntaxp (in-term-order-+ rhs mfc state))
+        (syntaxp (or (equal (fn-symb lhs)
+                            'binary-+)
+                     (equal (fn-symb rhs)
+                            'binary-+)))
+        (bind-free
+         (find-negative-addend lhs rhs mfc state)
+         (x))
+        (equal yyy (- x)))
+   (equal (< (+ yyy lhs) rhs)
+          (< lhs (+ (- yyy) rhs))))
+  :rule-classes ((:rewrite :backchain-limit-lst 2)))
+
+#!acl2
+(defthm acl2s::acl2s-prefer-positive-addends-equal
+  (implies (and (acl2-numberp lhs)
+                (acl2-numberp rhs)
+                (syntaxp (in-term-order-+ lhs mfc state))
+                (syntaxp (in-term-order-+ rhs mfc state))
+                (syntaxp (or (equal (fn-symb lhs)
+                                    'binary-+)
+                             (equal (fn-symb rhs)
+                                    'binary-+)))
+                (bind-free
+                 (find-negative-addend lhs rhs mfc state)
+                 (x)))
+           (equal (equal lhs rhs)
+                  (equal (+ x lhs)
+                         (+ x rhs))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+#!acl2
+(defthm acl2s::acl2s-reduce-additive-constant-<
+  (implies
+   (and (syntaxp (in-term-order-+ lhs mfc state))
+        (syntaxp (in-term-order-+ rhs mfc state))
+        (bind-free (find-constant-addend lhs rhs)
+                   (c))
+        (not (equal c 0))
+        (syntaxp
+         (simplify-ok-p
+          (cons '< (cons lhs (cons rhs 'nil)))
+          '(< (binary-+ c lhs)
+              (binary-+ c rhs))
+          (cons (cons 'lhs lhs)
+                (cons (cons 'rhs rhs)
+                      (cons (cons 'c c) 'nil)))
+          mfc state))
+        (acl2-numberp lhs)
+        (acl2-numberp rhs)
+        (acl2-numberp c))
+   (equal (< lhs rhs)
+          (< (+ c lhs)
+             (+ c rhs))))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
+#!acl2
+(defthm acl2s::acl2s-reduce-additive-constant-equal
+  (implies
+   (and (syntaxp (in-term-order-+ lhs mfc state))
+        (syntaxp (in-term-order-+ rhs mfc state))
+        (bind-free (find-constant-addend lhs rhs)
+                   (c))
+        (not (equal c 0))
+        (syntaxp
+         (simplify-ok-p
+          (cons 'equal
+                (cons lhs (cons rhs 'nil)))
+          '(equal (binary-+ c lhs)
+                  (binary-+ c rhs))
+          (cons (cons 'lhs lhs)
+                (cons (cons 'rhs rhs)
+                      (cons (cons 'c c) 'nil)))
+          mfc state))
+        (acl2-numberp lhs)
+        (acl2-numberp rhs)
+        (acl2-numberp c))
+   (equal (equal lhs rhs)
+          (equal (+ c lhs)
+                 (+ c rhs))))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
 ;;; When things have stabilized under simplification, enable non-linear
 ;;; arithmetic for one round (goal being simplified) only.
@@ -550,6 +693,34 @@ I commented out some disabled theorems that seem fine to me.
     (acl2s::stage acl2s::non-neg-rationalp)
     (acl2s::stage acl2s::non-pos-rationalp))))
 
+(include-book "arithmetic-5/top" :dir :system)
+
+(defthm numerator-1-decreases
+  (implies (rationalp n)
+           (< (numerator (- n 1))
+              (numerator n)))
+  :hints (("goal"
+           :use ((:instance ACL2::|(* r (denominator r))|
+                            (acl2::r n))
+                 (:instance ACL2::|(* r (denominator r))|
+                            (acl2::r (- n 1)))
+                 )
+           :in-theory (disable ACL2::|(* r (denominator r))|)))
+  :rule-classes ((:linear) (:rewrite)))
+
+(defun posp-ind (n)
+  (if (or (zp n) (equal n 1))
+      n
+    (posp-ind (- n 1))))
+
+(defthm cancel-<-+-1
+  (equal (< (+ a b) a)
+         (< b 0)))
+
+(defthm cancel-<-+-2
+  (equal (< a (+ a b))
+         (< 0 b)))
+
 (defthm cancel-<-*-1
   (implies (and (acl2-numberp a)
                 (< 0 a)
@@ -613,6 +784,35 @@ I commented out some disabled theorems that seem fine to me.
  Useful theorems about mod.
 
 |#
+
+(local
+ (in-theory
+  #!acl2(enable
+         ;; |(mod (+ x y) z) where (<= 0 z)|
+         ;; |(mod (+ x (- (mod a b))) y)|
+         ;; |(mod (mod x y) z)|
+         ;; |(mod (+ x (mod a b)) y)|
+         ;; mod-cancel-*-const
+         cancel-floor-+
+         cancel-mod-+
+         prefer-positive-addends-<
+         prefer-positive-addends-equal
+         reduce-additive-constant-< 
+         reduce-additive-constant-equal
+         default-mod-ratio
+         ash-to-floor
+         |(floor x 2)|
+         |(equal x (if a b c))|
+         |(equal (if a b c) x)|
+         |(logior 1 x)|
+         |(mod (+ 1 x) y)|
+         ;; mod-theorem-one-b x
+         ;; default-plus-2 x
+         ;; default-minus
+         ;;  |(mod (- x) y)|
+         ;;  mod-sums-cancel-1
+         ;;  |(equal (mod a n) (mod b n))|
+         )))
 
 (defthm mod-plus-simplify-a<n-+b
   (implies (and (non-neg-rationalp a)
@@ -1047,4 +1247,31 @@ Useful for testing defunc/definec errors
 (definec lendp (x :tl) :bool
   (atom x))
 
-(in-theory (disable acl2::default-mod-ratio))
+(in-theory
+ #!acl2(disable
+        ;; |(mod (+ x y) z) where (<= 0 z)|
+        ;; |(mod (+ x (- (mod a b))) y)|
+        ;; |(mod (mod x y) z)|
+        ;; |(mod (+ x (mod a b)) y)|
+        ;; mod-cancel-*-const
+        cancel-floor-+
+        cancel-mod-+
+        prefer-positive-addends-<
+        prefer-positive-addends-equal
+        reduce-additive-constant-< 
+        reduce-additive-constant-equal
+        default-mod-ratio
+        ash-to-floor
+        |(floor x 2)|
+        |(equal x (if a b c))|
+        |(equal (if a b c) x)|
+        |(logior 1 x)|
+        |(mod (+ 1 x) y)|
+        ;; mod-theorem-one-b x
+        ;; default-plus-2 x
+        ;; default-minus
+        ;;  |(mod (- x) y)|
+        ;;  mod-sums-cancel-1
+        ;;  |(equal (mod a n) (mod b n))|
+        ))
+
