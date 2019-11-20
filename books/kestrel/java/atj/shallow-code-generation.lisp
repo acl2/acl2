@@ -1011,6 +1011,91 @@
      the type @(':avalue') of all ACL2 values,
      i.e. it is as if there were no types."))
 
+  (define atj-gen-shallow-iftest ((test pseudo-termp)
+                                  (jvar-result-base stringp)
+                                  (jvar-result-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (fn-method-names symbol-string-alistp)
+                                  (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded ACL2 @(tsee if) test."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "See @(tsee atj-gen-shallow-ifapp) for a general description
+       of how ACL2 @(tsee if)s are translated to Java @('if')s.")
+     (xdoc::p
+      "Here we handle the test of the @(tsee if).
+       If the test has the form @('(boolean-value->bool b)'),
+       as explained in @(tsee atj-types-for-boolean-value-destructor),
+       we translate @('b') to its Java equivalent,
+       ``ignoring'' @(tsee boolean-value->bool).
+       More precisely, we are dealing with annotated terms,
+       so we look for @(tsee if) tests of the form
+       @('([AS>AS] (boolean-value->bool ([JZ>JZ] <jbool>)))'),
+       where @('<jbool>') evidently returns
+       (our ACL2 model of) a Java boolean value,
+       given the @('[JZ>JZ]') (non-)conversion (see @(tsee atj-type-conv)),
+       where the destination type @(':jboolean')
+       is the one assigned to the input of @(tsee boolean-value->bool).
+       When an @(tsee if) test is type-annotated,
+       no specific type is required for the test
+       (see @(tsee atj-type-annotate-term)),
+       so since the output type @(':asymbol')
+       is assigned to @(tsee boolean-value->bool),
+       the @('[AS>AS]') (non-)conversion will always wrap the test.")
+     (xdoc::p
+      "So, if the @(tsee if) test has the form just explained,
+       we translate just @('<jbool>') to Java.
+       Otherwise, we translate the whole test term,
+       and return an expression that compares it with
+       (the Java representation of) @('nil')."))
+    (b* ((jbool? ; non-NIL iff TEST has the form explained above
+          (b* (((mv test src-type dst-type) (atj-type-unwrap-term test))
+               ((unless (and (eq src-type :asymbol)
+                             (eq dst-type :asymbol)))
+                nil)
+               ((unless (and (consp test)
+                             (eq (ffn-symb test)
+                                 'boolean-value->bool$inline)
+                             (int= (len (fargs test)) 1))) ; always true
+                nil)
+               (test (fargn test 1))
+               ((unless (and (consp test)
+                             (eq (ffn-symb test)
+                                 (atj-type-conv :jboolean :jboolean))
+                             (int= (len (fargs test)) 1))) ; always true
+                nil))
+            test))
+         ((mv block
+              expr
+              jvar-result-index) (atj-gen-shallow-term (or jbool? test)
+                                                       jvar-result-base
+                                                       jvar-result-index
+                                                       pkg-class-names
+                                                       fn-method-names
+                                                       curr-pkg
+                                                       qpairs
+                                                       guards$
+                                                       wrld))
+         (expr (if jbool?
+                   expr
+                 (jexpr-binary (jbinop-ne)
+                               expr
+                               (atj-gen-shallow-symbol
+                                nil pkg-class-names curr-pkg)))))
+      (mv block expr jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count test) 1))
+
   (define atj-gen-shallow-ifapp ((test pseudo-termp)
                                  (then pseudo-termp)
                                  (else pseudo-termp)
@@ -1070,18 +1155,23 @@
      (xdoc::p
       "and the Java expression")
      (xdoc::codeblock
-      "<a-expr> == NIL ? <c-expr> : <b-expr>"))
+      "<a-expr> != NIL ? <b-expr> : <c-expr>")
+     (xdoc::p
+      "However, if the test of the @(tsee if) has the form
+       @('([AS>AS] (boolean-value->bool ([JZ>JZ] a)))'),
+       we generate just @('<a-expr>') as the test of the Java @('if'):
+       see @(tsee atj-gen-shallow-iftest) for details."))
     (b* (((mv test-block
               test-expr
-              jvar-result-index) (atj-gen-shallow-term test
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index) (atj-gen-shallow-iftest test
+                                                         jvar-result-base
+                                                         jvar-result-index
+                                                         pkg-class-names
+                                                         fn-method-names
+                                                         curr-pkg
+                                                         qpairs
+                                                         guards$
+                                                         wrld))
          ((mv then-block
               then-expr
               jvar-result-index) (atj-gen-shallow-term then
@@ -1108,10 +1198,7 @@
                      (null then-block)
                      (null else-block)))
           (b* ((block test-block)
-               (expr (jexpr-cond (jexpr-binary (jbinop-ne)
-                                               test-expr
-                                               (atj-gen-shallow-symbol
-                                                nil pkg-class-names curr-pkg))
+               (expr (jexpr-cond test-expr
                                  then-expr
                                  else-expr)))
             (mv block
@@ -1124,10 +1211,7 @@
                                    jvar-result-index
                                    (jexpr-literal-null)))
          (if-block (jblock-ifelse
-                    (jexpr-binary (jbinop-ne)
-                                  test-expr
-                                  (atj-gen-shallow-symbol
-                                   nil pkg-class-names curr-pkg))
+                    test-expr
                     (append then-block
                             (jblock-asg-name jvar-result then-expr))
                     (append else-block
@@ -1139,13 +1223,14 @@
       (mv block
           expr
           jvar-result-index))
-    ;; 2nd component is non-0
-    ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
+    ;; 2nd component is greater than 0 and 1
+    ;; so that the call of ATJ-GEN-SHALLOW-IFTEST decreases
+    ;; and each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNTs of the other two addends are 0:
     :measure (two-nats-measure (+ (acl2-count test)
                                   (acl2-count then)
                                   (acl2-count else))
-                               1))
+                               2))
 
   (define atj-gen-shallow-orapp ((first pseudo-termp)
                                  (second pseudo-termp)
@@ -1377,8 +1462,7 @@
               jvar-result-index))))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg)
-                               1))
+    :measure (two-nats-measure (acl2-count arg) 1))
 
   (define atj-gen-shallow-primunapp ((fn (member-eq fn *atj-primitive-unops*))
                                      (operand pseudo-termp)
@@ -1767,7 +1851,10 @@
           jvar-result-index))
     ;; 2nd component is greater than the one of ATJ-GEN-SHALLOW-LAMBDA
     ;; so that the call of ATJ-GEN-SHALLOW-LAMBDA decreases
-    ;; even when FN is a non-symbol atom (impossible under the guard):
+    ;; even when FN is a non-symbol atom (impossible under the guard),
+    ;; and it is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases
+    ;; even when the ACL2-COUNT of FN is 0:
     :measure (two-nats-measure (+ (acl2-count fn)
                                   (acl2-count args))
                                2))
