@@ -240,7 +240,12 @@
      pseudo-term-list-binding-count
      binding-count
      bindinglist-count
-     lambda-nest-to-bindinglist)))
+     lambda-nest-to-bindinglist
+
+     equiv-contextsp
+     equiv-contexts-fix
+     equiv-contextslist-p
+     equiv-contextslist-fix)))
 
 
 ;; bozo I don't think we need any of these

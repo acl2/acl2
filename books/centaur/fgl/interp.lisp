@@ -1276,10 +1276,10 @@
        ((when (equal x y)) t))
     nil)
   ///
-  (local (in-theory (disable equiv-contexts-fix-under-iff)))
+  ;; (local (in-theory (disable equiv-contexts-fix-under-iff)))
   (local (defthm not-equiv-contexts-fix
-           (implies (not (equiv-contexts-fix x))
-                    (equiv-contexts-equiv x nil))
+           (implies (not (consp y))
+                    (cmr::equiv-contexts-equiv y nil))
            :rule-classes :forward-chaining))
 
   (defthm fgl-ev-context-equiv-when-coarsening-p
@@ -6487,7 +6487,7 @@
              (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist))
     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-forall-extensions))))
 
-  (fty::deffixcong equiv-contexts-equiv equal (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
+  (fty::deffixcong cmr::equiv-contexts-equiv equal (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
     contexts
     :hints (("goal" :cases
              ((fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist))
@@ -6656,85 +6656,15 @@
 
 (local
  (defsection fgl-ev-context-equiv-when-equiv-rel
-   (defthm fgl-ev-context-equiv-base-of-equiv-rel
-     (implies (and ;; (fgl-ev-theoremp (cmr::equiv-rel-term equiv))
-               (pseudo-fnsym-p equiv)
-               (fgl-ev-equiv-context-equiv-base equiv x y))
-              (fgl-ev (list equiv (pseudo-term-quote x) (pseudo-term-quote y)) nil))
-     :hints(("Goal" :in-theory (enable fgl-ev-equiv-context-equiv-base))))
-
-   (local
-    (defthmd fgl-ev-when-theoremp
-      (implies (fgl-ev-theoremp x)
-               (fgl-ev x a))
-      :hints (("goal" :use fgl-ev-falsify))))
-
-   (local (in-theory (enable fgl-ev-of-bad-fncall
-                             fgl-ev-of-nonsymbol-atom)))
-   
-   (local (acl2::def-functional-instance
-            fgl-ev-equiv-rel-term-implies-reflexive
-            cmr::equiv-rel-term-implies-reflexive
-            ((cmr::equiv-ev fgl-ev)
-             (cmr::equiv-ev-list fgl-ev-list)
-             (cmr::equiv-ev-falsify fgl-ev-falsify))
-            :hints(("Goal" :in-theory (enable fgl-ev-when-theoremp
-                                              fgl-ev-of-fncall-args)))))
-
-   (local (acl2::def-functional-instance
-            fgl-ev-equiv-rel-term-implies-symmetric
-            cmr::equiv-rel-term-implies-symmetric
-            ((cmr::equiv-ev fgl-ev)
-             (cmr::equiv-ev-list fgl-ev-list)
-             (cmr::equiv-ev-falsify fgl-ev-falsify))))
-
-   (local (acl2::def-functional-instance
-            fgl-ev-equiv-rel-term-implies-transitive
-            cmr::equiv-rel-term-implies-transitive
-            ((cmr::equiv-ev fgl-ev)
-             (cmr::equiv-ev-list fgl-ev-list)
-             (cmr::equiv-ev-falsify fgl-ev-falsify))))
-
-   (defthm fgl-ev-context-equiv-some-of-equiv-rel
-     (implies (and (fgl-ev-theoremp (cmr::equiv-rel-term equiv))
-                   (pseudo-fnsym-p equiv)
-                   (fgl-ev-context-equiv-some (list equiv) x y))
-              (fgl-ev (list equiv (pseudo-term-quote x) (pseudo-term-quote y)) nil))
-     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-some))))
-
-   (defthm fgl-ev-context-equiv-symm-of-equiv-rel
-     (implies (and (fgl-ev-theoremp (cmr::equiv-rel-term equiv))
-                   (pseudo-fnsym-p equiv)
-                   (fgl-ev-context-equiv-symm (list equiv) x y))
-              (fgl-ev (list equiv (pseudo-term-quote x) (pseudo-term-quote y)) nil))
-     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-symm))))
-
-   (defthm fgl-ev-context-equiv-trace-of-equiv-rel
-     (implies (and (fgl-ev-theoremp (cmr::equiv-rel-term equiv))
-                   (pseudo-fnsym-p equiv)
-                   (fgl-ev-context-equiv-trace (list equiv) trace))
-              (fgl-ev (list equiv (pseudo-term-quote (car trace)) (pseudo-term-quote (car (last trace)))) nil))
-     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-trace)
-             :induct (fgl-ev-context-equiv-trace (list equiv) trace))
-            (and stable-under-simplificationp
-                 '(:use ((:instance fgl-ev-equiv-rel-term-implies-transitive
-                          (fn equiv)
-                          (x (pseudo-term-quote (car trace)))
-                          (y (pseudo-term-quote (cadr trace)))
-                          (z (pseudo-term-quote (car (last trace))))
-                          (a nil)))
-                   :in-theory (disable fgl-ev-equiv-rel-term-implies-transitive)))))
 
    (defthmd fgl-ev-context-equiv-of-equiv-rel
      (implies (and (fgl-ev-theoremp (cmr::equiv-rel-term equiv))
                    (pseudo-fnsym-p equiv)
                    (fgl-ev-context-equiv (list equiv) x y))
               (fgl-ev (list equiv (pseudo-term-quote x) (pseudo-term-quote y)) nil))
-     :hints(("Goal" :in-theory (e/d (fgl-ev-context-equiv)
-                                    (fgl-ev-context-equiv-is-equal-of-fixes
-                                     fgl-ev-context-equiv-trace-of-equiv-rel))
-             :use ((:instance fgl-ev-context-equiv-trace-of-equiv-rel
-                    (trace (fgl-ev-context-equiv-witness (list equiv) x y)))))))
+     :hints(("Goal" :in-theory (e/d (;; fgl-ev-of-fncall-args
+                                     fgl-ev-context-equiv-of-singleton)
+                                    (fgl-ev-context-equiv-is-equal-of-fixes)))))
    
 
 
@@ -6749,27 +6679,27 @@
    (local (defthm member-equiv-contexts-implies-not-quote
             (implies (member-equal x (equiv-contexts-fix contexts))
                      (not (equal x 'quote)))
-            :hints(("Goal" :in-theory (enable equiv-contexts-fix equiv-context-fix)))
+            :hints(("Goal" :in-theory (enable equiv-contexts-fix)))
             :rule-classes :forward-chaining))
 
 
    (local (defthm pseudo-fnsym-p-when-equiv-context-p
             (implies (and (symbolp x)
-                          (equiv-context-p x))
+                          (not (equal x 'quote)))
                      (pseudo-fnsym-p x))
-            :hints(("Goal" :in-theory (enable equiv-context-p)))))
+            :hints(("Goal" :in-theory (enable pseudo-fnsym-p)))))
 
-   (local (in-theory (disable pseudo-fnsym-p-of-equiv-context-when-atom)))
+   ;; (local (in-theory (disable pseudo-fnsym-p-of-equiv-context-when-atom)))
 
-   (local (defthm fgl-ev-context-equiv-some-by-eval
-            (implies (and (fgl-ev (list fn (pseudo-term-quote x) (pseudo-term-quote y))
-                                  nil)
-                          (member-equal fn (equiv-contexts-fix contexts))
-                          (symbolp fn))
-                     (fgl-ev-context-equiv-some contexts x y))
-            :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-some
-                                              equiv-contexts-fix
-                                              fgl-ev-equiv-context-equiv-base)))))
+   ;; (local (defthm fgl-ev-context-equiv-some-by-eval
+   ;;          (implies (and (fgl-ev (list fn (pseudo-term-quote x) (pseudo-term-quote y))
+   ;;                                nil)
+   ;;                        (member-equal fn (equiv-contexts-fix contexts))
+   ;;                        (symbolp fn))
+   ;;                   (fgl-ev-context-equiv-some contexts x y))
+   ;;          :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-some
+   ;;                                            equiv-contexts-fix
+   ;;                                            fgl-ev-equiv-context-equiv-base)))))
 
    (local (defthm fgl-ev-context-equiv-by-eval
             (implies (and (fgl-ev (list fn (pseudo-term-quote x) (pseudo-term-quote y))
@@ -6777,10 +6707,15 @@
                           (member-equal fn (equiv-contexts-fix contexts))
                           (symbolp fn))
                      (fgl-ev-context-equiv contexts x y))
-            :hints(("Goal" :use ((:instance fgl-ev-context-equiv-suff
-                                  (trace (list x y))))
-                    :in-theory (e/d (fgl-ev-context-equiv-symm)
-                                    (fgl-ev-context-equiv-is-equal-of-fixes))))))
+            :hints(("Goal" :in-theory (e/d (fgl-ev-context-equiv-when-singleton)
+                                           (fgl-ev-context-equiv-is-equal-of-fixes))
+                    :use ((:instance fgl-ev-context-equiv-by-singleton
+                           (equiv fn) (ctx contexts)))))
+            ;; :hints(("Goal" :use ((:instance fgl-ev-context-equiv-suff
+            ;;                       (trace (list x y))))
+            ;;         :in-theory (e/d (fgl-ev-context-equiv-symm)
+            ;;                         (fgl-ev-context-equiv-is-equal-of-fixes))))
+            ))
 
    (defthmd fgl-ev-context-fix-equal-by-eval
      (implies (and (fgl-ev (list fn (pseudo-term-quote x) (pseudo-term-quote y))
@@ -6789,8 +6724,10 @@
                    (symbolp fn))
               (equal (fgl-ev-context-fix contexts x)
                      (fgl-ev-context-fix contexts y)))
-     :hints (("goal" :use fgl-ev-context-equiv-by-eval
-              :in-theory (disable fgl-ev-context-equiv-by-eval)))
+     :hints(("Goal" :in-theory (e/d (equal-of-fgl-ev-context-fix)
+                                    (fgl-ev-context-equiv-is-equal-of-fixes))))
+     ;; :hints (("goal" :use fgl-ev-context-equiv-by-eval
+     ;;          :in-theory (disable fgl-ev-context-equiv-by-eval)))
      :rule-classes :forward-chaining)
 
   (defthm fgl-interp-equiv-refinementp-implies-context-fix
@@ -6918,7 +6855,7 @@
   (local (defthm member-equiv-contexts-implies-not-quote
             (implies (member-equal x (equiv-contexts-fix contexts))
                      (not (equal x 'quote)))
-            :hints(("Goal" :in-theory (enable equiv-contexts-fix equiv-context-fix)))
+            :hints(("Goal" :in-theory (enable equiv-contexts-fix)))
             :rule-classes :forward-chaining))
   
   
@@ -7280,11 +7217,11 @@
     t)
   ///
 
-  (local (in-theory (disable equiv-contexts-fix-under-iff)))
+  ;; (local (in-theory (disable equiv-contexts-fix-under-iff)))
 
   (local (defthm not-equiv-contexts-fix
-           (implies (not (equiv-contexts-fix x))
-                    (equiv-contexts-equiv x nil))
+           (implies (not (consp x))
+                    (cmr::equiv-contexts-equiv x nil))
            :rule-classes :forward-chaining))
 
   (defthm fgl-ev-context-equiv-forall-extensions-of-fncall-term-2

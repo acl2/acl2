@@ -34,6 +34,7 @@
 (include-book "syntax-bind")
 
 (defxdoc fgl-syntactic-checker-binders
+  :parents (fgl-rewrite-rules)
   :short "Functions for checking syntactic properties of objects, and inferring
           the logical properties that they imply"
   :long "<p>These functions are useful for creating FGL rewrite rules that

@@ -317,9 +317,9 @@ you could do:</p>
  })
 
 <p>It isn't necessary to call this around the entire conclusion of the theorem
-you wish to prove -- FGL always checks the final result of symbolically
-executing the conclusion; see @(see fgl-solving).  The purpose of
-@('fgl-sat-check') is for forcing SAT checks during symbolic execution, so as
+you wish to prove -- FGL SAT-checks the final result of symbolically
+executing the conclusion by default; see @(see fgl-solving).  The purpose of
+@('fgl-sat-check') is to force SAT checks during symbolic execution, so as
 to e.g. avoid unnecessary execution paths.</p>
 
 <p>The counterexamples from intermediate SAT checks may be pulled out of the

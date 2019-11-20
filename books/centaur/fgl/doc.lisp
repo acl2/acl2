@@ -762,7 +762,7 @@ validity check is configured using the attachable function
 @('fgl-toplevel-sat-check-config'); this may be overridden by either attaching
 a different function or setting the @(':sat-config') field of the FGL
 configuration object.  The type of the SAT configuration object (for the
-default attachment of @('interp-st-sat-check') is @(see fgl-sat-config).</p>
+default attachment of @('interp-st-sat-check')) is @(see fgl-sat-config).</p>
 
 ")
 
@@ -1352,10 +1352,11 @@ must equal @('f') of the evaluations of the arguments.</p>
 <p>New metafunctions can be defined with the form @('def-fgl-meta') and new
 primitives with @('def-fgl-primitive').  However, before the newly defined
 metafunctions/primitives may be used, they must be installed into the current
-metafunction and primitive dispatcher function using @('install-fgl-metafns).
+metafunction and primitive dispatcher function using @('install-fgl-metafns').
 This creates a new function that wraps all existing metafunctions into a case
-statement, and attaches it to the stub @('fgl-meta-fncall-stub'); it creates a
-similar dispatcher function for primitives.</p>
+statement, and attaches it to the stub @('fgl-meta-fncall-stub').  It also
+creates a similar dispatcher function for primitives and another one for binder
+meta rules (see @(see binder)).</p>
 
 
 <h3>Example</h3>
@@ -1400,28 +1401,28 @@ interpreter to run primitives.</p>
 respect to the FGL evaluator, @(see fgl-object-eval) -- that is, the result
 object must evaluate to the same thing as the evaluation of the input function
 symbol applied to the argument list.  However, @('fgl-object-eval') is based on
-an ACL2 evaluator @('fgl-eval') which only understands a limited set of
+an ACL2 evaluator @('fgl-ev') which only understands a limited set of
 function symbols.  Naively, this would prevent us from proving that the
 primitives evaluate correctly.  However, we are allowed to assume the
 correctness of facts we extract from the ACL2 state with respect to
-@('fgl-eval') -- see <see topic='@(url acl2::meta-extract)'>meta-extract</see>
+@('fgl-ev') -- see <see topic='@(url acl2::meta-extract)'>meta-extract</see>
 for details.  In many cases we can show that when some set of theorems are
 stored in the state in the expected form, and the evaluator is assumed to
 always evaluate these theorems to non-NIL values, the evaluator then correctly
 understands some new function.</p>
 
-<p>As a very simple example, @('(ifix x)') is not understood by @('fgl-eval'),
+<p>As a very simple example, @('(ifix x)') is not understood by @('fgl-ev'),
 but it is defined as @('(if (integerp x) x 0)').  All of the functions in its
-definition -- @('if'), @('integerp') -- are understood by @('fgl-eval').  So we
-can show that @('fgl-eval') understands @('ifix') if we check that the
+definition -- @('if'), @('integerp') -- are understood by @('fgl-ev').  So we
+can show that @('fgl-ev') understands @('ifix') if we check that the
 definition of @('ifix') stored in the state is the one we expect, and also
 assume that facts stored in the state are correct with respect to
-@('fgl-eval').</p>
+@('fgl-ev').</p>
 
 <p>We can build up to arbitrarily complex functions, in this way, as long as
 they are defined rather than constrained.  For example, if we check that the
 definitional formulas for @('='), @('ZIP'), @('FIX'), and @('EXPT') are present
-in the world, then we can show that @('fgl-eval') understands @('expt') terms.</p>
+in the world, then we can show that @('fgl-ev') understands @('expt') terms.</p>
 
 <p>In order to define primitives that need to check formulas in order to show
 they are correct, we first define a \"formula check\" function, an executable
@@ -1473,12 +1474,12 @@ of a flag function.</p>
 
 <p>Constrained functions, and functions that depend on constrained functions,
 pose more of a challenge.  But recall that what we're trying to prove is that
-the primitive equals the call of the function when it returns successp.  If we
-are to introduce a primitive for a constrained function, or a function that
-depends on a constrained function, we must be able to prove that equal to
-something in some cases.  It would then suffice to check formulas that show
-that in the cases we care about, the evaluation of the function reduces to some
-other form.</p>")
+if the primitive call succeeds, then its result is equivalent to the input
+function call.  If we are to introduce a primitive for a constrained function,
+or a function that depends on a constrained function, we must be able to prove
+that equal to something in some cases.  It would then suffice to check formulas
+that show that in the cases we care about, the evaluation of the function
+reduces to some other form.</p>")
 
 
 (defxdoc fgl-testbenches
