@@ -98,6 +98,7 @@
            h-long
            f-conv
            factorial-int
+           factorial-long
            :deep nil
            :guards nil
            :java-class "PrimitivesShallowUnguarded")
