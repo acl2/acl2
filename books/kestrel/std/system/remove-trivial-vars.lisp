@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines remove-trivial-vars
-  :parents (std/system)
+  :parents (std/system/term-transformations)
   :short "Remove the trivial lambda-bound variables."
   :long
   (xdoc::topstring
@@ -109,6 +109,7 @@
                                :hyp (symbol-listp formals))
                   (new-actuals pseudo-term-listp
                                :hyp (pseudo-term-listp actuals)))
+     :parents (remove-trivial-vars)
      (b* (((when (endp formals)) (mv nil nil))
           (formal (car formals))
           (actual (car actuals))

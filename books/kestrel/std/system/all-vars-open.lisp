@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines all-vars-open
+  :parents (std/system/term-queries)
   :short "Free variables in a term
           that may contain non-closed (i.e. open) lambda expressions."
   :long
@@ -39,7 +40,9 @@
      in languages where lambda expressions are not necessarily closed.")
    (xdoc::p
     "The returned list of variables has no duplicates.
-     The list is in no particular order."))
+     The list is in no particular order.")
+   (xdoc::@def "all-vars-open")
+   (xdoc::@def "all-vars-open-lst"))
 
   (define all-vars-open ((term pseudo-termp))
     :returns (vars symbol-listp :hyp :guard)

@@ -277,9 +277,11 @@
  found in community books directory @('books/coi/defung/').  Our utilities
  @('def-partial-measure') and @(tsee defthm-domain) were developed
  independently using an approach that seems considerably simpler than Greve's
- development; but for example, his utility handles reflexive functions &mdash;
- definitions with recursive calls like @('(mc91 (mc91 (+ n 11)))') &mdash;
- while ours were not designed to do so.</p>")
+ development.  However, his utility is much more powerful in that it generates
+ a termination test, rather than requiring the user to provide it, and also it
+ handles reflexive functions &mdash; definitions with recursive calls like
+ @('(mc91 (mc91 (+ n 11)))') &mdash; while ours were not designed to do
+ so.</p>")
 
 (defpointer defpm def-partial-measure)
 

@@ -73,23 +73,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (fsublis-var '((x . '1) (y . '2)) '(quote "a"))
-              '(quote "a"))
-
-(assert-equal (fsublis-var '((x . '1) (y . '2)) 'z)
-              'z)
-
-(assert-equal (fsublis-var '((x . '1) (y . '2)) 'x)
-              '(quote 1))
-
-(assert-equal (fsublis-var '((x . '1) (y . '2)) '((lambda (x) x) y))
-              '((lambda (x) x) '2))
-
-(assert-equal (fsublis-var '((x . '1) (y . '2)) '(f x (g z)))
-              '(f '1 (g z)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (mv-list 2 (fsublis-fn-rec
                           '((f . g) (h . (lambda (x) (cons x y))))
                           '(quote #\c)

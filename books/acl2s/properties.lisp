@@ -5,6 +5,7 @@
 
 (in-package "ACL2S")
 (include-book "definec" :ttags :all)
+(include-book "std/lists/flatten" :dir :system)
 
 #|
 
@@ -175,7 +176,7 @@ with the same hints and directives that defthm accepts.
 
 (defmacro property (&rest args)
   `(with-output
-    :off :all
+    :off :all :stack :push
     (make-event
      (b* (((list name? name prop kwd-alist)
            (parse-property ',args (w state)))
@@ -189,45 +190,46 @@ with the same hints and directives that defthm accepts.
              (append (if name? nil *property-just-defthm-keywords*)
                      *property-core-keywords*)
              kwd-alist))
+          (flat-kwds (flatten other-kwds))
           (args (if name?
-                    (list* name prop other-kwds)
-                  (list* prop other-kwds)))
+                    (list* name prop flat-kwds)
+                  (list* prop flat-kwds)))
           ((when (and proofs? testing?))
            `(encapsulate
              ()
              (with-time-limit
               ,testing-timeout
               (with-output
-               :on (error summary)
+               :stack :pop
                (test? ,prop)))
              (with-time-limit
               ,proof-timeout
               (with-output
-               :on (error summary)
+               :stack :pop
                (,prove ,@args)))))
           ((when proofs?)
            `(with-time-limit
              ,proof-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (,prove ,@args))))
           ((when (and testing? name?))
            `(with-time-limit
              ,testing-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (defthm-test-no-proof ,@args))))
           ((when testing?)
            `(with-time-limit
              ,testing-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (test? ,prop))))
           ((when name?)
            `(with-time-limit
              ,proof-timeout
              (with-output
-              :on (error summary)
+              :stack :pop
               (defthmskipall ,@args)))))
        `(value-triple :passed)))))
 

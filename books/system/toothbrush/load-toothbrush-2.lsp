@@ -49,6 +49,8 @@
   ONEIFY ; called in mv-let-for-with-local-stobj, but not with toothbrush
   INITIALIZE-DMR-INTERVAL-USED ; called by set-waterfall-parallelism-fn
   HARD-ERROR-IS-ERROR ; needs macro channel-to-string, which is defined late
+  CCL-INITIALIZE-GC-STRATEGY ; called by set-gc-strategy-fn
+  REMOVE-ADJACENT-DUPLICATES-EQ ; called by defpkg-raw1
   )
 
 #+hons ; memoize only here
@@ -96,13 +98,13 @@
  (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
    #+acl2-par (load "multi-threading-raw.lisp")
    (load "axioms.lisp")
+   #+hons (load "hons.lisp")
+   #+hons (load "hons-raw.lisp")
    (load "basis-a.lisp")
    #+hons (load "memoize.lisp")
-   #+hons (load "hons.lisp")
    #+acl2-par (load "parallel.lisp")
    #+acl2-par (load "futures-raw.lisp")
    #+acl2-par (load "parallel-raw.lisp")
-   #+hons (load "hons-raw.lisp")
    #+hons (load "memoize-raw.lisp")))
 
 ; Code for saving an image.

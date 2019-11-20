@@ -147,3 +147,10 @@
   (equal (cdr (reverse-list lst))
          (reverse-list (take (+ -1 (len lst)) lst)))
   :hints (("Goal" :in-theory (e/d (reverse-list take) ()))))
+
+(defthm last-of-reverse-list
+  (equal (last (reverse-list x))
+         (if (consp x)
+             (list (car x))
+           nil))
+  :hints (("Goal" :in-theory (enable reverse-list))))

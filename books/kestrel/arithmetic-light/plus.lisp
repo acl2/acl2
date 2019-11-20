@@ -107,3 +107,35 @@
   :hints (("Goal" :cases ((rationalp (fix x))))))
 
 (in-theory (disable rationalp-+)) ;the rules above are better
+
+(defthm <-of-+-arg1-when-negative-constant
+  (implies (and (syntaxp (quotep k))
+                (< k 0))
+           (equal (< (+ k x) y)
+                  (< x (+ (- k) y))))
+  :hints (("Goal" :cases ((< (+ k x) y)))))
+
+(defthm <-of-+-arg2-when-negative-constant
+  (implies (and (syntaxp (quotep k))
+                (< k 0))
+           (equal (< y (+ k x))
+                  (< (+ (- k) y) x)))
+  :hints (("Goal" :cases ((< y (+ k x))))))
+
+;; One rule may suffice here since equal can match either way.  In rare cases,
+;; this can cause problems, e.g., when we have a rule for (equal x ...), or
+;; want to substitute for x, since in the RHS, x is not equated to anything.
+(defthm equal-of-+-when-negative-constant
+  (implies (and (syntaxp (quotep k))
+                (< k 0))
+           (equal (equal x (+ k y))
+                  (and (equal (+ (- k) x) (fix y))
+                       (acl2-numberp x)))))
+
+;; Consider enabling
+(defthmd <-of-+-of-1-when-integers
+  (implies (and (syntaxp (not (quotep y)))
+                (integerp x)
+                (integerp y))
+           (equal (< x (+ 1 y))
+                  (<= x y))))

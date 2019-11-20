@@ -439,6 +439,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Wrap-around factorial over Java ints.
+
+(define factorial-int ((n java::int-value-p))
+  :guard (java::boolean-value->bool (java::int-greateq n (java::int-value 0)))
+  :returns (result java::int-value-p)
+  (if (mbt (and (java::int-value-p n)
+                (java::boolean-value->bool
+                 (java::int-greateq n (java::int-value 0)))))
+      (if (java::boolean-value->bool (java::int-eq n (java::int-value 0)))
+          (java::int-value 1)
+        (java::int-mul n
+                       (factorial-int (java::int-sub n
+                                                     (java::int-value 1)))))
+    (java::int-value 1))
+  :measure (nfix (java::int-value->int n))
+  :hints (("Goal" :in-theory (enable java::int-eq
+                                     java::int-greateq
+                                     java::int-sub
+                                     sbyte32p)))
+  :verify-guards nil ; done below
+  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
+  ///
+  (verify-guards factorial-int
+    :hints (("Goal" :in-theory (enable java::int-eq
+                                       java::int-greateq
+                                       java::int-sub
+                                       java::int-value-p
+                                       sbyte32p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Wrap-around factorial over Java longs.
+
+(define factorial-long ((n java::long-value-p))
+  :guard (java::boolean-value->bool (java::long-greateq n (java::long-value 0)))
+  :returns (result java::long-value-p)
+  (if (mbt (and (java::long-value-p n)
+                (java::boolean-value->bool
+                 (java::long-greateq n (java::long-value 0)))))
+      (if (java::boolean-value->bool (java::long-eq n (java::long-value 0)))
+          (java::long-value 1)
+        (java::long-mul n
+                        (factorial-long (java::long-sub n
+                                                        (java::long-value 1)))))
+    (java::long-value 1))
+  :measure (nfix (java::long-value->int n))
+  :hints (("Goal" :in-theory (enable java::long-eq
+                                     java::long-greateq
+                                     java::long-sub
+                                     sbyte64p)))
+  :verify-guards nil ; done below
+  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
+  ///
+  (verify-guards factorial-long
+    :hints (("Goal" :in-theory (enable java::long-eq
+                                       java::long-greateq
+                                       java::long-sub
+                                       java::long-value-p
+                                       sbyte64p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests for the functions above, when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
@@ -1129,6 +1191,36 @@
                       (java::short-value 11887)
                       (java::long-value -29493203747628)))))
 
+(defconst *shallow-guarded-factorial-int-tests*
+  '(("FactorialInt0" (factorial-int (java::int-value 0)))
+    ("FactorialInt1" (factorial-int (java::int-value 1)))
+    ("FactorialInt2" (factorial-int (java::int-value 2)))
+    ("FactorialInt3" (factorial-int (java::int-value 3)))
+    ("FactorialInt4" (factorial-int (java::int-value 4)))
+    ("FactorialInt5" (factorial-int (java::int-value 5)))
+    ("FactorialInt10" (factorial-int (java::int-value 10)))
+    ("FactorialInt100" (factorial-int (java::int-value 100)))
+    ("FactorialInt1000" (factorial-int (java::int-value 1000)))
+    ("FactorialInt10000" (factorial-int (java::int-value 10000)))
+    ("FactorialInt100000" (factorial-int (java::int-value 100000)))
+    ("FactorialInt1000000" (factorial-int (java::int-value 1000000)))))
+
+(defconst *shallow-guarded-factorial-long-tests*
+  '(("FactorialLong0" (factorial-long (java::long-value 0)))
+    ("FactorialLong1" (factorial-long (java::long-value 1)))
+    ("FactorialLong2" (factorial-long (java::long-value 2)))
+    ("FactorialLong3" (factorial-long (java::long-value 3)))
+    ("FactorialLong4" (factorial-long (java::long-value 4)))
+    ("FactorialLong5" (factorial-long (java::long-value 5)))
+    ("FactorialLong10" (factorial-long (java::long-value 10)))
+    ("FactorialLong100" (factorial-long (java::long-value 100)))
+    ("FactorialLong1000" (factorial-long (java::long-value 1000)))
+    ("FactorialLong10000" (factorial-long (java::long-value 10000)))
+    ("FactorialLong100000" (factorial-long (java::long-value 100000)))
+    ("FactorialLong1000000" (factorial-long (java::long-value 1000000)))))
+
 (defconst *shallow-guarded-tests*
   (append *shallow-guarded-basic-tests*
-          *shallow-guarded-more-tests*))
+          *shallow-guarded-more-tests*
+          *shallow-guarded-factorial-int-tests*
+          *shallow-guarded-factorial-long-tests*))

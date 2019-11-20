@@ -1888,6 +1888,11 @@ all is well, you should see the logo below:</p>
 
  <p>If any other broken links are reported, you can modify the parent topic
  (e.g., @('ACL2-DOC') just above &mdash; but please leave that one in place!)
- to fix the indicated broken link.</p>")
+ to fix the indicated broken link.</p>
+
+ <p>The @(':short') and @(':long') strings, if supplied, must consist entirely
+ of standard characters (see @(see standard-char-p)), except that tabs are also
+ allowed.  Making this check requires you to build the manual (as described
+ just above).</p>")
 
 (defpointer build-the-manual xdoc)

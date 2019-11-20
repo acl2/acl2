@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines remove-progn
-  :parents (std/system)
+  :parents (std/system/term-transformations)
   :short "Turn every call of @(tsee prog2$) and @(tsee progn$) in a term
           into just its last argument."
   :long
@@ -24,7 +24,9 @@
    (xdoc::p
     "In translated terms, @(tsee prog2$) and @(tsee progn$)
      have the form @('(return-last 'progn a b)').
-     We turn that form into just @('b')."))
+     We turn that form into just @('b').")
+   (xdoc::@def "remove-progn")
+   (xdoc::@def "remove-progn-lst"))
 
   (define remove-progn ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))

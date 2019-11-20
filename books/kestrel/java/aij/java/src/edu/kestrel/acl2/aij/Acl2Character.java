@@ -38,9 +38,21 @@ public final class Acl2Character extends Acl2Value {
      */
     private static final Acl2Character[] characters = new Acl2Character[256];
 
+    /**
+     * All the character codes.
+     * These are created in advance by the static initializer,
+     * and returned by the {@link #charCode()} method,
+     * which therefore executes quickly,
+     * avoiding the creation of a new integer.
+     * This field is never {@code null}.
+     */
+    private static final Acl2Integer[] codes = new Acl2Integer[256];
+
     static {
-        for (int code = 0; code < 256; ++code)
+        for (int code = 0; code < 256; ++code) {
             characters[code] = new Acl2Character((char) code);
+            codes[code] = Acl2Integer.make(code);
+        }
     }
 
     //////////////////////////////////////// package-private members:
@@ -64,7 +76,7 @@ public final class Acl2Character extends Acl2Value {
      */
     @Override
     Acl2Integer charCode() {
-        return Acl2Integer.make(jchar);
+        return codes[jchar];
     }
 
     /**

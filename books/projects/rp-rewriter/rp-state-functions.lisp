@@ -448,3 +448,6 @@
 (define increment-rw-stack-size (rp-state)
   (declare (xargs :stobjs (rp-state)))
   (update-rw-stack-size (1+ (rw-stack-size rp-state)) rp-state))
+
+
+(in-theory (disable rp-statep))

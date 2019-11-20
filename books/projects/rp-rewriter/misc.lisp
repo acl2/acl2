@@ -260,6 +260,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                        (new-synps 'nil)
                        (disable-meta-rules 'nil)
                        (enable-meta-rules 'nil)
+                       (rules-override 'nil)
                        (in-theory 'nil))
   `(encapsulate
      nil
@@ -301,8 +302,10 @@ Try using (rp::update-rp-brr t rp::rp-state) and
             (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
            (term (beta-search-reduce term 1000))
-           (runes (append (let ((world (w state))) (current-theory :here))
-                          ,extra-rules))
+           (runes ,(if rules-override
+                       rules-override
+                     `(append (let ((world (w state))) (current-theory :here))
+                          ,extra-rules)))
            (enabled-exec-rules (get-enabled-exec-rules runes))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
            (rules-alist (get-rules runes state :new-synps new-synps))
@@ -338,26 +341,31 @@ Try using (rp::update-rp-brr t rp::rp-state) and
 ;;                                 '"booth2_partial_product_signed_first$MULTIPLICAND_BITS=64"))
 ;;                   'nil))
 
-(defmacro rp-cl (&key extra-rules
+(defmacro rp-cl (&key (extra-rules 'nil)
                       (new-synps 'nil)
-                      (cl-name-prefix '0))
+                      (cl-name-prefix '0)
+                      (rules-override 'nil)
+                      )
   (declare (ignorable extra-rules))
   `(,(sa (if (equal cl-name-prefix 0) nil cl-name-prefix) "RP-CLAUSE-PROCESSOR")
     clause
     (make rp-cl-hints
-          :runes (append (let ((world (w state))) (current-theory :here))
-                         ,extra-rules)
+          :runes ,(if rules-override
+                      rules-override
+                    `(append (let ((world (w state))) (current-theory :here))
+                             ,extra-rules))
           :new-synps ,new-synps)
     rp-state state))
 
 (defmacro defthmrp (name term
                          &key
-                         extra-rules
+                         (extra-rules 'nil)
                          (rule-classes ':rewrite)
-                        ; (use-opener-error-rules 't)
+                         ;; (use-opener-error-rules 't)
                          (new-synps 'nil)
                          (disable-meta-rules 'nil)
                          (enable-meta-rules 'nil)
+                         (rules-override 'nil)
                          (in-theory 'nil))
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
@@ -370,6 +378,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                            :do-not '(preprocess generalize fertilize)
                            :clause-processor
                            (rp-cl :extra-rules ,',extra-rules
+                                  :rules-override ,,rules-override
                                   :cl-name-prefix ,cl-name-prefix
                                   :new-synps ,',new-synps)))))
          #|(opener-error-rules-alist (table-alist 'rw-opener-error-rules  (w state)))

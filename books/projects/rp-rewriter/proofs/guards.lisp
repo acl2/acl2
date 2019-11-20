@@ -500,7 +500,8 @@
                                                                        rp-context
                                                                        rp-state)))))
    :hints (("Goal"
-            :in-theory (e/d (rp-state-push-to-try-to-rw-stack) ())))))
+            :in-theory (e/d (rp-state-push-to-try-to-rw-stack
+                             rp-statep) ())))))
 
 (verify-guards rp-rw
   :otf-flg t
@@ -562,48 +563,48 @@
 
 (verify-guards rp-rw-aux
   :otf-flg t
-  :hints (("Goal"
+  :hints (("goal"
            :do-not-induct t
            ;;:use ((:instance rp-termp-remove-return-last))
            :in-theory
            (e/d (rp-term-listp
+                 rp-statep
                  context-syntaxp
                  rp-termp)
                 (#|rp-termp-remove-return-last||#
                  rp-rw
-;rp-stat-p
-
-                 ;;IS-EXC-ENABLED
-                 RP-EX-COUNTERPART
-                 #|RP-RW-APPLY-FALIST-META||#
-                 (:REWRITE
-                  VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP)
-                 (:DEFINITION VALID-RULES-ALISTP)
-                 (:DEFINITION VALID-RULESP)
-                 (:DEFINITION VALID-RULEP)
-                 (:DEFINITION VALID-RULEP-SK)
-                 (:DEFINITION VALID-RULEP-SK-BODY)
-                 (:DEFINITION RP-TERMP)
-                 (:REWRITE LEMMA11)
-                 (:REWRITE RP-EVL-OF-RP-EQUAL2)
-                 (:DEFINITION RP-EQUAL2)
-                 (:DEFINITION EX-FROM-RP)
-                 (:DEFINITION RP-EQUAL)
-                 (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
-                 (:REWRITE NOT-INCLUDE-RP)
-                 (:DEFINITION INCLUDE-FNC)
-                 (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                 (:DEFINITION ACL2::APPLY$-BADGEP)
-                 (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                 (:DEFINITION SUBSETP-EQUAL)
-                 (:DEFINITION MEMBER-EQUAL)
-                 (:DEFINITION FALIST-CONSISTENT)
-                 (:DEFINITION LEN)
-                 (:DEFINITION RP-RW)
-;(:DEFINITION RP-RW-APPLY-META)
-                 ;;(:TYPE-PRESCRIPTION CONTEXT-SYNTAXP)
-                 (:REWRITE DEFAULT-<-1)
-                 (:TYPE-PRESCRIPTION ALISTP)
-                 (:TYPE-PRESCRIPTION TRUE-LIST-LISTP)
-                 (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
-                 (:TYPE-PRESCRIPTION SYMBOL-ALISTP))))))
+                 ;;rp-stat-p
+                 ;;is-exc-enabled
+                 rp-ex-counterpart
+                 #|rp-rw-apply-falist-meta||#
+                 (:rewrite
+                  valid-rules-alistp-implies-rules-alistp)
+                 (:definition valid-rules-alistp)
+                 (:definition valid-rulesp)
+                 (:definition valid-rulep)
+                 (:definition valid-rulep-sk)
+                 (:definition valid-rulep-sk-body)
+                 (:definition rp-termp)
+                 (:rewrite lemma11)
+                 (:rewrite rp-evl-of-rp-equal2)
+                 (:definition rp-equal2)
+                 (:definition ex-from-rp)
+                 (:definition rp-equal)
+                 (:rewrite rp-equal-implies-rp-equal2)
+                 (:rewrite not-include-rp)
+                 (:definition include-fnc)
+                 (:linear acl2::apply$-badgep-properties . 1)
+                 (:definition acl2::apply$-badgep)
+                 (:definition include-fnc-subterms)
+                 (:definition subsetp-equal)
+                 (:definition member-equal)
+                 (:definition falist-consistent)
+                 (:definition len)
+                 (:definition rp-rw)
+                 ;;(:definition rp-rw-apply-meta)
+                 ;;(:type-prescription context-syntaxp)
+                 (:rewrite default-<-1)
+                 (:type-prescription alistp)
+                 (:type-prescription true-list-listp)
+                 (:type-prescription eqlable-alistp)
+                 (:type-prescription symbol-alistp))))))
