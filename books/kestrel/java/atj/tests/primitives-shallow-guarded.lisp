@@ -197,6 +197,10 @@
 
 (java::def-atj-main-function-type f-conv (:jbyte :jshort :jlong) :jint)
 
+;; factorial:
+
+(java::def-atj-main-function-type factorial-int (:jint) :jint)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the tested functions, with testing code.
@@ -282,6 +286,7 @@
            g-long
            h-long
            f-conv
+           factorial-int
            :deep nil
            :guards t
            :java-class "PrimitivesShallowGuarded"

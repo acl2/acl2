@@ -15,7 +15,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the functions that manipulate Java primitive values.
-; Generation of testing code is not supported yet.
 
 (java::atj test-boolean-not
            test-boolean-and
@@ -98,6 +97,7 @@
            g-long
            h-long
            f-conv
+           factorial-int
            :deep nil
            :guards nil
            :java-class "PrimitivesShallowUnguarded")
