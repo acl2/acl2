@@ -10,13 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "all-free-bound-vars")
-(include-book "all-vars-open")
-(include-book "dumb-occur-var-open")
 (include-book "lambda-closedp")
+
+(include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/system/term-queries
-  :parents (std/system)
-  :short "Utilities to query terms.")
+(assert! (lambda-closedp '(lambda (x) (* '2 x))))
+
+(assert! (lambda-closedp '(lambda (x y) (- y x))))
+
+(assert! (not (lambda-closedp '(lambda (x) (cons x a)))))

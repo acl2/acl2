@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
+(include-book "kestrel/std/system/lambda-closedp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "term-function-recognizers")
@@ -29,15 +30,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define lambda-closedp ((lambd pseudo-lambdap))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Check if a lambda expression is closed,
-          i.e. it has no free variables."
-  (subsetp-eq (all-vars (lambda-body lambd))
-              (lambda-formals lambd))
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (define apply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)

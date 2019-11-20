@@ -15,14 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (lambda-closedp '(lambda (x) (* '2 x))))
-
-(assert! (lambda-closedp '(lambda (x y) (- y x))))
-
-(assert! (not (lambda-closedp '(lambda (x) (cons x a)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (apply-term 'f '('4 y))
               '(f '4 y))
 
