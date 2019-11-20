@@ -32,6 +32,7 @@
 (include-book "kestrel/std/system/fundef-enabledp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
+(include-book "kestrel/std/system/included-books" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 (include-book "kestrel/std/system/known-packages" :dir :system)
@@ -294,16 +295,6 @@
                           (default-ruler-extenders wrld))))
     (termination-machine
      (list fn) (ubody fn wrld) nil nil ruler-extenders)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define included-books ((wrld plist-worldp))
-  :returns (result "A @(tsee string-listp).")
-  :verify-guards nil
-  :parents (world-queries)
-  :short "List of full pathnames of all books currently included
-          (directly or indirectly)."
-  (strip-cars (global-val 'include-book-alist wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

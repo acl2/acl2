@@ -13,6 +13,7 @@
 (include-book "conjoin")
 (include-book "event-name-queries")
 (include-book "function-queries")
+(include-book "included-books")
 (include-book "known-packages")
 (include-book "known-packages-plus")
 (include-book "logic-friendly")
