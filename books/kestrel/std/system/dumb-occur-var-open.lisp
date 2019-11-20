@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines dumb-occur-var-open
-  :parents (std/system)
+  :parents (std/system/term-queries)
   :short "Check if a variable occurs free in a term
           that may contain non-closed (i.e. open) lambda expressions."
   :long

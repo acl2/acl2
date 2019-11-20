@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines all-free/bound-vars
-  :parents (std/system)
+  :parents (std/system/term-queries)
   :short "Return all the free and bound variables that occur in a term."
   :long
   (xdoc::topstring
@@ -28,7 +28,9 @@
      because we use @(tsee union-eq) to join variable lists.")
    (xdoc::p
     "This utility is in contrast with the built-in @(tsee all-vars),
-     which returns only the free variables."))
+     which returns only the free variables.")
+   (xdoc::@def "all-free/bound-vars")
+   (xdoc::@def "all-free/bound-vars-lst"))
 
   (define all-free/bound-vars ((term pseudo-termp))
     :returns (vars symbol-listp :hyp :guard)

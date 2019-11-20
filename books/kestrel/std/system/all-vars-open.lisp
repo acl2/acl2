@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines all-vars-open
-  :parents (std/system)
+  :parents (std/system/term-queries)
   :short "Free variables in a term
           that may contain non-closed (i.e. open) lambda expressions."
   :long

@@ -10,10 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-free-bound-vars")
-(include-book "all-vars-open")
 (include-book "conjoin")
-(include-book "dumb-occur-var-open")
 (include-book "event-name-queries")
 (include-book "function-queries")
 (include-book "known-packages")
@@ -24,6 +21,7 @@
 (include-book "rune-enabledp")
 (include-book "table-alist-plus")
 (include-book "term-function-recognizers")
+(include-book "term-queries")
 (include-book "term-transformations")
 (include-book "theorem-queries")
 (include-book "unquote-term")
