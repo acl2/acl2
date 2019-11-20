@@ -853,9 +853,9 @@ flags apply to the recursive make of the core solver library.</li>
 > CXXFLAGS= -g -std=c++11 -Wall -DNDEBUG -O3 -fPIC
 > export CXXFLAGS
 70c70
-<       $(CXX) -g  -std=c++11 $(CXXLAGS) \
+< 	$(CXX) -g  -std=c++11 $(CXXLAGS) \
 ---
->       $(CXX) -g  -std=c++11 $(CXXFLAGS) \
+> 	$(CXX) -g  -std=c++11 $(CXXFLAGS) \
  })
 
 <p>After fixing the makefile, run "make".  This should produce
