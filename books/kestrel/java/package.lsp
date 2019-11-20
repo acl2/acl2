@@ -107,6 +107,7 @@
                          quote-listp
                          rawp
                          remove-assocs-eq
+                         remove-dead-if-branches
                          remove-mbe-exec
                          remove-mbe-logic
                          remove-progn

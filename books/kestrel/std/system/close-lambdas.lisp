@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines close-lambdas
-  :parents (std/system)
+  :parents (std/system/term-transformations)
   :short "Make all the lambda expressions in a term closed."
   :long
   (xdoc::topstring
@@ -42,11 +42,12 @@
      The @('close-lambdas') utility
      closes any non-closed lambda expression in a term,
      so that it also satisfies @(tsee lambdap).
-     It is essentially the inverse of @(tsee remove-trivial-vars)."))
+     It is essentially the inverse of @(tsee remove-trivial-vars).")
+   (xdoc::@def "close-lambdas")
+   (xdoc::@def "close-lambdas-lst"))
 
   (define close-lambdas ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))
-    :verify-guards :after-returns
     (b* (((when (variablep term)) term)
          ((when (fquotep term)) term)
          (fn (ffn-symb term))
@@ -66,4 +67,8 @@
                         :hyp (pseudo-term-listp terms))
     (cond ((endp terms) nil)
           (t (cons (close-lambdas (car terms))
-                   (close-lambdas-lst (cdr terms)))))))
+                   (close-lambdas-lst (cdr terms))))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards close-lambdas))

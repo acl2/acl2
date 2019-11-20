@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "universal-equiv")
+(include-book "std/lists/equiv" :dir :system)
 
 (def-universal-equiv nth-equiv
   :qvars n
@@ -94,3 +95,85 @@
   :rule-classes ((:induction
                   :pattern (nth-equiv x y)
                   :scheme (cdr2-ind x y))))
+
+
+
+
+(defrefinement list-equiv  nth-equiv
+  :hints (("goal" :in-theory (enable nth-equiv-recursive
+                                     nth-equiv-ind
+                                     list-equiv
+                                     true-list-fix))))
+
+
+
+(defthm true-list-fix-under-nth-equiv
+  (nth-equiv (true-list-fix x) x))
+
+
+(defcong list-equiv equal (nth-equiv x y) 1)
+
+(defcong list-equiv equal (nth-equiv x y) 2)
+
+(defcong nth-equiv nth-equiv (cons x y) 2
+  :hints(("Goal" :in-theory (enable nth-equiv-recursive))))
+
+(defcong nth-equiv nth-equiv (cdr x) 1
+  :hints(("Goal" :in-theory (enable nth-equiv-recursive))))
+
+(defcong nth-equiv nth-equiv (nthcdr n x) 2
+  :hints(("Goal" :in-theory (enable nth-equiv-recursive))))
+
+(defcong nth-equiv nth-equiv (update-nth n v x) 3
+  :hints(("Goal" :in-theory (enable nth-equiv-recursive))))
+
+(defthm true-list-fix-under-nth-equiv
+  (nth-equiv (true-list-fix x) x))
+
+(defun nth-equiv-exec (x y)
+  (declare (xargs :guard (and (true-listp x) (true-listp y))
+                  :guard-hints (("goal" :in-theory (enable nth-equiv-recursive nth-equiv-exec)))))
+  (mbe :logic (nth-equiv x y)
+       :exec (or (and (atom x) (atom y))
+                 (and (equal (car x) (car y))
+                      (nth-equiv-exec (cdr x) (cdr y))))))
+
+(defsection nth-equiv-fix
+  (defund nth-equiv-fix (x)
+    (declare (xargs :guard (true-listp x)))
+    (if (atom (remove nil x))
+        nil
+      (cons (car x)
+            (nth-equiv-fix (cdr x)))))
+
+  (local (in-theory (enable nth-equiv-fix)))
+  
+  (local (defthm nth-when-remove-nil
+           (implies (not (consp (remove nil x)))
+                    (not (nth n x)))))
+
+  (defthm nth-of-nth-equiv-fix
+    (equal (nth n (nth-equiv-fix x)) (nth n x)))
+
+  (defthm nth-equiv-fix-under-nth-equiv
+    (nth-equiv (nth-equiv-fix x) x)
+    :hints(("Goal" :in-theory (enable nth-equiv))))
+
+  (defthm nth-equiv-fix-self
+    (equal (nth-equiv-fix (nth-equiv-fix x)) (nth-equiv-fix x)))
+
+  (local (defthm consp-remove-equal-of-true-list-fix
+           (equal (consp (remove-equal k (true-list-fix x)))
+                  (consp (remove-equal k x)))))
+
+  (defcong nth-equiv equal (nth-equiv-fix x) 1
+    :hints (("goal" :in-theory (enable nth-equiv-recursive nth-equiv-ind)
+             :induct (nth-equiv x x-equiv))))
+
+  (defthmd nth-equiv-is-equal-of-fixes
+    (equal (nth-equiv x y)
+           (equal (nth-equiv-fix x) (nth-equiv-fix y)))
+    :hints (("goal" :use ((:instance nth-equiv-fix-under-nth-equiv)
+                          (:instance nth-equiv-fix-under-nth-equiv (x y)))
+             :in-theory (disable nth-equiv-fix-under-nth-equiv nth-equiv-fix)))))
+

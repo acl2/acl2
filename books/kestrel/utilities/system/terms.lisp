@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "term-function-recognizers")
@@ -185,37 +186,6 @@
       nil
     (cons (fapply-term (car fns) args)
           (fapply-terms-same-args (cdr fns) args))))
-
-(defines fsublis-var
-  :parents (term-utilities)
-  :short "Variant of @(tsee sublis-var) that performs no simplification."
-  :long
-  "<p>
-   The meaning of the starting @('f') in the name of this utility
-   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
-   </p>
-   @(def fsublis-var)
-   @(def fsublis-var-lst)"
-
-  (define fsublis-var ((alist (and (symbol-alistp alist)
-                                   (pseudo-term-listp (strip-cdrs alist))))
-                       (term pseudo-termp))
-    :returns (new-term "A @(tsee pseudo-termp).")
-    (cond ((variablep term) (b* ((pair (assoc-eq term alist)))
-                              (cond (pair (cdr pair))
-                                    (t term))))
-          ((fquotep term) term)
-          (t (b* ((fn (ffn-symb term))
-                  (args (fsublis-var-lst alist (fargs term))))
-               (fcons-term fn args)))))
-
-  (define fsublis-var-lst ((alist (and (symbol-alistp alist)
-                                       (pseudo-term-listp (strip-cdrs alist))))
-                           (terms pseudo-term-listp))
-    :returns (new-terms "A @(tsee pseudo-term-listp).")
-    (cond ((endp terms) nil)
-          (t (cons (fsublis-var alist (car terms))
-                   (fsublis-var-lst alist (cdr terms)))))))
 
 (defines fsublis-fn-rec
   :parents (term-utilities)

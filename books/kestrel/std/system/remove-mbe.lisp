@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines remove-mbe-logic/exec
-  :parents (std/system)
+  :parents (std/system/term-transformations)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a') or @(':exec') part @('b')."
   :long
@@ -27,7 +27,9 @@
    (xdoc::p
     "In translated terms,
      @(tsee mbe)s have the form @('(return-last 'mbe1-raw b a)').
-     We turn that form into @('a') or @('b'), based on the flag."))
+     We turn that form into @('a') or @('b'), based on the flag.")
+   (xdoc::@def "remove-mbe-logic/exec")
+   (xdoc::@def "remove-mbe-logic/exec-lst"))
 
   (define remove-mbe-logic/exec ((term pseudo-termp)
                                  (logic? booleanp))
@@ -64,14 +66,14 @@
 
 (define remove-mbe-logic ((term pseudo-termp))
   :returns (new-term pseudo-termp :hyp :guard)
-  :parents (std/system remove-mbe-logic/exec)
+  :parents (std/system/term-transformations remove-mbe-logic/exec)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':exec') part @('b')."
   (remove-mbe-logic/exec term t))
 
 (define remove-mbe-exec ((term pseudo-termp))
   :returns (new-term pseudo-termp :hyp :guard)
-  :parents (std/system remove-mbe-logic/exec)
+  :parents (std/system/term-transformations remove-mbe-logic/exec)
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a')."
   (remove-mbe-logic/exec term nil))
