@@ -280,19 +280,43 @@ sub scan_source_file
     my $max_time = 0;
     my @includes = ();
     my @pbs = ();
+    my $ifdef_level = 0;
+    my $ifdef_skipping_level = 0;
+    my %defines = ();
     foreach my $event (@$events) {
 	my $type = shift @$event;
-	if ($type eq set_max_mem_event) {
-	    $max_mem = $event->[0];
-	} elsif ($type eq set_max_time_event) {
-	    $max_time = $event->[0];
-	} elsif ($type eq include_book_event) {
-	    (my $book, my $dir, my $noport) = @$event;
-	    if (! $noport) {
-		push (@includes, [$book, $dir]);
+	if ($type eq ifdef_event) {
+	    (my $neg, my $var) = @$event;
+	    my $value = exists($defines{$var}) ? $defines{$var} : ($ENV{$var} || "");
+	    $ifdef_level = $ifdef_level+1;
+	    if (($value eq "") xor $neg) {
+		if ($ifdef_skipping_level == 0) {
+		    # print "Skipping: $var\n";
+		    $ifdef_skipping_level = $ifdef_level;
+		}
 	    }
-	} elsif ($type eq pbs_event) {
-	    push @pbs, $event->[0];
+	} elsif ($type eq endif_event) {
+	    if ($ifdef_skipping_level == $ifdef_level) {
+		# print "Leaving skipping ifdef\n";
+		$ifdef_skipping_level = 0;
+	    }
+	    $ifdef_level = $ifdef_level-1;
+	} elsif ($ifdef_skipping_level == 0) {
+	    if ($type eq set_max_mem_event) {
+		$max_mem = $event->[0];
+	    } elsif ($type eq set_max_time_event) {
+		$max_time = $event->[0];
+	    } elsif ($type eq ifdef_define_event) {
+		(my $neg, my $var) = @$event;
+		$defines{$var} = $neg ? "" : "1";
+	    } elsif ($type eq include_book_event) {
+		(my $book, my $dir, my $noport) = @$event;
+		if (! $noport) {
+		    push (@includes, [$book, $dir]);
+		}
+	    } elsif ($type eq pbs_event) {
+		push @pbs, $event->[0];
+	    }
 	}
     }
 
