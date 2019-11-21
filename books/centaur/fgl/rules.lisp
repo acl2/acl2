@@ -34,7 +34,7 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "centaur/meta/pseudo-rewrite-rule" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
-(include-book "arith-base") ;; for unequiv
+(include-book "syntax-bind") ;; for unequiv
 (include-book "rule-types")
 (local (include-book "std/lists/append" :dir :system))
 (local (std::add-default-post-define-hook :fix))

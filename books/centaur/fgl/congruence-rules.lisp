@@ -265,27 +265,28 @@
                    (cons ',rune (fgl-congruence-runes world))))))
 
 
-(define congruence-rules-from-runes-top (runes (w plist-worldp))
-  :returns (mv errmsg (rules congruence-rulelist-p))
-  (b* (((unless (fgl-congruence-runelist-p runes))
-        (mv "Rune list did not satisfy fgl-congruence-runelist-p" nil)))
-    (congruence-rules-from-runes runes w))
-  ///
-  (defret fgl-ev-congruence-rulelist-correct-p-of-<fn>
-    (implies (and (fgl-ev-meta-extract-global-facts)
-                  (equal w (w state)))
-             (fgl-ev-congruence-rulelist-correct-p rules)))
-
-  (memoize 'congruence-rules-from-runes))
-
-(define fgl-congruence-rules ((w plist-worldp))
+(define congruence-rule-table-from-runes (runes (w plist-worldp))
   :returns (table congruence-rule-table-p)
-  (b* ((runes (fgl-congruence-runes w))
-       ((mv errmsg rules) (congruence-rules-from-runes-top runes w))
+  (b* (((unless (fgl-congruence-runelist-p runes))
+        (er hard? 'fgl-congruence-rules
+            "Rune list did not satisfy fgl-congruence-runelist-p"))
+       ((mv errmsg rules) (congruence-rules-from-runes runes w))
        (- (and errmsg
                (er hard? 'fgl-congruence-rules
                    "Not all congruence runes could be parsed into valid rules: ~@0" errmsg))))
     (congruence-rulelist-to-table rules nil))
+  ///
+  (defret fgl-ev-congruence-rule-table-correct-p-of-<fn>
+    (implies (and (fgl-ev-meta-extract-global-facts)
+                  (equal w (w state)))
+             (fgl-ev-congruence-rule-table-correct-p table)))
+
+  (memoize 'congruence-rule-table-from-runes))
+
+(define fgl-congruence-rules ((w plist-worldp))
+  :returns (table congruence-rule-table-p)
+  (b* ((runes (fgl-congruence-runes w)))
+    (congruence-rule-table-from-runes runes w))
   ///
   (defret fgl-ev-congruence-rule-table-correct-p-of-<fn>
     (implies (and (fgl-ev-meta-extract-global-facts)

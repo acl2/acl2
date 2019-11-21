@@ -2711,8 +2711,8 @@
                                   (third args)
                                   interp-st state))
 
-          ((bind-var 2)
-           (fgl-interp-bind-var (first args) (second args) interp-st state))
+          ;; ((bind-var 2)
+          ;;  (fgl-interp-bind-var (first args) (second args) interp-st state))
 
           ((binder 1)
            (fgl-interp-binder (first args) interp-st state))
@@ -3219,34 +3219,34 @@
           ;; Note: Was interp-term-equivs
           (fgl-interp-term x interp-st state)))
 
-      (define fgl-interp-bind-var ((free-var pseudo-termp)
-                                  (form pseudo-termp)
-                                  (interp-st interp-st-bfrs-ok)
-                                  state)
-        :measure (list (nfix (interp-st->reclimit interp-st))
-                       2020 (pseudo-term-binding-count form)
-                       70)
-        :returns (mv (xobj fgl-object-p)
-                     new-interp-st new-state)
-        (b* (((unless (pseudo-term-case free-var :var))
-              (fgl-interp-error :msg (fgl-msg "Bad bind-var form -- first ~
-                                             argument must be a variable, but ~
-                                             was ~x0."
-                                            (pseudo-term-fix free-var))))
-             (varname (pseudo-term-var->name free-var))
-             ;; increment term index for first arg (variable)
-             (interp-st (interp-st-incr-term-index 1 interp-st))
-             ((interp-st-bind
-               (equiv-contexts '(unequiv)))
-              ((fgl-interp-value val) (fgl-interp-term-equivs form interp-st state)))
-             ((when (or (assoc-eq varname (interp-st-bindings interp-st))
-                        (assoc-eq varname (interp-st-minor-bindings interp-st))))
-              (fgl-interp-error
-               :msg (fgl-msg "Bind-var error: ~x0 was supposed to be bound in ~
-                             a bind-var form but was already bound."
-                            varname)))
-             (interp-st (interp-st-add-binding varname val interp-st)))
-          (fgl-interp-value val)))
+      ;; (define fgl-interp-bind-var ((free-var pseudo-termp)
+      ;;                             (form pseudo-termp)
+      ;;                             (interp-st interp-st-bfrs-ok)
+      ;;                             state)
+      ;;   :measure (list (nfix (interp-st->reclimit interp-st))
+      ;;                  2020 (pseudo-term-binding-count form)
+      ;;                  70)
+      ;;   :returns (mv (xobj fgl-object-p)
+      ;;                new-interp-st new-state)
+      ;;   (b* (((unless (pseudo-term-case free-var :var))
+      ;;         (fgl-interp-error :msg (fgl-msg "Bad bind-var form -- first ~
+      ;;                                        argument must be a variable, but ~
+      ;;                                        was ~x0."
+      ;;                                       (pseudo-term-fix free-var))))
+      ;;        (varname (pseudo-term-var->name free-var))
+      ;;        ;; increment term index for first arg (variable)
+      ;;        (interp-st (interp-st-incr-term-index 1 interp-st))
+      ;;        ((interp-st-bind
+      ;;          (equiv-contexts '(unequiv)))
+      ;;         ((fgl-interp-value val) (fgl-interp-term-equivs form interp-st state)))
+      ;;        ((when (or (assoc-eq varname (interp-st-bindings interp-st))
+      ;;                   (assoc-eq varname (interp-st-minor-bindings interp-st))))
+      ;;         (fgl-interp-error
+      ;;          :msg (fgl-msg "Bind-var error: ~x0 was supposed to be bound in ~
+      ;;                        a bind-var form but was already bound."
+      ;;                       varname)))
+      ;;        (interp-st (interp-st-add-binding varname val interp-st)))
+      ;;     (fgl-interp-value val)))
 
       (define fgl-interp-binder ((form pseudo-termp)
                                  (interp-st interp-st-bfrs-ok)
@@ -3274,10 +3274,12 @@
              (varname (pseudo-term-var->name (car form.args)))
              ;; increment term index for function and first arg
              (interp-st (interp-st-incr-term-index 2 interp-st))
-             ((interp-st-bind
-               (equiv-contexts (fgl-interp-lambda-arglist-equiv-contexts (interp-st->equiv-contexts interp-st))))
-              ((fgl-interp-recursive-call argvals)
-               (fgl-interp-lambda-arglist (cdr form.args) interp-st state)))
+             (argcontexts (equiv-argcontexts-rest
+                           (fgl-interp-arglist-equiv-contexts
+                            (interp-st->equiv-contexts interp-st)
+                            form.fn (len form.args) (w state))))
+             ((fgl-interp-recursive-call argvals)
+              (fgl-interp-arglist (cdr form.args) argcontexts interp-st state))
              ((fgl-interp-recursive-call successp var-val)
               (fgl-rewrite-binder-fncall form.fn argvals interp-st state))
              ((unless successp)
@@ -6529,11 +6531,11 @@
                                       stack$a-add-binding))))
   
 
-  (defthm fgl-ev-equiv-of-bind-var-call
-    (implies (equal (pseudo-fnsym-fix fn) 'bind-var)
-             (fgl-ev-equiv (pseudo-term-fncall fn args)
-                           (car args)))
-    :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
+  ;; (defthm fgl-ev-equiv-of-bind-var-call
+  ;;   (implies (equal (pseudo-fnsym-fix fn) 'bind-var)
+  ;;            (fgl-ev-equiv (pseudo-term-fncall fn args)
+  ;;                          (car args)))
+  ;;   :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
   (defthm fgl-ev-equiv-of-binder-call
     (implies (equal (pseudo-fnsym-fix fn) 'binder)
@@ -8452,6 +8454,59 @@
                                     eval-alist-extension-p-transitive-append-2)
                                    (fgl-ev-argcontext-congruence-correct-p-necc))))))
 
+  (local (defthm eval-alist-extension-p-append-cons
+           (implies (and (eval-alist-extension-p maj2 maj1)
+                         (not (hons-assoc-equal var maj2))
+                         (eval-alist-extension-p ext (append min (cons (cons var val) maj2))))
+                    (eval-alist-extension-p ext (append min maj1)))
+           :hints(("Goal" :in-theory (enable sub-alistp-by-witness)))))
+
+  (defthm fgl-interp-binder-fncall-argcontexts-equiv-lemma
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (consp x.args)
+                    (pseudo-term-case (car x.args) :var)
+                    (fgl-ev-argcontexts-equiv-forall-extensions
+                     (equiv-argcontexts-rest argcontexts)
+                     objs (cdr x.args) (append minor-bindings major-bindings1))
+                    (fgl-ev-argcontext-congruence-correct-p
+                     contexts x.fn argcontexts (len x.args))
+                    (equal (len objs) (len (cdr x.args)))
+                    (not (hons-assoc-equal (pseudo-term-var->name (car x.args)) minor-bindings))
+                    (not (hons-assoc-equal (pseudo-term-var->name (car x.args)) major-bindings2))
+                    (equal (fgl-ev-context-fix contexts
+                                               (fgl-ev (cons x.fn (cons (pseudo-term-quote result-obj)
+                                                                        (kwote-lst objs))) nil))
+                           (fgl-ev-context-fix contexts result-obj))
+                    (eval-alist-extension-p major-bindings2 major-bindings1))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts result-obj x (append minor-bindings
+                                              (cons (cons (pseudo-term-var->name (car x.args))
+                                                          result-obj)
+                                                    major-bindings2)))))
+    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall-extensions-witnessing)
+            (and stable-under-simplificationp
+                 '(:use ((:instance fgl-ev-argcontext-congruence-correct-p-necc
+                          (ctx contexts)
+                          (arg-ctxs argcontexts)
+                          (fn (pseudo-term-fncall->fn x))
+                          (arity (len (pseudo-term-call->args x)))
+                          (args2 (cons result-obj objs))
+                          (args1 (fgl-ev-list (pseudo-term-call->args x)
+                                              ext0)))
+                         (:instance fgl-ev-argcontexts-equiv-forall-extensions-necc
+                          (contexts (equiv-argcontexts-rest argcontexts))
+                          (terms (cdr (pseudo-term-call->args x)))
+                          (eval-alist (append minor-bindings major-bindings1))
+                          (ext ext0))
+                         )
+                   :in-theory (e/d (fgl-ev-of-fncall-args
+                                    len
+                                    eval-alist-extension-p-transitive-append-2)
+                                   (fgl-ev-argcontext-congruence-correct-p-necc))
+                   :do-not-induct t)))
+    :otf-flg t)
+
   (defthm fgl-interp-arglist-argcontexts-equiv-lemma
     (implies (and (fgl-ev-context-equiv-forall-extensions
                    (equiv-argcontexts-first argcontexts)
@@ -9021,12 +9076,12 @@
                    (fgl-object-eval ans env new-logicman)
                    nil eval-alist)))
 
-                ((:fnname fgl-interp-bind-var)
-                 (:add-concl
-                  (fgl-ev-context-equiv-forall-extensions
-                   (interp-st->equiv-contexts interp-st)
-                   (fgl-object-eval xobj env new-logicman)
-                   free-var eval-alist)))
+                ;; ((:fnname fgl-interp-bind-var)
+                ;;  (:add-concl
+                ;;   (fgl-ev-context-equiv-forall-extensions
+                ;;    (interp-st->equiv-contexts interp-st)
+                ;;    (fgl-object-eval xobj env new-logicman)
+                ;;    free-var eval-alist)))
 
                 ((:fnname fgl-interp-binder)
                  (:add-concl

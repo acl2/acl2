@@ -2715,7 +2715,7 @@ registers are not used.</p>"
     numerator rationalp realpart
     stringp symbol-name symbol-package-name
     symbolp
-    bind-var binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj
+    binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj
     fgl-time-fn fgl-prog2
     
 

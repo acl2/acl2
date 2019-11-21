@@ -408,3 +408,9 @@ be a string or message identifying the particular SAT check.</p>"
              (obj-alist)
              (env$->obj-alist env$)
              obj-alist))
+
+
+
+;; make bind-var work as a binder rule
+(add-fgl-congruence unequiv-implies-equal-bind-var1-2)
+(add-fgl-brewrite bind-var-binder-rule)
