@@ -45,6 +45,7 @@
 (include-book "trace")
 (include-book "fancy-ev")
 (include-book "binder-rules") ;; includes regular rules too
+(include-book "congruence-rules")
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
 (local (include-book "centaur/meta/urewrite" :dir :system))
@@ -1239,29 +1240,29 @@
        '(unequiv)))
 
 
-;; BOZO change this to derive argcontexts based on congruence rules!
-(define fgl-interp-arglist-equiv-contexts ((contexts equiv-contextsp)
-                                           (fn pseudo-fnsym-p)
-                                           (arity natp))
-  :returns (new-contexts equiv-argcontexts-p)
-  :ignore-ok t :irrelevant-formals-ok t
-  (and (member-eq 'unequiv (equiv-contexts-fix contexts))
-       t)
-  ///
-  (local (defthm nth-equiv-when-equal-length
-           (implies (equal (len x) (len y))
-                    (equal (acl2::nth-equiv x y)
-                           (acl2::list-equiv x y)))
-           :hints(("Goal" :in-theory (enable acl2::list-equiv acl2::nth-equiv-recursive true-list-fix
-                                             acl2::nth-equiv-ind len)
-                   :induct (acl2::nth-equiv x y)))))
+;; ;; BOZO change this to derive argcontexts based on congruence rules!
+;; (define fgl-interp-arglist-equiv-contexts ((contexts equiv-contextsp)
+;;                                            (fn pseudo-fnsym-p)
+;;                                            (arity natp))
+;;   :returns (new-contexts equiv-argcontexts-p)
+;;   :ignore-ok t :irrelevant-formals-ok t
+;;   (and (member-eq 'unequiv (equiv-contexts-fix contexts))
+;;        t)
+;;   ///
+;;   (local (defthm nth-equiv-when-equal-length
+;;            (implies (equal (len x) (len y))
+;;                     (equal (acl2::nth-equiv x y)
+;;                            (acl2::list-equiv x y)))
+;;            :hints(("Goal" :in-theory (enable acl2::list-equiv acl2::nth-equiv-recursive true-list-fix
+;;                                              acl2::nth-equiv-ind len)
+;;                    :induct (acl2::nth-equiv x y)))))
 
-  (local (fty::deffixcong acl2::list-equiv equal (kwote-lst x) x
-           :hints(("Goal" :in-theory (enable true-list-fix)))))
+;;   (local (fty::deffixcong acl2::list-equiv equal (kwote-lst x) x
+;;            :hints(("Goal" :in-theory (enable true-list-fix)))))
 
-  (defret <fn>-correct
-    (fgl-ev-argcontext-congruence-correct-p contexts fn new-contexts arity)
-    :hints(("Goal" :in-theory (enable fgl-ev-argcontext-congruence-correct-p)))))
+;;   (defret <fn>-correct
+;;     (fgl-ev-argcontext-congruence-correct-p contexts fn new-contexts arity)
+;;     :hints(("Goal" :in-theory (enable fgl-ev-argcontext-congruence-correct-p)))))
 
 
 (define fgl-interp-equiv-refinementp ((equiv pseudo-fnsym-p)
@@ -2678,7 +2679,7 @@
                   (fgl-interp-value ans))
 
                  (argcontexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st)
-                                                                 x.fn (len x.args)))
+                                                                 x.fn (len x.args) (w state)))
 
                  ((fgl-interp-recursive-call args)
                   (fgl-interp-arglist x.args argcontexts interp-st state))
@@ -8421,8 +8422,10 @@
     (b* (((pseudo-term-fncall x)))
       (implies (and (pseudo-term-case x :fncall)
                     (fgl-ev-argcontexts-equiv-forall-extensions
-                     (fgl-interp-arglist-equiv-contexts contexts x.fn (len x.args))
+                     argcontexts
                      objs x.args (append minor-bindings major-bindings1))
+                    (fgl-ev-argcontext-congruence-correct-p
+                     contexts x.fn argcontexts (len x.args))
                     (equal (len objs) (len x.args))
                     (equal (fgl-ev-context-fix contexts
                                                (fgl-ev (cons x.fn (kwote-lst objs)) nil))
@@ -8434,17 +8437,14 @@
             (and stable-under-simplificationp
                  '(:use ((:instance fgl-ev-argcontext-congruence-correct-p-necc
                           (ctx contexts)
-                          (arg-ctxs (fgl-interp-arglist-equiv-contexts contexts
-                                                                       (pseudo-term-fncall->fn x)
-                                                                       (len (pseudo-term-call->args x))))
+                          (arg-ctxs argcontexts)
                           (fn (pseudo-term-fncall->fn x))
                           (arity (len (pseudo-term-call->args x)))
                           (args2 objs)
                           (args1 (fgl-ev-list (pseudo-term-call->args x)
                                               ext0)))
                          (:instance fgl-ev-argcontexts-equiv-forall-extensions-necc
-                          (contexts (fgl-interp-arglist-equiv-contexts
-                                     contexts (pseudo-term-fncall->fn x) (len (pseudo-term-call->args x))))
+                          (contexts argcontexts)
                           (terms (pseudo-term-call->args x))
                           (eval-alist (append minor-bindings major-bindings1))
                           (ext ext0)))

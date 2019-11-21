@@ -426,6 +426,11 @@
            t)
     :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-of-singleton))))
 
+  (defthm fgl-ev-context-equiv-list-equal
+    (equal (fgl-ev-context-equiv '(equal) x y)
+           (equal x y))
+    :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-of-singleton))))
+
   (defthmd fgl-ev-context-equiv-by-singleton
     (implies (and (fgl-ev-context-equiv (list equiv) x y)
                   (member (pseudo-fnsym-fix equiv) (equiv-contexts-fix ctx)))
