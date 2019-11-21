@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "all-free-bound-vars")
+(include-book "all-program-ffn-symbs")
 (include-book "all-vars-open")
 (include-book "dumb-occur-var-open")
 (include-book "lambda-closedp")

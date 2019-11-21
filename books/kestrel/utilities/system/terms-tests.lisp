@@ -185,21 +185,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (all-program-ffn-symbs 'x nil (w state)) nil)
-
-(assert-equal (all-program-ffn-symbs '(quote 4) nil (w state)) nil)
-
-(assert-equal (all-program-ffn-symbs '(cons x y) nil (w state)) nil)
-
-(must-succeed*
- (defun f (x) (declare (xargs :mode :program)) x)
- (defun g (x) (declare (xargs :mode :logic)) x)
- (assert!
-  (set-equiv (all-program-ffn-symbs '(cons (f x) (g (f y))) nil (w state))
-             '(f))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (lambda-logic-fnsp '(lambda (x y) (len (cons x x))) (w state)))
 
 (must-succeed*
