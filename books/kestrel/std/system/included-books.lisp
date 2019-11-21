@@ -19,7 +19,7 @@
 (define included-books ((wrld plist-worldp))
   :returns (result "A @(tsee string-listp).")
   :verify-guards nil
-  :parents (world-queries)
+  :parents (std/system)
   :short "List of full pathnames of all books currently included
           (directly or indirectly)."
   (strip-cars (global-val 'include-book-alist wrld)))
