@@ -17,6 +17,7 @@
 (include-book "lambdap")
 (include-book "lambda-listp")
 (include-book "termfnp")
+(include-book "termfn-listp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
