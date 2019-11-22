@@ -2716,7 +2716,7 @@ registers are not used.</p>"
     stringp symbol-name symbol-package-name
     symbolp
     binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj
-    fgl-time-fn fgl-prog2
+    fgl-time-fn
     
 
     equal not if iff int bool

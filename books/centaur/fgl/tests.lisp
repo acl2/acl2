@@ -725,7 +725,10 @@
     (let ((n (1- n)))
       (cons `(let ((x1 (acl2::nth-slice8 ,n x))
                    (y1 (acl2::nth-slice8 ,n y)))
-               (loghead 8 (+ (if (eql x1 ,n) (+ 1 x1) x1) y1)))
+               (loghead 8 (+ ,(if (member n '(1 3 6))
+                                  `(if (eql x1 ,n) (+ 1 x1) x1)
+                                'x1)
+                             y1)))
             (make-buggy-paddb-lanes n)))))
 
 (make-event
@@ -826,13 +829,15 @@
   (equal (paddb x y)
          (buggy-paddb x y))
   ///
-  (disable-definition compare-paddbs)
+  ;; (disable-definition compare-paddbs)
   (def-fgl-rewrite compare-paddbs-impl
     (equal (compare-paddbs x y)
            (let ((ans (greedy-max-sat! ans (bytes-diff-list 8 (paddb x y) (buggy-paddb x y)) (make-fgl-ipasir-config))))
              (if (not ans)
                  t
-               (fgl-prog2 (cw "Ans: ~x0~%" ans)
+               (fgl-prog2 (fgl-prog2 (cw "Ans: ~x0~%" ans)
+                                     (syntax-interp (interp-st-put-user-scratch
+                                                     :buggy-lanes (g-concrete->val ans) 'interp-st)))
                           (abort-rewrite (compare-paddbs x y))))))
     :hints (("goal" :use ((:instance all-nils-by-greedy-max-sat
                            (x (bytes-diff-list 8 (paddb x y) (buggy-paddb x y)))
@@ -842,10 +847,23 @@
 
 
 
+(make-event
+ (b* (((mv err ?val state)
+       (fgl-thm (compare-paddbs x y)))
+      ((unless err)
+       (er soft 'test-greedy-max-sat "Event succeeded!"))
+      (buggy-lanes (cdr (assoc :buggy-lanes (interp-st->user-scratch interp-st))))
+      ((unless (and buggy-lanes
+                    (equal buggy-lanes '(1 3 6))))
+       (er soft 'test-greedy-max-sat "Didn't work? buggy-lanes: ~x0" buggy-lanes)))
+   (value '(value-triple :ok))))
 
-(fgl::def-fgl-thm paddb-debug
-  (compare-paddbs x y))
 
 
 
-
+(fgl-thm
+ (implies (and (unsigned-byte-p 5 width)
+               (unsigned-byte-p 64 x)
+               (unsigned-byte-p 64 y))
+          (equal (logtail width (logapp width x y))
+                 y)))

@@ -217,7 +217,9 @@ return the result from the second form."
   :long "<p>Logically, returns the second argument.  In FGL, the first argument
 is interpreted under the @('unequiv') equivalence context, then the second is
 interpreted normally and returned.</p>"
-  y)
+  y
+  ///
+  (defcong unequiv equal (fgl-prog2 x y) 1))
 
 (defmacro fgl-progn (&rest args)
   (xxxjoin 'fgl-prog2 args))

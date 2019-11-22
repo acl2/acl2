@@ -2750,10 +2750,10 @@
                             (second args)
                             interp-st state))
 
-          ((fgl-prog2 2)
-           (fgl-interp-prog2 (first args)
-                            (second args)
-                            interp-st state))
+          ;; ((fgl-prog2 2)
+          ;;  (fgl-interp-prog2 (first args)
+          ;;                   (second args)
+          ;;                   interp-st state))
 
           ((fgl-interp-obj 1)
            (fgl-interp-fgl-interp-obj (first args)
@@ -3651,23 +3651,23 @@
                (fgl-interp-term-equivs x interp-st state))))
           (fgl-interp-value ans)))
 
-      (define fgl-interp-prog2 ((first-arg pseudo-termp)
-                               (x pseudo-termp)
-                               (interp-st interp-st-bfrs-ok)
-                               state)
-        :measure (list (nfix (interp-st->reclimit interp-st))
-                       2020
-                       (+ (pseudo-term-binding-count first-arg)
-                          (pseudo-term-binding-count x))
-                       40)
-        :returns (mv
-                  (xobj fgl-object-p)
-                  new-interp-st new-state)
-        (b* (((interp-st-bind
-               (equiv-contexts '(unequiv)))
-              ((fgl-interp-recursive-call ?ign)
-               (fgl-interp-term-equivs first-arg interp-st state))))
-          (fgl-interp-term-equivs x interp-st state)))
+      ;; (define fgl-interp-prog2 ((first-arg pseudo-termp)
+      ;;                          (x pseudo-termp)
+      ;;                          (interp-st interp-st-bfrs-ok)
+      ;;                          state)
+      ;;   :measure (list (nfix (interp-st->reclimit interp-st))
+      ;;                  2020
+      ;;                  (+ (pseudo-term-binding-count first-arg)
+      ;;                     (pseudo-term-binding-count x))
+      ;;                  40)
+      ;;   :returns (mv
+      ;;             (xobj fgl-object-p)
+      ;;             new-interp-st new-state)
+      ;;   (b* (((interp-st-bind
+      ;;          (equiv-contexts '(unequiv)))
+      ;;         ((fgl-interp-recursive-call ?ign)
+      ;;          (fgl-interp-term-equivs first-arg interp-st state))))
+      ;;     (fgl-interp-term-equivs x interp-st state)))
 
       (define fgl-interp-fgl-interp-obj ((x pseudo-termp)
                                         (interp-st interp-st-bfrs-ok)
@@ -6549,8 +6549,8 @@
                            nil))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
-  (defthm fgl-ev-equiv-of-prog2-call
-    (implies (member (pseudo-fnsym-fix fn) '(fgl-prog2 narrow-equiv fgl-time-fn))
+  (defthm fgl-ev-equiv-of-narrow-equiv-call
+    (implies (member (pseudo-fnsym-fix fn) '(narrow-equiv fgl-time-fn))
              (fgl-ev-equiv (pseudo-term-fncall fn args)
                            (second args)))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
@@ -9045,7 +9045,7 @@
                      (:fnname fgl-interp-term)
                      (:fnname fgl-interp-time$)
                      (:fnname fgl-interp-return-last)
-                     (:fnname fgl-interp-prog2)
+                     ;; (:fnname fgl-interp-prog2)
                      (:fnname fgl-interp-narrow-equiv))
                  (:add-concl
                   (fgl-ev-context-equiv-forall-extensions

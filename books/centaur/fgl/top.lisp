@@ -414,3 +414,6 @@ be a string or message identifying the particular SAT check.</p>"
 ;; make bind-var work as a binder rule
 (add-fgl-congruence unequiv-implies-equal-bind-var1-2)
 (add-fgl-brewrite bind-var-binder-rule)
+
+;; make fgl-prog2 interpret its first arg under unequiv
+(add-fgl-congruence unequiv-implies-equal-fgl-prog2-1)
