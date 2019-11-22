@@ -13,6 +13,7 @@
 (include-book "pseudo-lambdap")
 (include-book "pseudo-lambda-listp")
 (include-book "pseudo-termfnp")
+(include-book "pseudo-termfn-listp")
 (include-book "lambdap")
 (include-book "termfnp")
 

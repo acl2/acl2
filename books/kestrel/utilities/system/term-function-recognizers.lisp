@@ -16,14 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist pseudo-termfn-listp (x)
-  (pseudo-termfnp x)
-  :parents (term-utilities term-function-recognizers)
-  :short "Recognize true lists of
-          <see topic='@(url pseudo-termfnp)'>pseudo-term-functions</see>."
-  :elementp-of-nil t
-  :true-listp t)
-
 (std::deflist lambda-listp (x wrld)
   (lambdap x wrld)
   :guard (plist-worldp-with-formals wrld)
