@@ -19,7 +19,6 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
-(include-book "term-function-recognizers")
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
@@ -67,6 +66,7 @@
 (include-book "kestrel/std/system/rune-enabledp" :dir :system)
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
+(include-book "kestrel/std/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/std/system/theorem-formula" :dir :system)
 (include-book "kestrel/std/system/theorem-formula-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-name-listp" :dir :system)

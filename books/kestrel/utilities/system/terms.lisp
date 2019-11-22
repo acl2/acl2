@@ -18,9 +18,9 @@
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
-(include-book "std/util/defines" :dir :system)
+(include-book "kestrel/std/system/term-function-recognizers" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
-(include-book "term-function-recognizers")
+(include-book "std/util/defines" :dir :system)
 (include-book "world-queries")
 
 (local (include-book "all-vars-theorems"))
