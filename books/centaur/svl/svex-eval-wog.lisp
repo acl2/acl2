@@ -52,7 +52,8 @@
          :quote)
         (t :call)))
 
-(defthm svex-kind-wog-is-svex-kind
+(def-rp-rule$ t nil
+  svex-kind-wog-is-svex-kind
   (equal (svex-kind-wog x)
          (svex-kind x))
   :hints (("Goal"
@@ -69,17 +70,22 @@
     (if look (cdr look) (sv::4vec-x)))
   :returns (res 4vec-p :hyp (sv::svex-env-p env))
   ///
-  (defthmd svex-env-fastlookup-wog-is-svex-env-fastlookup
+  (def-rp-rule$ t nil
+    svex-env-lookup-is-svex-env-fastlookup-wog
     (implies (and (svex-env-p env)
                   (sv::svar-p var))
-             (equal (SVEX-ENV-FASTLOOKUP-WOG var env)
-                    (sv::SVEX-ENV-FASTLOOKUP var env)))
-    :hints (("Goal"
-             :expand (sv::SVEX-ENV-FASTLOOKUP var env)
-             :in-theory (e/d (sv::SVEX-ENV-FASTLOOKUP
-                              SV::SVEX-ENV-LOOKUP
+             (and (equal (sv::svex-env-fastlookup var env)
+                         (svex-env-fastlookup-wog var env))
+                  (equal (sv::svex-env-lookup var env)
+                         (svex-env-fastlookup-wog var env))))
+    :hints (("goal"
+             :expand (sv::svex-env-fastlookup var env)
+             :in-theory (e/d (sv::svex-env-fastlookup
+                              sv::svex-env-lookup
                               svex-env-p
-                              4VEC-FIX) ())))))
+                              4vec-fix) ()))))
+
+  (add-rp-rule 4vec-p-of-svex-env-fastlookup-wog))
 
 (define 4vec-fix-wog (x)
   (if (consp x)
@@ -92,7 +98,7 @@
   ((local
     (in-theory (enable 4vec-p 4vec))))
   ///
-  (defthm 4vec-fix-wog-is-4vec-fix
+  (def-rp-rule 4vec-fix-wog-is-4vec-fix
     (equal (4vec-fix-wog x)
            (4vec-fix x))
     :hints (("Goal"
@@ -140,9 +146,10 @@
   (let* ((fn (fnsym-fix fn)))
     (svex-apply-cases-wog fn args)))
 
-(defthm svex-apply-wog-is-svex-apply
-  (equal (svex-apply-wog fn args)
-         (sv::svex-apply fn args))
+(def-rp-rule$ t nil
+  svex-apply-is-svex-apply-wog
+  (equal (sv::svex-apply fn args)
+         (svex-apply-wog fn args))
   :hints (("Goal"
            :expand ((:free (index)
                            (NTH index (SV::4VECLIST-FIX ARGS)))
@@ -171,6 +178,7 @@
    :measure (cons-count x)
    :hints (("Goal"
             :in-theory (e/d (rp::measure-lemmas
+                             svex-kind-wog
                              svex-kind) ())))
    :flag expr
    :returns (val 4vec-p "Value of @('x') under this environment."
@@ -208,26 +216,30 @@
  :prepwork
  ((local
    (defthm returns-lemma1
-     (IMPLIES (AND
-               (EQUAL (SVEX-KIND X) :QUOTE)
-               (NOT (CONSP X))
-               (SVEX-ENV-P ENV)
-               (SVEX-P X))
-              (4VEC-P X))
-     :hints (("Goal"
-              :in-theory (e/d (SVEX-KIND SVEX-P 4VEC-P) ())))))
+     (implies (and
+               (equal (svex-kind-wog x) :quote)
+               (not (consp x))
+               (svex-env-p env)
+               (svex-p x))
+              (4vec-p x))
+     :hints (("goal"
+              :in-theory (e/d (svex-kind-wog svex-p 4vec-p) ())))))
   (local
    (defthm returns-lemma2
-     (IMPLIES (AND
-               (EQUAL (SVEX-KIND X) :QUOTE)
-               (CONSP X)
-               (SVEX-ENV-P ENV)
-               (SVEX-P X))
-              (4VEC-P (CADR X)))
-     :hints (("Goal"
-              :in-theory (e/d (SVEX-KIND SVEX-P 4VEC-P) ()))))))
+     (implies (and
+               (equal (svex-kind-wog x) :quote)
+               (consp x)
+               (svex-env-p env)
+               (svex-p x))
+              (4vec-p (cadr x)))
+     :hints (("goal"
+              :in-theory (e/d (svex-kind-wog svex-p 4vec-p) ())))))
+  )
  ///
 
+ (local
+   (in-theory (enable SVEX-KIND-WOG)))
+ 
  (local (defthm consp-of-svexlist-eval
           (equal (consp (svexlist-eval-wog x env))
                  (consp x))
@@ -303,9 +315,11 @@
     :flag list)
   :hints (("goal"
            :in-theory (e/d (svex-call->fn
+                            svex-kind-wog
                             svex-kind
+                            SVEX-APPLY-IS-SVEX-APPLY-WOG
                             svex-eval-wog
-                            svex-env-fastlookup-wog-is-svex-env-fastlookup
+                            svex-env-lookup-is-svex-env-fastlookup-wog
                             svexlist-eval-wog
                             svex-p
                             sv::svar-p
@@ -314,7 +328,8 @@
                             sv::svex-quote->val
                             svex-call->args) ()))))
 
-(defthm svex-eval-is-svex-eval-wog
+(def-rp-rule$ t nil
+  svex-eval-is-svex-eval-wog
   (implies (and (svex-p x)
                 (svex-env-p env))
            (equal (svex-eval x env)
@@ -322,6 +337,14 @@
   :hints (("Goal"
            :in-theory (e/d (svex-eval-wog-is-svex-eval) ()))))
 
+(def-rp-rule$ t nil
+  svexlist-eval-is-svexlist-eval-wog
+  (implies (and (svexlist-p x)
+                (svex-env-p env))
+           (equal (svexlist-eval x env)
+                  (svexlist-eval-wog x env)))
+  :hints (("Goal"
+           :in-theory (e/d (svexlist-eval-wog-is-svexlist-eval) ()))))
 
 
 (progn

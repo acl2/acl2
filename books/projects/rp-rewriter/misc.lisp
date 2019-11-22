@@ -100,7 +100,7 @@
              new-index)))))
 
   (defun openers-to-rule (base-name openers)
-    `(defthm ,(sa base-name 'lambda-opener)
+    `(def-rp-rule ,(sa base-name 'lambda-opener)
        (and ,@openers)))
 
   (defun lambdas-to-other-rules (rule-name rule hints)
@@ -115,7 +115,7 @@
             ,(append p-sigs b-sigs)
             ,@(append p-fncs b-fncs)
             ,(openers-to-rule rule-name (append p-openers b-openers))
-            (defthm ,rule-name
+            (def-rp-rule ,rule-name
               (implies ,p-body
                        (equal ,a ,b-body))
               ,@hints))))
@@ -126,7 +126,7 @@
             ,b-sigs
             ,@(append b-fncs)
             ,(openers-to-rule rule-name b-openers)
-            (defthm ,rule-name
+            (def-rp-rule ,rule-name
               (equal ,a
                      ,b-body)
               ,@hints))))
@@ -139,11 +139,11 @@
             ,(append p-sigs b-sigs)
             ,@(append p-fncs b-fncs)
             ,(openers-to-rule rule-name (append p-openers b-openers))
-            (defthm ,rule-name
+            (def-rp-rule ,rule-name
               (implies ,p-body
                        ,b-body)
               ,@hints))))
-      (& `(defthm ,rule-name
+      (& `(def-rp-rule ,rule-name
             ,rule
             ,@hints))))
 
@@ -201,38 +201,35 @@
        (cons (pseudo-term-fix (car lst))
              (pseudo-term-list-fix (cdr lst))))))
 
-  (defmacro def-rw-opener-error (name term &key
-                                      vars-to-avoid
-                                      (disabled 'nil))
+  (defmacro def-rw-opener-error (name term &key vars-to-avoid (disabled 'nil))
     (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) vars-to-avoid)))
       `;(progn
-         ;(table rw-opener-error-rules  ',name t)
-         (,(if disabled 'defthmd 'defthm)
-          ,name
-          (implies (hard-error
-                    ',name
-                    ,(str::cat
-                      "A " (symbol-name (car term))
-                      " instance must have slipped through all of its rewrite rules. 
+;(table rw-opener-error-rules  ',name t)
+      (def-rp-rule$ t ,disabled  
+       ,name
+       (implies (hard-error
+                 ',name
+                 ,(str::cat
+                   "A " (symbol-name (car term))
+                   " instance must have slipped through all of its rewrite rules.
 Try using (rp::update-rp-brr t rp::rp-state) and
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 12 nil nil)
                  :frames 50). ~%"
-                      (rw-opener-error-args-string vars-to-print 0))
-                    ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0))) 
-                   (equal
-                    ,term
-                    t))
-          :hints (("Goal"
-                   :expand (hide ,term)
-                   :in-theory '(return-last hard-error hide))))));)
+                   (rw-opener-error-args-string vars-to-print 0))
+                 ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0)))
+                (equal
+                 ,term
+                 t))
+       :hints (("Goal"
+                :expand (hide ,term)
+                :in-theory '(return-last hard-error hide))))));)
 
-  (defmacro disable-opener-error-rule (rule-name)
-    `(table 'rw-opener-error-rules ',rule-name nil))
+  #|(defmacro disable-opener-error-rule (rule-name)
+    `(table 'rw-opener-error-rules ',rule-name nil))||#
 
-  (defmacro enable-opener-error-rule (rule-name)
-    `(table 'rw-opener-error-rules ',rule-name t)))
-
+  #|(defmacro enable-opener-error-rule (rule-name)
+    `(table 'rw-opener-error-rules ',rule-name t))||#)
 
 (defun translate1-vals-in-alist (alist state)
   (declare (xargs :guard (alistp alist)
@@ -245,8 +242,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
           (acl2::translate1 c t nil nil 'top-level (w state) state))
          (- (if err
                 (hard-error 'translate1-vals-in-alist
-                                "Error translating term ~p0~%"
-                                (list (cons #\0 c)))
+                            "Error translating term ~p0~%"
+                            (list (cons #\0 c)))
               nil))
          ((mv rest state)
           (translate1-vals-in-alist (cdr alist) state)))
@@ -254,47 +251,36 @@ Try using (rp::update-rp-brr t rp::rp-state) and
           state))))
 
 (defmacro rp-thm (term &key
-                       extra-rules
                        (untranslate 't)
                        #|(disable-opener-error 'nil)||#
                        (new-synps 'nil)
                        (disable-meta-rules 'nil)
                        (enable-meta-rules 'nil)
-                       (rules-override 'nil)
-                       (in-theory 'nil))
+                       (enable-rules 'nil)
+                       (disable-rules 'nil)
+                       (runes 'nil))
   `(encapsulate
      nil
-     #|(make-event
-      (b* ((opener-error-rules-alist (table-alist 'rw-opener-error-rules
-                                                  (w state)))
-           (?opener-error-rules
-            (loop$ for x in opener-error-rules-alist when (cdr x) collect (car
-                                                                           x)))
-           (opener-error-rules (set-difference$ opener-error-rules ,disable-opener-error)))
-        `(local
-          (in-theory (enable . ,opener-error-rules)))))||#
 
-     ;;(set-not-simplified-action :warning)
-
-     ,@(if in-theory
+     ,@(if enable-meta-rules
            `((local
-              (in-theory ,in-theory)))
+              (enable-meta-rules ,@enable-meta-rules)))
          'nil)
 
-      ;; ,@(if ',in-theory
-      ;;                `((local
-      ;;                   (in-theory ,',in-theory)))
-      ;;              'nil)
+     ,@(if disable-meta-rules
+           `((local
+              (disable-meta-rules ,@disable-meta-rules)))
+         'nil)
 
-      ,@(if enable-meta-rules
-            `((local
-               (enable-meta-rules ,@enable-meta-rules)))
-          'nil)
-      
-      ,@(if disable-meta-rules
-            `((local
-               (disable-meta-rules ,@disable-meta-rules)))
-          'nil)
+     ,@(if enable-rules
+           `((local
+              (enable-rules ,enable-rules)))
+         'nil)
+
+     ,@(if disable-rules
+           `((local
+              (disable-rules ,disable-rules)))
+         'nil)
 
      (make-event
       (b* ((- (check-if-clause-processor-up-to-date (w state)))
@@ -302,11 +288,10 @@ Try using (rp::update-rp-brr t rp::rp-state) and
             (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
            (term (beta-search-reduce term 1000))
-           (runes ,(if rules-override
-                       rules-override
-                     `(append (let ((world (w state))) (current-theory :here))
-                          ,extra-rules)))
-           (enabled-exec-rules (get-enabled-exec-rules runes))
+           ((mv runes exc-rules)
+            ,(if runes
+                 `(mv ,runes (get-disabled-exc-rules-from-table (table-alist 'rp-exc-rules world)))
+               '(get-enabled-rules-from-table state)))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
            (rules-alist (get-rules runes state :new-synps new-synps))
            (rp-state (rp-state-new-run rp-state))
@@ -319,7 +304,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
             (time$
              (rp-rw-aux term
                         rules-alist
-                        enabled-exec-rules
+                        exc-rules
                         meta-rules
                         rp-state
                         state)))
@@ -332,63 +317,49 @@ Try using (rp::update-rp-brr t rp::rp-state) and
            (rp-state (update-not-simplified-action old-not-simplified-action rp-state)))
         (mv nil `(value-triple :none) state rp-state)))))
 
-
-;; :new-synps '((svl-run-cycle-opener
-;;               . (if
-;;                     (not (equal module-name
-;;                                 '"booth2_partial_product_signed$MULTIPLICAND_BITS=64"))
-;;                     (not (equal module-name
-;;                                 '"booth2_partial_product_signed_first$MULTIPLICAND_BITS=64"))
-;;                   'nil))
-
-(defmacro rp-cl (&key (extra-rules 'nil)
-                      (new-synps 'nil)
+(defmacro rp-cl (&key (new-synps 'nil)
                       (cl-name-prefix '0)
-                      (rules-override 'nil)
-                      )
-  (declare (ignorable extra-rules))
+                      (runes 'nil))
   `(,(sa (if (equal cl-name-prefix 0) nil cl-name-prefix) "RP-CLAUSE-PROCESSOR")
     clause
     (make rp-cl-hints
-          :runes ,(if rules-override
-                      rules-override
-                    `(append (let ((world (w state))) (current-theory :here))
-                             ,extra-rules))
+          :runes ',runes #|,(if rules-override
+          rules-override
+          `(append (let ((world (w state))) (current-theory :here))
+          ,extra-rules)
+          )||#
           :new-synps ,new-synps)
     rp-state state))
 
-(defmacro defthmrp (name term
-                         &key
-                         (extra-rules 'nil)
-                         (rule-classes ':rewrite)
-                         ;; (use-opener-error-rules 't)
-                         (new-synps 'nil)
-                         (disable-meta-rules 'nil)
-                         (enable-meta-rules 'nil)
-                         (rules-override 'nil)
-                         (in-theory 'nil))
+(defmacro def-rp-thm (name term
+                           &key
+                           (rule-classes ':rewrite)
+                           ;; (use-opener-error-rules 't)
+                           (new-synps 'nil)
+                           (disable-meta-rules 'nil)
+                           (enable-meta-rules 'nil)
+                           (enable-rules 'nil)
+                           (disable-rules 'nil)
+                           (runes 'nil) ;; when nil, runes will be read from
+                           ;; rp-rules table
+                           )
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
          (cl-name-prefix (cdr (assoc-eq 'cl-name-prefix (table-alist 'rp-rw (w state)))))
-         (body `(defthm ,',name ,',term
+         (body `(def-rp-rule ,',name ,',term
                   :rule-classes ,',rule-classes
                   :hints (("Goal"
                            :do-not-induct t
                            :rw-cache-state nil
                            :do-not '(preprocess generalize fertilize)
                            :clause-processor
-                           (rp-cl :extra-rules ,',extra-rules
-                                  :rules-override ,,rules-override
+                           (rp-cl :runes ,,runes
                                   :cl-name-prefix ,cl-name-prefix
-                                  :new-synps ,',new-synps)))))
-         #|(opener-error-rules-alist (table-alist 'rw-opener-error-rules  (w state)))
-         (?opener-error-rules
-          (loop$ for x in opener-error-rules-alist when (cdr x) collect (car
-                                                                         x)))||#
-         )
+                                  :new-synps ,',new-synps))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
-               in-theory)
+               enable-rules
+               disable-rules)
            ``(encapsulate
                nil
                ;; ,@(if ,use-opener-error-rules
@@ -400,18 +371,26 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                      `((local
                         (enable-meta-rules ,@',enable-meta-rules)))
                    'nil)
-               
+
                ,@(if ',disable-meta-rules
                      `((local
                         (disable-meta-rules ,@',disable-meta-rules)))
                    'nil)
-               
-               ,@(if ',in-theory
+
+               ,@(if ',enable-rules
                      `((local
-                        (in-theory ,',in-theory)))
+                        (enable-rules ,',enable-rules)))
+                   'nil)
+
+               ,@(if ',disable-rules
+                     `((local
+                        (disable-rules ,',disable-rules)))
                    'nil)
                ,body)
          `body))))
+
+(defmacro defthmrp (&rest rest)
+  `(def-rp-thm ,@rest))
 
 (encapsulate
   nil
@@ -441,12 +420,12 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                  (not added-events))
             `(value-triple (cw "~%Event did not change current theory, not ~
     creating macro ~p0. ~%" ',',macro-name))
-        `(defmacro ,',macro-name (use)
-           (if use
-               `(in-theory (e/d ,',added-events
-                                ,',removed-events))
-             `(in-theory (e/d ,',removed-events
-                              ,',added-events))))))))
+          `(defmacro ,',macro-name (use)
+             (if use
+                 `(in-theory (e/d ,',added-events
+                                  ,',removed-events))
+               `(in-theory (e/d ,',removed-events
+                                ,',added-events))))))))
 
   (defmacro fetch-new-events (event macro-name &key (disabled 'nil) )
     `(with-output

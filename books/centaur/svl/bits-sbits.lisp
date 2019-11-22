@@ -46,7 +46,8 @@
   nil
 
   ;;low priority lemmas:
-  (defthm bits-01-of-a-bit
+  (def-rp-rule$ t t
+    bits-01-of-a-bit
     (implies (and (bitp x))
              (and (equal (bits x 0 1)
                          x)))))
@@ -56,7 +57,8 @@
   ;; 4vec-bitnot$lemmas
 
   ;; this has to have low priority
-  (defthm 4vec-bitnot$-of-bits-of-same-size
+  (def-rp-rule$ nil t
+    4vec-bitnot$-of-bits-of-same-size
     (implies (syntaxp (and (consp (rp::ex-from-rp term))
                            (not (equal (car (rp::ex-from-rp term))
                                        'svex-env-fastlookup-wog))))
@@ -69,7 +71,8 @@
                               4VEC-BITNOT$)
                              ()))))
 
-  (defthm 4vec-bitand$-of-bits-of-same-size
+  (def-rp-rule$ nil t
+    4vec-bitand$-of-bits-of-same-size
     (and
      (implies (syntaxp (and (consp (rp::ex-from-rp val1))
                            (not (equal (car (rp::ex-from-rp val1))
@@ -88,7 +91,8 @@
                               4VEC-BITand$)
                              ()))))
 
-  (defthm 4vec-bitor$-of-bits-of-same-size
+  (def-rp-rule$ nil t
+    4vec-bitor$-of-bits-of-same-size
     (and
      (implies (syntaxp (and (consp (rp::ex-from-rp val1))
                            (not (equal (car (rp::ex-from-rp val1))
@@ -107,7 +111,8 @@
                               4vec-bitor$)
                              ()))))
 
-  (defthm 4vec-bitxor$-of-bits-of-same-size
+  (def-rp-rule$ nil t
+    4vec-bitxor$-of-bits-of-same-size
     (and
      (implies (syntaxp (and (consp (rp::ex-from-rp val1))
                             (not (equal (car (rp::ex-from-rp val1))
@@ -126,7 +131,7 @@
                               4VEC-BITxor$)
                              ()))))
 
-  (defthm bits-of-4vec-bitnot
+  (def-rp-rule bits-of-4vec-bitnot
     (implies (and (natp size)
                   (natp start))
              (equal (bits (4vec-bitnot x) start size)
@@ -156,7 +161,7 @@
                              (sv::4vec-bitand
                               sv::4vec)))))
 
-  (defthm bits-of-4vec-bitand
+  (def-rp-rule bits-of-4vec-bitand
     (implies (and (natp size)
                   (natp start))
              (equal (bits (4vec-bitand val1 val2) start size)
@@ -185,7 +190,7 @@
                              (sv::4vec-bitor
                               sv::4vec)))))
 
-  (defthm bits-of-4vec-bitor
+  (def-rp-rule bits-of-4vec-bitor
     (implies (and (natp size)
                   (natp start))
              (equal (bits (4vec-bitor val1 val2) start size)
@@ -214,7 +219,7 @@
                              (sv::4vec-bitxor
                               sv::4vec)))))
 
-  (defthm bits-of-4vec-bitxor
+  (def-rp-rule bits-of-4vec-bitxor
     (implies (and (natp size)
                   (natp start))
              (equal (bits (sv::4vec-bitxor val1 val2) start size)
@@ -228,7 +233,7 @@
                              (sv::4vec-bitxor
                               sv::4vec)))))
 
-  (defthm bits-of-4vec-bitnot$
+  (def-rp-rule bits-of-4vec-bitnot$
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
@@ -246,7 +251,7 @@
                               bits)
                              ()))))
 
-  (defthm bits-of-4vec-bitand$
+  (def-rp-rule bits-of-4vec-bitand$
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
@@ -262,7 +267,7 @@
                               bits)
                              ()))))
 
-  (defthm bits-of-4vec-bitor$
+  (def-rp-rule bits-of-4vec-bitor$
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
@@ -278,7 +283,7 @@
                               bits)
                              ()))))
 
-  (defthm bits-of-4vec-bitxor$
+  (def-rp-rule bits-of-4vec-bitxor$
     (implies (and (natp bits-size)
                   (natp size)
                   (natp start))
@@ -294,7 +299,7 @@
                               bits)
                              ()))))
 
-  (defthm 4vec-bitnot-of-4vec-concat$
+  (def-rp-rule 4vec-bitnot-of-4vec-concat$
     (implies (and (natp size)
                   (integerp x)
                   (integerp y))
@@ -370,7 +375,8 @@
                :in-theory (e/d () ()))))  )
 
   ;;; TODO put these in meta function
-  (defthm bits-of-lsh-1
+  ;; OR convert all lsh to concat..
+  (def-rp-rule bits-of-lsh-1
     (implies
      (and (> r-size start)
           (natp r-size)
@@ -392,7 +398,7 @@
     :hints (("Goal"
              :use ((:instance bits-of-lsh-1-no-syntaxp)))))
 
-  (defthm bits-of-lsh-2
+  (def-rp-rule bits-of-lsh-2
     (implies
      (and (natp r-size)
           (natp start)
@@ -410,7 +416,7 @@
              :use ((:instance bits-of-lsh-2-no-syntaxp))
              :in-theory (e/d () ()))))
 
-  (defthm bits-of-lsh-3
+  (def-rp-rule bits-of-lsh-3
     (implies
      (and (>= start r-size)
           (natp r-size)
@@ -449,7 +455,7 @@
 
   ;; this has a place in meta function bits-of-meta-fn. but that function does
   ;; not work for subterms that may have "rp" side conditions.
-  (defthm bits-of-rsh
+  (def-rp-rule bits-of-rsh
     (implies
      (and (natp r-size)
           (natp start)
@@ -470,7 +476,7 @@
 
   ;; these can be improved!!!!  by replacing concat with concat$ and replacing
   ;; rsh with bits.
-  (defthm 4vec-rsh-of-4vec-concat$-2
+  (def-rp-rule 4vec-rsh-of-4vec-concat$-2
     (implies (and (natp s1)
                   (natp s2)
                   (<= s2 s1))
@@ -497,7 +503,7 @@
               :use ((:instance 4vec-rsh-of-4vec-concat))
               :in-theory (e/d (4vec-concat$) ())))))
 
-  (defthm 4vec-rsh-of-4vec-concat$-1
+  (def-rp-rule 4vec-rsh-of-4vec-concat$-1
     (implies (4vec-rsh-of-4vec-concat$-1-hyp s1 s2)
              (equal (4vec-rsh s1 (4vec-concat$ s2 x y))
                     (4vec-concat$ (- s2 s1)
@@ -512,7 +518,7 @@
              :in-theory (e/d (4vec-concat$) ()))))
 
 
-  (defthm 4vec-rsh-of-bits-1
+  (def-rp-rule 4vec-rsh-of-bits-1
     (implies (and (natp amount)
                   (natp start)
                   (natp size)
@@ -523,7 +529,7 @@
              :use ((:instance 4vec-rsh-of-4vec-part-select-1))
              :in-theory (e/d () (4vec-rsh-of-4vec-part-select-1)))))
 
-  (defthm 4vec-rsh-of-bits-2
+  (def-rp-rule 4vec-rsh-of-bits-2
     (implies (and (natp amount)
                   (natp start)
                   (natp size)
@@ -539,7 +545,7 @@
 
   ;; 4vec-concat lemmas
 
-  (defthm equal-of-4vec-concat$-with-size=1
+  (def-rp-rule equal-of-4vec-concat$-with-size=1
     (implies (and (4vec-p x)
                   (4vec-p l))
              (equal (equal x
@@ -558,7 +564,7 @@
                                SV::4VEC-FIX-OF-4VEC
                                SV::4VEC-P-OF-4VEC-CONCAT)))))
 
-  (defthm 4vec-concat$-of-4vec-fix
+  (def-rp-rule 4vec-concat$-of-4vec-fix
     (and (equal (4vec-concat$ x (4vec-fix y) z)
                 (4vec-concat$ x y z))
          (equal (4vec-concat$ x y (4vec-fix z))
@@ -568,7 +574,8 @@
                                            4vec)
                              (4VEC-CONCAT-OF-WIDTH=0)))))
 
-  (defthm convert-4vec-concat-to-4vec-concat$
+  (def-rp-rule$ t nil
+    convert-4vec-concat-to-4vec-concat$
     (implies t
              (equal (4vec-concat size term1 term2)
                     (4vec-concat$ size (bits term1 0 size )
@@ -578,7 +585,7 @@
                               4vec-concat-insert-4vec-part-select
                               bits) ()))))
 
-  (defthm 4vec-concat-of-4vec-concat$-case-2
+  (def-rp-rule 4vec-concat-of-4vec-concat$-case-2
     (implies
      (and (natp size1)
           (<= size1 size2)
@@ -597,7 +604,7 @@
                              (4VEC-CONCAT-INSERT-4VEC-PART-SELECT
                               convert-4vec-concat-to-4vec-concat$)))))
 
-  (defthm 4vec-concat$-of-4vec-concat$-case-2
+  (def-rp-rule 4vec-concat$-of-4vec-concat$-case-2
     (implies
      (and (natp size1)
           (<= size1 size2)
@@ -615,7 +622,7 @@
                              (4vec-concat-insert-4vec-part-select
                               convert-4vec-concat-to-4vec-concat$)))))
 
-  (defthm 4vec-concat$-of-4vec-concat$-case-1
+  (def-rp-rule 4vec-concat$-of-4vec-concat$-case-1
     (implies
      (and (natp size1)
           (< size2 size1)
@@ -630,7 +637,7 @@
                              (4VEC-CONCAT-INSERT-4VEC-PART-SELECT
                               convert-4vec-concat-to-4vec-concat$)))))
 
-  (defthm 4vec-concat-of-4vec-concat$-case-1
+  (def-rp-rule 4vec-concat-of-4vec-concat$-case-1
     (implies
      (and (natp size1)
           (< size2 size1)
@@ -730,7 +737,7 @@
                                 4vec-concat-insert-4vec-part-select
                                 commutativity-of-+))))))
 
-  (defthm bits-of-concat-1
+  (def-rp-rule bits-of-concat-1
     (implies (and (<= (+ start size) c-size)
                   (natp start)
                   (natp size)
@@ -749,7 +756,7 @@
                              (convert-4vec-concat-to-4vec-concat$
                               4vec-concat-insert-4vec-part-select)))))
 
-  (defthm bits-of-concat-3
+  (def-rp-rule bits-of-concat-3
     (implies (and (< start c-size)
                   (< c-size (+ start size))
                   (natp start)
@@ -771,7 +778,7 @@
                              (convert-4vec-concat-to-4vec-concat$
                               )))))
 
-  (defthm bits-of-concat-2
+  (def-rp-rule bits-of-concat-2
     (implies (and (<= c-size start)
                   (natp start)
                   (natp size)
@@ -790,7 +797,7 @@
                              (convert-4vec-concat-to-4vec-concat$
                               4vec-concat-insert-4vec-part-select)))))
 
-  (defthm sbits-of-concat
+  (def-rp-rule sbits-of-concat
     (implies (and (posp size)
                   (natp start)
                   (natp w)
@@ -815,7 +822,7 @@
                               4VEC-CONCAT-INSERT-4VEC-PART-SELECT
                               COMMUTATIVITY-OF-+)))))
 
-  (defthm concat-of-size=0
+  (def-rp-rule concat-of-size=0
     (and (equal (4vec-concat$ 0 term1 term2)
                 (4vec-fix term2))
          (equal (4vec-concat 0 term1 term2)
@@ -824,7 +831,7 @@
              :in-theory (e/d (4vec-concat$) ()))))
 
   ;; TODO size can be made more generic...
-  (defthm 4vec-concat$-of-size=1-term2=0
+  (def-rp-rule 4vec-concat$-of-size=1-term2=0
     (and (equal (4vec-concat$ 1 val1 0)
                 (bits val1 0 1 ))
          (equal (4vec-concat 1 val1 0)
@@ -844,7 +851,7 @@
   nil
 
   ;; sbits lemmas
-  (defthm sbits-size=0
+  (def-rp-rule sbits-size=0
     (implies (natp start)
              (equal (sbits start 0 new-val old-val)
                     (sv::4vec-fix old-val)))
@@ -852,7 +859,7 @@
              :use ((:instance 4vec-part-install-w=0))
              :in-theory (e/d () ()))))
 
-  (defthm sbits-of-bits
+  (def-rp-rule sbits-of-bits
     (implies (and (natp start)
                   (natp size)
                   (syntaxp (consp (rp::ex-from-rp new-val))))
@@ -873,7 +880,8 @@
              :use ((:instance 4vec-part-install-of-4vec-part-install-sizes=1))
              :in-theory (e/d () ()))))
 
-  (defthmd 4vec-part-install-is-sbits
+  (def-rp-rule$ t t
+    4vec-part-install-is-sbits
     (implies (natp size)
              (equal (4vec-part-install start size old new)
                     (sbits start size (bits new 0 size ) old)))
@@ -885,7 +893,7 @@
   nil
   ;; bits of bits lemmas
 
-  (defthm bits-of-4vec-plus-is-4vec-plus
+  (def-rp-rule bits-of-4vec-plus-is-4vec-plus
     (implies (and (integerp x)
                   (integerp y)
                   (natp size)
@@ -900,7 +908,7 @@
              :in-theory (e/d (4vec-part-select
                               4VEC-CONCAT) ()))))
 
-  (defthm bits-of-4vec-plus-is-4vec-plus-start=0
+  (def-rp-rule bits-of-4vec-plus-is-4vec-plus-start=0
     (implies (and (integerp x)
                   (integerp y)
                   (natp size))
@@ -933,7 +941,7 @@
   (rp::rp-attach-sc bits-of-4vec-plus-is-4vec-plus-start=0
                     bits-of-4vec-plus-is-4vec-plus-side-cond)
 
-  (defthm bits-of-4vec-?*
+  (def-rp-rule bits-of-4vec-?*
     (implies (and (natp start)
                   (natp size)
 ;(natp test)
@@ -946,7 +954,7 @@
              :in-theory (e/d (bits
                               4vec-part-select-of-4vec-?*) ()))))
 
-  (defthm bits-of-4vec-?
+  (def-rp-rule bits-of-4vec-?
     (implies (and (natp start)
                   (natp size)
 ;(natp test)
@@ -959,7 +967,7 @@
              :in-theory (e/d (bits
                               4vec-part-select-of-4vec-?) ()))))
 
-  (defthm bits-of-4vec-fix
+  (def-rp-rule bits-of-4vec-fix
     (equal (bits (4vec-fix val) start size )
            (bits val start size ))
     :hints (("Goal"
@@ -969,7 +977,7 @@
                               convert-4vec-concat-to-4vec-concat$
                               4vec-zero-ext-is-4vec-concat)))))
 
-  (defthm bits-of-bits-2
+  (def-rp-rule bits-of-bits-2
     (implies (and (natp start1)
                   (natp start2)
                   (natp size1)
@@ -982,7 +990,7 @@
              :in-theory (e/d () ()))))
 
   ;; this is yet to be covered by the meta function. (?)
-  (defthm bits-of-bits-1
+  (def-rp-rule bits-of-bits-1
     (implies (and (natp start1)
                   (natp start2)
                   (natp size1)
@@ -1111,7 +1119,8 @@
                :in-theory (e/d () ())))))
 
   ;; covered in the meta function, so it will be disabled in bits-sbits-meta.lisp
-  (defthm bits-of-sbits-1
+  (def-rp-rule$ nil t
+    bits-of-sbits-1
     (implies
      (and (natp start)
           (natp s-start)
@@ -1141,7 +1150,8 @@
              :in-theory (e/d () ()))))
 
   ;; covered in the meta function, so it will be disabled in bits-sbits-meta.lisp
-  (defthm bits-of-sbits-2
+  (def-rp-rule$ nil t
+    bits-of-sbits-2
     (implies (and (natp start)
                   (natp size)
                   (natp s-start)
@@ -1171,7 +1181,8 @@
              :in-theory (e/d () ()))))
 
   ;; covered in the meta function, so it will be disabled in bits-sbits-meta.lisp
-  (defthm bits-of-sbits-3
+  (def-rp-rule$ nil t
+    bits-of-sbits-3
     (implies (and  (natp start)
                    (natp size)
                    (natp s-start)
@@ -1198,7 +1209,8 @@
              :in-theory (e/d () ()))))
 
   ;; covered in the meta function, so it will be disabled in bits-sbits-meta.lisp
-  (defthm bits-of-sbits-4
+  (def-rp-rule$ nil t
+    bits-of-sbits-4
     (implies (and (<= s-start start)
                   (natp start)
                   (natp size)
@@ -1222,7 +1234,8 @@
              :in-theory (e/d () ()))))
 
   ;; covered in the meta function, so it will be disabled in bits-sbits-meta.lisp
-  (defthm bits-of-sbits-5
+  (def-rp-rule$ nil t
+    bits-of-sbits-5
     (implies (and (natp start)
                   (natp size)
                   (natp s-start)
@@ -1245,8 +1258,7 @@
   nil
 
   ;; other bits-of lemmas
-
-  (defthm bits-0-1-of-4vec-reduction-and
+  (def-rp-rule bits-0-1-of-4vec-reduction-and
     (implies
      (and (integerp amount)
           (> amount 1))
@@ -1264,7 +1276,7 @@
              :use ((:instance 4vec-part-select-of-4vec-reduction-and))
              :in-theory (e/d () (4vec-part-select-of-4vec-reduction-and)))))
 
-  (defthm bits-0-1-of-4vec-reduction-and-when-amount=1
+  (def-rp-rule bits-0-1-of-4vec-reduction-and-when-amount=1
     (implies t
              (equal (bits (sv::4vec-reduction-and
                            (SV::4VEC-SIGN-EXT 1 term))
@@ -1274,7 +1286,7 @@
              :use ((:instance 4vec-part-select-of-4vec-reduction-and-when-amount=1))
              :in-theory (e/d () (4vec-part-select-of-4vec-reduction-and-when-amount=1)))))
 
-  (defthm bits-of-0
+  (def-rp-rule bits-of-0
     (implies (and (natp start)
                   (natp size))
              (equal (bits 0 start size)
@@ -1292,7 +1304,8 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthmd 4vec-zero-ext-is-bits
+  (def-rp-rule$ t t
+    4vec-zero-ext-is-bits
     (equal (4vec-zero-ext n x)
            (bits x 0 n))
     :hints (("Goal"
@@ -1310,15 +1323,15 @@
 
 ;; generic type information:
 (progn
-  (defthm bitp-implies-natp
+  (def-rp-rule$ t nil bitp-implies-natp
     (implies (bitp x)
              (natp x)))
 
-  (defthm natp-implies-integerp
+  (def-rp-rule$ t nil natp-implies-integerp
     (implies (natp x)
              (integerp x)))
 
-  (defthm integerp-implies-4vecp
+  (def-rp-rule integerp-implies-4vecp
     (implies (integerp x)
              (4vec-p x))
     :hints (("Goal"
@@ -1328,19 +1341,19 @@
   nil
   ;; 4vec$ types
 
-  (defthm 4vec-p-4vec-bitand$
+  (def-rp-rule 4vec-p-4vec-bitand$
     (4vec-p (4vec-bitand$ size x y))
     :hints (("Goal"
              :in-theory (e/d (4vec-bitand$)
                              ()))))
 
-  (defthm 4vec-p-4vec-bitxor$
+  (def-rp-rule 4vec-p-4vec-bitxor$
     (4vec-p (4vec-bitxor$ size x y))
     :hints (("Goal"
              :in-theory (e/d (4vec-bitxor$)
                              ()))))
 
-  (defthm 4vec-p-4vec-bitor$
+  (def-rp-rule 4vec-p-4vec-bitor$
     (4vec-p (4vec-bitor$ size x y))
     :hints (("Goal"
              :in-theory (e/d (4vec-bitor$)
@@ -1353,14 +1366,14 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthm 4vec-p-4vec-concat$
+  (def-rp-rule 4vec-p-4vec-concat$
     (4vec-p (4vec-concat$ size x y))
     :hints (("Goal"
              :in-theory (e/d (4vec-concat$)
                              ()))))
   
   
-  (defthm integerp-4vec-concat$-slower
+  (def-rp-rule integerp-4vec-concat$-slower
     (implies (and (integerp (bits x 0 size))
                   (integerp y)
                   (natp size))
@@ -1388,7 +1401,7 @@
                               (:type-prescription
                                 acl2::expt-type-prescription-nonpositive-base-even-exponent))))))
   
-  (defthm integerp-4vec-concat$
+  (def-rp-rule integerp-4vec-concat$
     (implies (and (integerp x)
                   (integerp y)
                   (natp size))
@@ -1401,7 +1414,7 @@
                               sv::4vec->upper)
                              (convert-4vec-concat-to-4vec-concat$)))))
 
-  (defthm natp-4vec-concat$
+  (def-rp-rule natp-4vec-concat$
     (implies (and (integerp x)
                   (natp y)
                   (natp size))
@@ -1414,7 +1427,7 @@
                               sv::4vec->upper)
                              (convert-4vec-concat-to-4vec-concat$)))))
 
-  (defthm bitp-4vec-concat$
+  (def-rp-rule bitp-4vec-concat$
     (implies (and (integerp x))
              (bitp (4vec-concat$ 1 x 0)))
     :hints (("goal"
@@ -1433,13 +1446,13 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthm 4vec-p-bits
+  (def-rp-rule 4vec-p-bits
     (4vec-p (bits val start size ))
     :hints (("Goal"
              :in-theory (e/d (bits)
                              ()))))
 
-  (defthm integerp-4vec-part-select
+  (def-rp-rule integerp-4vec-part-select
     (implies (and (integerp x)
                   (natp start)
                   (natp size))
@@ -1455,7 +1468,7 @@
                               4VEC-PART-SELECT)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
-  (defthm integerp-bits
+  (def-rp-rule integerp-bits
     (implies (and (integerp x)
                   (natp size)
                   (natp start))
@@ -1464,7 +1477,7 @@
              :in-theory (e/d (bits)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
-  (defthm natp-4vec-part-select-better
+  (def-rp-rule natp-4vec-part-select-better
     (implies (and (integerp x)
                   (natp start)
                   (natp size))
@@ -1480,7 +1493,7 @@
                               4VEC-PART-SELECT)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
-  (defthm natp-bits
+  (def-rp-rule natp-bits
     (implies (and (integerp x)
                   (natp size)
                   (natp start))
@@ -1489,7 +1502,7 @@
              :in-theory (e/d (bits)
                              (CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))
 
-  (defthm bitp-bits-size=1
+  (def-rp-rule bitp-bits-size=1
     (implies (and (integerp x)
                   (natp start))
              (bitp (bits x start 1)))
@@ -1504,7 +1517,7 @@
                              (bitp
                               convert-4vec-concat-to-4vec-concat$)))))
 
-  (defthm bit$-of-negated-bit
+  (def-rp-rule bit$-of-negated-bit
     (implies (and (bitp x)
                   (natp start))
              (equal (bits (- x) start 1 )
@@ -1524,7 +1537,7 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthm 4vec-p-4vec-bitnot
+  (def-rp-rule 4vec-p-4vec-bitnot
     (and
      (4vec-p (4vec-bitnot x))
      (4vec-p (4vec-bitnot$ size x)))
@@ -1533,7 +1546,7 @@
                               4VEC-BITNOT$)
                              ()))))
 
-  (defthm integerp-4vec-bitnot
+  (def-rp-rule integerp-4vec-bitnot
     (implies (and (integerp x))
              (integerp (4vec-bitnot x)))
     :hints (("Goal"
@@ -1544,7 +1557,7 @@
                               4vec
                               SV::3VEC-BITNOT) ()))))
 
-  (defthm integerp-4vec-bitnot$
+  (def-rp-rule integerp-4vec-bitnot$
     (implies (and (integerp x)
                   (natp size))
              (integerp (4vec-bitnot$ size x)))
@@ -1557,7 +1570,7 @@
                               4VEC-BITNOT$)
                              ()))))
 
-  (defthm natp-4vec-bitnot$
+  (def-rp-rule natp-4vec-bitnot$
     (implies (and (integerp x)
                   (natp size))
              (natp (4vec-bitnot$ size x)))
@@ -1570,7 +1583,7 @@
                               4VEC-BITNOT$)
                              ()))))
 
-  (defthm bitp-of-4vec-bitnot
+  (def-rp-rule bitp-of-4vec-bitnot
     (implies (and (integerp x)
                   (natp start)
                   (natp size))
@@ -1593,7 +1606,7 @@
                              (convert-4vec-concat-to-4vec-concat$
                               4vec-concat$-of-size=1-term2=0)))))
 
-  (defthm bitp-of-4vec-bitnot$
+  (def-rp-rule bitp-of-4vec-bitnot$
     (implies (and (integerp x)
                   (natp start)
                   (natp size))
@@ -1637,7 +1650,7 @@
    4vec-bitnot-of-4vec-concat$
    4vec-bitnot-of-4vec-concat$-side-cond))
 
-(defthm 4vec-fix-of-functions
+(def-rp-rule 4vec-fix-of-functions
   (and (equal (4vec-fix (4vec-bitnot s))
               (4vec-bitnot s))
        (equal (4vec-fix (sv::4vec-symwildeq s s2))
@@ -1651,7 +1664,7 @@
        (equal (4vec-fix (4vec-concat$ size val1 val2))
               (4vec-concat$ size val1 val2))))
 
-(defthm 4vec-fix-wog-of-functions
+(def-rp-rule 4vec-fix-wog-of-functions
   (and (equal (4vec-fix-wog (4vec-bitnot s))
               (4vec-bitnot s))
        (equal (4vec-fix-wog (bits val start size ))
@@ -1669,17 +1682,16 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthm equal-of-4vec-concat$
-    (implies (and (bitp a)
-                  (4vec-p x)
-                  (4vec-p y))
+  (def-rp-rule equal-of-4vec-concat$
+    (implies t;(and (bitp a))
              (equal (equal (4vec-concat$ 1 a x)
                            (4vec-concat$ 1 a y))
-                    (equal x y)))
+                    (equal (4vec-fix x) (4vec-fix y))))
     :hints (("goal"
              :do-not '(preprocess)
              :in-theory (e/d (4vec-concat$
                               bitp
+                              4vec
                               4vec-p
                               4vec-concat
                               sv::4vec->lower
@@ -1690,10 +1702,15 @@
                               sv::4vec->upper)
                              (convert-4vec-concat-to-4vec-concat$))))))
 
-(in-theory (enable 4vec-part-install-is-sbits
-                   4vec-zero-ext-is-bits))
+#|(in-theory (enable 4vec-part-install-is-sbits
+                   4vec-zero-ext-is-bits))||#
 
-(defthm 4vec-part-select-is-bits
+(rp::enable-rules '(4vec-part-install-is-sbits
+                    4vec-zero-ext-is-bits))
+                  
+
+(def-rp-rule$ t nil
+  4vec-part-select-is-bits
   (implies t
            (equal (4vec-part-select start size x)
                   (bits x start size)))
@@ -1719,3 +1736,4 @@
 
 
 
+ 

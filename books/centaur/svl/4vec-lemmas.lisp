@@ -53,6 +53,8 @@
   (include-book "ihs/quotient-remainder-lemmas" :dir :system)
   use-qr-lemmas))
 
+(add-rp-rule sv::4vec-fix-of-4vec)
+
 (define 4vec-bitnot$ ((size 4vec-p)
                       (val 4vec-p))
   :returns (res 4vec-p)
@@ -78,7 +80,7 @@
 (local
  (in-theory (enable sv::4vec->upper sv::4vec->lower sv::4vec)))
 
-(defthm natp-4vec-rsh
+(def-rp-rule natp-4vec-rsh
   (implies (and (natp start)
                 (natp num))
            (natp (4vec-rsh start num)))
@@ -86,7 +88,7 @@
            :in-theory (e/d (4vec-rsh
                             sv::4vec-shift-core) ()))))
 
-(defthm natp-4vec-zero-ext
+(def-rp-rule natp-4vec-zero-ext
   (implies (and (natp size)
                 (natp val))
            (natp (4vec-zero-ext size val)))
@@ -96,7 +98,7 @@
                             sv::4vec->lower
                             sv::4vec) ()))))
 
-(defthm natp-4vec-part-select
+(def-rp-rule natp-4vec-part-select
   (implies (and (natp num)
                 (natp start)
                 (natp size))
@@ -116,7 +118,7 @@
                             sv::4vec->upper
                             sv::4vec) ()))))
 
-(defthm 4vec-rsh-of-width=0
+(def-rp-rule 4vec-rsh-of-width=0
   (equal (4vec-rsh 0 val)
          (4vec-fix val))
   :hints (("goal"
@@ -126,7 +128,7 @@
 
 
 
-(defthm mod-of-4vec-zero-ext
+(def-rp-rule mod-of-4vec-zero-ext
   (implies (and (natp size)
                 (natp val))
            (equal (mod (4vec-zero-ext size val)
@@ -194,67 +196,67 @@
            :in-theory (e/d* (4vec-concat
                              loghead
                              logapp
-                             4VEC-ZERO-EXT
+                             4vec-zero-ext
                              4vec-part-select)
-                            ((:REWRITE ACL2::MOD-X-Y-=-X-Y . 1)
-                             sv::4VEC->upper
-                             (:TYPE-PRESCRIPTION ACL2::MOD-ZERO . 3)
-                             (:LINEAR ACL2::MOD-BOUNDS-1)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-POSITIVE . 1)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-NONPOSITIVE)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-NEGATIVE . 1)
-                             (:LINEAR ACL2::MOD-BOUNDS-3)
-                             (:REWRITE ACL2::MOD-X-Y-=-X-Y . 3)
-                             (:REWRITE ACL2::MOD-X-Y-=-X+Y . 3)
-                             (:REWRITE ACL2::|(equal (mod a n) (mod b n))|)
-                             (:REWRITE ACL2::DEFAULT-PLUS-2)
-                             (:REWRITE ACL2::MOD-X-Y-=-X . 2)
-                             (:REWRITE ACL2::DEFAULT-PLUS-1)
-                             (:REWRITE ACL2::PREFER-POSITIVE-ADDENDS-EQUAL)
-                             (:REWRITE ACL2::ACL2-NUMBERP-X)
-                             (:REWRITE ACL2::DEFAULT-TIMES-2)
+                            ((:rewrite acl2::mod-x-y-=-x-y . 1)
+                             sv::4vec->upper
+                             (:type-prescription acl2::mod-zero . 3)
+                             (:linear acl2::mod-bounds-1)
+                             (:type-prescription acl2::mod-positive . 1)
+                             (:type-prescription acl2::mod-nonpositive)
+                             (:type-prescription acl2::mod-negative . 1)
+                             (:linear acl2::mod-bounds-3)
+                             (:rewrite acl2::mod-x-y-=-x-y . 3)
+                             (:rewrite acl2::mod-x-y-=-x+y . 3)
+                             (:rewrite acl2::|(equal (mod a n) (mod b n))|)
+                             (:rewrite acl2::default-plus-2)
+                             (:rewrite acl2::mod-x-y-=-x . 2)
+                             (:rewrite acl2::default-plus-1)
+                             (:rewrite acl2::prefer-positive-addends-equal)
+                             (:rewrite acl2::acl2-numberp-x)
+                             (:rewrite acl2::default-times-2)
                              (:e tau-system)
                              sv::4vec->lower
-                             (:TYPE-PRESCRIPTION ACL2::NOT-INTEGERP-4B)
-                             (:DEFINITION IFIX)
-                             (:REWRITE ACL2::|(equal (if a b c) x)|)
-                             (:REWRITE ACL2::|(equal x (if a b c))|)
-                             (:REWRITE ACL2::MOD-X-Y-=-X-Y . 2)
-                             (:REWRITE ACL2::MOD-X-Y-=-X+Y . 1)
-                             (:REWRITE ACL2::CANCEL-MOD-+)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-ZERO . 4)
-                             (:REWRITE ACL2::MOD-X-Y-=-X . 4)
-                             (:REWRITE ACL2::MOD-ZERO . 4)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-ZERO . 2)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-ZERO . 1)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-POSITIVE . 2)
-                             (:TYPE-PRESCRIPTION ACL2::MOD-NEGATIVE . 2)
-                             (:REWRITE ACL2::MOD-ZERO . 3)
-                             (:TYPE-PRESCRIPTION
-                              ACL2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
-                             (:TYPE-PRESCRIPTION
-                              ACL2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
-                             (:TYPE-PRESCRIPTION
-                              ACL2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
-                             (:TYPE-PRESCRIPTION
-                              ACL2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
-                             (:TYPE-PRESCRIPTION
-                              ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
-                             (:TYPE-PRESCRIPTION
-                              ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
-                             (:TYPE-PRESCRIPTION ACL2::NOT-INTEGERP-3B)
-                             (:TYPE-PRESCRIPTION ACL2::NOT-INTEGERP-2B)
-                             (:TYPE-PRESCRIPTION ACL2::NOT-INTEGERP-1B)
-                             (:TYPE-PRESCRIPTION ACL2::INTEGERP-/-EXPT-2)
-                             (:TYPE-PRESCRIPTION ACL2::INTEGERP-/-EXPT-1)
-                             (:REWRITE ACL2::DEFAULT-MOD-RATIO)
-                             (:REWRITE ACL2::MOD-X-Y-=-X+Y . 2)
-                             (:REWRITE ACL2::MOD-X-Y-=-X+Y . 2)
-                             (:REWRITE ACL2::|(integerp (- x))|)
-                             (:REWRITE ACL2::|(mod (+ x (mod a b)) y)|)
-                             (:REWRITE ACL2::|(mod (+ x (- (mod a b))) y)|))))))
+                             (:type-prescription acl2::not-integerp-4b)
+                             (:definition ifix)
+                             (:rewrite acl2::|(equal (if a b c) x)|)
+                             (:rewrite acl2::|(equal x (if a b c))|)
+                             (:rewrite acl2::mod-x-y-=-x-y . 2)
+                             (:rewrite acl2::mod-x-y-=-x+y . 1)
+                             (:rewrite acl2::cancel-mod-+)
+                             (:type-prescription acl2::mod-zero . 4)
+                             (:rewrite acl2::mod-x-y-=-x . 4)
+                             (:rewrite acl2::mod-zero . 4)
+                             (:type-prescription acl2::mod-zero . 2)
+                             (:type-prescription acl2::mod-zero . 1)
+                             (:type-prescription acl2::mod-positive . 2)
+                             (:type-prescription acl2::mod-negative . 2)
+                             (:rewrite acl2::mod-zero . 3)
+                             (:type-prescription
+                              acl2::expt-type-prescription-nonpositive-base-odd-exponent)
+                             (:type-prescription
+                              acl2::expt-type-prescription-nonpositive-base-even-exponent)
+                             (:type-prescription
+                              acl2::expt-type-prescription-negative-base-odd-exponent)
+                             (:type-prescription
+                              acl2::expt-type-prescription-negative-base-even-exponent)
+                             (:type-prescription
+                              acl2::expt-type-prescription-integerp-base-b)
+                             (:type-prescription
+                              acl2::expt-type-prescription-integerp-base-a)
+                             (:type-prescription acl2::not-integerp-3b)
+                             (:type-prescription acl2::not-integerp-2b)
+                             (:type-prescription acl2::not-integerp-1b)
+                             (:type-prescription acl2::integerp-/-expt-2)
+                             (:type-prescription acl2::integerp-/-expt-1)
+                             (:rewrite acl2::default-mod-ratio)
+                             (:rewrite acl2::mod-x-y-=-x+y . 2)
+                             (:rewrite acl2::mod-x-y-=-x+y . 2)
+                             (:rewrite acl2::|(integerp (- x))|)
+                             (:rewrite acl2::|(mod (+ x (mod a b)) y)|)
+                             (:rewrite acl2::|(mod (+ x (- (mod a b))) y)|))))))
 
-(defthm 4vec-concat-of-width=0
+(def-rp-rule 4vec-concat-of-width=0
   (equal (4vec-concat 0 val1 val2 )
          (4vec-fix val2))
   :hints (("goal"
@@ -263,7 +265,8 @@
                             sv::4VEC->UPPER
                             sv::4vec->lower) ()))))
 
-(defthmd 4vec-concat-of-width=1-term2=0
+(def-rp-rule$ t t
+  4vec-concat-of-width=1-term2=0
   (equal (4vec-concat 1 val1 0)
          (4vec-part-select 0 1 val1))
   :hints (("Goal"
@@ -273,15 +276,16 @@
                             sv::4VEC->UPPER
                             sv::4vec->lower) ()))))
 
-(defthm loghead-of-ash
-  (implies (and (natp shift)
-                (>= size shift)
-                (natp size))
-           (equal (acl2::loghead size (ash val shift))
-                  (* (expt 2 shift)
-                     (acl2::loghead (- size shift) val))))
-  :hints (("goal"
-           :in-theory (e/d (loghead) ()))))
+(local
+ (defthm loghead-of-ash
+   (implies (and (natp shift)
+                 (>= size shift)
+                 (natp size))
+            (equal (acl2::loghead size (ash val shift))
+                   (* (expt 2 shift)
+                      (acl2::loghead (- size shift) val))))
+   :hints (("goal"
+            :in-theory (e/d (loghead) ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,67 +311,72 @@
 (encapsulate
   nil
 
-  (defthm logapp-of-logapp
-    (implies (and (integerp size1)
-                  (<= 0 size1)
-                  (integerp term1)
+  
+   (defthm logapp-of-logapp
+     (implies (and (integerp size1)
+                   (<= 0 size1)
+                   (integerp term1)
 ;(<= 0 term1)
-                  (integerp term2)
+                   (integerp term2)
 ;(<= 0 term2)
-                  (integerp term3)
+                   (integerp term3)
 ;(<= 0 term3)
-                  (acl2-numberp size2)
-                  (<= size2 size1)
-                  (integerp size2)
-                  (<= 0 size2)
-                  (acl2-numberp size1))
-             (equal (acl2::logapp size1
-                                  (acl2::logapp size2 term1 term2)
-                                  term3)
-                    (acl2::logapp size2 term1
-                                  (acl2::logapp
-                                   (+ size1 (- size2))
-                                   term2 term3))))
-    :hints (("goal"
-             :in-theory (e/d (4vec-concat
-                              loghead)
-                             (acl2::logapp)))))
+                   (acl2-numberp size2)
+                   (<= size2 size1)
+                   (integerp size2)
+                   (<= 0 size2)
+                   (acl2-numberp size1))
+              (equal (acl2::logapp size1
+                                   (acl2::logapp size2 term1 term2)
+                                   term3)
+                     (acl2::logapp size2 term1
+                                   (acl2::logapp
+                                    (+ size1 (- size2))
+                                    term2 term3))))
+     :hints (("goal"
+              :in-theory (e/d (4vec-concat
+                               loghead)
+                              (acl2::logapp)))))
 
-  (defthm equal-logapps
-    (implies (and (EQUAL (LOGAPP SIZE TERM1 x)
-                         (LOGAPP SIZE TERM2 y))
-                  (integerp size)
-                  (equal (loghead size term1)
-                         (loghead size term2))
-                  (integerp x)
-                  (integerp y))
-             (equal x y))
-    :hints (("Goal"
-             :in-theory (e/d (loghead ifix nfix logapp) ())))
-    :rule-classes :forward-chaining)
+  
+   (defthm equal-logapps
+     (implies (and (EQUAL (LOGAPP SIZE TERM1 x)
+                          (LOGAPP SIZE TERM2 y))
+                   (integerp size)
+                   (equal (loghead size term1)
+                          (loghead size term2))
+                   (integerp x)
+                   (integerp y))
+              (equal x y))
+     :hints (("Goal"
+              :in-theory (e/d (loghead ifix nfix logapp) ())))
+     :rule-classes :forward-chaining)
 
-  (defthm equal-logapps-2
-    (implies (and (EQUAL (LOGAPP SIZE x TERM1)
-                         (LOGAPP SIZE y TERM1))
-                  (integerp size)
-                  (integerp x)
-                  (integerp y))
-             (equal (loghead size x)
-                    (loghead size y)))
-    :hints (("Goal"
-             :in-theory (e/d (loghead ifix nfix logapp) ())))
-    :rule-classes :forward-chaining)
+  
+   (defthm equal-logapps-2
+     (implies (and (EQUAL (LOGAPP SIZE x TERM1)
+                          (LOGAPP SIZE y TERM1))
+                   (integerp size)
+                   (integerp x)
+                   (integerp y))
+              (equal (loghead size x)
+                     (loghead size y)))
+     :hints (("Goal"
+              :in-theory (e/d (loghead ifix nfix logapp) ())))
+     :rule-classes :forward-chaining)
 
-  (defthm logapp-of-logapp-minus-1
-    (implies (and (natp size)
-                  (natp size2)
-                  (integerp val))
-             (equal (logapp size -1 (logapp size2 -1 val))
-                    (logapp (+ size size2)
-                            -1
-                            val))))
+  
+   (defthm logapp-of-logapp-minus-1
+     (implies (and (natp size)
+                   (natp size2)
+                   (integerp val))
+              (equal (logapp size -1 (logapp size2 -1 val))
+                     (logapp (+ size size2)
+                             -1
+                             val))))
 
-  (LOCAL (USE-ARITHMETIC-5 NIL))
+  (local
+   (use-arithmetic-5 nil)) 
 
   (defthm 4vec-concat-of-4vec-concat
     (implies
@@ -412,7 +421,7 @@
                                (:REWRITE ACL2::|(equal (if a b c) x)|)
                                acl2::associativity-of-logapp)))))
 
-  (LOCAL (USE-ARITHMETIC-5 t))
+  (local (use-arithmetic-5 t))
 
   (defthm logapp-of-logapp-2
     (IMPLIES (AND (INTEGERP SIZE1)
@@ -500,17 +509,6 @@
                                4VEC-ZERO-EXT)
                               (4vec))))))
 
-#|(local
- (defthm 4vec->lower-opener
-   (implies (integerp x)
-            (equal (sv::4vec->lower x)
-                   x))))||#
-
-#|(local
- (defthm 4vec->upper-opener
-   (implies (integerp x)
-            (equal (sv::4vec->upper x)
-                   x))))||#
 
 (local
  (defthm a-plus-minus-a
@@ -518,10 +516,11 @@
             (equal (+ a (- a) b)
                    b))))
 
-(defthm unary-of-unary-
-  (implies (acl2-numberp x)
-           (equal (- (- x))
-                  x)))
+(local
+ (defthm unary-of-unary-
+   (implies (acl2-numberp x)
+            (equal (- (- x))
+                   x))))
 
 (encapsulate
   nil
@@ -1065,7 +1064,7 @@
                             SV::4VEC->LOWER)
                            (acl2::logapp)))))
 
-(defthm 4vec-zero-ext-is-4vec-concat
+(def-rp-rule 4vec-zero-ext-is-4vec-concat
   (equal (4vec-zero-ext size x)
          (4vec-concat size x 0))
   :hints (("goal"
@@ -1532,7 +1531,7 @@
 ;; end of 4vec part select of 4vec install lemmas
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm natp-4vec-lsh
+(def-rp-rule natp-4vec-lsh
   (implies (and (natp x)
                 (natp size))
            (natp (4vec-lsh size x)))
@@ -1798,16 +1797,8 @@
            :cases ((4vec-p size))
            :in-theory (e/d (4vec-part-install
                             4vec-part-select
-                            sv::2VEC
-
-;   4VEC-CONCAT
-;  4VEC-RSH
-;            4VEC-SHIFT-CORE
-;           SV::4VEC->UPPER
-;          ACL2::NEGP
-;         sv::4vec->lower
-                            )
-                           (4VEC-CONCAT-INSERT-4VEC-PART-SELECT)))))
+                            sv::2vec)
+                           (4vec-concat-insert-4vec-part-select)))))
 
 (encapsulate
   nil
@@ -1815,7 +1806,7 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthm 4vec-rsh-of-4vec-rsh
+  (def-rp-rule 4vec-rsh-of-4vec-rsh
     (implies (and (natp s1)
                   (natp s2))
              (equal (4vec-rsh s1 (4vec-rsh s2 val))
@@ -1826,7 +1817,7 @@
                              (4vec))))))
 
 
-(defthm 4vec-rsh-of-bitxor
+(def-rp-rule 4vec-rsh-of-bitxor
   (implies (natp amount)
            (equal (sv::4vec-rsh amount (sv::4vec-bitxor x y))
                   (sv::4vec-bitxor (sv::4vec-rsh amount x)
@@ -1864,7 +1855,7 @@
                              (:definition integer-range-p)
                              (:rewrite acl2::zip-open))))))
 
-(defthm 4vec-rsh-of-bitor
+(def-rp-rule 4vec-rsh-of-bitor
   (implies (natp amount)
            (equal (sv::4vec-rsh amount (sv::4vec-bitor x y))
                   (sv::4vec-bitor (sv::4vec-rsh amount x)
@@ -1899,7 +1890,7 @@
                              (:definition integer-range-p)
                              (:rewrite acl2::zip-open))))))
 
-(defthm 4vec-rsh-of-bitand
+(def-rp-rule 4vec-rsh-of-bitand
   (implies (natp amount)
            (equal (sv::4vec-rsh amount (sv::4vec-bitand x y))
                   (sv::4vec-bitand (sv::4vec-rsh amount x)
@@ -1962,12 +1953,9 @@
                              bitops::ihsext-recursive-redefs
                              bitops::ihsext-inductions
                              sv::4vec-rsh
-                             4VEC-SHIFT-CORE
-                             4VEC-CONCAT)
+                             4vec-shift-core
+                             4vec-concat)
                             (4vec)))))
-
-
-
 
 
 (defthm 4vec-part-install-of-4vec-part-install-sizes=1
@@ -1997,7 +1985,7 @@
   :hints (("Goal"
            :in-theory (e/d (4vec-concat) ()))))
 
-(defthm 4vec-rsh-0
+(def-rp-rule 4vec-rsh-0
   (implies (natp x)
            (equal (4vec-rsh x 0)
                   0))
@@ -2238,7 +2226,7 @@
 
                              (:REWRITE SV::4VEC-P-WHEN-MAYBE-4VEC-P))))))
 
-(defthm natp-4vec-?*
+(def-rp-rule natp-4vec-?*
   (implies (and (natp a)
                 (natp test)
                 (natp b))
@@ -2254,7 +2242,7 @@
                              4vec-fix
                              SV::4VEC->UPPER) ()))))
 
-(defthm 4vec-?*-of-4vec-symwildeq-1
+(def-rp-rule 4vec-?*-of-4vec-symwildeq-1
   (and (implies (bitp cond)
                 (equal (4vec-?* (sv::4vec-symwildeq 1 cond) x y)
                        (4vec-?* cond x y)))
@@ -3037,7 +3025,8 @@
                               4vec-part-select-remove-start--and-insert-4vec-rsh)
                              (4VEC-PART-SELECT-OF-4VEC-RSH)))))
 
-  (defthmd 4vec-bitxor-of-4vec-rsh
+  (def-rp-rule$ t t
+    4vec-bitxor-of-4vec-rsh
     (implies (natp size)
              (equal (sv::4vec-bitxor (4vec-rsh size val1)
                                      (4vec-rsh size val2))
@@ -3316,7 +3305,7 @@
                               ))))))
 
 
-(defthm 4vec-bitand-with-0
+(def-rp-rule 4vec-bitand-with-0
    (and (equal (sv::4vec-bitand 0 x)
                0)
         (equal (sv::4vec-bitand x 0)
@@ -3326,7 +3315,7 @@
                              3VEC-BITAND
                              SV::3VEC-FIX) ()))))
 
-(defthm 4vec-bitand-with-1
+(def-rp-rule 4vec-bitand-with-1
    (and (equal (sv::4vec-bitand 1 x)
                (4vec-part-select 0 1 (sv::3vec-fix x)))
         (equal (sv::4vec-bitand x 1)
@@ -3341,7 +3330,7 @@
                               4VEC-CONCAT)
                              (4vec)))))
 
-(defthm 4vec-bitor-with-0
+(def-rp-rule 4vec-bitor-with-0
    (and (equal (sv::4vec-bitor 0 x)
                (sv::3vec-fix x))
         (equal (sv::4vec-bitor x 0)
@@ -3353,7 +3342,7 @@
                              sv::3vec-fix
                              ifix) ()))))
 
-(defthm 4vec-?*-test=1
+(def-rp-rule 4vec-?*-test=1
   (equal (4vec-?* 1 x y)
          (4vec-fix x))
   :hints (("Goal"
@@ -3361,14 +3350,14 @@
                             SV::3VEC-?*) ()))))
 
 
-(defthm 4vec-?*-test=0
+(def-rp-rule 4vec-?*-test=0
   (equal (4vec-?* 0 x y)
          (4vec-fix y))
   :hints (("Goal"
            :in-theory (e/d (4vec-?*
                             SV::3VEC-?*) ()))))
 
-(defthm 4vec-?-with-0
+(def-rp-rule 4vec-?-with-0
    (and (equal (sv::4vec-? 0 x y)
                (sv::4vec-fix y)))
    :hints (("Goal"
@@ -3380,7 +3369,7 @@
                              sv::3vec-?
                              ifix) ()))))
 
-(defthm 4vec-?-with-1
+(def-rp-rule 4vec-?-with-1
    (and (equal (sv::4vec-? 1 x y)
                (sv::4vec-fix x)))
    :hints (("Goal"
@@ -3393,7 +3382,7 @@
                              ifix) ()))))
 
 
-(defthm integerp-4vec?
+(def-rp-rule integerp-4vec?
   (implies (and (integerp test)
                 (integerp x)
                 (integerp y))
@@ -3404,7 +3393,7 @@
                             4vec-fix
                             sv::3vec-fix) ()))))
 
-(defthm integerp-4vec-bitand
+(def-rp-rule integerp-4vec-bitand
    (implies (and (integerp y )
                  (integerp x))
             (integerp (sv::4vec-bitand x y)))
@@ -3472,14 +3461,15 @@
                              sv::4vec->upper)
                             ()))))
 
-(defthm 4vec-?-of-test=0
+(def-rp-rule 4vec-?-of-test=0
   (equal (4vec-?* 0 a b)
          (4vec-fix B))
   :hints (("Goal"
            :in-theory (e/d (4vec-?*
                             SV::3VEC-?*) ()))))
 
-(defthmd bitp-of-4vec-?*
+(def-rp-rule$ t t
+  bitp-of-4vec-?*
   (implies (and (force (bitp a))
                 (force (bitp b))
                 (force (bitp test)))
@@ -3537,18 +3527,18 @@
                  (1- size)))))
     ///
 
-    (defthm 4vec-p-of-4vec-plus++
+    (def-rp-rule 4vec-p-of-4vec-plus++
       (4vec-p (4vec-plus++ x y carry-in size))
       :hints (("Goal"
                :in-theory (e/d (4vec-p) ()))))
 
-    (defthm integer-of-4vec-plus++
+    (def-rp-rule integer-of-4vec-plus++
       (integerp (4vec-plus++ x y carry-in size))))
 
   #|(local
   (use-arithmetic-5 t))||#
 
-  (defthm integerp-4vec-plus
+  (def-rp-rule integerp-4vec-plus
     (implies (and (integerp x)
                   (integerp y))
              (integerp (4vec-plus x y)))
@@ -3556,7 +3546,7 @@
              :in-theory (e/d (4vec-plus
                               2vec) ()))))
 
-  (defthm integerp-4vec-rsh
+  (def-rp-rule integerp-4vec-rsh
     (implies (and (integerp amount )
                   (integerp x))
              (integerp (4vec-rsh amount x)))
@@ -3611,7 +3601,7 @@
                                 BITOPS::LOGCDR-OF-LOGHEAD
                                 4vec-part-select) ())))))
 
-  (defthm 4vec-part-select-of-4vec-plus-is-4vec-plus
+  (def-rp-rule 4vec-part-select-of-4vec-plus-is-4vec-plus
     (implies (and (integerp x)
                   (integerp y)
                   (natp size)
@@ -3783,13 +3773,13 @@
                               ((:e tau-system))))))
 
 
-(defthm 4vec-bitand-of-3vec-fix
+(def-rp-rule 4vec-bitand-of-3vec-fix
   (and (equal (sv::4vec-bitand (sv::3vec-fix x) y)
               (sv::4vec-bitand x y))
        (equal (sv::4vec-bitand x (sv::3vec-fix y))
               (sv::4vec-bitand x y))))
 
-(defthm integerp-implies-3vec-p
+(def-rp-rule integerp-implies-3vec-p
   (implies (integerp x)
            (sv::3vec-p x))
   :hints (("Goal"
@@ -3797,7 +3787,7 @@
 
 
 
-(defthm remove-3vec-fix
+(def-rp-rule remove-3vec-fix
   (implies (integerp x)
            (equal (sv::3vec-fix x)
                   x))
@@ -3844,3 +3834,5 @@
 ;;                              SV::4VEC->UPPER
 ;;                              4vec-concat
 ;;                              ) ()))))
+
+

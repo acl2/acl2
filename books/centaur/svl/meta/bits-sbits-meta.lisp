@@ -604,7 +604,8 @@
               (equal (rp::rp-evl (mv-nth 0 (concat-of-meta-fn term limit)) a)
                      (rp::rp-evl term a)))
      :hints (("Goal"
-              :in-theory (e/d (rp-evl-of-fncall-args) ())))))
+              :in-theory (e/d (rp-evl-of-fncall-args
+                               convert-4vec-concat-to-4vec-concat$) ())))))
 
   (local
    (defthm rp-termp-of-concat-of-meta-fn-lemma1
@@ -933,6 +934,7 @@
              :induct (bits-of-meta-fn term)
              :in-theory (e/d (rp::is-rp
                               rp-evl-of-fncall-args
+                              bits-01-of-a-bit
                               rp::is-if)
                              ((:definition not)
                               (:definition natp))))))

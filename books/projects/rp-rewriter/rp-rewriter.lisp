@@ -361,18 +361,20 @@
     (if (or (atom term)
             (eq (car term) 'quote)
             (not (quote-listp (cdr term)))
-            (atom (hons-get (car term) exc-rules)))
+            (consp (hons-get (car term) exc-rules)))
         (mv term rp-state)
-      (b* (((unless (acl2::logicp (car term) (w state)))
+      (b* ((fn (car term))
+           ((unless (and (symbolp fn)
+                         (acl2::logicp fn (w state))))
             (progn$
              (hard-error
               'rp-ex-counterpart
               "Error with ex. counterpart: not a logic-mode function:~p1 ~%"
-              (car term))
+              fn)
              (mv term rp-state)))
            ((mv err val)
-            (magic-ev-fncall-wrapper (car term) (unquote-all (cdr term)) state t nil))
-           (rp-state (rp-stat-add-to-rules-used-ex-cnt (car term) rp-state))
+            (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state t nil))
+           (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (if err
                 (progn$

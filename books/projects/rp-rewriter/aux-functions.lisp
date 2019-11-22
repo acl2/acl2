@@ -987,6 +987,37 @@
             (rp-equal-subterms (cdr subterm1) (cdr subterm2))))))
 
   (mutual-recursion
+   ;; same as rp-equal but prints a mismatch.
+   (defun rp-equal-cw (term1 term2)
+     (declare (xargs :mode :logic
+                     :guard t #|(and (rp-termp term1)
+                     (rp-termp term2))||#))
+     "Check syntactic equivalance of two terms by ignoring all the rp terms"
+     (let* ((term1 (ex-from-rp term1))
+            (term2 (ex-from-rp term2)))
+       (cond
+        ((or (atom term1)
+             (atom term2)
+             (acl2::fquotep term1)
+             (acl2::fquotep term2))
+         (or (equal term1 term2)
+             (cw "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2)))
+        (t (and (or (equal (car term1) (car term2))
+                    (cw "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2))
+                (rp-equal-cw-subterms (cdr term1) (cdr term2)))))))
+
+   (defun rp-equal-cw-subterms (subterm1 subterm2)
+     (declare (xargs :mode :logic
+                     :guard t #|(and (rp-term-listp subterm1)
+                     (rp-term-listp subterm2))||#))
+     (if (or (atom subterm1)
+             (atom subterm2))
+         (or (equal subterm1 subterm2)
+             (cw "Mismatch: subterm1=~p0, sunterm2=~p1 ~%" subterm1 subterm2))
+       (and (rp-equal-cw (car subterm1) (car subterm2))
+            (rp-equal-cw-subterms (cdr subterm1) (cdr subterm2))))))
+
+  (mutual-recursion
    ;; check if two terms are equivalent by discarding rp terms
    (defun rp-equal-loose (term1 term2)
      (declare (xargs :mode :logic
@@ -1437,3 +1468,51 @@
                (cons (car meta-rules)
                      (remove-disabled-meta-rules (cdr meta-rules)
                                                  disabled-meta-rules)))))))
+
+
+
+
+
+
+(progn
+
+  (defund get-rune-name (fn state)
+    (declare (xargs :guard (and (symbolp fn))
+                    :stobjs (state)
+                    :verify-guards t))
+    (b* ((mappings
+          (getpropc fn 'acl2::runic-mapping-pairs
+                    nil (w state)))
+         ((when (atom mappings))
+          (progn$ (hard-error 'get-rune-name
+                              " ~p0 does not seem to exist. ~%"
+                              (list (cons #\0 fn)))
+                  fn))
+         (mapping (car mappings)))
+      (if (consp mapping)
+          (cdr mapping)
+        fn)))
+  
+  (defmacro add-rp-rule (rule-name &optional (disabled 'nil))
+    `(make-event
+      (b* ((rune (get-rune-name ',rule-name state)))
+        `(progn
+           (table rp-rules-inorder ',rune nil)
+           (table rp-rules ',rune ,,(not disabled))))))
+  
+  (defmacro add-rp-exc-counterpart (fnc-name)
+    `(add-rp-rule '(:executable-counterpart ,fnc-name)))
+
+  (defmacro def-rp-rule (rule-name rule &rest hints)
+    `(progn
+       (defthm
+         ,rule-name ,rule ,@hints)
+       (add-rp-rule ,rule-name)))
+
+  (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
+    `(progn
+       (,(if defthmd 'defthmd 'defthm)
+        ,rule-name ,rule ,@hints)
+       (add-rp-rule ,rule-name ,disabled))))
+
+
