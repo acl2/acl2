@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "pseudo-lambdap")
+(include-book "pseudo-lambda-listp")
 (include-book "pseudo-termfnp")
 (include-book "lambdap")
 (include-book "termfnp")

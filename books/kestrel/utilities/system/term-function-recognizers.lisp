@@ -16,14 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist pseudo-lambda-listp (x)
-  (pseudo-lambdap x)
-  :parents (term-utilities term-function-recognizers)
-  :short "Recognize true lists of
-          <see topic='@(url pseudo-lambdap)'>pseudo-lambda-expressions</see>."
-  :elementp-of-nil nil
-  :true-listp t)
-
 (std::deflist pseudo-termfn-listp (x)
   (pseudo-termfnp x)
   :parents (term-utilities term-function-recognizers)
