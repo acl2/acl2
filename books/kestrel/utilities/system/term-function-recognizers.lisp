@@ -16,15 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist lambda-listp (x wrld)
-  (lambdap x wrld)
-  :guard (plist-worldp-with-formals wrld)
-  :parents (term-utilities term-function-recognizers)
-  :short "Recognize true lists of valid
-          <see topic='@(url lambdap)'>translated lambda expressions</see>."
-  :elementp-of-nil nil
-  :true-listp t)
-
 (std::deflist termfn-listp (x wrld)
   (termfnp x wrld)
   :guard (plist-worldp-with-formals wrld)

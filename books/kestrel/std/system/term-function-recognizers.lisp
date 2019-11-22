@@ -15,6 +15,7 @@
 (include-book "pseudo-termfnp")
 (include-book "pseudo-termfn-listp")
 (include-book "lambdap")
+(include-book "lambda-listp")
 (include-book "termfnp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
