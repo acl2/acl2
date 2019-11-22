@@ -2821,6 +2821,50 @@ compute a value for @('x').</p>
     eval-errors))
 
 
+(define interp-st-counterex-value ((x fgl-object-p)
+                                   (interp-st)
+                                   (state))
+  :returns (mv (errmsg)
+               (x-val)
+               (new-interp-st))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (fgl-object-bfrlist x)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable interp-st-bfrs-ok
+                                          bfr-listp-when-not-member-witness))))
+  :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
+                      (implies (fgl-object-bindings-p x)
+                               (fgl-object-alist-p x))
+                      :hints(("Goal" :in-theory (enable fgl-object-alist-p
+                                                        fgl-object-bindings-p))))))
+  (b* ((x (fgl-object-fix x))
+       (vars (fgl-object-vars x nil))
+       ((mv infer-err interp-st)
+        (interp-st-infer-ctrex-var-assignments vars interp-st state))
+       ;; ((when err)
+       ;;  (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
+       ;;      nil nil interp-st))
+       )
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (env$ (interp-st->ctrex-env interp-st)))
+               (eval-err x-val)
+               (magic-fgl-object-eval x env$)
+               (mv (counterex-bindings-summarize-errors infer-err eval-err)
+                   x-val interp-st)))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+
+
 (define interp-st-counterex-bindings ((x fgl-object-bindings-p)
                                       (interp-st)
                                       (state))

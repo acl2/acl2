@@ -35,7 +35,7 @@
 (include-book "unify-defs")
 (include-book "centaur/meta/bindinglist" :dir :system)
 (include-book "syntax-bind")
-(include-book "rewrite-tables")
+; (include-book "rewrite-tables")
 (include-book "system/f-put-global" :dir :system)
 (include-book "std/util/defret-mutual-generate" :dir :system)
 (include-book "unify-thms")
@@ -2570,6 +2570,25 @@
                (stack-set-phase 0 stack))
              interp-st))
 
+
+(define interp-st-boolean-fncall-p ((x fgl-object-p) interp-st w)
+  (declare (ignorable interp-st w))
+  (fgl-object-case x
+    :g-apply (or (eq x.fn 'intcar)
+                 (eq x.fn 'equal)
+                 (eq x.fn 'consp)
+                 (eq x.fn 'integerp)
+                 (eq x.fn '<))
+    :otherwise nil)
+  ///
+  (defthmd interp-st-boolean-fncall-p-correct
+    (implies (and (interp-st-boolean-fncall-p x interp-st w)
+                  (fgl-ev-meta-extract-global-facts)
+                  (equal w (w state)))
+             (booleanp (fgl-object-eval x env)))
+    :hints(("Goal" :in-theory (enable fgl-apply)))))
+
+
 (progn
   (with-output
     :off (event prove)
@@ -2627,6 +2646,26 @@
                            (fgl-interp-error
                             :msg (fgl-msg "Try-equivalences-loop failed: ~@0" error))))
                        (fgl-interp-value val)))))
+
+      (define fgl-interp-term-top ((x pseudo-termp)
+                                   (interp-st interp-st-bfrs-ok)
+                                   state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020 (pseudo-term-binding-count x) 80)
+        :returns (mv
+                  (xobj fgl-object-p)
+                  new-interp-st new-state)
+        (b* ((contexts (interp-st->equiv-contexts interp-st))
+             ((when (member-eq 'iff contexts))
+              (b* (((fgl-interp-value xbfr) (fgl-interp-test x interp-st state)))
+                (fgl-interp-value (g-boolean xbfr))))
+             ((fgl-interp-recursive-call xobj)
+              (fgl-interp-term-equivs x interp-st state))
+             ((when (interp-st-boolean-fncall-p xobj interp-st (w state)))
+              (b* (((fgl-interp-value xbfr) (fgl-interp-simplify-if-test nil xobj interp-st state)))
+                (fgl-interp-value (g-boolean xbfr)))))
+          (fgl-interp-value xobj)))
+             
 
       (define fgl-interp-term ((x pseudo-termp)
                               (interp-st interp-st-bfrs-ok)
@@ -2772,7 +2811,7 @@
              ((interp-st-bind
                (equiv-contexts (equiv-argcontexts-first argcontexts)))
               ((fgl-interp-recursive-call arg1)
-               (fgl-interp-term-equivs (car args) interp-st state)))
+               (fgl-interp-term-top (car args) interp-st state)))
              ;; ((when err) (mv nil interp-st state))
              (interp-st (interp-st-push-scratch-fgl-obj arg1 interp-st))
              ((fgl-interp-value rest)
@@ -2790,7 +2829,7 @@
                   new-interp-st new-state)
         (b* (((when (atom args)) (fgl-interp-value nil))
              ((fgl-interp-recursive-call arg1)
-              (fgl-interp-term-equivs (car args) interp-st state))
+              (fgl-interp-term-top (car args) interp-st state))
              ;; ((when err) (mv nil interp-st state))
              (interp-st (interp-st-push-scratch-fgl-obj arg1 interp-st))
              ((fgl-interp-value rest)
@@ -3472,11 +3511,11 @@
                                :debug-obj boolfix)))
           (if (g-concrete->val boolfix)
               (b* (((fgl-interp-value ans)
-                    (fgl-interp-term-equivs then interp-st state))
+                    (fgl-interp-term-top then interp-st state))
                    (interp-st (interp-st-incr-term-index (fgl-minor-frame-subterm-count else) interp-st)))
                 (fgl-interp-value ans))
             (b* ((interp-st (interp-st-incr-term-index (fgl-minor-frame-subterm-count then) interp-st)))
-              (fgl-interp-term-equivs else interp-st state)))))
+              (fgl-interp-term-top else interp-st state)))))
 
       (define fgl-interp-or-nonbranching ((test pseudo-termp)
                                          (else pseudo-termp)
@@ -3511,7 +3550,7 @@
                                interp-st)))
                 (fgl-interp-value testobj))
             (b* ((interp-st (interp-st-incr-term-index (fgl-minor-frame-subterm-count test) interp-st)))
-              (fgl-interp-term-equivs else interp-st state)))))
+              (fgl-interp-term-top else interp-st state)))))
 
       
       (define fgl-interp-if ((test pseudo-termp)
@@ -3648,7 +3687,7 @@
              ((interp-st-bind
                (equiv-contexts contexts))
               ((fgl-interp-value ans)
-               (fgl-interp-term-equivs x interp-st state))))
+               (fgl-interp-term-top x interp-st state))))
           (fgl-interp-value ans)))
 
       ;; (define fgl-interp-prog2 ((first-arg pseudo-termp)
@@ -3705,7 +3744,7 @@
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((fgl-interp-value ans)
-               (fgl-interp-term-equivs term interp-st state)))
+               (fgl-interp-term-top term interp-st state)))
              (interp-st (interp-st-pop-minor-frame interp-st)))
           (fgl-interp-value ans)))
 
@@ -3717,7 +3756,7 @@
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020
                        (pseudo-term-binding-count x)
-                       60)
+                       100)
         :returns (mv
                   unreachable
                   (ans fgl-object-p)
@@ -3734,7 +3773,7 @@
                   ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
                   (fgl-interp-value nil nil)))
                ((fgl-interp-value ans)
-                (fgl-interp-term-equivs x interp-st state))
+                (fgl-interp-term-top x interp-st state))
                (interp-st (interp-st-pathcond-rewind interp-st))
                ((when (eq (interp-st->errmsg interp-st) :unreachable))
                 (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
@@ -5725,15 +5764,15 @@
            (iff (hons-assoc-equal v (stack$a-minor-bindings (fgl-major-stack-concretize stack env logicman)))
                 (hons-assoc-equal v (stack$a-minor-bindings stack)))))
 
-  (defthm hons-assoc-equal-of-stack$a-minor-bindings-of-fgl-interp-term-equivs
+  (defthm hons-assoc-equal-of-stack$a-minor-bindings-of-fgl-interp-term-top
     (b* (((mv ?ans new-interp-st ?new-state)
-          (fgl-interp-term-equivs x interp-st state)))
+          (fgl-interp-term-top x interp-st state)))
       (implies (interp-st-bfrs-ok interp-st)
                (iff (hons-assoc-equal v (stack$a-minor-bindings (interp-st->stack new-interp-st)))
                     (hons-assoc-equal v (stack$a-minor-bindings (interp-st->stack interp-st))))))
     :hints (("goal" :use ((:instance hons-assoc-equal-of-stack$a-minor-bindings-of-concretize
-                           (stack (interp-st->stack (mv-nth 1 (fgl-interp-term-equivs x interp-st state))))
-                           (logicman (interp-st->logicman (mv-nth 1 (fgl-interp-term-equivs x interp-st state)))))
+                           (stack (interp-st->stack (mv-nth 1 (fgl-interp-term-top x interp-st state))))
+                           (logicman (interp-st->logicman (mv-nth 1 (fgl-interp-term-top x interp-st state)))))
                           (:instance hons-assoc-equal-of-stack$a-minor-bindings-of-concretize
                            (stack (interp-st->stack interp-st))
                            (logicman (interp-st->logicman interp-st))))
@@ -7197,7 +7236,15 @@
               contexts res (pseudo-term-fncall 'if (list test then else))
               (append minor-bindings major-bindings3)))
     :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2))
+            (acl2::witness :ruleset context-equiv-forall)))
+
+  (defthm iff?-forall-extensions-implies-fgl-ev-context-equiv-forall-extensions
+    (implies (and (iff?-forall-extensions contexts bfr-eval x eval-alist)
+                  (member 'iff (equiv-contexts-fix contexts)))
+             (fgl-ev-context-equiv-forall-extensions contexts bfr-eval x eval-alist))
+    :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2))
             (acl2::witness :ruleset context-equiv-forall))))
+    
 
 
 
@@ -8403,6 +8450,21 @@
                          (ext eval-alist)))))))
 
 
+(local (defthm fgl-ev-context-equiv-forall-extensions-of-boolean-fncall
+         (implies (and (iff* bfr-eval (fgl-object-eval res-obj env))
+                       (booleanp bfr-eval)
+                       (fgl-ev-meta-extract-global-facts)
+                       (equal w (w state)))
+                  (equal (interp-st-boolean-fncall-p res-obj ist w)
+                         (and* (hide (interp-st-boolean-fncall-p res-obj ist w))
+                               (equal bfr-eval (fgl-object-eval res-obj env)))))
+         :hints (("goal" :expand ((:free (x) (hide x)))
+                  :in-theory (enable and* iff*)
+                  :use ((:instance interp-st-boolean-fncall-p-correct
+                         (x res-obj) (interp-st ist)))))))
+                  
+
+
 (local (defthm len-of-fgl-ev-list
          (equal (len (fgl-ev-list x env))
                 (len x))
@@ -8554,6 +8616,13 @@
                 (len x))
          :hints(("Goal" :in-theory (enable len fgl-objectlist-eval)))))
                            
+
+(local (defthm fgl-ev-context-equiv-forall-extensions-of-extension
+         (implies (and (fgl-ev-context-equiv-forall-extensions contexts obj x env1)
+                       (eval-alist-extension-p env2 env1))
+                  (fgl-ev-context-equiv-forall-extensions contexts obj x env2))
+         :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-2))
+                 (acl2::witness :ruleset context-equiv-forall))))
 
 
 (local
@@ -9042,6 +9111,7 @@
                    (gobj-bfr-eval xbfr env new-logicman) x eval-alist)))
 
                 ((or (:fnname fgl-interp-term-equivs)
+                     (:fnname fgl-interp-term-top)
                      (:fnname fgl-interp-term)
                      (:fnname fgl-interp-time$)
                      (:fnname fgl-interp-return-last)

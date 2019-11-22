@@ -34,6 +34,7 @@
 (include-book "arith-base")
 (include-book "config")
 (include-book "def-fgl-rewrite")
+(include-book "congruence-rules")
 (include-book "syntax-bind")
 (include-book "fgl-object")
 (include-book "centaur/misc/starlogic" :dir :system)
@@ -48,6 +49,13 @@
 (disable-definition int-endp)
 (disable-definition int)
 (disable-definition ifix)
+
+(defcong iff equal (intcons car cdr) 1)
+(add-fgl-congruence iff-implies-equal-intcons-1)
+(defcong iff equal (endint b) 1)
+(add-fgl-congruence iff-implies-equal-endint-1)
+
+
 
 (disable-definition acl2::logcons$inline)
 (def-fgl-rewrite logcons-is-intcons

@@ -76,6 +76,10 @@
 
 (fancy-ev-add-primitive interp-st-counterex-stack-bindings/print-errors t)
 
+(fancy-ev-add-primitive interp-st-counterex-value
+                        (and (fgl-object-p x)
+                             (interp-st-bfr-listp (fgl-object-bfrlist x))))
+
 (fancy-ev-add-primitive interp-st-counterex-bindings
                         (and (fgl-object-bindings-p x)
                              (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
@@ -103,6 +107,7 @@
                                            (natp reclimit)))
 
 (fancy-ev-add-primitive interp-st->user-scratch$inline t)
+(fancy-ev-add-primitive interp-st-put-user-scratch t)
 
 
 (def-fancy-ev-primitives counterex-primitives)
@@ -112,6 +117,55 @@
 (disable-definition show-counterexample)
 
 (disable-definition show-top-counterexample)
+
+
+(define get-counterexample-value ((x fgl-object-p)
+                                  (params fgl-object-p)
+                                  (interp-st)
+                                  (state))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (fgl-object-bfrlist x)))
+  :returns (mv (errmsg fgl-object-p)
+               (x-val fgl-object-p)
+               new-interp-st)
+  (b* (((unless (fgl-object-case params :g-concrete))
+        (mv (g-concrete (msg "error: params provided were not concrete-valued")) nil interp-st))
+       (params (g-concrete->val params))
+       ((mv sat-ctrex-err interp-st)
+        (interp-st-sat-counterexample params interp-st state))
+       ((when sat-ctrex-err)
+        (mv (g-concrete
+             (list (msg "error getting SAT counterexample: ~@0" sat-ctrex-err)
+                   nil nil))
+            nil interp-st))
+       ((mv errmsg x-val interp-st) (interp-st-counterex-value x interp-st state)))
+    (mv (g-concrete errmsg)
+        (g-concrete x-val)
+        interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+
+(define interp-st-fgl-bfr-objectp (x &optional (interp-st 'interp-st))
+  :enabled t :hooks nil
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (ok)
+             (fgl-bfr-object-p x (logicman->bfrstate))
+             ok))
+
+(fancy-ev-add-primitive get-counterexample-value
+                        (and (fgl-object-p x)
+                             (fgl-object-p params)
+                             (interp-st-fgl-bfr-objectp x)))
 
 ;; Note: this function will just get interpreted by fancy-ev when running under
 ;; show-counterexample-rw below, so we don't bother verifying guards etc.
