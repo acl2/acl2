@@ -16,14 +16,15 @@ public final class Acl2Character extends Acl2Value {
 
     /**
      * Code of this character.
-     * This is always below 256.
+     * Invariant: below 256.
      */
     private final char jchar;
 
     /**
      * Constructs a character with the given code.
      *
-     * @param jchar The code of the character. It is always below 256.
+     * @param jchar The code of the character.
+     *              Invariant: below 256.
      */
     private Acl2Character(char jchar) {
         this.jchar = jchar;
@@ -34,7 +35,7 @@ public final class Acl2Character extends Acl2Value {
      * These are created in advance by the static initializer,
      * and reused by the {@link #make(char)} method.
      * In other words, all the characters are (exhaustively) interned.
-     * This field is never {@code null}.
+     * Invariant: not null.
      */
     private static final Acl2Character[] characters = new Acl2Character[256];
 
@@ -44,7 +45,7 @@ public final class Acl2Character extends Acl2Value {
      * and returned by the {@link #charCode()} method,
      * which therefore executes quickly,
      * avoiding the creation of a new integer.
-     * This field is never {@code null}.
+     * Invariant: not null.
      */
     private static final Acl2Integer[] codes = new Acl2Integer[256];
 
@@ -96,6 +97,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The character to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
      */
@@ -110,6 +112,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The string to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
      */
@@ -124,6 +127,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The symbol to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -138,6 +142,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -152,6 +157,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -166,6 +172,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -180,6 +187,7 @@ public final class Acl2Character extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The {@code cons} pair to compare this character with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -194,7 +202,7 @@ public final class Acl2Character extends Acl2Value {
      * This is for AIJ's internal use, as conveyed by the {@code i} in the name.
      *
      * @param jchar The code of the character, as a Java character.
-     *              This is always below 256.
+     *              Invariant: below 256.
      * @return The character.
      */
     static Acl2Character imake(char jchar) {
@@ -226,7 +234,7 @@ public final class Acl2Character extends Acl2Value {
      * @param o The value to compare this character with.
      * @return A negative integer, zero, or a positive integer as
      * this character is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -297,7 +305,7 @@ public final class Acl2Character extends Acl2Value {
      * Returns the code of this character.
      *
      * @return The code of this character, as a Java character.
-     * It is always below 256.
+     * Invariant: below 256.
      */
     public char getJavaChar() {
         return this.jchar;

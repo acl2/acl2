@@ -20,13 +20,13 @@ public final class Acl2LambdaExpression extends Acl2Function {
 
     /**
      * Formal parameters of this lambda expression.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Symbol[] parameters;
 
     /**
      * Body of this lambda expression.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Term body;
 
@@ -34,7 +34,9 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Constructs a lambda expression with the given formal parameters and body.
      *
      * @param parameters The formal parameters of the lambda expression.
+     *                   Invariant: not nulll.
      * @param body       The body of the lambda expression.
+     *                   Invariant: not null.
      */
     private Acl2LambdaExpression(Acl2Symbol[] parameters, Acl2Term body) {
         this.parameters = parameters;
@@ -92,6 +94,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * to the formal parameters of the lambda expression.
      *
      * @param values The actual arguments to pass to the function.
+     *               Invariant: not null, no null elements.
      * @return The result of the lambda expression on the given arguments.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.
@@ -184,7 +187,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * @param o The function to compare this lambda expression with.
      * @return A negative integer, zero, or a positive integer as this
      * lambda expression is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Function o) {
@@ -234,12 +237,18 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * @param parameters The formal parameters of the lambda expression.
      * @param body       The body of the lambda expression.
      * @return The lambda expression.
-     * @throws IllegalArgumentException If any arguments is {@code null}.
+     * @throws IllegalArgumentException If {@code parameter} is null,
+     *                                  or any of its elements is null,
+     *                                  or {@code body} is null.
      */
     public static Acl2LambdaExpression make(Acl2Symbol[] parameters,
                                             Acl2Term body) {
         if (parameters == null)
             throw new IllegalArgumentException("Null parameters.");
+        for (int i = 0; i < parameters.length; ++i)
+            if (parameters[i] == null)
+                throw new IllegalArgumentException
+                        ("Null parameter at index " + i + ".");
         if (body == null)
             throw new IllegalArgumentException("Null body.");
         return new Acl2LambdaExpression(parameters, body);

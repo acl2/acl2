@@ -1280,7 +1280,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
             char[] charArray = new char[size];
             for (int i = 0; i < size; ++i)
                 charArray[i] = charList.get(i).getJavaChar();
-            return Acl2String.make(new String(charArray));
+            return Acl2String.imake(new String(charArray));
         }
     }
 
@@ -1315,7 +1315,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
                                                          Acl2Symbol sym) {
         // this may be faster than str.internThisInPackageOf(sym),
         // followed by sym.internInPackageOfThis(str):
-        return Acl2Symbol.make(sym.getPackageName(), str);
+        return Acl2Symbol.imake(sym.getPackageName(), str);
     }
 
     /**
@@ -1733,7 +1733,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execComplex(Acl2Value x, Acl2Value y) {
-        return Acl2Number.make(x.rfix(), y.rfix());
+        return Acl2Number.imake(x.rfix(), y.rfix());
     }
 
     /**
@@ -1749,7 +1749,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Number execComplex(Acl2Rational x, Acl2Rational y) {
         // this avoids calling rfix():
-        return Acl2Number.make(x, y);
+        return Acl2Number.imake(x, y);
     }
 
     /**
@@ -1871,7 +1871,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given arguments.
      */
     public static Acl2ConsPair execCons(Acl2Value x, Acl2Value y) {
-        return Acl2ConsPair.make(x, y);
+        return Acl2ConsPair.imake(x, y);
     }
 
     /**

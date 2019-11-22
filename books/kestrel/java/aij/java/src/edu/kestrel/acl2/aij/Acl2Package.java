@@ -21,13 +21,13 @@ public final class Acl2Package {
 
     /**
      * Name of this package.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2PackageName name;
 
     /**
      * Import list of this package.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final List<Acl2Symbol> imports;
 
@@ -35,7 +35,9 @@ public final class Acl2Package {
      * Constructs a package with the given name and import list.
      *
      * @param name    The name of the package.
+     *                Invariant: not null.
      * @param imports The import list of the package.
+     *                Invariant: not null.
      */
     private Acl2Package(Acl2PackageName name, List<Acl2Symbol> imports) {
         this.name = name;
@@ -50,9 +52,7 @@ public final class Acl2Package {
      * The values of the map are reused
      * by the {@link #define(Acl2PackageName, List)} method.
      * In other words, all the packages are interned.
-     * This field is never {@code null},
-     * its keys are never {@code null},
-     * and its values are never {@code null}.
+     * Invariants: not null, no null keys, no null values.
      */
     private static final Map<Acl2PackageName, Acl2Package> packages =
             new HashMap<>();
@@ -75,7 +75,8 @@ public final class Acl2Package {
      * Returns the package with the given name, if any.
      * If no package with the given name is defined, {@code null} is returned.
      *
-     * @param name The name of the package
+     * @param name The name of the package.
+     *             Invariant: not null.
      * @return The package with the given name,
      * or {@code null} if there is no package with the given name.
      */
@@ -104,7 +105,9 @@ public final class Acl2Package {
      * @param imports The import list of the package.
      * @return The package.
      * @throws IllegalArgumentException If {@code name} or {@code imports}
-     *                                  is {@code null},
+     *                                  is null,
+     *                                  or if any element of {@code imports}
+     *                                  is null
      *                                  or two imported symbols
      *                                  have the same name.
      * @throws IllegalStateException    If a package with the given name
@@ -121,6 +124,8 @@ public final class Acl2Package {
                     ("Package already defined: \"" + name + "\".");
         List<Acl2Symbol> importsCopy = new ArrayList<>(imports.size());
         for (Acl2Symbol symbol : imports) {
+            if (symbol == null)
+                throw new IllegalArgumentException("Null import symbol.");
             if (importsCopy.contains(symbol))
                 throw new IllegalArgumentException
                         ("Symbol with name "

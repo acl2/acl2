@@ -25,6 +25,7 @@ public final class Acl2String extends Acl2Value {
      * is below 256, i.e. it is a valid representation of an ACL2 character.
      *
      * @param jstring The Java string to check for validity.
+     *                Invariant: not null.
      * @return {@code true} if the string is valid, otherwise {@code false}.
      */
     private static boolean isValidString(String jstring) {
@@ -37,8 +38,7 @@ public final class Acl2String extends Acl2Value {
 
     /**
      * Representation of this string as a Java string.
-     * This is never {@code null} and
-     * it always satisfies {@link #isValidString(String)}.
+     * Invariants: not null, satisfies {@link #isValidString(String)}.
      */
     private final String jstring;
 
@@ -46,6 +46,8 @@ public final class Acl2String extends Acl2Value {
      * Constructs a string with the given representation as a Java string.
      *
      * @param jstring The representation as a Java string.
+     *                Invariant: not null,
+     *                satisfies {@link #isValidString(String)}.
      */
     private Acl2String(String jstring) {
         this.jstring = jstring;
@@ -56,11 +58,10 @@ public final class Acl2String extends Acl2Value {
      * These are stored as values of a map that has Java strings as keys:
      * each key-value pair is such that
      * the key is the {@link #jstring} field of the value.
-     * The values of the map are reused by the {@link #make(String)} method.
+     * The values of the map are reused by
+     * the {@link #imake(String)} and {@link #make(String)} methods.
      * In other words, all the strings are interned.
-     * This field is never {@code null},
-     * its keys are never {@code null},
-     * and its valules are never {@code null}.
+     * Invariants: not null, no null keys, no null values.
      */
     private static final Map<String, Acl2String> strings = new HashMap<>();
 
@@ -90,7 +91,7 @@ public final class Acl2String extends Acl2Value {
         for (int i = this.jstring.length() - 1; i >= 0; --i) {
             Acl2Character character =
                     Acl2Character.imake(this.jstring.charAt(i));
-            list = Acl2ConsPair.make(character, list);
+            list = Acl2ConsPair.imake(character, list);
         }
         return list;
     }
@@ -102,6 +103,7 @@ public final class Acl2String extends Acl2Value {
      * and the argument value is the second argument of that function.
      *
      * @param sym The value whose package this string is interned into.
+     *            Invariant: not null.
      * @return The symbol obtained by interning this string
      * into the package of the argument value.
      */
@@ -140,7 +142,7 @@ public final class Acl2String extends Acl2Value {
         int len = imports.size();
         Acl2Value result = Acl2Symbol.NIL;
         for (int i = len - 1; i >= 0; --i)
-            result = Acl2ConsPair.make(imports.get(i), result);
+            result = Acl2ConsPair.imake(imports.get(i), result);
         return result;
     }
 
@@ -162,13 +164,7 @@ public final class Acl2String extends Acl2Value {
             throw new Acl2EvaluationException(null, e);
         }
         String witnessName = Acl2Package.WITNESS_NAME;
-        Acl2Symbol result;
-        try {
-            result = Acl2Symbol.make(packageName, witnessName);
-        } catch (IllegalArgumentException e) {
-            throw new Acl2EvaluationException(null, e);
-        }
-        return result;
+        return Acl2Symbol.imake(packageName, Acl2String.imake(witnessName));
     }
 
     /**
@@ -176,6 +172,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The character to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
      */
@@ -190,6 +187,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The string to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
      */
@@ -204,6 +202,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The symbol to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
      */
@@ -218,6 +217,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
      */
@@ -232,6 +232,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
      */
@@ -246,6 +247,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument
      */
@@ -260,6 +262,7 @@ public final class Acl2String extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The {@code cons} pair to compare this string with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
      */
@@ -267,6 +270,23 @@ public final class Acl2String extends Acl2Value {
     int compareToConsPair(Acl2ConsPair o) {
         // strings are less than cons pairs:
         return -1;
+    }
+
+    /**
+     * Returns a string consisting
+     * with the given representation as a Java string.
+     *
+     * @param jstring The representation as a Java string.
+     *                Invariants: not null, no elements above 255.
+     * @return The string.
+     */
+    static Acl2String imake(String jstring) {
+        Acl2String string = strings.get(jstring);
+        if (string != null)
+            return string;
+        string = new Acl2String(jstring);
+        strings.put(jstring, string);
+        return string;
     }
 
     //////////////////////////////////////// public members:
@@ -294,7 +314,7 @@ public final class Acl2String extends Acl2Value {
      * @param o The value to compare this string with.
      * @return A negative integer, zero, or a positive integer as
      * this string is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -343,7 +363,7 @@ public final class Acl2String extends Acl2Value {
      *
      * @param jstring The representation as a Java string.
      * @return The string.
-     * @throws IllegalArgumentException If {@code jstring} is {@code null} or
+     * @throws IllegalArgumentException If {@code jstring} is null or
      *                                  any of its characters exceeds 255.
      */
     public static Acl2String make(String jstring) {
@@ -363,12 +383,12 @@ public final class Acl2String extends Acl2Value {
     /**
      * The empty string.
      */
-    public static final Acl2String EMPTY = make("");
+    public static final Acl2String EMPTY = imake("");
 
     /**
      * The string "ACL2".
      */
-    public static final Acl2String ACL2 = make("ACL2");
+    public static final Acl2String ACL2 = imake("ACL2");
 
     /**
      * Returns the representation of this string as a Java string.

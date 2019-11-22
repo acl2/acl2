@@ -27,6 +27,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * instances of {@link Acl2NativeFunction}.
      *
      * @param name The name of the function.
+     *             Invariant: not null.
      */
     private Acl2DefinedFunction(Acl2Symbol name) {
         super(name);
@@ -41,9 +42,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
      * In other words, all the defined functions are interned.
-     * This field is never {@code null},
-     * its keys are never {@code null},
-     * and its valules are never {@code null}.
+     * Invariants: not null, no null keys, no null values.
      */
     private static final Map<Acl2Symbol, Acl2DefinedFunction> functions =
             new HashMap<>();
@@ -140,6 +139,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * This is never called if the definiens is not set or validated.
      *
      * @param values The actual arguments to pass to the function.
+     *               Invariants: not null, no null elements.
      * @return The result of the function on the given arguments.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.
@@ -154,6 +154,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * The function is created and interned, if it does not exist.
      *
      * @param name The name of the defined function.
+     *             Invariant: not null.
      * @return The defined function.
      */
     static Acl2DefinedFunction getInstance(Acl2Symbol name) {
@@ -176,7 +177,9 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      *
      * @param parameters The formal parameters of the function definition.
      * @param body       The body of the function definition.
-     * @throws IllegalArgumentException If parameters or body is null
+     * @throws IllegalArgumentException If {@code parameters} is null,
+     *                                  or any of its elements is null,
+     *                                  or {@code body} is null,
      *                                  or the function definition is malformed
      *                                  in a way that
      *                                  some valid variable index cannot be set.

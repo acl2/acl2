@@ -19,13 +19,13 @@ public final class Acl2ConsPair extends Acl2Value {
 
     /**
      * First (i.e. {@code car}) component of this {@code cons} pair.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Value car;
 
     /**
      * Second (i.e. {@code cdr}) component of this {@code cons} pair.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Value cdr;
 
@@ -33,9 +33,9 @@ public final class Acl2ConsPair extends Acl2Value {
      * Constructs a {@code cons} pair with the given components.
      *
      * @param car The first component of the {@code cons} pair.
-     *            It is never {@code null}.
+     *            Invariant: not null.
      * @param cdr The second component of the {@code cons} pair.
-     *            It is never {@code null}.
+     *            Invariant: not null.
      */
     private Acl2ConsPair(Acl2Value car, Acl2Value cdr) {
         this.car = car;
@@ -94,7 +94,7 @@ public final class Acl2ConsPair extends Acl2Value {
         char[] charArray = new char[size];
         for (int i = 0; i < size; ++i)
             charArray[i] = charList.get(i).getJavaChar();
-        return Acl2String.make(new String(charArray));
+        return Acl2String.imake(new String(charArray));
     }
 
     /**
@@ -102,6 +102,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The character to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -116,6 +117,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The string to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -130,6 +132,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The symbol to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -144,6 +147,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -158,6 +162,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -172,6 +177,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -187,6 +193,7 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The {@code cons} pair to compare this {@code cons} pair with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as this
      * {@code cons} pair is less than, equal to, or greater than the argument.
      */
@@ -197,6 +204,20 @@ public final class Acl2ConsPair extends Acl2Value {
         if (carCmp != 0)
             return carCmp;
         return this.cdr.compareTo(o.cdr);
+    }
+
+    /**
+     * Returns a {@code cons} pair with the given components.
+     * This is for AIJ's internal use, as conveyed by the {@code i} in the name.
+     *
+     * @param car The first component of the {@code cons} pair.
+     *            Invariant: not null.
+     * @param cdr The second component of the {@code cons} pair.
+     *            Invariant: not null.
+     * @return The {@code cons} pair.
+     */
+    static Acl2ConsPair imake(Acl2Value car, Acl2Value cdr) {
+        return new Acl2ConsPair(car, cdr);
     }
 
     //////////////////////////////////////// public members:
@@ -270,15 +291,14 @@ public final class Acl2ConsPair extends Acl2Value {
      * @param car The first component of the {@code cons} pair.
      * @param cdr The second component of the {@code cons} pair.
      * @return The {@code cons} pair.
-     * @throws IllegalArgumentException If {@code car} or {@code cdr}
-     *                                  is {@code null}.
+     * @throws IllegalArgumentException If {@code car} or {@code cdr} is null.
      */
     public static Acl2ConsPair make(Acl2Value car, Acl2Value cdr) {
         if (car == null)
             throw new IllegalArgumentException("Null CAR component.");
         if (cdr == null)
             throw new IllegalArgumentException("Null CDR component.");
-        return new Acl2ConsPair(car, cdr);
+        return imake(car, cdr);
     }
 
     /**
@@ -286,7 +306,6 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code car} ACL2 function.
      *
      * @return The first component of this {@code cons} pair.
-     * It is never {@code null}.
      */
     public Acl2Value getCar() {
         return this.car;
@@ -297,7 +316,6 @@ public final class Acl2ConsPair extends Acl2Value {
      * This is consistent with the {@code car} ACL2 function.
      *
      * @return The first component of this {@code cons} pair.
-     * It is never {@code null}.
      */
     public Acl2Value getCdr() {
         return this.cdr;

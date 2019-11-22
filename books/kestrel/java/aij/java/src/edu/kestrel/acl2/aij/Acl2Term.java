@@ -43,6 +43,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * See {@link Acl2Variable} for more information about variable indices.
      *
      * @param indices Map from variable symbols to indices.
+     *                Invariants: not null, no null keys, no null values.
      * @throws IllegalArgumentException If the term or the map are malformed
      *                                  in a way that some index cannot be set.
      * @throws IllegalStateException    If some index is already set.
@@ -58,6 +59,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * See {@link Acl2Variable} for more information about variable indices.
      *
      * @param binding The binding of variable indices to values.
+     *                Invariants: not null, not null elements.
      * @return The value that results from the evaluation.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.
@@ -78,7 +80,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * @param o The term to compare this term with.
      * @return Aa negative integer, zero, or a positive integer as
      * this term is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public abstract int compareTo(Acl2Term o);

@@ -73,6 +73,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Applies this function to the given values.
      *
      * @param values The actual arguments to pass to the function.
+     *               Invariants: not null, no null elements.
      * @return The result of the function on the given arguments.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.

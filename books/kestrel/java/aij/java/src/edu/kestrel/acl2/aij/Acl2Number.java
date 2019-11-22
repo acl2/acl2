@@ -52,7 +52,7 @@ public abstract class Acl2Number extends Acl2Value {
         // -(a+bi) is (-a)+(-b)i:
         Acl2Rational a = this.realpart();
         Acl2Rational b = this.imagpart();
-        return Acl2Number.make(a.negate(), b.negate());
+        return Acl2Number.imake(a.negate(), b.negate());
     }
 
     /**
@@ -72,14 +72,15 @@ public abstract class Acl2Number extends Acl2Value {
         Acl2Rational aabbInv = aabb.reciprocate();
         Acl2Rational resultReal = a.multiplyRational(aabbInv);
         Acl2Rational resultImag = b.negate().multiplyRational(aabbInv);
-        return Acl2Number.make(resultReal, resultImag);
+        return Acl2Number.imake(resultReal, resultImag);
     }
 
     /**
      * Adds the argument value to this number,
      * consistently with the {@code binary-+} ACL2 function.
      *
-     * @param other The value to add to this number. It is never {@code null}.
+     * @param other The value to add to this number.
+     *              Invariant: not null.
      * @return The sum of this number with the argument value.
      */
     @Override
@@ -91,7 +92,8 @@ public abstract class Acl2Number extends Acl2Value {
      * Adds the argument number to this number,
      * consistently with the {@code binary-+} ACL2 function.
      *
-     * @param other The number to add to this number. It is never {@code null}.
+     * @param other The number to add to this number.
+     *              Invariant: not null.
      * @return The sum of this number with the argument number.
      */
     @Override
@@ -101,7 +103,7 @@ public abstract class Acl2Number extends Acl2Value {
         Acl2Rational b = this.imagpart();
         Acl2Rational c = other.realpart();
         Acl2Rational d = other.imagpart();
-        return Acl2Number.make(a.addRational(c), b.addRational(d));
+        return Acl2Number.imake(a.addRational(c), b.addRational(d));
     }
 
     /**
@@ -109,7 +111,7 @@ public abstract class Acl2Number extends Acl2Value {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The rational to add to this number.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this number with the argument rational.
      */
     @Override
@@ -117,7 +119,7 @@ public abstract class Acl2Number extends Acl2Value {
         // (a+bi)+c is (a+c)+bi:
         Acl2Rational a = this.realpart();
         Acl2Rational b = this.imagpart();
-        return Acl2Number.make(a.addRational(other), b);
+        return Acl2Number.imake(a.addRational(other), b);
     }
 
     /**
@@ -125,7 +127,7 @@ public abstract class Acl2Number extends Acl2Value {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The integer to add to this number.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this number with the argument integer.
      */
     @Override
@@ -133,7 +135,7 @@ public abstract class Acl2Number extends Acl2Value {
         // (a+bi)+c is (a+c)+bi:
         Acl2Rational a = this.realpart();
         Acl2Rational b = this.imagpart();
-        return Acl2Number.make(a.addRational(other), b);
+        return Acl2Number.imake(a.addRational(other), b);
     }
 
     /**
@@ -141,7 +143,7 @@ public abstract class Acl2Number extends Acl2Value {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The value by which to multiply this number.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this number with the argument value.
      */
     @Override
@@ -154,7 +156,7 @@ public abstract class Acl2Number extends Acl2Value {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The number by which to multiply this number.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this number with the argument number.
      */
     @Override
@@ -168,7 +170,8 @@ public abstract class Acl2Number extends Acl2Value {
         Acl2Rational bd = b.multiplyRational(d);
         Acl2Rational bc = b.multiplyRational(c);
         Acl2Rational ad = a.multiplyRational(d);
-        return Acl2Number.make(ac.addRational(bd.negate()), bc.addRational(ad));
+        return Acl2Number.imake(ac.addRational(bd.negate()),
+                bc.addRational(ad));
     }
 
     /**
@@ -176,7 +179,7 @@ public abstract class Acl2Number extends Acl2Value {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The rational by which to multiply this number.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this number with the argument rational.
      */
     @Override
@@ -184,8 +187,8 @@ public abstract class Acl2Number extends Acl2Value {
         // (a+bi)*c is (ac)+(bc)i:
         Acl2Rational a = this.realpart();
         Acl2Rational b = this.imagpart();
-        return Acl2Number.make
-                (a.multiplyRational(other), b.multiplyRational(other));
+        return Acl2Number.imake(a.multiplyRational(other),
+                b.multiplyRational(other));
     }
 
     /**
@@ -193,7 +196,7 @@ public abstract class Acl2Number extends Acl2Value {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The integer by which to multiply this number.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this number with the argument integer.
      */
     @Override
@@ -201,8 +204,8 @@ public abstract class Acl2Number extends Acl2Value {
         // (a+bi)*c is (ac)+(bc)i:
         Acl2Rational a = this.realpart();
         Acl2Rational b = this.imagpart();
-        return Acl2Number.make
-                (a.multiplyRational(other), b.multiplyRational(other));
+        return Acl2Number.imake(a.multiplyRational(other),
+                b.multiplyRational(other));
     }
 
     /**
@@ -243,6 +246,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The character to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -257,6 +261,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The string to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -271,6 +276,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The symbol to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -285,6 +291,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -303,6 +310,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -322,6 +330,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -341,6 +350,7 @@ public abstract class Acl2Number extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The {@code cons} pair to compare this number with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -348,6 +358,26 @@ public abstract class Acl2Number extends Acl2Value {
     int compareToConsPair(Acl2ConsPair o) {
         // numbers are less than cons pairs:
         return -1;
+    }
+
+    /**
+     * Returns a number with the given real and imaginary parts.
+     * This is for AIJ's internal use, as conveyed by the {@code i} in the name.
+     * If the imaginary part is 0, the result is a rational,
+     * according to the rule of complex canonicalization in Common Lisp.
+     *
+     * @param realPart      The real part of the number.
+     *                      Invariant: not null.
+     * @param imaginaryPart The imaginary part of the number.
+     *                      Invariant: not null.
+     * @return The number.
+     */
+    static Acl2Number imake(Acl2Rational realPart,
+                            Acl2Rational imaginaryPart) {
+        if (imaginaryPart.equals(Acl2Integer.ZERO))
+            return realPart;
+        else
+            return Acl2ComplexRational.makeInternal(realPart, imaginaryPart);
     }
 
     //////////////////////////////////////// public members:
@@ -359,7 +389,7 @@ public abstract class Acl2Number extends Acl2Value {
      * @param o The value to compare this number with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -376,8 +406,8 @@ public abstract class Acl2Number extends Acl2Value {
      * @param realPart      The real part of the number.
      * @param imaginaryPart The imaginary part of the number.
      * @return The number.
-     * @throws IllegalArgumentException If {@code realpart} or
-     *                                  {@code imaginaryPart} is {@code null}.
+     * @throws IllegalArgumentException If {@code realpart} is null
+     *                                  or {@code imaginaryPart} is null.
      */
     public static Acl2Number make(Acl2Rational realPart,
                                   Acl2Rational imaginaryPart) {
@@ -385,10 +415,7 @@ public abstract class Acl2Number extends Acl2Value {
             throw new IllegalArgumentException("Null real part.");
         if (imaginaryPart == null)
             throw new IllegalArgumentException("Null imaginary part.");
-        if (imaginaryPart.equals(Acl2Integer.ZERO))
-            return realPart;
-        else
-            return Acl2ComplexRational.makeInternal(realPart, imaginaryPart);
+        return imake(realPart, imaginaryPart);
     }
 
     /**
@@ -401,9 +428,8 @@ public abstract class Acl2Number extends Acl2Value {
      * @return The number.
      */
     public static Acl2Number make(int realPart, int imaginaryPart) {
-        return Acl2Number.make
-                (Acl2Integer.make(realPart),
-                        Acl2Integer.make(imaginaryPart));
+        return imake(Acl2Integer.make(realPart),
+                Acl2Integer.make(imaginaryPart));
     }
 
     /**
@@ -416,9 +442,8 @@ public abstract class Acl2Number extends Acl2Value {
      * @return The number.
      */
     public static Acl2Number make(long realPart, long imaginaryPart) {
-        return Acl2Number.make
-                (Acl2Integer.make(realPart),
-                        Acl2Integer.make(imaginaryPart));
+        return imake(Acl2Integer.make(realPart),
+                Acl2Integer.make(imaginaryPart));
     }
 
     /**
@@ -429,14 +454,17 @@ public abstract class Acl2Number extends Acl2Value {
      * @param realPart      The real part of the number.
      * @param imaginaryPart The imaginary part of the number.
      * @return The number.
-     * @throws IllegalArgumentException If {@code realpart} or
-     *                                  {@code imaginaryPart} is {@code null}.
+     * @throws IllegalArgumentException If {@code realpart} is null
+     *                                  or {@code imaginaryPart} is null.
      */
     public static Acl2Number make(BigInteger realPart,
                                   BigInteger imaginaryPart) {
-        return Acl2Number.make
-                (Acl2Integer.make(realPart),
-                        Acl2Integer.make(imaginaryPart));
+        if (realPart == null)
+            throw new IllegalArgumentException("Null real part.");
+        if (imaginaryPart == null)
+            throw new IllegalArgumentException("Null imaginary part.");
+        return imake(Acl2Integer.imake(realPart),
+                Acl2Integer.imake(imaginaryPart));
     }
 
     /**

@@ -22,7 +22,7 @@
  * <p>
  * The Javadoc documentation states some preconditions for some public methods
  * as well as some invariants for some non-public fields
- * and invariants for some non-public method arguments.
+ * and invariants for some non-public method arguments and results.
  * The invariants generally assume the satisfaction of the preconditions.
  * Calling a public method outside its precondition causes undefined behaviors
  * as far as AIJ documents.

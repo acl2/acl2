@@ -52,7 +52,7 @@ public abstract class Acl2Rational extends Acl2Number {
         // -(a/b) is (-a)/b:
         Acl2Integer a = this.numerator();
         Acl2Integer b = this.denominator();
-        return Acl2Rational.make(a.negate(), b);
+        return imake(a.negate(), b);
     }
 
     /**
@@ -68,14 +68,15 @@ public abstract class Acl2Rational extends Acl2Number {
         if (a.equals(Acl2Integer.ZERO))
             return Acl2Integer.ZERO;
         Acl2Integer b = this.denominator();
-        return Acl2Rational.make(b, a);
+        return imake(b, a);
     }
 
     /**
      * Adds the argument value to this rational,
      * consistently with the {@code binary-+} ACL2 function.
      *
-     * @param other The value to add to this rational. It is never {@code null}.
+     * @param other The value to add to this rational.
+     *              Invariant: not null.
      * @return The sum of this rational with the argument value.
      */
     @Override
@@ -88,7 +89,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The number to add to this rational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this rational with the argument number.
      */
     @Override
@@ -101,7 +102,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The rational to add to this raational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this rational with the argument rational.
      */
     Acl2Rational addRational(Acl2Rational other) {
@@ -113,10 +114,10 @@ public abstract class Acl2Rational extends Acl2Number {
         Acl2Integer d = other.denominator();
         Acl2Integer lcm = b.lcm(d);
         Acl2Integer aMultiplied = // a*(lcm/b)
-                (Acl2Integer) a.multiplyRational(Acl2Rational.make(lcm, b));
+                (Acl2Integer) a.multiplyRational(imake(lcm, b));
         Acl2Integer bMultiplied = // c*(lcm/d)
-                (Acl2Integer) c.multiplyRational(Acl2Rational.make(lcm, d));
-        return Acl2Rational.make(aMultiplied.addInteger(bMultiplied), lcm);
+                (Acl2Integer) c.multiplyRational(imake(lcm, d));
+        return imake(aMultiplied.addInteger(bMultiplied), lcm);
     }
 
     /**
@@ -124,7 +125,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The integer to add to this rational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this rational with the argument integer.
      */
     @Override
@@ -133,7 +134,7 @@ public abstract class Acl2Rational extends Acl2Number {
         Acl2Integer a = this.numerator();
         Acl2Integer b = this.denominator();
         Acl2Integer c = other;
-        return Acl2Rational.make(a.addInteger(b.multiplyInteger(c)), b);
+        return imake(a.addInteger(b.multiplyInteger(c)), b);
     }
 
     /**
@@ -141,7 +142,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The value by which to multiply this rational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this rational with the argument value.
      */
     @Override
@@ -154,7 +155,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The number by which to multiply this rational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this rational with the argument number.
      */
     @Override
@@ -167,7 +168,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The rational by which to multiply this rational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this rational with the argument rational.
      */
     @Override
@@ -177,7 +178,7 @@ public abstract class Acl2Rational extends Acl2Number {
         Acl2Integer b = this.denominator();
         Acl2Integer c = other.numerator();
         Acl2Integer d = other.denominator();
-        return Acl2Rational.make(a.multiplyInteger(c), b.multiplyInteger(d));
+        return imake(a.multiplyInteger(c), b.multiplyInteger(d));
     }
 
     /**
@@ -185,7 +186,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The integer by which to multiply this rational.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this rational with the argument integer.
      */
     @Override
@@ -193,7 +194,7 @@ public abstract class Acl2Rational extends Acl2Number {
         // (a/b)*c is (a*c)/b:
         Acl2Integer a = this.numerator();
         Acl2Integer b = this.denominator();
-        return Acl2Rational.make(a.multiplyInteger(other), b);
+        return imake(a.multiplyInteger(other), b);
     }
 
     /**
@@ -232,6 +233,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this rational with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this rational is less than, equal to, or greater than the argument.
      */
@@ -245,6 +247,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this rational with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this rational is less than, equal to, or greater than the argument.
      */
@@ -265,6 +268,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this rational with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this number is less than, equal to, or greater than the argument.
      */
@@ -278,6 +282,36 @@ public abstract class Acl2Rational extends Acl2Number {
         return a.compareToInteger(cb);
     }
 
+    /**
+     * Returns a rational whose numeric value is
+     * the fraction of the given numerator and denominator.
+     * If the fraction is actually an integer, the result is an integer,
+     * according to the rule of rational canonicalization in Common Lisp.
+     *
+     * @param numerator   The numerator of the rational.
+     *                    Invariant: not null.
+     * @param denominator The denominator of the rational.
+     *                    Invariant: not null, not 0.
+     * @return The rational.
+     */
+    static Acl2Rational imake(Acl2Integer numerator, Acl2Integer denominator) {
+        /* The numerator and denominator of the fraction are reduced,
+           and the denominator is made positive.
+           If the resulting denominator is 1, an ACL2 integer is returned;
+           otherwise, an ACL2 ratio is returned. */
+        Acl2Integer gcd = numerator.gcd(denominator);
+        numerator = numerator.divide(gcd);
+        denominator = denominator.divide(gcd);
+        if (denominator.compareTo(Acl2Integer.ZERO) < 0) {
+            numerator = numerator.negate();
+            denominator = denominator.negate();
+        }
+        if (denominator.equals(Acl2Integer.ONE))
+            return numerator;
+        else
+            return Acl2Ratio.makeInternal(numerator, denominator);
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -287,7 +321,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * @param o The object to compare this rational with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -306,7 +340,7 @@ public abstract class Acl2Rational extends Acl2Number {
      * @param denominator The denominator of the rational.
      * @return The rational.
      * @throws IllegalArgumentException If {@code numerator} or
-     *                                  {@code denominator} is {@code null},
+     *                                  {@code denominator} is null,
      *                                  or {@code denominator} is 0.
      */
     public static Acl2Rational make(Acl2Integer numerator,
@@ -317,21 +351,7 @@ public abstract class Acl2Rational extends Acl2Number {
             throw new IllegalArgumentException("Null denominator.");
         if (denominator.equals(Acl2Integer.ZERO))
             throw new IllegalArgumentException("Zero denominator.");
-        /* The numerator and denominator of the fraction are reduced,
-           and the denominator is made positive.
-           If the resulting denominator is 1, an ACL2 integer is returned;
-           otherwise, an ACL2 ratio is returned. */
-        Acl2Integer gcd = numerator.gcd(denominator);
-        numerator = numerator.divide(gcd);
-        denominator = denominator.divide(gcd);
-        if (denominator.compareTo(Acl2Integer.ZERO) < 0) {
-            numerator = numerator.negate();
-            denominator = denominator.negate();
-        }
-        if (denominator.equals(Acl2Integer.ONE))
-            return numerator;
-        else
-            return Acl2Ratio.makeInternal(numerator, denominator);
+        return imake(numerator, denominator);
     }
 
     /**
@@ -346,9 +366,10 @@ public abstract class Acl2Rational extends Acl2Number {
      * @throws IllegalArgumentException If {@code denominator} is 0.
      */
     public static Acl2Rational make(int numerator, int denominator) {
-        return Acl2Rational.make
-                (Acl2Integer.make(numerator),
-                        Acl2Integer.make(denominator));
+        if (denominator == 0)
+            throw new IllegalArgumentException("Zero denominator.");
+        return imake(Acl2Integer.make(numerator),
+                Acl2Integer.make(denominator));
     }
 
     /**
@@ -363,9 +384,10 @@ public abstract class Acl2Rational extends Acl2Number {
      * @throws IllegalArgumentException If {@code denominator} is 0.
      */
     public static Acl2Rational make(long numerator, long denominator) {
-        return Acl2Rational.make
-                (Acl2Integer.make(numerator),
-                        Acl2Integer.make(denominator));
+        if (denominator == 0)
+            throw new IllegalArgumentException("Zero denominator.");
+        return imake(Acl2Integer.make(numerator),
+                Acl2Integer.make(denominator));
     }
 
     /**
@@ -378,14 +400,19 @@ public abstract class Acl2Rational extends Acl2Number {
      * @param denominator The denominator of the rational.
      * @return The rational.
      * @throws IllegalArgumentException If {@code numerator} or
-     *                                  {@code denominator} is {@code null},
+     *                                  {@code denominator} is null,
      *                                  or {@code denominator} is 0.
      */
     public static Acl2Rational make(BigInteger numerator,
                                     BigInteger denominator) {
-        return Acl2Rational.make
-                (Acl2Integer.make(numerator),
-                        Acl2Integer.make(denominator));
+        if (numerator == null)
+            throw new IllegalArgumentException("Null numerator.");
+        if (denominator == null)
+            throw new IllegalArgumentException("Null denominator.");
+        if (denominator.equals(BigInteger.ZERO))
+            throw new IllegalArgumentException("Zero denominator.");
+        return imake(Acl2Integer.imake(numerator),
+                Acl2Integer.imake(denominator));
     }
 
     /**
