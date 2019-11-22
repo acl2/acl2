@@ -232,7 +232,7 @@ public final class Acl2Integer extends Acl2Rational {
     Acl2Character codeChar() {
         if (numericValue.compareTo(BigInteger.ZERO) >= 0 &&
                 numericValue.compareTo(BIG_INTEGER_256) < 0)
-            return Acl2Character.make((char) numericValue.intValue());
+            return Acl2Character.imake((char) numericValue.intValue());
         else
             return Acl2Character.CODE_0;
     }

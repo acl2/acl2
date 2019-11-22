@@ -189,6 +189,18 @@ public final class Acl2Character extends Acl2Value {
         return -1;
     }
 
+    /**
+     * Returns the character with the given code.
+     * This is for AIJ's internal use, as conveyed by the {@code i} in the name.
+     *
+     * @param jchar The code of the character, as a Java character.
+     *              This is always below 256.
+     * @return The character.
+     */
+    static Acl2Character imake(char jchar) {
+        return characters[jchar];
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -270,7 +282,7 @@ public final class Acl2Character extends Acl2Value {
      */
     public static Acl2Character make(char jchar) {
         if (jchar < 256)
-            return characters[jchar];
+            return imake(jchar);
         else
             throw new IllegalArgumentException
                     ("Invalid character: '" + jchar + "'.");

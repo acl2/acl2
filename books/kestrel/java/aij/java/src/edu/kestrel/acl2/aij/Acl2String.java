@@ -89,7 +89,7 @@ public final class Acl2String extends Acl2Value {
         Acl2Value list = Acl2Symbol.NIL;
         for (int i = this.jstring.length() - 1; i >= 0; --i) {
             Acl2Character character =
-                    Acl2Character.make(this.jstring.charAt(i));
+                    Acl2Character.imake(this.jstring.charAt(i));
             list = Acl2ConsPair.make(character, list);
         }
         return list;
