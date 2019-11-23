@@ -12,6 +12,7 @@
 
 (include-book "apply-term")
 (include-book "close-lambdas")
+(include-book "fapply-term")
 (include-book "fsublis-var")
 (include-book "remove-dead-if-branches")
 (include-book "remove-mbe")

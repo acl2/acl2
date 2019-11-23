@@ -17,6 +17,7 @@
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
+(include-book "kestrel/std/system/fapply-term" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
@@ -74,34 +75,6 @@
       nil
     (cons (apply-term (car fns) args)
           (apply-terms-same-args (cdr fns) args))))
-
-(define fapply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
-  :guard (or (symbolp fn)
-             (= (len terms)
-                (len (lambda-formals fn))))
-  :returns (term "A @(tsee pseudo-termp).")
-  :parents (term-utilities)
-  :short "Variant of @(tsee apply-term) that performs no simplification."
-  :long
-  "<p>
-   The meaning of the starting @('f') in the name of this utility
-   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
-   </p>"
-  (cond ((symbolp fn) (fcons-term fn terms))
-        (t (fsubcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
-
-(defsection fapply-term*
-  :parents (term-utilities)
-  :short "Variant of @(tsee apply-term*) that performs no simplification."
-  :long
-  "<p>
-   The meaning of the starting @('f') in the name of this utility
-   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
-   </p>
-   @(def fapply-term*)"
-  (defmacro fapply-term* (fn &rest terms)
-    `(fapply-term ,fn (list ,@terms))))
 
 (define fapply-unary-to-terms ((fn pseudo-termfnp)
                                (terms pseudo-term-listp))
