@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
@@ -31,38 +32,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define apply-term ((fn pseudo-termfnp) (terms pseudo-term-listp))
-  :guard (or (symbolp fn)
-             (= (len terms)
-                (len (lambda-formals fn))))
-  :returns (term "A @(tsee pseudo-termp).")
-  :parents (term-utilities)
-  :short "Apply a function symbol or a lambda expression
-          to a list of <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
-          obtaining a pseudo-term."
-  :long
-  "<p>
-   This utility is similar to @(tsee cons-term),
-   but it performs a beta reduction when @('fn') is a lambda expression.
-   </p>"
-  (cond ((symbolp fn) (cons-term fn terms))
-        (t (subcor-var (lambda-formals fn) terms (lambda-body fn))))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))
-
-(defsection apply-term*
-  :parents (term-utilities)
-  :short "Apply a function symbol or a lambda expression
-          to <see topic='@(url pseudo-termp)'>pseudo-terms</see>,
-          obtaining a pseudo-term."
-  :long
-  "<p>
-   This utility is similar to @(tsee cons-term*),
-   but it performs a beta reduction when @('fn') is a lambda expressions.
-   </p>
-   @(def apply-term*)"
-  (defmacro apply-term* (fn &rest terms)
-    `(apply-term ,fn (list ,@terms))))
 
 (define apply-unary-to-terms ((fn pseudo-termfnp) (terms pseudo-term-listp))
   :guard (or (symbolp fn)

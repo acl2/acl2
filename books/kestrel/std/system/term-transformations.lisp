@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "apply-term")
 (include-book "close-lambdas")
 (include-book "fsublis-var")
 (include-book "remove-dead-if-branches")
