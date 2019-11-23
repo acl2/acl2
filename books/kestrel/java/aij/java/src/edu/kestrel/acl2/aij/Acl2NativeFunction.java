@@ -71,7 +71,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Arity of this native function.
-     * This is always non-negative.
+     * Invariant: non-negative.
      */
     private final int arity;
 
@@ -79,7 +79,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Constructs a native function with the given name and arity.
      *
      * @param name  Name of the native function.
+     *              Invariant: not null.
      * @param arity Arity of the native function.
+     *              Invariant: non-negative.
      */
     private Acl2NativeFunction(Acl2Symbol name, int arity) {
         super(name);
@@ -94,9 +96,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * and the native functions are reused
      * by the {@link #getInstance(Acl2Symbol)} method;
      * In other words, the native functions are interned.
-     * This field is never {@code null},
-     * its keys are never {@code null},
-     * and its values are never {@code null}.
+     * Invariants: not null, no null keys, no null values.
      */
     private static final Map<Acl2Symbol, Acl2NativeFunction> functions =
             new HashMap<>();
@@ -155,6 +155,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -179,6 +180,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -203,6 +205,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -227,6 +230,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -251,6 +255,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -275,6 +280,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -299,6 +305,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -323,6 +330,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -347,6 +355,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -371,6 +380,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -395,6 +405,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -421,6 +432,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -446,6 +458,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -470,6 +483,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -500,6 +514,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * which says that evaluation fails in this case.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          * @throws Acl2EvaluationException If the package name is invalid
          *                                 or the package is not defined.
@@ -556,6 +571,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -580,6 +596,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -604,6 +621,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -628,6 +646,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -652,6 +671,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -676,6 +696,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -700,6 +721,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -724,6 +746,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -748,6 +771,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -772,6 +796,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -796,6 +821,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -820,6 +846,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -844,6 +871,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -868,6 +896,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given values.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -905,6 +934,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * This application never fails.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -937,6 +967,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * This application never fails.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -981,6 +1012,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * This application never fails.
          *
          * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
          */
         @Override
@@ -1043,13 +1075,14 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Returns the native function with the given name.
      * If the symbol argument names a native function,
      * the unique object that represents it is returned.
-     * Otherwise, {@code null} is returned;
+     * Otherwise, null is returned;
      * it is intentional not to return an error in this case,
      * see {@link Acl2NamedFunction#make(Acl2Symbol)}.
      *
      * @param name The name of the native function.
+     *             Invariant: not null.
      * @return The native function,
-     * or {@code null} if the argument does not name a native function.
+     * or null if the argument does not name a native function.
      */
     static Acl2NativeFunction getInstance(Acl2Symbol name) {
         return functions.get(name);
@@ -1080,7 +1113,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code characterp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execCharacterp(Acl2Value x) {
@@ -1092,7 +1125,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code stringp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execStringp(Acl2Value x) {
@@ -1104,7 +1137,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code symbolp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execSymbolp(Acl2Value x) {
@@ -1116,7 +1149,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code integerp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execIntegerp(Acl2Value x) {
@@ -1128,7 +1161,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code rationalp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execRationalp(Acl2Value x) {
@@ -1140,7 +1173,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code complex-rationalp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execComplexRationalp(Acl2Value x) {
@@ -1152,7 +1185,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code acl2-numberp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execAcl2Numberp(Acl2Value x) {
@@ -1164,7 +1197,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code consp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Symbol execConsp(Acl2Value x) {
@@ -1177,7 +1210,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execCharCode(Acl2Value x) {
@@ -1190,7 +1223,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a character.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execCharCode(Acl2Character x) {
@@ -1204,7 +1237,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Character execCodeChar(Acl2Value x) {
@@ -1217,7 +1250,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a non-negative integer below 256.
      *
      * @param x The actual argument to pass to the function.
-     *          Preconditions: not {@code null}, non-negative, and below 256.
+     *          Preconditions: not null, non-negative, and below 256.
      * @return The result of the function on the given argument.
      */
     public static Acl2Character execCodeChar(Acl2Integer x) {
@@ -1232,9 +1265,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any values.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Value execCoerce(Acl2Value x, Acl2Value y) {
@@ -1250,13 +1283,13 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a value and a symbol that satisfy the guard of the function.
      *
      * @param x The first actual argument to pass to the function.
-     *          Preconditions: not {@code null},
+     *          Preconditions: not null,
      *          instance of {@link Acl2String}
      *          if {@code y} represents the symbol {@code LIST},
      *          representation of a {@code character-listp} value
      *          if {@code y} represents the symbol {@code STRING}.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null},
+     *          Precondition: not null,
      *          representation of either the symbol {@code LIST}
      *          or the symbol {@code STRING}.
      * @return The result of the function on the given arguments.
@@ -1290,9 +1323,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any values.
      *
      * @param str The first actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @param sym The second actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Symbol execInternInPackageOfSymbol(Acl2Value str,
@@ -1306,9 +1339,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a string and a symbol.
      *
      * @param str The first actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @param sym The second actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Symbol execInternInPackageOfSymbol(Acl2String str,
@@ -1324,7 +1357,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2String execSymbolPackageName(Acl2Value x) {
@@ -1337,7 +1370,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a symbol.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2String execSymbolPackageName(Acl2Symbol x) {
@@ -1352,7 +1385,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2String execSymbolName(Acl2Value x) {
@@ -1365,7 +1398,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a symbol.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2String execSymbolName(Acl2Symbol x) {
@@ -1379,7 +1412,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param pkg The actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @return The result of the function on the given argument.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
@@ -1395,7 +1428,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a string.
      *
      * @param pkg The actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @return The result of the function on the given argument.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
@@ -1413,7 +1446,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param pkg The actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @return The result of the function on the given argument.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
@@ -1429,7 +1462,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a string.
      *
      * @param pkg The actual argument to pass to the function.
-     *            Precondition: not {@code null}.
+     *            Precondition: not null.
      * @return The result of the function on the given argument.
      * @throws Acl2EvaluationException If the package name is invalid
      *                                 or the package is not defined.
@@ -1447,7 +1480,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Number execUnaryMinus(Acl2Value x) {
@@ -1460,7 +1493,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a number.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Number execUnaryMinus(Acl2Number x) {
@@ -1477,7 +1510,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is a rational.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execUnaryMinus(Acl2Rational x) {
@@ -1492,7 +1525,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is an integer.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execUnaryMinus(Acl2Integer x) {
@@ -1505,7 +1538,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Number execUnarySlash(Acl2Value x) {
@@ -1518,7 +1551,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a non-zero number.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}, not 0.
+     *          Precondition: not null, not 0.
      * @return The result of the function on the given argument.
      */
     public static Acl2Number execUnarySlash(Acl2Number x) {
@@ -1535,7 +1568,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is a rational.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}, not 0.
+     *          Precondition: not null, not 0.
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execUnarySlash(Acl2Rational x) {
@@ -1548,9 +1581,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any values.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execBinaryPlus(Acl2Value x, Acl2Value y) {
@@ -1563,9 +1596,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on numbers.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execBinaryPlus(Acl2Number x, Acl2Number y) {
@@ -1582,9 +1615,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is a rational.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Rational execBinaryPlus(Acl2Rational x, Acl2Rational y) {
@@ -1601,9 +1634,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is an integer.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Integer execBinaryPlus(Acl2Integer x, Acl2Integer y) {
@@ -1618,9 +1651,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any values.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execBinaryStar(Acl2Value x, Acl2Value y) {
@@ -1633,9 +1666,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on numbers.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execBinaryStar(Acl2Number x, Acl2Number y) {
@@ -1652,9 +1685,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is a rational.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Rational execBinaryStar(Acl2Rational x, Acl2Rational y) {
@@ -1671,9 +1704,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the result is an integer.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Integer execBinaryStar(Acl2Integer x, Acl2Integer y) {
@@ -1688,9 +1721,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any values.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Symbol execLessThan(Acl2Value x, Acl2Value y) {
@@ -1708,9 +1741,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on rationals.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Symbol execLessThan(Acl2Rational x, Acl2Rational y) {
@@ -1727,9 +1760,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any values.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execComplex(Acl2Value x, Acl2Value y) {
@@ -1742,9 +1775,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on rationals.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Number execComplex(Acl2Rational x, Acl2Rational y) {
@@ -1758,7 +1791,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execRealPart(Acl2Value x) {
@@ -1771,7 +1804,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a number.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execRealPart(Acl2Number x) {
@@ -1785,7 +1818,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execImagPart(Acl2Value x) {
@@ -1798,7 +1831,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a number.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execImagPart(Acl2Number x) {
@@ -1812,7 +1845,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execNumerator(Acl2Value x) {
@@ -1825,7 +1858,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a rational.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execNumerator(Acl2Rational x) {
@@ -1839,7 +1872,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on any value.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execDenominator(Acl2Value x) {
@@ -1852,7 +1885,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * on a rational.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Integer execDenominator(Acl2Rational x) {
@@ -1865,9 +1898,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code cons} ACL2 primitive function.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2ConsPair execCons(Acl2Value x, Acl2Value y) {
@@ -1879,7 +1912,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code car} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Value execCar(Acl2Value x) {
@@ -1891,7 +1924,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code cdr} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
     public static Acl2Value execCdr(Acl2Value x) {
@@ -1903,9 +1936,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code equal} ACL2 primitive function.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Symbol execEqual(Acl2Value x, Acl2Value y) {
@@ -1920,9 +1953,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code bad-atom<=} ACL2 primitive function.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Symbol execBadAtomLessThanOrEqualTo(Acl2Value x,
@@ -1935,11 +1968,11 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code if} ACL2 primitive function.
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param z The third actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Value execIf(Acl2Value x, Acl2Value y, Acl2Value z) {
@@ -1954,9 +1987,9 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * the {@code or} ACL2 "pseudo-function".
      *
      * @param x The first actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @param y The second actual argument to pass to the function.
-     *          Precondition: not {@code null}.
+     *          Precondition: not null.
      * @return The result of the function on the given arguments.
      */
     public static Acl2Value execOr(Acl2Value x, Acl2Value y) {
