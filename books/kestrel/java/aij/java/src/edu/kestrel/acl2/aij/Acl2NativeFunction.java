@@ -48,11 +48,16 @@ import java.util.Map;
  * operate on all the ACL2 values, regardless of guards:
  * in other words, they run as if guard checking were off,
  * i.e. they run "in the logic", as the ACL2 documentation says sometimes.
- * However, some of these methods have overloaded variants
- * that operate on narrower types that are contained in the guards:
- * these can be used when guards are satisfied,
- * and may be more efficient;
- * some also return narrower result types.
+ * Some of these methods have overloaded variants
+ * that operate on narrower types and may return narrower results:
+ * they are equivalent to the ones that operate on all ACL2 values,
+ * but may be more efficient.
+ * Some of these overloaded variants have stated preconditions that,
+ * together with the narrower types, correspond exactly to the guards:
+ * thus, these methods can be called when the guards are satisifed.
+ * Some of these overloaded variants have argument types
+ * that are strictly narrower than the types corresponding to the guards;
+ * these are used when the arguments are statically known to have those types.
  * <p>
  * Each native function is represented by
  * a singleton instance of a direct subclass of this class.
