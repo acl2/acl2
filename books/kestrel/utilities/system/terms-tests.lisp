@@ -15,15 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (apply-unary-to-terms 'f '(x (g y) '2))
-              '((f x) (f (g y)) (f '2)))
-
-(assert-equal (apply-unary-to-terms '(lambda (z) (cons z z))
-                                    '(x (g y) '2))
-              '((cons x x) (cons (g y) (g y)) '(2 . 2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (fapply-unary-to-terms 'f '(x (g y) '2))
               '((f x) (f (g y)) (f '2)))
 

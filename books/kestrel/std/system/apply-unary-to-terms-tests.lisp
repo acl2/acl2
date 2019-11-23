@@ -10,19 +10,15 @@
 
 (in-package "ACL2")
 
-(include-book "apply-term")
 (include-book "apply-unary-to-terms")
-(include-book "close-lambdas")
-(include-book "fapply-term")
-(include-book "fsublis-var")
-(include-book "remove-dead-if-branches")
-(include-book "remove-mbe")
-(include-book "remove-progn")
-(include-book "remove-trivial-vars")
-(include-book "remove-unused-vars")
+
+(include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/system/term-transformations
-  :parents (std/system)
-  :short "Utilities to transform terms.")
+(assert-equal (apply-unary-to-terms 'f '(x (g y) '2))
+              '((f x) (f (g y)) (f '2)))
+
+(assert-equal (apply-unary-to-terms '(lambda (z) (cons z z))
+                                    '(x (g y) '2))
+              '((cons x x) (cons (g y) (g y)) '(2 . 2)))

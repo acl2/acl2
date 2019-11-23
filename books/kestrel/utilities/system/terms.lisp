@@ -34,31 +34,6 @@
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
 
-(define apply-unary-to-terms ((fn pseudo-termfnp) (terms pseudo-term-listp))
-  :guard (or (symbolp fn)
-             (= 1 (len (lambda-formals fn))))
-  :returns (applied-terms "A @(tsee pseudo-term-listp).")
-  :parents (term-utilities)
-  :short "Apply a function symbol or a unary lambda expression
-          to each element of a list of terms,
-          obtaining a list of corresponding terms."
-  (apply-unary-to-terms-aux fn terms nil)
-  :verify-guards nil
-
-  :prepwork
-  ((define apply-unary-to-terms-aux ((fn pseudo-termfnp)
-                                     (terms pseudo-term-listp)
-                                     (rev-result pseudo-term-listp))
-     :guard (or (symbolp fn)
-                (= 1 (len (lambda-formals fn))))
-     :returns (final-result "A @(tsee pseudo-term-listp).")
-     (cond ((endp terms) (reverse rev-result))
-           (t (apply-unary-to-terms-aux fn
-                                        (cdr terms)
-                                        (cons (apply-term* fn (car terms))
-                                              rev-result))))
-     :verify-guards nil)))
-
 (define apply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
   :returns (terms "A @(tsee pseudo-term-listp).")
   :verify-guards nil
