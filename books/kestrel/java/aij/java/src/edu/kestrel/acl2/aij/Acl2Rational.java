@@ -57,18 +57,38 @@ public abstract class Acl2Rational extends Acl2Number {
 
     /**
      * Reciprocates (arithmetically) this rational,
+     * assuming it is not 0,
      * consistently with the {@code unary-/} ACL2 function.
+     * Invariant: this rational is not 0.
+     *
+     * @return The reciprocal of this rational.
+     */
+    @Override
+    Acl2Rational reciprocateNonZero() {
+        // 1/(a/b) is b/a:
+        Acl2Integer a = this.numerator();
+        Acl2Integer b = this.denominator();
+        return imake(b, a); // see note below
+        // Note: the code just above is executed
+        // only if this rational is a ratio
+        // (otherwise the overriding method in Acl2Integer would be executed),
+        // so this rational is never 0, because ratios are never 0.
+    }
+
+    /**
+     * Reciprocates (arithmetically) this rational,
+     * consistently with the {@code unary-/} ACL2 function.
+     * If this rational is 0, the result is 0.
      *
      * @return The reciprocal of this rational.
      */
     @Override
     Acl2Rational reciprocate() {
-        // 1/(a/b) is b/a:
-        Acl2Integer a = this.numerator();
-        if (a.equals(Acl2Integer.ZERO))
-            return Acl2Integer.ZERO;
-        Acl2Integer b = this.denominator();
-        return imake(b, a);
+        // This code is executed
+        // only if this rational is a ratio
+        // (otherwise the overriding method in Acl2Integer would be executed),
+        // so this rational is never 0, because ratios are never 0.
+        return reciprocateNonZero();
     }
 
     /**

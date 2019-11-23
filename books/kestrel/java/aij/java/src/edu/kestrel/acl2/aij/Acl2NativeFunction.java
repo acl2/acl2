@@ -1555,9 +1555,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static Acl2Number execUnarySlash(Acl2Number x) {
-        // it is not clear if this can be made faster
-        // by knowing that x is an ACL2 number:
-        return x.reciprocate();
+        return x.reciprocateNonZero();
     }
 
     /**
@@ -1572,7 +1570,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static Acl2Rational execUnarySlash(Acl2Rational x) {
-        return x.reciprocate();
+        return x.reciprocateNonZero();
     }
 
     /**

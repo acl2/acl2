@@ -57,22 +57,43 @@ public abstract class Acl2Number extends Acl2Value {
 
     /**
      * Reciprocates (arithmetically) this number,
+     * assuming it is not 0,
      * consistently with the {@code unary-/} ACL2 function.
+     * Invariant: this number is not 0.
      *
      * @return The reciprocal of this number.
      */
-    @Override
-    Acl2Number reciprocate() {
+    Acl2Number reciprocateNonZero() {
         // 1/(a+bi) is (a/(aa+bb))-(b/(aa+bb))i:
         Acl2Rational a = this.realpart();
         Acl2Rational b = this.imagpart();
         Acl2Rational aa = a.multiplyRational(a);
         Acl2Rational bb = b.multiplyRational(b);
         Acl2Rational aabb = aa.addRational(bb);
-        Acl2Rational aabbInv = aabb.reciprocate();
+        Acl2Rational aabbInv = aabb.reciprocateNonZero(); // see note below
         Acl2Rational resultReal = a.multiplyRational(aabbInv);
         Acl2Rational resultImag = b.negate().multiplyRational(aabbInv);
         return Acl2Number.imake(resultReal, resultImag);
+        // Note: the code just above is executed
+        // only if this number is a complex rational
+        // (otherwise the code of an overriding method would be executed),
+        // so aabb is never zero because b is never 0.
+    }
+
+    /**
+     * Reciprocates (arithmetically) this number,
+     * consistently with the {@code unary-/} ACL2 function.
+     * If this number is 0, the result is 0.
+     *
+     * @return The reciprocal of this number.
+     */
+    @Override
+    Acl2Number reciprocate() {
+        // This code is executed
+        // only if this number is a complex rational
+        // (otherwise the code of an overriding method would be executed),
+        // so this number is never 0 because its imaginary part is never 0.
+        return reciprocateNonZero();
     }
 
     /**

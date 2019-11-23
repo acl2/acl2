@@ -101,16 +101,30 @@ public final class Acl2Integer extends Acl2Rational {
 
     /**
      * Reciprocates (arithmetically) this integer,
+     * assuming it is not 0,
      * consistently with the {@code unary-/} ACL2 function.
+     * Invariant: this integer is not 0.
+     *
+     * @return The reciprocal of this integer.
+     */
+    Acl2Rational reciprocateNonZero() {
+        // 1/a:
+        return Acl2Rational.imake(Acl2Integer.ONE, this);
+    }
+
+    /**
+     * Reciprocates (arithmetically) this integer,
+     * consistently with the {@code unary-/} ACL2 function.
+     * If this integer is 0, the result is 0.
      *
      * @return The reciprocal of this integer.
      */
     @Override
     Acl2Rational reciprocate() {
-        // 1/a:
         if (this.equals(Acl2Integer.ZERO))
             return Acl2Integer.ZERO;
-        return Acl2Rational.imake(Acl2Integer.ONE, this);
+        else
+            return reciprocateNonZero();
     }
 
     /**
