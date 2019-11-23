@@ -17,7 +17,9 @@
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
+(include-book "kestrel/std/system/apply-unary-to-terms" :dir :system)
 (include-book "kestrel/std/system/fapply-term" :dir :system)
+(include-book "kestrel/std/system/fapply-unary-to-terms" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
@@ -50,36 +52,6 @@
       nil
     (cons (apply-term (car fns) args)
           (apply-terms-same-args (cdr fns) args))))
-
-(define fapply-unary-to-terms ((fn pseudo-termfnp)
-                               (terms pseudo-term-listp))
-  :guard (or (symbolp fn)
-             (= 1 (len (lambda-formals fn))))
-  :returns (applied-terms "A @(tsee pseudo-term-listp).")
-  :parents (term-utilities)
-  :short "Variant of @(tsee apply-unary-to-terms)
-          that performs no simplification."
-  :long
-  "<p>
-   The meaning of the starting @('f') in the name of this utility
-   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
-   </p>"
-  (fapply-unary-to-terms-aux fn terms nil)
-  :verify-guards nil
-
-  :prepwork
-  ((define fapply-unary-to-terms-aux ((fn pseudo-termfnp)
-                                      (terms pseudo-term-listp)
-                                      (rev-result pseudo-term-listp))
-     :guard (or (symbolp fn)
-                (= 1 (len (lambda-formals fn))))
-     :returns (final-result "A @(tsee pseudo-term-listp).")
-     (cond ((endp terms) (reverse rev-result))
-           (t (fapply-unary-to-terms-aux fn
-                                         (cdr terms)
-                                         (cons (fapply-term* fn (car terms))
-                                               rev-result))))
-     :verify-guards nil)))
 
 (define fapply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
   :returns (terms "A @(tsee pseudo-term-listp).")

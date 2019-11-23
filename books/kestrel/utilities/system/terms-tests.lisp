@@ -15,15 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (fapply-unary-to-terms 'f '(x (g y) '2))
-              '((f x) (f (g y)) (f '2)))
-
-(assert-equal (fapply-unary-to-terms '(lambda (z) (cons z z))
-                                     '(x (g y) '2))
-              '((cons x x) (cons (g y) (g y)) (cons '2 '2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (mv-list 2 (fsublis-fn-rec
                           '((f . g) (h . (lambda (x) (cons x y))))
                           '(quote #\c)
