@@ -20,6 +20,7 @@
 (include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
 (include-book "kestrel/std/system/apply-unary-to-terms" :dir :system)
 (include-book "kestrel/std/system/fapply-term" :dir :system)
+(include-book "kestrel/std/system/fapply-terms-same-args" :dir :system)
 (include-book "kestrel/std/system/fapply-unary-to-terms" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
@@ -36,22 +37,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define fapply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
-  :returns (terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :parents (term-utilities)
-  :short "Variant of @(tsee apply-terms-same-args)
-          that performs no simplification."
-  :long
-  "<p>
-   The meaning of the starting @('f') in the name of this utility
-   is analogous to @(tsee fcons-term) compared to @(tsee cons-term).
-   </p>"
-  (if (endp fns)
-      nil
-    (cons (fapply-term (car fns) args)
-          (fapply-terms-same-args (cdr fns) args))))
 
 (defines fsublis-fn-rec
   :parents (term-utilities)
