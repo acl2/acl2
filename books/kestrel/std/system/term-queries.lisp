@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "all-fnnames")
 (include-book "all-free-bound-vars")
 (include-book "all-program-ffn-symbs")
 (include-book "all-vars-open")
