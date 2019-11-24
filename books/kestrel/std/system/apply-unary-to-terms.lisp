@@ -18,7 +18,7 @@
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
-  :parents (term-utilities)
+  :parents (std/system/term-transformations)
   :short "Apply a function symbol or a unary lambda expression
           to each element of a list of terms,
           obtaining a list of corresponding terms."

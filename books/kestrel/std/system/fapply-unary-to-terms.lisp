@@ -19,7 +19,7 @@
   :guard (or (symbolp fn)
              (= 1 (len (lambda-formals fn))))
   :returns (applied-terms "A @(tsee pseudo-term-listp).")
-  :parents (term-utilities)
+  :parents (std/system/term-transformations)
   :short "Variant of @(tsee apply-unary-to-terms)
           that performs no simplification."
   :long

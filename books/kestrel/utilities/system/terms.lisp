@@ -17,6 +17,7 @@
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
+(include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
 (include-book "kestrel/std/system/apply-unary-to-terms" :dir :system)
 (include-book "kestrel/std/system/fapply-term" :dir :system)
 (include-book "kestrel/std/system/fapply-unary-to-terms" :dir :system)
@@ -35,23 +36,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define apply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
-  :returns (terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :parents (term-utilities)
-  :short "Apply each function symbol or lambda expression of a list
-          to the same list of pseudo-term arguments,
-          obtaining a list of corresponding function applications."
-  :long
-  "<p>
-   This utility lifts @(tsee apply-term)
-   from a single function to a list of functions.
-   </p>"
-  (if (endp fns)
-      nil
-    (cons (apply-term (car fns) args)
-          (apply-terms-same-args (cdr fns) args))))
 
 (define fapply-terms-same-args ((fns pseudo-termfnp) (args pseudo-term-listp))
   :returns (terms "A @(tsee pseudo-term-listp).")
