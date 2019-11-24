@@ -85,11 +85,12 @@ public final class Acl2ConsPair extends Acl2Value {
     @Override
     Acl2String coerceToString() {
         List<Acl2Character> charList = new LinkedList<>();
-        for (Acl2Value list = this;
-             list instanceof Acl2ConsPair;
-             list = ((Acl2ConsPair) list).cdr) {
-            charList.add(((Acl2ConsPair) list).car.charFix());
-        }
+        Acl2Value list = this;
+        do {
+            Acl2ConsPair nonemptyList = (Acl2ConsPair) list;
+            charList.add(nonemptyList.car.charFix());
+            list = nonemptyList.cdr;
+        } while (list instanceof Acl2ConsPair);
         int size = charList.size();
         char[] charArray = new char[size];
         for (int i = 0; i < size; ++i)
