@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "abstract-syntax")
+(include-book "java-syntax-operations")
 
 (include-book "centaur/depgraph/toposort" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
