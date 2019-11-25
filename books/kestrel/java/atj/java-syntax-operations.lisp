@@ -239,3 +239,54 @@
                 (cons (car methods2)
                       (merge-jmethods methods1 (cdr methods2))))))
      :measure (+ (len methods1) (len methods2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define negate-boolean-jexpr ((expr jexprp))
+  :returns (new-expr jexprp)
+  :short "Negates a (boolean) Java expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This accepts and transforms any Java expression.
+     However, if the original expression is not boolean,
+     the transformed expression is malformed (i.e. ill-typed).")
+   (xdoc::p
+    "If the expression is a boolean literal,
+     we replace it with the other boolean literal.
+     If the expression is a logical negation @('!...'),
+     we remove the @('!').
+     If the expression is an (in)equality or comparison,
+     we negate the operator.
+     In all other cases, we put @('!') before the expression,
+     which is always correct and a default strategy.
+     We may extend the special (i.e. non-default) handling,
+     e.g. by distributing the negation over conjunctions and disjunctions,
+     and over the `then' and `else' branches
+     of the ternary condition operator @('? ... : ...')."))
+  (b* ((default-result
+         (jexpr-paren (jexpr-unary (junop-logcompl) (jexpr-paren expr)))))
+    (case (jexpr-kind expr)
+      (:literal (b* ((literal (jexpr-literal->get expr)))
+                  (if (jliteral-case literal :boolean)
+                      (if (jliteral-boolean->value literal)
+                          (jexpr-literal-false)
+                        (jexpr-literal-true))
+                    default-result)))
+      (:unary (b* ((op (jexpr-unary->op expr))
+                   (arg (jexpr-unary->arg expr)))
+                (if (junop-case op :logcompl)
+                    (jexpr-paren arg)
+                  default-result)))
+      (:binary (b* ((op (jexpr-binary->op expr))
+                    (left (jexpr-binary->left expr))
+                    (right (jexpr-binary->right expr)))
+                 (case (jbinop-kind op)
+                   (:lt (jexpr-paren (jexpr-binary (jbinop-ge) left right)))
+                   (:gt (jexpr-paren (jexpr-binary (jbinop-le) left right)))
+                   (:le (jexpr-paren (jexpr-binary (jbinop-gt) left right)))
+                   (:ge (jexpr-paren (jexpr-binary (jbinop-lt) left right)))
+                   (:eq (jexpr-paren (jexpr-binary (jbinop-ne) left right)))
+                   (:ne (jexpr-paren (jexpr-binary (jbinop-eq) left right)))
+                   (otherwise default-result))))
+      (otherwise default-result))))
