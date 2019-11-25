@@ -410,9 +410,10 @@
 
 (defthm
   fati-when-lofat-fs-p
-  (implies (and (lofat-fs-p fat32-in-memory)
-                (< (nfix i) (fat-length fat32-in-memory)))
-           (fat32-entry-p (fati i fat32-in-memory)))
+  (implies (lofat-fs-p fat32-in-memory)
+           (equal (fat32-entry-p (fati i fat32-in-memory))
+                  (< (nfix i)
+                     (fat-length fat32-in-memory))))
   :hints (("goal" :in-theory (enable lofat-fs-p
                                      fat32-in-memoryp fati fat-length))))
 
