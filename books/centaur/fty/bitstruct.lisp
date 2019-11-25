@@ -1294,8 +1294,8 @@ correspond to sub-subfields of the subfield type.  For example:</p>
  (defbitstruct toplevel
    ((ss innermost :subfields (saa sbb))
     (tt midlevel  :subfields ((tii (tiaa tibb))
-			      tqq
-			      tjj))))
+                              tqq
+                              tjj))))
  })
 
 <p>For the @('toplevel') bitstruct, this generates the following subfield
