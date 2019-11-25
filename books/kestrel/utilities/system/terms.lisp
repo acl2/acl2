@@ -15,6 +15,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/all-lambdas" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
@@ -38,32 +39,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(defines all-lambdas
-  :parents (term-utilities)
-  :short "Lambda expressions in a term."
-  :verify-guards nil ; done below
-
-  (define all-lambdas ((term pseudo-termp) (ans pseudo-lambda-listp))
-    :returns (final-ans pseudo-lambda-listp :hyp :guard)
-    (b* (((when (variablep term)) ans)
-         ((when (fquotep term)) ans)
-         (fn (ffn-symb term))
-         (ans (if (flambdap fn)
-                  (all-lambdas (lambda-body fn) (add-to-set-equal fn ans))
-                ans)))
-      (all-lambdas-lst (fargs term) ans)))
-
-  (define all-lambdas-lst ((terms pseudo-term-listp) (ans pseudo-lambda-listp))
-    :returns (final-ans pseudo-lambda-listp :hyp :guard)
-    (if (endp terms)
-        ans
-      (all-lambdas-lst (cdr terms)
-                       (all-lambdas (car terms) ans))))
-
-  ///
-
-  (verify-guards all-lambdas))
 
 (define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
   :returns (yes/no booleanp)
