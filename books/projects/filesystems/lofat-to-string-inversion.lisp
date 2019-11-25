@@ -2382,63 +2382,6 @@
       tmp_init
       image-path))))
 
-(defun
-    stobj-fa-table-to-string-helper
-    (fat32-in-memory length ac)
-  (declare
-   (xargs
-    :stobjs fat32-in-memory
-    :guard (and (lofat-fs-p fat32-in-memory)
-                (natp length)
-                (<= length (fat-length fat32-in-memory)))
-    :guard-hints
-    (("goal"
-      :in-theory
-      (e/d
-       (fat32-entry-p)
-       (unsigned-byte-p fati-when-lofat-fs-p))
-      :use (:instance fati-when-lofat-fs-p
-                      (i (+ -1 length)))))))
-  (if
-      (zp length)
-      ac
-    (let ((current (fati (- length 1) fat32-in-memory)))
-      (stobj-fa-table-to-string-helper
-       fat32-in-memory (- length 1)
-       (list*
-        (code-char (loghead 8             current ))
-        (code-char (loghead 8 (logtail  8 current)))
-        (code-char (loghead 8 (logtail 16 current)))
-        (code-char            (logtail 24 current))
-        ac)))))
-
-(defthm
-  character-listp-of-stobj-fa-table-to-string-helper
-  (equal
-   (character-listp
-    (stobj-fa-table-to-string-helper fat32-in-memory length ac))
-   (character-listp ac)))
-
-(defthm
-  len-of-stobj-fa-table-to-string-helper
-  (equal
-   (len
-    (stobj-fa-table-to-string-helper
-     fat32-in-memory length ac))
-   (+ (len ac) (* 4 (nfix length)))))
-
-(defund
-  stobj-fa-table-to-string
-  (fat32-in-memory)
-  (declare
-   (xargs
-    :stobjs fat32-in-memory
-    :guard (lofat-fs-p fat32-in-memory)))
-  (coerce
-   (stobj-fa-table-to-string-helper
-    fat32-in-memory (fat-length fat32-in-memory) nil)
-   'string))
-
 (encapsulate
   ()
 
@@ -2468,7 +2411,64 @@
                (integerp (- (* (bpb_bytspersec fat32-in-memory)
                                (bpb_rsvdseccnt fat32-in-memory)))))))
     :hints (("goal" :in-theory (e/d (lofat-fs-p)
-                                    (fat32-in-memoryp))))))
+                                    (fat32-in-memoryp)))))
+
+  (defun
+      stobj-fa-table-to-string-helper
+      (fat32-in-memory length ac)
+    (declare
+     (xargs
+      :stobjs fat32-in-memory
+      :guard (and (lofat-fs-p fat32-in-memory)
+                  (natp length)
+                  (<= length (fat-length fat32-in-memory)))
+      :guard-hints
+      (("goal"
+        :in-theory
+        (e/d
+         (fat32-entry-p)
+         (fati-when-lofat-fs-p))
+        :use (:instance fati-when-lofat-fs-p
+                        (i (+ -1 length)))))))
+    (if
+        (zp length)
+        ac
+      (let ((current (fati (- length 1) fat32-in-memory)))
+        (stobj-fa-table-to-string-helper
+         fat32-in-memory (- length 1)
+         (list*
+          (code-char (loghead 8             current ))
+          (code-char (loghead 8 (logtail  8 current)))
+          (code-char (loghead 8 (logtail 16 current)))
+          (code-char            (logtail 24 current))
+          ac))))))
+
+(defthm
+  character-listp-of-stobj-fa-table-to-string-helper
+  (equal
+   (character-listp
+    (stobj-fa-table-to-string-helper fat32-in-memory length ac))
+   (character-listp ac)))
+
+(defthm
+  len-of-stobj-fa-table-to-string-helper
+  (equal
+   (len
+    (stobj-fa-table-to-string-helper
+     fat32-in-memory length ac))
+   (+ (len ac) (* 4 (nfix length)))))
+
+(defund
+  stobj-fa-table-to-string
+  (fat32-in-memory)
+  (declare
+   (xargs
+    :stobjs fat32-in-memory
+    :guard (lofat-fs-p fat32-in-memory)))
+  (coerce
+   (stobj-fa-table-to-string-helper
+    fat32-in-memory (fat-length fat32-in-memory) nil)
+   'string))
 
 (defthm
   reserved-area-string-guard-lemma-2
