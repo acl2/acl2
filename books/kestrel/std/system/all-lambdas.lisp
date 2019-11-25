@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines all-lambdas
-  :parents (std/system/term-transformations)
+  :parents (std/system/term-queries)
   :short "Lambda expressions in a term."
 
   (define all-lambdas ((term pseudo-termp) (ans pseudo-lambda-listp))
