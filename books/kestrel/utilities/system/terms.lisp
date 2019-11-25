@@ -26,6 +26,7 @@
 (include-book "kestrel/std/system/fsublis-fn" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
+(include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
@@ -39,19 +40,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define lambda-logic-fnsp ((lambd pseudo-lambdap) (wrld plist-worldp))
-  :returns (yes/no booleanp)
-  :parents (term-utilities)
-  :short "Check if a lambda expression is in logic mode,
-          i.e. its body is in logic mode."
-  :long
-  "<p>
-   The name of this function is consistent with
-   the name of @('logic-fnsp') in the ACL2 source code.
-   </p>"
-  (logic-fnsp (lambda-body lambd) wrld)
-  :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
 
 (defines guard-verified-fnsp
   :parents (term-utilities)

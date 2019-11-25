@@ -15,14 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (lambda-logic-fnsp '(lambda (x y) (len (cons x x))) (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :mode :program)) x)
- (assert! (not (lambda-logic-fnsp '(lambda (z) (cons (f x) '3)) (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (guard-verified-fnsp '(cons (len a) '3) (w state)))
 
 (must-succeed*
