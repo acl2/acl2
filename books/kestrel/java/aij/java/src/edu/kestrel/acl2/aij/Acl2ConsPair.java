@@ -84,18 +84,14 @@ public final class Acl2ConsPair extends Acl2Value {
      */
     @Override
     Acl2String coerceToString() {
-        List<Acl2Character> charList = new LinkedList<>();
+        StringBuilder chars = new StringBuilder();
         Acl2Value list = this;
         do {
             Acl2ConsPair nonemptyList = (Acl2ConsPair) list;
-            charList.add(nonemptyList.car.charFix());
+            chars.append(nonemptyList.car.charFix().getJavaChar());
             list = nonemptyList.cdr;
         } while (list instanceof Acl2ConsPair);
-        int size = charList.size();
-        char[] charArray = new char[size];
-        for (int i = 0; i < size; ++i)
-            charArray[i] = charList.get(i).getJavaChar();
-        return Acl2String.imake(new String(charArray));
+        return Acl2String.imake(new String(chars));
     }
 
     /**
