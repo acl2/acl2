@@ -28,15 +28,19 @@
     (xdoc::seetopic "atj-post-translation" "here")
     ", after translating ACL2 to Java,
      ATJ performs a Java-to-Java post-translation.
-     Currently, this post-translation consists of a single step,
-     but more may be added in the future.")
-   (xdoc::p
-    "The (unique) post-translation step
-     only applied to the shallow embedding approach.
-     It folds @('return') statements into @('if') branches.
-     See "
-    (xdoc::seetopic "atj-post-translation-fold-returns" "here")
-    "."))
+     Currently, this post-translation consists of the following steps.
+     These steps only apply to the shallow embedding approach.")
+   (xdoc::ol
+    (xdoc::li
+     "We fold @('return') statements into @('if') branches.
+      See "
+     (xdoc::seetopic "atj-post-translation-fold-returns" "here")
+     ".")
+    (xdoc::li
+     "We eliminate tail recursions, replacing them with loops.
+      See "
+     (xdoc::seetopic "atj-post-translation-tailrec-elimination" "here")
+     ".")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,7 +52,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "ATJ introduces a Java local variable for every @(tsee if) in ACL2:
+    "ATJ's ACL2-to-Java translation
+     introduces a Java local variable for every @(tsee if) in ACL2:
      the variable is assigned in the `then' and `else' branches,
      and then used in subsequent Java code.
      When the subsequent Java code is simply a @('return'),
@@ -88,7 +93,7 @@
      always produces a method body that ends with a single @('return').
      This post-translation step may replace that single @('return')
      with a number of @('return')s, inside different conditional branches.
-     This is more readable and idiomatic code."))
+     This is more readable and idiomatic Java code."))
   :order-subtopics t
   :default-parent t)
 
@@ -245,6 +250,10 @@
      and replacing each recursive call with a @('continue')
      preceded by an assignment to the method's parameters
      of the values passed to the recursive call.")
+   (xdoc::p
+    "We remark that the assignment to the method's parameters
+     is an instance of destructive updates,
+     which is idiomatic in Java.")
    (xdoc::p
     "It seems better to realize this as a post-translation step,
      rather than as part of the ACL2-to-Java translation,
