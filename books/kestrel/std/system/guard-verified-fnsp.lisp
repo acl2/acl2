@@ -22,13 +22,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Note that if @('term') includes @(tsee mbe),
-     @('nil') is returned
-     if any function inside the @(':logic') component of @(tsee mbe)
+    "Note that if any function
+     inside the @(':logic') component of an @(tsee mbe)
+     or called via @(tsee ec-call)
      is not guard-verified,
+     we return @('nil'),
      even when @('term') could otherwise be fully guard-verified.
      See @(tsee guard-verified-exec-fnsp) for a similar utility
-     that ignores the @(':logic') components of @(tsee mbe)s.")
+     that ignores the guard verification status of functions
+     in the @(':logic') components of @(tsee mbe)s
+     or called via @(tsee ec-call).")
    (xdoc::p
     "The name of this function is consistent with
      the name of @('logic-fnsp') in the ACL2 source code.")

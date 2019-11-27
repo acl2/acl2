@@ -26,12 +26,15 @@
     "The name of this function is consistent with
      the name of @(tsee guard-verified-fnsp).")
    (xdoc::p
-    "Note that if @('lambd') includes @(tsee mbe),
-     @('nil') is returned
-     if any function inside the @(':logic') component of @(tsee mbe)
+    "Note that if any function
+     inside the @(':logic') component of an @(tsee mbe)
+     or called via @(tsee ec-call)
      is not guard-verified,
+     we return @('nil'),
      even when @('lambd') could otherwise be fully guard-verified.
      See @(tsee lambda-guard-verified-exec-fnsp) for a similar utility
-     that ignores the @(':logic') components of @(tsee mbe)s.")
+     that ignores the guard verification status of functions
+     in the @(':logic') components of @(tsee mbe)s
+     or called via @(tsee ec-call)."))
   (guard-verified-fnsp (lambda-body lambd) wrld)
   :guard-hints (("Goal" :in-theory (enable pseudo-lambdap))))
