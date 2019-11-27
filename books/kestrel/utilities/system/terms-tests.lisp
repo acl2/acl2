@@ -15,14 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (guard-verified-fnsp '(cons (len a) '3) (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert! (not (guard-verified-fnsp '(zp (f '4)) (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
 
 (must-succeed*

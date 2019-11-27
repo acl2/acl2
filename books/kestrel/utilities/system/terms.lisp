@@ -25,6 +25,7 @@
 (include-book "kestrel/std/system/fapply-unary-to-terms" :dir :system)
 (include-book "kestrel/std/system/fsublis-fn" :dir :system)
 (include-book "kestrel/std/system/fsublis-var" :dir :system)
+(include-book "kestrel/std/system/guard-verified-fnsp" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
 (include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
@@ -40,42 +41,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(defines guard-verified-fnsp
-  :parents (term-utilities)
-  :short "Check if a term calls only guard-verified functions."
-  :long
-  "<p>
-   Note that if @('term') includes @(tsee mbe),
-   @('nil') is returned
-   if any function inside the @(':logic') component of @(tsee mbe)
-   is not guard-verified,
-   even when @('term') could otherwise be fully guard-verified.
-   </p>
-   <p>
-   The name of this function is consistent with
-   the name of @('logic-fnsp') in the ACL2 source code.
-   </p>
-   @(def guard-verified-fnsp)
-   @(def guard-verified-fnsp-lst)"
-
-  (define guard-verified-fnsp ((term (termp term wrld))
-                               (wrld plist-worldp-with-formals))
-    :returns (yes/no booleanp)
-    (or (variablep term)
-        (fquotep term)
-        (and (guard-verified-fnsp-lst (fargs term) wrld)
-             (let ((fn (ffn-symb term)))
-               (if (symbolp fn)
-                   (guard-verified-p fn wrld)
-                 (guard-verified-fnsp (lambda-body fn) wrld))))))
-
-  (define guard-verified-fnsp-lst ((terms (term-listp terms wrld))
-                                   (wrld plist-worldp-with-formals))
-    :returns (yes/no booleanp)
-    (or (endp terms)
-        (and (guard-verified-fnsp (car terms) wrld)
-             (guard-verified-fnsp-lst (cdr terms) wrld)))))
 
 (define lambda-guard-verified-fnsp ((lambd (lambdap lambd wrld))
                                     (wrld plist-worldp-with-formals))
