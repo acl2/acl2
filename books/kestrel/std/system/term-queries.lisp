@@ -16,6 +16,7 @@
 (include-book "all-program-ffn-symbs")
 (include-book "all-vars-open")
 (include-book "dumb-occur-var-open")
+(include-book "guard-verified-exec-fnsp")
 (include-book "guard-verified-fnsp")
 (include-book "lambda-closedp")
 (include-book "lambda-guard-verified-fnsp")
