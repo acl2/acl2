@@ -133,6 +133,13 @@
     (equal (jstatem-count-ifs (jstatem-return expr?))
            0))
 
+  (defrule jblock-count-ifs-of-jstatem-if->then-decreases
+    (implies (jstatem-case statem :if)
+             (< (jblock-count-ifs (jstatem-if->then statem))
+                (jstatem-count-ifs statem)))
+    :rule-classes :linear
+    :expand ((jstatem-count-ifs statem)))
+
   (defrule jblock-count-ifs-of-jstatem-ifelse->then-decreases
     (implies (jstatem-case statem :ifelse)
              (< (jblock-count-ifs (jstatem-ifelse->then statem))
