@@ -10,19 +10,16 @@
 
 (in-package "ACL2")
 
-(include-book "all-fnnames")
-(include-book "all-free-bound-vars")
-(include-book "all-lambdas")
-(include-book "all-program-ffn-symbs")
-(include-book "all-vars-open")
-(include-book "dumb-occur-var-open")
-(include-book "guard-verified-fnsp")
-(include-book "lambda-closedp")
 (include-book "lambda-guard-verified-fnsp")
-(include-book "lambda-logic-fnsp")
+
+(include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/system/term-queries
-  :parents (std/system)
-  :short "Utilities to query terms.")
+(assert! (lambda-guard-verified-fnsp '(lambda (a) (cons (len a) '3)) (w state)))
+
+(must-succeed*
+ (defun f (x) (declare (xargs :verify-guards nil)) x)
+ (assert!
+  (not (lambda-guard-verified-fnsp '(lambda (x) (zp (f '4))) (w state)))))
