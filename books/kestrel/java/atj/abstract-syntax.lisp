@@ -482,7 +482,23 @@
     :elt-type jstatem
     :true-listp t
     :elementp-of-nil nil
-    :pred jblockp))
+    :pred jblockp)
+
+  ///
+
+  (defrule jblock-count-of-butlast-upper-bound
+    (<= (jblock-count (butlast block n))
+        (jblock-count block))
+    :rule-classes :linear
+    :enable jblock-count
+    :prep-books ((include-book "std/lists/butlast" :dir :system)))
+
+  (defrule jblock-count-of-append
+    (equal (jblock-count (append block1 block2))
+           (+ (jblock-count block1)
+              (jblock-count block2)
+              -1))
+    :enable (jblock-count append)))
 
 (define jblock-locvar ((type jtypep) (name stringp) (init jexprp))
   :returns (block jblockp)
