@@ -15,18 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (all-non-gv-ffn-symbs 'x nil (w state)) nil)
-
-(assert-equal (all-non-gv-ffn-symbs '(quote 4) nil (w state)) nil)
-
-(assert-equal (all-non-gv-ffn-symbs '(cons (len a) '3) nil (w state)) nil)
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert-equal (all-non-gv-ffn-symbs '(zp (f '4)) nil (w state)) '(f)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (all-non-gv-exec-ffn-symbs 'x (w state)) nil)
 
 (assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) (w state)) nil)
