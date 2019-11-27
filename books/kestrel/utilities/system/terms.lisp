@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-lambdas" :dir :system)
+(include-book "kestrel/std/system/all-non-gv-exec-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
@@ -45,36 +46,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define all-non-gv-exec-ffn-symbs ((term pseudo-termp) (wrld plist-worldp))
-  :returns (final-ans "A @(tsee symbol-listp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Non-guard-verified functions called by a term for execution."
-  "<p>
-   These are all the non-guard-verified functions that occur in the term,
-   except those that occur in the @(':logic') subterms of @(tsee mbe)s
-   and those called via @(tsee ec-call).
-   This is because, in order for a function to be guard-verified,
-   the functions that occurs in such subterms do not have to be guard-verified.
-   If this function returns @('nil'),
-   the term could be potentially guard-verified.
-   </p>
-   <p>
-   The name of this function is consistent with
-   the name of @('all-ffn-symbs') in the ACL2 source code.
-   </p>
-   <p>
-   The @('all-fnnames-exec') built-in system utility
-   returns all the function symbols except
-   the ones in the @(':logic') subterms of @(tsee mbe)s
-   and the ones called via @(tsee ec-call)
-   (see the ACL2 source code).
-   The @('collect-non-common-lisp-compliants') built-in system utility
-   returns all the ones that are not guard-verified
-   (see the ACL2 source code).
-   </p>"
-  (collect-non-common-lisp-compliants (all-fnnames-exec term) wrld))
 
 (defines all-pkg-names
   :parents (term-utilities)
