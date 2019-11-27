@@ -28,6 +28,7 @@
 (include-book "kestrel/std/system/guard-verified-exec-fnsp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-fnsp" :dir :system)
 (include-book "kestrel/std/system/lambda-closedp" :dir :system)
+(include-book "kestrel/std/system/lambda-guard-verified-exec-fnsp" :dir :system)
 (include-book "kestrel/std/system/lambda-guard-verified-fnsp" :dir :system)
 (include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
@@ -77,20 +78,6 @@
     (b* (((when (endp terms)) ans)
          (ans (all-non-gv-ffn-symbs (car terms) ans wrld)))
       (all-non-gv-ffn-symbs-lst (cdr terms) ans wrld))))
-
-(define lambda-guard-verified-exec-fnsp ((lambd (lambdap lambd wrld))
-                                         (wrld plist-worldp-with-formals))
-  :returns (yes/no "A @(tsee booleanp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Check if a lambda expression calls only guard-verified functions
-          for execution."
-  :long
-  "<p>
-   The name of this function is consistent with
-   the name of @(tsee guard-verified-exec-fnsp).
-   </p>"
-  (guard-verified-exec-fnsp (lambda-body lambd) wrld))
 
 (define all-non-gv-exec-ffn-symbs ((term pseudo-termp) (wrld plist-worldp))
   :returns (final-ans "A @(tsee symbol-listp).")

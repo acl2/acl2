@@ -19,6 +19,7 @@
 (include-book "guard-verified-exec-fnsp")
 (include-book "guard-verified-fnsp")
 (include-book "lambda-closedp")
+(include-book "lambda-guard-verified-exec-fnsp")
 (include-book "lambda-guard-verified-fnsp")
 (include-book "lambda-logic-fnsp")
 

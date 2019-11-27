@@ -27,28 +27,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (lambda-guard-verified-exec-fnsp '(lambda (x) x) (w state)))
-
-(assert! (lambda-guard-verified-exec-fnsp '(lambda (tt) '4) (w state)))
-
-(assert! (lambda-guard-verified-exec-fnsp '(lambda (x y) (cons x y)) (w state)))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (defun g (x) (declare (xargs :verify-guards t)) x)
- (assert! (not (lambda-guard-verified-exec-fnsp
-                '(lambda (x y) (cons (f x) (g (f y)))) (w state)))))
-
-(must-succeed*
- (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
- (assert! (not (lambda-guard-verified-exec-fnsp
-                '(lambda (x y z) (cons (mycar z) (len y))) (w state))))
- (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
- (assert! (lambda-guard-verified-exec-fnsp
-           (make-lambda '(x) (ubody 'f (w state))) (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (all-non-gv-exec-ffn-symbs 'x (w state)) nil)
 
 (assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) (w state)) nil)
