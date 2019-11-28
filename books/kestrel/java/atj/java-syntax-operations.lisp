@@ -59,6 +59,7 @@
                 :unary (jexpr-vars expr.arg)
                 :binary (union-equal (jexpr-vars expr.left)
                                      (jexpr-vars expr.right))
+                :instanceof (jexpr-vars expr.left)
                 :cond (union-equal (jexpr-vars expr.test)
                                    (union-equal (jexpr-vars expr.then)
                                                 (jexpr-vars expr.else)))
