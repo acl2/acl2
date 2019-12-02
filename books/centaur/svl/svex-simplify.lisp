@@ -610,8 +610,7 @@
                                (context 'nil)
                                (linearize ':auto)
                                (preloaded-rules 'nil)
-                               (runes '(let ((world (w state))) (current-theory
-                                                                 :here))))
+                               (runes 'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -714,8 +713,7 @@
                                    (context 'nil)
                                    (linearize ':auto)
                                    (preloaded-rules 'nil)
-                                   (runes '(let ((world (w state)))
-                                             (current-theory :here))))
+                                   (runes 'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -817,8 +815,7 @@
                        (state 'state)
                        (rp::rp-state 'rp::rp-state)
                        (context 'nil) ;; "Have more context for variables."
-                       (runes '(let ((world (w state)))
-                                 (current-theory :here)))
+                       (runes 'nil)
                        ;; "if need to work with only certain rules other than current-theory"
                        (preloaded-rules 'nil) ;; Non-nil overrides rule
                        ;; structure  creation for the rewriter. This value
@@ -857,8 +854,7 @@
                            (state 'state)
                            (rp::rp-state 'rp::rp-state)
                            (context 'nil) ;; "Have more context for variables."
-                           (runes '(let ((world (w state)))
-                                     (current-theory :here)))
+                           (runes 'nil)
                            ;; "if need to work with only certain rules other than current-theory"
                            (preloaded-rules 'nil) ;; Non-nil overrides rule
                            ;; structure  creation for the rewriter. This value
