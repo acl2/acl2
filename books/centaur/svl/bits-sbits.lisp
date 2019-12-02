@@ -175,6 +175,16 @@
                              (sv::4vec-bitand
                               sv::4vec)))))
 
+  (def-rp-rule sbits-of-4vec-bitand
+    (implies (and (natp size)
+                  (integerp new)
+                  (natp start))
+             (equal (sbits start size new (4vec-bitand val1 val2))
+                    (4vec-bitand (sbits start size new val1)
+                                 (sbits start size new val2))))
+    :hints (("Goal"
+             :in-theory (e/d () ()))))
+
   (defthmd bits-of-4vec-bitor-old
     (implies (and (natp size)
                   (natp start))
@@ -233,6 +243,14 @@
                              (sv::4vec-bitxor
                               sv::4vec)))))
 
+
+  (def-rp-rule sbits-of-4vec-bitnot$-with-same-size
+    (implies (and (natp size))
+             (equal (sbits 0 size new (4vec-bitnot$ size val))
+                    (bits new 0 size)))
+    :hints (("Goal"
+             :in-theory (e/d (4VEC-BITNOT$) ()))))
+  
   (def-rp-rule bits-of-4vec-bitnot$
     (implies (and (natp bits-size)
                   (natp size)
@@ -267,6 +285,18 @@
                               bits)
                              ()))))
 
+  (def-rp-rule 4vec-bitor-of-negated-same-var-with-bitnot$
+    (implies (and (natp size)
+                  (integerp x))
+           (and (equal (sv::4vec-bitor (4vec-bitnot$ size x) x)
+                       (sbits 0 size -1 x))
+                (equal (sv::4vec-bitor x (4vec-bitnot$ size x))
+                       (sbits 0 size -1 x))))
+    :hints (("Goal"
+             :use ((:instance 4vec-bitor-of-negated-same-var))
+             :in-theory (e/d (4VEC-BITNOT$)
+                             (4vec-bitor-of-negated-same-var)))))
+  
   (def-rp-rule bits-of-4vec-bitor$
     (implies (and (natp bits-size)
                   (natp size)

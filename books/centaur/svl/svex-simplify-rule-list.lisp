@@ -102,7 +102,9 @@
       (:rewrite bits-of-4vec-bitxor) 
       (:rewrite bits-of-4vec-bitor)
       (:rewrite bits-of-4vec-bitand)
+      (:rewrite sbits-of-4vec-bitand)
       (:rewrite bits-of-4vec-bitnot)
+      (:rewrite sbits-of-4vec-bitnot$-with-same-size)
       (:rewrite 4vec-bitor$-of-bits-of-same-size) ;; remove? necessary?
       (:rewrite 4vec-bitand$-of-bits-of-same-size) ;; remove? necessary?
       (:rewrite 4vec-bitnot$-of-bits-of-same-size) ;; remove? necessary?
@@ -314,8 +316,10 @@
       (:executable-counterpart =)
       (:executable-counterpart eql)
       (:executable-counterpart len)
-
+      (:rewrite 4vec-bitor-reorder)
       (:rewrite 4vec-p-of-svex-env-fastlookup-wog)
+      (:rewrite 4vec-bitor-of-negated-same-var-with-bitnot$)
+      (:rewrite 4vec-bitor-with-one)
       ))
 
   (make-event
