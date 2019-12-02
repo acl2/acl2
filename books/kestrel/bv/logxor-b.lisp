@@ -28,9 +28,9 @@
 ;; This book contains theorems that mix LOGXOR with BVCHOP and LOGTAIL.
 
 (defthm bvchop-of-logxor
-  (equal (bvchop n (logxor i j))
-         (logxor (bvchop n i)
-                 (bvchop n j)))
+  (equal (bvchop size (logxor i j))
+         (logxor (bvchop size i)
+                 (bvchop size j)))
   :hints (("Goal" :in-theory (enable bvchop))))
 
 ;move
