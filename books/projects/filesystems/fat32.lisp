@@ -296,12 +296,20 @@
   :hints (("goal" :in-theory (enable fat32-entry-p)))
   :rule-classes :forward-chaining)
 
-;; There's an obvious generalisation of this theorem, but it requires a silly
-;; arithmetic subgoal to be resolved.
-(defthm fat32-entry-p-of-nth
-  (implies (and (fat32-entry-list-p l)
-                (< (nfix n) (len l)))
-           (fat32-entry-p (nth n l))))
+(encapsulate
+  ()
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local
+   (defthm fat32-entry-p-of-nth-lemma-1
+     (equal (< (+ -1 n) (len (cdr l)))
+            (< n (+ 1 (len (cdr l)))))))
+
+  (defthm fat32-entry-p-of-nth
+    (implies (fat32-entry-list-p l)
+             (equal (fat32-entry-p (nth n l))
+                    (< (nfix n) (len l))))))
 
 (defund
   fat32-update-lower-28
@@ -506,7 +514,7 @@
       (+ 1 (count-free-clusters-helper fa-table (- n 1))))))
 
 (defthm
-  update-nth-of-count-free-clusters-helper-1
+  count-free-clusters-helper-of-update-nth-1
   (implies (and (natp n)
                 (natp key)
                 (not (equal (fat32-entry-mask val) 0)))
@@ -521,7 +529,7 @@
   :hints (("goal" :in-theory (disable nth update-nth))))
 
 (defthm
-  update-nth-of-count-free-clusters-helper-2
+  count-free-clusters-helper-of-update-nth-2
   (implies (and (natp n)
                 (natp key)
                 (equal (fat32-entry-mask val) 0))
@@ -553,7 +561,7 @@
       *ms-first-data-cluster*)))
 
 (defthm
-  update-nth-of-count-free-clusters-1
+  count-free-clusters-of-update-nth-1
   (implies
    (and (integerp key) (<= *ms-first-data-cluster* key)
         (not (equal (fat32-entry-mask val) 0))
@@ -567,7 +575,7 @@
   :hints (("goal" :in-theory (enable count-free-clusters))))
 
 (defthm
-  update-nth-of-count-free-clusters-2
+  count-free-clusters-of-update-nth-2
   (implies
    (and (integerp key) (<= *ms-first-data-cluster* key)
         (equal (fat32-entry-mask val) 0)
@@ -918,8 +926,8 @@
   (integer-listp (find-n-free-clusters fa-table n)))
 
 (defthm find-n-free-clusters-correctness-7
-  (implies (< (nfix m)
-              (len (find-n-free-clusters fa-table n)))
+  (implies (force (< (nfix m)
+                     (len (find-n-free-clusters fa-table n))))
            (and (<= *ms-first-data-cluster*
                     (nth m (find-n-free-clusters fa-table n)))
                 (< (nth m (find-n-free-clusters fa-table n))
@@ -1292,3 +1300,25 @@
                                     length cluster-size))))
   :hints
   (("goal" :in-theory (enable fat32-build-index-list))))
+
+(defthm
+  car-of-last-of-fat32-build-index-list
+  (implies
+   (and (fat32-masked-entry-p masked-current-cluster)
+        (< masked-current-cluster (len fa-table)))
+   (<
+    (car (last (mv-nth 0
+                       (fat32-build-index-list fa-table masked-current-cluster
+                                               length cluster-size))))
+    (len fa-table)))
+  :hints
+  (("goal"
+    :in-theory (disable car-of-last-when-bounded-nat-listp)
+    :use
+    (:instance
+     car-of-last-when-bounded-nat-listp
+     (l (mv-nth 0
+                (fat32-build-index-list fa-table masked-current-cluster
+                                        length cluster-size)))
+     (b (len fa-table)))))
+  :rule-classes :linear)

@@ -14,8 +14,7 @@
     :guard (and (m1-file-alist-p m1-file-alist1)
                 (m1-file-alist-p m1-file-alist2))
     :hints (("goal" :in-theory (enable m1-file->contents
-                                       m1-directory-file-p)))
-    :guard-hints (("goal" :in-theory (enable fat32-filename-p-correctness-1)))))
+                                       m1-directory-file-p)))))
   (b*
       (((when (atom m1-file-alist1)) t)
        ((unless (mbt (and (consp (car m1-file-alist1))
@@ -248,7 +247,7 @@
                              (m1-file dir-ent (m1-file->contents (cdar fs))))
                        (cdr fs))
                  fs)
-    :in-theory (e/d (hifat-no-dups-p fat32-filename-p-correctness-1)
+    :in-theory (e/d (hifat-no-dups-p)
                     (hifat-subsetp-reflexive-lemma-4))
     :use
     ((:instance hifat-subsetp-reflexive-lemma-4
@@ -300,7 +299,7 @@
              (hifat-equiv (m1-file->contents (cdr head))
                           contents))
     :in-theory
-    (e/d (hifat-no-dups-p fat32-filename-p-correctness-1)
+    (e/d (hifat-no-dups-p)
          (hifat-subsetp-reflexive-lemma-4 m1-directory-file-p-of-m1-file))
     :use ((:instance hifat-subsetp-reflexive-lemma-4
                      (x (list head))
@@ -338,6 +337,5 @@
                                (cons head tail2))
                   t))
   :hints
-  (("goal" :in-theory (e/d (hifat-equiv hifat-no-dups-p
-                                        fat32-filename-p-correctness-1))
+  (("goal" :in-theory (e/d (hifat-equiv hifat-no-dups-p))
     :expand (hifat-file-alist-fix (cons head tail1)))))

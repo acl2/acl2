@@ -15,7 +15,6 @@
 (include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/utilities/system/term-function-recognizers" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)

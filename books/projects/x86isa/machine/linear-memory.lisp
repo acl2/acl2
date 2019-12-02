@@ -4635,9 +4635,9 @@
 	     (byte-listp (take n xs))))
 
   (define combine-n-bytes ((low  natp "Index of the first byte")
-			   (num  natp "Number of bytes to combine,
-				       starting at @('pos')")
-			   (bytes byte-listp))
+                           (num  natp "Number of bytes to combine,
+                                       starting at @('pos')")
+                           (bytes byte-listp))
     :guard (<= (+ low num) (len bytes))
     :enabled t
     (combine-bytes (take num (nthcdr low bytes)))

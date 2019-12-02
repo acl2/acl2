@@ -23,7 +23,7 @@
     "Some built-in system utilities are not guard-verified;
      some are guard-verified but have weak guards,
      and also weak (or non-existent) return type theorems.
-     Some system utilities in the Std/system library
+     Some system utilities in the @(csee std/system) library
      are similar in this respect
      (intentionally so, as they are meant to complement the built-in ones).
      Strengthening the guards and return type theorems of these utilities
@@ -35,7 +35,7 @@
    (xdoc::p
     "For code where proving at least some type-like properties
      (particularly verifying guards and return types) is instead desired,
-     the Std/system library provides variants
+     the @(csee std/system) library provides variants
      of some of the aforementioned system utilities (built-in or not).
      These variants may have stronger guards,
      and often have stronger return type theorems:

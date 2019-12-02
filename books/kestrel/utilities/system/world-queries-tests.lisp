@@ -237,12 +237,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (string-listp (included-books (w state))))
-
-(assert! (no-duplicatesp-equal (included-books (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (must-succeed*
  (defun latest-event-landmark (wrld)
    (declare (xargs :guard (plist-worldp wrld)))

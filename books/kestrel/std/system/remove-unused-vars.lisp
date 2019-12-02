@@ -18,6 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines remove-unused-vars
+  :parents (std/system/term-transformations)
   :short "Remove all the lambda-bound variables that are not used."
   :long
   (xdoc::topstring
@@ -79,6 +80,7 @@
                                      :hyp (symbol-listp formals))
                   (remaining-actuals pseudo-term-listp
                                      :hyp (pseudo-term-listp actuals)))
+     :parents (remove-unused-vars)
      (b* (((when (endp formals)) (mv nil nil))
           (formal (car formals))
           (actual (car actuals))

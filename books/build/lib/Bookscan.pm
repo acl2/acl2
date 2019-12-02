@@ -396,6 +396,9 @@ sub scan_src_run {
 	    my $event = scan_include_book($fname, $the_line)
 		|| scan_max_mem($fname, $the_line)
 		|| scan_max_time($fname, $the_line)
+		|| scan_ifdef($fname, $the_line)
+		|| scan_endif($fname, $the_line)
+		|| scan_ifdef_define($fname, $the_line)
 		|| scan_pbs($fname, $the_line);
 	    if ($event) {
 		push @events, $event;

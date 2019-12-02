@@ -424,3 +424,35 @@
   ;; widening and narrowing conversions:
 
   (def-atj-main-function-type byte-to-char (:jbyte) :jchar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atj-types-for-boolean-value-destructor
+  :short "ATJ types for the Java boolean destructor."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 destructor of Java boolean values @(tsee boolean-value->bool)
+     plays a special role in the translation of ACL2 to Java.
+     An ACL2 @(tsee if) test of the form @('(boolean-value->bool b)'),
+     where @('b') is an ACL2 term that returns a @(tsee boolean-value)
+     (i.e. a Java boolean value in our model),
+     is compiled to Java @('if') test that consists of just
+     the Java expression derived from @('b'):
+     for instance, if @('b') is @('(java::int-less x y)'),
+     the generated Java test is @('(jx < jy)'),
+     where @('jx') and @('jy') are the Java equivalents of @('x') and @('y).")
+   (xdoc::p
+    "To make this work, we do not want the generated Java code
+     to convert @('b') to the Java representation of the ACL2 representation
+     of the Java boolean value;
+     instead, we want @('b') to remain a Java boolean value.
+     By assigning to @(tsee boolean-value->bool)
+     the argument type @(':jboolean') and the result type @(':asymbol'),
+     the conversion of @('b') will be avoided.")
+   (xdoc::p
+    "Since the @(tsee boolean-value->bool) destructor is inlined,
+     we need to specify @('boolean-value->bool$inline')
+     to @(tsee def-atj-main-function-type)."))
+
+  (def-atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol))

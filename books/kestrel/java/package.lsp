@@ -20,6 +20,9 @@
                          add-const-to-untranslate-preprocess
                          add-suffix
                          all-ffn-symbs
+                         all-fnnames
+                         all-fnnames-lst
+                         all-fnnames1
                          all-free/bound-vars
                          all-vars-open
                          all-vars-open-lst
@@ -107,6 +110,7 @@
                          quote-listp
                          rawp
                          remove-assocs-eq
+                         remove-dead-if-branches
                          remove-mbe-exec
                          remove-mbe-logic
                          remove-progn

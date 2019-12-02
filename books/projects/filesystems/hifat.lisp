@@ -184,6 +184,12 @@
     (("goal" :in-theory (enable chars=>nats)
       :induct (cdr-cdr-induct x x-equiv)))))
 
+(defthm nats=>chars-of-take
+  (implies (<= (nfix n) (len nats))
+           (equal (nats=>chars (take n nats))
+                  (take n (nats=>chars nats))))
+  :hints (("goal" :in-theory (enable nats=>chars take))))
+
 (defthm
   consecutive-read-file-into-string-1
   (implies
@@ -403,7 +409,9 @@
                   (integerp i2)
                   (not (zp j)))
              (<= (floor i1 j) (floor i2 j)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0)))
 
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
@@ -941,7 +949,7 @@
  :define t
  :forward t)
 
-(defthmd
+(defthm
   fat32-filename-p-correctness-1
   (implies (fat32-filename-p x)
            (and (stringp x)
@@ -964,8 +972,7 @@
                      (dir-ent-set-filename dir-ent filename))
                 #xe5))))
   :hints
-  (("goal" :in-theory (e/d (dir-ent-set-filename dir-ent-p
-                                                 fat32-filename-p-correctness-1)
+  (("goal" :in-theory (e/d (dir-ent-set-filename dir-ent-p)
                            (nth)))))
 
 (defthm
@@ -1452,8 +1459,7 @@
                 (m1-file-alist-p hifat-file-alist)
                 (m1-directory-file-p (cdr (car hifat-file-alist))))
            (hifat-no-dups-p (m1-file->contents (cdr (car hifat-file-alist)))))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p
-                                     fat32-filename-p-correctness-1))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
 (defun hifat-file-alist-fix (hifat-file-alist)
   (declare (xargs :guard (and (m1-file-alist-p hifat-file-alist)

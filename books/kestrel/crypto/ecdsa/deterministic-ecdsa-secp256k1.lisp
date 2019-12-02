@@ -1647,9 +1647,9 @@
    (xdoc::p "The call")
    (xdoc::blockquote (xdoc::@call "ecdsa-sign-deterministic-sha-256"))
    (xdoc::p "signs the message @('m')
-	     using <see topic=\"SHA2____SHA-2\">SHA-256</see> both for hashing
-	     the input message and when
-	     applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
+             using <see topic=\"SHA2____SHA-2\">SHA-256</see> both for hashing
+             the input message and when
+             applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
    (xdoc::p "Arguments:")
    (xdoc::ol
     (xdoc::li
@@ -1766,9 +1766,9 @@
    (xdoc::p "The call")
    (xdoc::blockquote (xdoc::@call "ecdsa-sign-deterministic-keccak-256"))
    (xdoc::p "signs the message @('m')
-	     using <see topic=\"KECCAK____KECCAK\">KECCAK-256</see> for hashing the input message,
-	     but using <see topic=\"SHA2____SHA-2\">SHA-256</see> when
-	     applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
+             using <see topic=\"KECCAK____KECCAK\">KECCAK-256</see> for hashing the input message,
+             but using <see topic=\"SHA2____SHA-2\">SHA-256</see> when
+             applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
    (xdoc::p "Arguments:")
    (xdoc::ol
     (xdoc::li

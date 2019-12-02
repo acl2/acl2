@@ -249,7 +249,7 @@
 (define seg-visiblei-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and
-	  values for the visible portions of the registers"
+          values for the visible portions of the registers"
   :long "<p>Note that the register values are required to be @('n16p') </p>"
   :enabled t
 
@@ -289,7 +289,7 @@
 (define seg-hidden-basei-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and values for the
-	  hidden portions containing the base addresses of the registers"
+          hidden portions containing the base addresses of the registers"
   :long "<p>Note that the register values are required to be @('n64p') </p>"
   :enabled t
 
@@ -308,7 +308,7 @@
 (define seg-hidden-limiti-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and values for the
-	  hidden portions containing the limit value of the registers"
+          hidden portions containing the limit value of the registers"
   :long "<p>Note that the register values are required to be @('n32p') </p>"
   :enabled t
 
@@ -327,7 +327,7 @@
 (define seg-hidden-attri-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and values for the
-	  hidden portions containing the attr value of the registers"
+          hidden portions containing the attr value of the registers"
   :long "<p>Note that the register values are required to be @('n16p') </p>"
   :enabled t
 

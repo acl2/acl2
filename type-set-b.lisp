@@ -1733,31 +1733,93 @@
   (coerce (chars-for-tilde-@-clause-id-phrase id)
           'string))
 
-(defun update-enabled-structure-array (name header alist k old)
+(defun update-enabled-structure-array (name header alist k old old-d new-d
+                                            old-n new-n)
 
 ; This function makes a number of assumptions, including the assumption noted
-; below that the first k keys of alist form a strictly decreasing sequence.
+; below that if k is non-nil, then the first k keys of alist form a strictly
+; decreasing sequence.
 
   #+acl2-loop-only
   (declare (xargs :guard (and (array1p name (cons header alist))
                               (null (array-order header))
-                              (natp k)
-                              (<= k (length alist))))
-           (ignore k old))
+                              (or (eq k nil)
+                                  (and (natp k)
+                                       (<= k (length alist))))
+                              (natp old-d)
+                              (natp new-d)
+                              (<= old-d new-d)
+                              (<= new-n new-d)))
+           (ignore k old old-d new-d old-n new-n))
   #+acl2-loop-only
   (compress1 name (cons header alist))
-  #-acl2-loop-only (declare (ignore name))
   #-acl2-loop-only
   (let ((old-car (car old))
-        (ar (cadr old))
+        (ar0 (cadr old))
+        (k2 (or k (length alist))) ; number of array elements to set
         index)
-    (assert (= 1 (array-rank (cadr old))))
+    (assert (= 1 (array-rank ar0)))
     (assert (eq (car (car (car old))) :HEADER))
-    (assert (eq (nthcdr k alist)
-                (cdr old-car)))
+    (assert (or (eq k nil)
+                (eq (nthcdr k alist)
+                    (cdr old-car))))
     (assert (eq header (car old-car)))
+    (assert (<= old-d new-d))
+    (assert (<= new-n new-d)) ; necessity is explained in a comment below
     (setf (car old) *invisible-array-mark*)
-    (loop for i from 1 to k
+
+; First, copy the array (to get a new value for ar0) if new-d exceeds old-d,
+; essentially expanding the array with NILs up to the new dimension, new-d.  We
+; actually copy only through the old index-of-last-enabling, old-n, leaving
+; indices beyond that at nil, which is the default value for compress1.  We
+; also update the header.  Finally, we update the 'acl2-array property
+; accordingly, updating destructively rather than calling
+; (set-acl2-array-property name (list (cons header alist) ar0 (caddr old)
+; header)).  Note that none of this updates the car; we will do that
+; unconditionally at the end of this definition, which removed the invalidation
+; mark from (car old).
+
+    (when (not (int= old-d new-d))
+      (setq ar0
+            (let ((new-ar (make-array (list new-d)
+                                      :initial-element nil)))
+              (setf (cadr old)
+
+; We considered instead this code here:
+;   (adjust-array ar0 (list new-d) :initial-element nil).
+; However, that didn't seem to improve performance, so we're doing our own
+; copying, thus avoiding any questions about structure sharing.
+
+                    (cond (k (copy-array-svref ar0
+                                               new-ar
+                                               0
+                                               (1+ old-n)))
+                          (t new-ar)))))
+      (setq header
+            (list :header
+                  :dimensions (list new-d)
+                  :maximum-length (1+ new-d)
+                  :default nil
+                  :name name
+                  :order nil))
+      (setf (aref (caddr old) 0)
+            (- (1+ new-d) ; new maximum-length
+               k2))
+      (setf (cadddr old)
+            header))
+
+; Next, if we are to build the array from scratch (which is the case k = nil),
+; then set all entries of the array to nil -- unless we already did so.
+
+    (when (and (eq k nil)
+               (int= old-d new-d)) ; else no need for this
+      (loop for i from 0 to (1- new-d) ; = (1- old-d)
+            do
+            (setf (svref ar0 i) nil)))
+
+; Next set relevant entries in the array according to enabled status.
+
+    (loop for i from 1 to k2
           for tail on alist
           do
           (let ((new-index (caar tail)))
@@ -1767,8 +1829,11 @@
 
             (assert (or (null index)
                         (< new-index index)))
-            (setq index (caar tail))
-            (setf (svref ar index) (cdar tail))))
+            (setq index new-index)
+            (setf (svref ar0 index) (cdar tail))))
+
+; Finally, return the new theory-array, which is placed into the car of old.
+
     (setf (car old) (cons header alist))))
 
 (defun update-enabled-structure (ens n d new-d alist
@@ -1783,21 +1848,45 @@
          (old-n (access enabled-structure ens :index-of-last-enabling)))
     (when (and header ; hence old is associated with name
                (consp (car old))
-               (eq header (caar old)) ; assumed in compress1-in-place
+               (eq header (caar old))
                (null incrmt-array-name-info)
                augmented-p
-               (eql d new-d)
-               (eq (loop for tail on alist
-                         do (cond ((<= (caar tail) old-n)
-                                   (return tail))
-                                  (t (incf k))))
-                   (cdr (access enabled-structure ens :theory-array))))
+               (or (eq (loop for tail on alist
+                             do (cond ((<= (caar tail) old-n)
+                                       (return tail))
+                                      (t (incf k))))
+                       (cdr (access enabled-structure ens :theory-array)))
+
+; The disjunct just above computes the tail of alist consisting of entries
+; not exceeding the old index-of-last-enabling, and checks that this tail is
+; the alist stored in the existing enabled structure.  In that case, k is the
+; number of entries of alist outside that tail, and the call of
+; update-enabled-structure-array below can take advantage of the fact that only
+; the first k elements of alist need to be updated in the corresponding raw
+; Lisp array.
+
+; By including the following disjunct and also tweaking
+; load-theory-into-enabled-structure, we have reduced the time spent in
+; load-theory-into-enabled-structure from about 3.1 to 3.2s to about 2.7s to
+; 2.8s in runs (of (include-book "centaur/sv/top" :dir :system)) that take
+; about 58s.  Notice that by setting k = nil, we are indicating to the call
+; below of update-enabled-structure-array that the eq test above has failed.
+
+                   (and (<= old-n n)
+                        (progn (setq k nil) t))))
+      (assert (eq (access enabled-structure ens :theory-array)
+                  (car old))) ; checking this invariant before updating
       (return-from
        update-enabled-structure
-       (change enabled-structure ens
-               :index-of-last-enabling n
-               :theory-array (update-enabled-structure-array
-                              name header alist k old)))))
+       (let ((new (change enabled-structure ens
+                          :index-of-last-enabling n
+                          :theory-array (update-enabled-structure-array
+                                         name header alist k old d new-d
+                                         old-n n))))
+         (if (eql d new-d)
+             new
+           (change enabled-structure new
+                   :array-length new-d))))))
   (let* ((root (access enabled-structure ens :array-name-root))
          (suffix (cond ((eq incrmt-array-name-info t)
                         (1+ (access enabled-structure ens
@@ -1857,7 +1946,7 @@
 ; enabling to be the highest existing nume in wrld right now unless
 ; index-of-last-enabling is non-nil, in which case we use that (which should be
 ; a natp).  Thus, any name introduced after this is enabled relative to this
-; ens.  If the array of the ens is too short, we extend it by 500.
+; ens.  If the array of the ens is too short, we extend it.
 
 ; A Refresher Course on ACL2 One Dimensional Arrays:
 
@@ -1876,7 +1965,8 @@
   (let* ((n (or index-of-last-enabling (1- (get-next-nume wrld))))
          (d (access enabled-structure ens :array-length))
          (new-d (cond ((< n d) d)
-                      (t (+ d (* 500 (1+ (floor (- n d) 500)))))))
+                      (t (max (* 2 d)
+                              (+ d (* 500 (1+ (floor (- n d) 500))))))))
          (alist (if augmented-p
                     theory
                   (augment-runic-theory theory wrld)))

@@ -23,7 +23,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Name of this named function.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Symbol name;
 
@@ -34,6 +34,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * This is accessed only by the subclasses.
      *
      * @param name The name of the function.
+     *             Invariant: not null.
      */
     Acl2NamedFunction(Acl2Symbol name) {
         this.name = name;
@@ -116,7 +117,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * @param o The function to compare this named function to.
      * @return A negative integer, zero, or a positive integer as this
      * named function is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Function o) {
@@ -145,7 +146,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @param name The name of the named function.
      * @return The named function.
-     * @throws IllegalArgumentException If {@code name} is {@code null}.
+     * @throws IllegalArgumentException If {@code name} is null.
      */
     public static Acl2NamedFunction make(Acl2Symbol name) {
         if (name == null)
@@ -173,8 +174,9 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @param parameters The formal parameters of the function definition.
      * @param body       The body of the function definition.
-     * @throws IllegalArgumentException If {@code parameters} or {@code body}
-     *                                  is {@code null},
+     * @throws IllegalArgumentException If {@code parameters} is null,
+     *                                  or any of its elements is null,
+     *                                  or {@code body} is null,
      *                                  or the function definition is malformed
      *                                  in a way that
      *                                  some variable index cannot be set.
@@ -189,8 +191,8 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @param values The arguments of the call.
      * @return The result of calling this named function on the arguments.
-     * @throws IllegalArgumentException If {@code values} is {@code null},
-     *                                  or any of its elements is {@code null}
+     * @throws IllegalArgumentException If {@code values} is null,
+     *                                  or any of its elements is null,
      *                                  or {@code values.length} differs from
      *                                  the function's arity.
      * @throws IllegalStateException    If not all the defined functions
