@@ -94,7 +94,8 @@
  svex-eval-wog-meta
  :flag-defthm-macro defthm-svex-eval-wog-meta
  :flag-local nil
-
+ :prepwork ((local
+             (in-theory (enable svex-kind-wog))))
  (define svex-eval-wog-meta (x env-falist good-env-flg)
    :flag expr
    :measure (cons-count x)
@@ -171,7 +172,8 @@
  svexl-node-eval-wog-meta
  :flag-defthm-macro defthm-svexl-node-eval-wog-meta
  :flag-local nil
-
+ :prepwork ((local
+             (in-theory (enable svexl-node-kind))))
  (define svexl-node-eval-wog-meta (x node-env-falist env-falist good-env-flg)
    :flag expr
    :measure (cons-count x)
@@ -285,7 +287,8 @@
                    (svex-kind-wog-is-svex-kind
                     4vec-fix-wog-is-4vec-fix
                     hons-assoc-equal
-                    svex-apply-wog-is-svex-apply
+                    svex-apply-is-svex-apply-wog
+                    svexl-node-kind-wog-is-svexl-node-kind
                     sv::4vec-equal))))
 
   (local
@@ -491,7 +494,7 @@
                               (nth-term x y)))
               :in-theory (e/d (svex-apply-wog
                                svex-apply-wog-meta)
-                              (svex-apply-wog-is-svex-apply
+                              (svex-apply-is-svex-apply-wog
                                (:definition nth)
                                (:rewrite default-cdr)
                                (:rewrite default-car)
@@ -594,7 +597,7 @@
                                svex-eval-wog
                                svexlist-eval-wog
                                svex-eval-wog-meta)
-                              (svex-apply-wog-is-svex-apply)))))
+                              (svex-apply-is-svex-apply-wog)))))
 
    (local
     (defthm all-falist-consistent-lemma
@@ -686,7 +689,7 @@
                                svexl-node-eval-wog-meta
                                svex-kind-wog
                                svexl-node-eval-wog)
-                              (svex-apply-wog-is-svex-apply)))))
+                              (svex-apply-is-svex-apply-wog)))))
 
    (local
     (defthm all-falist-consistent-lemma

@@ -56,8 +56,7 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
     /**
      * Java string representation of the package name.
      * Note that Java strings are a superset of the valid package names.
-     * This is never {@code null} and
-     * it always satisfies {@link #isValidString(String)}.
+     * Invariants: not null, satisfies {@link #isValidString(String)}.
      */
     private final String name;
 
@@ -65,6 +64,8 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * Constructs a package name with the given Java string representation.
      *
      * @param name The name of the package, as a Java string.
+     *             Invariant: not null,
+     *             satisfies {@link #isValidString(String)}.
      */
     private Acl2PackageName(String name) {
         this.name = name;
@@ -77,9 +78,7 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * the key is the {@link #name} field of the value.
      * The values of the map are reused  by the {@link #make(String)} method.
      * In other words, all the package names are interned.
-     * This field is never {@code null},
-     * its keys are never {@code null},
-     * and its values are never {@code null}.
+     * Invariants: not null, no null keys, no null values.
      */
     private static final Map<String, Acl2PackageName> packageNames =
             new HashMap<>();
@@ -97,6 +96,8 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      */
     @Override
     public int compareTo(Acl2PackageName o) {
+        if (o == null)
+            throw new NullPointerException();
         return this.name.compareTo(o.name);
     }
 
@@ -149,8 +150,8 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      *
      * @param name The name of the package, as a Java string.
      * @return The package name.
-     * @throws IllegalArgumentException If {@code name} is @{code null} or
-     *                                  not valid for package names.
+     * @throws IllegalArgumentException If {@code name} is null
+     *                                  or not valid for package names.
      */
     public static Acl2PackageName make(String name) {
         Acl2PackageName packageName = packageNames.get(name);

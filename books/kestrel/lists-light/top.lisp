@@ -32,6 +32,8 @@
 (include-book "butlast")
 (include-book "append")
 (include-book "revappend")
+(include-book "remove-equal")
+(include-book "remove1-equal")
 
 ;; Books about non-built-in functions:
 (include-book "firstn")

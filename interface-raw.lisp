@@ -3600,9 +3600,9 @@
 ; ...
 
 ; As a result, we revised the ordering of keys.  We also noticed that although
-; GLOBAL-VALUE is high on the list, most of that is accounted for by looking it
-; up for symbols RECOGNIZER-ALIST and UNTOUCHABLES, which do not have other
-; properties:
+; GLOBAL-VALUE is high on the list, most of that was accounted for by looking
+; it up for symbols RECOGNIZER-ALIST (which is no longer a world global, after
+; Version_8.2) and UNTOUCHABLES, which do not have other properties:
 
 ; books/certify-numbers.lisp:
 ;
@@ -3748,8 +3748,10 @@
 
 (defparameter *current-acl2-world-key-ordering*
   '(COARSENINGS
-    GLOBAL-VALUE ; mostly looked up for RECOGNIZER-ALIST and UNTOUCHABLES,
-                 ; which do not have other properties
+    GLOBAL-VALUE ; mostly looked up for RECOGNIZER-ALIST (until after
+                 ; Version_8.2) and UNTOUCHABLES,which do not have other
+                 ; properties
+    RECOGNIZER-ALIST
     RUNIC-MAPPING-PAIRS
     DEF-BODIES
     TYPE-PRESCRIPTIONS

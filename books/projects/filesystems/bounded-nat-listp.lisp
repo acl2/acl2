@@ -36,9 +36,15 @@
   (implies (and (<= x y) (bounded-nat-listp l x))
            (bounded-nat-listp l y)))
 
-(defthm bounded-nat-listp-correctness-6
+(defthm bounded-nat-listp-of-make-list-ac
   (implies (and (bounded-nat-listp ac b) (natp val) (< val b))
            (bounded-nat-listp (make-list-ac n val ac) b)))
+
+(defthm car-of-last-when-bounded-nat-listp
+  (implies (and (< 0 b) (bounded-nat-listp l b))
+           (< (car (last l)) b))
+  :hints (("goal" :induct (bounded-nat-listp l b)))
+  :rule-classes :linear)
 
 (defun lower-bounded-integer-listp (l b)
   (declare (xargs :guard (integerp b)))

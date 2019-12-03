@@ -321,6 +321,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The value to add to this value.
+     *              Invariant: not null.
      * @return The sum of this value with the argument value.
      */
     Acl2Number addValue(Acl2Value other) {
@@ -335,6 +336,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The number to add to this value.
+     *              Invariant: not null.
      * @return The sum of this value with the argument number.
      */
     Acl2Number addNumber(Acl2Number other) {
@@ -349,6 +351,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The rational to add to this value.
+     *              Invariant: not null.
      * @return The sum of this value with the argument rational.
      */
     Acl2Number addRational(Acl2Rational other) {
@@ -363,6 +366,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The integer to add to this value.
+     *              Invariant: not null.
      * @return The sum of this value with the argument integer.
      */
     Acl2Number addInteger(Acl2Integer other) {
@@ -377,6 +381,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The value by which to multiply this value.
+     *              Invariant: not null.
      * @return The product of this value with the argument value.
      */
     Acl2Number multiplyValue(Acl2Value other) {
@@ -391,6 +396,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The number by which to multiply this value.
+     *              Invariant: not null.
      * @return The product of this value with the argument number.
      */
     Acl2Number multiplyNumber(Acl2Number other) {
@@ -405,6 +411,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The rational by which to multiply this value.
+     *              Invariant: not null.
      * @return The product of this value with the argument rational.
      */
     Acl2Number multiplyRational(Acl2Rational other) {
@@ -419,6 +426,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * {@link Acl2Number}, {@link Acl2Rational}, and {@link Acl2Integer}.
      *
      * @param other The integer by which to multiply this value.
+     *              Invariant: not null.
      * @return The product of this value with the argument integer.
      */
     Acl2Number multiplyInteger(Acl2Integer other) {
@@ -539,9 +547,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The character to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToCharacter(Acl2Character o);
 
@@ -550,9 +558,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The string to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToString(Acl2String o);
 
@@ -561,9 +569,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The symbol to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToSymbol(Acl2Symbol o);
 
@@ -572,9 +580,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToNumber(Acl2Number o);
 
@@ -583,9 +591,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToRational(Acl2Rational o);
 
@@ -594,9 +602,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToInteger(Acl2Integer o);
 
@@ -605,9 +613,9 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The {@code cons} pair to compare this value with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
      */
     abstract int compareToConsPair(Acl2ConsPair o);
 
@@ -634,7 +642,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * @param o The value to compare this value with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public abstract int compareTo(Acl2Value o);

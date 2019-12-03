@@ -20,21 +20,23 @@ public final class Acl2Symbol extends Acl2Value {
 
     /**
      * Package name of the symbol.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2PackageName packageName;
 
     /**
      * Name of the symbol.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2String name;
 
     /**
      * Constructs a symbol with the given package name and name.
      *
-     * @param packageName The pacakge name of the symbol.
+     * @param packageName The package name of the symbol.
+     *                    Invariant: not null.
      * @param name        The name of the symbol.
+     *                    Invariant: not null.
      */
     private Acl2Symbol(Acl2PackageName packageName, Acl2String name) {
         this.packageName = packageName;
@@ -76,7 +78,7 @@ public final class Acl2Symbol extends Acl2Value {
      * The new associations have all symbols whose package names
      * match the corresponding keys in the outer map.
      * <li>
-     * When {@link #make(Acl2PackageName, Acl2String)} is called.
+     * When {@link #imake(Acl2PackageName, Acl2String)} is called.
      * In this case, this nested map structure is consulted
      * to see if the symbol already exists.
      * If it does, it is reused.
@@ -93,10 +95,8 @@ public final class Acl2Symbol extends Acl2Value {
      * <p>
      * All the symbols are thus interned.
      * <p>
-     * This field is never {@code null},
-     * its keys are never {@code null},
-     * and its values are never {@code null};
-     * the keys and values of the inner maps are never {@code null}.
+     * Invariants: not null, no null keys, no null values,
+     * no null keys or values in inner maps.
      */
     private static final Map<Acl2PackageName, Map<Acl2String, Acl2Symbol>>
             symbols = new HashMap<>();
@@ -109,7 +109,9 @@ public final class Acl2Symbol extends Acl2Value {
      * when a new package is defined.
      *
      * @param packageName The name of the package being defined.
+     *                    Invariant: not null.
      * @param imported    The import list of the package.
+     *                    Invariants: not null, no null elements.
      */
     static void addPackageImports(Acl2PackageName packageName,
                                   List<Acl2Symbol> imported) {
@@ -140,7 +142,7 @@ public final class Acl2Symbol extends Acl2Value {
      */
     @Override
     Acl2String symbolPackageName() {
-        return Acl2String.make(packageName.getJavaString());
+        return Acl2String.imake(packageName.getJavaString());
     }
 
     /**
@@ -161,12 +163,13 @@ public final class Acl2Symbol extends Acl2Value {
      * and the argument string is the first argument of that function.
      *
      * @param str The string to intern in the package.
+     *            Invariant: not null.
      * @return The interned symbol.
      */
     @Override
     Acl2Symbol internInPackageOfThis(Acl2String str) {
         Acl2PackageName packageName = this.packageName;
-        return Acl2Symbol.make(packageName, str);
+        return imake(packageName, str);
     }
 
     /**
@@ -174,6 +177,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The character to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this symbol is less than, equal to, or greater than the argument.
      */
@@ -188,6 +192,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The string to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
      */
@@ -202,6 +207,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The symbol to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this symbol is less than, equal to, or greater than the argument.
      */
@@ -220,6 +226,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this symbol is less than, equal to, or greater than the argument.
      */
@@ -234,6 +241,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this symbol is less than, equal to, or greater than the argument.
      */
@@ -248,6 +256,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this symbol is less than, equal to, or greater than the argument.
      */
@@ -262,6 +271,7 @@ public final class Acl2Symbol extends Acl2Value {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The {@code cons} pair to compare this symbol with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this symbol is less than, equal to, or greater than the argument.
      */
@@ -269,6 +279,28 @@ public final class Acl2Symbol extends Acl2Value {
     int compareToConsPair(Acl2ConsPair o) {
         // symbols are less than cons pairs:
         return -1;
+    }
+
+    /**
+     * Returns a symbol denoted by the given package name and name.
+     * The resulting symbol's package may differ from the given package,
+     * if the given package imports a symbol with that name.
+     *
+     * @param packageName The package name denoting the symbol.
+     *                    Invariant: not null, package defined.
+     * @param name        The name denoting the symbol.
+     *                    Invariant: not null.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If the package is not defined.
+     */
+    static Acl2Symbol imake(Acl2PackageName packageName, Acl2String name) {
+        Map<Acl2String, Acl2Symbol> innerMap = symbols.get(packageName);
+        Acl2Symbol symbol = innerMap.get(name);
+        if (symbol == null) {
+            symbol = new Acl2Symbol(packageName, name);
+            innerMap.put(name, symbol);
+        }
+        return symbol;
     }
 
     //////////////////////////////////////// public members:
@@ -293,10 +325,10 @@ public final class Acl2Symbol extends Acl2Value {
      * Compares this symbol with the argument value for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
-     * @param o The avlue to compare this symbol with.
+     * @param o The value to compare this symbol with.
      * @return A negative integer, zero, or a positive integer as
      * this value is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -362,7 +394,7 @@ public final class Acl2Symbol extends Acl2Value {
      * @param name        The name denoting the symbol.
      * @return The denoted symbol.
      * @throws IllegalArgumentException If {@code packageName} or {@code name}
-     *                                  is {@code null},
+     *                                  is null,
      *                                  or the package is not defined.
      */
     public static Acl2Symbol make(Acl2PackageName packageName,
@@ -374,13 +406,7 @@ public final class Acl2Symbol extends Acl2Value {
         if (Acl2Package.getDefined(packageName) == null)
             throw new IllegalArgumentException
                     ("Undefined package: \"" + packageName + "\".");
-        Map<Acl2String, Acl2Symbol> innerMap = symbols.get(packageName);
-        Acl2Symbol symbol = innerMap.get(name);
-        if (symbol == null) {
-            symbol = new Acl2Symbol(packageName, name);
-            innerMap.put(name, symbol);
-        }
-        return symbol;
+        return imake(packageName, name);
     }
 
     /**
@@ -392,7 +418,7 @@ public final class Acl2Symbol extends Acl2Value {
      * @param name        The name denoting the symbol, as a Java string.
      * @return The denoted symbol.
      * @throws IllegalArgumentException If {@code packageName} or {@code name}
-     *                                  is {@code null},
+     *                                  is null,
      *                                  or the package is not defined,
      *                                  or {@code name} contains
      *                                  characters above 255.
@@ -411,7 +437,7 @@ public final class Acl2Symbol extends Acl2Value {
      * @param name        The name denoting the symbol.
      * @return The denoted symbol.
      * @throws IllegalArgumentException If {@code packageName} or {@code name}
-     *                                  is {@code null},
+     *                                  is null,
      *                                  or the package is not defined,
      *                                  or {@code packageName} contains
      *                                  characters above 255.
@@ -431,7 +457,7 @@ public final class Acl2Symbol extends Acl2Value {
      *                    as a Java string.
      * @return The denoted symbol.
      * @throws IllegalArgumentException If {@code packageName} or {@code name}
-     *                                  is {@code null},
+     *                                  is null,
      *                                  or the package is not defined,
      *                                  or {@code packageName} contains
      *                                  characters above 255,
@@ -448,7 +474,7 @@ public final class Acl2Symbol extends Acl2Value {
      *
      * @param name The name denoting the symbol, as a Java string.
      * @return The denoted symbol.
-     * @throws IllegalArgumentException If {@code name} is {@code null}
+     * @throws IllegalArgumentException If {@code name} is null
      *                                  or contains characters above 255.
      * @throws IllegalStateException    If the {@code "KEYWORD"} package
      *                                  is not defined yet.
@@ -463,7 +489,7 @@ public final class Acl2Symbol extends Acl2Value {
      *
      * @param name The name denoting the symbol, as a Java string.
      * @return The denoted symbol.
-     * @throws IllegalArgumentException If {@code name} is {@code null}
+     * @throws IllegalArgumentException If {@code name} is null
      *                                  or contains characters above 255.
      * @throws IllegalStateException    If the {@code "COMMON-LISP"} package
      *                                  is not defined yet.
@@ -478,7 +504,7 @@ public final class Acl2Symbol extends Acl2Value {
      *
      * @param name The name denoting the symbol, as a Java string.
      * @return The denoted symbol.
-     * @throws IllegalArgumentException If {@code name} is {@code null}
+     * @throws IllegalArgumentException If {@code name} is null
      *                                  or contains characters above 255.
      * @throws IllegalStateException    If the {@code "ACL2"} package
      *                                  is not defined yet.
@@ -669,46 +695,46 @@ public final class Acl2Symbol extends Acl2Value {
 
     static { // builds the pre-created symbols
         // names of the symbols:
-        Acl2String stringT = Acl2String.make("T");
-        Acl2String stringNil = Acl2String.make("NIL");
-        Acl2String stringList = Acl2String.make("LIST");
-        Acl2String stringIf = Acl2String.make("IF");
-        Acl2String stringCharacterp = Acl2String.make("CHARACTERP");
-        Acl2String stringStringp = Acl2String.make("STRINGP");
-        Acl2String stringSymbolp = Acl2String.make("SYMBOLP");
-        Acl2String stringIntegerp = Acl2String.make("INTEGERP");
-        Acl2String stringRationalp = Acl2String.make("RATIONALP");
+        Acl2String stringT = Acl2String.imake("T");
+        Acl2String stringNil = Acl2String.imake("NIL");
+        Acl2String stringList = Acl2String.imake("LIST");
+        Acl2String stringIf = Acl2String.imake("IF");
+        Acl2String stringCharacterp = Acl2String.imake("CHARACTERP");
+        Acl2String stringStringp = Acl2String.imake("STRINGP");
+        Acl2String stringSymbolp = Acl2String.imake("SYMBOLP");
+        Acl2String stringIntegerp = Acl2String.imake("INTEGERP");
+        Acl2String stringRationalp = Acl2String.imake("RATIONALP");
         Acl2String stringComplexRationalp =
-                Acl2String.make("COMPLEX-RATIONALP");
-        Acl2String stringAcl2Numberp = Acl2String.make("ACL2-NUMBERP");
-        Acl2String stringConsp = Acl2String.make("CONSP");
-        Acl2String stringCharCode = Acl2String.make("CHAR-CODE");
-        Acl2String stringCodeChar = Acl2String.make("CODE-CHAR");
-        Acl2String stringCoerce = Acl2String.make("COERCE");
+                Acl2String.imake("COMPLEX-RATIONALP");
+        Acl2String stringAcl2Numberp = Acl2String.imake("ACL2-NUMBERP");
+        Acl2String stringConsp = Acl2String.imake("CONSP");
+        Acl2String stringCharCode = Acl2String.imake("CHAR-CODE");
+        Acl2String stringCodeChar = Acl2String.imake("CODE-CHAR");
+        Acl2String stringCoerce = Acl2String.imake("COERCE");
         Acl2String stringInternInPackageOfSymbol =
-                Acl2String.make("INTERN-IN-PACKAGE-OF-SYMBOL");
+                Acl2String.imake("INTERN-IN-PACKAGE-OF-SYMBOL");
         Acl2String stringSymbolPackageName =
-                Acl2String.make("SYMBOL-PACKAGE-NAME");
-        Acl2String stringSymbolName = Acl2String.make("SYMBOL-NAME");
-        Acl2String stringPkgImports = Acl2String.make("PKG-IMPORTS");
-        Acl2String stringPkgWitness = Acl2String.make("PKG-WITNESS");
-        Acl2String stringUnaryMinus = Acl2String.make("UNARY--");
-        Acl2String stringUnarySlash = Acl2String.make("UNARY-/");
-        Acl2String stringBinaryPlus = Acl2String.make("BINARY-+");
-        Acl2String stringBinaryTimes = Acl2String.make("BINARY-*");
-        Acl2String stringLessThan = Acl2String.make("<");
-        Acl2String stringComplex = Acl2String.make("COMPLEX");
-        Acl2String stringRealpart = Acl2String.make("REALPART");
-        Acl2String stringImagpart = Acl2String.make("IMAGPART");
-        Acl2String stringNumerator = Acl2String.make("NUMERATOR");
-        Acl2String stringDenominator = Acl2String.make("DENOMINATOR");
-        Acl2String stringCons = Acl2String.make("CONS");
-        Acl2String stringCar = Acl2String.make("CAR");
-        Acl2String stringCdr = Acl2String.make("CDR");
-        Acl2String stringEqual = Acl2String.make("EQUAL");
+                Acl2String.imake("SYMBOL-PACKAGE-NAME");
+        Acl2String stringSymbolName = Acl2String.imake("SYMBOL-NAME");
+        Acl2String stringPkgImports = Acl2String.imake("PKG-IMPORTS");
+        Acl2String stringPkgWitness = Acl2String.imake("PKG-WITNESS");
+        Acl2String stringUnaryMinus = Acl2String.imake("UNARY--");
+        Acl2String stringUnarySlash = Acl2String.imake("UNARY-/");
+        Acl2String stringBinaryPlus = Acl2String.imake("BINARY-+");
+        Acl2String stringBinaryTimes = Acl2String.imake("BINARY-*");
+        Acl2String stringLessThan = Acl2String.imake("<");
+        Acl2String stringComplex = Acl2String.imake("COMPLEX");
+        Acl2String stringRealpart = Acl2String.imake("REALPART");
+        Acl2String stringImagpart = Acl2String.imake("IMAGPART");
+        Acl2String stringNumerator = Acl2String.imake("NUMERATOR");
+        Acl2String stringDenominator = Acl2String.imake("DENOMINATOR");
+        Acl2String stringCons = Acl2String.imake("CONS");
+        Acl2String stringCar = Acl2String.imake("CAR");
+        Acl2String stringCdr = Acl2String.imake("CDR");
+        Acl2String stringEqual = Acl2String.imake("EQUAL");
         Acl2String stringBadAtomLessThanOrEqualTo =
-                Acl2String.make("BAD-ATOM<=");
-        Acl2String stringOr = Acl2String.make("OR");
+                Acl2String.imake("BAD-ATOM<=");
+        Acl2String stringOr = Acl2String.imake("OR");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);

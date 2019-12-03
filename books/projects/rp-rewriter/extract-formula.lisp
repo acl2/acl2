@@ -55,23 +55,6 @@
 (include-book "std/strings/suffixp" :dir :system)
 
 
-(defund get-rune-name (fn state)
-  (declare (xargs :guard (and (symbolp fn))
-                  :stobjs (state)
-                  :verify-guards t))
-  (b* ((mappings
-        (getpropc fn 'acl2::runic-mapping-pairs
-                  nil (w state)))
-       ((when (atom mappings))
-        (progn$ (hard-error 'get-rune-name
-                            " ~p0 does not seem to exist. ~%"
-                            (list (cons #\0 fn)))
-                fn))
-       (mapping (car mappings)))
-    (if (consp mapping)
-        (cdr mapping)
-      fn)))
-
 (defun custom-rewrite-from-formula (formula)
   (declare (xargs :guard t))
   (case-match formula
@@ -428,13 +411,14 @@
                             (equal given-rule-type ':e))
                         :executable-counterpart
                       rule-type))
-         ((when (and (equal rule-type ':definition)
-                     (or (str::strsuffixp "P" (symbol-name rule-name))
+         #|((when (and (equal rule-type ':definition)
+                     given-rule-type
+                     (or ;(str::strsuffixp "P" (symbol-name rule-name))
                          (acl2::recursivep rule-name nil (w state)))))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
-         ((when (and (equal given-rule-type ':type-prescription)
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))||#
+         #|((when (and (equal given-rule-type ':type-prescription)
                      (or (equal rule-type ':definition))))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))||#
          ((when (and (not (equal rule-type ':rewrite))
                      (not (equal rule-type ':definition))
                      (not (equal rule-type ':type-prescription))))
@@ -472,6 +456,7 @@
 
 (verify-guards rule-list-to-alist)
 
+
 (define get-rules (runes state &key new-synps)
   (declare (xargs :guard (alistp new-synps)
                   :stobjs (state)
@@ -497,7 +482,7 @@
        (rules-alist (rule-list-to-alist rule-list)))
     (to-fast-alist rules-alist)))
 
-(defun get-enabled-exec-rules (runes)
+#|(defun get-enabled-exec-rules (runes)
   ;; get the names of enabled executable counterpart rules
   (declare (xargs :guard t))
   (if (atom runes)
@@ -507,7 +492,7 @@
              (symbolp (cadar runes)))
         (hons-acons (cadar runes) nil
                     (get-enabled-exec-rules (cdr runes)))
-      (get-enabled-exec-rules (cdr runes)))))
+      (get-enabled-exec-rules (cdr runes)))))||#
 
 (defmacro rp-attach-sc (rule-name sc-rule-name)
   (declare (xargs :guard (and (symbolp rule-name)
@@ -523,3 +508,132 @@
              (?sc-alist (put-assoc ',rule-name val sc-alist)))
           `(table rp-sc ',',rule-name ',val))
       (value-triple :rule-attaching-failed))))
+
+
+(progn
+  (defund e/d-rp-rules-fn (rules state e/d)
+    (declare (xargs :stobjs (state)))
+    (if (atom rules)
+        nil
+      (b* ((rule (car rules))
+           (rest (e/d-rp-rules-fn (cdr rules) state e/d))
+           ((mv given-type name)
+            (case-match rule ((type name . &) (mv type name)) (& (mv nil rule))))
+           ((unless (symbolp name))
+            (hard-error 'enable-rp-rules
+                        "Rule name from ~p0 is not a symbolp ~%"
+                        (list (cons #\0 rule))))
+           (rune (get-rune-name name state))
+           (rune (if given-type rule rune))
+           (rest
+            (if (not (consp (hons-assoc-equal rune (table-alist 'rp-rules-inorder (w state)))))
+                (progn$
+                 (if (or (atom rune)
+                         (and (not (equal (car rune) ':definition))
+                              (not (equal (car rune) ':executable-counterpart))))
+                     (cw "Warning! ~p0 does not seem to be registered with ~
+  rp::add-rp-rule. Will do that now, but be aware that it will have a higher priority. ~%"
+                         rune)
+                   nil)
+                 (if (or (atom rune)
+                         (not (equal (car rune) ':executable-counterpart)))
+                     (cons `(table rp-rules-inorder ',rune nil) rest)
+                   rest))
+              rest)))
+        (case-match rune
+          ((':executable-counterpart name)
+           (cons (if e/d
+                     `(enable-exc-counterpart ,name)
+                   `(disable-exc-counterpart ,name))
+                 rest))
+          (&
+           (cons `(table rp-rules ',rune ,e/d) rest))))))
+
+  (defmacro enable-rules (rules)
+    `(make-event
+      `(with-output
+         :off :all
+         (progn ,@(e/d-rp-rules-fn ,rules state t)))))
+
+  (defmacro disable-rules (rules)
+    `(make-event
+      `(with-output
+         :off :all
+         (progn ,@(e/d-rp-rules-fn ,rules state nil)))))
+
+  (defmacro disable-all-rules ()
+    `(table rp-rules nil nil :clear))
+
+  (defmacro disable-exc-counterpart (fnc)
+    `(table rp-exc-rules ',fnc nil))
+
+  (defmacro enable-exc-counterpart (fnc)
+    `(table rp-exc-rules ',fnc t)))
+
+(progn
+
+  (defund get-disabled-exc-rules-from-table (rp-exc-rules)
+    (declare (xargs :guard t))
+    (if (atom rp-exc-rules)
+        nil
+      (b* ((rest (get-disabled-exc-rules-from-table (cdr rp-exc-rules))))
+        (if (and (consp (car rp-exc-rules))
+                 (symbolp (caar rp-exc-rules))
+                 (not (cdar rp-exc-rules)))
+            (hons-acons (caar rp-exc-rules) nil
+                        rest)
+          rest))))
+
+  
+  
+  (defund get-enabled-rules-from-table-aux (rp-rules-inorder rp-rules)
+    (declare (xargs :guard t))
+    (if (atom rp-rules-inorder)
+        (mv nil #|nil||# nil)
+      (b* ((rule (and (consp (car rp-rules-inorder)) (caar rp-rules-inorder)))
+           ((mv rest-rw #|rest-ex||# rest-def)
+            (get-enabled-rules-from-table-aux (cdr rp-rules-inorder)
+                                              rp-rules)))
+        (case-match rule
+          ((:executable-counterpart &)
+           (mv rest-rw #|rest-ex||# rest-def)
+           #|(b* ((rp-rules-entry (hons-get rule rp-rules)))
+           (if (or (and rp-rules-entry ;
+           (not (cdr rp-rules-entry))) ;
+           (not (symbolp name))) ;
+           (mv rest-rw rest-ex rest-def) ;
+           (mv rest-rw (hons-acons name nil rest-ex) rest-def)))||#)
+          ((:definition . &)
+           (if (cdr (hons-get rule rp-rules))
+               (mv rest-rw #|rest-ex||# (cons rule rest-def))
+             (mv rest-rw #|rest-ex||# rest-def)))
+          (& 
+           (if (cdr (hons-get rule rp-rules))
+               (mv (cons rule rest-rw) #|rest-ex||# rest-def)
+             (mv rest-rw #|rest-ex||# rest-def)))))))
+
+  (local
+   (defthm true-listp-get-enabled-rules-from-table-aux-for-guards
+     (b* (((mv rules-rw #|rules-ex||# rules-def)
+           (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules)))
+       (and (true-listp rules-rw)
+            #|(true-listp rules-ex)||#
+            #|(symbol-alistp rules-ex)||#
+            (true-listp rules-def)))
+     :hints (("Goal"
+              :in-theory (e/d (get-enabled-rules-from-table-aux) ())))))
+
+
+  (defund get-enabled-rules-from-table (state)
+    (declare (xargs :stobjs (state)
+                    :guard t))
+    (b* ((world (w state))
+         (rp-rules-inorder (table-alist 'rp-rules-inorder world))
+         (rp-rules (make-fast-alist (table-alist 'rp-rules world)))
+         ((mv rules-rw #|rules-ex||# rules-def)
+          (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules))
+         (- (fast-alist-free rp-rules))
+
+         (rp-exc-rules (table-alist 'rp-exc-rules world))
+         (rules-ex (get-disabled-exc-rules-from-table rp-exc-rules)))
+      (mv (append rules-rw rules-def) rules-ex))))

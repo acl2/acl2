@@ -489,17 +489,16 @@
    (t (first-boolean-type-prescription
        (cdr type-prescription-list) ens formals))))
 
-(defun recognizer-rune (fn recognizer-alist wrld ens)
+(defun recognizer-rune (recognizer-alist wrld ens)
   (cond
    ((endp recognizer-alist) nil)
-   ((and (eq fn (access recognizer-tuple (car recognizer-alist) :fn))
-         (enabled-runep (access recognizer-tuple (car recognizer-alist) :rune)
-                        ens
-                        wrld))
+   ((enabled-runep (access recognizer-tuple (car recognizer-alist) :rune)
+                   ens
+                   wrld)
     (access recognizer-tuple (car recognizer-alist) :rune))
-   (t (recognizer-rune fn (cdr recognizer-alist) wrld ens))))
+   (t (recognizer-rune (cdr recognizer-alist) wrld ens))))
 
-(defun bool-mask (fn recognizer-alist wrld ens)
+(defun bool-mask (fn wrld ens)
 
 ; Returns a "mask" that is a suitable argument to bool-flg.  Thus, this
 ; function returns either nil or else a mask of the form
@@ -526,7 +525,9 @@
 
     (list* nil *fake-rune-for-type-set*))
    (t
-    (let ((rune (recognizer-rune fn recognizer-alist wrld ens))
+    (let ((rune (recognizer-rune (getpropc fn 'recognizer-alist nil wrld)
+                                 wrld
+                                 ens))
           (formals (formals fn wrld)))
       (if rune
           (bool-mask1 formals nil rune)
@@ -662,10 +663,7 @@
                                                  wrld))
                                   (enabled-xfnp (car fns) ens wrld)
                                   (fn-rune-nume (car fns) nil t wrld))
-                             (bool-mask (car fns)
-                                        (global-val 'recognizer-alist wrld)
-                                        wrld
-                                        ens))
+                             (bool-mask (car fns) wrld ens))
                       acc)
                 (+ 3 i)
                 ens

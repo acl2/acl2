@@ -34,7 +34,7 @@
   svex-eval-wog_opener-error
   (svex-eval-wog x env))
 
-(defthm
+(def-rp-rule
  svex-env-fastlookup-wog-def
  (implies (syntaxp (consp (rp::ex-from-rp env)))
           (equal (svex-env-fastlookup-wog var env)
@@ -51,7 +51,7 @@
     (and
      (eq (svex-kind-wog x) ':var)))
 
-  (defthm svex-eval-wog-of-var
+  (def-rp-rule svex-eval-wog-of-var
     (implies (and (svex-kind-wog-is-var x))
              (equal (svex-eval-wog x env-wires)
                     (let ((entry (hons-get x env-wires)))
@@ -72,7 +72,7 @@
     (and
      (eq (svex-kind-wog x) ':quote)))
 
-  (defthm svex-eval-wog-of-quoted
+  (def-rp-rule svex-eval-wog-of-quoted
     (implies (svex-kind-wog-is-quote x)
              (equal (svex-eval-wog x env)
                     (cond ((atom x) x)
@@ -91,7 +91,7 @@
 (encapsulate
   nil
 
-  (defthm svexlist-eval-wog-cons-def
+  (def-rp-rule svexlist-eval-wog-cons-def
     (equal (svexlist-eval-wog (cons car-x cdr-x) env)
            (cons (svex-eval-wog car-x env)
                  (svexlist-eval-wog cdr-x
@@ -99,7 +99,7 @@
     :hints (("Goal"
              :in-theory (e/d (svexlist-eval-wog) ()))))
 
-  (defthm svexlist-eval-wog-nil-def
+  (def-rp-rule svexlist-eval-wog-nil-def
     (equal (svexlist-eval-wog nil env)
            nil)
     :hints (("Goal"
@@ -126,7 +126,7 @@
                                svex-eval-wog
 
                                svexlist-eval-wog)
-                              (svex-apply-wog-is-svex-apply))))))
+                              (svex-apply-is-svex-apply-wog))))))
 
   (local
    (defun svex-apply-cases-rw-fn-aux1 (args)
@@ -144,7 +144,7 @@
              (sv-fnc-name (car cur))
              (fnc-name (cadr cur))
              (args (caddr cur)))
-          `(defthm ,(sa 'svex-apply-wog sv-fnc-name 'rw)
+          `(def-rp-rule ,(sa 'svex-apply-wog sv-fnc-name 'rw)
              (implies t #|(and ,@(pairlis$ (repeat (len args) 'sv::svex-p)
                       (pairlis$  args nil)))||#
                       (equal (svex-eval-wog (list ',sv-fnc-name ,@args) env)
@@ -195,3 +195,23 @@
         ,@(svex-apply-cases-rw-fn sv::*svex-op-table*)))))
 
 
+
+
+(progn
+  (def-rw-opener-error
+    svexlist-list-eval-wog-opener-error
+    (svexlist-list-eval-wog x env)
+    :vars-to-avoid (env))
+
+  (def-rp-rule svexlist-list-eval-wog-opener-nil
+    (equal (svexlist-list-eval-wog nil env)
+           nil)
+    :hints (("Goal"
+             :in-theory (e/d (svexlist-list-eval-wog) ()))))
+
+  (def-rp-rule svexlist-list-eval-wog-opener-cons
+    (equal (svexlist-list-eval-wog (cons x rest) env)
+           (cons (svexlist-eval-wog x env)
+                 (svexlist-list-eval-wog rest env)))
+    :hints (("Goal"
+             :in-theory (e/d (svexlist-list-eval-wog) ())))))

@@ -21,13 +21,13 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Real part of this complex rational.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Rational realPart;
 
     /**
      * Imaginary part of this complex rational.
-     * This is never {@code null} and never 0.
+     * Invariants: not null, not 0.
      */
     private final Acl2Rational imaginaryPart;
 
@@ -36,9 +36,9 @@ final class Acl2ComplexRational extends Acl2Number {
      * with the given real and imaginary parts.
      *
      * @param realPart      The real part of the complex rational.
-     *                      It is never {@code null}.
+     *                      Invariant: not null.
      * @param imaginaryPart The imaginary part of the complex rational.
-     *                      It is never {@code null} and never 0.
+     *                      Invariants: not null, not 0.
      */
     private Acl2ComplexRational(Acl2Rational realPart,
                                 Acl2Rational imaginaryPart) {
@@ -62,14 +62,11 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Returns a complex rational with the given real and imaginary parts.
-     * This name of this method is not {@code make}
-     * because otherwise it would have to be public,
-     * due to the public {@link Acl2Number#make(Acl2Rational, Acl2Rational)}.
      *
      * @param realPart      The real part of the complex rational.
-     *                      It is never {@code null}.
+     *                      Invariant: not null.
      * @param imaginaryPart The imaginary part of the complex rational.
-     *                      It is never {@code null} and never 0.
+     *                      Invariants: not null, not 0.
      * @return The complex rational.
      */
     public static Acl2ComplexRational makeInternal(Acl2Rational realPart,

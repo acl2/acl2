@@ -493,8 +493,7 @@
   useless-dir-ent-p-of-dir-ent-set-filename
   (implies (fat32-filename-p filename)
            (not (useless-dir-ent-p (dir-ent-set-filename dir-ent filename))))
-  :hints (("goal" :in-theory (enable useless-dir-ent-p
-                                     fat32-filename-p-correctness-1))))
+  :hints (("goal" :in-theory (enable useless-dir-ent-p))))
 
 (defund
   make-dir-ent-list (dir-contents)
@@ -1149,7 +1148,6 @@
   (("goal" :in-theory
     (e/d (fat32-filename-p lofat-to-hifat-helper)
          (nth-of-string=>nats natp-of-cluster-size
-                              (:rewrite fat32-filename-p-correctness-1)
                               (:definition fat32-filename-p)))
     :induct (lofat-to-hifat-helper fat32-in-memory
                                    dir-ent-list entry-limit)))
@@ -3699,8 +3697,7 @@
   (useful-dir-ent-list-p
    (mv-nth 1
            (hifat-to-lofat-helper fat32-in-memory fs first-cluster)))
-  :hints (("goal" :in-theory (enable useful-dir-ent-list-p
-                                     fat32-filename-p-correctness-1))))
+  :hints (("goal" :in-theory (enable useful-dir-ent-list-p))))
 
 (defthm
   unsigned-byte-listp-of-flatten-when-dir-ent-list-p
@@ -3792,7 +3789,7 @@
     (("goal"
       :in-theory
       (e/d
-       (painful-debugging-lemma-9 fat32-filename-p-correctness-1)
+       (painful-debugging-lemma-9)
        (stobj-set-indices-in-fa-table))))))
 
 (defthm
@@ -4133,19 +4130,40 @@
                            (dir-ent (chars=>nats x)))
            :expand (make-dir-ent-list (implode (append x y))))))
 
-(defthm
-  make-dir-ent-list-of-append-2
-  (implies
-   (and (dir-ent-list-p dir-ent-list)
-        (character-listp y)
-        (or (< (len y) *ms-dir-ent-length*)
-            (equal (nth 0 y) (code-char 0))))
-   (equal
-    (make-dir-ent-list (implode (append (nats=>chars (flatten dir-ent-list))
-                                        y)))
-    (make-dir-ent-list (implode (nats=>chars (flatten dir-ent-list))))))
-  :hints (("goal" :in-theory (enable make-dir-ent-list flatten dir-ent-p)
-           :induct (flatten dir-ent-list))))
+(encapsulate
+  ()
+
+  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
+
+  (local
+   (defthmd
+     make-dir-ent-list-of-append-2-lemma-1
+     (implies (and (character-listp y)
+                   (or (< (len y) *ms-dir-ent-length*)
+                       (equal (nth 0 y) (code-char 0)))
+                   (equal (mod (len (explode x))
+                               *ms-dir-ent-length*)
+                          0))
+              (equal (make-dir-ent-list (implode (append (explode x) y)))
+                     (make-dir-ent-list x)))
+     :hints (("goal" :in-theory (enable make-dir-ent-list flatten dir-ent-p)
+              :induct (make-dir-ent-list x)))))
+
+  (defthm
+    make-dir-ent-list-of-append-2
+    (implies (and (character-listp y)
+                  (or (< (len y) *ms-dir-ent-length*)
+                      (equal (nth 0 y) (code-char 0)))
+                  (equal (mod (len x)
+                              *ms-dir-ent-length*)
+                         0)
+                  (character-listp x))
+             (equal (make-dir-ent-list (implode (append x y)))
+                    (make-dir-ent-list (implode x))))
+    :hints (("goal" :do-not-induct t
+             :use (:instance
+                   make-dir-ent-list-of-append-2-lemma-1
+                   (x (implode x)))))))
 
 (defthm
   make-dir-ent-list-of-implode-of-make-list-ac-1
@@ -7729,8 +7747,7 @@
       :in-theory
       (e/d (lofat-to-hifat-helper
             (:definition hifat-no-dups-p)
-            remove1-dir-ent fat32-filename-p-correctness-1
-            not-intersectp-list
+            remove1-dir-ent not-intersectp-list
             (:linear hifat-to-lofat-inversion-lemma-16))
            ((:rewrite nth-of-nats=>chars)
             (:rewrite dir-ent-p-when-member-equal-of-dir-ent-list-p)
@@ -9210,7 +9227,7 @@
 ;; any directory.)  As a result, it's possible for a lofat instance to
 ;; exist which completely fills up the available clusters on the disk,
 ;; but which leaves out at least one dot or dotdot entry, with the
-;; result that attempting to remake the stobj after coverting to hifat
+;; result that attempting to remake the stobj after converting to hifat
 ;; would cause the directory with the missing dot/dotdot entry to cross
 ;; a cluster boundary and therefore occupy more space than available in
 ;; the stobj. This scenario wouldn't even need a directory with 65535 or

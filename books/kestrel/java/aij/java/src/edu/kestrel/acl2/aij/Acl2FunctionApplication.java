@@ -20,14 +20,13 @@ public final class Acl2FunctionApplication extends Acl2Term {
 
     /**
      * Function of this function application.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Function function;
 
     /**
      * Arguments of this function application.
-     * This is never {@code null}.
-     * It may be empty.
+     * Invariant: not null, no null elements.
      */
     private final Acl2Term[] arguments;
 
@@ -35,7 +34,9 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * Constructs a function application with the given function and arguments.
      *
      * @param function  The function of the function application.
+     *                  Invariant: not null.
      * @param arguments The arguments of the function application.
+     *                  Invariant: not null, no null elements.
      */
     private Acl2FunctionApplication(Acl2Function function,
                                     Acl2Term[] arguments) {
@@ -130,6 +131,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * can never interfere with other functions.
      *
      * @param binding The binding of variable indices to values.
+     *                Invariant: not null, no null elements.
      * @return The value that results from the evaluation.
      * @throws Acl2EvaluationException If a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails.
@@ -199,7 +201,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * @param o The term to compare this function application with.
      * @return A negative integer, zero, or a positive integer as
      * this term is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Term o) {
@@ -251,7 +253,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * @param function  The function of this function application.
      * @param arguments The arguments of this function application.
      * @return The function application.
-     * @throws IllegalArgumentException If any arguments is {@code null}.
+     * @throws IllegalArgumentException If any arguments is null.
      */
     public static Acl2FunctionApplication make(Acl2Function function,
                                                Acl2Term[] arguments) {

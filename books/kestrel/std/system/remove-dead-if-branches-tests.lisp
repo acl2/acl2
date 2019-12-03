@@ -43,3 +43,7 @@
 (assert-equal (remove-dead-if-branches '(g (if a b c) y)) '(g (if a b c) y))
 
 (assert-equal (remove-dead-if-branches '(g (if 't b c) y)) '(g b y))
+
+(assert-equal (remove-dead-if-branches '(if (not 'nil) a b)) 'a)
+
+(assert-equal (remove-dead-if-branches '(if (not 't) a b)) 'b)

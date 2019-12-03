@@ -21,13 +21,13 @@ final class Acl2Ratio extends Acl2Rational {
 
     /**
      * Numerator of the ratio.
-     * This is never {@code null} and always coprime with the denominator.
+     * Invariants: not null, coprime with the denominator.
      */
     private final Acl2Integer numerator;
 
     /**
      * Denominator of the ratio.
-     * This is never {@code null} and always greater than 1.
+     * Invariants: not null, greater than 1, coprime with the numerator.
      */
     private final Acl2Integer denominator;
 
@@ -35,12 +35,12 @@ final class Acl2Ratio extends Acl2Rational {
      * Constructs a ratio with the given numerator and denominator.
      *
      * @param numerator   The numerator of the ratio.
-     *                    It is never {@code null}
-     *                    and always coprime with {@code denominator}.
+     *                    Invariants: not null,
+     *                    coprime with {@code denominator}.
      * @param denominator The denominator of the ratio.
-     *                    It is never {@code null},
-     *                    always greater than 1,
-     *                    and always coprime with {@code numerator}.
+     *                    Invariants: not null,
+     *                    greater than 1,
+     *                    coprime with {@code numerator}.
      */
     private Acl2Ratio(Acl2Integer numerator, Acl2Integer denominator) {
         this.numerator = numerator;
@@ -51,17 +51,14 @@ final class Acl2Ratio extends Acl2Rational {
 
     /**
      * Returns a ratio with the given numerator and denominator.
-     * This name of this method is not {@code make}
-     * because otherwise it would have to be public,
-     * due to the public {@link Acl2Rational#make(Acl2Integer, Acl2Integer)}.
      *
      * @param numerator   The numerator of the ratio.
-     *                    It is never {@code null}
-     *                    and always coprime with {@code denominator}.
+     *                    Invariants: not null,
+     *                    coprime with {@code denominator}.
      * @param denominator The denominator of the ratio.
-     *                    It is never {@code null},
-     *                    always greater than 1,
-     *                    and always coprime with {@code numerator}.
+     *                    Invariants: not null,
+     *                    greater than 1,
+     *                    coprime with {@code numerator}.
      * @return The ratio.
      */
     static Acl2Ratio makeInternal(Acl2Integer numerator,
@@ -129,7 +126,7 @@ final class Acl2Ratio extends Acl2Rational {
 
     /**
      * Returns the denominator of this ACL2 ratio.
-     * The numerator is in reduced form,
+     * The denominator is in reduced form,
      * i.e. it is positive and coprime with the numerator.
      *
      * @return The denominator of this ratio.

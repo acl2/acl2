@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "abstract-syntax")
+(include-book "java-syntax-operations")
 
 (include-book "centaur/depgraph/toposort" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
@@ -28,15 +28,29 @@
     (xdoc::seetopic "atj-post-translation" "here")
     ", after translating ACL2 to Java,
      ATJ performs a Java-to-Java post-translation.
-     Currently, this post-translation consists of a single step,
-     but more may be added in the future.")
-   (xdoc::p
-    "The (unique) post-translation step
-     only applied to the shallow embedding approach.
-     It folds @('return') statements into @('if') branches.
-     See "
-    (xdoc::seetopic "atj-post-translation-fold-returns" "here")
-    "."))
+     Currently, this post-translation consists of the following steps.
+     These steps only apply to the shallow embedding approach.")
+   (xdoc::ol
+    (xdoc::li
+     "We fold @('return') statements into @('if') branches.
+      See "
+     (xdoc::seetopic "atj-post-translation-fold-returns" "here")
+     ".")
+    (xdoc::li
+     "We eliminate tail recursions, replacing them with loops.
+      See "
+     (xdoc::seetopic "atj-post-translation-tailrec-elimination" "here")
+     ".")
+    (xdoc::li
+     "We lift tests from conditionals to loops.
+      See "
+     (xdoc::seetopic "atj-post-translation-lift-loop-tests" "here")
+     ".")
+    (xdoc::li
+     "We eliminate unnecessary @('continue')s from loops.
+      See "
+     (xdoc::seetopic "atj-post-translation-remove-continue" "here")
+     ".")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,7 +62,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "ATJ introduces a Java local variable for every @(tsee if) in ACL2:
+    "ATJ's ACL2-to-Java translation
+     introduces a Java local variable for every @(tsee if) in ACL2:
      the variable is assigned in the `then' and `else' branches,
      and then used in subsequent Java code.
      When the subsequent Java code is simply a @('return'),
@@ -88,7 +103,7 @@
      always produces a method body that ends with a single @('return').
      This post-translation step may replace that single @('return')
      with a number of @('return')s, inside different conditional branches.
-     This is more readable and idiomatic code."))
+     This is more readable and idiomatic Java code."))
   :order-subtopics t
   :default-parent t)
 
@@ -245,6 +260,10 @@
      and replacing each recursive call with a @('continue')
      preceded by an assignment to the method's parameters
      of the values passed to the recursive call.")
+   (xdoc::p
+    "We remark that the assignment to the method's parameters
+     is an instance of destructive updates,
+     which is idiomatic in Java.")
    (xdoc::p
     "It seems better to realize this as a post-translation step,
      rather than as part of the ACL2-to-Java translation,
@@ -446,7 +465,7 @@
      with a parallel assignment to the method parameters
      followed by a @('continue').")
    (xdoc::p
-    "Since we only apply this post-processing step to tail-recursive methods,
+    "Since we only apply this post-translation step to tail-recursive methods,
      we know that recursive calls may only appear as @('return') expressions;
      otherwise, the call would not be tail-recursive.
      Thus, we only need to look for @('return') statements
@@ -560,6 +579,311 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ atj-post-translation-lift-loop-tests
+  :parents (atj-post-translation)
+  :short "Post-translation step:
+          lifting to loop tests."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "atj-post-translation-tailrec-elimination"
+                    "tail recursion elimination step")
+    " produces method bodies of the form @('while (true) { ... }').
+     When the body of the @('while') is an @('if')
+     one of whose branches is a @('return'),
+     then it is possible to lift the @('if') tests to the loop test,
+     moving the @('return') after the loop.")
+   (xdoc::p
+    "More precisely, if the method body has the form")
+   (xdoc::codeblock
+    "while (true) {"
+    "    if (<test>) {"
+    "        return <expr>;"
+    "    } else {"
+    "        ..."
+    "    }"
+    "}")
+   (xdoc::p
+    "it can be turned into")
+   (xdoc::codeblock
+    "while (!<test>) {"
+    "    ..."
+    "}"
+    "return <expr>;")
+   (xdoc::p
+    "Simillarly, if the method body has the form")
+   (xdoc::codeblock
+    "while (true) {"
+    "    if (<test>) {"
+    "        ...."
+    "    } else {"
+    "        return <expr>;"
+    "    }"
+    "}")
+   (xdoc::p
+    "it can be turned into")
+   (xdoc::codeblock
+    "while (<test>) {"
+    "    ..."
+    "}"
+    "return <expr>;")
+   (xdoc::p
+    "This post-translation step performs these transformations,
+     which produce more idiomatic looping code.
+     It should be possible to extend the scope of this post-translation step,
+     e.g. to cases in which the @('return') is preceded by some statements."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-single-return-with-expr ((block jblockp))
+  :returns (mv (yes/no booleanp)
+               (expr jexprp))
+  :short "Check if a Java block consists of
+          a single @('return') with an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the check is successful,
+     we return the expression of the @('return').
+     If the check is not successful, i.e. the first result is @('nil'),
+     the second result is irrelevant."))
+  (b* (((fun (fail)) (mv nil (jexpr-name "")))
+       ((unless (= (len block) 1)) (fail))
+       (statem (car block))
+       ((unless (jstatem-case statem :return)) (fail))
+       (expr? (jstatem-return->expr? statem))
+       ((unless expr?) (fail)))
+    (mv t expr?)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-liftable-loop-test ((block jblockp))
+  :returns (mv (yes/no booleanp)
+               (test jexprp)
+               (return jexprp)
+               (body jblockp))
+  :short "Check if a Java block is a @('while (true) ...') loop
+          with an @('if') body whose test can be lifted to the loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This checks if a block has one of the two forms described "
+    (xdoc::seetopic "atj-post-translation-lift-loop-tests" "here")
+    ". If it does, we return its components, i.e.
+     the test expression, the return expression,
+     and the block that will become the body of the new loop
+     (i.e. the `then' or `else' branch that is not a @('return').
+     The returned test expression is the one that will become
+     the test of the new loop:
+     thus, it is either the same as the @('if')
+     or its logical negation,
+     depending on which branch is the @('return').")
+   (xdoc::p
+    "If the first result of this function is @('nil'),
+     the other results have irrelevant values."))
+  (b* (((fun (fail)) (mv nil (jexpr-name "") (jexpr-name "") nil))
+       ((unless (= (len block) 1)) (fail))
+       (statem (car block))
+       ((unless (jstatem-case statem :while)) (fail))
+       (while-test (jstatem-while->test statem))
+       (while-body (jstatem-while->body statem))
+       ((unless (equal while-test (jexpr-literal-true))) (fail))
+       ((unless (= (len while-body) 1)) (fail))
+       (statem (car while-body))
+       ((unless (jstatem-case statem :ifelse)) (fail))
+       (test (jstatem-ifelse->test statem))
+       (then (jstatem-ifelse->then statem))
+       (else (jstatem-ifelse->else statem))
+       ((mv then-return-p return) (atj-check-single-return-with-expr then))
+       ((when then-return-p) (mv t (negate-boolean-jexpr test) return else))
+       ((mv else-return-p return) (atj-check-single-return-with-expr else))
+       ((when else-return-p) (mv t test return then)))
+    (fail)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-lift-loop-test ((block jblockp))
+  :returns (new-block jblockp :hyp :guard)
+  :short "Lift an @('if') test to the enclosing loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the block is a loop of the form described "
+    (xdoc::seetopic "atj-post-translation-lift-loop-tests" "here")
+    ", we transform into the equivalent code also described "
+    (xdoc::seetopic "atj-post-translation-lift-loop-tests" "here")
+    ". We do it only once, not recursively,
+     because ATJ's ACL2-to-Java translation
+     currently does not generate nested loops."))
+  (b* (((mv matchp test return body) (atj-check-liftable-loop-test block))
+       ((unless matchp) block))
+    (append (jblock-while test body)
+            (jblock-return return))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-post-translation-remove-continue
+  :parents (atj-post-translation)
+  :short "Post-translation step:
+          remove unnecessary @('continue') statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "atj-post-translation-tailrec-elimination"
+                    "tail recursion elimination step")
+    " produces loops where the recursive calls are replaced with
+     @('continue') statements.
+     However, when one of these statements
+     is the last thing executed in the loop body,
+     it is superfluous and can be removed.")
+   (xdoc::p
+    "This post-translation step performs this removal."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-remove-ending-continue ((block jblockp))
+  :returns (new-block jblockp :hyp :guard)
+  :verify-guards :after-returns
+  :short "Remove any ending @('continue') statements
+          from a block that forms a loop body."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on bodies of loops (which are blocks).
+     It removes any ending @('continue'),
+     including the ones inside the branches of ending @('if')s,
+     recursively.")
+   (xdoc::p
+    "If the block is empty, we return it unchanged.
+     If the block ends with @('continue'),
+     we return the block without that last statement.
+     If the block ends with @('if') (with or without @('else')),
+     we recursively process the branch(es).")
+   (xdoc::p
+    "We prove that the size of the new block is not greater than
+     the size of the original block.
+     This is used to prove the termination of
+     @(tsee atj-remove-continue-in-jstatem) and
+     @(tsee atj-remove-continue-in-jblock)."))
+  (b* (((when (endp block)) nil)
+       (last-statem (car (last block)))
+       (butlast-block (butlast block 1)))
+    (case (jstatem-kind last-statem)
+      (:continue butlast-block)
+      (:if (append butlast-block
+                   (list (jstatem-if (jstatem-if->test last-statem)
+                                     (atj-remove-ending-continue
+                                      (jstatem-if->then last-statem))))))
+      (:ifelse (append butlast-block
+                       (list
+                        (jstatem-ifelse (jstatem-ifelse->test last-statem)
+                                        (atj-remove-ending-continue
+                                         (jstatem-ifelse->then last-statem))
+                                        (atj-remove-ending-continue
+                                         (jstatem-ifelse->else last-statem))))))
+      (otherwise block)))
+  :measure (jblock-count-ifs block)
+  ///
+
+  (defruledl atj-remove-ending-continue-does-not-increase-size-lemma-1
+    (implies (and (consp block)
+                  (jstatem-case (car (last block)) :if))
+             (equal (jblock-count block)
+                    (+ 4
+                       (jblock-count (butlast block 1))
+                       (jblock-count (jstatem-if->then (car (last block)))))))
+    :enable (jblock-count jstatem-count))
+
+  (defruled atj-remove-ending-continue-does-not-increase-size-lemma-2
+    (implies
+     (and (consp block)
+          (jstatem-case (car (last block)) :ifelse))
+     (equal (jblock-count block)
+            (+ 5
+               (jblock-count (butlast block 1))
+               (jblock-count (jstatem-ifelse->then (car (last block))))
+               (jblock-count (jstatem-ifelse->else (car (last block)))))))
+    :enable (jblock-count jstatem-count))
+
+  (defret atj-remove-ending-continue-does-not-increase-size
+    (<= (jblock-count (atj-remove-ending-continue block))
+        (jblock-count block))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (e/d (atj-remove-ending-continue
+                                     jblock-count
+                                     jstatem-count)
+                                    (butlast)))
+            '(:use
+              (atj-remove-ending-continue-does-not-increase-size-lemma-1
+               atj-remove-ending-continue-does-not-increase-size-lemma-2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-remove-continue-in-jstatems+jblocks
+  :short "Remove the ending @('continue') statements
+          in all the loops found in statements and blocks."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We recursively process all the statements and blocks.
+     When we encounter a loop,
+     we use @(tsee atj-remove-ending-continue)
+     to remove all its ending @('continue')s (if any),
+     and then we recursively process the resulting body
+     in order to remove @('continue')s from any nested loops.")
+   (xdoc::p
+    "Currently ATJ's ACL2-to-Java translation does not generate nested loops,
+     and none of ATJ's post-translation steps generates nested loops.
+     However, making this post-translation step more general
+     require only little additional effort."))
+
+  (define atj-remove-continue-in-jstatem ((statem jstatemp))
+    :returns (new-statem jstatemp :hyp :guard)
+    (jstatem-case
+     statem
+     :locvar statem
+     :expr statem
+     :return statem
+     :throw statem
+     :break statem
+     :continue statem
+     :if (jstatem-if statem.test
+                     (atj-remove-continue-in-jblock statem.then))
+     :ifelse (jstatem-ifelse statem.test
+                             (atj-remove-continue-in-jblock statem.then)
+                             (atj-remove-continue-in-jblock statem.else))
+     :while (b* ((body (atj-remove-ending-continue statem.body)))
+              (jstatem-while statem.test
+                             (atj-remove-continue-in-jblock body)))
+     :do (b* ((body (atj-remove-ending-continue statem.body)))
+           (jstatem-do (atj-remove-continue-in-jblock body)
+                       statem.test))
+     :for (b* ((body (atj-remove-ending-continue statem.body)))
+            (jstatem-for statem.init
+                         statem.test
+                         statem.update
+                         (atj-remove-continue-in-jblock body))))
+    :measure (jstatem-count statem))
+
+  (define atj-remove-continue-in-jblock ((block jblockp))
+    :returns (new-block jblockp :hyp :guard)
+    (cond ((endp block) nil)
+          (t (cons (atj-remove-continue-in-jstatem (car block))
+                   (atj-remove-continue-in-jblock (cdr block)))))
+    :measure (jblock-count block))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-remove-continue-in-jstatem))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-post-translate ((name stringp)
                             (params jparam-listp)
                             (body jblockp)
@@ -585,5 +909,7 @@
   (b* ((body (atj-fold-returns body))
        (body (if tailrecp
                  (atj-elim-tailrec name params body)
-               body)))
+               body))
+       (body (atj-lift-loop-test body))
+       (body (atj-remove-continue-in-jblock body)))
     body))

@@ -10,7 +10,8 @@
 
 (in-package "JAVA")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/known-packages-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,6 +41,15 @@
       because the construction happens before defining packages:
       thus, the package name must be the one where the symbol is,
       not one that imports the symbol.")
+    (xdoc::li
+     "The first three packages returned by @(tsee known-packages)
+      are @('\"KEYWORD\"'), @('\"COMMON-LISP\"'), and @('\"ACL2\"'),
+      in this order.")
+    (xdoc::li
+     "The @('\"KEYWORD\"') and @('\"COMMON-LISP\"') packages
+      import no symbols.
+      The @('\"ACL2\"') package imports only symbols
+      in the @('\"COMMON-LISP\"') package.")
     (xdoc::li
      "The ACL2 constant @('*pkg-witness-name*')
       has the value @('\"ACL2-PKG-WITNESS\"')."))))
@@ -83,6 +93,22 @@
 (assert-event (equal (symbol-package-name 'binary-+) "ACL2"))
 (assert-event (equal (symbol-package-name 'binary-*) "ACL2"))
 (assert-event (equal (symbol-package-name 'bad-atom<=) "ACL2"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (equal (take 3 (known-packages+ state))
+                     '("KEYWORD" "COMMON-LISP" "ACL2")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (equal (pkg-imports "KEYWORD") nil))
+
+(assert-event (equal (pkg-imports "COMMON-LISP") nil))
+
+(assert-event (let ((imports (pkg-imports "ACL2")))
+                (equal (symbol-package-name-lst imports)
+                       (make-list (len imports)
+                                  :initial-element "COMMON-LISP"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

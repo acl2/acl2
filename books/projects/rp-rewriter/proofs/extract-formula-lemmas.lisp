@@ -1261,5 +1261,27 @@
                             get-rule-list
                             table-alist)))))
 
-(defthm symbol-alistp-get-enabled-exec-rules
-  (symbol-alistp (get-enabled-exec-rules runes)))
+#|(defthm symbol-alistp-get-enabled-exec-rules
+  (symbol-alistp (get-enabled-exec-rules runes)))||#
+
+
+(defthm symbol-alistp-get-disabled-exc-rules-from-table
+     (symbol-alistp (get-disabled-exc-rules-from-table x))
+     :hints (("Goal"
+              :in-theory (e/d (get-disabled-exc-rules-from-table) ()))))
+
+(defthm true-listp-get-enabled-rules-from-table-aux
+     (b* (((mv rules-rw #|rules-ex||# rules-def)
+           (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules)))
+       (and (true-listp rules-rw)
+            #|(true-listp rules-ex)||#
+            #|(symbol-alistp rules-ex)||#
+            (true-listp rules-def)))
+     :hints (("Goal"
+              :in-theory (e/d (get-enabled-rules-from-table-aux) ()))))
+
+(defthm symbol-listp-get-enabled-rules-from-table
+    (symbol-alistp (mv-nth 1 (get-enabled-rules-from-table state)))
+    :otf-flg t
+    :hints (("Goal"
+             :in-theory (e/d (get-enabled-rules-from-table) ()))))

@@ -53,7 +53,7 @@
   :default-parent t)
 
 (fty::defprod rulename
-  :short "Rule names in the abstract syntax."
+  :short "Fixtype of rule names."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
@@ -76,7 +76,7 @@
 
 (fty::defoption maybe-rulename
   rulename
-  :short "Union of rule names and @('nil')."
+  :short "Fixtype of rule names and @('nil')."
   :pred maybe-rulenamep)
 
 (fty::defset rulename-set
@@ -88,7 +88,7 @@
   :short "Finite sets of rule names.")
 
 (fty::deftagsum num-val
-  :short "Numeric value notations in the abstract syntax."
+  :short "Fixtype of numeric value notations."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
@@ -110,7 +110,7 @@
            (max nat))))
 
 (fty::deftagsum char-val
-  :short "Character value notations in the abstract syntax."
+  :short "Fixtype of character value notations."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
@@ -129,7 +129,7 @@
   (:insensitive ((get acl2::string))))
 
 (fty::defprod prose-val
-  :short "Prose value notations in the abstract syntax."
+  :short "Fixtype of prose value notations."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
@@ -146,7 +146,7 @@
   :layout :list)
 
 (fty::defprod repeat-range
-  :short "Repetition ranges in the abstract syntax."
+  :short "Fixtype of repetition ranges."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
@@ -171,7 +171,7 @@
 (fty::deftypes alt/conc/rep/elem
 
   (fty::deflist alternation
-    :short "Alternations in the abstract syntax."
+    :short "Fixtype of alternations."
     :long
     (xdoc::topstring-p
      "In the abstract syntax,
@@ -189,7 +189,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist concatenation
-    :short "Concatenations in the abstract syntax."
+    :short "Fixtype of concatenations."
     :long
     (xdoc::topstring-p
      "In the abstract syntax,
@@ -208,7 +208,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::defprod repetition
-    :short "Repetitions in the abstract syntax."
+    :short "Fixtype of repetitions."
     :long
     (xdoc::topstring-p
      "In the abstract syntax,
@@ -225,7 +225,7 @@
     :measure (two-nats-measure (acl2-count x) 1))
 
   (fty::deftagsum element
-    :short "Elements in the abstract syntax."
+    :short "Fixtype of elements."
     :long
     (xdoc::topstring-p
      "In the abstract syntax,
@@ -241,7 +241,7 @@
     :measure (two-nats-measure (acl2-count x) 0)))
 
 (fty::defprod rule
-  :short "Rules in the abstract syntax."
+  :short "Fixtype of rules."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
@@ -261,11 +261,11 @@
 
 (fty::defoption maybe-rule
   rule
-  :short "Union of rules and @('nil')."
+  :short "Fixtype of rules and @('nil')."
   :pred maybe-rulep)
 
 (fty::deflist rulelist
-  :short "Lists of rules in the abstract syntax."
+  :short "Fixtype of lists of rules."
   :long
   (xdoc::topstring-p
    "In the abstract syntax,
