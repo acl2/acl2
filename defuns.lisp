@@ -2994,10 +2994,7 @@
                ttree)))))))
    (t
     (let* ((fn (ffn-symb term))
-           (recog-tuple
-            (most-recent-enabled-recog-tuple fn
-                                             (global-val 'recognizer-alist wrld)
-                                             ens)))
+           (recog-tuple (most-recent-enabled-recog-tuple fn wrld ens)))
       (cond
        (recog-tuple
         (mv-let (ts ttree1)

@@ -361,15 +361,12 @@
         (t nil)))
 
 ; -----------------------------------------------------------------
-; RECOGNIZER-ALIST [GLOBAL-VALUE]
+; BUILT-IN-CLAUSES [GLOBAL-VALUE]
 
-; The recognizer-alist contains records of the following form:
+; Built-in-clauses is an alist associating function symbols with lists of
+; built-in-clause records.
 
-; (defrec recognizer-tuple
-;   (fn (nume . true-ts)
-;       (false-ts . strongp)
-;       . rune)
-;   t)
+; (defrec built-in-clause ((nume . all-fnnames) clause . rune) t)
 
 (defun pseudo-numep (n)
 
@@ -379,37 +376,6 @@
 ; many as there are runes (a function of the world).
 
   (natp n))
-
-
-(defun type-setp (n)
-  (and (integerp n)
-       (<= *min-type-set* n)
-       (<= n *max-type-set*)))
-
-(defun pseudo-recognizer-tuplep (x)
-  (case-match x
-    ((fn (nume . true-ts) (false-ts . strongp) . rune)
-     (and (pseudo-function-symbolp fn 1)
-          (or (null nume) (pseudo-numep nume))  ; nil corresponds to the fake rune
-          (type-setp true-ts)
-          (type-setp false-ts)
-          (booleanp strongp)
-          (pseudo-runep rune)))
-    (& nil)))
-
-(defun pseudo-recognizer-alistp (x)
-  (if (atom x)
-      (null x)
-      (and (pseudo-recognizer-tuplep (car x))
-           (pseudo-recognizer-alistp (cdr x)))))
-
-; -----------------------------------------------------------------
-; BUILT-IN-CLAUSES [GLOBAL-VALUE]
-
-; Built-in-clauses is an alist associating function symbols with lists of
-; built-in-clause records.
-
-; (defrec built-in-clause ((nume . all-fnnames) clause . rune) t)
 
 (defun pseudo-built-in-clause-recordp (x)
   (case-match x
@@ -510,6 +476,11 @@
 
 ; This is a list of records:
 ; (defrec type-set-inverter-rule ((nume . ts) terms . rune) nil)
+
+(defun type-setp (n)
+  (and (integerp n)
+       (<= *min-type-set* n)
+       (<= n *max-type-set*)))
 
 (defun pseudo-type-set-inverter-rule-recordp (x)
   (case-match x
@@ -1779,7 +1750,6 @@
     (COMMAND-LANDMARK (pseudo-command-landmarkp val))
     (KNOWN-PACKAGE-ALIST (known-package-alistp val))
     (WELL-FOUNDED-RELATION-ALIST (pseudo-well-founded-relation-alistp val))
-    (RECOGNIZER-ALIST (pseudo-recognizer-alistp val))
     (BUILT-IN-CLAUSES (pseudo-built-in-clausesp val))
     (ATTACH-NIL-LST (pseudo-attach-nil-lst val))
     (ATTACHMENT-RECORDS (pseudo-attachment-recordsp val))
@@ -2242,6 +2212,34 @@
 ; correct) accurately reflects the use of the arguments in recursion.
 
   (pseudo-quick-block-info-listp val))
+
+; -----------------------------------------------------------------
+; RECOGNIZER-ALIST
+
+; Each property's recognizer-alist contains records of the following form:
+
+; (defrec recognizer-tuple
+;   (fn (nume . true-ts)
+;       (false-ts . strongp)
+;       . rune)
+;   t)
+
+(defun pseudo-recognizer-tuplep (fn x)
+  (case-match x
+    ((!fn (nume . true-ts) (false-ts . strongp) . rune)
+     (and (pseudo-function-symbolp fn 1)
+          (or (null nume) (pseudo-numep nume))  ; nil corresponds to the fake rune
+          (type-setp true-ts)
+          (type-setp false-ts)
+          (booleanp strongp)
+          (pseudo-runep rune)))
+    (& nil)))
+
+(defun pseudo-recognizer-alistp (fn x)
+  (if (atom x)
+      (null x)
+      (and (pseudo-recognizer-tuplep fn (car x))
+           (pseudo-recognizer-alistp fn (cdr x)))))
 
 ;-----------------------------------------------------------------
 ; RECURSIVEP
@@ -2894,6 +2892,7 @@
                           (predefinedp sym val)))
           (PRIMITIVE-RECURSIVE-DEFUNP (primitive-recursive-defunpp sym val))
           (QUICK-BLOCK-INFO (pseudo-quick-block-infop sym val))
+          (RECOGNIZER-ALIST (pseudo-recognizer-alistp sym val))
           (RECURSIVEP (pseudo-recursivepp sym val))
           (REDEFINED (redefinedp sym val))
           (REDUNDANCY-BUNDLE (pseudo-redundancy-bundlep sym val))

@@ -324,7 +324,7 @@ or
 ;;                          (,',type (,',acc x)))
 ;;                 ,@(if (most-recent-enabled-recog-tuple
 ;;                        ',type
-;;                        (global-val 'recognizer-alist (w state))
+;;                        (w state)
 ;;                        (global-val 'global-enabled-structure
 ;;                                    (w state)))
 ;;                       '(:rule-classes (:rewrite :type-prescription))
