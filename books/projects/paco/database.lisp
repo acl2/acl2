@@ -238,11 +238,17 @@
         )
        (copy-generalize-rules (cdr lst))))))
 
-(defun copy-trips (w seen a w0 paco-w0 state)
+(defun copy-trips (w seen a w0 paco-w0 ra state)
 
 ; Here, w is the ACL2 world, seen is a structure recording which trips
 ; we've already seen, a is the emerging Paco world.  It is in reverse
 ; order.
+
+; Ra is the accumulated recognizer-alist.  (This parameter was added
+; after ACL2 8.2 by Matt K. to accommodate an ACL2 change, which
+; distributes recognizer-alist on individual properties rather than
+; storing it in a world global.  Paco continues to store it as a world
+; global, thus making further changes to Paco unnecessary.)
 
 ; Finally, w0 is another ACL2 world and paco-w0 is the Paco world
 ; corresponding to w0.  We use it to short-circuit the construction.
@@ -258,10 +264,21 @@
 ; state when I need it.  Nothing fancy is going on with state.
 
   (cond
-   ((equal w w0) (mv t (revappend a paco-w0)))
-   ((endp w) (mv nil (revappend a nil)))
+   ((equal w w0)
+    (mv t (cons (list* 'PACO::RECOGNIZER-ALIST
+                       'PACO::GLOBAL-VALUE
+                       (revappend ra
+                                  (cddr (assoc-eq-equal 'PACO::RECOGNIZER-ALIST
+                                                        'PACO::GLOBAL-VALUE
+                                                        paco-w0))))
+                (revappend a paco-w0))))
+   ((endp w)
+    (mv nil (cons (list* 'PACO::RECOGNIZER-ALIST
+                         'PACO::GLOBAL-VALUE
+                         (revappend ra nil))
+                  (revappend a nil))))
    ((trip-seen (car w) seen)
-    (copy-trips (cdr w) seen a w0 paco-w0 state))
+    (copy-trips (cdr w) seen a w0 paco-w0 ra state))
    (t (let* ((new-seen (mark-as-seen (car w) seen))
              (sym (caar w))
              (prop (cadar w))
@@ -270,12 +287,6 @@
               (case prop
                 (GLOBAL-VALUE
                  (case sym
-                   (RECOGNIZER-ALIST
-                    (cons
-                     (list* 'PACO::RECOGNIZER-ALIST
-                            'PACO::GLOBAL-VALUE
-                            (copy-recognizer-alist val))
-                     a))
                    (BUILT-IN-CLAUSES
                     (cons
                      (list* 'PACO::BUILT-IN-CLAUSES
@@ -421,8 +432,13 @@
                               'PACO::INDUCTION-RULES
                               (copy-induction-rules val))
                        a))
-                (otherwise a))))
-        (copy-trips (cdr w) new-seen new-a w0 paco-w0 state)))))
+                (otherwise a)))
+             (new-ra
+              (case prop
+                (RECOGNIZER-ALIST
+                 (revappend (copy-recognizer-alist val) ra))
+                (otherwise ra))))
+        (copy-trips (cdr w) new-seen new-a w0 paco-w0 new-ra state)))))
 
 (defun transfer-paco-w1 (w w0 paco-w0 state)
 
@@ -447,7 +463,7 @@
 ; fn-rune-nume.  This function doesn't do anything fancy with state.
 
   (mv-let (flg paco-w)
-          (copy-trips w nil nil w0 paco-w0 state)
+          (copy-trips w nil nil w0 paco-w0 nil state)
           (prog2$ (retract-world 'paco::paco (if flg paco-w0 nil))
                   (extend-world  'paco::paco paco-w))))
 

@@ -2877,37 +2877,32 @@
 
   (cond
    ((null recognizer-alist) (value nil))
-   ((eq (access recognizer-tuple new-recog-tuple :fn)
-        (access recognizer-tuple (car recognizer-alist) :fn))
-    (cond
-     ((and
-       (ts-subsetp (access recognizer-tuple new-recog-tuple :true-ts)
-                   (access recognizer-tuple (car recognizer-alist) :true-ts))
-       (ts-subsetp (access recognizer-tuple new-recog-tuple :false-ts)
-                   (access recognizer-tuple (car recognizer-alist) :false-ts))
-       (or (access recognizer-tuple new-recog-tuple :strongp)
-           (null (access recognizer-tuple (car recognizer-alist) :strongp)))
-       (or
-        (not (ts= (access recognizer-tuple new-recog-tuple :false-ts)
-                  (access recognizer-tuple (car recognizer-alist) :false-ts)))
-        (not (ts= (access recognizer-tuple new-recog-tuple :true-ts)
-                  (access recognizer-tuple (car recognizer-alist) :true-ts)))
-        (not (eq (access recognizer-tuple new-recog-tuple :strongp)
-                 (access recognizer-tuple (car recognizer-alist) :strongp)))))
-      (comment-on-new-recog-tuple1 new-recog-tuple (cdr recognizer-alist)
-                                   ctx state))
-     (t (pprogn
-         (warning$ ctx ("Compound-rec")
-                  "The newly proposed compound recognizer rule ~x0 is not as ~
-                   restrictive as the old rule ~x1.  See :DOC ~
-                   compound-recognizer."
-                  (base-symbol (access recognizer-tuple new-recog-tuple :rune))
-                  (base-symbol (access recognizer-tuple (car recognizer-alist)
-                                       :rune)))
-         (comment-on-new-recog-tuple1 new-recog-tuple (cdr recognizer-alist)
-                                      ctx state)))))
-   (t (comment-on-new-recog-tuple1 new-recog-tuple (cdr recognizer-alist)
-                                   ctx state))))
+   ((and
+     (ts-subsetp (access recognizer-tuple new-recog-tuple :true-ts)
+                 (access recognizer-tuple (car recognizer-alist) :true-ts))
+     (ts-subsetp (access recognizer-tuple new-recog-tuple :false-ts)
+                 (access recognizer-tuple (car recognizer-alist) :false-ts))
+     (or (access recognizer-tuple new-recog-tuple :strongp)
+         (null (access recognizer-tuple (car recognizer-alist) :strongp)))
+     (or
+      (not (ts= (access recognizer-tuple new-recog-tuple :false-ts)
+                (access recognizer-tuple (car recognizer-alist) :false-ts)))
+      (not (ts= (access recognizer-tuple new-recog-tuple :true-ts)
+                (access recognizer-tuple (car recognizer-alist) :true-ts)))
+      (not (eq (access recognizer-tuple new-recog-tuple :strongp)
+               (access recognizer-tuple (car recognizer-alist) :strongp)))))
+    (comment-on-new-recog-tuple1 new-recog-tuple (cdr recognizer-alist)
+                                 ctx state))
+   (t (pprogn
+       (warning$ ctx ("Compound-rec")
+                 "The newly proposed compound recognizer rule ~x0 is not as ~
+                  restrictive as the old rule ~x1.  See :DOC ~
+                  compound-recognizer."
+                 (base-symbol (access recognizer-tuple new-recog-tuple :rune))
+                 (base-symbol (access recognizer-tuple (car recognizer-alist)
+                                      :rune)))
+       (comment-on-new-recog-tuple1 new-recog-tuple (cdr recognizer-alist)
+                                    ctx state)))))
 
 (defun comment-on-new-recog-tuple (new-recog-tuple ctx ens wrld state)
 
@@ -2923,7 +2918,8 @@
 ; handled.  (Without more experience with compound recognizers we do
 ; not know what sort of checks would be most helpful.)
 
-  (let ((pred (fcons-term* (access recognizer-tuple new-recog-tuple :fn) 'x)))
+  (let* ((fn (access recognizer-tuple new-recog-tuple :fn))
+         (pred (fcons-term* fn 'x)))
     (mv-let
      (tts-term ttree)
      (convert-type-set-to-term
@@ -2969,7 +2965,8 @@
           (if (warning-disabled-p "Compound-rec")
               (value nil)
             (comment-on-new-recog-tuple1 new-recog-tuple
-                                         (global-val 'recognizer-alist wrld)
+                                         (getpropc fn 'recognizer-alist nil
+                                                   wrld)
                                          ctx state)))))))))
 
 (defun chk-acceptable-compound-recognizer-rule (name term ctx ens wrld state)
@@ -3031,13 +3028,13 @@
 
 (defun add-compound-recognizer-rule (rune nume term ens wrld)
 
-; We construct the recognizer-tuple corresponding to term and just add
-; it onto the front of the current recognizer-alist.  We used to merge
-; it into the existing tuple for the same :fn, if one existed, but
-; that makes disabling these rules complicated.  When we retrieve
-; tuples from the alist we look for the first enabled tuple about the
-; :fn in question.  So it is necessary to leave old tuples for :fn in
-; place.
+; We construct the recognizer-tuple corresponding to term and just add it onto
+; the front of the current recognizer-alist for the function symbol of term.
+; We used to merge it into the existing tuple for that function symbol, if one
+; existed, but that makes disabling these rules complicated.  When we retrieve
+; tuples from the alist we look for the first enabled tuple for the function
+; symbol in question.  So it is necessary to leave old tuples for that function
+; symbol in place.
 
   (mv-let (parity fn var term1)
           (destructure-compound-recognizer term)
@@ -3045,9 +3042,10 @@
                   (make-recognizer-tuple rune nume parity fn var term1 ens
                                          wrld)
                   (declare (ignore ttree))
-                  (global-set 'recognizer-alist
-                              (cons recog-tuple (global-val 'recognizer-alist wrld))
-                              wrld))))
+                  (putprop fn 'recognizer-alist
+                           (cons recog-tuple
+                                 (getpropc fn 'recognizer-alist nil wrld))
+                           wrld))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :FORWARD-CHAINING Rules
@@ -5167,10 +5165,7 @@
                 (fargn term 1))
                (t nil)))
         ((let ((recog-tuple
-                (most-recent-enabled-recog-tuple (ffn-symb term)
-                                                 (global-val 'recognizer-alist
-                                                             wrld)
-                                                 ens)))
+                (most-recent-enabled-recog-tuple (ffn-symb term) wrld ens)))
            (and recog-tuple
 
 ; An ACL2(h) "everything" regression in August 2014 failed to certify community
@@ -5567,17 +5562,21 @@
                               wrld))
               wrld)))))
 
-(defun strong-compound-recognizer-p (fn recognizer-alist ens)
+(defun strong-compound-recognizer-p1 (recognizer-alist ens)
   (cond ((endp recognizer-alist) nil)
         ((let ((recog-tuple (car recognizer-alist)))
-           (and (eq fn (access recognizer-tuple recog-tuple :fn))
-                (access recognizer-tuple recog-tuple :strongp)
+           (and (access recognizer-tuple recog-tuple :strongp)
                 (enabled-numep (access recognizer-tuple recog-tuple :nume)
                                ens)))
          t)
-        (t (strong-compound-recognizer-p fn (cdr recognizer-alist) ens))))
+        (t (strong-compound-recognizer-p1 (cdr recognizer-alist) ens))))
 
-(defun warned-non-rec-fns-alist-for-tp (term recognizer-alist ens wrld)
+(defun strong-compound-recognizer-p (fn ens wrld)
+  (let ((alist (getpropc fn 'recognizer-alist nil wrld)))
+    (and alist ; optimization
+         (strong-compound-recognizer-p1 alist ens))))
+
+(defun warned-non-rec-fns-alist-for-tp (term ens wrld)
   (cond ((or (variablep term)
              (fquotep term))
          nil)
@@ -5593,15 +5592,15 @@
 
          (union-equal
           (warned-non-rec-fns-alist-for-tp
-           (fargn term 1) recognizer-alist ens wrld)
+           (fargn term 1) ens wrld)
           (union-equal
            (warned-non-rec-fns-alist-for-tp
-            (fargn term 2) recognizer-alist ens wrld)
+            (fargn term 2) ens wrld)
            (warned-non-rec-fns-alist-for-tp
-            (fargn term 3) recognizer-alist ens wrld))))
+            (fargn term 3) ens wrld))))
         ((eq (ffn-symb term) 'not)
-         (warned-non-rec-fns-alist-for-tp (fargn term 1) recognizer-alist ens wrld))
-        ((strong-compound-recognizer-p (ffn-symb term) recognizer-alist ens)
+         (warned-non-rec-fns-alist-for-tp (fargn term 1) ens wrld))
+        ((strong-compound-recognizer-p (ffn-symb term) ens wrld)
 
 ; We noticed in August 2014 that only the most-recent-enabled-recog-tuple is
 ; relevant here; see assume-true-false-rec.  But this code has been in place
@@ -5611,27 +5610,24 @@
          (non-recursive-fnnames-alist-lst (fargs term) ens wrld))
         (t (non-recursive-fnnames-alist term ens wrld))))
 
-(defun warned-non-rec-fns-alist-tp-hyps1 (hyps recognizer-alist ens wrld acc)
-  (cond ((endp hyps) acc)
-        (t (warned-non-rec-fns-alist-tp-hyps1
-            (cdr hyps)
-            recognizer-alist ens wrld
-            (let ((hyp (if (and (nvariablep (car hyps))
+(defun warned-non-rec-fns-alist-tp-hyps1 (hyps ens wrld acc)
+  (cond
+   ((endp hyps) acc)
+   (t (warned-non-rec-fns-alist-tp-hyps1
+       (cdr hyps) ens wrld
+       (let ((hyp (if (and (nvariablep (car hyps))
 ;                               (not (fquotep (car hyps))) ; implied by:
-                                (member-eq (ffn-symb (car hyps))
-                                           '(force case-split)))
-                           (fargn (car hyps) 1)
-                         (car hyps))))
-              (cond (acc (union-equal (warned-non-rec-fns-alist-for-tp
-                                       hyp recognizer-alist ens wrld)
-                                      acc))
-                    (t (warned-non-rec-fns-alist-for-tp
-                        hyp recognizer-alist ens wrld))))))))
+                           (member-eq (ffn-symb (car hyps))
+                                      '(force case-split)))
+                      (fargn (car hyps) 1)
+                    (car hyps))))
+         (cond
+          (acc (union-equal (warned-non-rec-fns-alist-for-tp hyp ens wrld)
+                            acc))
+          (t (warned-non-rec-fns-alist-for-tp hyp ens wrld))))))))
 
 (defun warned-non-rec-fns-alist-tp-hyps (hyps ens wrld)
-  (warned-non-rec-fns-alist-tp-hyps1 hyps
-                                     (global-val 'recognizer-alist wrld)
-                                     ens wrld nil))
+  (warned-non-rec-fns-alist-tp-hyps1 hyps ens wrld nil))
 
 (defun chk-acceptable-type-prescription-rule (name typed-term term
                                                    backchain-limit-lst
@@ -10441,8 +10437,6 @@
        (info-for-built-in-clause-rules val numes ens wrld))
       (type-set-inverter-rules
        (info-for-type-set-inverter-rules val numes ens wrld))
-      (recognizer-alist
-       (info-for-compound-recognizer-rules val numes ens wrld))
       (generalize-rules
        (info-for-generalize-rules val numes ens wrld))
       (otherwise nil)))
@@ -10466,6 +10460,8 @@
        (info-for-type-prescriptions val numes ens wrld))
       (induction-rules
        (info-for-induction-rules val numes ens wrld))
+      (recognizer-alist
+       (info-for-compound-recognizer-rules val numes ens wrld))
       (otherwise nil)))))
 
 (defun info-for-rules (props numes ens wrld)

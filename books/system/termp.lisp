@@ -250,3 +250,4 @@
 (verify-termination logic-term-listp) ; and guards
 (verify-termination logic-fns-list-listp) ; and guards
 (verify-termination logic-term-list-listp) ; and guards
+

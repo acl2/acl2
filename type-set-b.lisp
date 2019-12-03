@@ -2741,16 +2741,17 @@
          (mv *ts-t* (puffert ttree)))
         (t (mv *ts-boolean* (puffert ttree0)))))
 
-; Essay on the Recognizer-Alist and Recognizer-Tuples
+; Essay on Recognizer-Tuples
 
-; The "recognizer alist" of ACL2 is a combination of Nqthm's
-; RECOGNIZER-ALIST and its two COMPOUND-RECOGNIZER-ALISTs.  The
-; recognizer-alist is stored as a global variable in the world w and
-; accessed via
-
-; (global-val 'recognizer-alist w).
-
-; The recognizer alist contains records of the following form:
+; The "recognizer-alist" of ACL2 is a virtual alist -- that is, a
+; representation of a finite function -- rather than a single data structure.
+; It associates a function symbol with a list of recognizer-tuple records that
+; is stored on its 'recognizer-alist property.  This "alist" a combination of
+; Nqthm's RECOGNIZER-ALIST and its two COMPOUND-RECOGNIZER-ALISTs.  (Historical
+; note: Through Version_8.2 we stored a single alist rather than distributing
+; the recognizer-alist across relevant function symbols.  But we made the
+; change to support non-trivial efficiency improvements for large proof
+; developments.)
 
 (defrec recognizer-tuple
 
@@ -2764,7 +2765,7 @@
       . rune)
   t)
 
-; The initial value of the recognizer alist is shown after we discuss the
+; The initial value of the recognizer-alist is shown after we discuss the
 ; meaning of these records.
 
 ; In a recognizer-tuple, fn is the name of some Boolean-valued
@@ -2968,17 +2969,26 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*)))
 
-(defun most-recent-enabled-recog-tuple (fn alist ens)
+(defun most-recent-enabled-recog-tuple1 (lst ens)
 
-; This function finds the first recognizer-tuple on alist whose :fn is
-; fn and whose :nume is enabled-numep.  Thus, primitive recognizer
-; tuples, like that for rationalp, are always "enabled."
+; This function finds the first recognizer-tuple in lst whose whose :nume is
+; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
+; are always "enabled."
 
-  (cond ((null alist) nil)
-        ((and (eq fn (access recognizer-tuple (car alist) :fn))
-              (enabled-numep (access recognizer-tuple (car alist) :nume) ens))
-         (car alist))
-        (t (most-recent-enabled-recog-tuple fn (cdr alist) ens))))
+  (cond ((endp lst) nil)
+        ((enabled-numep (access recognizer-tuple (car lst) :nume) ens)
+         (car lst))
+        (t (most-recent-enabled-recog-tuple1 (cdr lst) ens))))
+
+(defun most-recent-enabled-recog-tuple (fn wrld ens)
+
+; This function finds the first recognizer-tuple for fn whose whose :nume is
+; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
+; are always "enabled."
+
+  (let ((lst (getpropc fn 'recognizer-alist nil wrld)))
+    (and lst ; optimization
+         (most-recent-enabled-recog-tuple1 lst ens))))
 
 (defun type-set-recognizer (recog-tuple arg-ts ttree ttree0)
 
@@ -6060,9 +6070,7 @@
                             (not (fquotep term))
                             (not (flambda-applicationp term))
                             (most-recent-enabled-recog-tuple
-                             (ffn-symb term)
-                             (global-val 'recognizer-alist wrld)
-                             ens))))
+                             (ffn-symb term) wrld ens))))
       (cond ((and recog-tuple
                   (access recognizer-tuple recog-tuple :strongp))
              (mv (fargn term 1)
@@ -7978,10 +7986,7 @@
                      (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist))))
     (t
      (let* ((fn (ffn-symb x))
-            (recog-tuple (most-recent-enabled-recog-tuple
-                          fn
-                          (global-val 'recognizer-alist w)
-                          ens))
+            (recog-tuple (most-recent-enabled-recog-tuple fn w ens))
             (dwp (if (and (consp dwp) (eq (car dwp) :SKIP-LOOKUP))
                      nil
                    dwp)))
@@ -9969,9 +9974,7 @@
                          pot-lst pt backchain-limit))
     (t
      (let ((recog-tuple
-            (most-recent-enabled-recog-tuple (ffn-symb x)
-                                             (global-val 'recognizer-alist w)
-                                             ens))
+            (most-recent-enabled-recog-tuple (ffn-symb x) w ens))
            (ignore (adjust-ignore-for-atf xnot-flg ignore0)))
        (cond
         (recog-tuple

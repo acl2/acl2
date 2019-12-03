@@ -15470,8 +15470,7 @@
 
   (declare (xargs :guard (and (plist-worldp wrld)
                               (pseudo-termp term))))
-  (cond ((mbe :logic (atom term)
-              :exec (variablep term))
+  (cond ((variablep term)
          t)
         ((fquotep term) t)
         ((flambdap (ffn-symb term))

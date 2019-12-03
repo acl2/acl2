@@ -1468,7 +1468,6 @@
                  (list (cons 'o<
                              (cons 'o-p
                                    *fake-rune-for-anonymous-enabled-rule*))))
-           (list 'recognizer-alist *initial-recognizer-alist*)
            (list 'built-in-clauses
                  (classify-and-store-built-in-clause-rules
                   *initial-built-in-clauses*
@@ -1566,9 +1565,13 @@
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
-
                          ,@*boot-strap-invariant-risk-symbols*
 
+; The following became necessary after Version_8.2, when we starting storing a
+; new 'recognizer-alist property on symbols (in the primordial-world) in place
+; of using a world global for the recognizer-alist.
+
+                         ,@(strip-cars *initial-recognizer-alist*)
                          ))
                     (ttags-seen nil)
                     (never-untouchable-fns nil)
@@ -1676,6 +1679,17 @@
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the treatment of *non-standard-primitives*
 
+(defun putprop-recognizer-alist (alist wrld)
+  (cond ((endp alist) wrld)
+        (t (putprop-recognizer-alist
+            (cdr alist)
+            (let* ((recog-tuple (car alist))
+                   (fn (access recognizer-tuple recog-tuple :fn)))
+              (putprop fn 'recognizer-alist
+                       (cons recog-tuple
+                             (getpropc fn 'recognizer-alist nil wrld))
+                       wrld))))))
+
 (defun primordial-world (operating-system)
 
 ; Warning: Names converted during the boot-strap from :program mode to :logic
@@ -1747,8 +1761,10 @@
 
                        (putprop
                         'state 'stobj '(*the-live-state*)
-                        (primordial-world-globals
-                         operating-system)))))))))))))))))))
+                        (putprop-recognizer-alist
+                         *initial-recognizer-alist*
+                         (primordial-world-globals
+                          operating-system))))))))))))))))))))
       t
       nil))))
 
