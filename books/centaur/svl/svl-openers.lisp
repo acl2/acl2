@@ -397,14 +397,14 @@
           (b* ((x (cdr (assoc-equal modname modules)))
                (env-wires (svl-start-env (CDR (STD::DA-NTH 1 X)) inputs))
                (env-wires
-                (svex-env-append (svl-env->wires delayed-env)
+                (svex-env-append (car delayed-env)
                                  env-wires))
                 #|(svl-run-add-delayed-ins env-wires delayed-env
                                          (CDR (STD::DA-NTH 2 X)))||#
                ((mv env-wires next-delayed-env.modules)
                 (svl-run-phase-occs-wog (CDR (STD::DA-NTH 4 X))
                                       env-wires
-                                      (svl-env->modules delayed-env)
+                                      (cadr delayed-env)
                                       modules))
                (out-vals (svl-retrieve-values (CDR (STD::DA-NTH 3 X))
                                                env-wires))
@@ -726,7 +726,7 @@
                 (- (cw "Using svl-run-phase-wog-opener for ~p0 ~%"
                        modname))
                 (env-wires (svex-env-append
-                            (svl-env->wires delayed-env)
+                            (car delayed-env)
                             (svl-start-env (CDR (STD::DA-NTH 1 X)) inputs)
                                         ;delayed-env
                                         ;(CDR (STD::DA-NTH 2 X))
@@ -734,7 +734,7 @@
                 ((mv env-wires next-delayed-env.modules)
                  (svl-run-phase-occs-wog (CDR (STD::DA-NTH 4 X))
                                        env-wires
-                                       (svl-env->modules delayed-env)
+                                       (cadr delayed-env)
                                        modules))
                 (out-vals (svl-retrieve-values (CDR (STD::DA-NTH 3 X))
                                                 env-wires))
