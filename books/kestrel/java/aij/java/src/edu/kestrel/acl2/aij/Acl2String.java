@@ -122,21 +122,21 @@ public final class Acl2String extends Acl2Value {
      * which says that evaluation fails in this case.
      *
      * @return The list of imported symbols.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
     @Override
-    Acl2Value pkgImports() throws Acl2EvaluationException {
+    Acl2Value pkgImports() throws Acl2UndefinedPackageException {
         String str = this.jstring;
         Acl2PackageName packageName;
         try {
             packageName = Acl2PackageName.make(str);
         } catch (IllegalArgumentException e) {
-            throw new Acl2EvaluationException(null, e);
+            throw new Acl2UndefinedPackageException(null, e);
         }
         Acl2Package packag = Acl2Package.getDefined(packageName);
         if (packag == null)
-            throw new Acl2EvaluationException
+            throw new Acl2UndefinedPackageException
                     ("Undefined package: \"" + packageName + "\".");
         List<Acl2Symbol> imports = packag.getImports();
         int len = imports.size();
@@ -151,17 +151,17 @@ public final class Acl2String extends Acl2Value {
      * consistently with the {@code pkg-witness} ACL2 function.
      *
      * @return The witness.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
     @Override
-    Acl2Symbol pkgWitness() throws Acl2EvaluationException {
+    Acl2Symbol pkgWitness() throws Acl2UndefinedPackageException {
         String str = this.jstring;
         Acl2PackageName packageName;
         try {
             packageName = Acl2PackageName.make(str);
         } catch (IllegalArgumentException e) {
-            throw new Acl2EvaluationException(null, e);
+            throw new Acl2UndefinedPackageException(null, e);
         }
         String witnessName = Acl2Package.WITNESS_NAME;
         return Acl2Symbol.imake(packageName, Acl2String.imake(witnessName));

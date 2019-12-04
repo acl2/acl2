@@ -843,5 +843,5 @@
                   :result (jresult-void)
                   :name "main"
                   :params (list method-param)
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body)))

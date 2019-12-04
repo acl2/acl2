@@ -514,7 +514,7 @@
                   :result (jresult-type *aij-type-value*)
                   :name "call"
                   :params method-params
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

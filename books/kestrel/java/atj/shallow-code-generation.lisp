@@ -2098,7 +2098,7 @@
                   :params (atj-gen-paramlist
                            method-param-names
                            (atj-type-list-to-jtype-list in-types))
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2324,7 +2324,7 @@
                              :result (jresult-type (atj-type-to-jtype out-type))
                              :name method-name
                              :params method-params
-                             :throws (list *aij-class-eval-exc*)
+                             :throws (list *aij-class-undef-pkg-exc*)
                              :body method-body)))
     (mv method qconsts)))
 
@@ -2611,7 +2611,7 @@
                   :result (jresult-type (atj-type-to-jtype out-type))
                   :name method-name
                   :params method-params
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

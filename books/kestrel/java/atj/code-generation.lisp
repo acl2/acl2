@@ -463,7 +463,7 @@
                   :params (list (make-jparam :final? nil
                                              :type (jtype-int)
                                              :name "n"))
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body))
 
   :prepwork

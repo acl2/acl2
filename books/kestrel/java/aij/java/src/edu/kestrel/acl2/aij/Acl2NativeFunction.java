@@ -492,7 +492,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * @return The result of the function on the given arguments.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             return execSymbolName(values[0]);
         }
     }
@@ -521,11 +521,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * @param values The actual arguments to pass to the function.
          *               Invariant: not null, no null elements.
          * @return The result of the function on the given arguments.
-         * @throws Acl2EvaluationException If the package name is invalid
-         *                                 or the package is not defined.
+         * @throws Acl2UndefinedPackageException If the package name is invalid
+         *                                       or the package is not defined.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values)
+                throws Acl2UndefinedPackageException {
             return execPkgImports(values[0]);
         }
     }
@@ -551,11 +552,12 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * the ACL2 manual page for {@code pkg-witness},
          * which says that evaluation fails in this case.
          *
-         * @throws Acl2EvaluationException If the package name is invalid
-         *                                 or the package is not defined.
+         * @throws Acl2UndefinedPackageException If the package name is invalid
+         *                                       or the package is not defined.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values)
+                throws Acl2UndefinedPackageException {
             return execPkgWitness(values[0]);
         }
     }
@@ -1419,11 +1421,11 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @param pkg The actual argument to pass to the function.
      *            Precondition: not null.
      * @return The result of the function on the given argument.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
     public static Acl2Value execPkgImports(Acl2Value pkg)
-            throws Acl2EvaluationException {
+            throws Acl2UndefinedPackageException {
         return pkg.pkgImports();
     }
 
@@ -1435,11 +1437,11 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @param pkg The actual argument to pass to the function.
      *            Precondition: not null.
      * @return The result of the function on the given argument.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
     public static Acl2Value execPkgImports(Acl2String pkg)
-            throws Acl2EvaluationException {
+            throws Acl2UndefinedPackageException {
         // it is not clear if this can be made faster
         // by knowing that pkg is an ACL2 string:
         return pkg.pkgImports();
@@ -1453,11 +1455,11 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @param pkg The actual argument to pass to the function.
      *            Precondition: not null.
      * @return The result of the function on the given argument.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
     public static Acl2Symbol execPkgWitness(Acl2Value pkg)
-            throws Acl2EvaluationException {
+            throws Acl2UndefinedPackageException {
         return pkg.pkgWitness();
     }
 
@@ -1469,11 +1471,11 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @param pkg The actual argument to pass to the function.
      *            Precondition: not null.
      * @return The result of the function on the given argument.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
     public static Acl2Symbol execPkgWitness(Acl2String pkg)
-            throws Acl2EvaluationException {
+            throws Acl2UndefinedPackageException {
         // it is not clear if this can be made faster
         // by knowing that pkg is an ACL2 string:
         return pkg.pkgWitness();

@@ -45,28 +45,28 @@
 
 (defsection aij-class-names
   :short "ACL2 named constants for the AIJ class names."
-  (defconst *aij-class-char*      "Acl2Character")
-  (defconst *aij-class-complex*   "Acl2ComplexRational")
-  (defconst *aij-class-cons*      "Acl2ConsPair")
-  (defconst *aij-class-def-fn*    "Acl2DefinedFunction")
-  (defconst *aij-class-eval-exc*  "Acl2EvaluationException")
-  (defconst *aij-class-fn*        "Acl2Function")
-  (defconst *aij-class-fn-app*    "Acl2FunctionApplication")
-  (defconst *aij-class-int*       "Acl2Integer")
-  (defconst *aij-class-lambda*    "Acl2LambdaExpression")
-  (defconst *aij-class-named-fn*  "Acl2NamedFunction")
-  (defconst *aij-class-native-fn* "Acl2NativeFunction")
-  (defconst *aij-class-number*    "Acl2Number")
-  (defconst *aij-class-pkg*       "Acl2Package")
-  (defconst *aij-class-pkg-name*  "Acl2PackageName")
-  (defconst *aij-class-qconst*    "Acl2QuotedConstant")
-  (defconst *aij-class-ratio*     "Acl2Ratio")
-  (defconst *aij-class-rational*  "Acl2Rational")
-  (defconst *aij-class-string*    "Acl2String")
-  (defconst *aij-class-symbol*    "Acl2Symbol")
-  (defconst *aij-class-term*      "Acl2Term")
-  (defconst *aij-class-value*     "Acl2Value")
-  (defconst *aij-class-var*       "Acl2Variable"))
+  (defconst *aij-class-char*           "Acl2Character")
+  (defconst *aij-class-complex*        "Acl2ComplexRational")
+  (defconst *aij-class-cons*           "Acl2ConsPair")
+  (defconst *aij-class-def-fn*         "Acl2DefinedFunction")
+  (defconst *aij-class-undef-pkg-exc*  "Acl2UndefinedPackageException")
+  (defconst *aij-class-fn*             "Acl2Function")
+  (defconst *aij-class-fn-app*         "Acl2FunctionApplication")
+  (defconst *aij-class-int*            "Acl2Integer")
+  (defconst *aij-class-lambda*         "Acl2LambdaExpression")
+  (defconst *aij-class-named-fn*       "Acl2NamedFunction")
+  (defconst *aij-class-native-fn*      "Acl2NativeFunction")
+  (defconst *aij-class-number*         "Acl2Number")
+  (defconst *aij-class-pkg*            "Acl2Package")
+  (defconst *aij-class-pkg-name*       "Acl2PackageName")
+  (defconst *aij-class-qconst*         "Acl2QuotedConstant")
+  (defconst *aij-class-ratio*          "Acl2Ratio")
+  (defconst *aij-class-rational*       "Acl2Rational")
+  (defconst *aij-class-string*         "Acl2String")
+  (defconst *aij-class-symbol*         "Acl2Symbol")
+  (defconst *aij-class-term*           "Acl2Term")
+  (defconst *aij-class-value*          "Acl2Value")
+  (defconst *aij-class-var*            "Acl2Variable"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -76,7 +76,7 @@
         *aij-class-complex*
         *aij-class-cons*
         *aij-class-def-fn*
-        *aij-class-eval-exc*
+        *aij-class-undef-pkg-exc*
         *aij-class-fn*
         *aij-class-fn-app*
         *aij-class-int*
@@ -102,28 +102,28 @@
 
 (defsection aij-class-types
   :short "ACL2 named constants for the AIJ class types."
-  (defconst *aij-type-char*      (jtype-class *aij-class-char*))
-  (defconst *aij-type-complex*   (jtype-class *aij-class-complex*))
-  (defconst *aij-type-cons*      (jtype-class *aij-class-cons*))
-  (defconst *aij-type-def-fn*    (jtype-class *aij-class-def-fn*))
-  (defconst *aij-type-eval-exc*  (jtype-class *aij-class-eval-exc*))
-  (defconst *aij-type-fn*        (jtype-class *aij-class-fn*))
-  (defconst *aij-type-fn-app*    (jtype-class *aij-class-fn-app*))
-  (defconst *aij-type-int*       (jtype-class *aij-class-int*))
-  (defconst *aij-type-lambda*    (jtype-class *aij-class-lambda*))
-  (defconst *aij-type-named-fn*  (jtype-class *aij-class-named-fn*))
-  (defconst *aij-type-native-fn* (jtype-class *aij-class-native-fn*))
-  (defconst *aij-type-number*    (jtype-class *aij-class-number*))
-  (defconst *aij-type-pkg*       (jtype-class *aij-class-pkg*))
-  (defconst *aij-type-pkg-name*  (jtype-class *aij-class-pkg-name*))
-  (defconst *aij-type-qconst*    (jtype-class *aij-class-qconst*))
-  (defconst *aij-type-ratio*     (jtype-class *aij-class-ratio*))
-  (defconst *aij-type-rational*  (jtype-class *aij-class-rational*))
-  (defconst *aij-type-string*    (jtype-class *aij-class-string*))
-  (defconst *aij-type-symbol*    (jtype-class *aij-class-symbol*))
-  (defconst *aij-type-term*      (jtype-class *aij-class-term*))
-  (defconst *aij-type-value*     (jtype-class *aij-class-value*))
-  (defconst *aij-type-var*       (jtype-class *aij-class-var*)))
+  (defconst *aij-type-char*           (jtype-class *aij-class-char*))
+  (defconst *aij-type-complex*        (jtype-class *aij-class-complex*))
+  (defconst *aij-type-cons*           (jtype-class *aij-class-cons*))
+  (defconst *aij-type-def-fn*         (jtype-class *aij-class-def-fn*))
+  (defconst *aij-type-undef-pkg-exc*  (jtype-class *aij-class-undef-pkg-exc*))
+  (defconst *aij-type-fn*             (jtype-class *aij-class-fn*))
+  (defconst *aij-type-fn-app*         (jtype-class *aij-class-fn-app*))
+  (defconst *aij-type-int*            (jtype-class *aij-class-int*))
+  (defconst *aij-type-lambda*         (jtype-class *aij-class-lambda*))
+  (defconst *aij-type-named-fn*       (jtype-class *aij-class-named-fn*))
+  (defconst *aij-type-native-fn*      (jtype-class *aij-class-native-fn*))
+  (defconst *aij-type-number*         (jtype-class *aij-class-number*))
+  (defconst *aij-type-pkg*            (jtype-class *aij-class-pkg*))
+  (defconst *aij-type-pkg-name*       (jtype-class *aij-class-pkg-name*))
+  (defconst *aij-type-qconst*         (jtype-class *aij-class-qconst*))
+  (defconst *aij-type-ratio*          (jtype-class *aij-class-ratio*))
+  (defconst *aij-type-rational*       (jtype-class *aij-class-rational*))
+  (defconst *aij-type-string*         (jtype-class *aij-class-string*))
+  (defconst *aij-type-symbol*         (jtype-class *aij-class-symbol*))
+  (defconst *aij-type-term*           (jtype-class *aij-class-term*))
+  (defconst *aij-type-value*          (jtype-class *aij-class-value*))
+  (defconst *aij-type-var*            (jtype-class *aij-class-var*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

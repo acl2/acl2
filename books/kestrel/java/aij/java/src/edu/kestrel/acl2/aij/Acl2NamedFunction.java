@@ -191,16 +191,17 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @param values The arguments of the call.
      * @return The result of calling this named function on the arguments.
-     * @throws IllegalArgumentException If {@code values} is null,
-     *                                  or any of its elements is null,
-     *                                  or {@code values.length} differs from
-     *                                  the function's arity.
-     * @throws IllegalStateException    If not all the defined functions
-     *                                  have been validated.
-     * @throws Acl2EvaluationException  If a call of {@code pkg-imports}
-     *                                  or {@code pkg-witness} fails.
+     * @throws IllegalArgumentException      If {@code values} is null,
+     *                                       or any of its elements is null,
+     *                                       or {@code values.length} differs
+     *                                       from the function's arity.
+     * @throws IllegalStateException         If not all the defined functions
+     *                                       have been validated.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
-    public Acl2Value call(Acl2Value[] values) throws Acl2EvaluationException {
+    public Acl2Value call(Acl2Value[] values)
+            throws Acl2UndefinedPackageException {
         if (!validatedAll)
             throw new IllegalStateException
                     ("Not all function definitions have been validated.");

@@ -141,11 +141,11 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * @param values The actual arguments to pass to the function.
      *               Invariants: not null, no null elements.
      * @return The result of the function on the given arguments.
-     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
     @Override
-    Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+    Acl2Value apply(Acl2Value[] values) throws Acl2UndefinedPackageException {
         return definiens.apply(values);
     }
 

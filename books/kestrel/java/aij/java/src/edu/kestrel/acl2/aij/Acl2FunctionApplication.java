@@ -133,11 +133,11 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * @param binding The binding of variable indices to values.
      *                Invariant: not null, no null elements.
      * @return The value that results from the evaluation.
-     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
     @Override
-    Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException {
+    Acl2Value eval(Acl2Value[] binding) throws Acl2UndefinedPackageException {
         if (function.isIf()) {
             Acl2Value test = arguments[0].eval(binding);
             if (test.equals(Acl2Symbol.NIL))
