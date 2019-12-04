@@ -198,6 +198,11 @@
 
 
 (progn
+
+  (def-rw-opener-error
+    svex-env-append-opener-error
+    (svex-env-append term1 term2)) 
+  
   (def-rp-rule svex-env-append-opener-cons
     (equal (svex-env-append (cons x rest) lst2)
            (hons-acons (car x) (cdr x)
@@ -360,6 +365,12 @@
                   env-wires
                   delayed-env))
 
+(defmacro make-svl-env-wog (&rest args)
+  (std::make-aggregate 'list
+                       args '((:wires) (:modules))
+                       'make-svl-env-wog
+                       nil))
+
 (acl2::defines
  svl-run-phase-wog
  :flag-defthm-macro defthm-svl-run-phase-wog
@@ -397,7 +408,7 @@
                                       modules))
                (out-vals (svl-retrieve-values (CDR (STD::DA-NTH 3 X))
                                                env-wires))
-               (next-delayed-env (make-svl-env
+               (next-delayed-env (make-svl-env-wog
                                   :wires (create-next-env-for-wires
                                           (CDR (STD::DA-NTH 2 X))
                                           env-wires)
@@ -628,8 +639,33 @@
     :hints (("Goal"
              :expand (SVL-OCC-ALIST-P OCCS)
              :in-theory (e/d (SVL-OCC-P) ())))))
-                  
 
+
+ (local
+  (defthm lemma6
+    (implies (and (force (svex-env-p wires))
+                  (force (svl-env-alist-p modules)))
+             (equal (make-svl-env :wires wires :modules modules)
+                    (make-svl-env-wog :wires wires :modules modules)))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-ENV->MODULES
+                              SVL-ENV-P
+                              SVL-ENV->WIRES) ())))))
+
+
+ (local
+  (defthm lemma7
+    (implies (and (SVL-MODULE-ALIST-P MODULES)
+                  (SV::MODNAME-P MODNAME))
+             (SV::SVARLIST-P (CDR (CADDDR (ASSOC-EQUAL MODNAME MODULES)))))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-MODULE-ALIST-P
+                              SVL-MODULE-P)
+                             ((:DEFINITION WIRE-P)
+                              (:REWRITE LEMMA3)
+                              (:REWRITE
+                                SVL-MODULE-P-OF-CDAR-WHEN-SVL-MODULE-ALIST-P)))))))
+ 
  (defthm-svl-run-phase-wog
    (defthm svl-run-phase-is-svl-run-phase-wog
      (implies (and (force (sv::modname-p modname))
@@ -654,7 +690,12 @@
                      (SVL-RUN-PHASE-OCCS-WOG OCCS
                                            ENV-WIRES DELAYED-ENV-ALIST MODULES)
                      (SVL-RUN-PHASE MODNAME INPUTS DELAYED-ENV MODULES)
-                     )
+                     (:free (x y)
+                            (svl-env->wires (cons x y)))
+                     (:free (x y)
+                            (svl-env->modules (cons x y)))
+                     (:free (x y)
+                            (svl-env-p (cons x y))))
             :in-theory (e/d (svexlist-eval-wog-is-svexlist-eval
                              svl-run-phase
                              svl-run-phase-wog
@@ -697,7 +738,7 @@
                                        modules))
                 (out-vals (svl-retrieve-values (CDR (STD::DA-NTH 3 X))
                                                 env-wires))
-                (next-delayed-env (make-svl-env
+                (next-delayed-env (make-svl-env-wog
                                    :wires (create-next-env-for-wires
                                            (CDR (STD::DA-NTH 2 X))
                                            env-wires)
@@ -837,68 +878,153 @@
             :in-theory (e/d (svl-run-save-output) ())))))
 
 
+
+
+
 (progn
+  (define svl-run-aux-wog (modname
+                           inputs
+                           out-wires
+                           out-bind-alist
+                           delayed-env
+                           modules)
+    :verify-guards nil
+    (if (atom inputs)
+        (progn$ ;(svl-free-env modname delayed-env modules (expt 2 30))
+         nil)
+      (b* (((mv out-vals next-delayed-env)
+            (svl-run-phase-wog modname (car inputs) delayed-env modules))
+           (out-alist (pairlis3 out-wires out-vals))
+           ((mv outputs out-bind-alist) (svl-run-save-output out-alist out-bind-alist))
+           (rest (svl-run-aux-wog modname (cdr inputs) out-wires out-bind-alist next-delayed-env modules)))
+        (append outputs rest))))
+  
   (def-rw-opener-error
     svl-run-aux-opener-error
     (svl-run-aux modname inputs out-wires out-bind-alist delayed-env modules)
     :vars-to-avoid (modules delayed-env))
 
+  (def-rw-opener-error
+    svl-run-aux-wog-opener-error
+    (svl-run-aux-wog modname inputs out-wires out-bind-alist delayed-env modules)
+    :vars-to-avoid (modules delayed-env))
 
-  (def-rp-rule svl-run-aux-opener-nil
-    (equal (svl-run-aux modname nil out-wires out-bind-alist
-                         delayed-env modules)
+  (def-rp-rule svl-run-aux-is-svl-run-aux-wog
+    (implies (and (force (sv::modname-p modname))
+                  (force (4vec-list-listp inputs ))
+                  (force (sv::svarlist-p out-wires))
+                  (force (alistp out-bind-alist))
+                  (force (svl-env-p delayed-env))
+                  (force (svl-module-alist-p modules)))
+             (equal (svl-run-aux modname inputs out-wires out-bind-alist
+                                 delayed-env modules)
+                    (svl-run-aux-wog modname inputs out-wires out-bind-alist
+                                     delayed-env modules)))
+    :hints (("Goal" 
+             :in-theory (e/d (SVL-RUN-AUX
+                              svl-run-aux-wog)
+                             (RETURN-TYPE-OF-SVL-RUN-PHASE.NEXT-DELAYED-ENV)))
+            ("Subgoal *1/2"
+             :use ((:instance return-type-of-svl-run-phase.next-delayed-env
+                              (inputs (car inputs)))))
+            ("Subgoal *1/4"
+             :use ((:instance return-type-of-svl-run-phase.next-delayed-env
+                              (inputs (car inputs)))))))
+
+  (def-rp-rule svl-run-aux-wog-opener-nil
+    (equal (svl-run-aux-wog modname nil out-wires out-bind-alist
+                            delayed-env modules)
            nil)
     :hints (("Goal"
-             :in-theory (e/d (svl-run-aux) ()))))
+             :in-theory (e/d (svl-run-aux-wog) ()))))
   
   (rp::defthm-lambda
    svl-run-aux-opener-cons
-   (equal (svl-run-aux modname (cons x y) out-wires out-bind-alist
-                        delayed-env modules)
+   (equal (svl-run-aux-wog modname (cons x y) out-wires out-bind-alist
+                           delayed-env modules)
           (b* (((mv out-vals next-delayed-env)
-                (svl-run-phase modname x delayed-env modules))
+                (svl-run-phase-wog modname x delayed-env modules))
                (out-alist (pairlis3 out-wires out-vals))
                ((mv outputs out-bind-alist) (svl-run-save-output out-alist out-bind-alist))
-               (rest (svl-run-aux modname y out-wires out-bind-alist next-delayed-env modules)))
+               (rest (svl-run-aux-wog modname y out-wires out-bind-alist next-delayed-env modules)))
             (append outputs rest)))
    :hints (("Goal"
-            :in-theory (e/d (svl-run-aux)
-                            (SVL-RUN-PHASE-IS-SVL-RUN-PHASE-WOG))))))
+            :in-theory (e/d (svl-run-aux-wog)
+                            (svl-run-phase-is-svl-run-phase-wog))))))
 
 
 
 (progn
+  #|(define svl-run-wog (modname inputs-env ;; needs to be fast-alist
+                               ins-bind-alist ;; a constant to tell what input
+                               ;; signal should be assigned to what and when
+                               out-bind-alist ;; same as above but for outputs
+                               modules)
+    :guard (and (string-listp (strip-cars out-bind-alist))
+                (string-listp (strip-cars ins-bind-alist)))
+    (declare (ignorable out-bind-alist))
+    (b* ((module (assoc-equal modname modules))
+         ((unless module)
+          (hard-error 'svl-run
+                      "Module ~p0 cannot be found! ~%"
+                      (list (cons #\0 modname))))
+         (module (cdr module))
+         (input-wires (svl-module->inputs module))
+         (output-wires (strip-cars (svl-module->outputs module)))
+         (inputs-unbound (svl-generate-inputs ins-bind-alist input-wires))
+         ((unless (svex-list-listp inputs-unbound))
+          (hard-error 'svl-run
+                      "Something went wrong while parsing inputs... ~p0 ~%"
+                      (list (cons #\0 inputs-unbound))))
+         ;; everything up to here uses only constants (only executable counterparts)
+         (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
+      (svl-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules)))||#
+
+  
   (def-rw-opener-error
     svl-run-opener-error
     (svl-run modname inputs-env ins-bind-alist out-bind-alist modules)
     :vars-to-avoid (modules))
 
+
+  
+
+  (local
+   (defthm strip-cars-of-wire-listp-is-svar-listp
+     (implies (and (wire-list-p wires))
+              (sv::svarlist-p (strip-cars wires))))) 
+
+  
   (rp::defthm-lambda
    svl-run-def-opener
-   (equal (svl-run modname
-                    inputs-env
-                    ins-bind-alist
-                    out-bind-alist
-                    modules)
-          (b* ((module (assoc-equal modname modules))
-               ((unless module)
-                (hard-error 'svl-run
-                            "Module ~p0 cannot be found! ~%"
-                            (list (cons #\0 modname))))
-               (module (cdr module))
-               (input-wires (svl-module->inputs module))
-               (output-wires (strip-cars (svl-module->outputs module)))
-               (inputs-unbound (svl-generate-inputs ins-bind-alist input-wires))
-               ((unless (svex-list-listp inputs-unbound))
-                (hard-error 'svl-run
-                            "Something went wrong while parsing inputs... ~p0 ~%"
-                            (list (cons #\0 inputs-unbound))))
-               ;; everything up to here uses only constants (only executable counterparts)
-               (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
-            (svl-run-aux modname inputs output-wires out-bind-alist
-                          (make-svl-env) modules)))
+   (implies (and (sv::modname-p modname)
+                 (svex-env-p inputs-env)
+                 (alistp out-bind-alist)
+                 (svl-module-alist-p modules)) 
+            (equal (svl-run modname
+                            inputs-env
+                            ins-bind-alist
+                            out-bind-alist
+                            modules)
+                   (b* ((module (assoc-equal modname modules))
+                        ((unless module)
+                         (hard-error 'svl-run
+                                     "Module ~p0 cannot be found! ~%"
+                                     (list (cons #\0 modname))))
+                        (module (cdr module))
+                        (input-wires (svl-module->inputs module))
+                        (output-wires (strip-cars (svl-module->outputs module)))
+                        (inputs-unbound (svl-generate-inputs ins-bind-alist input-wires))
+                        ((unless (svex-list-listp inputs-unbound))
+                         (hard-error 'svl-run
+                                     "Something went wrong while parsing inputs... ~p0 ~%"
+                                     (list (cons #\0 inputs-unbound))))
+                        ;; everything up to here uses only constants (only executable counterparts)
+                        (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
+                     (svl-run-aux-wog modname inputs output-wires out-bind-alist
+                                      (make-svl-env) modules))))
    :hints (("Goal"
             :in-theory (e/d (svl-run) ())))))
 
 
-
+(rp::add-rp-rule sv::4veclist-p-of-cons)

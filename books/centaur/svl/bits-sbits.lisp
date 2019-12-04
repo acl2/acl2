@@ -1757,6 +1757,10 @@
        (4vec-p (4vec-part-select x y z))
        (4vec-p (4vec-part-install x y z m))))
 
+(rp::add-rp-rule 4vec-p-of-sbits)
+(rp::add-rp-rule 4vec-p-of-sbits)
+(rp::add-rp-rule 4vec-p-of-4vec-concat$)
+
 (encapsulate
   nil
 

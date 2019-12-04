@@ -227,7 +227,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
 
 
   (def-rw-opener-error force-fail-error
-    (force x))
+    (force forced-term))
   
   #|(defmacro disable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name nil))||#
