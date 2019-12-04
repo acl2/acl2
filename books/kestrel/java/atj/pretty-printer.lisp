@@ -224,7 +224,6 @@
                :gt ">"
                :le "<="
                :ge ">="
-               :instanceof "instanceof"
                :eq "=="
                :ne "!="
                :and "&"
@@ -294,6 +293,9 @@
                              (print-jexpr expr.left)
                              (print-jbinop expr.op)
                              (print-jexpr expr.right))
+                :instanceof (msg "~@0 instanceof ~@1"
+                                 (print-jexpr expr.left)
+                                 (print-jtype expr.right))
                 :cond (msg "~@0 ? ~@1 : ~@2"
                            (print-jexpr expr.test)
                            (print-jexpr expr.then)

@@ -15,48 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (all-non-gv-ffn-symbs 'x nil (w state)) nil)
-
-(assert-equal (all-non-gv-ffn-symbs '(quote 4) nil (w state)) nil)
-
-(assert-equal (all-non-gv-ffn-symbs '(cons (len a) '3) nil (w state)) nil)
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (assert-equal (all-non-gv-ffn-symbs '(zp (f '4)) nil (w state)) '(f)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (all-non-gv-exec-ffn-symbs 'x (w state)) nil)
-
-(assert-equal (all-non-gv-exec-ffn-symbs '(quote 4) (w state)) nil)
-
-(assert-equal (all-non-gv-exec-ffn-symbs '(cons x y) (w state)) nil)
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (defun g (x) (declare (xargs :verify-guards t)) x)
- (assert!
-  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (f x) (g (f y))) (w state))
-             '(f))))
-
-(must-succeed*
- (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
- (assert!
-  (set-equiv (all-non-gv-exec-ffn-symbs '(cons (mycar z) (len y)) (w state))
-             '(mycar)))
- (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
- (assert-equal (all-non-gv-exec-ffn-symbs (ubody 'f (w state)) (w state))
-               nil))
-
-(must-succeed*
- (defun f (x) (declare (xargs :verify-guards nil)) x)
- (defun g (x) (declare (xargs :verify-guards t)) (cons (ec-call (f x)) (len x)))
- (assert-equal (all-non-gv-exec-ffn-symbs (ubody 'g (w state)) (w state))
-               nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (all-pkg-names '(quote 4))
               nil)
 

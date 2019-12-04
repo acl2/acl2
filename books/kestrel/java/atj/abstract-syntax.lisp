@@ -237,6 +237,11 @@
 
 (fty::deftagsum jbinop
   :short "Java binary operators [JLS:15.17-26]."
+  :long
+  (xdoc::topstring-p
+   "We do not include @('instanceof') here because
+    it does not operate on two expressions, just one:
+    its right-hand side is a reference type, not an expression.")
   (:mul ()) ; *
   (:div ()) ; /
   (:rem ()) ; %
@@ -249,7 +254,6 @@
   (:gt ()) ; >
   (:le ()) ; <=
   (:ge ()) ; >=
-  (:instanceof ())
   (:eq ()) ; ==
   (:ne ()) ; !=
   (:and ()) ; &
@@ -320,7 +324,11 @@
      Parenthesized expressions may be removed from the abstract syntax
      if the pretty-printer is improved
      to generate just the minimum amount of parentheses
-     based on Java operator precedence rules."))
+     based on Java operator precedence rules.")
+   (xdoc::p
+    "The abstract syntax allows any type, not just reference types,
+     as the right-hand side of @('instanceof').
+     This may be improved in the future."))
 
   (fty::deftagsum jexpr
     (:literal ((get jliteral)))
@@ -338,6 +346,7 @@
     (:cast ((type jtype) (arg jexpr)))
     (:unary ((op junop) (arg jexpr)))
     (:binary ((op jbinop) (left jexpr) (right jexpr)))
+    (:instanceof ((left jexpr) (right jtype)))
     (:cond ((test jexpr) (then jexpr) (else jexpr)))
     (:paren ((get jexpr)))
     :pred jexprp)
