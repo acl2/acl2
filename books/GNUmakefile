@@ -478,10 +478,25 @@ manual:
 
 else
 
+ifneq ($(filter-out CCL SBCL, $(ACL2_HOST_LISP)),)
+# As of this writing (late 2019), ACL2 built on Allegro CL, Lispworks,
+# or (as is well known) GCL fails to certify all books necessary to
+# build the manual, probably because of problems involving quicklisp.
+# Ideally someone will fix those problems, but for now we will simply
+# cause an immediate error on an attempt to build the manual with this
+# target.
+manual:
+	@echo "Error: The manual may be built only using ACL2 built on CCL or SBCL,"
+	@echo "       not $(ACL2_HOST_LISP)."
+	@exit 1
+
+else
+
 quicklisp: $(QUICKLISP_DIR)/top.cert
 
 manual: doc/top.cert system/doc/acl2-manual.cert
 
+endif # ifneq ($(filter-out CCL SBCL, $(ACL2_HOST_LISP)),)
 endif # REALLY_USE_QUICKLISP
 
 
