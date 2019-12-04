@@ -4077,3 +4077,172 @@
   :hints (("Goal"
            :in-theory (e/d (4vec-bitor
                             SV::3VEC-BITOR) ()))))
+
+
+
+(progn
+  (def-rp-rule$ t nil
+    loghead-to-4vec-part-select
+    (implies (and (natp size)
+                  (integerp x))
+             (and (equal (loghead size x)
+                         (4vec-part-select 0 size x))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-CONCAT) ()))))
+  (defthmd loghead-to-4vec-part-select-side-cond
+    (implies (and (natp size)
+                  (integerp x))
+             (integerp (4vec-part-select 0 size x)))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              4vec-concat) ()))))
+  (rp-attach-sc loghead-to-4vec-part-select
+                loghead-to-4vec-part-select-side-cond))
+
+
+(progn
+  (def-rp-rule$ t nil
+    logtail-to-4vec-rsh
+    (implies (and (natp size)
+                  (integerp x))
+             (and (equal (logtail size x)
+                         (4vec-rsh size x))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-CONCAT
+                              4vec-rsh
+                              4VEC-SHIFT-CORE) ()))))
+  (defthmd logtail-to-4vec-rsh-side-cond
+    (implies (and (natp size)
+                  (integerp x))
+             (integerp (4vec-rsh size x))))
+  
+  (rp-attach-sc logtail-to-4vec-rsh
+                logtail-to-4vec-rsh-side-cond))
+
+
+(progn
+  (def-rp-rule$ t nil
+    ash-to-4vec-rsh
+    (implies (and (integerp size)
+                  (< size 0) 
+                  (integerp x))
+             (and (equal (ash x size)
+                         (4vec-rsh (- size) x))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-CONCAT
+                              4vec-rsh
+                              4VEC-SHIFT-CORE) ()))))
+  (defthmd ash-to-4vec-rsh-side-cond
+    (implies (and (integerp size)
+                  (< size 0) 
+                  (integerp x))
+             (integerp (4vec-rsh (- size) x))))
+  
+  (rp-attach-sc ash-to-4vec-rsh
+                ash-to-4vec-rsh-side-cond))
+
+(progn
+  (def-rp-rule$ t nil
+    ash-to-4vec-lsh
+    (implies (and (integerp x)
+                  (natp size))
+             (and (equal (ash x size)
+                         (4vec-lsh size x))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-CONCAT
+                              4vec-lsh
+                              4VEC-SHIFT-CORE) ()))))
+  (defthmd ash-to-4vec-lsh-side-cond
+    (implies (and (integerp x)
+                  (natp size))
+             (integerp (4vec-lsh size x)))
+    :hints (("Goal"
+             :in-theory (e/d (4VEC-LSH
+                              4VEC-SHIFT-CORE) ()))))
+  
+  (rp-attach-sc ash-to-4vec-lsh
+                ash-to-4vec-lsh-side-cond))
+
+
+(progn
+  (def-rp-rule$ t nil
+    logior-to-4vec-bitor
+    (implies (and (integerp x)
+                  (integerp y))
+             (and (equal (logior x y)
+                         (4vec-bitor x y))))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              sv::4vec-bitor
+                              SV::3VEC-BITOR) ()))))
+  (defthmd logior-to-4vec-bitor-side-cond
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (4vec-bitor x y)))
+    :hints (("Goal"
+             :in-theory (e/d (4VEC-BITOR
+                              SV::3VEC-BITOR) ()))))
+  
+  (rp-attach-sc logior-to-4vec-bitor
+                logior-to-4vec-bitor-side-cond))
+
+
+(progn
+  (def-rp-rule$ t nil
+    logand-to-4vec-bitand
+    (implies (and (integerp x)
+                  (integerp y))
+             (and (equal (logand x y)
+                         (4vec-bitand x y))))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              sv::4vec-bitand
+                              SV::3VEC-BITAND) ()))))
+  (defthmd logand-to-4vec-bitand-side-cond
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (4vec-bitand x y)))
+    :hints (("Goal"
+             :in-theory (e/d (4VEC-BITAND
+                              SV::3VEC-BITAND) ()))))
+  
+  (rp-attach-sc logand-to-4vec-bitand
+                logand-to-4vec-bitand-side-cond))
+
+(progn
+  (def-rp-rule$ t nil
+    logxor-to-4vec-bitxor
+    (implies (and (integerp x)
+                  (integerp y))
+             (and (equal (logxor x y)
+                         (sv::4vec-bitxor x y))))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              sv::4vec-bitxor
+                              SV::3VEC-BITXOR) ()))))
+  (defthmd logxor-to-4vec-bitxor-side-cond
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (sv::4vec-bitxor x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-bitxor
+                              SV::3VEC-BITXOR) ()))))
+  
+  (rp-attach-sc logxor-to-4vec-bitxor
+                logxor-to-4vec-bitxor-side-cond))
+
