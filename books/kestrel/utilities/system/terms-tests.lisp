@@ -15,26 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (all-pkg-names '(quote 4))
-              nil)
-
-(assert-equal (all-pkg-names 'x)
-              '("ACL2"))
-
-(assert-equal (all-pkg-names '(binary-+ '5 'x))
-              '("ACL2"))
-
-(assert! (set-equiv (all-pkg-names '(car (binary-/ 'x)))
-                    (list "ACL2" *main-lisp-package-name*)))
-
-(assert! (set-equiv (all-pkg-names '(f std::abcde))
-                    (list "ACL2" "STD")))
-
-(assert-equal (all-pkg-names '(std::deflist '8))
-              '("STD"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (mv-list 2 (check-user-term 3 (w state)))
               '('3 (nil)))
 

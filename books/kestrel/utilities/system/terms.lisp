@@ -18,6 +18,7 @@
 (include-book "kestrel/std/system/all-lambdas" :dir :system)
 (include-book "kestrel/std/system/all-non-gv-exec-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-pkg-names" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
@@ -46,45 +47,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(defines all-pkg-names
-  :parents (term-utilities)
-  :short "Collect all the package names of all the symbols in a term."
-  :long
-  "@(def all-pkg-names)
-   @(def all-pkg-names-lst)"
-  :verify-guards nil ; done below
-
-  (define all-pkg-names ((term pseudo-termp))
-    :returns (pkg-names string-listp)
-    (cond ((variablep term) (list (symbol-package-name term)))
-          ((fquotep term) (if (symbolp (cadr term))
-                              (list (symbol-package-name (cadr term)))
-                            nil))
-          ((symbolp (ffn-symb term))
-           (add-to-set-equal (symbol-package-name (ffn-symb term))
-                             (all-pkg-names-lst (fargs term))))
-          (t (union-equal (remove-duplicates-equal
-                           (symbol-package-name-lst
-                            (lambda-formals (ffn-symb term))))
-                          (union-equal (all-pkg-names (lambda-body
-                                                       (ffn-symb term)))
-                                       (all-pkg-names-lst (fargs term)))))))
-
-  (define all-pkg-names-lst ((terms pseudo-term-listp))
-    :returns (pkg-names string-listp)
-    (cond ((endp terms) nil)
-          (t (union-equal (all-pkg-names (car terms))
-                          (all-pkg-names-lst (cdr terms))))))
-
-  :prepwork
-  ((local (include-book "std/typed-lists/string-listp" :dir :system))
-   (local (include-book "kestrel/utilities/typed-lists/string-listp-theorems" :dir :system))
-   (local (include-book "kestrel/utilities/lists/union-theorems" :dir :system)))
-
-  ///
-
-  (verify-guards all-pkg-names))
 
 (define check-user-term (x (wrld plist-worldp))
   :returns (mv (term/message "A @(tsee pseudo-termp) or @(tsee msgp).")

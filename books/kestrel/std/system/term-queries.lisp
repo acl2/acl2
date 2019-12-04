@@ -15,6 +15,7 @@
 (include-book "all-lambdas")
 (include-book "all-non-gv-exec-ffn-symbs")
 (include-book "all-non-gv-ffn-symbs")
+(include-book "all-pkg-names")
 (include-book "all-program-ffn-symbs")
 (include-book "all-vars-open")
 (include-book "dumb-occur-var-open")
