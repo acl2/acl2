@@ -97,7 +97,7 @@
 
 (define print-jchar ((char characterp))
   :returns (part msgp)
-  :short "Pretty-print a Java character."
+  :short "Pretty-print a character."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -151,7 +151,7 @@
 
 (define print-jliteral ((lit jliteralp))
   :returns (part msgp)
-  :short "Pretty-print a Java literal."
+  :short "Pretty-print a literal."
   :long
   (xdoc::topstring-p
    "We pretty-print our limited form of floating-point literals
@@ -178,6 +178,7 @@
 
 (define print-primitive-type ((ptype primitive-typep))
   :returns (part msgp)
+  :short "Pretty-print a primitive type."
   (primitive-type-case ptype
                        :boolean "boolean"
                        :char "char"
@@ -190,7 +191,7 @@
 
 (define print-jtype ((type jtypep))
   :returns (part msgp)
-  :short "Pretty-print a Java type."
+  :short "Pretty-print a type."
   (jtype-case type
               :prim (print-primitive-type type.type)
               :class type.name
@@ -199,7 +200,7 @@
 
 (define print-junop ((unop junopp))
   :returns (part msgp)
-  :short "Pretty-print a Java unary operator."
+  :short "Pretty-print a unary operator."
   (junop-case unop
               :preinc "++"
               :predec "--"
@@ -210,7 +211,7 @@
 
 (define print-jbinop ((binop jbinopp))
   :returns (part msgp)
-  :short "Pretty-print a Java binary operator."
+  :short "Pretty-print a binary operator."
   (jbinop-case binop
                :mul "*"
                :div "/"
@@ -244,8 +245,8 @@
                :asg-bitxor "^="
                :asg-bitior "|="))
 
-(defines print-jexprs
-  :short "Pretty-print Java expressions."
+(defines print-jexpr
+  :short "Pretty-print an expression."
 
   (define print-jexpr ((expr jexprp))
     :returns (part msgp)
@@ -331,6 +332,7 @@
 
 (define print-jlocvar ((locvar jlocvarp) (indent-level natp))
   :returns (line msgp)
+  :short "Pretty-print a local variable declaration."
   (b* (((jlocvar locvar) locvar))
     (print-jline (msg "~@0~@1 ~@2 = ~@3;"
                       (if locvar.final? "final " "")
@@ -340,7 +342,7 @@
                  indent-level)))
 
 (defines print-jstatems+jblocks
-  :short "Pretty-print statements and blocks."
+  :short "Pretty-print a statement or block."
   :long
   (xdoc::topstring-p
    "Note that we print the statements that form a block
@@ -493,6 +495,10 @@
           (list (print-jline "}" indent-level))))
 
 (defines print-jclasses+jcmembers
+  :short "Pretty-print a class declaration or class member declaration."
+  :long
+  (xdoc::topstring-p
+   "These are mutually recursive because classes may be class members.")
 
   (define print-jcmember ((member jcmemberp) (indent-level natp))
     :returns (lines msg-listp)
@@ -506,7 +512,7 @@
   (define print-jcbody-element ((body-element jcbody-element-p)
                                 (indent-level natp))
     :returns (lines msg-listp)
-    :short "Pretty-print a Java class body declaration."
+    :short "Pretty-print a class body declaration."
     (jcbody-element-case body-element
                          :member (print-jcmember body-element.get indent-level)
                          :init (print-jcinitializer body-element.get
