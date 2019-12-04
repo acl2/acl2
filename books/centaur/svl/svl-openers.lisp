@@ -632,10 +632,10 @@
 
  (defthm-svl-run-phase-wog
    (defthm svl-run-phase-is-svl-run-phase-wog
-     (implies (and (sv::modname-p modname)
-                   (sv::4veclist-p inputs)
-                   (svl-env-p delayed-env)
-                   (svl-module-alist-p modules))
+     (implies (and (force (sv::modname-p modname))
+                   (force (sv::4veclist-p inputs))
+                   (force (svl-env-p delayed-env))
+                   (force (svl-module-alist-p modules)))
               (equal (svl-run-phase modname inputs delayed-env modules)
                      (svl-run-phase-wog modname inputs delayed-env modules)))
      :flag svl-run-phase-wog)
@@ -862,7 +862,8 @@
                (rest (svl-run-aux modname y out-wires out-bind-alist next-delayed-env modules)))
             (append outputs rest)))
    :hints (("Goal"
-            :in-theory (e/d (svl-run-aux) ())))))
+            :in-theory (e/d (svl-run-aux)
+                            (SVL-RUN-PHASE-IS-SVL-RUN-PHASE-WOG))))))
 
 
 

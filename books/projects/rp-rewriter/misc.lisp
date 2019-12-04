@@ -225,6 +225,10 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                 :expand (hide ,term)
                 :in-theory '(return-last hard-error hide))))));)
 
+
+  (def-rw-opener-error force-fail-error
+    (force x))
+  
   #|(defmacro disable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name nil))||#
 

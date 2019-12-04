@@ -63,7 +63,7 @@
 
 
 
-(defthm make-fast-alist-def
+(def-rp-rule make-fast-alist-def
   (equal (make-fast-alist (cons (cons x y) rest))
          (hons-acons x y
                      (make-fast-alist rest))))
