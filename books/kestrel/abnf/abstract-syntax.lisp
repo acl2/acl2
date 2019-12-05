@@ -64,9 +64,9 @@
     which [RFC:4] requires to start with a letter
     and only use letters, digits, and dashes;
     these are ACL2 characters.
-    These restrictions are captured by the notion of
-    <see topic='@(url rulename-wfp)'>well-formed rule names</see>,
-    which also requires all the letters to be lowercase,
+    These restrictions are captured by the notion of "
+   (xdoc::seetopic "rulename-wfp" "well-formed rule names")
+   ", which also requires all the letters to be lowercase,
     as a normalized representation of rule names,
     which are case-insensitive [RFC:2.1].")
   ((get acl2::string))
@@ -101,9 +101,9 @@
     We abstract away the radix notations @('%b'), @('%d'), and @('%x').
     We also abstract away the restriction
     that lists of natural numbers be non-empty.
-    This restriction is captured by the notion of
-    <see topic='@(url num-val-wfp)'>well-formed numeric value notations</see>,
-    which also requires that the minimum of a range
+    This restriction is captured by the notion of "
+   (xdoc::seetopic "num-val-wfp" "well-formed numeric value notations")
+   ", which also requires that the minimum of a range
     does not exceed the maximum.")
   (:direct ((get nat-list)))
   (:range ((min nat)
@@ -122,9 +122,9 @@
     We abstract away the restriction
     that quoted strings include only certain characters
     (which all are ACL2 characters).
-    This restriction is captured by the notion of
-    <see topic='@(url char-val-wfp)'>well-formed
-    character value notations</see>.")
+    This restriction is captured by the notion of "
+   (xdoc::seetopic "char-val-wfp" "well-formed character value notations")
+   ".")
   (:sensitive ((get acl2::string)))
   (:insensitive ((get acl2::string))))
 
@@ -138,9 +138,9 @@
     We abstract away the restriction
     that the prose include only certain characters
     (which all are ACL2 characters).
-    This restriction is captured by the notion of
-    <see topic='@(url prose-val-wfp)'>well-formed
-    prose value notations</see>.")
+    This restriction is captured by the notion of "
+   (xdoc::seetopic "prose-val-wfp" "well-formed prose value notations")
+   ".")
   ((get acl2::string))
   :tag :prose
   :layout :list)
@@ -159,9 +159,9 @@
     to one with the default (i.e. 0) as lower bound.
     A repetition with a missing upper bound is abstracted
     to one with the default (i.e. infinity) as explicit upper bound.
-    The notion of
-    <see topic='@(url repeat-range-wfp)'>well-formed repetition ranges</see>
-    requires the minimum not to exceed the maximum.")
+    The notion of "
+   (xdoc::seetopic "repeat-range-wfp" "well-formed repetition ranges")
+   " requires the minimum not to exceed the maximum.")
   ((min nat)
    (max nati))
   :tag :repeat
@@ -181,8 +181,9 @@
       We abstract away comments and blank space.
       We also abstract away the restriction that
       there be at least one alternation.
-      This restriction is captured by the notion of
-      <see topic='@(url alternation-wfp)'>well-formed alternations</see>.")
+      This restriction is captured by the notion of "
+     (xdoc::seetopic "alternation-wfp" "well-formed alternations")
+     ".")
     :elt-type concatenation
     :true-listp t
     :pred alternationp
@@ -199,8 +200,9 @@
       We abstract away comments and blank space.
       We also abstract away the restriction that
       there be at least one repetition.
-      This restriction is captured by the notion of
-      <see topic='@(url concatenation-wfp)'>well-formed concatenations</see>.")
+      This restriction is captured by the notion of "
+     (xdoc::seetopic "concatenation-wfp" "well-formed concatenations")
+     ".")
     :elt-type repetition
     :true-listp t
     :elementp-of-nil nil
@@ -476,10 +478,11 @@
      with this macro,
      the resulting sequence will have a @('/') separating the concatenations
      (plus an extra @('/') at the beginning).
-     See the <see topic='@(url core-rules)'>core rules</see>
-     and the
-     <see topic='@(url concrete-syntax-rules)'>concrete syntax rules</see>
-     for examples.")
+     See the "
+    (xdoc::seetopic "core-rules" "core rules")
+    " and the "
+    (xdoc::seetopic "concrete-syntax-rules" "concrete syntax rules")
+    ".")
    (xdoc::@def "/_"))
 
   (defmacro /_ (&rest xs)

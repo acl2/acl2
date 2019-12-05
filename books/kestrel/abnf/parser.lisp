@@ -79,7 +79,9 @@
      and (iii) the remaining suffix of the input that must still be parsed.
      The indication of success or failure is
      either @('nil') to indicate success,
-     or a <see topic='@(url msg)'>message</see> to describe the failure.
+     or a "
+    (xdoc::seetopic "msg" "message")
+    " to describe the failure.
      This is consistent with the <i>@(see Seq)</i> macros,
      with which these parsing functions are implemented.")
 
