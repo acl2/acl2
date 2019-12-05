@@ -372,36 +372,48 @@
                  (:rewrite default-car)))))))
 
 
+
+(define 4vec-to-svex-termlist-quote (lst)
+  :prepwork
+  ((local
+    (in-theory (enable SVEXL-NODE-P
+                       4VEC-P
+                       svex-p
+                       
+                       SVEXL-NODELIST-P))))
+  :returns (mv (err)
+               (res svexl-nodelist-p))
+  (cond ((equal lst nil)
+         (mv nil nil))
+        ((atom lst)
+         (mv t nil))
+        (t 
+         (b* (((mv err rest) (4vec-to-svex-termlist-quote (cdr lst))))
+           (cond ((integerp (car lst))
+                  (mv err (cons (car lst) rest)))
+                 ((4vec-p (car lst))
+                  (mv err
+                      (cons (list 'quote (car lst))
+                            rest)))
+                 (t
+                  (mv t nil))))))
+  ///
+  (std::defret svexlist-p-of-4vec-to-svex-termlist-quote
+               (implies (not svexl-node-flg)
+                        (svexlist-p res))))
+  
+
 (define 4vec-to-svex-termlist (term svexl-node-flg memoize-flg)
   :returns (mv (err)
                (res svexl-nodelist-p))
-  :prepwork
-  ((local
-    (defthm lemma1
-      (implies (integer-listp x)
-               (svexl-nodelist-p x))
-      :hints (("Goal"
-               :in-theory (e/d (svexl-nodelist-p
-                                SVEXL-NODE-P) ())))))
-   (local
-    (defthm lemma2
-      (implies (integer-listp x)
-               (SVEXLIST-P x))
-      :hints (("Goal"
-               :in-theory (e/d (svex-p
-                                SVEXLIST-P) ()))))))
   (case-match term
     (('cons x rest)
      (b* (((mv err1 res1) (4vec-to-svex x svexl-node-flg memoize-flg))
           ((mv err2 res2) (4vec-to-svex-termlist rest svexl-node-flg memoize-flg)))
        (mv (or err1 err2)
            (cons res1 res2))))
-    (''nil
-     (mv nil nil))
     (('quote a)
-     (if (integer-listp a)
-         (mv nil a)
-       (mv t nil)))
+     (4vec-to-svex-termlist-quote a))
     (&
      (mv t nil)))
   ///
