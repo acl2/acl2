@@ -291,3 +291,4 @@
 
 
 (add-rp-rule svl-env->wires-of-svl-env)
+(add-rp-rule svl::svl-env-p-of-svl-env)

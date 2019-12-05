@@ -1143,7 +1143,7 @@
   (local
    (in-theory (disable rp-hyp rp-lhs rp-rhs)))
 
-  (defun no-free-variablep (rule)
+  (define no-free-variablep (rule)
     (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
                                 #|(rp-termp (rp-hyp rule))||#
                                 #|(rp-termp (rp-lhs rule))||#
@@ -1154,51 +1154,68 @@
                     :test 'equal)
            (subsetp (get-vars (rp-rhs rule))
                     vars
-                    :test 'equal))))
+                    :test 'equal)))
+    ///
+    (in-theory (disable (:type-prescription no-free-variablep))))
 
   (define rule-syntaxp (rule &key warning)
     (declare (xargs :guard t))
     (and
      (or (weak-custom-rewrite-rule-p rule)
          (and warning
-              (cw "ATTENTION! weak-custom-rewrite-rule-p failed! ~p0 ~%" rule)))
+              (hard-error
+               'rule-syntaxp
+               "ATTENTION! weak-custom-rewrite-rule-p failed! ~p0 ~%"
+               (list (cons #\0 rule)))))
      (or (and
           (or (rp-termp (rp-hyp rule))
               (and warning
-                   (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! ~%")))
+                   (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! Hyp of the ~
+    rule does not satisfy rp::rp-termp. ~%")))
           (or (rp-termp (rp-lhs rule))
               (and warning
-                   (cw "ATTENTION! (rp-termp (rp-lhs rule)) failed! ~p0 ~%" rule)))
+                   (cw "ATTENTION! (rp-termp (rp-lhs rule)) failed! LSH of the ~
+    rule does not satisfy rp::rp-termp. ~%")))
           (or (rp-termp (rp-rhs rule))
               (and warning
-                   (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! ~%")))
+                   (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! RHS of the ~
+    rule does not satisfy rp::rp-termp. ~%")))
           (or (not (include-fnc (rp-lhs rule) 'rp))
               (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp)) failed! ~%")))
+                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
+    failed! LHS cannot contain an instance of rp. ~%")))
           (or (not (include-fnc (rp-hyp rule) 'rp))
               (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp)) failed! ~%")))
+                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
+    failed! HYP cannot contain an instance of rp. ~%")))
           (or (not (include-fnc (rp-rhs rule) 'falist))
               (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist)) failed! ~%")))
+                   (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
+    failed! RHS cannot contain an instance of falist ~%")))
           (or (not (include-fnc (rp-hyp rule) 'falist))
               (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist)) failed! ~%")))
+                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
+    failed! HYP cannot contain an instance of falist ~%")))
           (or (not (include-fnc (rp-lhs rule) 'if))
               (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if)) failed! ~%")))
+                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if))
+    failed! LHS cannot contain an instance of 'if'. ~%")))
           (or (consp (rp-lhs rule))
               (and warning
-                   (cw "ATTENTION! (consp (rp-lhs rule)) failed! ~%")))
+                   (cw "ATTENTION! (consp (rp-lhs rule)) failed! LHS cannot
+    be a variable. ~%")))
           (or (not (acl2::fquotep (rp-lhs rule)))
               (and warning
-                   (cw "ATTENTION! (not (acl2::fquotep (rp-lhs rule))) failed! ~%")))
+                   (cw "ATTENTION! (not (acl2::fquotep (rp-lhs rule))) failed!
+    LHS cannot be a quoted value ~%")))
           (or (not (include-fnc (rp-lhs rule) 'synp))
               (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp)) failed! ~%")))
+                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp))
+    failed! LHS cannot contain an instance of synp ~%")))
           (or (no-free-variablep rule)
               (and warning
-                   (cw "ATTENTION! (no-free-variablep rule) failed! ~%"))))
+                   (cw "ATTENTION! (no-free-variablep rule) failed! We do not
+    support rules with free variables ~%"))))
          (and (equal warning ':err)
               (hard-error
                'rule-syntaxp
@@ -1209,8 +1226,13 @@
                      (cons #\2 (rp-lhs rule))
                      (cons #\3 (rp-rhs rule)))))
          (and warning
-              (cw "This rule will be skipped! Warning is issued at rp::rule-syntaxp for ~p0 ~%" rule)))))
-
+              (cw "Warning in rp::rule-syntaxp is issued for: ~%
+ rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
+                  (rp-rune rule)
+                  (rp-hyp rule)
+                  (rp-lhs rule)
+                  (rp-rhs rule))))))
+  
   (defun rule-list-syntaxp (rules)
     (declare (xargs :guard t))
     (if (atom rules)
