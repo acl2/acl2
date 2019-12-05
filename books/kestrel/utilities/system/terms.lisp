@@ -35,6 +35,7 @@
 (include-book "kestrel/std/system/lambda-guard-verified-fnsp" :dir :system)
 (include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
+(include-book "kestrel/std/system/term-guard-obligation" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "world-queries")
@@ -157,26 +158,6 @@
        ((when (msgp term/message))
         (mv (msg "~x0 does not have a valid body.  ~@1" x term/message) nil)))
     (mv `(lambda ,(second x) ,term/message) stobjs-out)))
-
-(define term-guard-obligation ((term pseudo-termp) state)
-  :returns (obligation "A @(tsee pseudo-termp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Formula expressing the guard obligation of a term."
-  :long
-  "<p>
-   The case in which @('term') is a symbol is dealt with separately
-   because @(tsee guard-obligation)
-   interprets a symbol as a function or theorem name, not as a variable.
-   </p>"
-  (b* (((when (symbolp term)) *t*)
-       ((mv erp val) (guard-obligation term nil nil t __function__ state))
-       ((when erp)
-        (raise "Error ~x0 when computing the guard obligation of ~x1."
-               erp term))
-       (obligation-clauses (cadr val))
-       (obligation-formula (termify-clause-set obligation-clauses)))
-    obligation-formula))
 
 (define all-vars-in-untranslated-term (x (wrld plist-worldp))
   :returns (term "A @(tsee pseudo-termp).")

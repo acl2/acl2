@@ -25,6 +25,7 @@
 (include-book "lambda-guard-verified-exec-fnsp")
 (include-book "lambda-guard-verified-fnsp")
 (include-book "lambda-logic-fnsp")
+(include-book "term-guard-obligation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

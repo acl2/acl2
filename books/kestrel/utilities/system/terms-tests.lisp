@@ -117,11 +117,3 @@
 
 (assert! (msgp (nth 0 (mv-list 2 (check-user-lambda
                                   '(lambda (x) (f x)) (w state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (term-guard-obligation 'x state)
-              ''t)
-
-(assert-equal (term-guard-obligation '(binary-+ x '4) state)
-              '(acl2-numberp x))
