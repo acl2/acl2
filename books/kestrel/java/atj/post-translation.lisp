@@ -396,7 +396,7 @@
      if there are no circularities,
      we perform the assignments in the topological order
      (note that we need to reverse the ordered list
-     returned by @(tsee depgraph::topsort),
+     returned by @(tsee depgraph::toposort),
      which starts with variables that do not depend on other variables,
      and which we must assign last).
      If instead there are circularities,
