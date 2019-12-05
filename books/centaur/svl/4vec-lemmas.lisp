@@ -1960,9 +1960,7 @@
 
 (defthm 4vec-part-install-of-4vec-part-install-sizes=1
   (implies (and (natp start1)
-                (natp size1)
                 (natp start2)
-                (natp size2)
                 (> start1 start2))
            (equal (4vec-part-install start1 1
                                      (4vec-part-install start2 1 old-val val2)
