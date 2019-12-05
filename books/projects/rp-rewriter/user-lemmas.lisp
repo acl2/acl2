@@ -126,5 +126,17 @@
   (equal (append nil x)
          x))
 
-(def-rw-opener-error force-fail-error
-    (force forced-term))  
+(def-rp-rule$ t nil
+  force-fail
+  (implies
+   (hard-error
+    'force-fail
+    "the below term in a 'force' instance could not be reduced to 't.
+you can using (rp::update-rp-brr t rp::rp-state) and
+(rp::pp-rw-stack :omit '()
+                 :evisc-tuple (evisc-tuple 10 12 nil nil)
+                 :frames 50). ~%forced-term: ~p0 ~% "
+    (list (cons #\0 forced-term)))
+   (equal (force forced-term) t))
+  :hints (("goal" 
+           :in-theory '(return-last hard-error hide))))
