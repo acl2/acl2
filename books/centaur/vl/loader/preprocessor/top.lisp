@@ -726,10 +726,9 @@ tree.</li>
 (fty::deflist vl-istack
   :elt-type vl-iframe)
 
-(local (defthm true-listp-of-vl-echarlist-fix
-         (equal (true-listp (vl-echarlist-fix x))
-                (true-listp x))
-         :hints(("Goal" :in-theory (enable vl-echarlist-fix)))))
+;; (local (defthm true-listp-of-vl-echarlist-fix
+;;          (true-listp (vl-echarlist-fix x))
+;;          :hints(("Goal" :in-theory (enable vl-echarlist-fix)))))
 
 (defsection ppst
   :short "Preprocessor state object."
@@ -1679,13 +1678,8 @@ the defines table, and make the appropriate changes to the @('istack') and
     (mv t remainder ppst))
   ///
   (defthm true-listp-of-vl-process-ifdef
-    (equal (true-listp (mv-nth 1 (vl-process-ifdef loc directive echars ppst)))
-           (true-listp echars))
-    :rule-classes ((:rewrite)
-                   (:type-prescription :corollary
-                    (implies (true-listp echars)
-                             (true-listp
-                              (mv-nth 1 (vl-process-ifdef loc directive echars ppst)))))))
+    (true-listp (mv-nth 1 (vl-process-ifdef loc directive echars ppst)))
+    :rule-classes :type-prescription)
 
   (defthm acl2-count-of-vl-process-ifdef-weak
     (<= (acl2-count (mv-nth 1 (vl-process-ifdef loc directive echars ppst)))
@@ -1823,6 +1817,15 @@ the defines table, and make the appropriate changes to the @('istack') and
        (ppst (vl-ppst-update-iskips iskips)))
 
     (mv t ppst)))
+
+(local
+ (defrule remainder-when-successful-vl-read-until-literal
+   (b* (((mv successp ?prefix remainder)
+         (vl-read-until-literal string echars)))
+     (implies successp
+              remainder))
+   :hints (("goal" :use consp-of-remainder-when-successful-vl-read-until-literal
+            :in-theory (disable consp-of-remainder-when-successful-vl-read-until-literal)))))
 
 (define vl-read-until-end-of-define
   :short "Read from @('`define') until the end of the line."
@@ -2186,9 +2189,8 @@ non-arguments pieces.</p>"
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-read-until-end-of-define-remainder
-    (equal (true-listp (mv-nth 2 (vl-read-until-end-of-define echars config)))
-           (true-listp echars))
-    :rule-classes ((:rewrite)))
+    (true-listp (mv-nth 2 (vl-read-until-end-of-define echars config)))
+    :rule-classes :type-prescription)
 
   (defthm acl2-count-of-vl-read-until-end-of-define-weak
     (<= (acl2-count (mv-nth 2 (vl-read-until-end-of-define echars config)))
@@ -2302,9 +2304,8 @@ non-arguments pieces.</p>"
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-read-define-default-text-remainder
-    (equal (true-listp (mv-nth 2 (vl-read-define-default-text echars starting-loc ppst)))
-           (true-listp echars))
-    :rule-classes ((:rewrite)))
+    (true-listp (mv-nth 2 (vl-read-define-default-text echars starting-loc ppst)))
+    :rule-classes :type-prescription)
 
   (defthm acl2-count-of-vl-read-define-default-text-weak
     (<= (acl2-count (mv-nth 2 (vl-read-define-default-text echars config starting-loc)))
@@ -2534,8 +2535,8 @@ appropriately if @('activep') is set.</p>"
 
   ///
   (defthm true-listp-of-vl-process-define-remainder
-    (equal (true-listp (mv-nth 1 (vl-process-define loc echars ppst)))
-           (true-listp echars)))
+    (true-listp (mv-nth 1 (vl-process-define loc echars ppst)))
+    :rule-classes :type-prescription)
 
   (defthm acl2-count-of-vl-process-define
     (<= (acl2-count (mv-nth 1 (vl-process-define loc echars ppst)))
@@ -3350,8 +3351,8 @@ update the defines table appropriately.</p>"
     (mv t remainder ppst))
   ///
   (defthm true-listp-of-vl-process-undef-remainder
-    (equal (true-listp (mv-nth 1 (vl-process-undef loc echars ppst)))
-           (true-listp echars)))
+    (true-listp (mv-nth 1 (vl-process-undef loc echars ppst)))
+    :rule-classes :type-prescription)
 
   (defthm acl2-count-of-vl-process-undef
     (<= (acl2-count (mv-nth 1 (vl-process-undef loc echars ppst)))

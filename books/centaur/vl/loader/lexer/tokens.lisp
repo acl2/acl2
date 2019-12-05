@@ -241,6 +241,7 @@ we're ever actually running @(see vl-tokenlist-p).</p>"
 
 
 
+
 (defaggregate vl-plaintoken
   :short "Tokens for whitespace, comments, operators, punctuation, and keywords."
   :tag nil ;; Subtle, see below
@@ -252,8 +253,7 @@ we're ever actually running @(see vl-tokenlist-p).</p>"
            @(see lex-keywords) and other kinds of nonkeyword tokens.")
 
    (etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The actual text that gave rise to this token from the Verilog source
            code.  Having this text is useful for error reporting, e.g., it
            includes location information.")
@@ -294,8 +294,7 @@ like @(see vl-token->etext).</p>"
   :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this string literal from the
            Verilog source.  Note that this text is \"verbatim\" and, as a
            consequence, character sequences like @('\\n') will not have been
@@ -321,8 +320,7 @@ Verilog-2005 standard.  BOZO is that still valid for SystemVerilog?</p>")
   :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this token.")
 
    (name stringp
@@ -356,8 +354,7 @@ updated references to the standard.</p>")
   :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this token.")
 
    (name stringp
@@ -374,8 +371,7 @@ updated references to the standard.</p>")
   :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this token.")
 
    (breakp booleanp :rule-classes :type-prescription
@@ -409,8 +405,7 @@ bits.</p>"
   :layout :tree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this token.")
 
    (width   posp
@@ -480,8 +475,7 @@ bits.</p>"
   :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this token.")
 
    (breakp booleanp :rule-classes :type-prescription
@@ -497,8 +491,7 @@ bits.</p>"
   :layout :fulltree
 
   ((etext (and (vl-echarlist-p etext)
-               (consp etext)
-               (true-listp etext))
+               (consp etext))
           "The characters that gave rise to this token.")
 
    (quantity stringp

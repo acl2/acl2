@@ -73,6 +73,16 @@ mode, it will default to program mode, etc.</p>
 <p>The optional @(':parents'), @(':short'), and @(':long') parameters are like
 those in @(see xdoc::defxdoc).</p>
 
+<p>If keyword @(':disable-fc') is set, it causes the generated forward chaining
+rule to be disabled, which can make the admission of the defenum form and
+subsequent proofs much faster when the number of elements is large.</p>
+
+<p>If keyword @(':member') is set, then the body of the recognizer uses a
+@('member-eq') check rather than an @('or').  This can speed up compilation
+when the number of elements is large.  It is probably necessary to have some
+rules about @('member-equal') available; loading the @('std/lists/sets') should
+be sufficient.</p>
+
 <h3>Performance Notes</h3>
 
 <p>The recognizer just tests its argument against the elements, in order.
@@ -161,7 +171,9 @@ fast alist or other schemes, based on the elements it is given.</p>")
     :long
     :default
     :fix
-    :equiv))
+    :equiv
+    :disable-fc
+    :member))
 
 (defun defenum-fn (name members rest-args state)
   (declare (xargs :mode :program))
@@ -205,7 +217,9 @@ fast alist or other schemes, based on the elements it is given.</p>")
                     (eq mode :program)))
         (raise ":mode must be one of :logic or :program, but is ~x0." mode))
 
-       (body (cons 'or (defenum-members-to-tests members x)))
+       (body (if (cdr (assoc :member kwd-alist))
+                 `(and (member-eq ,x ',members) t)
+               (cons 'or (defenum-members-to-tests members x))))
        (def `(defund ,name (,x)
                (declare (xargs :guard t))
                ,body))
@@ -239,12 +253,15 @@ fast alist or other schemes, based on the elements it is given.</p>")
         ;; Magic function from :doc type-set
         (acl2::convert-type-set-to-term x ts (acl2::ens state) (w state) nil))
 
-       (fc-rule `(defthm ,(intern-in-package-of-symbol
-                           (concatenate 'string (symbol-name name) "-POSSIBILITIES")
-                           name)
-                   (implies (,name ,x)
-                            (or . ,(defenum-members-to-tests-equal members x)))
-                   :rule-classes :forward-chaining))
+       (fc-rule `(,(if (cdr (assoc :disable-fc kwd-alist))
+                       'defthmd
+                     'defthm)
+                  ,(intern-in-package-of-symbol
+                    (concatenate 'string (symbol-name name) "-POSSIBILITIES")
+                    name)
+                  (implies (,name ,x)
+                           (or . ,(defenum-members-to-tests-equal members x)))
+                  :rule-classes :forward-chaining))
 
        (name-without-p (std::strip-p-from-symbol name))
 
@@ -293,6 +310,8 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
        ,fc-rule
 
+       (local (in-theory (disable ,name)))
+
        ,fix
 
        (local (in-theory (enable ,fixname)))
@@ -301,6 +320,7 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
        ,fix-id
 
+       (local (in-theory (disable ,fixname)))
        (fty::deffixtype ,name
          :pred ,name
          :fix ,fixname
