@@ -18,7 +18,7 @@ public final class Acl2Variable extends Acl2Term {
 
     /**
      * Name of the variable.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Symbol name;
 
@@ -60,6 +60,7 @@ public final class Acl2Variable extends Acl2Term {
      * according to the supplied map from variable symbols to indices.
      *
      * @param indices Map from variable symbols to indices.
+     *                Invariants: not null, no null keys, no null values.
      * @throws IllegalArgumentException If this variable
      *                                  is not a key of the map,
      *                                  or if the value associated with it
@@ -90,6 +91,7 @@ public final class Acl2Variable extends Acl2Term {
      * This evaluation never fails.
      *
      * @param binding The binding of variable indices to values.
+     *                Invariant: not null, no null elements.
      * @return The value that results from the evaluation.
      */
     @Override
@@ -134,7 +136,7 @@ public final class Acl2Variable extends Acl2Term {
      * @param o The term to compare this variable with.
      * @return A negative integer, zero, or a positive integer as
      * this term is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Term o) {
@@ -163,7 +165,7 @@ public final class Acl2Variable extends Acl2Term {
      *
      * @param name The name of the variable.
      * @return The variable.
-     * @throws IllegalArgumentException If {@code name} is {@code null}.
+     * @throws IllegalArgumentException If {@code name} is null.
      */
     public static Acl2Variable make(Acl2Symbol name) {
         if (name == null)

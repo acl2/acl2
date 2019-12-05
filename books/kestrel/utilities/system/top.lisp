@@ -20,7 +20,6 @@
 (include-book "named-formulas")
 (include-book "numbered-names")
 (include-book "paired-names")
-(include-book "term-function-recognizers")
 (include-book "terms")
 (include-book "world-queries")
 (include-book "world-theorems")

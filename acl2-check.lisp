@@ -332,8 +332,11 @@ most-negative-fixnum = ~s."
 (error "This Common Lisp is unsuitable for ACL2 because~%~
         neither :UNIX nor :MSWINDOWS is a member of *features*.")
 
-(or (typep (1- array-dimension-limit) 'fixnum)
-    (error "We assume that (1- ARRAY-DIMENSION-LIMIT) is a fixnum.  CLTL2 ~
+(or (typep array-dimension-limit 'fixnum)
+
+; We assume this explicitly in the various copy-array functions.
+
+    (error "We assume that ARRAY-DIMENSION-LIMIT is a fixnum.  CLTL2 ~
             requires this.  ACL2 will not work in this Common Lisp."))
 
 (or (>= multiple-values-limit *number-of-return-values*)

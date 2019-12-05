@@ -855,23 +855,23 @@ the @('fault') field instead.</li>
 
     :short "Calculates effective address when SIB is present."
     :long "<p>Source: Intel Vol. 2A, Table 2-3.</p>
-	   <p>Also see Intel Vol. 2A, Table 2-2 and Figure 2-6.</p>
-	   <p>In 64-bit mode,
-	   we use @('rgfi') to read bases as signed linear addresses,
-	   which encode canonical linear addresses,
-	   which are also effective addresses in 64-bit mode.
-	   In 32-bit mode,
-	   we use @('rr32') to read bases as unsigned effective addresses.</p>
-	   <p>In 64-bit mode,
-	   we use @('rgfi') to read indices as signed 64-bit values.
-	   In 32-bit mode,
-	   we limit them to signed 32-bit values.</p>
-	   <p>Note that, in 32-bit mode,
-	   we call this function only when the address size is 32 bits.
-	   When the address size is 16 bits, there is no SIB byte:
-	   See Intel Vol. 2 Table 2-1.</p>
-	   <p>The displacement is read as a signed values:
-	   see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
+           <p>Also see Intel Vol. 2A, Table 2-2 and Figure 2-6.</p>
+           <p>In 64-bit mode,
+           we use @('rgfi') to read bases as signed linear addresses,
+           which encode canonical linear addresses,
+           which are also effective addresses in 64-bit mode.
+           In 32-bit mode,
+           we use @('rr32') to read bases as unsigned effective addresses.</p>
+           <p>In 64-bit mode,
+           we use @('rgfi') to read indices as signed 64-bit values.
+           In 32-bit mode,
+           we limit them to signed 32-bit values.</p>
+           <p>Note that, in 32-bit mode,
+           we call this function only when the address size is 32 bits.
+           When the address size is 16 bits, there is no SIB byte:
+           See Intel Vol. 2 Table 2-1.</p>
+           <p>The displacement is read as a signed values:
+           see AMD manual, Dec'17, Volume 3, Section 1.5.</p>"
 
     :returns (mv flg
 		 (non-truncated-memory-address
@@ -991,7 +991,7 @@ the @('fault') field instead.</li>
 		 (increment-rip-by natp)
 		 (x86 x86p :hyp (x86p x86)))
     :short "Calculate the displacement for
-	    16-bit effective address calculation."
+            16-bit effective address calculation."
     :long
     "<p>
      This is according to Intel manual, Mar'17, Vol. 2, Table 2-1.
@@ -1193,17 +1193,17 @@ the @('fault') field instead.</li>
       <p>Quoting Intel Vol. 1 Sec. 3.3.7 (Address Calculations in
       64-Bit Mode):</p>
 
-	<p><em>All 16-bit and 32-bit address calculations are
-	zero-extended in IA-32e mode to form 64-bit addresses. Address
-	calculations are first truncated to the effective address size
-	of the current mode (64-bit mode or compatibility mode), as
-	overridden by any address-size prefix. The result is then
-	zero-extended to the full 64-bit address width. Because of
-	this, 16-bit and 32-bit applications running in compatibility
-	mode can access only the low 4 GBytes of the 64-bit mode
-	effective addresses. Likewise, a 32-bit address generated in
-	64-bit mode can access only the low 4 GBytes of the 64-bit
-	mode effective addresses.</em></p>
+        <p><em>All 16-bit and 32-bit address calculations are
+        zero-extended in IA-32e mode to form 64-bit addresses. Address
+        calculations are first truncated to the effective address size
+        of the current mode (64-bit mode or compatibility mode), as
+        overridden by any address-size prefix. The result is then
+        zero-extended to the full 64-bit address width. Because of
+        this, 16-bit and 32-bit applications running in compatibility
+        mode can access only the low 4 GBytes of the 64-bit mode
+        effective addresses. Likewise, a 32-bit address generated in
+        64-bit mode can access only the low 4 GBytes of the 64-bit
+        mode effective addresses.</em></p>
 
     <p>Also: Intel Vol 1, Section 3.3.7 says that we need
     sign-extended displacements in effective address calculations. In
@@ -1368,8 +1368,8 @@ the @('fault') field instead.</li>
      ;; instruction. For details, see *Z-addressing-method-info* in
      ;; x86isa/utils/decoding-utilities.lisp.
      (num-imm-bytes  :type (unsigned-byte 3)
-		     "Number of immediate bytes (0, 1, 2, or 4)
-		      that follow the sib (or displacement bytes, if any).")
+                     "Number of immediate bytes (0, 1, 2, or 4)
+                      that follow the sib (or displacement bytes, if any).")
      x86)
 
 
@@ -1572,17 +1572,17 @@ reference made from privilege level 3.</blockquote>"
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
      (reg-type      :type (unsigned-byte  1)
        "@('reg-type') is @('*gpr-access*') for GPRs, and
-		   @('*xmm-access*') for XMMs.")
+                   @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking,
-		   @('nil') otherwise.")
+                   @('nil') otherwise.")
      (memory-ptr?   booleanp
                     "@('t') if the operand is a memory operand of the
-		   form m16:16, m16:32, or m16:64")
+                   form m16:16, m16:32, or m16:64")
      (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
                     "Register of the segment to read the operand from
-		   (when reading the operand from memory).")
+                   (when reading the operand from memory).")
      (p4?           :type (or t nil)
        "Address-Size Override Prefix Present?")
      (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
@@ -1763,11 +1763,11 @@ reference made from privilege level 3.</blockquote>"
                     "@('t') if instruction does alignment checking, @('nil') otherwise")
      (memory-ptr?   booleanp
                     "@('t') if the operand is a memory operand
-		   of the form m16:16, m16:32, or m16:64")
+                   of the form m16:16, m16:32, or m16:64")
      (operand      :type (integer 0 *))
      (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
                     "Register of the segment to read the operand from
-		   (when reading the operand from memory).")
+                   (when reading the operand from memory).")
      (addr         :type (signed-byte 64))
      (rex-byte     :type (unsigned-byte 8))
      (r/m          :type (unsigned-byte 3))
@@ -1819,11 +1819,11 @@ reference made from privilege level 3.</blockquote>"
      (operand-size  :type (member 4 8 16))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking,
-		   @('nil') otherwise")
+                   @('nil') otherwise")
      (operand       :type (integer 0 *))
      (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
                     "Register of the segment to read the operand from
-		   (when reading the operand from memory).")
+                   (when reading the operand from memory).")
      (addr          :type (signed-byte 64))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))

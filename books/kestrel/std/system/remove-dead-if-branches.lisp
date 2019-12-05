@@ -21,8 +21,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each @('(if t a b)') is turned into @('a'),
-     and each @('(if nil a b)') is turned into @('b').
+    "Each @('(if t a b)') or @('(if (not nil) a b)') is turned into @('a'),
+     and each @('(if nil a b)') or @('(if (not t) a b)') is turned into @('b').
      This is done to @('a') and @('b'), recursively.")
    (xdoc::@def "remove-dead-if-branches")
    (xdoc::@def "remove-dead-if-branches-lst"))
@@ -34,9 +34,11 @@
          (fn (ffn-symb term))
          ((when (and (eq fn 'if)
                      (= (len (fargs term)) 3))) ; should be always true
-          (cond ((equal (fargn term 1) *t*)
+          (cond ((member-equal (fargn term 1)
+                               (list *t* (fcons-term 'not (list *nil*))))
                  (remove-dead-if-branches (fargn term 2)))
-                ((equal (fargn term 1) *nil*)
+                ((member-equal (fargn term 1)
+                               (list *nil* (fcons-term 'not (list *t*))))
                  (remove-dead-if-branches (fargn term 3)))
                 (t `(if ,(remove-dead-if-branches (fargn term 1))
                         ,(remove-dead-if-branches (fargn term 2))

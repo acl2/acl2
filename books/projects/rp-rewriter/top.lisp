@@ -45,7 +45,6 @@
 (include-book "misc")
 
 (include-book "user-lemmas")
-(include-book "proofs/useful-lemmas")
 
 (include-book "meta/top")
 

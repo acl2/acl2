@@ -70,7 +70,7 @@
                    :in-theory (e/d ()
                                    (rp-rw-aux
                                     get-rules
-                                    GET-ENABLED-EXEC-RULES
+                                    #|GET-ENABLED-EXEC-RULES||#
                                     beta-search-reduce))))
     :verify-guards t))
   (if (and (consp cl)
@@ -82,8 +82,12 @@
             ;; appear in the term but rp-termp does not.
             (mv nil (list cl) rp-state state))
            (runes (access rp-cl-hints hints :runes))
+           ((mv runes exc-rules)
+            (if runes
+                (mv runes (get-disabled-exc-rules-from-table
+                           (table-alist 'rp-exc-rules (w state))))
+              (get-enabled-rules-from-table state)))
            (new-synps (access rp-cl-hints hints :new-synps))
-           (enabled-exec-rules (get-enabled-exec-rules runes))
            (rules-alist (get-rules runes state :new-synps new-synps))
            ((when (not (rules-alistp rules-alist)))
             (progn$ (hard-error 'rp-clause-precessor-aux
@@ -98,11 +102,12 @@
            ((mv rw rp-state)
             (rp-rw-aux car-cl
                        rules-alist
-                       enabled-exec-rules
+                       exc-rules
                        meta-rules
                        rp-state
                        state))
            (- (fast-alist-free meta-rules))
+           (- (fast-alist-free exc-rules))
            (- (fast-alist-free rules-alist)))
         (mv nil
             (list (list rw))
@@ -137,7 +142,7 @@
                             ;; valid-rp-meta-rule-listp
                             rp-evl-of-beta-search-reduce
                             rp-meta-valid-syntax-listp
-                            symbol-alistp-get-enabled-exec-rules
+                            ;;symbol-alistp-get-enabled-exec-rules
                             rp-rw-aux-is-correct)
                            (get-rules
                             valid-rp-meta-rule-listp
@@ -147,7 +152,7 @@
                             ex-from-synp-lemma1
                             valid-rules-alistp
                             rp-rw-aux
-                            get-enabled-exec-rules
+                            #|get-enabled-exec-rules||#
                             assoc-eq
                             table-alist))))
   :rule-classes :rewrite)

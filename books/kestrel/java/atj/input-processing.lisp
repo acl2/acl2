@@ -815,7 +815,115 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atj-collect-fns-in-term
-    :hints (("Goal" :expand (pseudo-termp term)))))
+    :hints (("Goal" :expand (pseudo-termp term))))
+
+  ;; this is currently in a GitHub Pull Request
+  ;; for [books]/std/lists/remove1-equal.lisp;
+  ;; remove this and include that file here when the Pull Request is merged:
+  (defruledl subsetp-equal-of-remove1-equal-left
+    (implies (subsetp-equal x y)
+             (subsetp-equal (remove1-equal a x) y)))
+
+  ;; the following lemmas about ALL-FNNAMES1 seem a bit too specific
+  ;; to be in [books]/kestrel/std/system/all-fnnames.lisp:
+
+  (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
+
+  (defruledl all-fnnames1-lemma1
+    (implies (and (consp x)
+                  (equal fn (car x))
+                  (not (equal fn 'quote))
+                  (not (consp fn)))
+             (member-equal fn (all-fnnames1 nil x acc)))
+    :expand ((all-fnnames1 nil x acc))
+    :disable acl2::all-fnnames1-includes-acc
+    :use (:instance acl2::all-fnnames1-includes-acc
+          (flg t) (x (cdr x)) (acc (cons fn acc))))
+
+  (defruledl all-fnnames1-lemma2
+    (implies (and (consp x)
+                  (not (eq (car x) 'quote)))
+             (subsetp-equal (all-fnnames1 t (cdr x) nil)
+                            (all-fnnames1 nil x nil)))
+    :enable all-fnnames1)
+
+  (defruledl all-fnnames1-lemma3
+    (implies (and (consp x)
+                  (not (equal (car x) 'quote))
+                  (not (consp (car x))))
+             (subsetp-equal (all-fnnames1 nil (caddr x) nil)
+                            (all-fnnames1 nil x nil)))
+    :use (:instance acl2::all-fnnames1-includes-acc
+          (flg nil)
+          (x (cadr x))
+          (acc (all-fnnames1 nil
+                             (caddr x)
+                             (all-fnnames1 t
+                                           (cdddr x)
+                                           (list (car x))))))
+    :disable acl2::all-fnnames1-includes-acc
+    :enable all-fnnames1)
+
+  (defruledl all-fnnames1-lemma4
+    (implies (and (consp x)
+                  (not (equal (car x) 'quote))
+                  (not (consp (car x))))
+             (subsetp-equal (all-fnnames1 nil (cadddr x) nil)
+                            (all-fnnames1 nil x nil)))
+    :use ((:instance acl2::all-fnnames1-includes-acc
+           (flg nil)
+           (x (cadr x))
+           (acc (all-fnnames1
+                 nil
+                 (caddr x)
+                 (all-fnnames1 nil
+                               (cadddr x)
+                               (all-fnnames1 t
+                                             (cddddr x)
+                                             (list (car x)))))))
+          (:instance acl2::all-fnnames1-includes-acc
+           (flg nil)
+           (x (caddr x))
+           (acc (all-fnnames1 nil
+                              (cadddr x)
+                              (all-fnnames1 t
+                                            (cddddr x)
+                                            (list (car x)))))))
+    :disable acl2::all-fnnames1-includes-acc
+    :enable all-fnnames1)
+
+  (defret-mutual subsetp-equal-of-atj-collect-fns-in-term
+    (defret subsetp-equal-of-atj-collect-fns-in-term
+      (and (subsetp-equal new-worklist-gen
+                          (append worklist-gen
+                                  worklist-chk
+                                  (all-fnnames term)))
+           (subsetp-equal new-worklist-chk
+                          (append worklist-gen
+                                  worklist-chk
+                                  (all-fnnames term))))
+      :fn atj-collect-fns-in-term)
+    (defret subsetp-equal-of-atj-collect-fns-in-terms
+      (and (subsetp-equal new-worklist-gen
+                          (append worklist-gen
+                                  worklist-chk
+                                  (all-fnnames-lst terms)))
+           (subsetp-equal new-worklist-chk
+                          (append worklist-gen
+                                  worklist-chk
+                                  (all-fnnames-lst terms))))
+      :fn atj-collect-fns-in-terms)
+    :mutual-recursion atj-collect-fns-in-term
+    :hints (("Goal" :in-theory (e/d (atj-collect-fns-in-term
+                                     atj-collect-fns-in-terms
+                                     all-fnnames1
+                                     all-fnnames1-lemma1
+                                     all-fnnames1-lemma2
+                                     all-fnnames1-lemma3
+                                     all-fnnames1-lemma4
+                                     subsetp-equal-of-remove1-equal-left)
+                                    (member-equal
+                                     acl2::member-of-cons))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

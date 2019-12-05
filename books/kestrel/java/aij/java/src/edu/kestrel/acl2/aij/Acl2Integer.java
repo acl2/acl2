@@ -18,7 +18,7 @@ public final class Acl2Integer extends Acl2Rational {
 
     /**
      * Numeric value of this integer.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final BigInteger numericValue;
 
@@ -26,7 +26,7 @@ public final class Acl2Integer extends Acl2Rational {
      * Constructs an integer with the given numeric value.
      *
      * @param numericValue The numeric value of the integer.
-     *                     It is never {@code null}.
+     *                     Invariant: not null.
      */
     private Acl2Integer(BigInteger numericValue) {
         this.numericValue = numericValue;
@@ -46,11 +46,12 @@ public final class Acl2Integer extends Acl2Rational {
      * The result is 0 if both integers are 0.
      *
      * @param other The integer for which to take the greatest common divisor
-     *              with this integer. It is never {@code null}.
+     *              with this integer.
+     *              Invariant: not null.
      * @return The greatest common divisor.
      */
     Acl2Integer gcd(Acl2Integer other) {
-        return Acl2Integer.make(this.numericValue.gcd(other.numericValue));
+        return imake(this.numericValue.gcd(other.numericValue));
     }
 
     /**
@@ -59,7 +60,8 @@ public final class Acl2Integer extends Acl2Rational {
      * The result is 0 if any integer is 0.
      *
      * @param other The integer for which to take the least common multiple
-     *              with this integer. It is never {@code null}.
+     *              with this integer.
+     *              Invariant: not null.
      * @return The least common multiple.
      */
     Acl2Integer lcm(Acl2Integer other) {
@@ -70,20 +72,20 @@ public final class Acl2Integer extends Acl2Rational {
         BigInteger mayBeNegative = // (a*b)/gcd
                 thisBigInt.divide(gcd).multiply(otherBigInt);
         if (mayBeNegative.signum() == -1)
-            return Acl2Integer.make(mayBeNegative.negate());
+            return imake(mayBeNegative.negate());
         else
-            return Acl2Integer.make(mayBeNegative);
+            return imake(mayBeNegative);
     }
 
     /**
      * Divides this integer by the argument integer.
      *
      * @param other The divisor by which this integer is divided.
-     *              It is never {@code null} and never 0.
+     *              Invariant: not null, not 0.
      * @return The quotient.
      */
     Acl2Integer divide(Acl2Integer other) {
-        return Acl2Integer.make(this.numericValue.divide(other.numericValue));
+        return imake(this.numericValue.divide(other.numericValue));
     }
 
     /**
@@ -94,28 +96,43 @@ public final class Acl2Integer extends Acl2Rational {
      */
     @Override
     Acl2Integer negate() {
-        return Acl2Integer.make(this.numericValue.negate());
+        return imake(this.numericValue.negate());
+    }
+
+    /**
+     * Reciprocates (arithmetically) this integer,
+     * assuming it is not 0,
+     * consistently with the {@code unary-/} ACL2 function.
+     * Invariant: this integer is not 0.
+     *
+     * @return The reciprocal of this integer.
+     */
+    Acl2Rational reciprocateNonZero() {
+        // 1/a:
+        return Acl2Rational.imake(Acl2Integer.ONE, this);
     }
 
     /**
      * Reciprocates (arithmetically) this integer,
      * consistently with the {@code unary-/} ACL2 function.
+     * If this integer is 0, the result is 0.
      *
      * @return The reciprocal of this integer.
      */
     @Override
     Acl2Rational reciprocate() {
-        // 1/a:
         if (this.equals(Acl2Integer.ZERO))
             return Acl2Integer.ZERO;
-        return Acl2Rational.make(Acl2Integer.ONE, this);
+        else
+            return reciprocateNonZero();
     }
 
     /**
      * Adds the argument value to this integer,
      * consistently with the {@code binary-+} ACL2 function.
      *
-     * @param other The value to add to this integer. It is never {@code null}.
+     * @param other The value to add to this integer.
+     *              Invariant: not null.
      * @return The sum of this integer with the argument value.
      */
     @Override
@@ -127,7 +144,8 @@ public final class Acl2Integer extends Acl2Rational {
      * Adds the argument number to this integer,
      * consistently with the {@code binary-+} ACL2 function.
      *
-     * @param other The number to add to this integer. It is never {@code null}.
+     * @param other The number to add to this integer.
+     *              Invariant: not null.
      * @return The sum of this integer with the argument number.
      */
     @Override
@@ -140,7 +158,7 @@ public final class Acl2Integer extends Acl2Rational {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The rational to add to this integer.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this integer with the argument rational.
      */
     @Override
@@ -153,11 +171,11 @@ public final class Acl2Integer extends Acl2Rational {
      * consistently with the {@code binary-+} ACL2 function.
      *
      * @param other The integer to add to this integer.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The sum of this integer with the argument integer.
      */
     Acl2Integer addInteger(Acl2Integer other) {
-        return Acl2Integer.make(this.numericValue.add(other.numericValue));
+        return imake(this.numericValue.add(other.numericValue));
     }
 
     /**
@@ -165,7 +183,7 @@ public final class Acl2Integer extends Acl2Rational {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The value by which to multiply this integer.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this integer with the argument value.
      */
     @Override
@@ -178,7 +196,7 @@ public final class Acl2Integer extends Acl2Rational {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The number by which to multiply this integer.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this integer with the argument number.
      */
     @Override
@@ -191,7 +209,7 @@ public final class Acl2Integer extends Acl2Rational {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The rational by which to multiply this integer.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this integer with the argument rational.
      */
     @Override
@@ -204,11 +222,11 @@ public final class Acl2Integer extends Acl2Rational {
      * consistently with the {@code binary-*} ACL2 function.
      *
      * @param other The integer by which to multiply this integer.
-     *              It is never {@code null}.
+     *              Invariant: not null.
      * @return The product of this integer with the argument integer.
      */
     Acl2Integer multiplyInteger(Acl2Integer other) {
-        return Acl2Integer.make(this.numericValue.multiply(other.numericValue));
+        return imake(this.numericValue.multiply(other.numericValue));
     }
 
     /**
@@ -232,7 +250,7 @@ public final class Acl2Integer extends Acl2Rational {
     Acl2Character codeChar() {
         if (numericValue.compareTo(BigInteger.ZERO) >= 0 &&
                 numericValue.compareTo(BIG_INTEGER_256) < 0)
-            return Acl2Character.make((char) numericValue.intValue());
+            return Acl2Character.imake((char) numericValue.intValue());
         else
             return Acl2Character.CODE_0;
     }
@@ -242,6 +260,7 @@ public final class Acl2Integer extends Acl2Rational {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The number to compare this integer with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this integer is less than, equal to, or greater than the argument.
      */
@@ -256,6 +275,7 @@ public final class Acl2Integer extends Acl2Rational {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The rational to compare this integer with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this integer is less than, equal to, or greater than the argument.
      */
@@ -270,6 +290,7 @@ public final class Acl2Integer extends Acl2Rational {
      * This is consistent with the {@code lexorder} ACL2 function.
      *
      * @param o The integer to compare this integer with.
+     *          Invariant: not null.
      * @return A negative integer, zero, or a positive integer as
      * this integer is less than, equal to, or greater than the argument.
      */
@@ -277,6 +298,18 @@ public final class Acl2Integer extends Acl2Rational {
     int compareToInteger(Acl2Integer o) {
         // compare numeric values:
         return this.numericValue.compareTo(o.numericValue);
+    }
+
+    /**
+     * Returns an integer with the numeric value of the given Java big integer.
+     * This is for AIJ's internal use, as conveyed by the {@code i} in the name.
+     *
+     * @param numericValue The numeric value of the integer.
+     *                     Invariant: not null.
+     * @return The integer.
+     */
+    static Acl2Integer imake(BigInteger numericValue) {
+        return new Acl2Integer(numericValue);
     }
 
     //////////////////////////////////////// public members:
@@ -314,7 +347,7 @@ public final class Acl2Integer extends Acl2Rational {
      * @param o The value to compare this integer with.
      * @return A negative integer, zero, or a positive integer as
      * this integer is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Value o) {
@@ -343,7 +376,7 @@ public final class Acl2Integer extends Acl2Rational {
     public static Acl2Integer make(int numericValue) {
         if (numericValue == 0) return ZERO;
         if (numericValue == 1) return ONE;
-        return new Acl2Integer(BigInteger.valueOf(numericValue));
+        return imake(BigInteger.valueOf(numericValue));
     }
 
     /**
@@ -353,7 +386,7 @@ public final class Acl2Integer extends Acl2Rational {
      * @return The integer.
      */
     public static Acl2Integer make(long numericValue) {
-        return new Acl2Integer(BigInteger.valueOf(numericValue));
+        return imake(BigInteger.valueOf(numericValue));
     }
 
     /**
@@ -361,13 +394,13 @@ public final class Acl2Integer extends Acl2Rational {
      *
      * @param numericValue The numeric value of the integer.
      * @return The integer.
-     * @throws IllegalArgumentException If {@code numericValue} is {@code null}.
+     * @throws IllegalArgumentException If {@code numericValue} is null.
      */
     public static Acl2Integer make(BigInteger numericValue) {
         if (numericValue == null)
             throw new IllegalArgumentException("Null numeric value.");
         else
-            return new Acl2Integer(numericValue);
+            return imake(numericValue);
     }
 
     /**

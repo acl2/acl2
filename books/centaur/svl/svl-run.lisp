@@ -334,6 +334,7 @@
    :otf-flg t
    :hints (("Goal"
             :in-theory (e/d (svexlist-eval-wog-is-svexlist-eval
+                             SVEX-EVAL-IS-SVEX-EVAL-WOG
                              svl-well-ranked-module)
                             ())))))
 

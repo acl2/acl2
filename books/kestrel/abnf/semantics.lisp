@@ -284,6 +284,12 @@
            (append (tree->string tree)
                    (tree-list->string trees))))
 
+  (defrule tree-list->string-of-append
+    (equal (tree-list->string (append trees1 trees2))
+           (append (tree-list->string trees1)
+                   (tree-list->string trees2)))
+    :enable append)
+
   (defrule tree-list-list->string-when-atom
     (implies (atom treess)
              (equal (tree-list-list->string treess) nil)))
@@ -291,7 +297,13 @@
   (defrule tree-list-list->string-of-cons
     (equal (tree-list-list->string (cons trees treess))
            (append (tree-list->string trees)
-                   (tree-list-list->string treess)))))
+                   (tree-list-list->string treess))))
+
+  (defrule tree-list-list->string-of-append
+    (equal (tree-list-list->string (append treess1 treess2))
+           (append (tree-list-list->string treess1)
+                   (tree-list-list->string treess2)))
+    :enable append))
 
 (defines tree-terminatedp
   :short "Notion of terminated tree."

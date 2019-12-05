@@ -13,7 +13,7 @@ public final class Acl2EvaluationException extends Exception {
 
     /**
      * Constructs an evaluation exception
-     * with {@code null} as its detail message.
+     * with a null detail message.
      */
     public Acl2EvaluationException() {
         super();

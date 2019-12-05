@@ -124,14 +124,10 @@
               (jkeywordp (abnf::tree->string tree)))
      :rule-classes nil
      :expand ((:free (element)
-               (abnf::tree-match-element-p tree element *grammar*))
-              (:free (treess element)
-               (abnf::tree-list-match-element-p
-                (car treess) element *grammar*)))
+               (abnf::tree-match-element-p tree element *grammar*)))
      :enable (abnf-tree-with-root-p
               abnf::tree-match-element-p
-              abnf::tree-list-match-repetition-p
-              abnf::numrep-match-repeat-range-p
+              abnf::tree-list-match-repetition-p-of-1-repetition
               abnf::tree-match-char-val-p
               abnf::nat-match-sensitive-char-p
               abnf::nat-match-insensitive-char-p

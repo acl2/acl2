@@ -246,8 +246,8 @@
    (defthm lousy-unsigned-byte-p-of-*-mixed
      ;; Probably won't ever unify with anything.
      (implies (and (unsigned-byte-p n1 a)
-		   (unsigned-byte-p n2 b))
-	      (unsigned-byte-p (+ n1 n2) (* a b)))
+                   (unsigned-byte-p n2 b))
+              (unsigned-byte-p (+ n1 n2) (* a b)))
      :hints((\"Goal\" :use ((:instance upper-bound)))))
   })
 
@@ -1531,4 +1531,3 @@ building the word.</p>"
     (cond
      ((endp bits) 0)
      (t `(LOGAPP 1 ,(car bits) (MAKE-WORD-FROM-BITS ,@(cdr bits)))))))
-

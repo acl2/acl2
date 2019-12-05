@@ -8150,10 +8150,6 @@
                  (collect-x-rules-of-rune 'type-set-inverter-rule rune
                                           val ans)
                  ans))
-            (recognizer-alist
-             (if (eq token :compound-recognizer)
-                 (collect-x-rules-of-rune 'recognizer-tuple rune val ans)
-                 ans))
             (generalize-rules
              (if (eq token :generalize)
                  (collect-x-rules-of-rune 'generalize-rule rune val ans)
@@ -8214,6 +8210,10 @@
              (if (eq token :induction)
                  (collect-x-rules-of-rune 'induction-rule rune val ans)
                  ans))
+            (recognizer-alist
+             (if (eq token :compound-recognizer)
+                 (collect-x-rules-of-rune 'recognizer-tuple rune val ans)
+               ans))
             (otherwise ans))))))
 
 (defun find-rules-of-rune1 (rune props ans)
@@ -13417,10 +13417,7 @@
                     ))
     (t (let* ((ens (access rewrite-constant rcnst
                            :current-enabled-structure))
-              (recog-tuple (most-recent-enabled-recog-tuple
-                            fn
-                            (global-val 'recognizer-alist wrld)
-                            ens)))
+              (recog-tuple (most-recent-enabled-recog-tuple fn wrld ens)))
          (cond
           (recog-tuple
            (prepend-step-limit

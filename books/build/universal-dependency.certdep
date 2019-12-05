@@ -3,4 +3,4 @@
 ; required.
 
 Recertification of many books may be required because of new changes to the
-raw Lisp implementations of defstobj and defabsstobj.
+raw Lisp support for defstobj array-resizing functions.

@@ -1033,7 +1033,12 @@
                      make-list-ac-removal
                      (:rewrite lofat-remove-file-correctness-1-lemma-64)
                      (:rewrite lofat-find-file-correctness-1)
-                     lofat-unlink-refinement-lemma-1))
+                     lofat-unlink-refinement-lemma-1
+                     (:rewrite
+                      dir-ent-clusterchain-contents-of-lofat-place-file-coincident-lemma-15)
+                     (:rewrite lofat-place-file-correctness-1-lemma-6)
+                     (:linear
+                      dir-ent-clusterchain-contents-of-lofat-remove-file-disjoint-lemma-12)))
     :do-not-induct t
     :use
     ((:instance (:rewrite lofat-remove-file-correctness-1)

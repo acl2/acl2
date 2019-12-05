@@ -260,7 +260,7 @@ symbol:</p>
 
 @({
 (cdr (assoc-eq 'gl::run-gified
-	       (table-alist 'gl::latest-greatest-gl-clause-proc (w state))))
+               (table-alist 'gl::latest-greatest-gl-clause-proc (w state))))
 })
 
 <p>For example, this function symbol is 'gl::glcp-run-gified immediately after

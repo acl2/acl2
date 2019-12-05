@@ -6302,11 +6302,11 @@
    (t `(simple-array ,array-etype (*)))))
 
 #-acl2-loop-only
-(defun-one-output stobj-copy-array-aref (a1 a2 i n)
-  (declare (type (unsigned-byte 29) i n))
+(defun-one-output copy-array-aref (a1 a2 i n)
+  (declare (type fixnum i n))
 
 ; Copy the first n elements of array a1 into array a2, starting with index i,
-; and then return a2.  See also copy-array-svref and stobj-copy-array-fix-aref.
+; and then return a2.  See also copy-array-svref and copy-array-fix-aref.
 ; Note that this copying does not copy substructures, so in the case that a1 is
 ; an array of stobjs, if 0 <= i < n then the ith element of a1 will be EQ to
 ; the ith element of a2 after the copy is complete.
@@ -6315,13 +6315,13 @@
    ((>= i n) a2)
    (t (setf (aref a2 i)
             (aref a1 i))
-      (stobj-copy-array-aref a1 a2
-                             (the (unsigned-byte 29) (1+ i))
-                             (the (unsigned-byte 29) n)))))
+      (copy-array-aref a1 a2
+                       (the fixnum (1+ i))
+                       n))))
 
 #-acl2-loop-only
-(defun-one-output stobj-copy-array-svref (a1 a2 i n)
-  (declare (type (unsigned-byte 29) i n)
+(defun-one-output copy-array-svref (a1 a2 i n)
+  (declare (type fixnum i n)
            (type simple-vector a1 a2))
 
 ; This is a variant of copy-array-aref for simple vectors a1 and a2.
@@ -6330,16 +6330,14 @@
    ((>= i n) a2)
    (t (setf (svref a2 i)
             (svref a1 i))
-      (stobj-copy-array-svref a1 a2
-                              (the (unsigned-byte 29) (1+ i))
-                              (the (unsigned-byte 29) n)))))
+      (copy-array-svref a1 a2
+                        (the fixnum (1+ i))
+                        n))))
 
 #-acl2-loop-only
-(defun-one-output stobj-copy-array-fix-aref (a1 a2 i n)
-  #+gcl ; declaration causes errors in cmucl and sbcl and may not be necessary
-        ; except in gcl (to avoid boxing)
-  (declare (type (unsigned-byte 29) i n)
-           (type (simple-array (signed-byte 29) (*)) a1 a2))
+(defun-one-output copy-array-fix-aref (a1 a2 i n)
+  (declare (type fixnum i n)
+           (type (simple-array fixnum (*)) a1 a2))
 
 ; This is a variant of copy-array-aref for arrays of fixnums a1 and a2.  We
 ; need this special version to avoid fixnum boxing in GCL during resizing.
@@ -6348,9 +6346,9 @@
    ((>= i n) a2)
    (t (setf (aref a2 i)
             (aref a1 i))
-      (stobj-copy-array-fix-aref a1 a2
-                                 (the (unsigned-byte 29) (1+ i))
-                                 (the (unsigned-byte 29) n)))))
+      (copy-array-fix-aref a1 a2
+                           (the fixnum (1+ i))
+                           n))))
 
 (defmacro live-stobjp (name)
 
@@ -6746,7 +6744,7 @@
                       (prog1 (setf ,(if single-fieldp
                                         'var
                                       `(svref var ,n))
-                                   (,(pack2 'stobj-copy-array- fix-vref)
+                                   (,(pack2 'copy-array- fix-vref)
                                     old new 0 min-index))
                         ,@(and stobj-creator
                                `((when (< (length old) i)

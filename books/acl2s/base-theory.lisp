@@ -508,6 +508,11 @@ I commented out some disabled theorems that seem fine to me.
   :otf-flg t
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
+#|
+
+ This was leading to infinite rewrite loops, which should be
+ investigated.
+
 #!acl2
 (defthm acl2s::acl2s-prefer-positive-addends-<
   (implies
@@ -524,6 +529,7 @@ I commented out some disabled theorems that seem fine to me.
           (< (+ x lhs)
              (+ x rhs))))
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
+|#
 
 #!acl2
 (defthm acl2s::acl2s-prefer-positive-addends-<1
@@ -755,7 +761,8 @@ I commented out some disabled theorems that seem fine to me.
                 (natp y))
            (equal (o< x y)
                   (< x y)))
-  :hints (("goal" :in-theory (enable o<))))
+  :hints (("goal" :in-theory (enable o<)))
+  :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
 (add-macro-fn tlp true-listp)
 

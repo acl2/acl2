@@ -29,6 +29,7 @@
 (include-book "directed-untranslate")
 (include-book "doublets")
 (include-book "enumerations")
+(include-book "erp")
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-macros/top")

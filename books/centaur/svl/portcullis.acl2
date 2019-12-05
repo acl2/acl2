@@ -96,52 +96,23 @@
 	    rp::measure-lemmas
 	    rp::rp-rw
 	    rp::rp-rw-test
-	    rp::CONS-COUNTW
-	    rp::CONS-COUNT
-
-
+	    rp::cons-countw
+	    rp::cons-count
             rp::rp-evl
             rp::rp-evl-meta-extract-global-facts
             rp::rp-evl-lst
-            rp::RP-EVL-OF-FNCALL-ARGS
-            rp::RP-EVL-META-EXTRACT-FORMULA
+            rp::rp-evl-of-fncall-args
+            rp::rp-evl-meta-extract-formula
             rp::defthm-lambda
             rp::def-rw-opener-error
-            
-            ;; temporary:
-            rp::b+
-            rp::m2
-            rp::f2
-            
-            rp::s
-            rp::pp+
-            rp::merge-sum
-            rp::merge-b+
-            rp::pp-sum
-            
-            rp::--
-            rp::f2o
-            rp::c
-            rp::co
-            rp::pp
-            rp::~
-            rp::quarternaryp
-            rp::m2-f2
-            rp::c
-            rp::m2-f2-[0-3]
+	    rp::def-rp-rule
+	    rp::def-rp-rule$
+	    rp::defthmrp
+	    rp::def-rp-thm
+	    rp::add-rp-rule
 
-            rp::times
-            rp::b-*
-            rp::binary-and
-            rp::binary-or
-            rp::binary-?
-            rp::binary-xor
-            rp::binary-not
-            rp::or$
-            rp::and$
-            rp::not$
-            rp::bit-fix
-            
+            acl2::arglist
+	    acl2::value
             acl2::in
             acl2::for
             acl2::collect

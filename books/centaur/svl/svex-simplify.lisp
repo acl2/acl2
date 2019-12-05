@@ -40,11 +40,11 @@
                     acl2::natp-when-integerp))
 
 (defrec svex-simplify-preloaded
-  (enabled-exec-rules rules . meta-rules)
+  (exc-rules rules . meta-rules)
   t)
 
 (progn
-  (define svex-simplify-preload (&key (runes '(let ((world (w state))) (current-theory :here)))
+  (define svex-simplify-preload (&key (runes 'nil)
                                       (state 'state))
     (declare (xargs :guard-hints (("Goal"
                                    :in-theory (e/d () (table-alist))))
@@ -52,15 +52,21 @@
     (b* ((world (w state))
          (- (rp::check-if-clause-processor-up-to-date world))
          ;;(runes (if runes runes (current-theory :here)))
-         (enabled-exec-rules (rp::get-enabled-exec-rules runes))
-         (rules-alist (rp::get-rules runes state))
+
+         ((mv runes exc-rules)
+          (if runes
+              (mv runes
+                  (rp::get-disabled-exc-rules-from-table
+                   (table-alist 'rp-exc-rules world)))
+            (rp::get-enabled-rules-from-table state)))
+         (rules-alist (rp::get-rules runes state :warning :err))
          (meta-rules-entry (hons-assoc-equal 'rp::meta-rules-list
                                              (table-alist 'rp::rp-rw world)))
          (meta-rules (if (consp meta-rules-entry)
                          (make-fast-alist
                           (cdr meta-rules-entry))
                        nil)))
-      (make svex-simplify-preloaded :enabled-exec-rules enabled-exec-rules
+      (make svex-simplify-preloaded :exc-rules exc-rules
             :meta-rules meta-rules
             :rules rules-alist)))
 
@@ -74,7 +80,7 @@
                                        :rules))
              (symbol-alistp (access svex-simplify-preloaded
                                     svex-simplify-preloaded
-                                    :enabled-exec-rules))
+                                    :exc-rules))
              (rp::rp-meta-rule-recs-p (access svex-simplify-preloaded
                                               svex-simplify-preloaded
                                               :meta-rules)
@@ -95,7 +101,7 @@
                                   :rules))
          (fast-alist-free (access svex-simplify-preloaded
                                   svex-simplify-preloaded
-                                  :enabled-exec-rules))
+                                  :exc-rules))
          nil)
       nil)))
 
@@ -369,6 +375,21 @@
 (define 4vec-to-svex-termlist (term svexl-node-flg memoize-flg)
   :returns (mv (err)
                (res svexl-nodelist-p))
+  :prepwork
+  ((local
+    (defthm lemma1
+      (implies (integer-listp x)
+               (svexl-nodelist-p x))
+      :hints (("Goal"
+               :in-theory (e/d (svexl-nodelist-p
+                                SVEXL-NODE-P) ())))))
+   (local
+    (defthm lemma2
+      (implies (integer-listp x)
+               (SVEXLIST-P x))
+      :hints (("Goal"
+               :in-theory (e/d (svex-p
+                                SVEXLIST-P) ()))))))
   (case-match term
     (('cons x rest)
      (b* (((mv err1 res1) (4vec-to-svex x svexl-node-flg memoize-flg))
@@ -377,6 +398,10 @@
            (cons res1 res2))))
     (''nil
      (mv nil nil))
+    (('quote a)
+     (if (integer-listp a)
+         (mv nil a)
+       (mv t nil)))
     (&
      (mv t nil)))
   ///
@@ -428,9 +453,9 @@
       (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system)))
 
     (b* ((rules preloaded-rules)
-         ((mv enabled-exec-rules rules-alist meta-rules)
+         ((mv exc-rules rules-alist meta-rules)
           (mv (access svex-simplify-preloaded rules
-                      :enabled-exec-rules)
+                      :exc-rules)
               (access svex-simplify-preloaded rules
                       :rules)
               (access svex-simplify-preloaded rules
@@ -441,7 +466,7 @@
          ((mv rw rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-           enabled-exec-rules meta-rules nil rp::rp-state state))
+           exc-rules meta-rules nil rp::rp-state state))
          
          ((mv err node-new) (4vec-to-svex rw t nil))
          (- (and err
@@ -476,12 +501,12 @@
                           rp::rw-step-limit
                           rp::rp-rw-aux
                           (:DEFINITION RP::RULES-ALISTP)
-                          (:DEFINITION RP::RULE-SYNTAXP))))))
+                          RP::RULE-SYNTAXP)))))
 
     (b* ((rules preloaded-rules)
-         ((mv enabled-exec-rules rules-alist meta-rules)
+         ((mv exc-rules rules-alist meta-rules)
           (mv (access svex-simplify-preloaded rules
-                      :enabled-exec-rules)
+                      :exc-rules)
               (access svex-simplify-preloaded rules
                       :rules)
               (access svex-simplify-preloaded rules
@@ -492,7 +517,7 @@
          ((mv rw rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-           enabled-exec-rules meta-rules nil rp::rp-state state))
+           exc-rules meta-rules nil rp::rp-state state))
          
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
@@ -604,8 +629,7 @@
                                (context 'nil)
                                (linearize ':auto)
                                (preloaded-rules 'nil)
-                               (runes '(let ((world (w state))) (current-theory
-                                                                 :here))))
+                               (runes 'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -629,7 +653,7 @@
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
-                     (:definition rp::get-enabled-exec-rules)
+                     
                      (:definition rp::rp-rw-subterms)
                      (:rewrite
                       rp::valid-rules-alistp-implies-rules-alistp)
@@ -666,9 +690,9 @@
                      nil)
          (mv term rp::rp-state)))
        
-       ((mv enabled-exec-rules rules-alist meta-rules)
+       ((mv exc-rules rules-alist meta-rules)
         (mv (access svex-simplify-preloaded rules
-                    :enabled-exec-rules)
+                    :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
             (access svex-simplify-preloaded rules
@@ -677,7 +701,7 @@
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil (rp::rw-step-limit rp::rp-state) rules-alist
-         enabled-exec-rules meta-rules rp::rp-state state))
+         exc-rules meta-rules rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
        
        ((mv svexl rp::rp-state)
@@ -691,7 +715,7 @@
        ((mv rw rp::rp-state)
         (rp::rp-rw
          term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-         enabled-exec-rules meta-rules nil rp::rp-state state))
+         exc-rules meta-rules nil rp::rp-state state))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -708,8 +732,7 @@
                                    (context 'nil)
                                    (linearize ':auto)
                                    (preloaded-rules 'nil)
-                                   (runes '(let ((world (w state)))
-                                             (current-theory :here))))
+                                   (runes 'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -733,7 +756,7 @@
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
-                     (:definition rp::get-enabled-exec-rules)
+                     
                      (:definition rp::rp-rw-subterms)
                      (:rewrite
                       rp::valid-rules-alistp-implies-rules-alistp)
@@ -770,9 +793,9 @@
                      nil)
          (mv term rp::rp-state)))
        
-       ((mv enabled-exec-rules rules-alist meta-rules)
+       ((mv exc-rules rules-alist meta-rules)
         (mv (access svex-simplify-preloaded rules
-                    :enabled-exec-rules)
+                    :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
             (access svex-simplify-preloaded rules
@@ -781,7 +804,7 @@
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil (rp::rw-step-limit rp::rp-state) rules-alist
-         enabled-exec-rules meta-rules rp::rp-state state))
+         exc-rules meta-rules rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
        
        ((mv svexllist rp::rp-state)
@@ -795,7 +818,7 @@
        ((mv rw rp::rp-state)
         (rp::rp-rw
          term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-         enabled-exec-rules meta-rules nil rp::rp-state state))
+         exc-rules meta-rules nil rp::rp-state state))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -811,8 +834,7 @@
                        (state 'state)
                        (rp::rp-state 'rp::rp-state)
                        (context 'nil) ;; "Have more context for variables."
-                       (runes '(let ((world (w state)))
-                                 (current-theory :here)))
+                       (runes 'nil)
                        ;; "if need to work with only certain rules other than current-theory"
                        (preloaded-rules 'nil) ;; Non-nil overrides rule
                        ;; structure  creation for the rewriter. This value
@@ -851,8 +873,7 @@
                            (state 'state)
                            (rp::rp-state 'rp::rp-state)
                            (context 'nil) ;; "Have more context for variables."
-                           (runes '(let ((world (w state)))
-                                     (current-theory :here)))
+                           (runes 'nil)
                            ;; "if need to work with only certain rules other than current-theory"
                            (preloaded-rules 'nil) ;; Non-nil overrides rule
                            ;; structure  creation for the rewriter. This value

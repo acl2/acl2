@@ -280,9 +280,9 @@ routine, where we might see an instruction moving the value in
 <code>
 ...
 0000000100000e60 @('<_popcount_32>'):
-   100000e60:	55                     push   %rbp
-   100000e61:	48 89 e5               mov    %rsp,%rbp
-   100000e64:	89 7d fc               mov    %edi,-0x4(%rbp)
+   100000e60:   55                     push   %rbp
+   100000e61:   48 89 e5               mov    %rsp,%rbp
+   100000e64:   89 7d fc               mov    %edi,-0x4(%rbp)
 ...
 </code>
 

@@ -48,7 +48,9 @@
   :enabled t
   (if entry
       (cdr entry)
-    (sv::4vec-x)))
+    (sv::4vec-x))
+  ///
+  (add-rp-rule entry-4vec-fix))
 
 (define save-wires-to-env-wires ((val sv::4vec-p)
                                  (wires wire-list-p)

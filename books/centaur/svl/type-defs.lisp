@@ -282,3 +282,12 @@
                   :count nil
                   :measure (cons-countw x 2)
                   :val-type svl-env)))
+
+
+(def-rp-rule SVL-ENV-P-OF-SVL-ENV-is-t
+  (B* ((SVL::X (SVL::SVL-ENV SVL::WIRES SVL::MODULES)))
+    (equal (SVL::SVL-ENV-P SVL::X)
+           t)))
+
+
+(add-rp-rule svl-env->wires-of-svl-env)

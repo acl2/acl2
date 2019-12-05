@@ -18,7 +18,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
 
     /**
      * Value of the quoted constant.
-     * This is never {@code null}.
+     * Invariant: not null.
      */
     private final Acl2Value value;
 
@@ -26,6 +26,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * Constructs an quoted constant with the given value.
      *
      * @param value The value of the quoted constant.
+     *              Invariant: not null.
      */
     private Acl2QuotedConstant(Acl2Value value) {
         this.value = value;
@@ -49,6 +50,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * See {@link Acl2Variable} for more information about variable indices.
      *
      * @param indices Map from variable symbols to indices.
+     *                Invariant: not null.
      */
     @Override
     void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
@@ -62,6 +64,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * This evaluation never fails.
      *
      * @param binding The binding of variable indices to values.
+     *                Invariants: not null, no null elements.
      * @return The value that results from evaluation.
      */
     @Override
@@ -108,7 +111,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * @param o The term to compare this quoted constant with.
      * @return A negative integer, zero, or a positive integer as
      * this term is less than, equal to, or greater than the argument.
-     * @throws NullPointerException If the argument is {@code null}.
+     * @throws NullPointerException If the argument is null.
      */
     @Override
     public int compareTo(Acl2Term o) {
@@ -140,7 +143,7 @@ public final class Acl2QuotedConstant extends Acl2Term {
      *
      * @param value The value of the quoted constant.
      * @return The quoted constant.
-     * @throws IllegalArgumentException If {@code value} is {@code null}.
+     * @throws IllegalArgumentException If {@code value} is null.
      */
     public static Acl2QuotedConstant make(Acl2Value value) {
         if (value == null)
