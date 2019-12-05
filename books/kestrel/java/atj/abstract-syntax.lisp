@@ -270,9 +270,9 @@
   (:asg-shl ()) ; <<=
   (:asg-sshr ()) ; >>=
   (:asg-ushr ()) ; >>>=
-  (:asg-bitand ()) ; &=
-  (:asg-bitxor ()) ; ^=
-  (:asg-bitior ()) ; |=
+  (:asg-and ()) ; &=
+  (:asg-xor ()) ; ^=
+  (:asg-ior ()) ; |=
   :pred jbinopp)
 
 (fty::deftypes jexprs

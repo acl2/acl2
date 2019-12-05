@@ -241,9 +241,9 @@
                :asg-shl "<<="
                :asg-sshr ">>="
                :asg-ushr ">>>="
-               :asg-bitand "&="
-               :asg-bitxor "^="
-               :asg-bitior "|="))
+               :asg-and "&="
+               :asg-xor "^="
+               :asg-ior "|="))
 
 (defxdoc print-jexprs
   :short "Pretty-printing of expressions."
@@ -532,9 +532,9 @@
                                    :asg-shl (jexpr-rank-assignment)
                                    :asg-sshr (jexpr-rank-assignment)
                                    :asg-ushr (jexpr-rank-assignment)
-                                   :asg-bitand (jexpr-rank-assignment)
-                                   :asg-bitxor (jexpr-rank-assignment)
-                                   :asg-bitior (jexpr-rank-assignment))
+                                   :asg-and (jexpr-rank-assignment)
+                                   :asg-xor (jexpr-rank-assignment)
+                                   :asg-ior (jexpr-rank-assignment))
               :instanceof (jexpr-rank-relational)
               :cond (jexpr-rank-conditional)
               :paren (jexpr-rank-primary)))
@@ -617,9 +617,9 @@
    :asg-shl (mv (jexpr-rank-primary) (jexpr-rank-expression))
    :asg-sshr (mv (jexpr-rank-primary) (jexpr-rank-expression))
    :asg-ushr (mv (jexpr-rank-primary) (jexpr-rank-expression))
-   :asg-bitand (mv (jexpr-rank-primary) (jexpr-rank-expression))
-   :asg-bitxor (mv (jexpr-rank-primary) (jexpr-rank-expression))
-   :asg-bitior (mv (jexpr-rank-primary) (jexpr-rank-expression))))
+   :asg-and (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-xor (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-ior (mv (jexpr-rank-primary) (jexpr-rank-expression))))
 
 (defines print-jexpr
   :short "Pretty-print an expression."
