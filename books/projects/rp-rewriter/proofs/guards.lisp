@@ -109,8 +109,23 @@
 
   (verify-guards rp-match-lhs))
 
-(verify-guards rp-rw-rule-aux)
+(verify-guards rp-rw-rule-aux
+  :hints (("Goal"
+           :in-theory (e/d (RULE-SYNTAXP)
+                           (EX-FROM-RP-LEMMA1
+                            FALIST-CONSISTENT
+                            NO-FREE-VARIABLEP
+                            (:REWRITE
+                             VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION VALID-SC)
+                            (:REWRITE VALID-RULEP-IMPLIES-VALID-SC))))))
+
 (verify-guards rp-rw-meta-rule)
+
 (verify-guards rp-rw-meta-rules
   :hints (("Goal"
            :in-theory (e/d (WEAK-RP-META-RULE-RECS-P

@@ -54,6 +54,8 @@
 
 (include-book "std/strings/suffixp" :dir :system)
 
+(local
+ (in-theory (enable rule-syntaxp)))
 
 (defun custom-rewrite-from-formula (formula)
   (declare (xargs :guard t))
@@ -157,7 +159,7 @@
          new-terms)))))
 
 
-(defund formulas-to-rules (rune rule-new-synp formulas)
+(defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
   (if (atom formulas)
       nil
@@ -175,26 +177,30 @@
                      :flg flg
                      :lhs lhs
                      :rhs rhs))
-         (rest (formulas-to-rules rune rule-new-synp (cdr formulas))))
-      (if (and (rule-syntaxp rule)
-               (not (include-fnc rhs 'rp)))
+         (rest (formulas-to-rules rune rule-new-synp warning (cdr formulas))))
+      (if (and (rule-syntaxp rule :warning warning)
+               (or (not (include-fnc rhs 'rp))
+                   (and warning
+                        (cw "(not (include-fnc rhs 'rp)) failed! ~p0 ~%.
+ Rhs of  a rule cannot have an 'rp' instance ~%" rhs))))
           (cons rule rest)
-        rest))))
+        (or (and warning (cw "this rule failed rule-syntaxp check: ~p0" rule))
+            rest)))))
 
-(defun custom-rewrite-with-meta-extract (rule-name rule-new-synp state)
+(defun custom-rewrite-with-meta-extract (rule-name rule-new-synp warning state)
   (declare (xargs :guard (and (symbolp rule-name))
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       ((when (equal formula ''t))
-        nil)
+       #|((when (equal formula ''t))
+        nil)||#
        ((when (not (pseudo-termp formula)))
         (hard-error 'custom-rewrite-with-meta-extract
                     "Rule ~p0 does not seem to be pseudo-termp ~%"
                     (list (cons #\0 rule-name))))
        (formulas (make-formula-better formula))
        (rune (get-rune-name rule-name state)))
-    (formulas-to-rules rune rule-new-synp formulas)))
+    (formulas-to-rules rune rule-new-synp warning formulas)))
 
 
 
@@ -303,7 +309,29 @@
 (verify-guards update-rule-with-sc
   :otf-flg t
   :hints (("Goal"
-           :in-theory (e/d () (rule-syntaxp)))))
+           :use ((:instance rule-syntaxp-implies))
+           :in-theory (e/d ()
+                           (rule-syntaxp
+                            no-free-variablep
+                            weak-custom-rewrite-rule-p
+                            rp-termp
+                            FALIST-CONSISTENT
+                            IS-IF-RP-TERMP
+                            RP-TERM-LISTP
+                            (:TYPE-PRESCRIPTION RP-TERMP)
+                            (:TYPE-PRESCRIPTION TRUE-LIST-LISTP)
+                            (:TYPE-PRESCRIPTION ALISTP)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                            (:TYPE-PRESCRIPTION SYMBOL-ALISTP)
+                            (:DEFINITION QUOTEP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE DEFAULT-CAR)
+                            (:DEFINITION STATE-P)
+                            (:DEFINITION RP-HYP$INLINE)   
+                            (:DEFINITION RP-LHS$INLINE)
+                            (:DEFINITION RP-RHS$INLINE)
+                            (:DEFINITION RP-RUNE$INLINE)
+                            (:TYPE-PRESCRIPTION EQLABLE-ALISTP))))))
 
 (defun update-rules-with-sc (rules sc-alist state)
   (declare (xargs :guard (and (rule-list-syntaxp rules)
@@ -380,7 +408,7 @@
           rules))
     rules))
 
-(defun get-rule-list (runes sc-alist new-synps rule-fnc-alist state)
+(defun get-rule-list (runes sc-alist new-synps warning rule-fnc-alist state)
   (declare (xargs :guard (and (symbol-symbol-alistp sc-alist)
                               (alistp new-synps))
                   :guard-hints
@@ -403,7 +431,7 @@
           (progn$
            (cw "WARNING! Problem reading the rune name. Skipping ~p0 ~%"
                rune)
-           (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))
+           (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state)))
          ;; if the current rune is just a name, then treat that as a rewrite
          ;; rule for only the following tests. 
          (rule-type (mv-nth 0 (get-rune-name rule-name state)))
@@ -422,16 +450,16 @@
          ((when (and (not (equal rule-type ':rewrite))
                      (not (equal rule-type ':definition))
                      (not (equal rule-type ':type-prescription))))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))
+          (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state))
          (rule-new-synp (cdr (assoc-equal rule-name new-synps)))
          (rules (custom-rewrite-with-meta-extract rule-name rule-new-synp
-                                                  state))
+                                                  warning  state))
          (rules (try-to-add-rule-fnc rules rule-fnc-alist))
          ((when (not (rule-list-syntaxp rules)))
           (or (cw "Warning a problem with rule-list ~p0 ~%" rules)
-              (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))
+              (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state)))
          (rules (update-rules-with-sc rules sc-alist state)))
-      (append rules (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state)))))
+      (append rules (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state)))))
 
 (defun to-fast-alist (alist)
   (declare (xargs :guard t))
@@ -457,7 +485,7 @@
 (verify-guards rule-list-to-alist)
 
 
-(define get-rules (runes state &key new-synps)
+(define get-rules (runes state &key new-synps warning)
   (declare (xargs :guard (alistp new-synps)
                   :stobjs (state)
                   :verify-guards t))
@@ -471,6 +499,7 @@
        (rule-list (get-rule-list runes
                                  sc-alist
                                  new-synps
+                                 warning
                                  rule-fnc-alist
                                  state))
        ((when (not (weak-custom-rewrite-rule-listp rule-list)))

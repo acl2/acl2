@@ -281,7 +281,8 @@
                             (a a)))
            :in-theory (e/d (valid-rulep
                             valid-rulesp
-                            valid-rules-alistp)
+                            valid-rules-alistp
+                            rule-syntaxp)
                            (rp-evl-of-rp-equal
                             (:REWRITE RP-APPLY-BINDINGS-EQUIV-NOT-IFF)
                             (:DEFINITION BIND-BINDINGS-AUX)
@@ -316,7 +317,8 @@
                             (a a)))
            :in-theory (e/d (valid-rulep
                             valid-rulesp
-                            valid-rules-alistp)
+                            valid-rules-alistp
+                            rule-syntaxp)
                            (rp-evl-of-rp-equal
                             rp-evl-of-rp-equal2
                             RP-EQUAL2-IS-symmetric
@@ -577,7 +579,7 @@
    (:definition no-free-variablep)
    (:type-prescription rule-list-list-syntaxp)
    (:definition rule-list-syntaxp)
-   (:definition rule-syntaxp)
+   rule-syntaxp
    (:definition rule-list-list-syntaxp)
    (:rewrite rp-equal2-bindings-1to1-consp)
    (:definition get-vars)

@@ -59,7 +59,7 @@
                   (rp::get-disabled-exc-rules-from-table
                    (table-alist 'rp-exc-rules world)))
             (rp::get-enabled-rules-from-table state)))
-         (rules-alist (rp::get-rules runes state))
+         (rules-alist (rp::get-rules runes state :warning :err))
          (meta-rules-entry (hons-assoc-equal 'rp::meta-rules-list
                                              (table-alist 'rp::rp-rw world)))
          (meta-rules (if (consp meta-rules-entry)
@@ -375,6 +375,21 @@
 (define 4vec-to-svex-termlist (term svexl-node-flg memoize-flg)
   :returns (mv (err)
                (res svexl-nodelist-p))
+  :prepwork
+  ((local
+    (defthm lemma1
+      (implies (integer-listp x)
+               (svexl-nodelist-p x))
+      :hints (("Goal"
+               :in-theory (e/d (svexl-nodelist-p
+                                SVEXL-NODE-P) ())))))
+   (local
+    (defthm lemma2
+      (implies (integer-listp x)
+               (SVEXLIST-P x))
+      :hints (("Goal"
+               :in-theory (e/d (svex-p
+                                SVEXLIST-P) ()))))))
   (case-match term
     (('cons x rest)
      (b* (((mv err1 res1) (4vec-to-svex x svexl-node-flg memoize-flg))
@@ -383,6 +398,10 @@
            (cons res1 res2))))
     (''nil
      (mv nil nil))
+    (('quote a)
+     (if (integer-listp a)
+         (mv nil a)
+       (mv t nil)))
     (&
      (mv t nil)))
   ///
@@ -482,7 +501,7 @@
                           rp::rw-step-limit
                           rp::rp-rw-aux
                           (:DEFINITION RP::RULES-ALISTP)
-                          (:DEFINITION RP::RULE-SYNTAXP))))))
+                          RP::RULE-SYNTAXP)))))
 
     (b* ((rules preloaded-rules)
          ((mv exc-rules rules-alist meta-rules)

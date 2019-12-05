@@ -393,7 +393,7 @@
            (context-syntaxp (mv-nth 3 (rp-rw-rule-aux term rules-for-term
                                                       context iff-flg state))))
   :hints (("Goal"
-           :in-theory (e/d ()
+           :in-theory (e/d (rule-syntaxp)
                            ((:DEFINITION SUBSETP-EQUAL)
                             (:DEFINITION RP-TERMP)
                             (:DEFINITION MEMBER-EQUAL)
@@ -426,7 +426,7 @@
            (bindings-alistp (mv-nth 2 (rp-rw-rule-aux term rules-for-term
                                                       context iff-flg state))))
   :hints (("Goal"
-           :in-theory (e/d ()
+           :in-theory (e/d (rule-syntaxp)
                            ((:DEFINITION SUBSETP-EQUAL)
                             (:DEFINITION VALID-RULEP)
                             (:DEFINITION RP-TERMP)
@@ -740,7 +740,8 @@
                       (rp-rw-rule-aux term rules-for-term context iff-flg state))
               a))
     :hints (("Goal"
-             :in-theory (e/d () (;RULE-SYNTAXP
+             :in-theory (e/d (rule-syntaxp)
+                             (;RULE-SYNTAXP
                                  VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP
                                  (:DEFINITION SUBSETP-EQUAL)
                                  (:DEFINITION NO-FREE-VARIABLEP)
@@ -1003,27 +1004,38 @@
 
   (local
    (defthm lemma3
-     (implies (and (EQUAL (CAR (EX-FROM-RP TERM))
+     (implies (and (EQUAL (CAR (EX-FROM-RP (ex-from-falist TERM)))
                           (CAR RULE-LHS))
                    (consp rule-lhs)
-                   (consp (EX-FROM-RP TERM))
+                   (consp (EX-FROM-RP (ex-from-falist TERM)))
                    (NOT (EQUAL (CAR RULE-LHS) 'QUOTE))
                    (equal (rp-evl-lst (cdr rule-lhs) a1)
-                          (rp-evl-lst (cdr (EX-FROM-RP TERM)) a2)))
+                          (rp-evl-lst (cdr (EX-FROM-RP (ex-from-falist TERM))) a2)))
               (equal (equal (rp-evl rule-lhs a1)
                             (rp-evl term a2))
                      t))
      :hints (("Goal"
 ; :do-not '(preprocess)
               :use (:instance lemma3-lemma
-                              (a a2))
+                              (a a2)
+                              (term (ex-from-falist TERM)))
               :in-theory (e/d (rp-evl-of-fncall-args)
                               (EVL-OF-EXTRACT-FROM-RP
+                               ex-from-falist
                                ex-from-rp))))))
 
   (local
    (defthm lemma4
      (implies (SHOULD-TERM-BE-IN-CONS RULE-LHS (EX-FROM-RP TERM))
+              (CONSP (RP-EVL TERM A)))
+     :hints (("Goal"
+              :use (:instance lemma3-lemma)
+              :in-theory (e/d (should-term-be-in-cons)
+                              (EVL-OF-EXTRACT-FROM-RP))))))
+
+  (local
+   (defthm lemma4-v2
+     (implies (SHOULD-TERM-BE-IN-CONS RULE-LHS (EX-FROM-RP (ex-from-falist TERM)))
               (CONSP (RP-EVL TERM A)))
      :hints (("Goal"
               :use (:instance lemma3-lemma)
