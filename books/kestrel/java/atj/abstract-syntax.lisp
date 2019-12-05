@@ -318,13 +318,10 @@
      which normally do not belong to an abstract syntax
      because the tree structure of the abstract syntax
      provides the intended grouping of the nested expressions.
-     However, having parenthesized expressions in the abstract syntax
-     makes the implementation of the pretty-printer easier
-     while allowing to maintain the generated code more readable.
-     Parenthesized expressions may be removed from the abstract syntax
-     if the pretty-printer is improved
-     to generate just the minimum amount of parentheses
-     based on Java operator precedence rules.")
+     However, having explicit parenthesized expressions in the abstract syntax
+     provides more flexibility,
+     e.g. to capture parentheses that would not be needed for corectness
+     but could perhaps improve clarity and readability.")
    (xdoc::p
     "The abstract syntax allows any type, not just reference types,
      as the right-hand side of @('instanceof').

@@ -245,72 +245,485 @@
                :asg-bitxor "^="
                :asg-bitior "|="))
 
+(defxdoc print-jexprs
+  :short "Pretty-printing of expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The tree structure of the abstract syntax of Java expressions
+     describes the grouping of nested subexpressions.
+     For instance, the tree")
+   (xdoc::codeblock
+    "(jexpr-binary (jbinop-mul)"
+    "              (jexpr-binary (jbinop-add)"
+    "                            (jexpr-name \"x\")"
+    "                            (jexpr-name \"y\"))"
+    "              (jexpr-name \"z\"))")
+   (xdoc::p
+    "represents the expression @('(x + y) * z').
+     Note that, when this expression is written in concrete syntax as just done,
+     parentheses must be added,
+     because @('*') binds tighter (i.e. has a higher priority) than @('+')
+     in Java.")
+   (xdoc::p
+    "The relative priorities of Java operators are implicitly defined
+     by the Java grammar of expressions,
+     which also defines the left vs. right associativity
+     of binary operators.
+     For instance, with reference to "
+    (xdoc::seetopic "grammar" "the ABNF grammar")
+    ", the rules tell us that
+     (i) @('+') binds tighter than @('*') and
+     (ii) @('+') is left-associative:")
+   (xdoc::ul
+    (xdoc::li
+     "Consider an expression @('x + y * z').
+      In order to parse this as a @('multiplicative-expression'),
+      @('x + y') would have to be a @('multiplicative-expression'),
+      which is not.
+      Thus, the original expression can only be parsed
+      as an @('additive-expression').")
+    (xdoc::li
+     "Consider an expression @('x * y + z').
+      In order to parse this as a @('multiplicative-expression'),
+      @('y + z') would have to be a @('unary-expression'),
+      which is not.
+      Thus, the original expression can only be parsed
+      as an @('additive-expression').")
+    (xdoc::li
+     "Consider an expression @('x + y + z').
+      In order to right-associate it (i.e. @('x + (y + z)')),
+      @('y + z') would have to be a @('multiplicative-expression'),
+      which is not.
+      Thus, the original expression can only be left-associated
+      (i.e. @('(x + y) + z'))."))
+   (xdoc::p
+    "Our pretty-printer adds parentheses
+     based on the relative priorities of the Java operators
+     and the left or right associativity of the Java binary operators,
+     following the grammar.
+     The approach is explained in the following paragraphs.")
+   (xdoc::p
+    "We define ``ranks'' of expressions
+     that correspond to certain nonterminals of the Java grammar,
+     such as a the rank of additive expressions
+     corresponding to the nonterminal @('additive-expression').
+     We define a mapping from the expressions of our abstract syntax
+     to their ranks,
+     e.g. @('(jexpr-binary (jbinop-add) ... ...)')
+     and @('(jexpr-binary (jbinop-sub) ... ...)')
+     are mapped to the rank of additive expressions.")
+   (xdoc::p
+    "We define a partial order on expression ranks that is
+     the reflexive and transitive closure of the binary relation
+     that consists of the pairs @('rank1 < rank2') such that
+     there is a grammar (sub)rule @('nonterm2 = nonterm1')
+     saying that the nonterminal @('nonterm2') corresponding to @('rank2')
+     may expand to the nonterminal @('nonterm1') corresponding to @('rank1').
+     For instance, @('rank1') is the rank of multiplicative expressions
+     and @('rank2') is the rank of additive expressions,
+     because there is a (sub)rule
+     @('additive-expression = multiplicative-expression') in the grammar.
+     The nonterminal @('additive-expression') also has other alternatives,
+     but those are not single nonterminals,
+     but here we are only concerned with single nonterminals
+     as rule definientia.
+     The reason is explained below.")
+   (xdoc::p
+    "Besides the abstract syntactic expression to pretty-print,
+     the pretty-printer for expression has an argument
+     hat is the rank of expression that must be pretty-printed
+     at that point.
+     At the top level, this second argument is
+     the rank of top-level expressions,
+     i.e. the rank that corresponds to the nonterminal @('expression').
+     As the pretty-printer descends into subexpressions,
+     the second argument is changed according to
+     the grammar rule corresponding to the super-expressions.
+     For instance, when pretty-printing the left and right subexpressions
+     of a super-expression @('(jbinary-expr (jbinop-add) left right)'),
+     we recursively call the pretty-printer twice,
+     once on @('left') and once on @('right').
+     Because of the grammar rule
+     @('additive-expression =
+        additive-expression \"+\" multiplicative-expression')
+     that corresponds to the super-expression,
+     the recursive call on @('left') will have as second argument
+     the rank of @('additive-expression'),
+     while the recursive call on @('right') will have as second argument
+     the rank of @('multiplicative-expression').
+     The second argument of the pretty-printer is used as follows:
+     the pretty-printer compares the second argument
+     (i.e. the expected rank of expression)
+     with the rank of the expression passed as first argument
+     (i.e. the actual rank of expression),
+     according to the partial order on expression ranks described above;
+     if the actual rank is less than or equal to the expected rank,
+     the expression is pretty-printed without parentheses,
+     otherwise parentheses are added.
+     The reason why no parentheses are needed in the first case is that
+     the nonterminal for the expected rank can be expanded,
+     possibly in multiple steps,
+     into the nonterminal for the actual rank:
+     or conversely, the actual expression can be parsed
+     into an expression of the expected rank.
+     On the other hand, if the actual rank is greater than, or unrelated to,
+     the expected rank, there is no such possibility;
+     by adding parentheses, we ``change'' the rank of the actual expression
+     into the bottom of the partial order,
+     i.e. the rank corresponding to @('primary'),
+     which again lets the parenthesize expression be parsed
+     into an expression of the expected rank.")
+   (xdoc::p
+    "For instance, consider the abstract syntax tree for @('(x + y) * z'),
+     shown earlier as motivating example.
+     Assume that it is pretty-printed as a top-level expression,
+     i.e. that the second argument is the rank of @('expression')
+     (the expected rank).
+     Since the actual rank of the expression is
+     the one for @('multiplicative-expression'),
+     which is less than or equal to the one for @('expression')
+     (via
+     @('assignment-expression'),
+     @('conditional-expression'),
+     @('conditional-or-expression'),
+     @('conditional-and-expression'),
+     @('inclusive-or-expression'),
+     @('exclusive-or-expression'),
+     @('and-expression'),
+     @('equality-expression'),
+     @('relational-expression'),
+     @('shift-expression'), and
+     @('additive-expression')),
+     no parentheses are printed at the top level.
+     When pretty-printing the left subexpression @('x + y'),
+     the expected rank is @('multiplicative-expression'):
+     since the actual rank of @('x + y') is @('additive-expression'),
+     which is greater than the expected rank,
+     parentheses must be added,
+     as mentioned when the example was first presented.
+     On the other hand, when pretty-printing the right subexpression @('z'),
+     the expected rank is @('unary-expression'):
+     since the actual rank of @('z') is @('primary'),
+     which is less than the expected rank,
+     no parentheses are printed.")
+   (xdoc::p
+    "The partial order on expression ranks only considers, as mentioned,
+     (sub)rules of the form @('nonterm2 = nonterm1')
+     where @('nonterm1') is a single nonterminal.
+     Rule definientia that are not single terminals
+     are captured as tree structures in our abstract syntax,
+     and thus have their own explicit rank.
+     On the other hand, single-nonterminal definientia
+     do not correspond to any tree structure,
+     but rather allow the same expression to have, in effect,
+     different ranks (a form of subtyping).")))
+
+(fty::deftagsum jexpr-rank
+  :short "Ranks of expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See "
+    (xdoc::seetopic "print-jexprs" "here")
+    " for motivation.")
+   (xdoc::p
+    "The rank @(':expression') corresponds to the nonterminal @('expression').
+     The rank @(':primary') corresponds to the nonterminal @('primary').
+     Each of the other ranks, @(':<rank>'), corresponds to
+     the nonterminal @('<rank>-expression').")
+   (xdoc::p
+    "We omit a rank for @('lambda-expression'),
+     because our abstract syntax does not capture lambda expressions
+     (but even if it did, we would omit a rank for them
+     for the same reason why we omit the ranks described in the next sentence).
+     We omit ranks for
+     @('assignment'),
+     @('pre-increment-expression'),
+     @('pre-decrement-expression'),
+     @('unary-expression-not-plus-minus'),
+     @('cast-expression'), and
+     @('primary-no-new-array')
+     because we do not need them:
+     we could imagine expanding their definitions
+     in the definientia where they appear,
+     for our pretty-printing purposes.
+     We stop at primary expressions:
+     we do not need ranks for
+     @('literal'), @('class-instance-creation-expression'), etc.,
+     because those do not have any (sub)rules
+     with single-nonterminal definientia for expressions."))
+  (:expression ())
+  (:assignment ())
+  (:conditional ())
+  (:conditional-or ())
+  (:conditional-and ())
+  (:inclusive-or ())
+  (:exclusive-or ())
+  (:and ())
+  (:equality ())
+  (:relational ())
+  (:shift ())
+  (:additive ())
+  (:multiplicative ())
+  (:unary ())
+  (:postfix ())
+  (:primary ())
+  :pred jexpr-rankp)
+
+(define jexpr->rank ((expr jexprp))
+  :returns (rank jexpr-rankp)
+  :short "Rank of an abstract syntactic expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See "
+    (xdoc::seetopic "print-jexprs" "here")
+    " for motivation.")
+   (xdoc::p
+    "Expressions that do not have their own rank (e.g. literals)
+     are mapped to the rank of the most specific nonterminal
+     that they (more precisely, their concrete syntactic counterpart)
+     can be generated from:
+     this is rank @(':primary') for most of them,
+     except that expression names are mapped to rank @(':postfix')
+     and that cast expressions are mapped to rank @(':unary')."))
+  (jexpr-case expr
+              :literal (jexpr-rank-primary)
+              :name (jexpr-rank-postfix)
+              :newarray (jexpr-rank-primary)
+              :newarray-init (jexpr-rank-primary)
+              :array (jexpr-rank-primary)
+              :newclass (jexpr-rank-primary)
+              :field (jexpr-rank-primary)
+              :method (jexpr-rank-primary)
+              :smethod (jexpr-rank-primary)
+              :imethod (jexpr-rank-primary)
+              :postinc (jexpr-rank-postfix)
+              :postdec (jexpr-rank-postfix)
+              :cast (jexpr-rank-unary)
+              :unary (jexpr-rank-unary)
+              :binary (jbinop-case expr.op
+                                   :mul (jexpr-rank-multiplicative)
+                                   :div (jexpr-rank-multiplicative)
+                                   :rem (jexpr-rank-multiplicative)
+                                   :add (jexpr-rank-additive)
+                                   :sub (jexpr-rank-additive)
+                                   :shl (jexpr-rank-shift)
+                                   :sshr (jexpr-rank-shift)
+                                   :ushr (jexpr-rank-shift)
+                                   :lt (jexpr-rank-relational)
+                                   :gt (jexpr-rank-relational)
+                                   :le (jexpr-rank-relational)
+                                   :ge (jexpr-rank-relational)
+                                   :eq (jexpr-rank-equality)
+                                   :ne (jexpr-rank-equality)
+                                   :and (jexpr-rank-and)
+                                   :xor (jexpr-rank-exclusive-or)
+                                   :ior (jexpr-rank-inclusive-or)
+                                   :condand (jexpr-rank-conditional-and)
+                                   :condor (jexpr-rank-conditional-or)
+                                   :asg (jexpr-rank-assignment)
+                                   :asg-mul (jexpr-rank-assignment)
+                                   :asg-div (jexpr-rank-assignment)
+                                   :asg-rem (jexpr-rank-assignment)
+                                   :asg-add (jexpr-rank-assignment)
+                                   :asg-sub (jexpr-rank-assignment)
+                                   :asg-shl (jexpr-rank-assignment)
+                                   :asg-sshr (jexpr-rank-assignment)
+                                   :asg-ushr (jexpr-rank-assignment)
+                                   :asg-bitand (jexpr-rank-assignment)
+                                   :asg-bitxor (jexpr-rank-assignment)
+                                   :asg-bitior (jexpr-rank-assignment))
+              :instanceof (jexpr-rank-relational)
+              :cond (jexpr-rank-conditional)
+              :paren (jexpr-rank-primary)))
+
+(define jexpr-rank-<= ((rank1 jexpr-rankp) (rank2 jexpr-rankp))
+  :returns (yes/no booleanp)
+  :short "Order over expression ranks."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See "
+    (xdoc::seetopic "print-jexprs" "here")
+    " for motivation.")
+   (xdoc::p
+    "The partial order over expression ranks is actually a linear order.
+     (However, our pretty-printing approach should work
+     with partial orders that are not linear orders.)
+     So we define the linear order by mapping each rank to a numeric index
+     so that the indices provide the order of the ranks.
+     The specific numeric values are unimportant;
+     only their relative ordering is."))
+  (<= (jexpr-rank-index rank1)
+      (jexpr-rank-index rank2))
+
+  :prepwork
+  ((define jexpr-rank-index ((rank jexpr-rankp))
+     :returns (index natp)
+     (jexpr-rank-case rank
+                      :expression 15
+                      :assignment 14
+                      :conditional 13
+                      :conditional-or 12
+                      :conditional-and 11
+                      :inclusive-or 10
+                      :exclusive-or 9
+                      :and 8
+                      :equality 7
+                      :relational 6
+                      :shift 5
+                      :additive 4
+                      :multiplicative 3
+                      :unary 2
+                      :postfix 1
+                      :primary 0))))
+
+(define jbinop-expected-ranks ((op jbinopp))
+  :returns (mv (left-rank jexpr-rankp)
+               (right-rank jexpr-rankp))
+  :short "Expression ranks of the operands of a binary operator."
+  :long
+  (xdoc::topstring-p
+   "These are based on the grammar rules.")
+  (jbinop-case
+   op
+   :mul (mv (jexpr-rank-multiplicative) (jexpr-rank-unary))
+   :div (mv (jexpr-rank-multiplicative) (jexpr-rank-unary))
+   :rem (mv (jexpr-rank-multiplicative) (jexpr-rank-unary))
+   :add (mv (jexpr-rank-additive) (jexpr-rank-multiplicative))
+   :sub (mv (jexpr-rank-additive) (jexpr-rank-multiplicative))
+   :shl (mv (jexpr-rank-shift) (jexpr-rank-additive))
+   :sshr (mv (jexpr-rank-shift) (jexpr-rank-additive))
+   :ushr (mv (jexpr-rank-shift) (jexpr-rank-additive))
+   :lt (mv (jexpr-rank-relational) (jexpr-rank-shift))
+   :gt (mv (jexpr-rank-relational) (jexpr-rank-shift))
+   :le (mv (jexpr-rank-relational) (jexpr-rank-shift))
+   :ge (mv (jexpr-rank-relational) (jexpr-rank-shift))
+   :eq (mv (jexpr-rank-equality) (jexpr-rank-relational))
+   :ne (mv (jexpr-rank-equality) (jexpr-rank-relational))
+   :and (mv (jexpr-rank-and) (jexpr-rank-equality))
+   :xor (mv (jexpr-rank-exclusive-or) (jexpr-rank-and))
+   :ior (mv (jexpr-rank-inclusive-or) (jexpr-rank-exclusive-or))
+   :condand (mv (jexpr-rank-conditional-and) (jexpr-rank-inclusive-or))
+   :condor (mv (jexpr-rank-conditional-or) (jexpr-rank-conditional-and))
+   :asg (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-mul (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-div (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-rem (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-add (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-sub (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-shl (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-sshr (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-ushr (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-bitand (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-bitxor (mv (jexpr-rank-primary) (jexpr-rank-expression))
+   :asg-bitior (mv (jexpr-rank-primary) (jexpr-rank-expression))))
+
 (defines print-jexpr
   :short "Pretty-print an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See "
+    (xdoc::seetopic "print-jexprs" "here")
+    " for motivation.")
+   (xdoc::p
+    "We first pretty-print the expression,
+     and then we wrap it in parentheses
+     if the expected rank is smaller than the actual rank.")
+   (xdoc::p
+    "When recursively pretty-printing subexpressions,
+     the ranks argument passed for the subexpressions
+     are determined by the relevant grammar rules.")
+   (xdoc::p
+    "The function to pretty-print lists of expressions
+     takes a single rank argument,
+     because we only need to pretty-print lists of expressions
+     that all have the same required rank."))
 
-  (define print-jexpr ((expr jexprp))
+  (define print-jexpr ((expr jexprp) (expected-rank jexpr-rankp))
     :returns (part msgp)
-    (jexpr-case expr
+    (b* ((actual-rank (jexpr->rank expr))
+         (part (jexpr-case
+                expr
                 :literal (print-jliteral expr.get)
                 :name expr.get
                 :newarray (msg "new ~@0[~@1]"
                                (print-jtype expr.type)
-                               (print-jexpr expr.size))
+                               (print-jexpr expr.size (jexpr-rank-expression)))
                 :newarray-init (msg "new ~@0[]{~@1}"
                                     (print-jtype expr.type)
                                     (print-comma-sep
-                                     (print-jexpr-list expr.init)))
+                                     (print-jexpr-list
+                                      expr.init (jexpr-rank-expression))))
                 :array (msg "~@0[~@1]"
-                            (print-jexpr expr.array)
-                            (print-jexpr expr.index))
+                            (print-jexpr expr.array (jexpr-rank-primary))
+                            (print-jexpr expr.index (jexpr-rank-expression)))
                 :newclass (msg "new ~@0(~@1)"
                                (print-jtype expr.type)
-                               (print-comma-sep (print-jexpr-list expr.args)))
+                               (print-comma-sep
+                                (print-jexpr-list
+                                 expr.args (jexpr-rank-expression))))
                 :field (msg "~@0.~@1"
-                            (print-jexpr expr.target)
+                            (print-jexpr expr.target (jexpr-rank-primary))
                             expr.name)
                 :method (msg "~@0(~@1)"
                              expr.name
-                             (print-comma-sep (print-jexpr-list expr.args)))
+                             (print-comma-sep
+                              (print-jexpr-list
+                               expr.args (jexpr-rank-expression))))
                 :smethod (msg "~@0.~@1(~@2)"
                               (print-jtype expr.type)
                               expr.name
-                              (print-comma-sep (print-jexpr-list expr.args)))
+                              (print-comma-sep
+                               (print-jexpr-list
+                                expr.args (jexpr-rank-expression))))
                 :imethod (msg "~@0.~@1(~@2)"
-                              (print-jexpr expr.target)
+                              (print-jexpr expr.target (jexpr-rank-primary))
                               expr.name
-                              (print-comma-sep (print-jexpr-list expr.args)))
+                              (print-comma-sep
+                               (print-jexpr-list
+                                expr.args (jexpr-rank-expression))))
                 :postinc (msg "~@0++"
-                              (print-jexpr expr.arg))
+                              (print-jexpr expr.arg (jexpr-rank-postfix)))
                 :postdec (msg "~@0--"
-                              (print-jexpr expr.arg))
+                              (print-jexpr expr.arg (jexpr-rank-postfix)))
                 :cast (msg "(~@0) ~@1"
                            (print-jtype expr.type)
-                           (print-jexpr expr.arg))
+                           (print-jexpr expr.arg (jexpr-rank-unary)))
                 :unary (msg "~@0~@1"
                             (print-junop expr.op)
-                            (print-jexpr expr.arg))
-                :binary (msg "~@0 ~@1 ~@2"
-                             (print-jexpr expr.left)
-                             (print-jbinop expr.op)
-                             (print-jexpr expr.right))
+                            (print-jexpr expr.arg (jexpr-rank-unary)))
+                :binary (b* (((mv left-rank
+                                  right-rank) (jbinop-expected-ranks expr.op)))
+                          (msg "~@0 ~@1 ~@2"
+                               (print-jexpr expr.left left-rank)
+                               (print-jbinop expr.op)
+                               (print-jexpr expr.right right-rank)))
                 :instanceof (msg "~@0 instanceof ~@1"
-                                 (print-jexpr expr.left)
+                                 (print-jexpr expr.left (jexpr-rank-relational))
                                  (print-jtype expr.right))
                 :cond (msg "~@0 ? ~@1 : ~@2"
-                           (print-jexpr expr.test)
-                           (print-jexpr expr.then)
-                           (print-jexpr expr.else))
+                           (print-jexpr expr.test (jexpr-rank-conditional-or))
+                           (print-jexpr expr.then (jexpr-rank-expression))
+                           (print-jexpr expr.else (jexpr-rank-conditional)))
                 :paren (msg "(~@0)"
-                            (print-jexpr expr.get)))
+                            (print-jexpr expr.get (jexpr-rank-expression))))))
+      (if (jexpr-rank-<= actual-rank expected-rank)
+          part
+        (msg "(~@0)" part)))
     :measure (jexpr-count expr))
 
-  (define print-jexpr-list ((exprs jexpr-listp))
+  (define print-jexpr-list ((exprs jexpr-listp) (expected-rank jexpr-rankp))
     :returns (parts msg-listp)
     (cond ((endp exprs) nil)
-          (t (cons (print-jexpr (car exprs))
-                   (print-jexpr-list (cdr exprs)))))
+          (t (cons (print-jexpr (car exprs) expected-rank)
+                   (print-jexpr-list (cdr exprs) expected-rank))))
     :measure (jexpr-list-count exprs))
+
+  :ruler-extenders :all
 
   :verify-guards nil ; done below
   ///
@@ -338,7 +751,7 @@
                       (if locvar.final? "final " "")
                       (print-jtype locvar.type)
                       locvar.name
-                      (print-jexpr locvar.init))
+                      (print-jexpr locvar.init (jexpr-rank-expression)))
                  indent-level)))
 
 (defines print-jstatems+jblocks
@@ -361,44 +774,56 @@
      statem
      :locvar (list (print-jlocvar statem.get indent-level))
      :expr (list (print-jline (msg "~@0;"
-                                   (print-jexpr statem.get))
+                                   (print-jexpr statem.get
+                                                (jexpr-rank-expression)))
                               indent-level))
      :return (list (if statem.expr?
                        (print-jline (msg "return ~@0;"
-                                         (print-jexpr statem.expr?))
+                                         (print-jexpr statem.expr?
+                                                      (jexpr-rank-expression)))
                                     indent-level)
                      (print-jline "return;" indent-level)))
      :throw (list (print-jline (msg "throw ~@0;"
-                                    (print-jexpr statem.expr))
+                                    (print-jexpr statem.expr
+                                                 (jexpr-rank-expression)))
                                indent-level))
      :break (list (print-jline "break;" indent-level))
      :continue (list (print-jline "continue;" indent-level))
      :if (append (list (print-jline (msg "if (~@0) {"
-                                         (print-jexpr statem.test))
+                                         (print-jexpr statem.test
+                                                      (jexpr-rank-expression)))
                                     indent-level))
                  (print-jblock statem.then (1+ indent-level))
                  (list (print-jline "}" indent-level)))
      :ifelse (append (list (print-jline (msg "if (~@0) {"
-                                             (print-jexpr statem.test))
+                                             (print-jexpr
+                                              statem.test
+                                              (jexpr-rank-expression)))
                                         indent-level))
                      (print-jblock statem.then (1+ indent-level))
                      (list (print-jline "} else {" indent-level))
                      (print-jblock statem.else (1+ indent-level))
                      (list (print-jline "}" indent-level)))
      :while (append (list (print-jline (msg "while (~@0) {"
-                                            (print-jexpr statem.test))
+                                            (print-jexpr
+                                             statem.test
+                                             (jexpr-rank-expression)))
                                        indent-level))
                     (print-jblock statem.body (1+ indent-level))
                     (list (print-jline "}" indent-level)))
      :do (append (list (print-jline "do {" indent-level))
                  (print-jblock statem.body (1+ indent-level))
                  (list (print-jline (msg "} while (~@0);"
-                                         (print-jexpr statem.test))
+                                         (print-jexpr statem.test
+                                                      (jexpr-rank-expression)))
                                     indent-level)))
      :for (append (list (print-jline (msg "for (~@0; ~@1; ~@2) {"
-                                          (print-jexpr statem.init)
-                                          (print-jexpr statem.test)
-                                          (print-jexpr statem.update))
+                                          (print-jexpr statem.init
+                                                       (jexpr-rank-expression))
+                                          (print-jexpr statem.test
+                                                       (jexpr-rank-expression))
+                                          (print-jexpr statem.update
+                                                       (jexpr-rank-expression)))
                                      indent-level))
                   (print-jblock statem.body (1+ indent-level))
                   (list (print-jline "}" indent-level))))
@@ -432,7 +857,7 @@
                       (if field.volatile? "volatile " "")
                       (print-jtype field.type)
                       field.name
-                      (print-jexpr field.init))
+                      (print-jexpr field.init (jexpr-rank-expression)))
                  indent-level)))
 
 (define print-jresult ((result jresultp))
