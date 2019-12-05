@@ -103,8 +103,7 @@
     Otherwise, we cast the value to @('char').")
   (if (< char 256)
       (jexpr-literal-character (code-char char))
-    (jexpr-paren
-     (jexpr-cast (jtype-char) (jexpr-literal-integer-decimal char)))))
+    (jexpr-cast (jtype-char) (jexpr-literal-integer-decimal char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +122,7 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('byte')
           from a signed 8-bit ACL2 integer."
-  (jexpr-paren (jexpr-cast (jtype-byte) (atj-gen-jint byte)))
+  (jexpr-cast (jtype-byte) (atj-gen-jint byte))
   :guard-hints (("Goal" :in-theory (enable sbyte8p sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,7 +131,7 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('short')
           from a signed 16-bit signed ACL2 integer."
-  (jexpr-paren (jexpr-cast (jtype-short) (atj-gen-jint short)))
+  (jexpr-cast (jtype-short) (atj-gen-jint short))
   :guard-hints (("Goal" :in-theory (enable sbyte16p sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

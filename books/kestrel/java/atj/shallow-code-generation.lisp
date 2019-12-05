@@ -754,10 +754,9 @@
        (acl2-symbol-nil-expr (atj-gen-shallow-symbol
                               nil pkg-class-names curr-pkg))
        (acl2-core-expr (case type
-                         (:jboolean (jexpr-paren
-                                     (jexpr-cond expr
-                                                 acl2-symbol-t-expr
-                                                 acl2-symbol-nil-expr)))
+                         (:jboolean (jexpr-cond expr
+                                                acl2-symbol-t-expr
+                                                acl2-symbol-nil-expr))
                          (t (jexpr-smethod *aij-type-int*
                                            "make"
                                            (list expr)))))
@@ -832,40 +831,31 @@
      and get its numeric value as @('long')."))
   (b* ((acl2-symbol-nil-expr (atj-gen-shallow-symbol
                               nil pkg-class-names curr-pkg))
-       (acl2-outer-cons-expr (jexpr-paren (jexpr-cast *aij-type-cons* expr)))
+       (acl2-outer-cons-expr (jexpr-cast *aij-type-cons* expr))
        (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
-       (acl2-inner-cons-expr (jexpr-paren
-                              (jexpr-cast *aij-type-cons* acl2-cdr-expr)))
+       (acl2-inner-cons-expr (jexpr-cast *aij-type-cons* acl2-cdr-expr))
        (acl2-car-expr (jexpr-imethod acl2-inner-cons-expr "getCar" nil)))
     (case type
       (:jboolean
-       (b* ((acl2-symbol-expr (jexpr-paren
-                               (jexpr-cast *aij-type-symbol* acl2-car-expr))))
-         (jexpr-paren (jexpr-binary (jbinop-eq)
-                                    acl2-symbol-expr
-                                    acl2-symbol-nil-expr))))
+       (b* ((acl2-symbol-expr (jexpr-cast *aij-type-symbol* acl2-car-expr)))
+         (jexpr-binary (jbinop-eq) acl2-symbol-expr acl2-symbol-nil-expr)))
       (:jchar
-       (b* ((acl2-integer-expr (jexpr-paren
-                                (jexpr-cast *aij-type-int* acl2-car-expr)))
+       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
             (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-         (jexpr-paren (jexpr-cast (jtype-char) int-expr))))
+         (jexpr-cast (jtype-char) int-expr)))
       (:jbyte
-       (b* ((acl2-integer-expr (jexpr-paren
-                                (jexpr-cast *aij-type-int* acl2-car-expr)))
+       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
             (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-         (jexpr-paren (jexpr-cast (jtype-byte) int-expr))))
+         (jexpr-cast (jtype-byte) int-expr)))
       (:jshort
-       (b* ((acl2-integer-expr (jexpr-paren
-                                (jexpr-cast *aij-type-int* acl2-car-expr)))
+       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
             (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-         (jexpr-paren (jexpr-cast (jtype-short) int-expr))))
+         (jexpr-cast (jtype-short) int-expr)))
       (:jint
-       (b* ((acl2-integer-expr (jexpr-paren
-                                (jexpr-cast *aij-type-int* acl2-car-expr))))
+       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr)))
          (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
       (:jlong
-       (b* ((acl2-integer-expr (jexpr-paren
-                                (jexpr-cast *aij-type-int* acl2-car-expr))))
+       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr)))
          (jexpr-imethod acl2-integer-expr "getJavaLong" nil)))
       (t (prog2$ (impossible) (jexpr-fix expr))))))
 
@@ -1531,7 +1521,7 @@
                                 (long-minus (junop-uminus))
                                 (int-not (junop-bitcompl))
                                 (long-not (junop-bitcompl)))))
-                     (jexpr-paren (jexpr-unary unop operand-expr)))
+                     (jexpr-unary unop operand-expr))
                  (b* ((jtype (case fn
                                (byte-to-short (jtype-short))
                                (byte-to-int (jtype-int))
@@ -1553,7 +1543,7 @@
                                (int-to-char (jtype-char))
                                (long-to-char (jtype-char))
                                (byte-to-char (jtype-char)))))
-                   (jexpr-paren (jexpr-cast jtype operand-expr)))))
+                   (jexpr-cast jtype operand-expr))))
          (block operand-block))
       (mv block
           (atj-adapt-expr-to-type
@@ -1669,7 +1659,7 @@
                   (long-long-ushiftr (jbinop-ushr))
                   (long-int-ushiftr (jbinop-ushr))
                   (int-long-ushiftr (jbinop-ushr))))
-         (expr (jexpr-paren (jexpr-binary binop left-expr right-expr)))
+         (expr (jexpr-binary binop left-expr right-expr))
          (block (append left-block right-block)))
       (mv block
           (atj-adapt-expr-to-type
