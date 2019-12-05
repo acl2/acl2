@@ -612,6 +612,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "remove-hyps" "Remove-hyps utility"))
+
+   (xdoc::p
+    "Now, @(tsee remove-hyps) succeeds when applied to a call of @(tsee thm)
+    whose formula is not in the form of a valid rewrite rule.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "set::theorems-about-osets" "Kestrel Oset Theorems"))
 
    (xdoc::p

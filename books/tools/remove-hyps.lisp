@@ -108,6 +108,12 @@
  non-nil optional argument.  For example, for event @('E'), use @('(remove-hyps
  E t)').</p>
 
+ <p>Unless there is an error (for example, due to malformed input), then in the
+ case of a call of @('thm'), the value returned is the keyword,
+ @(':REMOVE-HYPS-COMPLETED'); otherwise, the value returned is the name of the
+ theorem.  (Technically, the value returned is an error triple with such a
+ value; see @(see error-triple).)</p>
+
  <p>Consider the case that a call of @('remove-hyps') is made in a context
  where proofs are normally skipped (see @(see ld-skip-proofsp)).  If this
  happens while including a certified book with @(tsee include-book), then
@@ -281,12 +287,21 @@
                                  verbose-p ctx state)
   (do-proofs?
    t
-   (let ((name2 (or name (gen-new-name 'remove-hyps-name (w state)))))
+   (mv-let (thmp name2 kwd-alist+)
+     (assert$
+      (iff (eq (car form) 'thm)
+           (null name))
+      (if (null name) ; (eq (car form) 'thm)
+          (mv t
+              (gen-new-name 'remove-hyps-name (w state))
+              (append kwd-alist '(:rule-classes nil)))
+        (mv nil name kwd-alist)))
      ;; Try the original event and obtain the number of steps.
-     (er-let* ((steps (event-steps (if name
-                                       form
-                                     (assert$ (eq (car form) 'thm)
-                                              `(defthm ,name2 ,@(cdr form))))
+     (er-let* ((steps (event-steps (if thmp
+                                       `(defthm ,name2
+                                          ,@(cdr form)
+                                          :rule-classes nil)
+                                     form)
                                    verbose-p nil state)))
        (cond
         ((null steps) ; The original event failed; so we simply fail.
@@ -299,7 +314,7 @@
                ;; additional hypotheses.  We start with an empty list of necessary
                ;; hypotheses and a full list of additional hypotheses.
                (remove-hyps-formula-1 name2
-                                      nil hyps concl kwd-alist let/let*
+                                      nil hyps concl kwd-alist+ let/let*
                                       bindings
                                       (remove-hyps-formula-steps steps)
                                       verbose-p state)))
@@ -322,7 +337,7 @@
                (remove-hyps-formula ',form ',name ',hyps ',concl ',kwd-alist
                                     ',let/let* ',bindings ',verbose-p
                                     'remove-hyps state))
-              (thmp (value (eq (car new-form) 'thm))))
+              (thmp (value (eq (car ',form) 'thm))))
 ; Test the new form versus the old form.
       (pprogn (cond ((null new-form) ; no change
 ; If no hypotheses were removed, print this to the terminal.
@@ -344,7 +359,7 @@
                             (standard-co state) state nil)))
 ; Now submit the new form with all output disabled.
               (value (if thmp
-                         '(value-triple :invisible)
+                         '(value-triple :remove-hyps-completed)
                        (list 'with-output
                              :off :all
                              :gag-mode t

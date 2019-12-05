@@ -1,4 +1,4 @@
-; Java Library
+; Standard System Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,15 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "factorial")
+(include-book "term-guard-obligation")
+
+(include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the factorial functions, with testing code.
+(assert-equal (term-guard-obligation 'x state)
+              ''t)
 
-(java::atj fact
-           fact-tail
-           :deep nil
-           :guards nil
-           :java-class "FactorialShallowUnguarded"
-           :tests *fact-tests*)
+(assert-equal (term-guard-obligation '(binary-+ x '4) state)
+              '(acl2-numberp x))

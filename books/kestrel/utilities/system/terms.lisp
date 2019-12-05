@@ -16,6 +16,9 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/all-lambdas" :dir :system)
+(include-book "kestrel/std/system/all-non-gv-exec-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-pkg-names" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
@@ -32,6 +35,7 @@
 (include-book "kestrel/std/system/lambda-guard-verified-fnsp" :dir :system)
 (include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
+(include-book "kestrel/std/system/term-guard-obligation" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "world-queries")
@@ -44,109 +48,6 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(defines all-non-gv-ffn-symbs
-  :parents (term-utilities)
-  :short "Non-guard-verified functions called by a term."
-  :long
-  "<p>
-   The name of this function is consistent with
-   the name of @('all-ffn-symbs') in the ACL2 source code.
-   </p>
-   @(def all-non-gv-ffn-symbs)
-   @(def all-non-gv-ffn-symbs-lst)"
-  :verify-guards nil
-
-  (define all-non-gv-ffn-symbs ((term pseudo-termp)
-                                (ans symbol-listp)
-                                (wrld plist-worldp))
-    :returns (final-ans symbol-listp :hyp :guard)
-    (b* (((when (variablep term)) ans)
-         ((when (fquotep term)) ans)
-         (fn/lambda (ffn-symb term))
-         (ans (if (flambdap fn/lambda)
-                  (all-non-gv-ffn-symbs (lambda-body fn/lambda) ans wrld)
-                (if (guard-verified-p fn/lambda wrld)
-                    ans
-                  (add-to-set-eq fn/lambda ans)))))
-      (all-non-gv-ffn-symbs-lst (fargs term) ans wrld)))
-
-  (define all-non-gv-ffn-symbs-lst ((terms pseudo-term-listp)
-                                    (ans symbol-listp)
-                                    (wrld plist-worldp))
-    :returns (final-ans symbol-listp :hyp :guard)
-    (b* (((when (endp terms)) ans)
-         (ans (all-non-gv-ffn-symbs (car terms) ans wrld)))
-      (all-non-gv-ffn-symbs-lst (cdr terms) ans wrld))))
-
-(define all-non-gv-exec-ffn-symbs ((term pseudo-termp) (wrld plist-worldp))
-  :returns (final-ans "A @(tsee symbol-listp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Non-guard-verified functions called by a term for execution."
-  "<p>
-   These are all the non-guard-verified functions that occur in the term,
-   except those that occur in the @(':logic') subterms of @(tsee mbe)s
-   and those called via @(tsee ec-call).
-   This is because, in order for a function to be guard-verified,
-   the functions that occurs in such subterms do not have to be guard-verified.
-   If this function returns @('nil'),
-   the term could be potentially guard-verified.
-   </p>
-   <p>
-   The name of this function is consistent with
-   the name of @('all-ffn-symbs') in the ACL2 source code.
-   </p>
-   <p>
-   The @('all-fnnames-exec') built-in system utility
-   returns all the function symbols except
-   the ones in the @(':logic') subterms of @(tsee mbe)s
-   and the ones called via @(tsee ec-call)
-   (see the ACL2 source code).
-   The @('collect-non-common-lisp-compliants') built-in system utility
-   returns all the ones that are not guard-verified
-   (see the ACL2 source code).
-   </p>"
-  (collect-non-common-lisp-compliants (all-fnnames-exec term) wrld))
-
-(defines all-pkg-names
-  :parents (term-utilities)
-  :short "Collect all the package names of all the symbols in a term."
-  :long
-  "@(def all-pkg-names)
-   @(def all-pkg-names-lst)"
-  :verify-guards nil ; done below
-
-  (define all-pkg-names ((term pseudo-termp))
-    :returns (pkg-names string-listp)
-    (cond ((variablep term) (list (symbol-package-name term)))
-          ((fquotep term) (if (symbolp (cadr term))
-                              (list (symbol-package-name (cadr term)))
-                            nil))
-          ((symbolp (ffn-symb term))
-           (add-to-set-equal (symbol-package-name (ffn-symb term))
-                             (all-pkg-names-lst (fargs term))))
-          (t (union-equal (remove-duplicates-equal
-                           (symbol-package-name-lst
-                            (lambda-formals (ffn-symb term))))
-                          (union-equal (all-pkg-names (lambda-body
-                                                       (ffn-symb term)))
-                                       (all-pkg-names-lst (fargs term)))))))
-
-  (define all-pkg-names-lst ((terms pseudo-term-listp))
-    :returns (pkg-names string-listp)
-    (cond ((endp terms) nil)
-          (t (union-equal (all-pkg-names (car terms))
-                          (all-pkg-names-lst (cdr terms))))))
-
-  :prepwork
-  ((local (include-book "std/typed-lists/string-listp" :dir :system))
-   (local (include-book "kestrel/utilities/typed-lists/string-listp-theorems" :dir :system))
-   (local (include-book "kestrel/utilities/lists/union-theorems" :dir :system)))
-
-  ///
-
-  (verify-guards all-pkg-names))
 
 (define check-user-term (x (wrld plist-worldp))
   :returns (mv (term/message "A @(tsee pseudo-termp) or @(tsee msgp).")
@@ -257,26 +158,6 @@
        ((when (msgp term/message))
         (mv (msg "~x0 does not have a valid body.  ~@1" x term/message) nil)))
     (mv `(lambda ,(second x) ,term/message) stobjs-out)))
-
-(define term-guard-obligation ((term pseudo-termp) state)
-  :returns (obligation "A @(tsee pseudo-termp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "Formula expressing the guard obligation of a term."
-  :long
-  "<p>
-   The case in which @('term') is a symbol is dealt with separately
-   because @(tsee guard-obligation)
-   interprets a symbol as a function or theorem name, not as a variable.
-   </p>"
-  (b* (((when (symbolp term)) *t*)
-       ((mv erp val) (guard-obligation term nil nil t __function__ state))
-       ((when erp)
-        (raise "Error ~x0 when computing the guard obligation of ~x1."
-               erp term))
-       (obligation-clauses (cadr val))
-       (obligation-formula (termify-clause-set obligation-clauses)))
-    obligation-formula))
 
 (define all-vars-in-untranslated-term (x (wrld plist-worldp))
   :returns (term "A @(tsee pseudo-termp).")

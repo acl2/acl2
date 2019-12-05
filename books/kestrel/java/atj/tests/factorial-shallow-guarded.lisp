@@ -16,15 +16,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Specialize the input and output types of the factorial function.
+; Specialize the input and output types of the factorial functions.
 
 (java::def-atj-main-function-type fact (:ainteger) :ainteger)
 
+(java::def-atj-main-function-type fact-tail (:ainteger :ainteger) :ainteger)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the factorial function, with testing code.
+; Generate Java code for the factorial functions, with testing code.
 
 (java::atj fact
+           fact-tail
            :deep nil
            :guards t
            :java-class "FactorialShallowGuarded"

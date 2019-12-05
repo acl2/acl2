@@ -61,10 +61,11 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * @param binding The binding of variable indices to values.
      *                Invariants: not null, not null elements.
      * @return The value that results from the evaluation.
-     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
-    abstract Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException;
+    abstract Acl2Value eval(Acl2Value[] binding)
+            throws Acl2UndefinedPackageException;
 
     //////////////////////////////////////// public members:
 
