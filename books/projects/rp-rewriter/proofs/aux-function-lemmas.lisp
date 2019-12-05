@@ -968,3 +968,12 @@
 (defthm rp-termp-implies-dont-rw-syntaxp
   (implies (rp-termp term)
 	   (dont-rw-syntaxp term)))
+
+
+(defthm rp-termp-ex-from-falist
+  (implies (rp-termp x)
+           (rp-termp (ex-from-falist x)))
+  :rule-classes (:type-prescription :rewrite)
+  :hints (("Goal"
+           :expand (ex-from-falist x)
+           :in-theory (e/d () ()))))

@@ -997,10 +997,10 @@
   
   (rp::defthm-lambda
    svl-run-def-opener
-   (implies (and (sv::modname-p modname)
-                 (svex-env-p inputs-env)
-                 (alistp out-bind-alist)
-                 (svl-module-alist-p modules)) 
+   (implies (and (force (sv::modname-p modname))
+                 (force (svex-env-p inputs-env))
+                 (force (alistp out-bind-alist))
+                 (force (svl-module-alist-p modules))) 
             (equal (svl-run modname
                             inputs-env
                             ins-bind-alist
@@ -1028,3 +1028,11 @@
 
 
 (rp::add-rp-rule sv::4veclist-p-of-cons)
+
+(def-rp-rule svex-env-p-of-falist
+  (equal (sv::svex-env-p (cons (cons a b) rest))
+         (and (sv::svar-p a)
+              (sv::4vec-p b)
+              (sv::svex-env-p rest))))
+
+

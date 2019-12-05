@@ -1615,8 +1615,7 @@
 
   (def-rp-rule bitp-of-4vec-bitnot
     (implies (and (integerp x)
-                  (natp start)
-                  (natp size))
+                  (natp start))
              (bitp (bits (4vec-bitnot x) start 1 )))
     :hints (("Goal"
              :do-not '(preprocess)

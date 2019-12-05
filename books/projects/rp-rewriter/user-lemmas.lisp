@@ -40,6 +40,10 @@
 
 (include-book "aux-functions")
 
+(include-book "extract-formula")
+
+(include-book "misc")
+
 (encapsulate
   nil
 
@@ -62,8 +66,61 @@
              :in-theory (e/d (dont-rw-syntaxp) ())))))
 
 
-
 (def-rp-rule make-fast-alist-def
   (equal (make-fast-alist (cons (cons x y) rest))
          (hons-acons x y
                      (make-fast-alist rest))))
+
+(def-rp-rule len-cons
+  (equal (len (cons a b))
+         (+ 1 (len b))))
+
+(def-rp-rule atom-cons
+  (equal (atom (cons a b))
+         nil))
+
+(def-rp-rule consp-cons
+  (consp (cons a b)))
+
+(def-rp-rule equal-to-t
+  (equal (equal a a)
+         't))
+
+(def-rp-rule boolean-listp-is-booleanp
+  (booleanp (boolean-listp a))
+  :hints (("goal"
+           :in-theory (enable boolean-listp))))
+
+
+
+;; add definitions from minimal theory.
+(add-rp-rule car-cons)
+(add-rp-rule cdr-cons)
+(add-rp-rule return-last)
+(add-rp-rule mv-nth)
+(add-rp-rule the-check)
+(add-rp-rule CONS-WITH-HINT)
+(add-rp-rule IFF)
+(add-rp-rule WORMHOLE-EVAL)
+(add-rp-rule MV-LIST)
+(add-rp-rule MINUSP)
+(add-rp-rule PLUSP)
+(add-rp-rule ZEROP)
+(add-rp-rule LISTP)
+;(add-rp-rule SYNP)
+(add-rp-rule CASE-SPLIT)
+(add-rp-rule FORCE)
+(add-rp-rule /=)
+(add-rp-rule =)
+(add-rp-rule atom)
+(add-rp-rule null)
+(add-rp-rule endp)
+(add-rp-rule eql)
+(add-rp-rule not)
+(add-rp-rule implies)
+(add-rp-rule eq)
+(add-rp-rule eql)
+(add-rp-rule cons-equal)
+
+(def-rw-opener-error force-fail-error
+    (force forced-term))  

@@ -59,7 +59,7 @@
                   (rp::get-disabled-exc-rules-from-table
                    (table-alist 'rp-exc-rules world)))
             (rp::get-enabled-rules-from-table state)))
-         (rules-alist (rp::get-rules runes state))
+         (rules-alist (rp::get-rules runes state :warning t))
          (meta-rules-entry (hons-assoc-equal 'rp::meta-rules-list
                                              (table-alist 'rp::rp-rw world)))
          (meta-rules (if (consp meta-rules-entry)
@@ -482,7 +482,7 @@
                           rp::rw-step-limit
                           rp::rp-rw-aux
                           (:DEFINITION RP::RULES-ALISTP)
-                          (:DEFINITION RP::RULE-SYNTAXP))))))
+                          RP::RULE-SYNTAXP)))))
 
     (b* ((rules preloaded-rules)
          ((mv exc-rules rules-alist meta-rules)
