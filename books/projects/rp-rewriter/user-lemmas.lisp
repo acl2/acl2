@@ -122,5 +122,9 @@
 (add-rp-rule eql)
 (add-rp-rule cons-equal)
 
+(def-rp-rule append-of-nil
+  (equal (append nil x)
+         x))
+
 (def-rw-opener-error force-fail-error
     (force forced-term))  
