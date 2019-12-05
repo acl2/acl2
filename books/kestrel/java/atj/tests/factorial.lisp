@@ -34,10 +34,15 @@
 
 (local (include-book "arithmetic/top" :dir :system))
 
-(defthmd fact-tail-correct
+(defthmd fact-tail-correct-lemma
   (implies (natp r)
            (equal (fact-tail n r)
                   (* r (fact n)))))
+
+(defthm fact-tail-correct
+  (equal (fact-tail n 1)
+         (fact n))
+  :hints (("Goal" :in-theory (enable fact-tail-correct-lemma))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
