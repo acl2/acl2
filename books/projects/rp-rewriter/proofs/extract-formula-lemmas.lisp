@@ -946,7 +946,7 @@
      (implies (rule-syntaxp rule)
               (rule-syntaxp (attach-sc-to-rule rule sc-formula)))
      :hints (("Goal"
-              :in-theory (e/d () (get-vars1
+              :in-theory (e/d (NO-FREE-VARIABLEP) (get-vars1
                                   RP-TERM-LISTP
                                   IS-RP-PSEUDO-TERMP
                                   RP-TERM-LISTP-IS-TRUE-LISTP
@@ -1206,6 +1206,7 @@
      :otf-flg t
      :hints (("goal"
               :in-theory (e/d (valid-rulep-sk-necc
+                               NO-FREE-VARIABLEP
                                rule-syntaxp)
                               (valid-rulep-sk))))))
 

@@ -184,8 +184,7 @@
                         (cw "(not (include-fnc rhs 'rp)) failed! ~p0 ~%.
  Rhs of  a rule cannot have an 'rp' instance ~%" rhs))))
           (cons rule rest)
-        (or (and warning (cw "this rule failed rule-syntaxp check: ~p0" rule))
-            rest)))))
+        rest))))
 
 (defun custom-rewrite-with-meta-extract (rule-name rule-new-synp warning state)
   (declare (xargs :guard (and (symbolp rule-name))

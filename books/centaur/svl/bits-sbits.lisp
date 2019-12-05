@@ -1757,8 +1757,9 @@
        (4vec-p (4vec-part-install x y z m))))
 
 (rp::add-rp-rule 4vec-p-of-sbits)
-(rp::add-rp-rule 4vec-p-of-sbits)
+(rp::add-rp-rule 4vec-p-of-bits)
 (rp::add-rp-rule 4vec-p-of-4vec-concat$)
+;;(rp::add-rp-rule svl::svl-env-p-of-svl-env)
 
 (encapsulate
   nil
