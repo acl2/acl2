@@ -224,7 +224,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
        :hints (("Goal"
                 :expand (hide ,term)
                 :in-theory '(return-last hard-error hide))))));)
-
+  
   #|(defmacro disable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name nil))||#
 

@@ -45,6 +45,16 @@
 (local (include-book "aux-function-lemmas"))
 (local (include-book "rp-equal-lemmas"))
 
+
+
+(defthm remove-warning-from-rule-syntaxp
+  (implies (syntaxp (not (equal warning ''nil)))
+           (equal (rule-syntaxp rule :warning warning)
+                  (rule-syntaxp rule :warning nil)))
+  :hints (("Goal"
+           :in-theory (e/d (rule-syntaxp) ()))))
+
+
 (local
  ;;LOCAL FUNCITONS FOR LOCAL LEMMAS
  (encapsulate
@@ -83,11 +93,11 @@
 
    (defthm correctness-of-formulas-to-rules
      (implies (eval-and-all formulas a)
-              (valid-rulesp-with-a (formulas-to-rules rune rule-new-synp formulas) a))
+              (valid-rulesp-with-a (formulas-to-rules rune rule-new-synp warning formulas) a))
      :hints (("Goal"
+              ;:expand ((:free (warning x y) (rule-syntaxp-fn (cons x y) warning)))
               :in-theory (e/d (formulas-to-rules
-                               valid-rulesp-with-a
-                               )
+                               valid-rulesp-with-a)
                               (rule-syntaxp)))))
 
    (defun-sk eval-and-all-sk ( formulas)
@@ -270,7 +280,7 @@
   (local
    (defthm correctness-of-formulas-to-rules2
      (implies (eval-and-all-sk formulas)
-              (valid-rulesp-with-a (formulas-to-rules rune rule-new-synp formulas) a))
+              (valid-rulesp-with-a (formulas-to-rules rune rule-new-synp warning formulas) a))
      :hints (("Goal"
               :use ((:instance correctness-of-formulas-to-rules)
                     (:instance EVAL-AND-ALL-SK-NECC))
@@ -298,7 +308,7 @@
   (local
    (defthm correctness-of-formulas-to-rules3
      (implies (eval-and-all-sk formulas)
-              (valid-rulesp (formulas-to-rules rune rule-new-synp formulas)))
+              (valid-rulesp (formulas-to-rules rune rule-new-synp warning formulas)))
      :otf-flg t
      :hints (("Goal"
               :induct  (valid-rulesp-induct formulas)
@@ -313,7 +323,8 @@
   (defthm custom-rewrite-with-meta-extract-is-correct
     (implies (and ;(custom-rewrite-with-meta-extract rule-name state)
               (rp-evl-meta-extract-global-facts :state state))
-             (valid-rulesp (custom-rewrite-with-meta-extract rule-name rule-new-synp state)))
+             (valid-rulesp (custom-rewrite-with-meta-extract rule-name
+                                                             rule-new-synp warning state)))
     :hints (("goal"
 ;:cases ((custom-rewrite-with-meta-extract rule-name state))
              :in-theory (e/d (valid-rulep-sk-necc
@@ -927,6 +938,10 @@
  (encapsulate
    nil
 
+
+   (local
+    (in-theory (enable rule-syntaxp)))
+   
    (defthm rule-sytanxp-attach-sc-to-rule
      (implies (rule-syntaxp rule)
               (rule-syntaxp (attach-sc-to-rule rule sc-formula)))
@@ -1118,6 +1133,12 @@
                                   attach-sc-to-rule
                                   rule-syntaxp)))))))
 
+(defthm VALID-RULEP-implies
+  (implies (valid-rulep rule)
+           (AND (RULE-SYNTAXP RULE)
+                (VALID-RULEP-SK RULE)))
+  :rule-classes :forward-chaining)
+
 (defthm valid-rulep-update-rules-with-sc
   (implies (and (valid-rulesp rules)
                 (rp-evl-meta-extract-global-facts :state state))
@@ -1128,8 +1149,9 @@
            :in-theory (e/d ()
                            (update-rule-with-sc
                             ;;(:e tau-system)
-                            valid-rulep-update-rule-with-sc
+                            ;valid-rulep-update-rule-with-sc
                             valid-rulep-sk
+                            valid-rulep
                             valid-rulep-sk-body
                             rule-syntaxp)))))
 
@@ -1183,7 +1205,8 @@
                                    :rule-fnc x)))
      :otf-flg t
      :hints (("goal"
-              :in-theory (e/d (valid-rulep-sk-necc)
+              :in-theory (e/d (valid-rulep-sk-necc
+                               rule-syntaxp)
                               (valid-rulep-sk))))))
 
   (defthm valid-rulesp-try-to-add-rule-fnc
@@ -1201,11 +1224,11 @@
 
 (defthm valid-rulesp-get-rules
   (implies (rp-evl-meta-extract-global-facts :state state)
-           (valid-rulesp (get-rule-list runes sc-alist new-synps rule-fnc-alist
+           (valid-rulesp (get-rule-list runes sc-alist new-synps warning rule-fnc-alist
                                         state)))
   :hints (("Goal"
            :do-not-induct t
-           :induct (get-rule-list runes sc-alist new-synps rule-fnc-alist
+           :induct (get-rule-list runes sc-alist new-synps warning rule-fnc-alist
                                         state)
            :in-theory (e/d ()
                            (rule-syntaxp

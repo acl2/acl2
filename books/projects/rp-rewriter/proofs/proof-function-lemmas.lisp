@@ -424,10 +424,10 @@
   :hints (("Goal"
            :in-theory (e/d (valid-rulesp
                             rule-list-syntaxp)
-                           ((:DEFINITION FALIST-CONSISTENT)
-                            (:DEFINITION RP-TERMP)
-                            (:DEFINITION RULE-SYNTAXP)
-                            (:DEFINITION SUBSETP-EQUAL))))))
+                           ((:definition falist-consistent)
+                            (:definition rp-termp)
+                            rule-syntaxp
+                            (:definition subsetp-equal))))))
 
 (defthm VALID-SC-and-is-if
   (implies (and (is-if term)
@@ -529,3 +529,28 @@
 
 
 
+(defthm valid-sc-ex-from-falist
+  (implies (valid-sc x a)
+           (valid-sc (ex-from-falist x) a))
+  :rule-classes :rewrite
+  :hints (("Goal"
+           :expand (ex-from-falist x)
+           :in-theory (e/d (is-rp
+                            is-if) ()))))
+
+(defthm valid-sc-ex-from-falist-replace
+  (implies (rp-termp x)
+           (equal (valid-sc (ex-from-falist x) a)
+                  (valid-sc x a)))
+  :rule-classes :rewrite
+  :hints (("Goal"
+           :expand (ex-from-falist x)
+           :in-theory (e/d (is-rp
+                            is-if) ()))))
+
+(defthm rp-evl-of-ex-from-falist
+  (equal (rp-evl (ex-from-falist x) a)
+         (rp-evl x a))
+  :hints (("Goal"
+           :Expand (ex-from-falist x)
+           :in-theory (e/d () ()))))

@@ -455,7 +455,7 @@
 
   (defmacro bindings-alistp (bindings)
     `(and (alistp ,bindings)
-          (symbol-listp (strip-cars ,bindings))
+          ;(symbol-listp (strip-cars ,bindings))
           (rp-term-listp (strip-cdrs ,bindings)))))
 
 (defun cons-count (x)
@@ -534,6 +534,13 @@
     (declare (xargs :guard t #|(and (rp-termp term))||#))
     (case-match term (('rp & &) t) (& nil)))
 
+
+  (define ex-from-falist (term)
+    (case-match term
+      (('falist & x)
+       x)
+      (& term)))  
+  
   (defun ex-from-rp (term)
     (declare (xargs :guard t))
     (if (is-rp term)
@@ -1138,9 +1145,9 @@
 
   (defun no-free-variablep (rule)
     (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
-                                (rp-termp (rp-hyp rule))
-                                (rp-termp (rp-lhs rule))
-                                (rp-termp (rp-rhs rule)))))
+                                #|(rp-termp (rp-hyp rule))||#
+                                #|(rp-termp (rp-lhs rule))||#
+                                #|(rp-termp (rp-rhs rule))||#)))
     (let ((vars (get-vars (rp-lhs rule))))
       (and (subsetp (get-vars (rp-hyp rule))
                     vars
@@ -1149,25 +1156,60 @@
                     vars
                     :test 'equal))))
 
-  (defun rule-syntaxp (rule)
+  (define rule-syntaxp (rule &key warning)
     (declare (xargs :guard t))
     (and
-     (weak-custom-rewrite-rule-p rule)
-     (rp-termp (rp-hyp rule))
-     (rp-termp (rp-lhs rule))
-     (rp-termp (rp-rhs rule))
-     ;;(rp-syntaxp (rp-lhs rule))
-     (not (include-fnc (rp-lhs rule) 'rp))
-     (not (include-fnc (rp-hyp rule) 'rp))
-     ;(rp-syntaxp (rp-rhs rule))
-
-     (not (include-fnc (rp-rhs rule) 'falist))
-     (not (include-fnc (rp-hyp rule) 'falist))
-     (not (include-fnc (rp-lhs rule) 'if))
-     (consp (rp-lhs rule))
-     (not (acl2::fquotep (rp-lhs rule)))
-     (not (include-fnc (rp-lhs rule) 'synp))
-     (no-free-variablep rule)))
+     (or (weak-custom-rewrite-rule-p rule)
+         (and warning
+              (cw "ATTENTION! weak-custom-rewrite-rule-p failed! ~p0 ~%" rule)))
+     (or (and
+          (or (rp-termp (rp-hyp rule))
+              (and warning
+                   (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! ~%")))
+          (or (rp-termp (rp-lhs rule))
+              (and warning
+                   (cw "ATTENTION! (rp-termp (rp-lhs rule)) failed! ~p0 ~%" rule)))
+          (or (rp-termp (rp-rhs rule))
+              (and warning
+                   (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! ~%")))
+          (or (not (include-fnc (rp-lhs rule) 'rp))
+              (and warning
+                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp)) failed! ~%")))
+          (or (not (include-fnc (rp-hyp rule) 'rp))
+              (and warning
+                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp)) failed! ~%")))
+          (or (not (include-fnc (rp-rhs rule) 'falist))
+              (and warning
+                   (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist)) failed! ~%")))
+          (or (not (include-fnc (rp-hyp rule) 'falist))
+              (and warning
+                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist)) failed! ~%")))
+          (or (not (include-fnc (rp-lhs rule) 'if))
+              (and warning
+                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if)) failed! ~%")))
+          (or (consp (rp-lhs rule))
+              (and warning
+                   (cw "ATTENTION! (consp (rp-lhs rule)) failed! ~%")))
+          (or (not (acl2::fquotep (rp-lhs rule)))
+              (and warning
+                   (cw "ATTENTION! (not (acl2::fquotep (rp-lhs rule))) failed! ~%")))
+          (or (not (include-fnc (rp-lhs rule) 'synp))
+              (and warning
+                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp)) failed! ~%")))
+          (or (no-free-variablep rule)
+              (and warning
+                   (cw "ATTENTION! (no-free-variablep rule) failed! ~%"))))
+         (and (equal warning ':err)
+              (hard-error
+               'rule-syntaxp
+               "Error  is issued for: ~%
+ rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
+               (list (cons #\0 (rp-rune rule))
+                     (cons #\1 (rp-hyp rule))
+                     (cons #\2 (rp-lhs rule))
+                     (cons #\3 (rp-rhs rule)))))
+         (and warning
+              (cw "This rule will be skipped! Warning is issued at rp::rule-syntaxp for ~p0 ~%" rule)))))
 
   (defun rule-list-syntaxp (rules)
     (declare (xargs :guard t))
@@ -1495,13 +1537,14 @@
   
   (defmacro add-rp-rule (rule-name &optional (disabled 'nil))
     `(make-event
-      (b* ((rune (get-rune-name ',rule-name state)))
+      (b* ((rune (get-rune-name ',rule-name state))
+           (- (get-rules `(,rune) state :warning :err)))
         `(progn
            (table rp-rules-inorder ',rune nil)
            (table rp-rules ',rune ,,(not disabled))))))
   
-  (defmacro add-rp-exc-counterpart (fnc-name)
-    `(add-rp-rule '(:executable-counterpart ,fnc-name)))
+  #|(defmacro add-rp-exc-counterpart (fnc-name)
+    `(add-rp-rule '(:executable-counterpart ,fnc-name)))||#
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(progn

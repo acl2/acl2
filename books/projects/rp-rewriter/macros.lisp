@@ -40,7 +40,7 @@
 
 (include-book "std/strings/decimal" :dir :system)
 ;(include-book "aux-functions")
-(local (include-book "proofs/useful-lemmas"))
+;(local (include-book "proofs/useful-lemmas"))
 (include-book "tools/flag" :dir :system)
 
 (encapsulate
