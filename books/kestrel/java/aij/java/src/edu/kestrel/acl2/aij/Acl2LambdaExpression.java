@@ -73,9 +73,12 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * in the formal parameters of this lambda expression.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException If this function is malformed
-     *                                  in a way that some index cannot be set.
-     * @throws IllegalStateException    If some index is already set.
+     * @throws IllegalArgumentException If some index is already set,
+     *                                  or this lambda expression
+     *                                  contains some variable
+     *                                  that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     @Override
     void setVariableIndices() {

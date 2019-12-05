@@ -60,27 +60,25 @@ public final class Acl2Variable extends Acl2Term {
      * according to the supplied map from variable symbols to indices.
      *
      * @param indices Map from variable symbols to indices.
-     *                Invariants: not null, no null keys, no null values.
-     * @throws IllegalArgumentException If this variable
-     *                                  is not a key of the map,
-     *                                  or if the value associated with it
-     *                                  is negative.
-     * @throws IllegalStateException    If this variable index is already set.
+     *                Invariants:
+     *                not null,
+     *                no null keys,
+     *                no null values,
+     *                no negative values.
+     * @throws IllegalArgumentException If this variable index is already set,
+     *                                  or this variable is not
+     *                                  a key of the map.
      */
     @Override
     void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
         if (this.index != -1)
-            throw new IllegalStateException
+            throw new IllegalArgumentException
                     ("Index of variable " + this.name
                             + " already set to " + this.index + ".");
         Integer index = indices.get(this.name);
         if (index == null)
             throw new IllegalArgumentException
                     ("Variable " + this.name + " has no associated index.");
-        if (index < 0)
-            throw new IllegalArgumentException
-                    ("Negative index " + index
-                            + "associated to variable " + this.name + ".");
         this.index = index;
     }
 

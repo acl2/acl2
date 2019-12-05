@@ -44,10 +44,13 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Sets the indices of all the variables in this function.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException If this function is malformed
-     *                                  in a way that
-     *                                  some valid index cannot be set.
-     * @throws IllegalStateException    If some index is already set.
+     * @throws IllegalArgumentException If some index is already set,
+     *                                  or this function contains some variable
+     *                                  that is in the body
+     *                                  of some lambda expression
+     *                                  and that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     abstract void setVariableIndices();
 

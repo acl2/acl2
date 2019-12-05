@@ -177,12 +177,13 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * @throws IllegalArgumentException If {@code parameters} is null,
      *                                  or any of its elements is null,
      *                                  or {@code body} is null,
-     *                                  or the function definition is malformed
-     *                                  in a way that
-     *                                  some variable index cannot be set.
-     * @throws IllegalStateException    If the function is
-     *                                  already defined or native,
-     *                                  or some variable index is already set.
+     *                                  or the function is native,
+     *                                  or the function definition
+     *                                  (viewed as a lambda expression)
+     *                                  contains some variable
+     *                                  that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     public abstract void define(Acl2Symbol[] parameters, Acl2Term body);
 
