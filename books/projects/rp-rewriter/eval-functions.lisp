@@ -123,6 +123,7 @@
     (binary-+ . 2)
     (binary-* . 2)
     (consp . 1)
+    (force . 1)
 
     ;; Below are temporary, will probably be removed when def-formula-checks
     ;; start supporting mutually recursive funcitons

@@ -55,6 +55,7 @@
            :in-theory (e/d (rule-syntaxp) ()))))
 
 
+
 (local
  ;;LOCAL FUNCITONS FOR LOCAL LEMMAS
  (encapsulate
@@ -274,6 +275,49 @@
                                rp-hyp
                                rule-syntaxp)))))))
 
+
+(local
+ (encapsulate nil
+   (make-flag insert-iff-to-force :defthm-macro-name
+              defthm-insert-iff-to-force)
+
+
+
+   (defthm-insert-iff-to-force
+     (defthm rp-evl-of-insert-off-to-force-lemma
+       (if iff-flg
+           (iff (rp-evl (insert-iff-to-force term iff-flg) a)
+                (rp-evl term a))
+         (equal (rp-evl (insert-iff-to-force term iff-flg) a)
+                (rp-evl term a)))
+       :flag insert-iff-to-force)
+     (defthm rp-evl-lst-of-insert-off-to-force-lst
+       (equal (rp-evl-lst (insert-iff-to-force-lst lst) a)
+              (rp-evl-lst lst a))
+       :flag insert-iff-to-force-lst)
+     :hints (("Goal"
+              :in-theory (e/d (RP-EVL-OF-FNCALL-ARGS)
+                              ((:definition rp-termp)
+                               (:definition falist-consistent)
+                               (:rewrite rp-evl-of-rp-equal2)
+                               (:definition falist-consistent-aux)
+                               (:rewrite acl2::o-p-o-infp-car)
+                               (:type-prescription insert-iff-to-force))))))
+
+
+   (defthm rp-evl-of-insert-off-to-force
+     (and (iff (rp-evl (insert-iff-to-force term t) a)
+               (rp-evl term a))
+          (equal (rp-evl (insert-iff-to-force term nil) a)
+                 (rp-evl term a)))
+     :hints (("Goal"
+              :use ((:instance rp-evl-of-insert-off-to-force-lemma
+                               (iff-flg t))
+                    (:instance rp-evl-of-insert-off-to-force-lemma
+                               (iff-flg nil)))
+              :in-theory (e/d () ()))))))
+
+  
 (encapsulate
   nil
 
@@ -1285,21 +1329,15 @@
                             get-rule-list
                             table-alist)))))
 
-#|(defthm symbol-alistp-get-enabled-exec-rules
-  (symbol-alistp (get-enabled-exec-rules runes)))||#
-
-
 (defthm symbol-alistp-get-disabled-exc-rules-from-table
      (symbol-alistp (get-disabled-exc-rules-from-table x))
      :hints (("Goal"
               :in-theory (e/d (get-disabled-exc-rules-from-table) ()))))
 
 (defthm true-listp-get-enabled-rules-from-table-aux
-     (b* (((mv rules-rw #|rules-ex||# rules-def)
+     (b* (((mv rules-rw rules-def)
            (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules)))
        (and (true-listp rules-rw)
-            #|(true-listp rules-ex)||#
-            #|(symbol-alistp rules-ex)||#
             (true-listp rules-def)))
      :hints (("Goal"
               :in-theory (e/d (get-enabled-rules-from-table-aux) ()))))
