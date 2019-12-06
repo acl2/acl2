@@ -26,6 +26,7 @@
 (include-book "octal-digits")
 (include-book "binary-digits")
 (include-book "primitive-types")
+(include-book "unicode-escapes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
