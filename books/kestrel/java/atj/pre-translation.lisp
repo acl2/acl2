@@ -1072,7 +1072,7 @@
      because of the special treatment of @('(if a a b)') terms,
      which are treated as @('(or a b)'):
      the Java code generated for this case is a little different
-     (see @(tsee atj-gen-shallow-orapp)),
+     (see @(tsee atj-gen-shallow-or-app)),
      but the treatment of @('vars-in-scope')
      is essentially the same as just explained
      (there is no `then' branch to mark, because it is the same as the test,
