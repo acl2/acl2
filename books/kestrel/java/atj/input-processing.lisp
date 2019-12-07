@@ -103,7 +103,7 @@
    the iteration terminates when both worklists are empty.")
  (xdoc::p
   "Yet another complication arises from
-   calls of functions in @(tsee *atj-primitive-fns*),
+   calls of functions in @(tsee *atj-java-primitive-fns*),
    which are translated directly to Java primitive literals and operations
    when @(':deep') is @('nil') and @(':guards') is @('t').
    Under these conditions, when @('fn') is taken from a worklist,
@@ -112,7 +112,7 @@
    which it is in a sense.")
  (xdoc::p
   "As an optimization, ACL2 functions natively implemented in Java,
-   as well as functions in @(tsee *atj-primitive-fns*)
+   as well as functions in @(tsee *atj-java-primitive-fns*)
    if @(':deep') is @('nil') and @(':guards') is @('t'),
    are never added to the worklists and collected lists.
    This is because they are known to satisfy the necessary constraints,
@@ -120,12 +120,12 @@
    In fact, the worklist is initialized
    with possibly a subset of @('fn1'), ..., @('fnp'),
    obtained by removing any natively implemented functions
-   (while the ones in @(tsee *atj-primitive-fns*),
+   (while the ones in @(tsee *atj-java-primitive-fns*),
    when @(':deep') is @('nil') and @(':guards') is @('t'),
    are already ruled out by input validation).
    When descending into the defining of a function,
    natively implemented functions,
-   and functions in @(tsee *atj-primitive-fns*) when applicable,
+   and functions in @(tsee *atj-java-primitive-fns*) when applicable,
    are skipped over, not checked against worlists and collected lists,
    and not added to any worklist.")
  (xdoc::p
@@ -159,7 +159,7 @@
                                            t nil))
        ((unless (or (eq deep nil)
                     (eq guards t))) (value nil))
-       (target-prims (intersection-eq targets *atj-primitive-fns*))
+       (target-prims (intersection-eq targets *atj-java-primitive-fns*))
        ((when (null target-prims)) (value nil)))
     (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
@@ -652,7 +652,7 @@
    (xdoc::p
     "Otherwise, the call is of a named function (not @(tsee return-last)).
      If it is a natively implemented function,
-     or in @(tsee *atj-primitive-fns*) when applicable,
+     or in @(tsee *atj-java-primitive-fns*) when applicable,
      we do not add it to the worklist,
      because it satisfies all the necessary constraints
      and does not have a defining body to be inspected.
@@ -760,7 +760,7 @@
          ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
-                     (member-eq fn *atj-primitive-fns*)))
+                     (member-eq fn *atj-java-primitive-fns*)))
           (mv worklist-gen worklist-chk nil)))
       (if gen?
           (if (or (member-eq fn worklist-gen)

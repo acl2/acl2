@@ -303,7 +303,7 @@
     (xdoc::p
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
       then none of the @('fni') may be
-      one of the functions listed in @(tsee *atj-primitive-fns*).
+      one of the functions listed in @(tsee *atj-java-primitive-fns*).
       These functions are treated specially
       in the shallow embedding when guard satisfaction is assumed (see below).")
     (xdoc::p
@@ -547,7 +547,7 @@
      the Java class contains public static methods
      for the functions among @('fn1'), ..., @('fnp'),
      the functions that they transitively call
-     (except for the functions in @(tsee *atj-primitive-fns*),
+     (except for the functions in @(tsee *atj-java-primitive-fns*),
      when @(':deep') is @('nil') and @(':guards') is @('t'))
      and the ACL2 functions natively implemented in AIJ
      (the latter are just wrappers of the native implementations).

@@ -1306,18 +1306,18 @@
                                   (acl2-count second))
                                1))
 
-  (define atj-gen-shallow-primconstrapp ((fn (member-eq
-                                              fn *atj-primitive-constructors*))
-                                         (arg pseudo-termp)
-                                         (src-type atj-typep)
-                                         (dst-type atj-typep)
-                                         (jvar-result-base stringp)
-                                         (jvar-result-index posp)
-                                         (pkg-class-names string-string-alistp)
-                                         (fn-method-names symbol-string-alistp)
-                                         (curr-pkg stringp)
-                                         (qpairs cons-pos-alistp)
-                                         (wrld plist-worldp))
+  (define atj-gen-shallow-jprimconstrapp
+    ((fn (member-eq fn *atj-java-primitive-constructors*))
+     (arg pseudo-termp)
+     (src-type atj-typep)
+     (dst-type atj-typep)
+     (jvar-result-base stringp)
+     (jvar-result-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
@@ -1454,17 +1454,18 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 1))
 
-  (define atj-gen-shallow-primunapp ((fn (member-eq fn *atj-primitive-unops*))
-                                     (operand pseudo-termp)
-                                     (src-type atj-typep)
-                                     (dst-type atj-typep)
-                                     (jvar-result-base stringp)
-                                     (jvar-result-index posp)
-                                     (pkg-class-names string-string-alistp)
-                                     (fn-method-names symbol-string-alistp)
-                                     (curr-pkg stringp)
-                                     (qpairs cons-pos-alistp)
-                                     (wrld plist-worldp))
+  (define atj-gen-shallow-jprimunapp
+    ((fn (member-eq fn *atj-java-primitive-unops*))
+     (operand pseudo-termp)
+     (src-type atj-typep)
+     (dst-type atj-typep)
+     (jvar-result-base stringp)
+     (jvar-result-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
@@ -1554,18 +1555,19 @@
     :measure (two-nats-measure (acl2-count operand)
                                1))
 
-  (define atj-gen-shallow-primbinapp ((fn (member-eq fn *atj-primitive-binops*))
-                                      (left pseudo-termp)
-                                      (right pseudo-termp)
-                                      (src-type atj-typep)
-                                      (dst-type atj-typep)
-                                      (jvar-result-base stringp)
-                                      (jvar-result-index posp)
-                                      (pkg-class-names string-string-alistp)
-                                      (fn-method-names symbol-string-alistp)
-                                      (curr-pkg stringp)
-                                      (qpairs cons-pos-alistp)
-                                      (wrld plist-worldp))
+  (define atj-gen-shallow-jprimbinapp
+    ((fn (member-eq fn *atj-java-primitive-binops*))
+     (left pseudo-termp)
+     (right pseudo-termp)
+     (src-type atj-typep)
+     (dst-type atj-typep)
+     (jvar-result-base stringp)
+     (jvar-result-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
@@ -1755,39 +1757,24 @@
                                      guards$
                                      wrld))))
          ((when (and guards$
-                     (member-eq fn *atj-primitive-constructors*)
+                     (member-eq fn *atj-java-primitive-constructors*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-primconstrapp fn
-                                         (car args)
-                                         src-type
-                                         dst-type
-                                         jvar-result-base
-                                         jvar-result-index
-                                         pkg-class-names
-                                         fn-method-names
-                                         curr-pkg
-                                         qpairs
-                                         wrld))
+          (atj-gen-shallow-jprimconstrapp fn
+                                          (car args)
+                                          src-type
+                                          dst-type
+                                          jvar-result-base
+                                          jvar-result-index
+                                          pkg-class-names
+                                          fn-method-names
+                                          curr-pkg
+                                          qpairs
+                                          wrld))
          ((when (and guards$
-                     (member-eq fn *atj-primitive-unops*)
+                     (member-eq fn *atj-java-primitive-unops*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-primunapp fn
-                                     (car args)
-                                     src-type
-                                     dst-type
-                                     jvar-result-base
-                                     jvar-result-index
-                                     pkg-class-names
-                                     fn-method-names
-                                     curr-pkg
-                                     qpairs
-                                     wrld))
-         ((when (and guards$
-                     (member-eq fn *atj-primitive-binops*)
-                     (int= (len args) 2))) ; should be always true
-          (atj-gen-shallow-primbinapp fn
-                                      (first args)
-                                      (second args)
+          (atj-gen-shallow-jprimunapp fn
+                                      (car args)
                                       src-type
                                       dst-type
                                       jvar-result-base
@@ -1797,6 +1784,21 @@
                                       curr-pkg
                                       qpairs
                                       wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-java-primitive-binops*)
+                     (int= (len args) 2))) ; should be always true
+          (atj-gen-shallow-jprimbinapp fn
+                                       (first args)
+                                       (second args)
+                                       src-type
+                                       dst-type
+                                       jvar-result-base
+                                       jvar-result-index
+                                       pkg-class-names
+                                       fn-method-names
+                                       curr-pkg
+                                       qpairs
+                                       wrld))
          ((mv arg-blocks
               arg-exprs
               jvar-result-index) (atj-gen-shallow-terms args
