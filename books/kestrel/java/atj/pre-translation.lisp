@@ -109,7 +109,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-remove-return-last ((term pseudo-termp) (guards$ booleanp))
   :returns (new-term pseudo-termp :hyp (pseudo-termp term))
@@ -225,7 +225,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-id ((type atj-typep))
   :returns (id stringp :hyp :guard)
@@ -263,7 +263,7 @@
                            (atj-type-id y))
                     (equal x y)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-of-id ((id stringp))
   :returns (type atj-typep)
@@ -296,7 +296,7 @@
                     x))
     :enable atj-type-id))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-conv ((src-type atj-typep) (dst-type atj-typep))
   :returns (name symbolp)
@@ -322,7 +322,7 @@
   (intern$ (str::cat "[" (atj-type-id src-type) ">" (atj-type-id dst-type) "]")
            "JAVA"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-types-of-conv ((conv symbolp))
   :returns (mv (src-type atj-typep)
@@ -352,7 +352,7 @@
                     (list x y)))
     :enable (atj-type-conv atj-type-id)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-wrap-term ((term pseudo-termp)
                             (src-type atj-typep)
@@ -371,7 +371,7 @@
                (atj-type-conv src-type src-type))))
     (fcons-term* conv term)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unwrap-term ((term pseudo-termp))
   :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
@@ -402,7 +402,7 @@
                 (acl2-count term)))
     :rule-classes :linear))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-rewrap-term ((term pseudo-termp)
                               (src-type atj-typep)
@@ -426,7 +426,7 @@
     (atj-type-wrap-term (fargn term 1) src-type dst-type?))
   :guard-hints (("Goal" :expand ((pseudo-termp term)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-rewrap-terms ((terms pseudo-term-listp)
                                (src-types atj-type-listp)
@@ -443,7 +443,7 @@
                                         (cdr src-types)
                                         (cdr dst-types?))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-annotate-var ((var symbolp) (type atj-typep))
   :returns (annotated-var symbolp)
@@ -458,7 +458,7 @@
      where @('type') identifies an ATJ type."))
   (packn-pos (list "[" (atj-type-id type) "]" var) var))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unannotate-var ((var symbolp))
   :returns (mv (unannotated-var symbolp)
@@ -485,7 +485,7 @@
        (type (atj-type-of-id type-id)))
     (mv unannotated-var type)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-annotate-vars ((vars symbol-listp)
                                 (types atj-type-listp))
@@ -501,7 +501,7 @@
     (equal (len new-vars)
            (len vars))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unannotate-vars ((vars symbol-listp))
   :returns (mv (unannotated-vars symbol-listp)
@@ -521,7 +521,7 @@
     (equal (len types)
            (len vars))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-type-annotate-term
   :short "Add ATJ type annotations to ACL2 terms."
@@ -819,7 +819,7 @@
   (verify-guards atj-type-annotate-term
     :hints (("Goal" :expand ((pseudo-termp term))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-annotate-formals+body ((formals symbol-listp)
                                         (body pseudo-termp)
@@ -944,14 +944,14 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-mark-var-new ((var symbolp))
   :returns (marked-var symbolp)
   :short "Mark a variable as `new'."
   (packn-pos (list "[N]" var) var))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-mark-vars-new ((vars symbol-listp))
   :returns (marked-vars symbol-listp)
@@ -965,14 +965,14 @@
     (equal (len marked-vars)
            (len vars))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-mark-var-old ((var symbolp))
   :returns (marked-var symbolp)
   :short "Mark a variable as `old'."
   (packn-pos (list "[O]" var) var))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-unmark-var ((var symbolp))
   :returns (mv (unmarked-var symbolp)
@@ -992,7 +992,7 @@
        (unmarked-var (intern-in-package-of-symbol unmarked-string var)))
     (mv unmarked-var new?)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-unmark-vars ((vars symbol-listp))
   :returns (mv (unmarked-vars symbol-listp)
@@ -1012,7 +1012,7 @@
     (equal (len new?s)
            (len vars))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-mark-term
   :short "Mark the variables in a term as `new' or `old'."
@@ -1345,7 +1345,7 @@
 
   (verify-guards atj-mark-term))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-mark-formals+body ((formals symbol-listp) (body pseudo-termp))
   :returns (mv (new-formals symbol-listp)
@@ -1389,7 +1389,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-init-indices*
   :short "Initial variable index alist."
@@ -1416,7 +1416,7 @@
   ///
   (assert-event (symbol-pos-alistp *atj-init-indices*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-rename-formal ((var symbolp)
                            (indices symbol-pos-alistp)
@@ -1524,7 +1524,7 @@
      (implies (posp x)
               (posp (1+ x))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-rename-formals ((formals symbol-listp)
                             (renaming-new symbol-symbol-alistp)
@@ -1654,7 +1654,7 @@
     (equal (len new-formals)
            (len formals))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines atj-rename-term
   :short "Rename all the ACL2 variables in an ACL2 term to their Java names."
@@ -1856,7 +1856,7 @@
   ///
   (verify-guards atj-rename-term))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-rename-formals+body ((formals symbol-listp)
                                  (body pseudo-termp)
