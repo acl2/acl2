@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "abstract-syntax")
+(include-book "java-abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

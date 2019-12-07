@@ -13,7 +13,7 @@
 (include-book "common-code-generation")
 (include-book "pre-translation")
 (include-book "post-translation")
-(include-book "primitives")
+(include-book "java-primitives")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)

@@ -11,7 +11,7 @@
 (in-package "JAVA")
 
 (include-book "aij-notions")
-(include-book "primitives")
+(include-book "java-primitives")
 (include-book "test-structures")
 
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)

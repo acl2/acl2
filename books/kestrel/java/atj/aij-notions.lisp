@@ -12,7 +12,7 @@
 
 (include-book "library-extensions")
 
-(include-book "abstract-syntax")
+(include-book "java-abstract-syntax")
 
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)

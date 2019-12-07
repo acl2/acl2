@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "abstract-syntax")
+(include-book "java-abstract-syntax")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
