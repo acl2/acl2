@@ -94,7 +94,7 @@
      e.g. to convert from @('int') to @('Acl2Value');
      here the conversion is based on
      the ACL2 representation of Java @('int') values,
-     described " (xdoc::seetopic "atj-primitives" "here") ".")
+     described " (xdoc::seetopic "atj-java-primitives" "here") ".")
    (xdoc::p
     "The ATJ type information stored in the table
      determines/specifies the input and output types of the Java methods
@@ -294,7 +294,7 @@
      The predicates for the @(':j...') types are
      the recognizers of the corresponding Java primitive types
      in our Java language formalization.
-     Also see " (xdoc::seetopic "atj-primitives" "here") "."))
+     Also see " (xdoc::seetopic "atj-java-primitives" "here") "."))
   (case x
     (:acharacter 'characterp)
     (:astring 'stringp)
@@ -328,7 +328,7 @@
      The @(':j...') types denote ACL2 predicates
      satisfied only by @(tsee cons)es
      (satisfying additional properties; see "
-    (xdoc::seetopic "atj-primitives" "here")
+    (xdoc::seetopic "atj-java-primitives" "here")
     "); thus, the @(':j...') types are below @(':acons') in the partial order.
      The @('j...') types are unrelated to each other in the partial order,
      because the corresponding predicates are disjoint.")
