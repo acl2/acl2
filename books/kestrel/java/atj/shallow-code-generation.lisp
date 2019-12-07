@@ -596,7 +596,7 @@
                                (pkg-class-names string-string-alistp)
                                (curr-pkg stringp))
   :returns (expr jexprp)
-  :short "Generate a shallowly  embedded ACL2 value."
+  :short "Generate a shallowly embedded ACL2 value."
   :long
   (xdoc::topstring-p
    "For numbers, characters, strings, and symbols,
@@ -1001,15 +1001,15 @@
      the type @(':avalue') of all ACL2 values,
      i.e. it is as if there were no types."))
 
-  (define atj-gen-shallow-iftest ((test pseudo-termp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
-                                  (pkg-class-names string-string-alistp)
-                                  (fn-method-names symbol-string-alistp)
-                                  (curr-pkg stringp)
-                                  (qpairs cons-pos-alistp)
-                                  (guards$ booleanp)
-                                  (wrld plist-worldp))
+  (define atj-gen-shallow-if-test ((test pseudo-termp)
+                                   (jvar-result-base stringp)
+                                   (jvar-result-index posp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (curr-pkg stringp)
+                                   (qpairs cons-pos-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
@@ -1019,7 +1019,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "See @(tsee atj-gen-shallow-ifapp) for a general description
+      "See @(tsee atj-gen-shallow-if-app) for a general description
        of how ACL2 @(tsee if)s are translated to Java @('if')s.")
      (xdoc::p
       "Here we handle the test of the @(tsee if).
@@ -1067,14 +1067,14 @@
          ((mv block
               expr
               jvar-result-index) (atj-gen-shallow-term (or jbool? test)
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          (expr (if jbool?
                    expr
                  (jexpr-binary (jbinop-ne)
@@ -1086,18 +1086,18 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count test) 1))
 
-  (define atj-gen-shallow-ifapp ((test pseudo-termp)
-                                 (then pseudo-termp)
-                                 (else pseudo-termp)
-                                 (type atj-typep)
-                                 (jvar-result-base stringp)
-                                 (jvar-result-index posp)
-                                 (pkg-class-names string-string-alistp)
-                                 (fn-method-names symbol-string-alistp)
-                                 (curr-pkg stringp)
-                                 (qpairs cons-pos-alistp)
-                                 (guards$ booleanp)
-                                 (wrld plist-worldp))
+  (define atj-gen-shallow-if-app ((test pseudo-termp)
+                                  (then pseudo-termp)
+                                  (else pseudo-termp)
+                                  (type atj-typep)
+                                  (jvar-result-base stringp)
+                                  (jvar-result-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (fn-method-names symbol-string-alistp)
+                                  (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
@@ -1135,7 +1135,7 @@
      (xdoc::p
       "The type @('<type>') of the result variable is
        derived from the ATJ type passed to this code generation function.
-       See @(tsee atj-gen-shallow-fnapp) for details.")
+       See @(tsee atj-gen-shallow-fn-app) for details.")
      (xdoc::p
       "If the flag @(tsee *atj-gen-cond-exprs*) is set,
        and if both @('<b-block>') and @('<c-block>') are empty,
@@ -1150,40 +1150,40 @@
       "However, if the test of the @(tsee if) has the form
        @('([AS>AS] (boolean-value->bool ([JZ>JZ] a)))'),
        we generate just @('<a-expr>') as the test of the Java @('if'):
-       see @(tsee atj-gen-shallow-iftest) for details."))
+       see @(tsee atj-gen-shallow-if-test) for details."))
     (b* (((mv test-block
               test-expr
-              jvar-result-index) (atj-gen-shallow-iftest test
-                                                         jvar-result-base
-                                                         jvar-result-index
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         curr-pkg
-                                                         qpairs
-                                                         guards$
-                                                         wrld))
+              jvar-result-index) (atj-gen-shallow-if-test test
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          ((mv then-block
               then-expr
               jvar-result-index) (atj-gen-shallow-term then
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          ((mv else-block
               else-expr
               jvar-result-index) (atj-gen-shallow-term else
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          ((when (and *atj-gen-cond-exprs*
                      (null then-block)
                      (null else-block)))
@@ -1214,7 +1214,7 @@
           expr
           jvar-result-index))
     ;; 2nd component is greater than 0 and 1
-    ;; so that the call of ATJ-GEN-SHALLOW-IFTEST decreases
+    ;; so that the call of ATJ-GEN-SHALLOW-IF-TEST decreases
     ;; and each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNTs of the other two addends are 0:
     :measure (two-nats-measure (+ (acl2-count test)
@@ -1222,17 +1222,17 @@
                                   (acl2-count else))
                                2))
 
-  (define atj-gen-shallow-orapp ((first pseudo-termp)
-                                 (second pseudo-termp)
-                                 (type atj-typep)
-                                 (jvar-result-base stringp)
-                                 (jvar-result-index posp)
-                                 (pkg-class-names string-string-alistp)
-                                 (fn-method-names symbol-string-alistp)
-                                 (curr-pkg stringp)
-                                 (qpairs cons-pos-alistp)
-                                 (guards$ booleanp)
-                                 (wrld plist-worldp))
+  (define atj-gen-shallow-or-app ((first pseudo-termp)
+                                  (second pseudo-termp)
+                                  (type atj-typep)
+                                  (jvar-result-base stringp)
+                                  (jvar-result-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (fn-method-names symbol-string-alistp)
+                                  (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
@@ -1260,25 +1260,25 @@
     (b* (((mv first-block
               first-expr
               jvar-result-index) (atj-gen-shallow-term first
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          ((mv second-block
               second-expr
               jvar-result-index) (atj-gen-shallow-term second
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          (jtype (atj-type-to-jtype type))
          ((mv result-locvar-block jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
@@ -1306,7 +1306,7 @@
                                   (acl2-count second))
                                1))
 
-  (define atj-gen-shallow-jprimconstrapp
+  (define atj-gen-shallow-jprim-constr-app
     ((fn (member-eq fn *atj-java-primitive-constructors*))
      (arg pseudo-termp)
      (src-type atj-typep)
@@ -1425,14 +1425,14 @@
         (b* (((mv arg-block
                   arg-expr
                   jvar-result-index) (atj-gen-shallow-term arg
-                                                           jvar-result-base
-                                                           jvar-result-index
-                                                           pkg-class-names
-                                                           fn-method-names
-                                                           curr-pkg
-                                                           qpairs
-                                                           t ; GUARDS$
-                                                           wrld))
+                  jvar-result-base
+                  jvar-result-index
+                  pkg-class-names
+                  fn-method-names
+                  curr-pkg
+                  qpairs
+                  t ; GUARDS$
+                  wrld))
              (expr (cond
                     ((eq fn 'boolean-value)
                      (atj-adapt-expr-to-type
@@ -1454,7 +1454,7 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 1))
 
-  (define atj-gen-shallow-jprimunapp
+  (define atj-gen-shallow-jprim-unop-app
     ((fn (member-eq fn *atj-java-primitive-unops*))
      (operand pseudo-termp)
      (src-type atj-typep)
@@ -1499,14 +1499,14 @@
     (b* (((mv operand-block
               operand-expr
               jvar-result-index) (atj-gen-shallow-term operand
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              t ; GUARDS$
+              wrld))
          (expr (if (member-eq fn '(boolean-not
                                    int-plus
                                    long-plus
@@ -1555,7 +1555,7 @@
     :measure (two-nats-measure (acl2-count operand)
                                1))
 
-  (define atj-gen-shallow-jprimbinapp
+  (define atj-gen-shallow-jprim-binop-app
     ((fn (member-eq fn *atj-java-primitive-binops*))
      (left pseudo-termp)
      (right pseudo-termp)
@@ -1596,25 +1596,25 @@
     (b* (((mv left-block
               left-expr
               jvar-result-index) (atj-gen-shallow-term left
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              t ; GUARDS$
+              wrld))
          ((mv right-block
               right-expr
               jvar-result-index) (atj-gen-shallow-term right
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              t ; GUARDS$
+              wrld))
          (binop (case fn
                   (boolean-and (jbinop-and))
                   (boolean-xor (jbinop-xor))
@@ -1674,18 +1674,18 @@
                                   (acl2-count right))
                                1))
 
-  (define atj-gen-shallow-fnapp ((fn pseudo-termfnp)
-                                 (args pseudo-term-listp)
-                                 (src-type atj-typep)
-                                 (dst-type atj-typep)
-                                 (jvar-result-base stringp)
-                                 (jvar-result-index posp)
-                                 (pkg-class-names string-string-alistp)
-                                 (fn-method-names symbol-string-alistp)
-                                 (curr-pkg stringp)
-                                 (qpairs cons-pos-alistp)
-                                 (guards$ booleanp)
-                                 (wrld plist-worldp))
+  (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
+                                  (args pseudo-term-listp)
+                                  (src-type atj-typep)
+                                  (dst-type atj-typep)
+                                  (jvar-result-base stringp)
+                                  (jvar-result-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (fn-method-names symbol-string-alistp)
+                                  (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
     :guard (and (not (equal curr-pkg ""))
                 (or (not (pseudo-lambdap fn))
                     (equal (len (lambda-formals fn))
@@ -1733,33 +1733,47 @@
                (second (second args))
                (athird (third args)))
             (if (equal first second)
-                (atj-gen-shallow-orapp first
-                                       athird
-                                       dst-type ; = SRC-TYPE
-                                       jvar-result-base
-                                       jvar-result-index
-                                       pkg-class-names
-                                       fn-method-names
-                                       curr-pkg
-                                       qpairs
-                                       guards$
-                                       wrld)
-              (atj-gen-shallow-ifapp first
-                                     second
-                                     athird
-                                     dst-type ; = SRC-TYPE
-                                     jvar-result-base
-                                     jvar-result-index
-                                     pkg-class-names
-                                     fn-method-names
-                                     curr-pkg
-                                     qpairs
-                                     guards$
-                                     wrld))))
+                (atj-gen-shallow-or-app first
+                                        athird
+                                        dst-type ; = SRC-TYPE
+                                        jvar-result-base
+                                        jvar-result-index
+                                        pkg-class-names
+                                        fn-method-names
+                                        curr-pkg
+                                        qpairs
+                                        guards$
+                                        wrld)
+              (atj-gen-shallow-if-app first
+                                      second
+                                      athird
+                                      dst-type ; = SRC-TYPE
+                                      jvar-result-base
+                                      jvar-result-index
+                                      pkg-class-names
+                                      fn-method-names
+                                      curr-pkg
+                                      qpairs
+                                      guards$
+                                      wrld))))
          ((when (and guards$
                      (member-eq fn *atj-java-primitive-constructors*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimconstrapp fn
+          (atj-gen-shallow-jprim-constr-app fn
+                                            (car args)
+                                            src-type
+                                            dst-type
+                                            jvar-result-base
+                                            jvar-result-index
+                                            pkg-class-names
+                                            fn-method-names
+                                            curr-pkg
+                                            qpairs
+                                            wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-java-primitive-unops*)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-jprim-unop-app fn
                                           (car args)
                                           src-type
                                           dst-type
@@ -1771,45 +1785,31 @@
                                           qpairs
                                           wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primitive-unops*)
-                     (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimunapp fn
-                                      (car args)
-                                      src-type
-                                      dst-type
-                                      jvar-result-base
-                                      jvar-result-index
-                                      pkg-class-names
-                                      fn-method-names
-                                      curr-pkg
-                                      qpairs
-                                      wrld))
-         ((when (and guards$
                      (member-eq fn *atj-java-primitive-binops*)
                      (int= (len args) 2))) ; should be always true
-          (atj-gen-shallow-jprimbinapp fn
-                                       (first args)
-                                       (second args)
-                                       src-type
-                                       dst-type
-                                       jvar-result-base
-                                       jvar-result-index
-                                       pkg-class-names
-                                       fn-method-names
-                                       curr-pkg
-                                       qpairs
-                                       wrld))
+          (atj-gen-shallow-jprim-binop-app fn
+                                           (first args)
+                                           (second args)
+                                           src-type
+                                           dst-type
+                                           jvar-result-base
+                                           jvar-result-index
+                                           pkg-class-names
+                                           fn-method-names
+                                           curr-pkg
+                                           qpairs
+                                           wrld))
          ((mv arg-blocks
               arg-exprs
               jvar-result-index) (atj-gen-shallow-terms args
-                                                        jvar-result-base
-                                                        jvar-result-index
-                                                        pkg-class-names
-                                                        fn-method-names
-                                                        curr-pkg
-                                                        qpairs
-                                                        guards$
-                                                        wrld))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld))
          ((when (symbolp fn))
           (b* ((expr (jexpr-method
                       (atj-gen-shallow-fnname fn
@@ -1825,19 +1825,19 @@
          ((mv lambda-block
               lambda-expr
               jvar-result-index) (atj-gen-shallow-lambda (lambda-formals fn)
-                                                         (lambda-body fn)
-                                                         arg-blocks
-                                                         arg-exprs
-                                                         src-type
-                                                         dst-type
-                                                         jvar-result-base
-                                                         jvar-result-index
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         curr-pkg
-                                                         qpairs
-                                                         guards$
-                                                         wrld)))
+              (lambda-body fn)
+              arg-blocks
+              arg-exprs
+              src-type
+              dst-type
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld)))
       (mv lambda-block
           lambda-expr
           jvar-result-index))
@@ -1885,14 +1885,14 @@
          ((mv body-block
               body-expr
               jvar-result-index) (atj-gen-shallow-term body
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld)))
+              jvar-result-base
+              jvar-result-index
+              pkg-class-names
+              fn-method-names
+              curr-pkg
+              qpairs
+              guards$
+              wrld)))
       (mv (append let-block body-block)
           (atj-adapt-expr-to-type
            body-expr src-type dst-type pkg-class-names curr-pkg)
@@ -1953,18 +1953,18 @@
                (expr (atj-adapt-expr-to-type
                       expr src-type dst-type pkg-class-names curr-pkg)))
             (mv nil expr jvar-result-index))))
-      (atj-gen-shallow-fnapp (ffn-symb term)
-                             (fargs term)
-                             src-type
-                             dst-type
-                             jvar-result-base
-                             jvar-result-index
-                             pkg-class-names
-                             fn-method-names
-                             curr-pkg
-                             qpairs
-                             guards$
-                             wrld))
+      (atj-gen-shallow-fn-app (ffn-symb term)
+                              (fargs term)
+                              src-type
+                              dst-type
+                              jvar-result-base
+                              jvar-result-index
+                              pkg-class-names
+                              fn-method-names
+                              curr-pkg
+                              qpairs
+                              guards$
+                              wrld))
     :measure (two-nats-measure (acl2-count term) 0))
 
   (define atj-gen-shallow-terms ((terms pseudo-term-listp)
@@ -1989,25 +1989,25 @@
       (b* (((mv first-block
                 first-expr
                 jvar-result-index) (atj-gen-shallow-term (car terms)
-                                                         jvar-result-base
-                                                         jvar-result-index
-                                                         pkg-class-names
-                                                         fn-method-names
-                                                         curr-pkg
-                                                         qpairs
-                                                         guards$
-                                                         wrld))
+                jvar-result-base
+                jvar-result-index
+                pkg-class-names
+                fn-method-names
+                curr-pkg
+                qpairs
+                guards$
+                wrld))
            ((mv rest-blocks
                 rest-exprs
                 jvar-result-index) (atj-gen-shallow-terms (cdr terms)
-                                                          jvar-result-base
-                                                          jvar-result-index
-                                                          pkg-class-names
-                                                          fn-method-names
-                                                          curr-pkg
-                                                          qpairs
-                                                          guards$
-                                                          wrld)))
+                jvar-result-base
+                jvar-result-index
+                pkg-class-names
+                fn-method-names
+                curr-pkg
+                qpairs
+                guards$
+                wrld)))
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
             jvar-result-index)))
@@ -2341,28 +2341,28 @@
   (b* (((when (endp fn-types)) (mv nil qconsts))
        ((mv first-methods
             qconsts) (atj-gen-shallow-fndef-method fn
-                                                   (car fn-types)
-                                                   formals
-                                                   body
-                                                   method-name
-                                                   qconsts
-                                                   pkg-class-names
-                                                   fn-method-names
-                                                   curr-pkg
-                                                   guards$
-                                                   wrld))
+            (car fn-types)
+            formals
+            body
+            method-name
+            qconsts
+            pkg-class-names
+            fn-method-names
+            curr-pkg
+            guards$
+            wrld))
        ((mv rest-methods
             qconsts) (atj-gen-shallow-fndef-methods fn
-                                                    (cdr fn-types)
-                                                    formals
-                                                    body
-                                                    method-name
-                                                    qconsts
-                                                    pkg-class-names
-                                                    fn-method-names
-                                                    curr-pkg
-                                                    guards$
-                                                    wrld)))
+            (cdr fn-types)
+            formals
+            body
+            method-name
+            qconsts
+            pkg-class-names
+            fn-method-names
+            curr-pkg
+            guards$
+            wrld)))
     (mv (cons first-methods rest-methods) qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2470,20 +2470,20 @@
   (b* (((when (endp fns)) (mv nil qconsts))
        ((mv first-methods
             qconsts) (atj-gen-shallow-fn-methods (car fns)
-                                                 qconsts
-                                                 pkg-class-names
-                                                 fn-method-names
-                                                 guards$
-                                                 verbose$
-                                                 wrld))
+            qconsts
+            pkg-class-names
+            fn-method-names
+            guards$
+            verbose$
+            wrld))
        ((mv rest-methods
             qconsts) (atj-gen-shallow-all-fn-methods (cdr fns)
-                                                     qconsts
-                                                     pkg-class-names
-                                                     fn-method-names
-                                                     guards$
-                                                     verbose$
-                                                     wrld)))
+            qconsts
+            pkg-class-names
+            fn-method-names
+            guards$
+            verbose$
+            wrld)))
     (mv (append first-methods rest-methods) qconsts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2724,12 +2724,12 @@
                for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
             qconsts) (atj-gen-shallow-all-fn-methods fns
-                                                     qconsts
-                                                     pkg-class-names
-                                                     fn-method-names
-                                                     guards$
-                                                     verbose$
-                                                     wrld))
+            qconsts
+            pkg-class-names
+            fn-method-names
+            guards$
+            verbose$
+            wrld))
        (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
        (imported-fns (sort-symbol-listp imported-fns))
        (synonym-methods (atj-gen-shallow-all-synonym-methods imported-fns
@@ -2782,24 +2782,24 @@
        (pkg (car pkgs))
        ((mv first-methods
             qconsts) (atj-gen-shallow-pkg-methods pkg
-                                                  fns-by-pkg
-                                                  fns+natives
-                                                  qconsts
-                                                  pkg-class-names
-                                                  fn-method-names
-                                                  guards$
-                                                  verbose$
-                                                  wrld))
+            fns-by-pkg
+            fns+natives
+            qconsts
+            pkg-class-names
+            fn-method-names
+            guards$
+            verbose$
+            wrld))
        ((mv rest-methods
             qconsts) (atj-gen-shallow-all-pkg-methods (cdr pkgs)
-                                                      fns-by-pkg
-                                                      fns+natives
-                                                      qconsts
-                                                      pkg-class-names
-                                                      fn-method-names
-                                                      guards$
-                                                      verbose$
-                                                      wrld)))
+            fns-by-pkg
+            fns+natives
+            qconsts
+            pkg-class-names
+            fn-method-names
+            guards$
+            verbose$
+            wrld)))
     (if (null first-methods)
         (mv rest-methods qconsts)
       (mv (acons pkg first-methods rest-methods)
