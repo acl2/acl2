@@ -18,6 +18,7 @@
 (include-book "all-pkg-names")
 (include-book "all-program-ffn-symbs")
 (include-book "all-vars-open")
+(include-book "check-user-lambda")
 (include-book "check-user-term")
 (include-book "dumb-occur-var-open")
 (include-book "guard-verified-exec-fnsp")
