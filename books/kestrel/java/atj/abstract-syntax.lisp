@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-abstract-syntax
+(defxdoc+ atj-java-abstract-syntax
   :parents (atj-implementation)
   :short "An abstract syntax of Java for ATJ's implementation."
   :long

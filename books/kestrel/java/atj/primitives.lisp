@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-primitives
+(defxdoc+ atj-java-primitives
   :parents (atj-implementation)
   :short "Representation of Java primitive types and operations for ATJ."
   :long

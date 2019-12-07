@@ -21,7 +21,7 @@
   (xdoc::topstring
    (xdoc::p
     "These operartions, like the "
-    (xdoc::seetopic "atj-abstract-syntax" "abstract syntax of Java")
+    (xdoc::seetopic "atj-java-abstract-syntax" "abstract syntax of Java")
     ", are more general than ATJ and will be eventually moved
      to a new library for manipulating Java code.
      For now, these are parts of ATJ, which is their only user so far."))

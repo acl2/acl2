@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-pretty-printer
+(defxdoc+ atj-java-pretty-printer
   :parents (atj-implementation)
   :short "A pretty-printer for the abstract syntax of Java,
           for ATJ's implementation."
