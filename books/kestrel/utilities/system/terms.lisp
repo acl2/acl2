@@ -12,6 +12,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This file is temporary.
+; Its previous contents have been moved under Std/system,
+; each utility in its individual file for greater modularity.
+; When all the existing inclusions of this file
+; will be replaced by inclusions of some of those new individual files,
+; this file will be removed.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
@@ -42,12 +51,3 @@
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "world-queries")
-
-(local (include-book "all-vars-theorems"))
-(local (include-book "world-theorems"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc term-utilities
-  :parents (system-utilities-non-built-in)
-  :short "Utilities for @(see term)s.")
