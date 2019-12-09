@@ -237,7 +237,10 @@
      For the ATJ types that correspond to AIJ's public classes,
      the first letter is @('A') and the second letter is from the class name.
      For the Java primitive types,
-     the first letter is @('J') and the second letter is from [JVMS:4.3.2]."))
+     the first letter is @('J') and the second letter is from [JVMS:4.3.2].
+     For the Java primitive array types,
+     the first letter is @('Y') (which is the ending letter of `array')
+     and the second letter is from [JVMS:4.3.2]."))
   (case type
     (:ainteger "AI")
     (:arational "AR")
@@ -253,6 +256,12 @@
     (:jshort "JS")
     (:jint "JI")
     (:jlong "JJ")
+    (:jboolean[] "YZ")
+    (:jchar[] "YC")
+    (:jbyte[] "YB")
+    (:jshort[] "YS")
+    (:jint[] "YI")
+    (:jlong[] "YJ")
     (otherwise (impossible)))
   ///
 
@@ -285,6 +294,12 @@
         ((equal id "JS") :jshort)
         ((equal id "JI") :jint)
         ((equal id "JJ") :jlong)
+        ((equal id "YZ") :jboolean[])
+        ((equal id "YC") :jchar[])
+        ((equal id "YB") :jbyte[])
+        ((equal id "YS") :jshort[])
+        ((equal id "YI") :jint[])
+        ((equal id "YJ") :jlong[])
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
             :avalue))) ; irrelevant

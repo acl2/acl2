@@ -144,6 +144,8 @@
     int-value
     long-value))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primitive-unops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive unary operations."
@@ -185,6 +187,8 @@
     long-to-char
     ;; widening and narrowing conversions:
     byte-to-char))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-java-primitive-binops*
   :short "List of (the names of) the ACL2 functions that model
@@ -242,6 +246,8 @@
     long-int-ushiftr
     int-long-ushiftr))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primitive-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
@@ -254,7 +260,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atj-types-for-primitives
+(defsection atj-types-for-java-primitives
   :short "ATJ types for the Java primitive constructors and operations."
 
   ;; primitive constructors:

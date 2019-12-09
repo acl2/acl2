@@ -12,6 +12,7 @@
 
 (include-book "aij-notions")
 (include-book "java-primitives")
+(include-book "java-primitive-arrays")
 (include-book "test-structures")
 
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
@@ -103,16 +104,18 @@
    the iteration terminates when both worklists are empty.")
  (xdoc::p
   "Yet another complication arises from
-   calls of functions in @(tsee *atj-java-primitive-fns*),
-   which are translated directly to Java primitive literals and operations
+   calls of functions in
+   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
+   which are translated directly to suitable Java constructs
    when @(':deep') is @('nil') and @(':guards') is @('t').
    Under these conditions, when @('fn') is taken from a worklist,
-   it is added to the collected list and its defining body is not examined;
+   its defining body is not examined;
    i.e. it is treated like a natively implemented function,
-   which it is in a sense.")
+   which it is in some sense.")
  (xdoc::p
   "As an optimization, ACL2 functions natively implemented in Java,
-   as well as functions in @(tsee *atj-java-primitive-fns*)
+   as well as functions in
+   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
    if @(':deep') is @('nil') and @(':guards') is @('t'),
    are never added to the worklists and collected lists.
    This is because they are known to satisfy the necessary constraints,
@@ -120,13 +123,16 @@
    In fact, the worklist is initialized
    with possibly a subset of @('fn1'), ..., @('fnp'),
    obtained by removing any natively implemented functions
-   (while the ones in @(tsee *atj-java-primitive-fns*),
+   (while the ones in
+   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
    when @(':deep') is @('nil') and @(':guards') is @('t'),
    are already ruled out by input validation).
    When descending into the defining of a function,
    natively implemented functions,
-   and functions in @(tsee *atj-java-primitive-fns*) when applicable,
-   are skipped over, not checked against worlists and collected lists,
+   and functions in
+   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+   when applicable,
+   are skipped over, not checked against worKlists and collected lists,
    and not added to any worklist.")
  (xdoc::p
   "Further details and complications of the worklist algorithm
@@ -159,7 +165,9 @@
                                            t nil))
        ((unless (or (eq deep nil)
                     (eq guards t))) (value nil))
-       (target-prims (intersection-eq targets *atj-java-primitive-fns*))
+       (target-prims (intersection-eq targets
+                                      (union-eq *atj-java-primitive-fns*
+                                                *atj-java-primarray-fns*)))
        ((when (null target-prims)) (value nil)))
     (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
@@ -200,6 +208,8 @@
   "Acl2Code"
   ///
   (assert-event (stringp *atj-default-java-class*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-java-class (java-class ctx state)
   :returns (mv erp
@@ -252,7 +262,18 @@
     (if (or deep$
             (not guards$)
             (not (member-eq type
-                            '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+                            '(:jboolean
+                              :jchar
+                              :jbyte
+                              :jshort
+                              :jint
+                              :jlong
+                              :jboolean[]
+                              :jchar[]
+                              :jbyte[]
+                              :jshort[]
+                              :jint[]
+                              :jlong[]))))
         (if (quotep input)
             (value (atj-test-value-avalue (unquote-term input)))
           (er-soft+ ctx t irrelevant
@@ -261,7 +282,22 @@
                      the test term ~x2 in the :TESTS input, ~
                      must be a quoted constant."
                     input fn call))
-      (b* ((constructor (case type
+      (b* (((when (member-eq type '(:jboolean[]
+                                    :jchar[]
+                                    :jbyte[]
+                                    :jshort[]
+                                    :jint[]
+                                    :jlong[])))
+            (er-soft+ ctx t irrelevant
+                      "The term ~x0 that is an argument of ~
+                       the function call (~x1 ...) that translates ~
+                       the test term ~x2 in the :TESTS input, ~
+                       is currently not supported; ~
+                       the generation of tests for functions ~
+                       that operate on Java primitive arrays ~
+                       is currently not supported."
+                      input fn call))
+           (constructor (case type
                           (:jboolean 'boolean-value)
                           (:jchar 'char-value)
                           (:jbyte 'byte-value)
@@ -406,7 +442,7 @@
                 targets$
                 (msg "among the target functions ~&0." targets$)
                 (msg "The function ~x0 called by ~
-                         the test term ~x1 in the :TESTS input"
+                      the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
        (inputs (fargs term$))
@@ -447,6 +483,18 @@
         (er-soft+ ctx t nil
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
+                  call))
+       ((when (member-eq out-type?
+                         '(:jboolean[]
+                           :jchar[]
+                           :jbyte[]
+                           :jshort[]
+                           :jint[]
+                           :jlong[])))
+        (er-soft+ ctx t nil
+                  "The test term ~x0 in the :TESTS input ~
+                   has an output type that is a Java primitive array type, ~
+                   which is currently not supported for test generation."
                   call))
        (test-output (cond ((eq out-type? :jboolean)
                            (atj-test-value-jvalue-boolean output))
@@ -652,7 +700,8 @@
    (xdoc::p
     "Otherwise, the call is of a named function (not @(tsee return-last)).
      If it is a natively implemented function,
-     or in @(tsee *atj-java-primitive-fns*) when applicable,
+     or in @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+     when applicable,
      we do not add it to the worklist,
      because it satisfies all the necessary constraints
      and does not have a defining body to be inspected.
@@ -760,7 +809,8 @@
          ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
-                     (member-eq fn *atj-java-primitive-fns*)))
+                     (or (member-eq fn *atj-java-primitive-fns*)
+                         (member-eq fn *atj-java-primarray-fns*))))
           (mv worklist-gen worklist-chk nil)))
       (if gen?
           (if (or (member-eq fn worklist-gen)

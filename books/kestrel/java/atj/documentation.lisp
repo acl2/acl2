@@ -175,7 +175,7 @@
      and stopping at the ACL2 functions that
      either are implemented natively in AIJ
      or (under certain conditions; see below)
-     represent Java primitive literals and operations.
+     represent Java primitive operations or primitive array operations.
      If a function is encountered that
      is not natively implemented in AIJ
      and has no unnormalized body,
@@ -303,7 +303,8 @@
     (xdoc::p
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
       then none of the @('fni') may be
-      one of the functions listed in @(tsee *atj-java-primitive-fns*).
+      one of the functions listed in @(tsee *atj-java-primitive-fns*) or
+      one of the functions listed in @(tsee *atj-java-primarray-fns*).
       These functions are treated specially
       in the shallow embedding when guard satisfaction is assumed (see below).")
     (xdoc::p
@@ -337,7 +338,7 @@
        and @(tsee def-atj-other-function-type)
        (see the `Generated Java Code' section for more information),
        and the generated Java code may manipulate
-       Java primitive values directly.")
+       Java primitive values and Java primitive arrays directly.")
      (xdoc::li
       "@('nil') (the default), to not assume that the guards are satisfied.
        In this case, the generated code runs ``in the logic'';
@@ -445,9 +446,13 @@
        if the type is @(':jint'),
        then @('in') must be a term @('(java::int-value <int>)')
        where @('<int>') is a quoted signed 32-bit integer;
-       if the type if @(':jlong'),
+       if the type is @(':jlong'),
        then @('in') must be a term @('(java::long-value <long>)')
-       where @('<long>') is a quoted signed 64-bit integer."))
+       where @('<long>') is a quoted signed 64-bit integer;
+       if the type is @(':j...[]'), it is an error,
+       i.e. there is no support yet for the generation of tests
+       of functions that manipulate Java primitive arrays,
+       including functions that have output type @(':j...[]')."))
     (xdoc::p
      "All the @('namej') strings must be distinct.")
     (xdoc::p
@@ -547,7 +552,8 @@
      the Java class contains public static methods
      for the functions among @('fn1'), ..., @('fnp'),
      the functions that they transitively call
-     (except for the functions in @(tsee *atj-java-primitive-fns*),
+     (except for the functions in
+     @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
      when @(':deep') is @('nil') and @(':guards') is @('t'))
      and the ACL2 functions natively implemented in AIJ
      (the latter are just wrappers of the native implementations).
