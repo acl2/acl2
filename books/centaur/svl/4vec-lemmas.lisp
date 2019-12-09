@@ -4244,3 +4244,4 @@
   (rp-attach-sc logxor-to-4vec-bitxor
                 logxor-to-4vec-bitxor-side-cond))
 
+
