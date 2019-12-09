@@ -659,7 +659,7 @@
                                      (print-jexpr-list
                                       expr.init (jexpr-rank-expression))))
                 :array (msg "~@0[~@1]"
-                            (print-jexpr expr.array (jexpr-rank-primary))
+                            (print-jexpr expr.array (jexpr-rank-postfix))
                             (print-jexpr expr.index (jexpr-rank-expression)))
                 :newclass (msg "new ~@0(~@1)"
                                (print-jtype expr.type)
