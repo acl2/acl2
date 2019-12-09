@@ -867,17 +867,11 @@
   (verify-guards atj-collect-fns-in-term
     :hints (("Goal" :expand (pseudo-termp term))))
 
-  ;; this is currently in a GitHub Pull Request
-  ;; for [books]/std/lists/remove1-equal.lisp;
-  ;; remove this and include that file here when the Pull Request is merged:
-  (defruledl subsetp-equal-of-remove1-equal-left
-    (implies (subsetp-equal x y)
-             (subsetp-equal (remove1-equal a x) y)))
+  (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
+  (local (include-book "std/lists/remove1-equal" :dir :system))
 
   ;; the following lemmas about ALL-FNNAMES1 seem a bit too specific
   ;; to be in [books]/kestrel/std/system/all-fnnames.lisp:
-
-  (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 
   (defruledl all-fnnames1-lemma1
     (implies (and (consp x)
@@ -970,8 +964,7 @@
                                      all-fnnames1-lemma1
                                      all-fnnames1-lemma2
                                      all-fnnames1-lemma3
-                                     all-fnnames1-lemma4
-                                     subsetp-equal-of-remove1-equal-left)
+                                     all-fnnames1-lemma4)
                                     (member-equal
                                      acl2::member-of-cons))))))
 
