@@ -17,6 +17,7 @@
 (include-book "all-non-gv-ffn-symbs")
 (include-book "all-pkg-names")
 (include-book "all-program-ffn-symbs")
+(include-book "all-vars-in-untranslated-term")
 (include-book "all-vars-open")
 (include-book "check-user-lambda")
 (include-book "check-user-term")

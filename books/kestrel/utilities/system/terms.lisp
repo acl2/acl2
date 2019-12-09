@@ -20,6 +20,7 @@
 (include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/all-pkg-names" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-vars-in-untranslated-term" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
 (include-book "kestrel/std/system/apply-unary-to-terms" :dir :system)
@@ -50,31 +51,3 @@
 (defxdoc term-utilities
   :parents (system-utilities-non-built-in)
   :short "Utilities for @(see term)s.")
-
-(define all-vars-in-untranslated-term (x (wrld plist-worldp))
-  :returns (term "A @(tsee pseudo-termp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "The variables free in the given untranslated term."
-  :long
-  "<p>
-   This function returns the variables of the given untranslated term.  They
-   are returned in reverse order of print occurrence, for consistency with the
-   function, @(tsee all-vars).
-   </p>
-   <p>
-   The input is translated for reasoning, so restrictions for executability are
-   not enforced.  There is also no restriction on the input being in
-   @(':')@(tsee logic) mode.
-   </p>"
-  (let ((ctx 'all-vars-in-untranslated-term))
-    (mv-let (erp term)
-      (translate-cmp x
-                     t ; stobjs-out
-                     nil ; logic-modep (not required)
-                     nil ; known-stobjs
-                     ctx
-                     wrld
-                     (default-state-vars nil))
-      (cond (erp (er hard erp "~@0" term))
-            (t (all-vars term))))))
