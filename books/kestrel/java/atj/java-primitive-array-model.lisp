@@ -28,8 +28,8 @@
      we introduce an ACL2 representation of Java primitive arrays
      and of operations on such arrays.
      This is currently not part of our Java language formalization,
-     but it may eventually replaced with a perhaps more general model
-     from the Java language formalization.
+     but it may eventually be replaced with
+     a perhaps more general model from the Java language formalization.
      The current model only serves ATJ's needs;
      it is not meant to model all aspects of Java primitive arrays.
      ATJ's use of this model of Java primitive arrays is described "
@@ -42,20 +42,22 @@
      the @('length') field of an array has type @('int') [JLS:10.7],
      and the maximum integer representable with @('int') is @($2^{31}-1$).")
    (xdoc::p
-    "We introduce recognizers for the lists just described,
-     i.e. for (ATJ's ACL2 model of) Java primitive arrays.
-     Here we really model just the component of the arrays,
-     and none of the additional information
-     that is part of every Java object (e.g. locks),
-     but that is adequate for ATJ's code generation purpose;
-     recall that arrays are object in Java.
-     We introduce eight recognizers, one for each Java primitive type.")
-   (xdoc::p
-    "We also introduce operations to read components of Java primitive arrays.
-     The index is (our ACL2 model of) a Java @('int'),
-     and the result is (our ACL2 model of) the array component type
-     (which is also the element type in this case).
-     We introduce eight such operations, one for each Java primitive type."))
+    "We introduce the following functions,
+     eight of each kind, for the eight Java primitive types:")
+   (xdoc::ul
+    (xdoc::li
+     "Recognizers for the lists just described,
+      i.e. for (ATJ's ACL2 model of) Java primitive arrays.
+      Here we really model just the component of the arrays,
+      and none of the additional information
+      that is part of every Java object (e.g. locks),
+      but that is adequate for ATJ's code generation purpose.
+      (Recall that arrays are object in Java.)")
+    (xdoc::li
+     "Operations to read components of Java primitive arrays.
+      The index is (our ACL2 model of) a Java @('int'),
+      and the result is (our ACL2 model of) the array component type
+      (which is also the element type in this case).")))
   :order-subtopics t
   :default-parent t)
 
