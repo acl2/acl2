@@ -1601,11 +1601,10 @@
  function recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
- <p>Extended the <see topic='@(url term-utilities)'>term utilities</see> with
- operations to substitute function symbols without performing simplification,
- to construct terms that are functions applications of certain forms, to
- collect all the lambda expressions in terms, and to collect all the package
- names in (symbols in) terms.</p>
+ <p>Extended the Kestrel term utilities with operations to substitute function
+ symbols without performing simplification, to construct terms that are
+ functions applications of certain forms, to collect all the lambda expressions
+ in terms, and to collect all the package names in (symbols in) terms.</p>
 
  <p>The utility @(tsee install-not-norm-event) now includes option @(':allp
  nil') in the generated @(tsee install-not-normalized) event.  The new utility,
@@ -2004,11 +2003,10 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The <see topic='@(url world-queries)'>world query utilities</see>, <see
- topic='@(url term-utilities)'>term utilities</see>, <see topic='@(url
- string-utilities)'>string utilities</see>, and character
- utilities (@('[books]/kestrel/utilities/characters.lisp')) have undergone
- several improvements and extensions.</p>
+ <p>The Kestrel <see topic='@(url world-queries)'>world query utilities</see>,
+ term utilities, <see topic='@(url string-utilities)'>string utilities</see>,
+ and character utilities (@('[books]/kestrel/utilities/characters.lisp')) have
+ undergone several improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
  about world-related functions</see> and theorems about lists (in
