@@ -185,7 +185,8 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      *                                  contains some variable
      *                                  that is not bound in the formals of
      *                                  its smallest enclosing
-     *                                  lambda expression.
+     *                                  lambda expression
+     *                                  or that has an index already set.
      */
     @Override
     public void define(Acl2Symbol[] parameters, Acl2Term body) {
