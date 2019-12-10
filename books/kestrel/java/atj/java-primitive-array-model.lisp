@@ -66,7 +66,17 @@
      "Operations to write components of Java primitive arrays.
       The index is (our ACL2 model of) a Java @('int'),
       the new component value is (our ACL2 model of) the array component type,
-      and the result is the new Java primitive array.")))
+      and the result is the new Java primitive array.")
+    (xdoc::li
+     "Operations to construct Java primitive arrays from lists.
+      These are currently identity operations,
+      but their explicit presence can be recognized by ATJ
+      and translated into array creation expressions with initializers
+      under suitable conditions,
+      where the components of the array initializers
+      are derived from the list elements.
+      Furthermore, the ``abstraction'' provided by these functions
+      allows us to change the model of arrays in the future, if desired.")))
   :order-subtopics t
   :default-parent t)
 
@@ -473,3 +483,91 @@
   :short "Write a component to a Java @('double') array."
   (update-nth (int-value->int index) component array)
   :guard-hints (("Goal" :in-theory (enable double-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array ((list boolean-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array boolean-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable boolean-array-p))))
+  :short "Construct a Java @('boolean') array
+          from a list of @('boolean') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array ((list char-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array char-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable char-array-p))))
+  :short "Construct a Java @('char') array
+          from a list of @('char') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array ((list byte-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array byte-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable byte-array-p))))
+  :short "Construct a Java @('byte') array
+          from a list of @('byte') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array ((list short-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array short-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable short-array-p))))
+  :short "Construct a Java @('short') array
+          from a list of @('short') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array ((list int-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array int-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable int-array-p))))
+  :short "Construct a Java @('int') array
+          from a list of @('int') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array ((list long-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array long-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable long-array-p))))
+  :short "Construct a Java @('long') array
+          from a list of @('long') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define float-array ((list float-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array float-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable float-array-p))))
+  :short "Construct a Java @('float') array
+          from a list of @('float') values."
+  list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define double-array ((list double-value-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array double-array-p
+                  :hyp :guard
+                  :hints (("Goal" :in-theory (enable double-array-p))))
+  :short "Construct a Java @('double') array
+          from a list of @('double') values."
+  list)
