@@ -8100,7 +8100,7 @@
              (ACL2-COUNT LST)))))
    (FLAG-ALL-VARS1 4 :SYSTEM
                    .
-                   "kestrel/utilities/all-vars-theorems")))
+                   "kestrel/std/system/all-vars")))
  ((JUSTIFICATION (ABNF::INPUT)
                  (NIL O-P . O<)
                  ((LEN ABNF::INPUT) . :ALL))

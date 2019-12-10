@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "all-vars-theorems")
 (include-book "arglistp-theorems")
 (include-book "defchoose-queries")
 (include-book "defun-sk-queries")
