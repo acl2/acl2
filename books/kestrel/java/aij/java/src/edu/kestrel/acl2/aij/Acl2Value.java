@@ -647,4 +647,54 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     @Override
     public abstract int compareTo(Acl2Value o);
 
+    /**
+     * Returns a true list consisting of the elements of an array,
+     * in the same order.
+     * This is somewhat analogous to the ACL2 macro {@code list}.
+     *
+     * @param elements The array consisting of the list elements.
+     * @return The list.
+     * @throws IllegalArgumentException If {@code elements} is {@code null},
+     *                                  or any of its elements is {@code null}.
+     */
+    public Acl2Value makeList(Acl2Value[] elements) {
+        if (elements == null)
+            throw new IllegalArgumentException("Null array of list elements.");
+        Acl2Value list = Acl2Symbol.NIL;
+        for (int i = elements.length - 1; i >= 0; --i) {
+            list = Acl2ConsPair.make(elements[i], list);
+        }
+        return list;
+    }
+
+    /**
+     * Returns a dotted list consisting of the elements of an array,
+     * in the same order, with the last array element as the final {@code cdr}.
+     * This is somewhat analogous to the ACL2 macro {@code list*}.
+     *
+     * @param elements The array consisting of the list elements.
+     * @return The list.
+     * @throws IllegalArgumentException If {@code elements} is {@code null},
+     *                                  or it is an empty array,
+     *                                  or any of its elements is {@code null}.
+     */
+    public Acl2Value makeListStar(Acl2Value[] elements) {
+        if (elements == null)
+            throw new IllegalArgumentException
+                    ("Null array of list elements.");
+        if (elements.length == 0)
+            throw new IllegalArgumentException
+                    ("Empty array of list elemnents.");
+        Acl2Value finalCdr = elements[elements.length - 1];
+        if (finalCdr == null)
+            throw new IllegalArgumentException
+                    ("Null array element at index " +
+                            (elements.length - 1) + ".");
+        Acl2Value list = finalCdr;
+        for (int i = elements.length - 2; i >= 0; --i) {
+            list = Acl2ConsPair.make(elements[i], list);
+        }
+        return list;
+    }
+
 }
