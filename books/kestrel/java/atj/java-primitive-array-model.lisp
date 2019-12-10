@@ -13,9 +13,10 @@
 (include-book "../language/primitive-values")
 
 ; these are so that the FTY::DEFLISTs in this file
-; can generate theorems about NTH and UPDATE-NTH:
+; can generate theorems about NTH, UPDATE-NTH, and REPEAT:
 (include-book "std/lists/nth" :dir :system)
 (include-book "std/lists/update-nth" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,7 +46,8 @@
      and the maximum integer representable with @('int') is @($2^{31}-1$).")
    (xdoc::p
     "We introduce the following functions,
-     eight of each kind, for the eight Java primitive types:")
+     eight of each kind, for the eight Java primitive types
+     (with an exception noted below):")
    (xdoc::ul
     (xdoc::li
      "Recognizers for the lists just described,
@@ -76,7 +78,18 @@
       where the components of the array initializers
       are derived from the list elements.
       Furthermore, the ``abstraction'' provided by these functions
-      allows us to change the model of arrays in the future, if desired.")))
+      allows us to change the model of arrays in the future, if desired.")
+    (xdoc::li
+     "Operations to construct Java primitive arrays of given sizes
+      and with every component the default value for the component type,
+      i.e. @('false') for @('boolean') and 0 for the integral types
+      [JLS:4.12.5].
+      We omit operations for @('float') and @('double') arrays for now,
+      because currently our abstract model of these two types
+      does not provide a way to denote the 0 values of these types.
+      The size is (our ACL2 model of) a Java @('int').
+      These operations can be recognized by ATJ
+      and translated to array creation expressions without initializers.")))
   :order-subtopics t
   :default-parent t)
 
@@ -571,3 +584,63 @@
   :short "Construct a Java @('double') array
           from a list of @('double') values."
   list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array boolean-array-p
+                  :hints (("Goal" :in-theory (enable boolean-array-p))))
+  :short "Construct a Java @('boolean') array with the given size
+          and with @('false') as every component."
+  (repeat (int-value->int length) (boolean-value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array char-array-p
+                  :hints (("Goal" :in-theory (enable char-array-p))))
+  :short "Construct a Java @('char') array with the given size
+          and with @('false') as every component."
+  (repeat (int-value->int length) (char-value 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array byte-array-p
+                  :hints (("Goal" :in-theory (enable byte-array-p))))
+  :short "Construct a Java @('byte') array with the given size
+          and with @('false') as every component."
+  (repeat (int-value->int length) (byte-value 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array short-array-p
+                  :hints (("Goal" :in-theory (enable short-array-p))))
+  :short "Construct a Java @('short') array with the given size
+          and with @('false') as every component."
+  (repeat (int-value->int length) (short-value 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array int-array-p
+                  :hints (("Goal" :in-theory (enable int-array-p))))
+  :short "Construct a Java @('int') array with the given size
+          and with @('false') as every component."
+  (repeat (int-value->int length) (int-value 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array long-array-p
+                  :hints (("Goal" :in-theory (enable long-array-p))))
+  :short "Construct a Java @('long') array with the given size
+          and with @('false') as every component."
+  (repeat (int-value->int length) (long-value 0)))
