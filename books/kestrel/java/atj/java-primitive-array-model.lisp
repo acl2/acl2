@@ -57,7 +57,10 @@
      "Operations to read components of Java primitive arrays.
       The index is (our ACL2 model of) a Java @('int'),
       and the result is (our ACL2 model of) the array component type
-      (which is also the element type in this case).")))
+      (which is also the element type in this case).")
+    (xdoc::li
+     "Operations to obtain the lengths of Java primitive arrays.
+      The result is (our ACL2 model of) a Java @('int').")))
   :order-subtopics t
   :default-parent t)
 
@@ -296,3 +299,67 @@
   :short "Read a component from a Java @('double') array."
   (nth (int-value->int index) array)
   :guard-hints (("Goal" :in-theory (enable double-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array-length ((array boolean-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('boolean') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable boolean-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array-length ((array char-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('char') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable char-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array-length ((array byte-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('byte') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable byte-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array-length ((array short-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('short') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable short-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array-length ((array int-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('int') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable int-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array-length ((array long-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('long') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable long-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define float-array-length ((array float-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('float') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable float-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define double-array-length ((array double-array-p))
+  :returns (length int-value-p)
+  :short "Obtain the length of a Java @('double') array."
+  (int-value (len array))
+  :guard-hints (("Goal" :in-theory (enable double-array-p sbyte32p))))
