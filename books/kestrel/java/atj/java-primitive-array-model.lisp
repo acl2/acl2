@@ -12,8 +12,10 @@
 
 (include-book "../language/primitive-values")
 
-; this is so that the FTY::DEFLISTs in this file generate theorems about NTH:
+; these are so that the FTY::DEFLISTs in this file
+; can generate theorems about NTH and UPDATE-NTH:
 (include-book "std/lists/nth" :dir :system)
+(include-book "std/lists/update-nth" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,11 +58,15 @@
     (xdoc::li
      "Operations to read components of Java primitive arrays.
       The index is (our ACL2 model of) a Java @('int'),
-      and the result is (our ACL2 model of) the array component type
-      (which is also the element type in this case).")
+      and the result is (our ACL2 model of) the array component type.")
     (xdoc::li
      "Operations to obtain the lengths of Java primitive arrays.
-      The result is (our ACL2 model of) a Java @('int').")))
+      The result is (our ACL2 model of) a Java @('int').")
+    (xdoc::li
+     "Operations to write components of Java primitive arrays.
+      The index is (our ACL2 model of) a Java @('int'),
+      the new component value is (our ACL2 model of) the array component type,
+      and the result is the new Java primitive array.")))
   :order-subtopics t
   :default-parent t)
 
@@ -363,3 +369,107 @@
   :short "Obtain the length of a Java @('double') array."
   (int-value (len array))
   :guard-hints (("Goal" :in-theory (enable double-array-p sbyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array-write ((array boolean-array-p)
+                             (index int-value-p)
+                             (component boolean-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array boolean-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable boolean-array-p))))
+  :short "Write a component to a Java @('boolean') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable boolean-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array-write ((array char-array-p)
+                          (index int-value-p)
+                          (component char-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array char-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable char-array-p))))
+  :short "Write a component to a Java @('char') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable char-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array-write ((array byte-array-p)
+                          (index int-value-p)
+                          (component byte-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array byte-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable byte-array-p))))
+  :short "Write a component to a Java @('byte') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable byte-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array-write ((array short-array-p)
+                           (index int-value-p)
+                           (component short-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array short-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable short-array-p))))
+  :short "Write a component to a Java @('short') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable short-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array-write ((array int-array-p)
+                         (index int-value-p)
+                         (component int-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array int-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable int-array-p))))
+  :short "Write a component to a Java @('int') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable int-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array-write ((array long-array-p)
+                          (index int-value-p)
+                          (component long-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array long-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable long-array-p))))
+  :short "Write a component to a Java @('long') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable long-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define float-array-write ((array float-array-p)
+                           (index int-value-p)
+                           (component float-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array float-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable float-array-p))))
+  :short "Write a component to a Java @('float') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable float-array-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define double-array-write ((array double-array-p)
+                            (index int-value-p)
+                            (component double-value-p))
+  :guard (integer-range-p 0 (len array) (int-value->int index))
+  :returns (new-array double-array-p
+                      :hyp :guard
+                      :hints (("Goal" :in-theory (enable double-array-p))))
+  :short "Write a component to a Java @('double') array."
+  (update-nth (int-value->int index) component array)
+  :guard-hints (("Goal" :in-theory (enable double-array-p))))
