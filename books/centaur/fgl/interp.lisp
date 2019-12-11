@@ -4026,9 +4026,9 @@
              (flags (interp-st->flags interp-st))
              (new-flags  (!interp-flags->intro-synvars
                           t
-                          (!interp-flags->intro-bvars
-                           nil
-                           (!interp-flags->simplify-logic nil flags))))
+                          ;; (!interp-flags->intro-bvars
+                          ;;  nil
+                           (!interp-flags->simplify-logic nil flags)))
              ((interp-st-bind
                (flags new-flags flags)
                (reclimit (1- reclimit) reclimit)

@@ -232,7 +232,11 @@
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
         (er hard? 'add-fgl-branch-merge-fn
-            "No valid branch-merge rules found for ~x0" name)))
+            "No valid branch-merge rules found for ~x0.  Note: The LHS of the ~
+             rewrite rule must be an IF with a function call as the THEN ~
+             branch.  Due to special handling in the FGL unifier, the rule ~
+             will also apply to branch merges where that function call is the ~
+             ELSE branch." name)))
     (branch-merge-alist-add-rune-entries fns rune alist)))
 
 (defun remove-fgl-branch-merge-fn (name alist world)
@@ -288,7 +292,7 @@
   (if (atom names)
       alist
     (add-fgl-branch-merges-fn (cdr names)
-                             (add-fgl-branch-merge-fn (car names) alist world)
+                              (add-fgl-branch-merge-fn (car names) alist world)
                              world)))
 
 (defun remove-fgl-branch-merges-fn (names alist world)

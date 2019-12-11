@@ -2811,7 +2811,12 @@ compute a value for @('x').</p>
                     (cw "Inconsistencies in bvar-db counterexample (~x0 total). See error list: ~x1.~%"
                         (len consistency-result)
                         '(cdr (hons-get :bvar-db-ctrex-consistency-errors (@ :fgl-user-scratch)))))
-               interp-st)))
+               interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :user-scratch))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))))
 
 (define counterex-bindings-summarize-errors (infer-errors eval-errors)
   (if infer-errors

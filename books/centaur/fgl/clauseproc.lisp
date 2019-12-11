@@ -120,12 +120,22 @@
                               (interp-st)
                               state)
   :returns (mv new-interp-st new-state)
+  :prepwork ((local (defthm constraint-db-bfrlist-of-fast-alist-fork
+                      (implies (and (not (member v (constraint-db-bfrlist x)))
+                                    (not (member v (constraint-db-bfrlist y))))
+                               (not (member v (constraint-db-bfrlist (fast-alist-fork x y))))))))
   :verify-guards nil
   (b* ((interp-st (interp-st-init interp-st))
        ((fgl-config config))
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
        (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
+       (constraint-db (table-alist 'fgl::fgl-bool-constraints (w state)))
+       (interp-st (if (and (constraint-db-p constraint-db)
+                           (not (constraint-db-bfrlist constraint-db)))
+                      (update-interp-st->constraint-db
+                       (gbc-db-make-fast constraint-db) interp-st)
+                    interp-st))
        (flags (interp-st->flags interp-st))
        (interp-st (update-interp-st->flags
                    (!interp-flags->make-ites
@@ -236,7 +246,8 @@
     (interp-st-bfrs-ok new-interp-st)
     :hints (("goal" :do-not '(preprocess)
              :in-theory (enable logicman-ipasir-sat-lits-invar
-                                logicman-ipasirs-assumption-free))))
+                                logicman-ipasirs-assumption-free
+                                bfr-listp-when-not-member-witness))))
 
   (defret pathcond-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->pathcond new-interp-st)

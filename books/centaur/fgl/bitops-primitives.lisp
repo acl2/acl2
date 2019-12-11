@@ -225,6 +225,31 @@
 ;;                        FGL::FGL-LOGTAIL$INLINE-PRIMITIVE)
 ;; (FGL::ADD-FGL-PRIMITIVE LOGAPP FGL::FGL-LOGAPP-PRIMITIVE)
 
+(define s-append (lsb-bits (msb-bits true-listp))
+  (if (atom lsb-bits)
+      (if (atom msb-bits) '(nil)
+        (mbe :logic (true-list-fix msb-bits)
+             :exec msb-bits))
+    (scons (car lsb-bits) (s-append (cdr lsb-bits) msb-bits)))
+  ///
+  (defthm eval-of-s-append
+    (equal (bools->int (gobj-bfr-list-eval (s-append lsb-bits msb-bits) env))
+           (logapp (len lsb-bits)
+                   (bools->int (gobj-bfr-list-eval lsb-bits env))
+                   (bools->int (gobj-bfr-list-eval msb-bits env))))
+    :hints(("Goal" :in-theory (enable len)
+            :induct (s-append lsb-bits msb-bits)
+            :expand ((gobj-bfr-list-eval lsb-bits env)))
+           (and stable-under-simplificationp
+                '(:in-theory (e/d* (s-endp scdr))))))
+
+  (defthm member-of-s-append
+    (implies (and (not (member v msb-bits))
+                  (not (member v lsb-bits))
+                  v)
+             (not (member v (s-append lsb-bits msb-bits))))))
+                           
+
 
 (def-fgl-primitive logapp (width lsbs msbs)
   (b* (((unless (fgl-object-case width :g-concrete))
@@ -235,9 +260,9 @@
        ((unless ok) (mv nil nil interp-st))
        (lsb-bits (gobj-syntactic-integer->bits lsbs))
        (msb-bits (gobj-syntactic-integer->bits msbs)))
-    (mv t (mk-g-integer (append (extend-bits (nfix (g-concrete->val width))
-                                             lsb-bits)
-                                (if (atom msb-bits) '(nil) msb-bits)))
+    (mv t (mk-g-integer (s-append (extend-bits (nfix (g-concrete->val width))
+                                               lsb-bits)
+                                  (if (atom msb-bits) '(nil) msb-bits)))
         interp-st))
   :formula-check bitops-formula-checks)
 
