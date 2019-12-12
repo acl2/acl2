@@ -765,7 +765,11 @@
             (not (include-fnc (rp-hyp rule) 'falist))
             (not (include-fnc (rp-lhs rule) 'if))
             (not (include-fnc (rp-lhs rule) 'synp))
-            (no-free-variablep rule)))
+            (no-free-variablep rule)
+            (not (include-fnc (rp-lhs rule) 'list*))
+            (not (include-fnc (rp-hyp rule) 'list*))
+            (not (include-fnc (rp-rhs rule) 'list*))))
+  :rule-classes (:rewrite :forward-chaining)
   :hints (("Goal" :in-theory (enable rule-syntaxp))))
 
 (defthm ex-from-rp-loose-of-ex-from-rp-loose
@@ -977,3 +981,60 @@
   :hints (("Goal"
            :expand (ex-from-falist x)
            :in-theory (e/d () ()))))
+
+
+(defthm is-falist-strict-to-is-falist
+  (implies (rp-termp term)
+           (equal (is-falist-strict term)
+                  (is-falist term))))
+
+
+(defthm rp-termp-trans*-list
+  (implies (and (rp-term-listp lst)
+                (consp lst))
+           (rp-termp (trans-list* lst))))
+
+(defthm consp-rp-trans-lst
+  (equal (consp (rp-trans-lst lst))
+         (consp lst))
+  :hints (("Goal"
+           :induct (len lst)
+           :in-theory (e/d () ()))))
+
+(defthm is-rp-rp-trans-lst
+  (IMPLIES (AND (RP-TERMP TERM)
+                (is-rp term))
+           (IS-RP (CONS 'RP (RP-TRANS-LST (CDR TERM)))))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
+
+(defthm-rp-trans
+  (defthm rp-termp-of-rp-trans
+    (implies (rp-termp term)
+             (rp-termp (rp-trans term)))
+    :flag rp-trans)
+  (defthm rp-term-listp-of-rp-trans-lst
+    (implies (rp-term-listp lst)
+             (rp-term-listp (rp-trans-lst lst)))
+    :flag rp-trans-lst)
+  :otf-flg t
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ()))))
+
+
+#|(defthm-rp-trans
+  (defthm rp-trans-is-term-when-list*-is-absent
+    (implies (not (include-fnc term 'list*))
+             (equal (rp-trans term) term))
+    :flag rp-trans)
+  (defthm rp-trans-lst-is-lst-when-list*-is-absent
+    (implies (not (include-fnc-subterms lst 'list*))
+             (equal (rp-trans-lst lst) lst))
+    :flag rp-trans-lst))||#
+
+
+
+
+

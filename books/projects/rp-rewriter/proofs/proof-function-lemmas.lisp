@@ -105,14 +105,28 @@
 (defthm-valid-sc
   (defthm not-include-rp-means-valid-sc
     (implies (not (include-fnc term 'rp))
-             (valid-sc term a))
+             (and (valid-sc term a)))
     :flag valid-sc)
   (defthm not-include-rp-means-valid-sc-lst
     (implies (not (include-fnc-subterms subterms 'rp))
-             (valid-sc-subterms subterms a))
+             (and (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
-  :hints (("Goal"
-           :in-theory (e/d (is-rp) ()))))
+  :hints (("Goal" 
+           :in-theory (e/d (is-rp
+                            valid-sc-nt) ()))))
+
+(defthm-valid-sc-nt
+  (defthm not-include-rp-means-valid-sc-nt
+    (implies (not (include-fnc term 'rp))
+             (and (valid-sc-nt term a)))
+    :flag valid-sc-nt)
+  (defthm not-include-rp-means-valid-sc-nt-subterms
+    (implies (not (include-fnc-subterms subterms 'rp))
+             (and (valid-sc-nt-subterms subterms a)))
+    :flag valid-sc-nt-subterms)
+  :hints (("Goal" 
+           :in-theory (e/d (is-rp
+                            valid-sc-nt) ()))))
 
 (defthm valid-sc-ex-from-rp
   (implies (valid-sc term a)
@@ -240,15 +254,19 @@
            :in-theory (e/d (valid-sc
                             append) ()))))
 
+
+
 (defthm valid-rulep-implies-valid-sc
   (implies (and (valid-rulep rule)
-                (RP-EVL (RP-HYP RULE) A))
-           (valid-sc (rp-rhs rule) a))
+                (rp-evl (rp-hyp rule) a))
+           (valid-sc-nt (rp-rhs rule) a))
   :hints (("Goal"
            :use (:instance valid-rulep-sk-necc)
-           :in-theory (e/d (valid-rulep
-                            )
+           :in-theory (e/d (valid-rulep)
                            (valid-sc
+                            rp-rhs
+                            rp-hyp
+                            valid-sc-nt
                             VALID-RULEP-SK
                             valid-rulep-sk-necc
                             rule-syntaxp)))))
@@ -433,7 +451,7 @@
   (implies (and (is-if term)
                 (valid-sc term a))
            (and (valid-sc (cadr term) a)
-                (if (rp-evl (cadr term) a)
+                (if (rp-evlt (cadr term) a)
                     (valid-sc (caddr term) a)
                   (valid-sc (cadddr term) a))))
   :rule-classes :forward-chaining
@@ -554,3 +572,81 @@
   :hints (("Goal"
            :Expand (ex-from-falist x)
            :in-theory (e/d () ()))))
+
+
+
+(defthm eval-and-all-nt-is-eval-and-all
+  (implies (not (include-fnc-subterms lst 'list*))
+           (equal (eval-and-all-nt lst a)
+                  (eval-and-all lst a))))
+
+(defthm EVAL-AND-ALL-NT-of-context-from-rp
+  (implies (and (not (include-fnc-subterms context 'list*))
+                (not (include-fnc term 'list*)))
+           (equal (EVAL-AND-ALL-NT (CONTEXT-FROM-RP TERM context) A)
+                  (EVAL-AND-ALL (CONTEXT-FROM-RP TERM context) A)))
+  :hints (("Goal"
+           :induct (CONTEXT-FROM-RP TERM context)
+           :in-theory (e/d (context-from-rp
+                            eval-and-all-nt-is-eval-and-all
+                            is-rp
+                            rp-evl-of-fncall-args)
+                           ()))))
+         
+(defthm-valid-sc
+  (defthm valid-sc-nt-is-valid-sc
+    (implies (not (include-fnc term 'list*))
+             (equal (valid-sc-nt term a)
+                    (valid-sc term a)))
+    :flag valid-sc)
+  (defthm valid-sc-nt-subterms-valid-sc-subterms
+    (implies (not (include-fnc-subterms subterms 'list*))
+             (equal (valid-sc-nt-subterms subterms a)
+                    (valid-sc-subterms subterms a)))
+    :flag valid-sc-subterms)
+  :hints (("Goal"
+           :in-theory (e/d (EVAL-AND-ALL-NT-of-context-from-rp) ()))))
+
+
+
+
+  
+(defthm rp-evl-of-trans-list*-lemma
+  (equal (rp-evl (trans-list* lst) a)
+         (rp-evl-of-trans-list* lst a))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (trans-list* lst)
+           :in-theory (e/d () ()))))
+
+
+
+(local
+ (defun two-cdr-induct (x y)
+   (if (or (atom x)
+           (atom y))
+       nil
+     (acons (car x)
+            (car y)
+            (two-cdr-induct (cdr x) (cdr y))))))
+
+(local
+ (defthm rp-evl-of-trans-list*-lemma-3
+   (implies (and (not (consp x))
+                 (not (rp-evl-lst y a)))
+            (not (rp-evl-of-trans-list* y a)))))
+
+
+(defthm rp-evl-of-trans-list*-lemma-2
+  (implies (equal (rp-evl-lst x a1)
+                  (rp-evl-lst y a2))
+           (equal (equal (rp-evl-of-trans-list* x a1)
+                         (rp-evl-of-trans-list* y a2))
+                  t))
+  :otf-flg t
+  :hints (("goal"
+           :do-not-induct t
+           :induct (two-cdr-induct x y)
+           :in-theory (e/d (rp-evl-of-trans-list*) ()))))
+
+(in-theory (disable rp-evl-of-trans-list*))

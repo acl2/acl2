@@ -167,7 +167,7 @@
 
 (defthm extract-context-is-valid-sc
   (implies (and (valid-sc term a)
-                (rp-evl term a))
+                (rp-evlt term a))
            (valid-sc-subterms (RP-EXTRACT-CONTEXT term) a))
   :hints (("Goal"
            :in-theory (e/d (rp-extract-context
@@ -262,7 +262,7 @@
 (defthm rp-rule-is-applicable-not-iff
   ;; when a valid rule is applied on a term with good bindings,
   ;; the rhs of applied rule should be the same as the term.
-  (implies (and (rp-evl (rp-apply-bindings (rp-hyp rule) bindings) a)
+  (implies (and (rp-evlt (rp-apply-bindings (rp-hyp rule) bindings) a)
                 (rp-termp term)
                 (good-bindingsp rule term bindings a)
                 (bindings-alistp bindings)
@@ -270,11 +270,15 @@
                 (alistp a)
                 (rp-termp (rp-rhs rule))
                 (not (rp-iff-flag rule)))
-           (equal (rp-evl (rp-apply-bindings (rp-rhs rule) bindings) a)
-                  (rp-evl term a)))
+           (and (equal (rp-evlt (rp-apply-bindings (rp-rhs rule) bindings) a)
+                       (rp-evlt term a))
+                (equal (rp-evl (rp-apply-bindings (rp-rhs rule)
+                                                  (rp-trans-bindings bindings))
+                               a)
+                       (rp-evlt term a))))
   :hints (("goal"
            :use ((:instance valid-rulep-sk-necc
-                            (a (bind-bindings bindings a)))
+                            (a (bind-bindings (rp-trans-bindings bindings) a)))
                  (:instance rp-evl-of-rp-equal2
                             (term1 (rp-apply-bindings (rp-lhs rule) bindings))
                             (term2 term)
@@ -298,19 +302,22 @@
 (defthm rp-rule-is-applicable-iff
   ;; when a valid rule is applied on a term with good bindings,
   ;; the rhs of applied rule should be the same as the term.
-  (implies (and (rp-evl (rp-apply-bindings (rp-hyp rule) bindings) a)
+  (implies (and (rp-evlt (rp-apply-bindings (rp-hyp rule) bindings) a)
                 (rp-termp term)
                 (good-bindingsp rule term bindings a)
                 (bindings-alistp bindings)
                 (valid-rulep rule)
                 (alistp a)
                 (rp-termp (rp-rhs rule)))
-           (iff (rp-evl (rp-apply-bindings (rp-rhs rule) bindings) a)
-                (rp-evl term a))
-           #|(rp-evl term a)||#)
+           (and (iff (rp-evlt (rp-apply-bindings (rp-rhs rule) bindings) a)
+                     (rp-evlt term a))
+                (iff (rp-evl (rp-apply-bindings (rp-rhs rule)
+                                                  (rp-trans-bindings bindings))
+                               a)
+                     (rp-evlt term a))))
   :hints (("goal"
            :use ((:instance valid-rulep-sk-necc
-                            (a (bind-bindings bindings a)))
+                            (a (bind-bindings (rp-trans-bindings bindings) a)))
                  (:instance rp-evl-of-rp-equal2
                             (term1 (rp-apply-bindings (rp-lhs rule) bindings))
                             (term2 term)
@@ -321,6 +328,13 @@
                             rule-syntaxp)
                            (rp-evl-of-rp-equal
                             rp-evl-of-rp-equal2
+                            (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                            (:DEFINITION RP-TRANS-BINDINGS)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:DEFINITION IS-FALIST)
+                            (:DEFINITION TRANS-LIST*)
+                            (:REWRITE RP-EVL-OF-LAMBDA)
+                            (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
                             RP-EQUAL2-IS-symmetric
                             rp-rule-is-applicable-not-iff
                             (:REWRITE RP-APPLY-BINDINGS-EQUIV-NOT-IFF)
@@ -351,7 +365,6 @@
 (make-flag rp-get-dont-rw :defthm-macro-name defthm-rp-get-dont-rw)
 
 (defthm-rp-get-dont-rw
-
   (defthm dont-rw-syntaxp-rp-get-dont-rw
     (dont-rw-syntaxp (rp-get-dont-rw term))
     :flag rp-get-dont-rw)
@@ -395,67 +408,80 @@
                                      hons-assoc-equal
                                      valid-rules-alistp))))
 
+ 
+
+
+(local
+ (defthmd rp-check-context-is-correct-iff-lemma
+   (implies (case-match x (('equal & &) t))
+            (equal (RP-TRANS x)
+                   `(equal ,(rp-trans (cadr x))
+                           ,(rp-trans (caddr x)))))))
+
 (defthm rp-check-context-is-correct-iff
   (implies
-   (and (rp-termp term)
-        (valid-sc term a)
-        (context-syntaxp context)
-        iff-flg
-        (eval-and-all context a))
-   (iff (rp-evl (rp-check-context term context iff-flg) a)
-        (rp-evl term a)))
-  :hints (("Subgoal *1/2"
-           :use ((:instance rp-evl-of-rp-equal
-                            (term1 term)
-                            (term2 (CADR (CAR CONTEXT))))))
-          ("Subgoal *1/3"
-           :use ((:instance rp-evl-of-rp-equal
-                            (term1 (car context))
+   (and  (context-syntaxp context)
+         iff-flg
+         (eval-and-all context a))
+   (iff (rp-evlt (rp-check-context term context iff-flg) a)
+        (rp-evlt term a)))
+  :hints ( ("Subgoal *1/3"
+           :use ((:instance rp-evlt-of-rp-equal 
+                            (term1 (car context)) 
                             (term2 term))))
-          ("Goal"
+          ("Subgoal *1/2"
+           :use ((:instance rp-evlt-of-rp-equal ;
+                            (term2 (CADR (CAR CONTEXT))) ;
+                            (term1 term))))
+          ("goal"
            :in-theory (e/d (rp-check-context
-                            is-rp
-                            is-if
-                            CONTEXT-SYNTAXP
+                            context-syntaxp
+                            rp-check-context-is-correct-iff-lemma
                             rp-termp
-                            eval-and-all)
-                           (RP-TERM-LISTP-IS-TRUE-LISTP
+                            eval-and-all
+                            is-falist)
+                           (rp-term-listp-is-true-listp
                             rp-evl-of-rp-equal
-                            (:REWRITE EX-FROM-SYNP-LEMMA1)
+                            rp-trans
+                            rp-trans-lst
+                            (:rewrite ex-from-synp-lemma1)
+                            #|rp-trans-of-rp-equal||#
+                            (:rewrite evl-of-extract-from-rp-2)
+                            (:rewrite acl2::fn-check-def-not-quote)
 
-                            (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                            (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
-
-                            (:REWRITE
-                             RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS)
-                            (:TYPE-PRESCRIPTION BOOLEANP)
-                            (:REWRITE RP-EQUAL2-BINDINGS-1TO1-CONSP)
-                            ;;ALL-FALIST-CONSISTENT-LST
+                            (:rewrite
+                             rp-termp-should-term-be-in-cons-lhs)
+                            (:type-prescription booleanp)
+                            (:rewrite rp-equal2-bindings-1to1-consp)
+                            ;;all-falist-consistent-lst
                             falist-consistent
-                            IS-FALIST
-                            RP-TERMP-IMPLIES-SUBTERMS)))))
+                            is-falist
+                            rp-evlt-of-rp-equal
+                            ;;rp-equal-is-symmetric
+                            rp-termp-implies-subterms)))))
 
-(defthm rp-check-context-is-correct-not-iff
+(defthm rp-check-context-is-correct
   (implies
-   (and (rp-termp term)
-        (valid-sc term a)
+   (and ;(rp-termp term)
+;(valid-sc term a)
 
-        (context-syntaxp context)
-        (eval-and-all context a))
-   (equal (rp-evl (rp-check-context term context nil) a)
-          (rp-evl term a)))
+    (context-syntaxp context)
+    (eval-and-all context a))
+   (equal (rp-evlt (rp-check-context term context nil) a)
+          (rp-evlt term a)))
   :hints (("Goal"
            :in-theory (e/d (rp-check-context
                             CONTEXT-SYNTAXP
                             rp-termp
-                            eval-and-all)
+                            eval-and-all
+                            IS-FALIST)
                            (RP-TERM-LISTP-IS-TRUE-LISTP
 
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:REWRITE RP-EQUAL2-BINDINGS-1TO1-CONSP)
 ;ALL-FALIST-CONSISTENT-LST
                             falist-consistent
-                            IS-FALIST
+
                             RP-TERMP-IMPLIES-SUBTERMS)))))
 
 (defthm VALID-SC-BINDINGS-REMOVE-RP-FROM-BINDINGS
@@ -478,8 +504,8 @@
                                  A)
                    (RP-TERM-LISTP (CDR TERM))
                    (rp-termp TERM))
-              (RP-EVL (LIST (CADR (CADR TERM)) TERM)
-                      A))
+              (RP-EVLt (LIST (CADR (CADR TERM)) TERM)
+                       A))
      :hints (("Goal"
               :expand ((CONTEXT-FROM-RP TERM NIL))
               :in-theory (e/d (EVAL-AND-ALL
@@ -491,10 +517,10 @@
    (defthm lemma1-lemma1
      (IMPLIES (AND (IS-RP TERM)
                    (not (equal fnc 'quote))
-                   (RP-EVL (LIST FNC (CADDR TERM)) A)
+                   (RP-EVLt (LIST FNC (CADDR TERM)) A)
                    (RP-TERMP (CADDR TERM))
                    (rp-termp (CADDR TERM)))
-              (RP-EVL (LIST FNC TERM) A))
+              (RP-EVLt (LIST FNC TERM) A))
      :hints (("Goal"
               :expand ((CONTEXT-FROM-RP TERM NIL))
               :in-theory (e/d (EVAL-AND-ALL
@@ -509,30 +535,29 @@
                    (not (equal fnc 'quote))
                    (rp-termp term)
                    (check-if-relieved-with-rp-aux fnc term))
-              (rp-evl `(,fnc ,term) a))
+              (rp-evlt `(,fnc ,term) a))
      :otf-flg t
      :hints (("Goal"
               :induct (check-if-relieved-with-rp-aux fnc term)
               :in-theory (e/d (check-if-relieved-with-rp-aux
-; is-rp
                                eval-and-all
                                context-from-rp
-                               quotep
-                               )
-                              (ex-from-rp-lemma1))))))
+                               quotep)
+                              (ex-from-rp-lemma1
+                               rp-trans))))))
 
   (defthm check-if-relieved-with-rp-is-correct
     (implies (and (check-if-relieved-with-rp term)
                   (valid-sc term a)
-                  (rp-termp term)
                   (rp-termp term))
-             (rp-evl term a))
+             (rp-evlt term a))
     :hints (("Goal"
 
              :in-theory (e/d (check-if-relieved-with-rp
                               is-if
                               is-rp
-                              check-if-relieved-with-rp-aux) ())))))
+                              check-if-relieved-with-rp-aux)
+                             (rp-trans))))))
 
 (local
  (in-theory
@@ -639,7 +664,9 @@
    EX-AND-EVAL-SC
    EX-AND-EVAL-SC-SUBTERMS
    ;; (:meta acl2::mv-nth-cons-meta)
-   (:type-prescription symbol-alistp))))
+   (:type-prescription symbol-alistp)
+   rp-trans
+   rp-trans-lst)))
 
 (encapsulate
   nil
@@ -1201,10 +1228,16 @@
 
 (defthm rp-evl-of-extract-context
   (iff (eval-and-all (rp-extract-context term) a)
-       (rp-evl term a))
+       (rp-evlt term a))
   :hints (("Goal"
+           :induct (rp-extract-context term)
+           :do-not-induct t
            :in-theory (e/d (rp-extract-context
-                            eval-and-all) ()))))
+                            eval-and-all
+                            rp-trans
+                            rp-trans-lst
+                            is-falist)
+                           ()))))
 
 (local
  (defthm hide-x-is-x
@@ -1214,10 +1247,14 @@
 
 (defthm rp-evl-of-dumb-negate-lit2
   (implies (rp-termp x)
-           (iff (rp-evl (dumb-negate-lit2 x) a)
-                (not (rp-evl x a))))
+           (iff (rp-evlt (dumb-negate-lit2 x) a)
+                (not (rp-evlt x a))))
   :hints (("Goal"
-           :in-theory (e/d (dumb-negate-lit2 not) ()))))
+           :in-theory (e/d (dumb-negate-lit2
+                            not
+                            rp-trans-lst
+                            rp-trans
+                            is-falist) ()))))
 
 (local
  (in-theory (disable ACL2::CDR-OF-APPEND-WHEN-CONSP
@@ -1249,7 +1286,7 @@
                             (falist-consistent))))))||#
 
 (local
- (defthm lemma4
+ (defthm lemma4-v1
    (implies (and (consp term)
                  (not (quotep term))
                  (equal (rp-evl-lst (cdr term) a)
@@ -1257,7 +1294,75 @@
             (equal (rp-evl (cons (car term) subterms2) a)
                    (rp-evl term a)))
    :hints (("Goal"
-            :in-theory (e/d (rp-evl-of-fncall-args) ())))))
+            :in-theory (e/d (rp-evl-of-fncall-args
+                             rp-trans
+                             rp-trans-lst)
+                            ())))))
+
+
+;; (local
+;;  (defun rp-evl-of-trans-list* (lst a)
+;;    (if (atom lst)
+;;        (rp-evl nil a)
+;;      (if (atom (cdr lst))
+;;          (rp-evl (car lst) a)
+;;        (cons (rp-evl (car lst) a)
+;;              (rp-evl-of-trans-list* (cdr lst) a))))))
+
+;; (local
+;;  (defthm rp-evl-of-trans-list*-lemma
+;;    (equal (rp-evl (trans-list* lst) a)
+;;           (rp-evl-of-trans-list* lst a))
+;;    :hints (("Goal"
+;;             :do-not-induct t
+;;             :induct (trans-list* lst)
+;;             :in-theory (e/d () ())))))
+
+;; (local
+;;  (defun two-cdr-induct (x y)
+;;    (if (or (atom x)
+;;            (atom y))
+;;        nil
+;;      (acons (car x)
+;;             (car y)
+;;             (two-cdr-induct (cdr x) (cdr y))))))
+
+;; (local
+;;  (defthm rp-evl-of-trans-list*-lemma-3
+;;    (IMPLIES (AND (NOT (CONSP X))
+;;                  (NOT (RP-EVL-LST Y A)))
+;;             (NOT (RP-EVL-OF-TRANS-LIST* Y A)))))
+
+;; (local
+;;  (defthm rp-evl-of-trans-list*-lemma-2
+;;    (implies (equal (rp-evl-lst x a)
+;;                    (rp-evl-lst y a))
+;;             (equal (EQUAL (RP-EVL-OF-TRANS-LIST* x A)
+;;                           (RP-EVL-OF-TRANS-LIST* y A))
+;;                    t))
+;;    :otf-flg t
+;;    :hints (("Goal"
+;;             :do-not-induct t
+;;             :induct (two-cdr-induct x y)
+;;             :in-theory (e/d (RP-EVL-OF-TRANS-LIST*) ())))))
+
+(local
+ (defthm lemma4
+   (implies (and (consp term)
+                 (not (quotep term))
+                 (equal (rp-evlt-lst (cdr term) a)
+                        (rp-evlt-lst subterms2 a)))
+            (equal (rp-evlt (cons (car term) subterms2) a)
+                   (rp-evlt term a)))
+   :otf-flg t
+   :hints (("Goal"
+            :cases ((is-falist term))
+            :in-theory (e/d (rp-evl-of-fncall-args
+                             rp-trans
+                             is-falist
+                             rp-trans-lst)
+                            (trans-list*
+                             rp-evl-of-trans-list*))))))
 
 (local
  (defthm lemma5
@@ -1272,6 +1377,15 @@
             (rp-evl term a))
    :hints (("Goal"
             :in-theory (e/d (nonnil-p) ())))))
+
+(local
+ (defthm lemma6-v2
+   (implies (nonnil-p term)
+            (rp-evlt term a))
+   :hints (("Goal"
+            :in-theory (e/d (nonnil-p
+                             rp-trans
+                             is-falist) ())))))
 
 #|(local
  (defthm lemma7
@@ -1477,34 +1591,124 @@
                               valid-sc-subterms)))))
 
   (local
+   (defthmd i-lemma3-lemma1
+     (implies (IS-RP (LIST 'RP CADR-TERM x))
+              (IS-RP (LIST 'RP CADR-TERM y)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
+
+  (local
+   (defthmd i-lemma3-lemma2
+     (implies (IS-RP (LIST* 'RP CADR-TERM '(NIL)))
+              (not (EQUAL (CADR CADR-TERM) 'QUOTE)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
+
+  (local
+   (defthmd i-lemma3-lemma3
+     (IMPLIES (AND (NOT (IS-RP (LIST 'RP CADR-TERM RP-RW-CADDR-TERM)))
+                   (EQUAL (RP-EVL (RP-TRANS RP-RW-CADDR-TERM) A)
+                          (RP-EVL (RP-TRANS CADDR-TERM) A))
+                   (VALID-SC RP-RW-CADDR-TERM A)
+                   (VALID-SC (LIST 'RP CADR-TERM CADDR-TERM)
+                             A))
+              (VALID-SC (LIST 'RP CADR-TERM RP-RW-CADDR-TERM)
+                        A))
+     :hints (("Goal"
+              :expand ((VALID-SC (LIST 'RP CADR-TERM RP-RW-CADDR-TERM)
+                                 A)
+                       (VALID-SC (LIST 'RP CADR-TERM CADDR-TERM)
+                                 A))
+              :in-theory (e/d (is-if
+                               i-lemma3-lemma1
+                               i-lemma3-lemma2) ())))))
+
+  (local
    (defthm i-lemma3
-     (implies (and (equal (rp-evl rp-rw-caddr-term a)
-                          (rp-evl caddr-term a))
+     (implies (and (equal (rp-evlt rp-rw-caddr-term a)
+                          (rp-evlt caddr-term a))
                    (valid-sc rp-rw-caddr-term a)
                    (valid-sc term a)
+
                    (equal term (list 'rp cadr-term caddr-term)))
               (valid-sc (list 'rp cadr-term rp-rw-caddr-term) a))
      :otf-flg t
      :hints (("goal"
-              :use ((:instance evl-of-extract-from-rp
-                               (term rp-rw-caddr-term))
-                    (:instance evl-of-extract-from-rp
-                               (term caddr-term)))
-              :expand ((valid-sc (list 'rp cadr-term rp-rw-caddr-term) a)
-                       (ex-from-rp (list 'rp cadr-term rp-rw-caddr-term))
+              :do-not-induct t
+              :cases ((is-rp (list 'rp cadr-term rp-rw-caddr-term)))
+              :use (#|(:instance evl-of-extract-from-rp
+                    (term rp-rw-caddr-term))||#
+                    (:instance valid-sc-single-step
+                               (term (list 'rp cadr-term rp-rw-caddr-term)))
+                    #| (:instance evl-of-extract-from-rp
+                    (term (rp-trans rp-rw-caddr-term)))||#
+                    #| (:instance evl-of-extract-from-rp
+                    (term caddr-term))||#
+                    #| (:instance evl-of-extract-from-rp
+                    (term (rp-trans caddr-term)))||#)
+              :expand (;(valid-sc (list 'rp cadr-term rp-rw-caddr-term) a)
+;(ex-from-rp (list 'rp cadr-term rp-rw-caddr-term))
                        (ex-from-rp (list 'rp cadr-term caddr-term))
-                       (context-from-rp (list 'rp cadr-term rp-rw-caddr-term)
-                                        nil)
-                       (context-from-rp (list 'rp cadr-term caddr-term)
-                                        nil)
-                       (valid-sc (list 'rp cadr-term caddr-term) a))
-              :in-theory (e/d (is-if
+;(context-from-rp (list 'rp cadr-term rp-rw-caddr-term)
+;              nil)
+;(context-from-rp (list 'rp cadr-term caddr-term)
+;             nil)
+; (valid-sc (list 'rp cadr-term caddr-term) a)
+                       (RP-TRANS (LIST (CADR CADR-TERM)
+                                       RP-RW-CADDR-TERM))
+                       (:free (CADDR-TERM)
+                              (RP-TRANS (LIST 'LIST* CADDR-TERM)))
+                       (RP-TRANS (LIST (CADR CADR-TERM)
+                                       (EX-FROM-RP RP-RW-CADDR-TERM)))
+                       (RP-TRANS (LIST (CADR CADR-TERM)
+                                       (EX-FROM-RP CADDR-TERM)))
+                       (RP-TRANS-LST (LIST CADDR-TERM))
+                       (RP-TRANS (LIST (CADR CADR-TERM) CADDR-TERM))
+                       (RP-TRANS-LST (LIST RP-RW-CADDR-TERM))
+                       (:free (x) (RP-TRANS (LIST 'QUOTE x)))
+                       (RP-TRANS-LST (LIST (EX-FROM-RP RP-RW-CADDR-TERM))))
+              :in-theory (e/d (;is-if
+                               i-lemma3-lemma1
+                               i-lemma3-lemma2
+                               i-lemma3-lemma3
                                rp-evl-of-fncall-args
-                               eval-and-all
-                               valid-sc
-                               is-rp)
+; eval-and-all
+;valid-sc
+;IS-FALIST
+                               ;;is-rp
+                               is-falist
+                               valid-sc-single-step
+                               )
                               (evl-of-extract-from-rp
-                               valid-sc-ex-from-rp-2))))))
+                               valid-sc-ex-from-rp-2
+                               valid-sc))))))
+
+
+  (local
+   (defthmd ilemma4-1
+     (implies (and (is-rp term)
+                   (valid-sc term a))
+              (valid-sc (caddr term) a))
+     :hints (("Goal"
+              :in-theory (e/d (valid-sc-single-step) ())))))
+
+  (local
+   (defthm ilemma4
+     (implies (and (valid-sc term a)
+                   (eval-and-all context a))
+              (eval-and-all (CONTEXT-FROM-RP term context) a))
+     :otf-flg t
+     :hints (("Goal"
+              :induct (context-from-rp term context)
+;:expand (VALID-SC TERM A)
+              :do-not-induct t
+              :in-theory (e/d (context-from-rp
+                               valid-sc
+                               ilemma4-1
+                               is-rp
+                               is-if)
+                              (valid-sc-ex-from-rp-2
+                               rp-evlt-cons))))))
 
   (defthm valid-sc-cons-car-term-and-rp-rw-subterms
     (implies
@@ -1512,11 +1716,11 @@
       (valid-sc term a)
       (consp term)
       (rp-termp term)
-      (equal (rp-evl-lst
+      (equal (rp-evlt-lst
               (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context limit
                                         rules-alist exc-rules meta-rules rp-state state))
               a)
-             (rp-evl-lst (cdr term) a))
+             (rp-evlt-lst (cdr term) a))
       (valid-sc-subterms
        (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context limit
                                  rules-alist exc-rules meta-rules rp-state state))
@@ -1530,7 +1734,9 @@
     :hints (("goal"
              :do-not-induct t
              :expand ((valid-sc term a)
-
+                      (:free (x y) (RP-TRANS-LST (cons x y)))
+                      (:free (x y) (valid-sc (cons x y) a))
+                      (:free (x y) (EX-FROM-RP (list 'rp x y)))
                       (RP-RW-SUBTERMS (CDDR TERM)
                                       NIL CONTEXT (+ -1 LIMIT)
                                       RULES-ALIST EXC-RULES META-RULES
@@ -1554,12 +1760,17 @@
                       (rp-rw-subterms (cdr term)
                                       dont-rw context limit
                                       rules-alist exc-rules meta-rules rp-state state))
-             :in-theory (e/d (is-rp is-if valid-sc
-                                    context-from-rp
-                                    rp-rw
-                                    rp-rw-subterms)
+             :in-theory (e/d (is-rp
+                              is-if
+                              is-falist
+                              context-from-rp
+                              RP-TRANS-LST
+                              rp-evl-of-fncall-args
+                              rp-trans
+                              rp-rw
+                              rp-rw-subterms)
                              (rp-rw
-
+                              valid-sc
                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:REWRITE
                                EVAL-AND-ALL-CONTEXT-FROM-WHEN-VALID-SC)
@@ -1573,7 +1784,11 @@
                               (:REWRITE NOT-INCLUDE-RP)
                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                               (:REWRITE RP-TERMP-CADDR)
-
+                              (:REWRITE VALID-SC-OF-EX-FROM-RP)
+                              (:REWRITE LEMMA4-V1)
+                              (:REWRITE RP-TERMP-CADR)
+                              (:REWRITE ACL2::SYMBOL-LISTP-IMPLIES-SYMBOLP)
+                              VALID-SC-EX-FROM-RP-2
                               ex-from-rp-lemma1))))))
 
 #|(local
@@ -1623,7 +1838,7 @@
  (defthm lemma108
    (implies (and
              (valid-sc term a)
-             (not (rp-evl (cadr term) a))
+             (not (rp-evlt (cadr term) a))
              (is-if term))
             (valid-sc (cadddr term) a))
    :hints (("goal"
@@ -1634,7 +1849,7 @@
  (defthm lemma109
    (implies (and
              (valid-sc term a)
-             (rp-evl (cadr term) a)
+             (rp-evlt (cadr term) a)
              (is-if term))
             (valid-sc (caddr term) a))
    :hints (("goal"
@@ -1673,11 +1888,40 @@
 
 (local
  (defthm rp-evl-of-nil
-   (equal (rp-evl ''nil a)
+   (equal (rp-evlt ''nil a)
           nil)))
 
 ;; (defthm when-ex-from-rp-is-quote
 ;;   (implies (and (equal (car
+
+(local
+ (defthm if-is-not-falist
+   (not (is-falist (cons 'if x)))
+   :hints (("Goal"
+            :in-theory (e/d (is-falist) ()))))) 
+
+
+(local
+ (defthm is-if-and-rp-trans
+   (implies (and (is-if term)
+                 (syntaxp (atom term)))
+            (equal (RP-TRANS TERM)
+                   `(if ,(rp-trans (cadr term))
+                        ,(rp-trans (caddr term))
+                      ,(rp-trans (cadddr term)))))
+   
+   :hints (("Goal"
+            :expand ((RP-TRANS TERM)
+                     (RP-TRANS-LST (CDR TERM))
+                     (RP-TRANS-LST (CDDR TERM))
+                     (RP-TRANS-LST (CDDDR TERM)))
+            :in-theory (e/d (is-falist
+                             is-if) ())))))
+
+(local
+ (defthm rp-eVL-OF-NIL-2
+   (EQUAL (RP-EVL ''NIL A)
+          NIL)))
 
 (with-output
   :off (warning event  prove  observation)
@@ -1704,8 +1948,8 @@
                                      exc-rules meta-rules iff-flg rp-state state))))
                  (and (valid-sc res a)
                       (if iff-flg
-                          (iff (rp-evl res a) (rp-evl term a))
-                        (equal (rp-evl res a) (rp-evl term a))))))
+                          (iff (rp-evlt res a) (rp-evlt term a))
+                        (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-rule
@@ -1729,8 +1973,8 @@
                                           exc-rules meta-rules iff-flg rp-state state))))
                  (and (valid-sc res a)
                       (if iff-flg
-                          (iff (rp-evl res a) (rp-evl term a))
-                        (equal (rp-evl res a) (rp-evl term a))))))
+                          (iff (rp-evlt res a) (rp-evlt term a))
+                        (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-rule)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-if
@@ -1753,8 +1997,8 @@
                                         exc-rules meta-rules iff-flg rp-state state))))
                  (and  (valid-sc res a)
                        (if iff-flg
-                           (iff (rp-evl res a) (rp-evl term a))
-                         (equal (rp-evl res a) (rp-evl term a))))))
+                           (iff (rp-evlt res a) (rp-evlt term a))
+                         (equal (rp-evlt res a) (rp-evlt term a))))))
       :flag rp-rw-if)
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-subterms
@@ -1776,11 +2020,11 @@
                                                 rules-alist exc-rules
                                                 meta-rules rp-state state))))
                  (and (valid-sc-subterms res a)
-                      (equal (rp-evl-lst res a) (rp-evl-lst subterms a)))))
+                      (equal (rp-evlt-lst res a) (rp-evlt-lst subterms a)))))
       :flag rp-rw-subterms)
     :otf-flg nil
     :hints (("goal"
-             :in-theory (e/d ()
+             :in-theory (e/d (rp-evl-of-fncall-args)
                              (RP-EVL-OF-QUOTE
                               rp-termp
                               is-rp
@@ -1809,14 +2053,18 @@
                               (:REWRITE RP-EQUAL-SUBTERMS-IS-SYMMETRIC)
                               (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSESUBTERMS)
                               (:TYPE-PRESCRIPTION IS-RP-LOOSE$INLINE)
-
+                              RP-EVLT-OF-APPLY-BINDINGS-TO-EVL
                               (:REWRITE
-                                    RP-EX-COUNTERPART-IS-TERM-NOT-QUOTEP)
-                              
+                               RP-EX-COUNTERPART-IS-TERM-NOT-QUOTEP)
+
                               (:REWRITE RP-EVL-OF-RP-EQUAL2-SUBTERMS)))
              :expand
              ((:free (x y z)
                      (valid-sc (list 'if x y z) a))
+              (:free (x y)
+                     (RP-TRANS-LST (cons x y)))
+              (:free (x y z)
+                     (RP-TRANS (list 'if x y z)))
               (rp-rw-rule term rules-for-term context limit
                           rules-alist exc-rules meta-rules nil rp-state state)
               (rp-rw-rule term

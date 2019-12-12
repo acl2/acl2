@@ -57,6 +57,11 @@
 (local
  (in-theory (enable n2b f2 m2 d2 p+ b+ ba  pp type-fix merge-pp+)))
 
+
+(local
+ (in-theory (disable rp-trans
+                     rp-evlt-of-ex-from-rp)))
+
 (local
  (encapsulate
    nil
@@ -420,22 +425,22 @@
                             (EX-FROM-RP-LEMMA1))))))
 
 (local
- (defthmd rp-evl-of-ex-from-rp-reverse
+ (defthmd rp-evlt-of-ex-from-rp-reverse
    (implies (syntaxp (atom x))
-            (equal (rp-evl x a)
-                   (rp-evl (ex-from-rp x) a)))
+            (equal (rp-evlt x a)
+                   (rp-evlt (ex-from-rp x) a)))
    :hints (("Goal"
             :in-theory (e/d (ex-from-rp
                              is-rp) ())))))
 
 (local
  (defthm lemma9
-   (implies (equal x (pp-sum y (rp-evl (ex-from-rp z) a)))
+   (implies (equal x (pp-sum y (rp-evlt (ex-from-rp z) a)))
             (equal (equal (pp-sum m x)
-                          (pp-sum y m (rp-evl z a)))
+                          (pp-sum y m (rp-evlt z a)))
                    t))
    :hints (("Goal"
-            :in-theory (e/d (rp-evl-of-ex-from-rp-reverse)
+            :in-theory (e/d (rp-evlt-of-ex-from-rp-reverse)
                             (evl-of-extract-from-RP))))))
 
 (local
@@ -456,10 +461,10 @@
                               (and (equal (car x) 'ex-from-rp)
                                    (consp (cdr x))
                                    (atom (cadr x))))))
-            (equal (rp-evl x a)
-                   (-- (rp-evl (cadr x) a))))
+            (equal (rp-evlt x a)
+                   (-- (rp-evlt (cadr x) a))))
    :hints (("Goal"
-            :in-theory (e/d () ())))))
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm rp-termp-cadr
@@ -485,22 +490,22 @@
                  (rp-termp y)
                  (rp-evl-meta-extract-global-facts)
                  (pp-sum-meta-formal-checks state))
-            (and (equal (pp-sum (rp-evl x a)
-                                (rp-evl y a))
+            (and (equal (pp-sum (rp-evlt x a)
+                                (rp-evlt y a))
                         0)
-                 (equal (pp-sum (rp-evl x a)
-                                (rp-evl y a)
+                 (equal (pp-sum (rp-evlt x a)
+                                (rp-evlt y a)
                                 b)
                         (pp-sum b 0))
-                 (equal (pp-sum (rp-evl y a)
-                                (rp-evl x a))
+                 (equal (pp-sum (rp-evlt y a)
+                                (rp-evlt x a))
                         0)
-                 (equal (pp-sum (rp-evl y a)
-                                (rp-evl x a)
+                 (equal (pp-sum (rp-evlt y a)
+                                (rp-evlt x a)
                                 b)
                         (pp-sum b 0))))
    :hints (("goal"
-            :use ((:instance rp-evl-of-rp-equal
+            :use ((:instance rp-evlt-of-rp-equal
                              (term1 y)
                              (term2 (cadr x))))
             :in-theory (e/d (is-rp
@@ -531,18 +536,18 @@
                  (rp-termp y)
                  (rp-evl-meta-extract-global-facts)
                  (pp-sum-meta-formal-checks state))
-            (and (equal (pp-sum (rp-evl x a)
-                                (rp-evl y a))
+            (and (equal (pp-sum (rp-evlt x a)
+                                (rp-evlt y a))
                         0)
-                 (equal (pp-sum (rp-evl x a)
-                                (rp-evl y a)
+                 (equal (pp-sum (rp-evlt x a)
+                                (rp-evlt y a)
                                 b)
                         (pp-sum b 0))
-                 (equal (pp-sum (rp-evl y a)
-                                (rp-evl x a))
+                 (equal (pp-sum (rp-evlt y a)
+                                (rp-evlt x a))
                         0)
-                 (equal (pp-sum (rp-evl y a)
-                                (rp-evl x a)
+                 (equal (pp-sum (rp-evlt y a)
+                                (rp-evlt x a)
                                 b)
                         (pp-sum b 0))))
    :hints (("Goal"
@@ -647,10 +652,11 @@
                  (NOT (CDdR X))
                  (rp-evl-meta-extract-global-facts)
                  (pp-sum-meta-formal-checks state))
-            (equal (rp-evl x a)
-                   (type-fix (rp-evl (cadr x) a))))
+            (equal (rp-evlt x a)
+                   (type-fix (rp-evlt (cadr x) a))))
    :hints (("Goal"
-            :in-theory (e/d () (type-fix))))))
+            :in-theory (e/d (rp-trans)
+                            (type-fix))))))
 
 (local
  (defthm eval-of-pp-sum
@@ -661,11 +667,11 @@
                  (consp (cdr term))
                  (consp (cddr term))
                  (not (cdddr term)))
-            (equal (rp-evl term a)
-                   (pp-sum (rp-evl (cadr term) a)
-                           (rp-evl (caddr term) a))))
+            (equal (rp-evlt term a)
+                   (pp-sum (rp-evlt (cadr term) a)
+                           (rp-evlt (caddr term) a))))
    :hints (("Goal"
-            :in-theory (e/d () (pp-sum))))))
+            :in-theory (e/d (rp-trans) (pp-sum))))))
 
 (local
  (defthm eval-of-merge-pp-sum
@@ -676,33 +682,40 @@
                  (consp (cdr term))
                  (consp (cddr term))
                  (not (cdddr term)))
-            (equal (rp-evl term a)
-                   (merge-pp+ (rp-evl (cadr term) a)
-                              (rp-evl (caddr term) a))))
+            (equal (rp-evlt term a)
+                   (merge-pp+ (rp-evlt (cadr term) a)
+                              (rp-evlt (caddr term) a))))
    :hints (("Goal"
-            :in-theory (e/d () (pp-sum))))))
+            :in-theory (e/d (rp-trans) (pp-sum))))))
+
+
+(local
+ (defthm resolve-pp-sum-order-rec-correct-dummy-lemma1-lemma
+   (implies (equal (type-fix evl)
+                   (PP-SUM y caddr-x))
+            (equal (equal (pp-sum cadr-x evl)
+                          (PP-SUM y cadr-x
+                                  caddr-x))
+                   t))))
 
 (local
  (defthm resolve-pp-sum-order-rec-correct-dummy-lemma1
-   (implies (and
-             (pp-sum-meta-formal-checks state)
-             (rp-evl-meta-extract-global-facts)
-             (consp x)
-             (consp (cdr x))
-             (consp (cddr x))
-             (equal (type-fix evl)
-                    (PP-SUM y (RP-EVL (EX-FROM-RP (CADDR x))  A))))
-            (equal (equal (pp-sum (RP-EVL (cadr x) A) evl)
-                          (PP-SUM y (RP-EVL (CADR x) A)
-                                  (RP-EVL (CADDR x) A)))
+   (implies (and (equal (type-fix evl)
+                        (PP-SUM y (RP-EVLT (EX-FROM-RP (CADDR x))  A))))
+            (equal (equal (pp-sum (RP-EVLT (cadr x) A) evl)
+                          (PP-SUM y (RP-EVLT (CADR x) A)
+                                  (RP-EVLT (CADDR x) A)))
                    t))
    :hints (("Goal"
             :do-not '(preprocess)
-            :in-theory (e/d (rp-evl-of-ex-from-rp
-                             pp-sum-comm-2
-                             pp-sum-comm-1
-                             pp-sum-reorder)
+            :use ((:instance
+                   resolve-pp-sum-order-rec-correct-dummy-lemma1-lemma
+                   (caddr-x (RP-EVLT (CADDR x) A))
+                   (cadr-x (RP-EVLT (CADR x) A))))
+            :in-theory (e/d (rp-evlt-of-ex-from-rp)
                             (ex-from-rp
+                             CAR-CDR-ELIM
+                             resolve-pp-sum-order-rec-correct-dummy-lemma1-lemma
                              pp-sum
                              type-fix))))))
 
@@ -710,18 +723,20 @@
  (defthm eval-of-ex-from-rp/type-fix
    (implies (and (pp-sum-meta-formal-checks state)
                  (rp-evl-meta-extract-global-facts))
-            (equal (type-fix (rp-evl (ex-from-rp/type-fix term) a))
-                   (type-fix (rp-evl term a))))
+            (equal (type-fix (rp-evlt (ex-from-rp/type-fix term) a))
+                   (type-fix (rp-evlt term a))))
    :hints (("Goal"
             :induct (ex-from-rp/type-fix term)
-            :in-theory (e/d (ex-from-rp/type-fix) ())))))
+            :do-not-induct t
+            :in-theory (e/d (ex-from-rp/type-fix
+                             rp-trans) ())))))
 
 (local
  (defthm eval-of-ex-from-type-fix
    (implies (and (pp-sum-meta-formal-checks state)
                  (rp-evl-meta-extract-global-facts))
-            (equal (type-fix (rp-evl (ex-from-type-fix term) a))
-                   (type-fix (rp-evl term a))))
+            (equal (type-fix (rp-evlt (ex-from-type-fix term) a))
+                   (type-fix (rp-evlt term a))))
    :hints (("Goal"
 ;:induct (ex-from-type-fix term)
             :in-theory (e/d (ex-from-type-fix) ())))))
@@ -730,14 +745,14 @@
  (defthm eval-of-ex-from-type-fix-2
    (implies (and (pp-sum-meta-formal-checks state)
                  (rp-evl-meta-extract-global-facts))
-            (and (equal (pp-sum (rp-evl (ex-from-type-fix term) a)
+            (and (equal (pp-sum (rp-evlt (ex-from-type-fix term) a)
                                 other)
-                        (pp-sum (rp-evl (ex-from-rp/type-fix term) a)
+                        (pp-sum (rp-evlt (ex-from-rp/type-fix term) a)
                                 other))
                  (equal (pp-sum other
-                                (rp-evl (ex-from-type-fix term) a))
+                                (rp-evlt (ex-from-type-fix term) a))
                         (pp-sum other
-                                (rp-evl (ex-from-rp/type-fix term) a)))))
+                                (rp-evlt (ex-from-rp/type-fix term) a)))))
    :hints (("Goal"
             :in-theory (e/d () (type-fix))))))
 
@@ -746,9 +761,9 @@
    (implies (and (pp-sum-meta-formal-checks state)
                  (rp-evl-meta-extract-global-facts)
                  (equal (type-fix evl)
-                        (PP-SUM cadr-x caddr-x (RP-EVL (ex-from-rp/type-fix caddr-y) A))))
+                        (PP-SUM cadr-x caddr-x (RP-EVLT (ex-from-rp/type-fix caddr-y) A))))
             (equal (equal (pp-sum cadr-y evl)
-                          (pp-sum cadr-x cadr-y caddr-x (rp-evl caddr-y a)))
+                          (pp-sum cadr-x cadr-y caddr-x (rp-evlt caddr-y a)))
                    t))
    :hints (("Goal"
             :use ((:instance eval-of-ex-from-rp/type-fix
@@ -769,15 +784,16 @@
    (implies (and (pp-sum-meta-formal-checks state)
                  (rp-evl-meta-extract-global-facts)
                  (syntaxp (atom x)))
-            (and (equal (pp-sum (rp-evl x a) y)
-                        (pp-sum (rp-evl (ex-from-rp/type-fix x) a) y))
-                 (equal (pp-sum y (rp-evl x a))
+            (and (equal (pp-sum (rp-evlt x a) y)
+                        (pp-sum (rp-evlt (ex-from-rp/type-fix x) a) y))
+                 (equal (pp-sum y (rp-evlt x a))
                         (pp-sum y
-                                (rp-evl (ex-from-rp/type-fix x) a)))))
+                                (rp-evlt (ex-from-rp/type-fix x) a)))))
    :hints (("Goal"
             :do-not-induct t
             :induct (ex-from-rp/type-fix x)
             :in-theory (e/d (ex-from-rp/type-fix
+                             rp-trans
                              eval-of-type-fix-when-pp-sum-meta-formal-checks)
                             ())))))
 
@@ -786,14 +802,15 @@
    (implies (and (pp-sum-meta-formal-checks state)
                  (rp-evl-meta-extract-global-facts)
                  (syntaxp (atom x)))
-            (and (equal (equal (type-fix (rp-evl x a)) m)
+            (and (equal (equal (type-fix (rp-evlt x a)) m)
 
-                        (equal (type-fix (rp-evl (ex-from-rp/type-fix x) a))
+                        (equal (type-fix (rp-evlt (ex-from-rp/type-fix x) a))
                                m))))
    :hints (("Goal"
             :do-not-induct t
             :induct (ex-from-rp/type-fix x)
             :in-theory (e/d (ex-from-rp/type-fix
+                             rp-trans
                              eval-of-type-fix-when-pp-sum-meta-formal-checks)
                             ())))))
 
@@ -822,8 +839,8 @@
                  (rp-termp x)
                  (rp-termp y)
                  (rp-evl-meta-extract-global-facts))
-            (equal (type-fix (rp-evl (resolve-pp-sum-order-rec y x) a))
-                   (p+ (rp-evl y a) (rp-evl x a))))
+            (equal (type-fix (rp-evlt (resolve-pp-sum-order-rec y x) a))
+                   (p+ (rp-evlt y a) (rp-evlt x a))))
    :hints (("Goal"
             :induct (resolve-pp-sum-order-rec y x)
             :do-not-induct t
@@ -864,8 +881,8 @@
          (equal (car x) 'type-fix)
          (rp-evl-meta-extract-global-facts)
          (pp-sum-meta-formal-checks state))
-    (EQUAL (pp-sum 0 (rp-evl (cadr x) a))
-           (rp-evl x a)))
+    (EQUAL (pp-sum 0 (rp-evlt (cadr x) a))
+           (rp-evlt x a)))
    :hints (("Goal"
             :in-theory (e/d (eval-of-type-fix-when-pp-sum-meta-formal-checks) ())))))
 
@@ -874,8 +891,8 @@
    (implies (and (force (pp-sum-meta-formal-checks state))
                  (force (valid-sc term a))
                  (rp-evl-meta-extract-global-facts))
-            (equal (rp-evl (flatten-pp-main term) a)
-                   (rp-evl term a)))
+            (equal (rp-evlt (flatten-pp-main term) a)
+                   (rp-evlt term a)))
    :hints (("Goal"
             :do-not-induct t
             :use ((:instance eval-of-sort-pp-flatten-main-is-correct))
@@ -907,7 +924,7 @@
                 (valid-sc x a)
                 (pp-sum-meta-formal-checks state)
                 (rp-evl-meta-extract-global-facts))
-           (equal (rp-evl x a)
+           (equal (rp-evlt x a)
                   0))
   :hints (("Goal"
            :do-not-induct t
@@ -921,9 +938,9 @@
                 (rp-termp x)
                 (valid-sc x a)
                 (rp-evl-meta-extract-global-facts))
-           (equal (type-fix (rp-evl (resolve-pp-sum-order-preprocess x)
+           (equal (type-fix (rp-evlt (resolve-pp-sum-order-preprocess x)
                                     a))
-                  (type-fix (rp-evl x a))))
+                  (type-fix (rp-evlt x a))))
   :hints (("goal"
            :in-theory (e/d (resolve-pp-sum-order-preprocess) ()))))
 
@@ -932,14 +949,14 @@
                 (rp-termp x)
                 (valid-sc x a)
                 (rp-evl-meta-extract-global-facts))
-           (and (equal (pp-sum (rp-evl (resolve-pp-sum-order-preprocess x) a)
+           (and (equal (pp-sum (rp-evlt (resolve-pp-sum-order-preprocess x) a)
                                other)
-                       (pp-sum (rp-evl x a)
+                       (pp-sum (rp-evlt x a)
                                other))
                 (equal (pp-sum other
-                               (rp-evl (resolve-pp-sum-order-preprocess x) a))
+                               (rp-evlt (resolve-pp-sum-order-preprocess x) a))
                        (pp-sum other
-                               (rp-evl x a)))))
+                               (rp-evlt x a)))))
   :hints (("goal"
            :use ((:instance eval-of-resolve-pp-sum-order-preprocess))
            :in-theory (e/d ()
@@ -957,7 +974,7 @@
                 (rp-termp x)
                 (rp-evl-meta-extract-global-facts)
                 (EQUAL (resolve-pp-sum-order-preprocess x) ''0))
-           (equal (rp-evl x a)
+           (equal (rp-evlt x a)
                   0))
   :hints (("goal"
            :do-not-induct t
@@ -1037,8 +1054,8 @@
                    (valid-sc x a)
                    (pp-sum-meta-formal-checks state)
                    (rp-evl-meta-extract-global-facts))
-              (equal (rp-evl (resolve-pp-sum-order x) a)
-                     (rp-evl x a)))
+              (equal (rp-evlt (resolve-pp-sum-order x) a)
+                     (rp-evlt x a)))
      :rule-classes :rewrite
      :hints (("Goal"
               :expand ((:free (x) (hide x))
@@ -1086,8 +1103,8 @@
  (defthmd
    evl-of-extract-from-rp-clear-ex-from-rp
    (implies (syntaxp (include-fnc term 'ex-from-rp))
-            (equal (rp-evl (ex-from-rp term) a)
-                   (rp-evl term a)))
+            (equal (rp-evlt (ex-from-rp term) a)
+                   (rp-evlt term a)))
    :hints (("goal"  ))))
 
 (local
@@ -1108,8 +1125,8 @@
    (IMPLIES (AND (RP-EQUAL TERM1 TERM2)
                  (force (RP-TERMP TERM1))
                  (force (RP-TERMP TERM2)))
-            (EQUAL (RP-EVL TERM1 A)
-                   (RP-EVL TERM2 A)))
+            (EQUAL (RP-EVLT TERM1 A)
+                   (RP-EVLT TERM2 A)))
    :rule-classes :rewrite))
 
 (local
@@ -1326,8 +1343,8 @@
                 (rp-termp term)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
-           (equal (rp-evl (mv-nth 0 (resolve-pp-sum-order-main term)) a)
-                  (rp-evl term a)))
+           (equal (rp-evlt (mv-nth 0 (resolve-pp-sum-order-main term)) a)
+                  (rp-evlt term a)))
   :hints (("Goal"
            :in-theory (e/d () (resolve-pp-sum-order
                                )))))

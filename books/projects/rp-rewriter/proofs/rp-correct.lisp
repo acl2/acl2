@@ -51,7 +51,6 @@
 (in-theory (disable rp-iff-flag rp-lhs rp-rhs rp-hyp))
 
 
-
 (encapsulate
   nil
 
@@ -82,16 +81,19 @@
 
   (defthm eval-of-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a))
-             (equal (rp-evl (mv-nth 1 (attach-sc-from-context context term)) a)
-                    (rp-evl term a)))
+             (equal (rp-evlt (mv-nth 1 (attach-sc-from-context context term)) a)
+                    (rp-evlt term a)))
     :hints (("Goal"
              :do-not-induct t
+             :expand ((IS-RP (LIST 'RP ''QUOTE (CADR (CAR CONTEXT)))))
              :induct (attach-sc-from-context context term)
              :in-theory (e/d (attach-sc-from-context) ()))))
 
   (defthm valid-sc-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a)
                   (rp-termp term)
+                  ;(not (include-fnc-subterms context 'list*))
+                  
                   (valid-sc term a))
              (valid-sc (mv-nth 1 (attach-sc-from-context context term)) a))
     :hints (("Goal"
@@ -112,6 +114,8 @@
   
 
   )
+
+
 
 (local
  (encapsulate
@@ -161,6 +165,19 @@
                :expand ((VALID-SC TERM A))
                :in-theory (e/d (is-if is-rp) ())))))
 
+
+   (local
+    (defthm is-falist-of-implies
+      (not (is-falist (cons 'implies x)))))
+
+
+   (local
+    (defthm include-fnc-lemma
+      (implies (and (NOT (INCLUDE-FNC term 'LIST*))
+                    (not (quotep term)))
+               (and (NOT (INCLUDE-FNC (CADR TERM) 'LIST*))
+                    (NOT (INCLUDE-FNC (CAdDR TERM) 'LIST*))))))
+   
    (defthm rp-rw-aux-is-correct-lemma
      (implies (and (rp-termp term)
                    (valid-sc term a)
@@ -182,13 +199,13 @@
                                (term term #|(REMOVE-RETURN-LAST TERM)||#)
                                (dont-rw nil)
                                (context nil)
-                               (limit (NTH *RW-STEP-LIMIT* RP-STATE))
+                               (limit (RW-STEP-LIMIT RP-STATE))
                                (iff-flg t))
                     (:instance rp-evl-and-side-cond-consistent-of-rp-rw
                                (term (CADR term #|(REMOVE-RETURN-LAST TERM)||#))
                                (dont-rw nil)
                                (context nil)
-                               (limit (NTH *RW-STEP-LIMIT* RP-STATE))
+                               (limit (RW-STEP-LIMIT RP-STATE))
                                (iff-flg t))
                     (:instance rp-evl-and-side-cond-consistent-of-rp-rw
                                (term (MV-NTH
@@ -197,7 +214,7 @@
                                        (RP-EXTRACT-CONTEXT
                                         (MV-NTH 0
                                                 (RP-RW (CADR TERM)
-                                                       NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                       NIL NIL (RW-STEP-LIMIT RP-STATE)
                                                        RULES-ALIST
                                                        EXC-RULES META-RULES T RP-STATE STATE)))
                                        (CADDR TERM))))
@@ -208,24 +225,34 @@
                                           (RP-EXTRACT-CONTEXT
                                            (MV-NTH 0
                                                    (RP-RW (CADR TERM)
-                                                          NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                          NIL NIL (RW-STEP-LIMIT RP-STATE)
                                                           RULES-ALIST
                                                           EXC-RULES META-RULES T RP-STATE STATE)))
                                           (CADDR TERM))))
-                               (limit (NTH *RW-STEP-LIMIT* RP-STATE))
+                               (limit (RW-STEP-LIMIT RP-STATE))
                                (iff-flg t)
                                (rp-state (MV-NTH 1
                                                  (RP-RW (CADR term #|(REMOVE-RETURN-LAST TERM)||#)
-                                                        NIL NIL (NTH *RW-STEP-LIMIT* RP-STATE)
+                                                        NIL NIL (RW-STEP-LIMIT RP-STATE)
                                                         RULES-ALIST EXC-RULES
                                                         meta-rules T rp-state
                                                         STATE)))))
-              :expand ((:free (x y) (iff x y))) 
+              :expand ((:free (x y) (iff x y))
+                       (:free (x) (rp-trans (cons 'implies x)))
+                       (:free (x y) (RP-TRANS-LST (cons x y)))) 
 ;:expand ((:free (context) (CONTEXT-SYNTAXP context)))
               :in-theory (e/d (;rp-evl-of-remove-from-last
                                ;;context-syntaxp-implies
                                )
                               (rp-rw
+                               RW-STEP-LIMIT
+                               SYNP
+                               is-falist
+                               rp-termp
+                               include-fnc
+                               valid-sc
+                               rp-trans
+                               rp-trans-lst
                                valid-sc
                                valid-rules-alistp
                                RP-EVL-of-variable

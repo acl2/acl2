@@ -32,6 +32,15 @@
   :hints (("Goal"
            :in-theory (e/d (is-if) ()))))
 
+
+
+(defthm rp-evlt-of-ex-from-rp
+  (EQUAL (RP-EVL (RP-TRANS (EX-FROM-RP TERM)) A)
+         (RP-EVL (RP-TRANS TERM) A))
+  :hints (("Goal"
+           :in-theory (e/d (ex-from-rp
+                            is-rp) ()))))
+
 (encapsulate
   nil
   (local
@@ -58,8 +67,8 @@
   (local
    (defthm valid-sc-single-step-lemma3-lemma
      (implies (not (equal fnc 'quote))
-              (equal (RP-EVL (LIST fnc (EX-FROM-RP term)) A)
-                     (RP-EVL (LIST fnc term) A)))
+              (equal (RP-EVLt (LIST fnc (EX-FROM-RP term)) A)
+                     (RP-EVLt (LIST fnc term) A)))
      :hints (("Goal"
               :do-not-induct t
               :in-theory (e/d (is-if
@@ -71,30 +80,32 @@
   (local
    (defthm valid-sc-single-step-lemma3
      (implies (and (IS-RP TERM)
-                   (NOT (RP-EVL (LIST (CADR (CADR TERM)) (CADDR TERM)) A)))
+                   (NOT (RP-EVLt (LIST (CADR (CADR TERM)) (CADDR TERM)) A)))
               (not (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL) A)))
      :hints (("Goal"
               :do-not-induct t
               :expand (CONTEXT-FROM-RP TERM NIL)
               :in-theory (e/d (is-if
                                eval-and-all
+                               rp-evl-of-fncall-args
                                is-rp) ())))))
 
   (local
    (defthm valid-sc-single-step-lemma4
      (implies (and (IS-RP TERM)
-                   (NOT (RP-EVL (LIST (CADR (CADR TERM)) (CADDR TERM)) A)))
+                   (NOT (RP-EVLt (LIST (CADR (CADR TERM)) (CADDR TERM)) A)))
               (not (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL) A)))
      :hints (("Goal"
               :do-not-induct t
               :expand (CONTEXT-FROM-RP TERM NIL)
               :in-theory (e/d (is-if
+                               rp-evl-of-fncall-args
                                eval-and-all
                                is-rp) ())))))
 
   (local
    (defthm valid-sc-single-step-lemma5
-     (implies (and (RP-EVL (LIST (CADR (CADR TERM)) (CADDR TERM))
+     (implies (and (RP-EVLt (LIST (CADR (CADR TERM)) (CADDR TERM))
                            A)
                    (IS-RP TERM)
                    (NOT (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL)
@@ -103,6 +114,7 @@
                                  A)))
      :hints (("Goal"
               :in-theory (e/d (is-rp eval-and-all
+                                     rp-evl-of-fncall-args
                                      context-from-rp) ())))))
 
   (local
@@ -116,10 +128,10 @@
                                      context-from-rp) ())))))
 
   (defthmd valid-sc-single-step
-    (implies (and (rp-termp term)
+    (implies (and ;(rp-termp term)
                   (is-rp term))
              (equal (valid-sc term a)
-                    (and (rp-evl `(,(cadr (cadr term)) ,(caddr term))  a)
+                    (and (rp-evlt `(,(cadr (cadr term)) ,(caddr term))  a)
                          (valid-sc (caddr term) a))))
     :hints (("Goal"
              :do-not-induct t
@@ -187,3 +199,18 @@
 
 (defthm eval-and-all-nil
   (EVAL-AND-ALL NIL A))
+
+
+(defthm-rp-trans
+  (defthm rp-trans-is-term-when-list*-is-absent
+    (implies (not (include-fnc term 'list*))
+             (equal (rp-evl (rp-trans term) a)
+                    (rp-evl term a)))
+    :flag rp-trans)
+  (defthm rp-trans-lst-is-lst-when-list*-is-absent
+    (implies (not (include-fnc-subterms lst 'list*))
+             (equal (rp-evl-lst (rp-trans-lst lst) a)
+                    (rp-evl-lst lst a)))
+    :flag rp-trans-lst)
+  :hints (("Goal"
+           :in-theory (e/d (rp-evl-of-fncall-args) ()))))

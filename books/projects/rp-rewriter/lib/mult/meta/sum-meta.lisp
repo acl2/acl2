@@ -47,7 +47,9 @@
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 
 (local
- (in-theory (enable n2b f2 m2 d2 p+ b+ ba pp type-fix merge-pp+)))
+ (include-book "../greedy-lemmas"))
+(local
+ (in-theory (disable n2b f2 m2 d2 p+ b+ ba pp type-fix merge-pp+)))
 
 (def-formula-checks-default-evl
  rp-evl
@@ -559,27 +561,17 @@
 (local
  (defthm rec-lemma1
    (equal (type-fix (+ (type-fix a) (type-fix b)))
-          (+ (type-fix a) (type-fix b)))))
+          (+ (type-fix a) (type-fix b)))
+   :hints (("Goal"
+            :in-theory (e/d (type-fix) ())))))
 
 (local
  (defthm rec-lemma2
    (equal (type-fix (type-fix a) )
-          (type-fix a))))
+          (type-fix a))
+   :hints (("Goal"
+            :in-theory (e/d (type-fix) ())))))
 
-(local
- (defthmd sum-comm-1
-   (equal (sum y x)
-          (sum x y))))
-
-(local
- (defthmd sum-comm-2
-   (equal (b+ y (b+ x z))
-          (b+ x (b+ y z)))))
-
-(local
- (defthmd sum-reorder
-   (equal (b+ (b+ x y) z)
-          (b+ x (b+ y z)))))
 
 (local
  (defthm rec-lemma3
@@ -593,20 +585,26 @@
    (implies (equal x (+ (type-fix a) (type-fix b) (type-fix c)))
             (equal (equal (+ m (type-fix x))
                           (+ m x))
-                   t))))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d (type-fix) ())))))
 
 (local
  (defthm rec-lemma5
    (implies (equal x (+ (type-fix a) (type-fix b) ))
             (equal (equal (+ m (type-fix x))
                           (+ m x))
-                   t))))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d (type-fix) ())))))
 
 (local
  (defthm extract-from-type-fix
    (implies (integerp x)
             (equal (type-fix x)
-                   x))))
+                   x))
+   :hints (("Goal"
+            :in-theory (e/d (type-fix) ())))))
 
 (encapsulate
   nil
@@ -616,6 +614,7 @@
                        ex-from-rp
                        RESOLVE-B+-SWEEP-INTO-PP+
                        is-b+-ordered
+                       ALL-SUMS-IS-SUM
                        (:TYPE-PRESCRIPTION DOES-BELONG-TO-PP+$INLINE)
                        DOES-BELONG-TO-PP+
                        ex-from-rp-loose
@@ -637,6 +636,9 @@
     merge-b+
     merge-pp+)))
 
+(local
+ (in-theory (disable rp-trans)))
+
 (defun mv-nth-0-resolve-b+-order (term)
   (b* (((mv term &) (resolve-b+-order term)))
     term))
@@ -648,8 +650,8 @@
                          'ex-from-rp))
                          (not (quotep term)))||#))
             (equal
-             (rp-evl term a)
-             (rp-evl (ex-from-rp term) a)
+             (rp-evlt term a)
+             (rp-evlt (ex-from-rp term) a)
              ))
    :hints (("Goal"
             :in-theory (e/d (ex-from-rp
@@ -665,7 +667,7 @@
 (local
  (defthm ex-from-rp-is-zero
    (implies (EQUAL (EX-FROM-RP X) ''0)
-            (equal (rp-evl x a) 0))
+            (equal (rp-evlt x a) 0))
    :hints (("Goal"
             :in-theory (e/d (rp-evl-of-ex-from-rp-reverse)
                             (rp-evl-of-ex-from-rp))))))
@@ -673,22 +675,22 @@
 (local
  (defthm dummy-lemma1
    (implies (EQUAL m
-                   (+ (TYPE-FIX (RP-EVL (EX-FROM-RP Y) A))
-                      (TYPE-FIX (RP-EVL (EX-FROM-RP (CADDR (EX-FROM-RP X)))
+                   (+ (TYPE-FIX (RP-EVLT (EX-FROM-RP Y) A))
+                      (TYPE-FIX (RP-EVLT (EX-FROM-RP (CADDR (EX-FROM-RP X)))
                                         A))))
-            (equal (EQUAL (+ (TYPE-FIX (RP-EVL (CADR (EX-FROM-RP X)) A))
+            (equal (EQUAL (+ (TYPE-FIX (RP-EVLT (CADR (EX-FROM-RP X)) A))
                              m)
-                          (+ (TYPE-FIX (RP-EVL (EX-FROM-RP Y) A))
-                             (TYPE-FIX (RP-EVL (CADR (EX-FROM-RP X)) A))
-                             (TYPE-FIX (RP-EVL (CADDR (EX-FROM-RP X)) A))))
+                          (+ (TYPE-FIX (RP-EVLT (EX-FROM-RP Y) A))
+                             (TYPE-FIX (RP-EVLT (CADR (EX-FROM-RP X)) A))
+                             (TYPE-FIX (RP-EVLT (CADDR (EX-FROM-RP X)) A))))
                    t))
    :hints (("Goal"
-            :in-theory (e/d (rp-evl-of-ex-from-rp) ())))))
+            :in-theory (e/d (rp-evlt-of-ex-from-rp) ())))))
 
-(local
+#|(local
  (defthm type-fix-is-ifix
    (equal (type-fix x)
-          (ifix x))))
+          (ifix x))))||#
 
 #|(local
  (progn
@@ -719,7 +721,9 @@
         (equal (sum x (-- x) b)
                (sum b 0))
         (equal (sum (-- x) x b)
-               (sum b 0)))))
+               (sum b 0)))
+   :hints (("Goal"
+            :in-theory (e/d (sum type-fix) ())))))
 
 (local
  (encapsulate
@@ -738,8 +742,10 @@
                                  (and (equal (car x) 'ex-from-rp)
                                       (consp (cdr x))
                                       (atom (cadr x))))))
-               (equal (rp-evl x a)
-                      (rp-evl `(-- ,(cadr x)) a)))))
+               (and (equal (rp-evlt x a)
+                           (rp-evlt `(-- ,(cadr x)) a))
+                    (equal (rp-evl x a)
+                           (rp-evl `(-- ,(cadr x)) a))))))
 
    (local
     (defthm dl2
@@ -753,9 +759,12 @@
                                  (and (equal (car x) 'ex-from-rp)
                                       (consp (cdr x))
                                       (atom (cadr x))))))
-               (equal (rp-evl x a)
-                      (-- (rp-evl (cadr x) a))))
+               (and (equal (rp-evlt x a)
+                           (-- (rp-evlt (cadr x) a)))
+                    (equal (rp-evl x a)
+                           (-- (rp-evl (cadr x) a)))))
       :hints (("Goal"
+               :expand ((RP-TRANS (LIST '-- (CADR X))))
                :in-theory (e/d (dl1) ())))))
 
    (local
@@ -792,22 +801,39 @@
                     (rp-termp y)
                     (rp-evl-meta-extract-global-facts)
                     (sum-meta-formal-checks state))
-               (and (equal (sum (rp-evl x a)
+               (and (equal (sum (rp-evlt x a)
+                                (rp-evlt y a))
+                           0)
+                    (equal (sum (rp-evl x a)
                                 (rp-evl y a))
                            0)
+                    (equal (sum (rp-evlt x a)
+                                (rp-evlt y a)
+                                b)
+                           (sum b 0))
                     (equal (sum (rp-evl x a)
                                 (rp-evl y a)
                                 b)
                            (sum b 0))
+                    (equal (sum (rp-evlt y a)
+                                (rp-evlt x a))
+                           0)
                     (equal (sum (rp-evl y a)
                                 (rp-evl x a))
                            0)
+                    (equal (sum (rp-evlt y a)
+                                (rp-evlt x a)
+                                b)
+                           (sum b 0))
                     (equal (sum (rp-evl y a)
                                 (rp-evl x a)
                                 b)
                            (sum b 0))))
       :hints (("Goal"
-               :use ((:instance rp-evl-of-rp-equal
+               :use ((:instance rp-evlt-of-rp-equal
+                                (term1 y)
+                                (term2 (cadr x)))
+                     (:instance rp-evl-of-rp-equal
                                 (term1 y)
                                 (term2 (cadr x)))
 
@@ -817,6 +843,8 @@
                                 type-fix
                                 ex-from-rp)
                                (rp-termp
+                                rp-evl-of-rp-equal
+                                rp-evlt-of-rp-equal
                                 EVL-OF-EXTRACT-FROM-RP
                                 EX-FROM-RP
                                 (:DEFINITION NOT)
@@ -826,7 +854,7 @@
                                 (:DEFINITION IFIX)
                                 (:REWRITE RP-EVL-OF-VARIABLE)
 ;(:DEFINITION SHOULD-B+-CANCEL)
-                                RP-EVL-OF-EX-FROM-RP))))))
+                                RP-EVLT-OF-EX-FROM-RP))))))
 
    (defthm SHOULD-B+-CANCEL-aux-redef
      (equal (should-sum-terms-cancel x y)
@@ -841,16 +869,30 @@
                    (rp-termp y)
                    (rp-evl-meta-extract-global-facts)
                    (sum-meta-formal-checks state))
-              (and (equal (sum (rp-evl x a)
+              (and (equal (sum (rp-evlt x a)
+                               (rp-evlt y a))
+                          0)
+                   (equal (sum (rp-evl x a)
                                (rp-evl y a))
                           0)
+                   (equal (sum (rp-evlt x a)
+                               (rp-evlt y a)
+                               b)
+                          (sum b 0))
                    (equal (sum (rp-evl x a)
                                (rp-evl y a)
                                b)
                           (sum b 0))
+                   (equal (sum (rp-evlt y a)
+                               (rp-evlt x a))
+                          0)
                    (equal (sum (rp-evl y a)
                                (rp-evl x a))
                           0)
+                   (equal (sum (rp-evlt y a)
+                               (rp-evlt x a)
+                               b)
+                          (sum b 0))
                    (equal (sum (rp-evl y a)
                                (rp-evl x a)
                                b)
@@ -859,6 +901,9 @@
               :use ((:instance rp-evl-of-rp-equal
                                (term1 y)
                                (term2 (cadr x)))
+                    #|(:instance rp-evlt-of-rp-equal
+                               (term1 y)
+                               (term2 (cadr x)))||#
 
                     )
               :in-theory (e/d (IS-RP
@@ -876,7 +921,7 @@
                                (:DEFINITION FIX)
                                (:DEFINITION IFIX)
                                (:REWRITE RP-EVL-OF-VARIABLE)
-                               RP-EVL-OF-EX-FROM-RP)))))))
+                               RP-EVLT-OF-EX-FROM-RP)))))))
 
 
 #|(local
@@ -971,13 +1016,18 @@
  (defthm dumm-lemma4
    (implies (equal (sum a b) 0)
             (equal (equal (type-fix x) (sum a b x))
-                   t))))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d (sum type-fix) ())))
+   ))
 
 (local
  (defthm sum-of-not-integer
    (implies (not (integerp x))
             (equal (sum y x)
-                   (sum y 0)))))
+                   (sum y 0)))
+   :hints (("Goal"
+            :in-theory (e/d (sum type-fix) ())))))
 
 (local
  (defthm dumm-lemma5
@@ -1036,9 +1086,11 @@
                  (NOT (CDDDR REST))
                  (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state))
-            (equal (RP-EVL REST A)
-                   (sum (rp-evl (cadr rest) a)
-                        (rp-evl (caddr rest) a))))))
+            (equal (RP-EVLT REST A)
+                   (sum (rp-evlt (cadr rest) a)
+                        (rp-evlt (caddr rest) a))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm merge-sum-eval
@@ -1049,9 +1101,11 @@
                  (NOT (CDDDR REST))
                  (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state))
-            (equal (RP-EVL REST A)
-                   (sum (rp-evl (cadr rest) a)
-                        (rp-evl (caddr rest) a))))))
+            (equal (RP-EVLT REST A)
+                   (sum (rp-evlt (cadr rest) a)
+                        (rp-evlt (caddr rest) a))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm ----eval
@@ -1061,8 +1115,10 @@
                  (NOT (CDDR REST))
                  (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state))
-            (equal (RP-EVL REST A)
-                   (-- (rp-evl (cadr rest) a))))))
+            (equal (RP-EVLT REST A)
+                   (-- (rp-evlt (cadr rest) a))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm f2o--eval
@@ -1072,8 +1128,10 @@
                  (NOT (CDDR REST))
                  (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state))
-            (equal (RP-EVL REST A)
-                   (d2 (rp-evl (cadr rest) a))))))
+            (equal (RP-EVLT REST A)
+                   (d2 (rp-evlt (cadr rest) a))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm times2--eval
@@ -1083,8 +1141,10 @@
                  (NOT (CDDR REST))
                  (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state))
-            (equal (RP-EVL REST A)
-                   (times2 (rp-evl (cadr rest) a))))))
+            (equal (RP-EVLT REST A)
+                   (times2 (rp-evlt (cadr rest) a))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm minus--eval
@@ -1094,8 +1154,10 @@
                  (NOT (CDDR REST))
                  (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state))
-            (equal (RP-EVL REST A)
-                   (minus (rp-evl (cadr rest) a))))))
+            (equal (RP-EVLT REST A)
+                   (minus (rp-evlt (cadr rest) a))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans) ())))))
 
 (local
  (defthm dl2
@@ -1114,13 +1176,33 @@
    (implies (and (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state)
                  (is-a-type-fixed-fnc term))
-            (EQUAL (TYPE-FIX (RP-EVL term A))
-                   (RP-EVL term A)))
+            (EQUAL (TYPE-FIX (RP-EVLT term A))
+                   (RP-EVLT term A)))
    :hints (("Goal"
+            :expand (RP-TRANS-LST (CDR TERM))
             :in-theory (e/d (is-a-type-fixed-fnc
+                             rp-trans
+                             type-fix
+                             d2
                              times2
                              minus)
                             ())))))
+
+
+
+(DEFTHMd
+  RP-EVL-OF-EX-FROM-RP-REVERSE-2
+  (IMPLIES (SYNTAXP (OR (ATOM TERM)))
+           (EQUAL (RP-EVL TERM A)
+                  (RP-EVL (EX-FROM-RP TERM) A)))
+  :HINTS (("Goal" :IN-THEORY (E/D (EX-FROM-RP IS-RP) NIL))))
+
+(local
+ (defthm dumm-lemma6
+   (implies (equal x (sum a b))
+            (equal (type-fix x)
+                   x))
+   :rule-classes :forward-chaining))
 
 (local
  (defthmd resolve-b+-order-rec-correct
@@ -1128,13 +1210,17 @@
                  (sum-meta-formal-checks state)
                  (rp-termp x)
                  (rp-termp y))
-            (equal (rp-evl (mv-nth 0 (resolve-b+-order-rec y x)) a)
-                   (b+ (rp-evl y a) (rp-evl x a))))
+            (equal (rp-evlt (mv-nth 0 (resolve-b+-order-rec y x)) a)
+                   (b+ (rp-evlt y a) (rp-evlt x a))))
    :hints (("Goal"
-            :in-theory (e/d (sum-comm-1
+            :induct (resolve-b+-order-rec y x)
+            :do-not-induct t
+            :expand ((:free (x) (RP-TRANS (cons 'TYPE-FIX x))))
+            :in-theory (e/d (;sum-comm-1
                              rp-evl-of-fncall-args
-                             sum-comm-2
+                             ;sum-comm-2
                              rp-evl-of-ex-from-rp-reverse
+                             RP-EVL-OF-EX-FROM-RP-REVERSE-2
                              sum-0
                              sum-reorder)
                             (s-order
@@ -1143,13 +1229,15 @@
                              SHOULD-B+-CANCEL-AUX-REDEF
                              SHOULD-B+-CANCEL-AUX
                              should-sum-terms-cancel
+                             RP-TRANS-IS-TERM-WHEN-LIST*-IS-ABSENT
                              merge-b+
+                             RP-EVLT-OF-EX-FROM-RP
                              type-fix
                              cons-equal
                              RP-EVL-OF-VARIABLE
                              ifix
                              EX-FROM-RP
-                             TYPE-FIX-IS-IFIX
+                             ;TYPE-FIX-IS-IFIX
                              should-sum-terms-cancel
                              rp-evl-of-ex-from-rp))))))
 
@@ -1171,8 +1259,10 @@
 
 (local
  (defthm type-fix-type
-   (and (integerp (TYPE-FIX (RP-EVL X A)))
-        (ACL2-NUMBERP (TYPE-FIX (RP-EVL X A))))))
+   (and (integerp (TYPE-FIX (RP-EVLT X A)))
+        (ACL2-NUMBERP (TYPE-FIX (RP-EVLT X A))))
+   :hints (("Goal"
+            :in-theory (e/d (type-fix) ())))))
 
 #|(local
  (defthm does-belong-to-pp+-implies
@@ -1197,21 +1287,36 @@
                    y))))
 
 (local
+ (defthm dumm-lemma7
+   (equal (RP-EVL ''0 A)
+          0)))
+
+
+
+
+(local
  (defthm rp-evl-of-resolve-B+-SWEEP-INTO-PP+
    (implies (and (rp-evl-meta-extract-global-facts)
                  (sum-meta-formal-checks state)
                  (case-match x
                    (('b+ & &) t)))
-            (equal (rp-evl (mv-nth 0 (resolve-b+-sweep-into-pp+ x old-dont-rw)) a)
-                   (rp-evl x a)))
+            (equal (rp-evlt (mv-nth 0 (resolve-b+-sweep-into-pp+ x old-dont-rw)) a)
+                   (rp-evlt x a)))
    :rule-classes :rewrite
    :hints (("Goal"
+            :induct (resolve-b+-sweep-into-pp+ x old-dont-rw)
+            :expand ((:free (x) (rp-trans (cons 'MERGE-PP+ x)))) 
+            :do-not-induct t
             :in-theory (e/d (resolve-b+-sweep-into-pp+)
-                            (TYPE-FIX-IS-IFIX
+                            (;TYPE-FIX-IS-IFIX
+                             rp-trans
+                             sum
+                             pp-sum
                              type-fix
                              (:TYPE-PRESCRIPTION TYPE-FIX)
                              (:REWRITE SUM-WHEN-SHOULD-B+-CANCEL)
                              (:REWRITE SHOULD-B+-CANCEL-AUX-REDEF)
+                             rp-trans-is-term-when-list*-is-absent
                              (:DEFINITION SHOULD-B+-CANCEL-AUX)
                              EX-FROM-RP
                              (:DEFINITION RP-EQUAL-CNT)
@@ -1253,8 +1358,8 @@
                  (rp-termp x)
                  (rp-termp y)
                  (sum-meta-formal-checks state))
-            (equal (rp-evl (mv-nth 0 (resolve-b+-order x)) a)
-                   (rp-evl x a)))
+            (equal (rp-evlt (mv-nth 0 (resolve-b+-order x)) a)
+                   (rp-evlt x a)))
    :rule-classes :rewrite
    :hints (("Goal"
             :in-theory (e/d (resolve-b+-order-rec-correct)
@@ -1266,12 +1371,12 @@
                  (rp-termp x)
                  (rp-termp y)
                  (sum-meta-formal-checks state))
-            (equal (rp-evl (mv-nth-0-resolve-b+-order x) a)
-                   (rp-evl x a)))
+            (equal (rp-evlt (mv-nth-0-resolve-b+-order x) a)
+                   (rp-evlt x a)))
    :rule-classes :rewrite
    :hints (("Goal"
             :in-theory (e/d ()
-                            (TYPE-FIX-IS-IFIX
+                            (
                              (:DEFINITION RESOLVE-B+-ORDER-REC)
                              resolve-b+-order
                              type-fix

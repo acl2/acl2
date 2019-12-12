@@ -40,8 +40,6 @@
 
 (include-book "ihs/basic-definitions" :dir :system)
 
-(include-book "projects/rp-rewriter/top" :dir :system)
-
 (include-book "misc/total-order" :dir :system)
 
 (define bit-listp (lst)

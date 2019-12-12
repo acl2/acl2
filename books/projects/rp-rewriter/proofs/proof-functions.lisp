@@ -181,7 +181,7 @@
                   (equal (rp-evl (rp-lhs rule) a)
                          (rp-evl (rp-rhs rule) a)))
                 (implies (include-fnc (rp-rhs rule) 'rp)
-                         (valid-sc (rp-rhs rule) a)))))
+                         (valid-sc-nt (rp-rhs rule) a)))))
 
 (defun-sk valid-rulep-sk (rule)
   (forall a
@@ -277,7 +277,8 @@
   (declare (ignorable a))
   ;; when var-bindings is applied to the lhs of the rule, it is the same as the term
   (and
-   (equal (rp-evl (rp-apply-bindings (rp-lhs rule) bindings) a) (rp-evl term a))
+   (equal (rp-evlt (rp-apply-bindings (rp-lhs rule) bindings) a)
+          (rp-evlt term a))
    ;;(rp-equal2 (rp-apply-bindings (rp-lhs rule) bindings) term)
    ))
 
@@ -399,3 +400,12 @@
   (and (rp-termp term)
        (eval-and-all context a)
        (valid-sc term a)))
+
+
+(defun rp-evl-of-trans-list* (lst a)
+     (if (atom lst)
+         (rp-evl nil a)
+       (if (atom (cdr lst))
+           (rp-evl (car lst) a)
+         (cons (rp-evl (car lst) a)
+               (rp-evl-of-trans-list* (cdr lst) a)))))

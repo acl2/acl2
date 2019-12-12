@@ -97,12 +97,15 @@
   p+))
 
 (local
- (defthmd rp-evl-of-ex-from-rp-loose-reverse
+ (defthmd rp-evlt-of-ex-from-rp-loose-reverse
    (implies (syntaxp (atom term))
-            (equal (rp-evl term a)
-                   (rp-evl (EX-FROM-RP-LOOSE term) a)))
+            (equal (rp-evlt term a)
+                   (rp-evlt (EX-FROM-RP-LOOSE term) a)))
    :hints (("Goal"
-            :in-theory (e/d (EX-FROM-RP-LOOSE) ())))))
+            :induct (EX-FROM-RP-LOOSE term)
+            :do-not-induct t
+            :in-theory (e/d (EX-FROM-RP-LOOSE
+                             IS-RP-LOOSE) ())))))
 
 (local
  (encapsulate
@@ -111,10 +114,10 @@
    (local
     (defthm rp-termp-lemma1
       (implies (and (rp-termp term)
-                    (CONSP term))
-               (RP-TERMP (CAR term)))
-      :hints (("Goal"
-               :expand (RP-TERMP TERM)
+                    (consp term))
+               (rp-termp (car term)))
+      :hints (("goal"
+               :expand (rp-termp term)
                :in-theory (e/d (ex-from-rp-loose is-rp-loose
                                                  rp-termp) ())))))
 
@@ -122,9 +125,9 @@
     (defthm rp-termp-lemma2
       (implies (and (rp-termp term)
                     (CONSP term))
-               (RP-TERMP (CAR term)))
-      :hints (("Goal"
-               :expand (RP-TERMP TERM)
+               (rp-termp (car term)))
+      :hints (("goal"
+               :expand (rp-termp term)
                :in-theory (e/d (ex-from-rp-loose is-rp-loose
                                                  rp-termp) ())))))
 
@@ -143,23 +146,42 @@
                :in-theory (e/d (rp-evl-of-fncall-args) ())))))
 
    (local
-    (defthm rp-evl-of-rp-equal-iter-pp+-lemma
+    (defthm lemma2-v2
+      (implies (and (equal (rp-evlt-lst (cdr x) a)
+                           (rp-evlt-lst (cdr y) a))
+                    (equal (car x) (car y))
+                    (consp x)
+                    (rp-termp x)
+                    (rp-termp y)
+                    (consp y)
+                    (not (quotep x)))
+               (equal (equal (rp-evlt x a)
+                             (rp-evlt y a))
+                      t))
+      :hints (("Goal"
+               :do-not-induct t
+               :cases ((is-falist x))
+               :expand ((RP-TRANS Y))
+               :in-theory (e/d (rp-evl-of-fncall-args) ())))))
+
+   (local
+    (defthm rp-evlt-of-rp-equal-iter-pp+-lemma
       (if (equal lst-flg 'nil)
           (implies (and (rp-evl-meta-extract-global-facts)
                         (rp-termp x)
                         (rp-termp y)
                         (rp-equal-iter-pp+-meta-formula-checks state)
                         (rp-equal-iter-pp+ x y lst-flg))
-                   (equal (equal (rp-evl x a)
-                                 (rp-evl y a))
+                   (equal (equal (rp-evlt x a)
+                                 (rp-evlt y a))
                           t))
         (implies (and (rp-evl-meta-extract-global-facts)
                       (rp-term-listp x)
                       (rp-term-listp y)
                       (rp-equal-iter-pp+-meta-formula-checks state)
                       (rp-equal-iter-pp+ x y lst-flg))
-                 (equal (equal (rp-evl-lst x a)
-                               (rp-evl-lst y a))
+                 (equal (equal (rp-evlt-lst x a)
+                               (rp-evlt-lst y a))
                         t)))
       :hints (("Goal"
                :use ((:instance rp-evl-of-rp-equal
@@ -167,7 +189,7 @@
                                 (term2 (EX-FROM-RP-LOOSE y))))
                :in-theory (e/d (rp-equal-iter-pp+
                                 ;;rp-evl-of-fncall-args
-                                rp-evl-of-ex-from-rp-loose-reverse
+                                rp-evlt-of-ex-from-rp-loose-reverse
                                 rp-equal-cnt-pp+)
                                (EVL-OF-EXTRACT-FROM-RP-LOOSE
                                 rp-termp))))))
@@ -176,10 +198,10 @@
      (implies (and (rp-evl-meta-extract-global-facts)
                    (rp-termp term)
                    (rp-equal-iter-pp+-meta-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (rp-equal-iter-pp+-meta term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (rp-equal-iter-pp+-meta term)) a)
+                     (rp-evlt term a)))
      :hints (("Goal"
-              :use ((:instance rp-evl-of-rp-equal-iter-pp+-lemma
+              :use ((:instance rp-evlt-of-rp-equal-iter-pp+-lemma
                                (x (CADR TERM))
                                (y (CADDR TERM))
                                (lst-flg nil)))

@@ -771,8 +771,8 @@
 (local
  (defthmd rp-evl-of-ex-from-rp-reverse
    (implies (syntaxp (atom x))
-            (equal (rp-evl x a)
-                   (rp-evl (ex-from-rp x) a)))
+            (equal (rp-evlt x a)
+                   (rp-evlt (ex-from-rp x) a)))
    :hints (("goal"
             :in-theory (e/d (ex-from-rp
                              is-rp) ())))))
@@ -780,7 +780,7 @@
 (local
  (defthm when-ex-from-rp-is-1
    (implies (equal (ex-from-rp term) ''1)
-            (equal (rp-evl term a)
+            (equal (rp-evlt term a)
                    1))
    :hints (("goal"
             :in-theory (e/d (ex-from-rp is-rp)
@@ -789,7 +789,7 @@
 (local
  (defthm when-ex-from-rp-is-0
    (implies (equal (ex-from-rp term) ''0)
-            (equal (rp-evl term a)
+            (equal (rp-evlt term a)
                    0))
    :hints (("goal"
             :in-theory (e/d (ex-from-rp is-rp)
@@ -808,8 +808,8 @@
                    (consp term)
                    (consp (cdr term))
                    (not (cddr term)))
-              (equal (rp-evl term a)
-                     (binary-not (rp-evl (cadr term) a))))
+              (equal (rp-evlt term a)
+                     (binary-not (rp-evlt (cadr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -823,8 +823,8 @@
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (not (cddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (binary-not (rp-evl (cadr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (binary-not (rp-evlt (cadr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of-binary-not-1)
@@ -840,8 +840,8 @@
                    (consp term)
                    (consp (cdr term))
                    (not (cddr term)))
-              (equal (rp-evl term a)
-                     (-- (rp-evl (cadr term) a))))
+              (equal (rp-evlt term a)
+                     (-- (rp-evlt (cadr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -855,8 +855,8 @@
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (not (cddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (-- (rp-evl (cadr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (-- (rp-evlt (cadr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of---1)
@@ -873,9 +873,9 @@
                    (consp (cdr term))
                    (consp (cddr term))
                    (not (cdddr term)))
-              (equal (rp-evl term a)
-                     (bit-of (rp-evl (cadr term) a)
-                             (rp-evl (caddr term) a))))
+              (equal (rp-evlt term a)
+                     (bit-of (rp-evlt (cadr term) a)
+                             (rp-evlt (caddr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -890,9 +890,9 @@
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
                    (not (cdddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (bit-of (rp-evl (cadr (ex-from-rp term)) a)
-                             (rp-evl (caddr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (bit-of (rp-evlt (cadr (ex-from-rp term)) a)
+                             (rp-evlt (caddr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of-bit-of-1)
@@ -910,10 +910,10 @@
                    (consp (cddr term))
                    (consp (cdddr term))
                    (not (cddddr term)))
-              (equal (rp-evl term a)
-                     (binary-? (rp-evl (cadr term) a)
-                               (rp-evl (caddr term) a)
-                               (rp-evl (cadddr term) a))))
+              (equal (rp-evlt term a)
+                     (binary-? (rp-evlt (cadr term) a)
+                               (rp-evlt (caddr term) a)
+                               (rp-evlt (cadddr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -929,10 +929,10 @@
                    (consp (cddr (ex-from-rp term)))
                    (consp (cdddr (ex-from-rp term)))
                    (not (cddddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (binary-? (rp-evl (cadr (ex-from-rp term)) a)
-                               (rp-evl (caddr (ex-from-rp term)) a)
-                               (rp-evl (cadddr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (binary-? (rp-evlt (cadr (ex-from-rp term)) a)
+                               (rp-evlt (caddr (ex-from-rp term)) a)
+                               (rp-evlt (cadddr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of-binary-?-1)
@@ -949,9 +949,9 @@
                    (consp (cdr term))
                    (consp (cddr term))
                    (not (cdddr term)))
-              (equal (rp-evl term a)
-                     (binary-or (rp-evl (cadr term) a)
-                                (rp-evl (caddr term) a))))
+              (equal (rp-evlt term a)
+                     (binary-or (rp-evlt (cadr term) a)
+                                (rp-evlt (caddr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -966,9 +966,9 @@
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
                    (not (cdddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (binary-or (rp-evl (cadr (ex-from-rp term)) a)
-                                (rp-evl (caddr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (binary-or (rp-evlt (cadr (ex-from-rp term)) a)
+                                (rp-evlt (caddr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of-binary-or-1)
@@ -985,9 +985,9 @@
                    (consp (cdr term))
                    (consp (cddr term))
                    (not (cdddr term)))
-              (equal (rp-evl term a)
-                     (binary-xor (rp-evl (cadr term) a)
-                                 (rp-evl (caddr term) a))))
+              (equal (rp-evlt term a)
+                     (binary-xor (rp-evlt (cadr term) a)
+                                 (rp-evlt (caddr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -1002,9 +1002,9 @@
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
                    (not (cdddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (binary-xor (rp-evl (cadr (ex-from-rp term)) a)
-                                 (rp-evl (caddr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (binary-xor (rp-evlt (cadr (ex-from-rp term)) a)
+                                 (rp-evlt (caddr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of-binary-xor-1)
@@ -1021,9 +1021,9 @@
                    (consp (cdr term))
                    (consp (cddr term))
                    (not (cdddr term)))
-              (equal (rp-evl term a)
-                     (binary-and (rp-evl (cadr term) a)
-                                 (rp-evl (caddr term) a))))
+              (equal (rp-evlt term a)
+                     (binary-and (rp-evlt (cadr term) a)
+                                 (rp-evlt (caddr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
@@ -1038,9 +1038,9 @@
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
                    (not (cdddr (ex-from-rp term))))
-              (equal (rp-evl term a)
-                     (binary-and (rp-evl (cadr (ex-from-rp term)) a)
-                                 (rp-evl (caddr (ex-from-rp term)) a))))
+              (equal (rp-evlt term a)
+                     (binary-and (rp-evlt (cadr (ex-from-rp term)) a)
+                                 (rp-evlt (caddr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
                                eval-of-binary-and-1)
@@ -1059,9 +1059,10 @@
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
                    (eval-and-all (context-from-rp term nil) a))
-              (bitp (rp-evl term a)))
+              (bitp (rp-evlt term a)))
      :hints (("goal"
               :induct (pp-has-bitp-rp term)
+              :do-not-induct t
               :in-theory (e/d (pp-has-bitp-rp
                                is-rp
                                is-if
@@ -1077,15 +1078,17 @@
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
                    (valid-sc term a))
-              (bitp (rp-evl term a)))
+              (bitp (rp-evlt term a)))
      :hints (("goal"
               :induct (pp-has-bitp-rp term)
               :expand ((valid-sc term a))
+              :do-not-induct t
               :in-theory (e/d (pp-has-bitp-rp
                                pp-has-bitp-rp-implies-lemma
                                is-rp
                                is-if)
                               (bitp
+                               rp-trans
                                ex-from-rp-lemma1
                                context-from-rp
                                valid-sc-ex-from-rp-2
@@ -1100,16 +1103,20 @@
                  (pp-flatten-formula-checks state)
                  (rp-evl-meta-extract-global-facts)
                  (valid-sc term a))
-            (bitp (rp-evl term a)))
+            (bitp (rp-evlt term a)))
    :hints (("goal"
             :in-theory (e/d ()
                             (valid-sc
                              bitp
+                             rp-trans
                              p+
                              not$-to-pp-sum))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ARITH LEMMAS
+
+(local
+ (in-theory (disable rp-evlt-of-ex-from-rp)))
 
 (local
  (encapsulate
@@ -1142,11 +1149,11 @@
             (bit-list-listp (cdr lst))))))
 
   (local
-   (defun rp-evl-lst-lst (lst a)
+   (defun rp-evlt-lst-lst (lst a)
      (if (atom lst)
          nil
-       (cons (rp-evl-lst (car lst) a)
-             (rp-evl-lst-lst (cdr lst) a)))))
+       (cons (rp-evlt-lst (car lst) a)
+             (rp-evlt-lst-lst (cdr lst) a)))))
 
   (local
    (define times$ (x y)
@@ -1177,14 +1184,14 @@
 
 (progn (local
         (defthm bit-listp-lemma
-          (implies (bit-listp (rp-evl-lst lst a))
-                   (bit-listp (rp-evl-lst (cdr lst) a)))))
+          (implies (bit-listp (rp-evlt-lst lst a))
+                   (bit-listp (rp-evlt-lst (cdr lst) a)))))
 
        (local
         (defthm bit-listp-lemma-2
-          (implies (and (bit-listp (rp-evl-lst lst a))
+          (implies (and (bit-listp (rp-evlt-lst lst a))
                         (consp lst))
-                   (bitp (rp-evl (car lst) a))))))
+                   (bitp (rp-evlt (car lst) a))))))
 
 (progn
   (local
@@ -1476,14 +1483,14 @@
    (defthm append-returns-bit-list-listp
      (implies (and (pp-flatten-formula-checks state)
                    (booleanp sign)
-                   (bit-list-listp (rp-evl-lst-lst lst1 a))
-                   (bit-list-listp (rp-evl-lst-lst lst2 a))
+                   (bit-list-listp (rp-evlt-lst-lst lst1 a))
+                   (bit-list-listp (rp-evlt-lst-lst lst2 a))
                    (rp-evl-meta-extract-global-facts))
               (bit-list-listp
-               (rp-evl-lst-lst (append lst1 lst2)
+               (rp-evlt-lst-lst (append lst1 lst2)
                                a)))
      :hints (("goal"
-              :in-theory (e/d (rp-evl-lst-lst
+              :in-theory (e/d (rp-evlt-lst-lst
                                and$-pp-lists
                                and$-pp-lists-aux
                                pp-term-to-pp-lists
@@ -1492,14 +1499,14 @@
    (defthm append-returns-bit-list-listp-with-strip-cdrs
      (implies (and (pp-flatten-formula-checks state)
                    (booleanp sign)
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a))
                    (rp-evl-meta-extract-global-facts))
               (bit-list-listp
-               (rp-evl-lst-lst (strip-cdrs (append lst1 lst2))
+               (rp-evlt-lst-lst (strip-cdrs (append lst1 lst2))
                                a)))
      :hints (("goal"
-              :in-theory (e/d (rp-evl-lst-lst
+              :in-theory (e/d (rp-evlt-lst-lst
                                and$-pp-lists
                                and$-pp-lists-aux
                                pp-term-to-pp-lists
@@ -1508,14 +1515,14 @@
    (defthm append-returns-bit-listp
      (implies (and (pp-flatten-formula-checks state)
                    (booleanp sign)
-                   (bit-listp (rp-evl-lst lst1 a))
-                   (bit-listp (rp-evl-lst lst2 a))
+                   (bit-listp (rp-evlt-lst lst1 a))
+                   (bit-listp (rp-evlt-lst lst2 a))
                    (rp-evl-meta-extract-global-facts))
               (bit-listp
-               (rp-evl-lst (append lst1 lst2)
+               (rp-evlt-lst (append lst1 lst2)
                            a)))
      :hints (("goal"
-              :in-theory (e/d (rp-evl-lst-lst
+              :in-theory (e/d (rp-evlt-lst-lst
                                and$-pp-lists
                                and$-pp-lists-aux
                                pp-term-to-pp-lists
@@ -1540,10 +1547,10 @@
 (progn
   (local
    (defthm bitp-of-eval-of-pp-lists-to-term-aux
-     (implies (and (bit-listp (rp-evl-lst lst a))
+     (implies (and (bit-listp (rp-evlt-lst lst a))
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts))
-              (bitp (rp-evl (pp-lists-to-term-and$ lst) a)))
+              (bitp (rp-evlt (pp-lists-to-term-and$ lst) a)))
      :hints (("goal"
               :in-theory (e/d (pp-lists-to-term-and$) ())))))
 
@@ -1551,11 +1558,11 @@
    (defthm eval-of-append-of-pp-lists-to-term-aux
      (implies  (and (pp-flatten-formula-checks state)
                     (rp-evl-meta-extract-global-facts)
-                    (bit-listp (rp-evl-lst cur a))
-                    (bit-listp (rp-evl-lst cur2 a)))
-               (equal (rp-evl (pp-lists-to-term-and$ (append cur cur2)) a)
-                      (and$ (rp-evl (pp-lists-to-term-and$ cur) a)
-                            (rp-evl (pp-lists-to-term-and$ cur2) a))))
+                    (bit-listp (rp-evlt-lst cur a))
+                    (bit-listp (rp-evlt-lst cur2 a)))
+               (equal (rp-evlt (pp-lists-to-term-and$ (append cur cur2)) a)
+                      (and$ (rp-evlt (pp-lists-to-term-and$ cur) a)
+                            (rp-evlt (pp-lists-to-term-and$ cur2) a))))
      :hints (("goal"
               :do-not-induct t
               :induct (pp-lists-to-term-and$ cur)
@@ -1567,19 +1574,19 @@
 
   (local
    (defthm integerp-of-eval-of-pp-lists-to-term-aux
-     (implies (and (integer-listp (rp-evl-lst lst a))
+     (implies (and (integer-listp (rp-evlt-lst lst a))
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts))
-              (integerp (rp-evl (pp-lists-to-term-and$ lst) a)))
+              (integerp (rp-evlt (pp-lists-to-term-and$ lst) a)))
      :hints (("goal"
               :in-theory (e/d (pp-lists-to-term-and$) ())))))
 
   (local
    (defthm integerp-of-eval-of-pp-lists-to-term
-     (implies (and (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a))
+     (implies (and (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a))
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts))
-              (integerp (rp-evl (pp-lists-to-term-p+ lst) a)))
+              (integerp (rp-evlt (pp-lists-to-term-p+ lst) a)))
      :hints (("goal"
               :do-not-induct t
               :induct (pp-lists-to-term-p+ lst)
@@ -1593,8 +1600,8 @@
    (defthm integerp-of-eval-of-pp-lists-to-term-forward-chaining
      (implies (and (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a)))
-              (integerp (rp-evl (pp-lists-to-term-p+ lst) a)))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a)))
+              (integerp (rp-evlt (pp-lists-to-term-p+ lst) a)))
      :rule-classes :forward-chaining
      :hints (("goal"
               :in-theory (e/d (pp-lists-to-term-p+) ()))))))
@@ -1602,10 +1609,10 @@
 (local
  (defthm pp-lists-to-term-of-apply-sign-to-pp-lists
    (implies (and (pp-flatten-formula-checks state)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a))
                  (rp-evl-meta-extract-global-facts))
-            (equal (rp-evl (pp-lists-to-term-p+ (apply-sign-to-pp-lists lst t)) a)
-                   (-- (rp-evl (pp-lists-to-term-p+ lst) a))))
+            (equal (rp-evlt (pp-lists-to-term-p+ (apply-sign-to-pp-lists lst t)) a)
+                   (-- (rp-evlt (pp-lists-to-term-p+ lst) a))))
    :hints (("goal"
             :do-not-induct t
             :induct (pp-lists-to-term-p+ lst)
@@ -1620,11 +1627,11 @@
  (defthm pp-lists-to-term-of-append
    (implies (and (pp-flatten-formula-checks state)
                  (rp-evl-meta-extract-global-facts)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a))
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a)))
-            (equal (rp-evl (pp-lists-to-term-p+ (append lst1 lst2)) a)
-                   (pp-sum (rp-evl (pp-lists-to-term-p+ lst1) a)
-                           (rp-evl (pp-lists-to-term-p+ lst2) a))))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a)))
+            (equal (rp-evlt (pp-lists-to-term-p+ (append lst1 lst2)) a)
+                   (pp-sum (rp-evlt (pp-lists-to-term-p+ lst1) a)
+                           (rp-evlt (pp-lists-to-term-p+ lst2) a))))
    :hints (("goal"
             :induct (pp-lists-to-term-p+ lst1)
             :do-not-induct t
@@ -1661,9 +1668,9 @@
  (defthm bit-list-listp-of-apply-sign-to-pp-lists
    (implies (and (pp-flatten-formula-checks state)
                  (rp-evl-meta-extract-global-facts)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a)))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a)))
             (bit-list-listp
-             (rp-evl-lst-lst
+             (rp-evlt-lst-lst
               (strip-cdrs (apply-sign-to-pp-lists lst1
                                                   sign))
               a)))
@@ -1674,11 +1681,11 @@
  (defthmd sign-convert-apply-sign-to-pp-lists
    (implies (and (pp-flatten-formula-checks state)
                  (rp-evl-meta-extract-global-facts)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a)))
-            (equal (rp-evl (pp-lists-to-term-p+
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a)))
+            (equal (rp-evlt (pp-lists-to-term-p+
                             (apply-sign-to-pp-lists lst t))
                            a)
-                   (-- (rp-evl (pp-lists-to-term-p+
+                   (-- (rp-evlt (pp-lists-to-term-p+
                                 (apply-sign-to-pp-lists lst nil))
                                a))))
    :hints (("goal"
@@ -1780,17 +1787,17 @@
 
    (defthm eval-of-list-to-term-of-merge-sorted-and$-list
      (implies (and (pp-flatten-formula-checks state)
-                   (force (bit-listp (rp-evl-lst lst1 a)))
-                   (force (bit-listp (rp-evl-lst lst2 a)))
+                   (force (bit-listp (rp-evlt-lst lst1 a)))
+                   (force (bit-listp (rp-evlt-lst lst2 a)))
                    (force (true-listp lst1))
                    (force (true-listp lst2))
                    (rp-evl-meta-extract-global-facts))
-              (equal (rp-evl
+              (equal (rp-evlt
                       (pp-lists-to-term-and$
                        (merge-sorted-and$-lists lst1 lst2))
                       a)
-                     (and$ (rp-evl (pp-lists-to-term-and$ lst1) a)
-                           (rp-evl (pp-lists-to-term-and$ lst2) a))))
+                     (and$ (rp-evlt (pp-lists-to-term-and$ lst1) a)
+                           (rp-evlt (pp-lists-to-term-and$ lst2) a))))
      :hints (("Goal"
               :induct (MERGE-SORTED-AND$-LISTS lst1 lst2)
               :do-not-induct t
@@ -1815,9 +1822,9 @@
                        (PP-LISTS-TO-TERM-AND$ LST1)))))
 
    (defthm bit-listp-of-merge-sorted-and$-lists
-     (implies (and (bit-listp (rp-evl-lst lst1 a))
-                   (bit-listp (rp-evl-lst lst2 a)))
-              (bit-listp (rp-evl-lst (MERGE-SORTED-AND$-LISTS LST1 lst2)
+     (implies (and (bit-listp (rp-evlt-lst lst1 a))
+                   (bit-listp (rp-evlt-lst lst2 a)))
+              (bit-listp (rp-evlt-lst (MERGE-SORTED-AND$-LISTS LST1 lst2)
                                      a)))
      :hints (("Goal"
               :do-not-induct t
@@ -1834,8 +1841,8 @@
    (local
     (defthm bitp-bitlistp-lemma
       (IMPLIES (AND (consp lst)
-                    (BIT-LISTP (RP-EVL-LST LST A)))
-               (BITP (RP-EVL (CAR LST) A)))
+                    (BIT-LISTP (RP-EVLT-LST LST A)))
+               (BITP (RP-EVLT (CAR LST) A)))
       :hints (("Goal"
                :in-theory (e/d (bitp bit-listp) ())))))
 
@@ -1849,12 +1856,12 @@
                :in-theory (e/d (len bitp bit-listp) ())))))
 
    (defthm bit-listp-of-CUT-LIST-BY-HALF
-     (implies (and (bit-listp (rp-evl-lst lst a))
+     (implies (and (bit-listp (rp-evlt-lst lst a))
                    (< size (len lst)))
-              (and (bit-listp (rp-evl-lst (MV-NTH 0
+              (and (bit-listp (rp-evlt-lst (MV-NTH 0
                                                   (CUT-LIST-BY-HALF LST size))
                                           a))
-                   (bit-listp (rp-evl-lst (MV-NTH 1
+                   (bit-listp (rp-evlt-lst (MV-NTH 1
                                                   (CUT-LIST-BY-HALF LST size))
                                           a))))
      :hints (("Goal"
@@ -1865,13 +1872,13 @@
                               (bitp)))))
 
    (defthm bit-list-listp-of-CUT-LIST-BY-HALF
-     (implies (and (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a))
+     (implies (and (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a))
                    (< size (len lst)))
-              (and (bit-list-listp (rp-evl-lst-lst (strip-cdrs
+              (and (bit-list-listp (rp-evlt-lst-lst (strip-cdrs
                                                     (MV-NTH 0
                                                             (CUT-LIST-BY-HALF LST size)))
                                                    a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs (MV-NTH 1
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs (MV-NTH 1
                                                                        (CUT-LIST-BY-HALF LST size)))
                                                    a))))
      :hints (("Goal"
@@ -1893,19 +1900,19 @@
 
    (defthm eval-of-CUT-LIST-BY-HALF
      (implies (and (pp-flatten-formula-checks state)
-                   (force (bit-listp (rp-evl-lst lst a)))
+                   (force (bit-listp (rp-evlt-lst lst a)))
                    (force (true-listp lst))
                    (force (< size (len lst)))
                    (rp-evl-meta-extract-global-facts))
-              (equal (AND$ (RP-EVL (PP-LISTS-TO-TERM-AND$
+              (equal (AND$ (RP-EVLT (PP-LISTS-TO-TERM-AND$
                                     (MV-NTH 0
                                             (CUT-LIST-BY-HALF LST size)))
                                    A)
-                           (RP-EVL (PP-LISTS-TO-TERM-AND$
+                           (RP-EVLT (PP-LISTS-TO-TERM-AND$
                                     (MV-NTH 1
                                             (CUT-LIST-BY-HALF LST size)))
                                    A))
-                     (RP-EVL (PP-LISTS-TO-TERM-AND$
+                     (RP-EVLT (PP-LISTS-TO-TERM-AND$
                               lst)
                              A)))
      :hints (("Goal"
@@ -1926,19 +1933,19 @@
 
    (defthm eval-of-CUT-LIST-BY-HALF-with-pp-sum
      (implies (and (pp-flatten-formula-checks state)
-                   (force (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a)))
+                   (force (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a)))
                    (force (pp-lists-p lst))
                    (force (< size (len lst)))
                    (rp-evl-meta-extract-global-facts))
-              (equal (pp-sum (RP-EVL (PP-LISTS-TO-TERM-p+
+              (equal (pp-sum (RP-EVLT (PP-LISTS-TO-TERM-p+
                                       (MV-NTH 0
                                               (CUT-LIST-BY-HALF LST size)))
                                      A)
-                             (RP-EVL (PP-LISTS-TO-TERM-p+
+                             (RP-EVLT (PP-LISTS-TO-TERM-p+
                                       (MV-NTH 1
                                               (CUT-LIST-BY-HALF LST size)))
                                      A))
-                     (RP-EVL (PP-LISTS-TO-TERM-p+
+                     (RP-EVLT (PP-LISTS-TO-TERM-p+
                               lst)
                              A)))
      :hints (("Goal"
@@ -1962,8 +1969,8 @@
 
 (local
  (defthm bit-listp-of-sort-and$-list
-   (implies (bit-listp (rp-evl-lst lst a))
-            (and (bit-listp (rp-evl-lst (sort-and$-list LST size)
+   (implies (bit-listp (rp-evlt-lst lst a))
+            (and (bit-listp (rp-evlt-lst (sort-and$-list LST size)
                                         a))))
    :hints (("Goal"
             :do-not-induct t
@@ -1978,18 +1985,19 @@
 (local
  (defthm eval-of-list-to-term-of-sort-and$-list
    (implies (and (pp-flatten-formula-checks state)
-                 (bit-listp (rp-evl-lst lst a))
+                 (bit-listp (rp-evlt-lst lst a))
                  (true-listp lst)
                  (rp-evl-meta-extract-global-facts))
-            (equal (rp-evl
+            (equal (rp-evlt
                     (pp-lists-to-term-and$
                      (sort-and$-list lst len))
                     a)
-                   (rp-evl (pp-lists-to-term-and$ lst) a)))
+                   (rp-evlt (pp-lists-to-term-and$ lst) a)))
    :hints (("Goal"
             :do-not-induct t
             :induct (sort-and$-list lst len)
-            :in-theory (e/d (sort-and$-list)
+            :in-theory (e/d (sort-and$-list
+                             )
                             (floor
                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                              (:DEFINITION TRUE-LISTP)
@@ -2000,7 +2008,6 @@
                              (:DEFINITION PP-LISTS-P)
                              (:DEFINITION ACL2::APPLY$-BADGEP)
                              (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
-                             (:DEFINITION QUOTEP)
                              (:REWRITE IS-IF-RP-TERMP)
                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                              (:DEFINITION SUBSETP-EQUAL)
@@ -2124,18 +2131,18 @@
                (equal lst1 lst2)
                (pp-flatten-formula-checks state)
                (rp-evl-meta-extract-global-facts)
-               (bit-listp (rp-evl-lst lst1 a))
-               (bit-listp (rp-evl-lst lst2 a))
+               (bit-listp (rp-evlt-lst lst1 a))
+               (bit-listp (rp-evlt-lst lst2 a))
                (true-listp lst1)
                (true-listp lst2))
-              (and (equal (PP-SUM (RP-EVL (pp-lists-to-term-and$ LST1)
+              (and (equal (PP-SUM (RP-EVLT (pp-lists-to-term-and$ LST1)
                                           A)
-                                  (-- (RP-EVL (pp-lists-to-term-and$ LST2)
+                                  (-- (RP-EVLT (pp-lists-to-term-and$ LST2)
                                               A)))
                           0)
-                   (equal (PP-SUM (-- (RP-EVL (pp-lists-to-term-and$ LST1)
+                   (equal (PP-SUM (-- (RP-EVLT (pp-lists-to-term-and$ LST1)
                                               A))
-                                  (RP-EVL (pp-lists-to-term-and$ LST2)
+                                  (RP-EVLT (pp-lists-to-term-and$ LST2)
                                           A))
                           0)))
      :hints (("Goal"
@@ -2155,13 +2162,13 @@
      (implies (and (two-pp-list-cancel-each-other lst1 lst2)
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a))
                    (pp-lists-p lst1)
                    (pp-lists-p lst2))
-              (equal (PP-SUM (RP-EVL (PP-LISTS-TO-TERM-P+ LST1)
+              (equal (PP-SUM (RP-EVLT (PP-LISTS-TO-TERM-P+ LST1)
                                      A)
-                             (RP-EVL (PP-LISTS-TO-TERM-P+ LST2)
+                             (RP-EVLT (PP-LISTS-TO-TERM-P+ LST2)
                                      A))
                      0))
      :hints (("Goal"
@@ -2174,11 +2181,11 @@
      (implies (and (two-pp-list-cancel-each-other lst1 lst2)
                    (pp-flatten-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a))
                    (pp-lists-p lst1)
                    (pp-lists-p lst2))
-              (equal (RP-EVL (PP-LISTS-TO-TERM-P+
+              (equal (RP-EVLT (PP-LISTS-TO-TERM-P+
                               (merge-sorted-pp-lists
                                lst1 LST2))
                              A)
@@ -2209,17 +2216,17 @@
 
    (defthm eval-of-list-to-term-of-merge-sorted-pp-lists
      (implies (and (pp-flatten-formula-checks state)
-                   (force (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a)))
-                   (force (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a)))
+                   (force (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a)))
+                   (force (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a)))
                    (force (pp-lists-p lst1))
                    (force (pp-lists-p lst2))
                    (rp-evl-meta-extract-global-facts))
-              (equal (rp-evl
+              (equal (rp-evlt
                       (pp-lists-to-term-p+
                        (merge-sorted-pp-lists lst1 lst2))
                       a)
-                     (pp-sum (rp-evl (pp-lists-to-term-p+ lst1) a)
-                             (rp-evl (pp-lists-to-term-p+ lst2) a))))
+                     (pp-sum (rp-evlt (pp-lists-to-term-p+ lst1) a)
+                             (rp-evlt (pp-lists-to-term-p+ lst2) a))))
      :hints (("Goal"
               :induct (merge-sorted-pp-lists lst1 lst2)
               :do-not-induct t
@@ -2247,9 +2254,9 @@
                        (PP-LISTS-TO-TERM-P+ LST2)))))
 
    (defthm bit-list-list-of-merge-sorted-pp-lists
-     (implies (and (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a)))
-              (bit-list-listp (rp-evl-lst-lst (strip-cdrs (merge-sorted-pp-lists LST1 lst2))
+     (implies (and (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a)))
+              (bit-list-listp (rp-evlt-lst-lst (strip-cdrs (merge-sorted-pp-lists LST1 lst2))
                                               a)))
      :hints (("Goal"
               :do-not-induct t
@@ -2262,9 +2269,9 @@
 
 (local
  (defthm bit-list-listp-of-sort-pp-lists
-   (implies (and (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a))
+   (implies (and (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a))
                  (pp-lists-p lst))
-            (bit-list-listp (rp-evl-lst-lst (strip-cdrs (sort-pp-lists lst
+            (bit-list-listp (rp-evlt-lst-lst (strip-cdrs (sort-pp-lists lst
                                                                        size))
                                             a)))
    :hints (("Goal"
@@ -2276,11 +2283,11 @@
 (local
  (defthm eval-of-sort-pp-lists-is-correct
    (implies (and (pp-flatten-formula-checks state)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst) a))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst) a))
                  (pp-lists-p lst)
                  (rp-evl-meta-extract-global-facts))
-            (equal (rp-evl (pp-lists-to-term-p+ (sort-pp-lists lst size)) a)
-                   (rp-evl (pp-lists-to-term-p+ lst) a)))
+            (equal (rp-evlt (pp-lists-to-term-p+ (sort-pp-lists lst size)) a)
+                   (rp-evlt (pp-lists-to-term-p+ lst) a)))
    :hints (("Goal"
             :do-not-induct t
             :induct (sort-pp-lists lst size)
@@ -2481,17 +2488,17 @@
    (defthm and$-pp-lists-aux-returns-bit-list-listp
      (implies (and (pp-flatten-formula-checks state)
                    (booleanp sign)
-                   (bit-listp (rp-evl-lst cur a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs acc) a))
+                   (bit-listp (rp-evlt-lst cur a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs acc) a))
                    (rp-evl-meta-extract-global-facts))
               (bit-list-listp
-               (rp-evl-lst-lst (strip-cdrs (and$-pp-lists-aux cur lst2 acc sign))
+               (rp-evlt-lst-lst (strip-cdrs (and$-pp-lists-aux cur lst2 acc sign))
                                a)))
      :hints (("goal"
               :do-not-induct t
               :induct (and$-pp-lists-aux cur lst2 acc sign)
-              :in-theory (e/d (rp-evl-lst-lst
+              :in-theory (e/d (rp-evlt-lst-lst
                                and$-pp-lists
                                and$-pp-lists-aux
                                pp-term-to-pp-lists
@@ -2499,17 +2506,17 @@
 
    (defthm and$-pp-lists-returns-bit-list-listp
      (implies (and (pp-flatten-formula-checks state)
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a))
-                   (bit-list-listp (rp-evl-lst-lst (strip-cdrs acc) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a))
+                   (bit-list-listp (rp-evlt-lst-lst (strip-cdrs acc) a))
                    (rp-evl-meta-extract-global-facts))
               (bit-list-listp
-               (rp-evl-lst-lst (strip-cdrs (and$-pp-lists lst1 lst2 acc sign))
+               (rp-evlt-lst-lst (strip-cdrs (and$-pp-lists lst1 lst2 acc sign))
                                a)))
      :hints (("goal"
               :do-not-induct t
               :induct (and$-pp-lists lst1 lst2 acc sign)
-              :in-theory (e/d (rp-evl-lst-lst
+              :in-theory (e/d (rp-evlt-lst-lst
                                and$-pp-lists
                                and$-pp-lists-aux
                                pp-term-to-pp-lists
@@ -2522,12 +2529,12 @@
                    (valid-sc term a)
                    (rp-evl-meta-extract-global-facts))
               (bit-list-listp
-               (rp-evl-lst-lst (strip-cdrs (pp-term-to-pp-lists term sign))
+               (rp-evlt-lst-lst (strip-cdrs (pp-term-to-pp-lists term sign))
                                a)))
      :hints (("goal"
               :do-not-induct t
               :induct (pp-term-to-pp-lists term sign)
-              :in-theory (e/d (rp-evl-lst-lst
+              :in-theory (e/d (rp-evlt-lst-lst
                                pp-term-to-pp-lists
                                bit-list-listp) ()))))))
 
@@ -2791,12 +2798,12 @@
    (implies (and (pp-flatten-formula-checks state)
                  (rp-evl-meta-extract-global-facts)
                  (pp-lists-p lst2)
-                 (bit-listp (rp-evl-lst cur a))
+                 (bit-listp (rp-evlt-lst cur a))
                  (true-listp cur)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a)))
-            (equal (rp-evl (pp-lists-to-term-p+ (and$-pp-lists-aux cur lst2 nil nil)) a)
-                   (times$ (rp-evl (pp-lists-to-term-and$ cur) a)
-                           (rp-evl (pp-lists-to-term-p+ lst2) a))))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a)))
+            (equal (rp-evlt (pp-lists-to-term-p+ (and$-pp-lists-aux cur lst2 nil nil)) a)
+                   (times$ (rp-evlt (pp-lists-to-term-and$ cur) a)
+                           (rp-evlt (pp-lists-to-term-p+ lst2) a))))
    :hints (("goal"
             :induct (and$-pp-lists-aux cur lst2 nil nil)
             :do-not-induct t
@@ -2824,11 +2831,11 @@
                  (rp-evl-meta-extract-global-facts)
                  (pp-lists-p lst1)
                  (pp-lists-p lst2)
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst2) a))
-                 (bit-list-listp (rp-evl-lst-lst (strip-cdrs lst1) a)))
-            (equal (rp-evl (pp-lists-to-term-p+ (and$-pp-lists lst1 lst2 nil nil)) a)
-                   (times$ (rp-evl (pp-lists-to-term-p+ lst1) a)
-                           (rp-evl (pp-lists-to-term-p+ lst2) a))))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst2) a))
+                 (bit-list-listp (rp-evlt-lst-lst (strip-cdrs lst1) a)))
+            (equal (rp-evlt (pp-lists-to-term-p+ (and$-pp-lists lst1 lst2 nil nil)) a)
+                   (times$ (rp-evlt (pp-lists-to-term-p+ lst1) a)
+                           (rp-evlt (pp-lists-to-term-p+ lst2) a))))
    :hints (("goal"
             :induct (and$-pp-lists lst1 lst2 nil nol)
             :do-not-induct t
@@ -2845,18 +2852,18 @@
                              true-listp))))))
 
 ;; MAIN LEMMA1.
-(defthm rp-evl_of_pp-lists-to-term_of_pp-term-to-pp-lists
+(defthm rp-evlt_of_pp-lists-to-term_of_pp-term-to-pp-lists
   (implies (and (pp-flatten-formula-checks state)
                 (pp-term-p term)
                 (booleanp sign)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
-           (equal (rp-evl (pp-lists-to-term-p+
+           (equal (rp-evlt (pp-lists-to-term-p+
                            (pp-term-to-pp-lists term sign))
                           a)
                   (if sign
-                      (-- (rp-evl term a))
-                    (rp-evl term a))))
+                      (-- (rp-evlt term a))
+                    (rp-evlt term a))))
   :hints (("goal"
            :do-not-induct t
            :induct (pp-term-to-pp-lists term sign)
@@ -2895,8 +2902,8 @@
   (implies (and (pp-flatten-formula-checks state)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
-           (equal (rp-evl (flatten-pp-main term) a)
-                  (rp-evl term a)))
+           (equal (rp-evlt (flatten-pp-main term) a)
+                  (rp-evlt term a)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (flatten-pp-main

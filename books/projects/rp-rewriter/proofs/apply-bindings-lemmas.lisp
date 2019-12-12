@@ -119,6 +119,60 @@
     :hints (("Goal"
              :in-theory (e/d (IS-RP-IMPLIES-FC is-rp) (FALIST-CONSISTENT))))))
 
+
+
+(defthm rp-evlt-cons
+  (implies (and (case-split (is-falist (cons x y))))
+           (equal (rp-evl (rp-trans (cons x y)) a)
+                  (rp-evl (rp-trans (cadr y)) a))))
+
+
+(encapsulate
+  nil
+
+  (defun rp-trans-bindings (bindings)
+    (if (atom bindings)
+        nil
+      (acons (caar bindings)
+             (rp-trans (cdar bindings))
+             (rp-trans-bindings (cdr bindings)))))
+  (local
+   (defthm lemma1
+     (implies (alistp bindings)
+              (equal (CONSP (ASSOC-EQUAL TERM (RP-TRANS-BINDINGS BINDINGS)))
+                     (CONSP (ASSOC-EQUAL TERM BINDINGS))))))
+
+  (local
+   (defthm lemma2
+     (IMPLIES (AND (ALISTP BINDINGS)
+                   (CONSP (ASSOC-EQUAL TERM BINDINGS)))
+              (EQUAL (RP-TRANS (CDR (ASSOC-EQUAL TERM BINDINGS)))
+                     (CDR (ASSOC-EQUAL TERM (RP-TRANS-BINDINGS BINDINGS)))))))
+
+  (defthm-apply-bindings
+    (defthm rp-trans-of-rp-apply-bindings
+      (implies (and (not (include-fnc term 'list*))
+                    (alistp bindings))
+               (equal (rp-evlt (rp-apply-bindings term bindings) a)
+                      (rp-evl (rp-apply-bindings term
+                                                 (rp-trans-bindings bindings))
+                              a)))
+      :flag rp-apply-bindings)
+    (defthm rp-trans-lst-of-rp-apply-bindings-subterms
+      (implies (and (not (include-fnc-subterms subterms 'list*))
+                    (alistp bindings))
+               (equal (rp-evlt-lst (rp-apply-bindings-subterms subterms
+                                                               bindings)
+                                   a)
+                      (rp-evl-lst (rp-apply-bindings-subterms subterms
+                                                              (rp-trans-bindings bindings))
+                                  a)))
+      :flag rp-apply-bindings-subterms)
+    :hints (("Goal"
+             :in-theory (e/d (rp-evl-of-fncall-args) ())))
+    :otf-flg t))
+
+
 (encapsulate
   nil
 
@@ -260,18 +314,16 @@
   (defthm-apply-bindings
     (defthm rp-apply-bindings-to-evl
       (implies (and (rp-termp term)
-                    ;(alistp a)
                     (bindings-alistp bindings))
-               (equal (rp-evl (rp-apply-bindings term bindings) a)
-                      (rp-evl term (bind-bindings bindings a))))
+               (and (equal (rp-evl (rp-apply-bindings term bindings) a)
+                           (rp-evl term (bind-bindings bindings a)))))
       :flag rp-apply-bindings)
 
     (defthm rp-apply-bindings-subterms-to-evl-lst
       (implies (and (rp-term-listp subterms)
-                    ;(alistp a)
                     (bindings-alistp bindings))
-               (equal (rp-evl-lst (rp-apply-bindings-subterms subterms bindings) a)
-                      (rp-evl-lst subterms (bind-bindings bindings a))))
+               (and (equal (rp-evl-lst (rp-apply-bindings-subterms subterms bindings) a)
+                           (rp-evl-lst subterms (bind-bindings bindings a)))))
       :flag rp-apply-bindings-subterms)
     :hints (("Goal"
              :expand ((RP-APPLY-BINDINGS TERM BINDINGS)
@@ -281,6 +333,10 @@
                                  rp-apply-bindings-subterms
                                  lambda-exp-free-p))))
     :otf-flg t))
+
+
+
+
 
 (defthm rp-apply-bindings-equiv-iff
   (implies (and (valid-rulep rule)
@@ -519,6 +575,16 @@
       :flag rp-apply-bindings-subterms)
     :hints (("Goal"
              :in-theory (e/d (is-rp) ())))))||#
+
+
+
+(defthm alistp-RP-TRANS-BINDINGS
+  (alistp (RP-TRANS-BINDINGS bindings)))
+
+
+(defthm RP-TERM-LISTP-STRIP-CDRS-RP-TRANS-BINDINGS
+  (implies (rp-term-listp (strip-cdrs bindings))
+           (rp-term-listp (strip-cdrs (rp-trans-bindings bindings)))))
 
 (encapsulate
   nil
@@ -766,13 +832,14 @@
                             a)
               (rp-termp term)
               (alistp a)
+              (not (include-fnc term 'list*))
               (bindings-alistp bindings)
-              (rp-evl (list (cadr (cadr term))
-                            (ex-from-rp (caddr term)))
-                      (append (bind-bindings-aux bindings a)
+              (rp-evlt (list (cadr (cadr term))
+                             (ex-from-rp (caddr term)))
+                      (append (bind-bindings-aux (rp-trans-bindings bindings) a)
                               a))
               (eval-and-all (context-from-rp (caddr term) nil)
-                            (append (bind-bindings-aux bindings a)
+                            (append (bind-bindings-aux (rp-trans-bindings bindings) a)
                                     a))
               (eval-and-all-lst (context-from-rp-bindings bindings)
                                 a))
@@ -797,9 +864,10 @@
                      (rp-termp term)
                      (alistp a)
                      (bindings-alistp bindings)
-                     
+                     (not (include-fnc term 'list*))
                      (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL)
-                                   (APPEND (BIND-BINDINGS-AUX BINDINGS A) A))
+                                   (APPEND (BIND-BINDINGS-AUX
+                                            (rp-trans-bindings bindings) A) A))
                      (eval-and-all-lst (context-from-rp-bindings bindings) a))
                 (EVAL-AND-ALL (CONTEXT-FROM-RP (rp-apply-bindings TERM bindings) NIL) a))
        :hints (("Goal"
@@ -835,44 +903,117 @@
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                                (:REWRITE VALID-SC-CONS)))))))
 
-  (defthm-valid-sc
-    (defthm rp-apply-bindings-to-valid-sc-with-different-a
-      (implies (and (rp-termp term)
-                    (alistp a)
-                    (valid-sc-bindings bindings a)
-                    (valid-sc term (bind-bindings bindings a))
-                    (bindings-alistp bindings))
-               (valid-sc (rp-apply-bindings term bindings) a))
-      :flag valid-sc)
 
-    (defthm rp-apply-bindings-to-valid-sc-with-different-a-subterms
-      (implies (and (rp-term-listp subterms)
-                    (alistp a)
-                    (valid-sc-subterms subterms (bind-bindings bindings a))
-                    (valid-sc-bindings bindings a)
-                    (bindings-alistp bindings))
-               (valid-sc-subterms (rp-apply-bindings-subterms subterms bindings) a))
-      :flag valid-sc-subterms)
-    :hints (("Goal"
-             :induct
-             (FLAG-VALID-SC FLAG TERM SUBTERMS (BIND-BINDINGS BINDINGS A))
-             :in-theory (e/d ()
-                             (EVL-OF-EXTRACT-FROM-RP
-                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                              (:DEFINITION ACL2::APPLY$-BADGEP)
-                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
-                              (:DEFINITION TRUE-LISTP)
-                              (:DEFINITION INCLUDE-FNC)
-                              (:DEFINITION RP-TERMP)
-                              VALID-SC-EX-FROM-RP-2)))))
+  (local
+   (mutual-recursion
+    (defun valid-sc-with-apply (term bindings a)
+      (declare (xargs
+                :measure (cons-count term)
+                :hints (("Goal"
+                               :in-theory (e/d (measure-lemmas) ())))))
+      (cond ((quotep term)
+             t)
+            ((atom term)
+             t #|(B*
+                 ((BINDING (ASSOC-EQUAL TERM BINDINGS))
+                  (RES
+                   (IF (CONSP BINDING)
+                       (valid-sc (CDR BINDING) a)
+                       t)))
+               res)||#)
+            ((is-synp term) ''t)
+            ((is-if term)
+             (AND (valid-sc-with-apply (cadr term) bindings a)
+                  (IF (rp-evlt (rp-apply-bindings (cadr term) bindings) a)
+                      (valid-sc-with-apply (caddr term) bindings a)
+                      (valid-sc-with-apply (CADDDR TERM) bindings A))))
+            ((is-rp term)
+             (and #|(eval-and-all (rp-apply-bindings-subterms (context-from-rp
+                                                             term nil)
+                                                            bindings)
+                                a)||#
+                  (valid-sc-with-apply (ex-from-rp term) bindings a)))
+            (t (valid-sc-with-apply-lst (cdr term) bindings a))))
+    (defun valid-sc-with-apply-lst (subterms bindings a)
+      (declare (xargs :measure (cons-count subterms)))
+      (cond ((atom subterms) t)
+            (t (and (valid-sc-with-apply (car subterms) bindings a)
+                    (valid-sc-with-apply-lst (cdr subterms)
+                                             bindings
+                                             a)))))))
+
+  (local
+   (make-flag valid-sc-with-apply :defthm-macro-name defthm-valid-sc-with-apply
+             :hints (("Goal"
+                      :in-theory (e/d (measure-lemmas) ())))))
+
+
+
+  (local
+   (defthm is-rp-apply-bindings
+     (implies (is-rp term)
+              (is-rp (RP-APPLY-BINDINGS TERM BINDINGS)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp
+                               is-synp) ())))))
+
+  
+  (local
+   (defthm include-fnc-lemma
+     (implies (and (NOT (INCLUDE-FNC TERM 'LIST*))
+                   (NOT (EQUAL (CAR TERM) 'QUOTE)))
+              (and (not (INCLUDE-FNC-SUBTERMS (CDR TERM) 'LIST*))
+                   (not (INCLUDE-FNC (CADR TERM) 'LIST*))
+                   (not (INCLUDE-FNC (CADDR TERM) 'LIST*))
+                   (not (INCLUDE-FNC (CADDDR TERM) 'LIST*))))))
+
+  (local
+   (defthm-valid-sc-with-apply
+     (defthm rp-apply-bindings-to-valid-sc-with-different-a
+       (implies (and (rp-termp term)
+                     (not (include-fnc term 'list*))
+                     (alistp a)
+                     (valid-sc-bindings bindings a)
+                     (valid-sc term (bind-bindings (rp-trans-bindings bindings) a))
+                     (bindings-alistp bindings))
+                (valid-sc (rp-apply-bindings term bindings) a))
+       :flag valid-sc-with-apply)
+
+     (defthm rp-apply-bindings-to-valid-sc-with-different-a-subterms
+       (implies (and (rp-term-listp subterms)
+                     (alistp a)
+                     (not (include-fnc-subterms subterms 'list*))
+                     (valid-sc-subterms subterms (bind-bindings (rp-trans-bindings bindings) a))
+                     (valid-sc-bindings bindings a)
+                     (bindings-alistp bindings))
+                (valid-sc-subterms (rp-apply-bindings-subterms subterms bindings) a))
+       :flag valid-sc-with-apply-lst)
+     :hints (("Goal"
+              :expand ((VALID-SC (RP-APPLY-BINDINGS TERM BINDINGS)
+                                 A)
+                       (:free (x y a) (VALID-SC (CONS x y) A)))
+              ;; :induct
+              ;;  (FLAG-VALID-SC FLAG TERM SUBTERMS (bind-bindings (rp-trans-bindings bindings) a))
+              :in-theory (e/d ()
+                              (EVL-OF-EXTRACT-FROM-RP
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                               (:DEFINITION TRUE-LISTP)
+                               (:DEFINITION INCLUDE-FNC)
+                               ;;valid-sc
+                               (:DEFINITION RP-TERMP)
+                               VALID-SC-EX-FROM-RP-2))))))
 
   (defthm valid-sc-apply-bindings-for-rhs
     (implies
      (and (valid-rulep rule)
+          (not (include-fnc (rp-hyp rule) 'list*))
+          (not (include-fnc (rp-rhs rule) 'list*))
           (alistp a)
           (valid-sc-bindings bindings a)
           (bindings-alistp bindings)
-          (rp-evl (rp-apply-bindings (rp-hyp rule) bindings) a))
+          (rp-evlt (rp-apply-bindings (rp-hyp rule) bindings) a))
      (valid-sc (rp-apply-bindings (rp-rhs rule) bindings) a))
     :otf-flg t
     :hints (("Goal"
@@ -881,10 +1022,10 @@
                    (:instance rp-apply-bindings-to-valid-sc-with-different-a
                               (term (rp-rhs rule)))
                    (:instance valid-rulep-sk-necc
-                              (a (bind-bindings bindings a)))
+                              (a (bind-bindings (rp-trans-bindings bindings) a)))
                    (:instance valid-sc-any-necc
                               (term (rp-rhs rule))
-                              (a (bind-bindings bindings a))))
+                              (a (bind-bindings (rp-trans-bindings bindings) a))))
              :do-not-induct t
              :in-theory (e/d (valid-rulep
                               rule-syntaxp)
@@ -899,3 +1040,28 @@
                               valid-rulep-sk-necc
                               valid-sc
                               valid-sc-any))))))
+
+
+
+
+(defthm rp-evlt-of-apply-bindings-to-evl
+  (implies (and (rp-termp term)
+                (not (include-fnc term 'list*))
+                (bindings-alistp bindings))
+           (and (equal (rp-evlt (rp-apply-bindings term bindings) a)
+                       (rp-evl term (bind-bindings (rp-trans-bindings bindings)
+                                                   a)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d () ()))))
+
+(defthm rp-evlt-lst-of-apply-bindings-to-evl-lst
+  (implies (and (rp-term-listp subterms)
+                (not (include-fnc-subterms subterms 'list*))
+                (bindings-alistp bindings))
+           (and (equal (rp-evlt-lst (rp-apply-bindings-subterms subterms bindings) a)
+                       (rp-evl-lst subterms (bind-bindings (rp-trans-bindings bindings)
+                                                   a)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d () ()))))

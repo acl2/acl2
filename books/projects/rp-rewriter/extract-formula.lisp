@@ -539,8 +539,9 @@
          "Something is wrong with the rewrite rule list format"
          nil))
        (- (fast-alist-free rule-fnc-alist))
-       (rules-alist (rule-list-to-alist rule-list)))
-    (to-fast-alist rules-alist)))
+       (rules-alist (rule-list-to-alist rule-list))
+       (rules-alist (to-fast-alist rules-alist)))
+    rules-alist))
 
 #|(defun get-enabled-exec-rules (runes)
   ;; get the names of enabled executable counterpart rules

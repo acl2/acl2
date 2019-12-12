@@ -140,6 +140,7 @@
                          (not (booleanp type))
                          (not (equal type 'quote))
                          (not (equal type 'rp))
+                         (not (equal type 'list*))
                          (not (equal type 'falist))))
     (& nil))
   ///
@@ -261,7 +262,6 @@
      (and (lambda-exp-free-p (car subterms))
           (lambda-exp-free-listp (cdr subterms))))))
 
-
 (encapsulate
   nil
 
@@ -308,42 +308,46 @@
        t)
       (& nil)))
 
-  
 
   (defun is-falist (term)
     ;; checks if it is a falist statement?
     (declare (xargs :guard t))
     (case-match term (('falist & &) t) (& nil)))
 
-  #|(mutual-recursion
-   (defun all-falist-consistent (term)
-     ;; searches the term for (falist & &) and if found, checkes whether
-     ;; they're consistent.
-     (declare (xargs :guard t #|(rp-termp term)||#))
-     (cond
-      ((or (atom term)
-           (quotep term))
-       t)
-      ((is-falist term)
-       (and (falist-consistent term)
-            (all-falist-consistent (caddr term))))
-      (t (all-falist-consistent-lst (cdr term)))))
+  (defun is-falist-strict (term)
+    ;; checks if it is a falist statement?
+    (declare (xargs :guard t))
+    (case-match term (('falist ('quote &) &) t) (& nil)))
 
-   (defun all-falist-consistent-lst (lst)
-     (declare (xargs :guard t #|(rp-term-listp lst)||#))
-     (if (atom lst)
-         t
-       (and (all-falist-consistent (car lst))
-            (all-falist-consistent-lst (cdr lst))))))||#
+  #|(mutual-recursion
+  (defun all-falist-consistent (term)
+  ;; searches the term for (falist & &) and if found, checkes whether
+  ;; they're consistent.
+  (declare (xargs :guard t #|(rp-termp term)||#))
+  (cond
+  ((or (atom term)
+  (quotep term))
+  t)
+  ((is-falist term)
+  (and (falist-consistent term)
+  (all-falist-consistent (caddr term))))
+  (t (all-falist-consistent-lst (cdr term)))))
+
+  (defun all-falist-consistent-lst (lst)
+  (declare (xargs :guard t #|(rp-term-listp lst)||#))
+  (if (atom lst)
+  t
+  (and (all-falist-consistent (car lst))
+  (all-falist-consistent-lst (cdr lst))))))||#
 
   #|(defun all-falist-consistent-bindings (bindings)
-    ;; input is var-bindings;
-    ;; checks if the values are falist-consistent
-    (if (atom bindings)
-        t
-      (and (consp (car bindings))
-           (all-falist-consistent (cdar bindings))
-           (all-falist-consistent-bindings (cdr bindings)))))||#)
+  ;; input is var-bindings;
+  ;; checks if the values are falist-consistent
+  (if (atom bindings)
+  t
+  (and (consp (car bindings))
+  (all-falist-consistent (cdar bindings))
+  (all-falist-consistent-bindings (cdr bindings)))))||#)
 
 (encapsulate
   nil
@@ -395,7 +399,6 @@
         (equal lst nil)
       (and (rp-term-listp (car lst))
            (rp-term-list-listp (cdr lst))))))
-
 
 
 (defun falist-syntaxp (unquoted-falist)
@@ -455,7 +458,7 @@
 
   (defmacro bindings-alistp (bindings)
     `(and (alistp ,bindings)
-          ;(symbol-listp (strip-cars ,bindings))
+;(symbol-listp (strip-cars ,bindings))
           (rp-term-listp (strip-cdrs ,bindings)))))
 
 (defun cons-count (x)
@@ -534,13 +537,12 @@
     (declare (xargs :guard t #|(and (rp-termp term))||#))
     (case-match term (('rp & &) t) (& nil)))
 
-
   (define ex-from-falist (term)
     (case-match term
       (('falist & x)
        x)
-      (& term)))  
-  
+      (& term)))
+
   (defun ex-from-rp (term)
     (declare (xargs :guard t))
     (if (is-rp term)
@@ -864,7 +866,6 @@
               t))))
 
 
-
 (defun context-syntaxp (context)
   (declare (xargs :guard t))
   (and ;(cons-consp context) ;; may not be necessary anymore.
@@ -1110,7 +1111,6 @@
        (and (rp-equal-cnt (car subterm1) (car subterm2) cnt)
             (rp-equal-cnt-subterms (cdr subterm1) (cdr subterm2) cnt)))))
 
-
   (mutual-recursion
    ;; check if two terms are equivalent by discarding rp terms
    (defun p-rp-equal-cnt (term1 term2 cnt)
@@ -1215,7 +1215,10 @@
           (or (no-free-variablep rule)
               (and warning
                    (cw "ATTENTION! (no-free-variablep rule) failed! We do not
-    support rules with free variables ~%"))))
+    support rules with free variables ~%")))
+          (not (include-fnc (rp-lhs rule) 'list*))
+          (not (include-fnc (rp-hyp rule) 'list*))
+          (not (include-fnc (rp-rhs rule) 'list*)))
          (and (equal warning ':err)
               (hard-error
                'rule-syntaxp
@@ -1232,7 +1235,7 @@
                   (rp-hyp rule)
                   (rp-lhs rule)
                   (rp-rhs rule))))))
-  
+
   (defun rule-list-syntaxp (rules)
     (declare (xargs :guard t))
     (if (atom rules)
@@ -1444,7 +1447,6 @@
         (rp-beta-reduce (caddr (car term)) (cadar term) (cdr term))
       term)))
 
-
 (encapsulate
   nil
 
@@ -1514,7 +1516,6 @@
 
 
 
-
 (define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
                                     (disabled-meta-rules ))
   :guard-hints (("Goal"
@@ -1524,7 +1525,7 @@
         ((atom meta-rules)
          meta-rules)
         (t (b* ((entry (hons-assoc-equal (rp-meta-fnc (car meta-rules))
-                                    disabled-meta-rules)))
+                                         disabled-meta-rules)))
              (if (and (consp entry)
                       (cdr entry))
                  (remove-disabled-meta-rules (cdr meta-rules)
@@ -1532,8 +1533,6 @@
                (cons (car meta-rules)
                      (remove-disabled-meta-rules (cdr meta-rules)
                                                  disabled-meta-rules)))))))
-
-
 
 
 
@@ -1556,7 +1555,7 @@
       (if (consp mapping)
           (cdr mapping)
         fn)))
-  
+
   (defmacro add-rp-rule (rule-name &optional (disabled 'nil))
     `(make-event
       (b* ((rune (get-rune-name ',rule-name state))
@@ -1564,9 +1563,9 @@
         `(progn
            (table rp-rules-inorder ',rune nil)
            (table rp-rules ',rune ,,(not disabled))))))
-  
+
   #|(defmacro add-rp-exc-counterpart (fnc-name)
-    `(add-rp-rule '(:executable-counterpart ,fnc-name)))||#
+  `(add-rp-rule '(:executable-counterpart ,fnc-name)))||#
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(progn
@@ -1581,3 +1580,68 @@
        (add-rp-rule ,rule-name ,disabled))))
 
 
+
+(defun trans-list* (lst)
+  (declare (xargs :guard t))
+  (if (atom lst)
+      nil
+    (if (atom (cdr lst))
+        (car lst)
+      `(cons ,(car lst) ,(trans-list* (cdr lst))))))
+      
+    
+
+(progn
+  (mutual-recursion
+   (defun rp-trans (term)
+     (cond ((atom term)
+            term)
+           ((quotep term)
+            term)
+           ((and (equal (car term) 'list*)
+                 (consp (cdr term)))
+            (trans-list* (rp-trans-lst (cdr term))))
+           ((and (is-falist term))
+            (rp-trans (caddr term)))
+           (t (cons (car term)
+                    (rp-trans-lst (cdr term))))))
+   (defun rp-trans-lst (lst)
+     (if (atom lst)
+         nil
+       (cons (rp-trans (car lst))
+             (rp-trans-lst (cdr lst))))))
+
+  (make-flag rp-trans :defthm-macro-name defthm-rp-trans)
+
+  (local
+   (defthm rp-trans-lst-consp
+     (equal (consp (rp-trans-lst lst))
+            (consp lst))
+     :hints (("Goal"
+              :induct (len lst)
+              :in-theory (e/d () ())))))
+
+  (verify-guards rp-trans))
+
+(mutual-recursion
+ (defun rp-untrans (term)
+   (declare (xargs :guard t))
+   (cond ((atom term)
+          term)
+         ((quotep term)
+          term)
+         ((is-cons term)
+          (b* ((a (rp-untrans (cadr term)))
+               (b (rp-untrans (caddr term))))
+            (case-match b
+              (('list* . rest)
+               `(list* ,a . ,rest))
+              (&
+               `(list* ,a ,b)))))
+         (t (cons (car term)
+                  (rp-untrans-lst (cdr term))))))
+ (defun rp-untrans-lst (lst)
+   (if (atom lst)
+       nil
+     (cons (rp-untrans (car lst))
+           (rp-untrans-lst (cdr lst))))))

@@ -332,6 +332,11 @@
      resolve-adder-and-order
      resolve-adder-sum-order)))
 
+
+(local
+ (in-theory (disable rp-trans
+                     rp-evlt-of-ex-from-rp)))
+
 (local
  (progn
    #|(defthm rp-syntaxp-resolve-adder-and-order-rec
@@ -465,12 +470,13 @@
               :in-theory (e/d (and$) ())))))
 
   (local
-   (defthmd rp-evl-ex-from-rp-reverse
+   (defthmd rp-evlt-ex-from-rp-reverse
      (implies (syntaxp (atom x))
-              (equal (rp-evl x a)
-                     (rp-evl (ex-from-rp x) a)))
+              (equal (rp-evlt x a)
+                     (rp-evlt (ex-from-rp x) a)))
      :hints (("Goal"
-              :in-theory (e/d (is-rp) ())))))
+              :in-theory (e/d (is-rp
+                               rp-evlt-of-ex-from-rp) ())))))
 
   (local
    (defthmd eval-of-adder-and-1
@@ -481,11 +487,11 @@
                    (CONSP (CDR y))
                    (CONSP (CDDR y))
                    (NOT (CDDDR y)))
-              (equal (rp-evl y a)
-                     (adder-and (RP-EVL (CADR y) A)
-                                (RP-EVL (CADDR y) A))))
+              (equal (rp-evlt y a)
+                     (adder-and (RP-EVLT (CADR y) A)
+                                (RP-EVLT (CADDR y) A))))
      :hints (("Goal"
-              :in-theory (e/d ( )
+              :in-theory (e/d ( rp-trans)
                               (ex-from-rp))))))
 
   (local
@@ -497,11 +503,12 @@
                    (CONSP (CDR (EX-FROM-RP Y)))
                    (CONSP (CDDR (EX-FROM-RP Y)))
                    (NOT (CDDDR (EX-FROM-RP Y))))
-              (equal (rp-evl y a)
-                     (adder-and (RP-EVL (CADR (EX-FROM-RP Y)) A)
-                                (RP-EVL (CADDR (EX-FROM-RP Y)) A))))
+              (equal (rp-evlt y a)
+                     (adder-and (RP-EVLT (CADR (EX-FROM-RP Y)) A)
+                                (RP-EVLT (CADDR (EX-FROM-RP Y)) A))))
      :hints (("Goal"
-              :in-theory (e/d (rp-evl-ex-from-rp-reverse
+              :in-theory (e/d (rp-evlt-ex-from-rp-reverse
+                               rp-trans
                                eval-of-adder-and-1)
                               (ex-from-rp))))))
 
@@ -509,20 +516,22 @@
    (defthm rp-evl-resolve-adder-and-order-rec
      (implies (and (adder-rule-formula-checks state)
                    (rp-evl-meta-extract-global-facts :state state))
-              (equal (rp-evl (mv-nth 0 (resolve-adder-and-order-rec x y)) a)
-                     (adder-and (rp-evl x a)
-                                (rp-evl y a))))
+              (equal (rp-evlt (mv-nth 0 (resolve-adder-and-order-rec x y)) a)
+                     (adder-and (rp-evlt x a)
+                                (rp-evlt y a))))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-and-order-rec
+                               rp-trans
                                adder-and) ())))))
 
   (defthm rp-evl-resolve-adder-and-order
     (implies (and (adder-rule-formula-checks state)
                   (rp-evl-meta-extract-global-facts :state state))
-             (equal (rp-evl (mv-nth 0 (resolve-adder-and-order x)) a)
-                    (rp-evl x a)))
+             (equal (rp-evlt (mv-nth 0 (resolve-adder-and-order x)) a)
+                    (rp-evlt x a)))
     :hints (("Goal"
              :in-theory (e/d (resolve-adder-and-order
+                              rp-trans
                               merge-adder-and) ())))))
 
 (encapsulate
@@ -538,12 +547,13 @@
               :in-theory (e/d (sum) ())))))
 
   (local
-   (defthmd rp-evl-ex-from-rp-reverse
+   (defthmd rp-evlt-ex-from-rp-reverse
      (implies (syntaxp (atom x))
-              (equal (rp-evl x a)
-                     (rp-evl (ex-from-rp x) a)))
+              (equal (rp-evlt x a)
+                     (rp-evlt (ex-from-rp x) a)))
      :hints (("Goal"
-              :in-theory (e/d (is-rp) ())))))
+              :in-theory (e/d (is-rp
+                               rp-evlt-of-ex-from-rp) ())))))
 
   (local
    (in-theory (enable
@@ -559,11 +569,11 @@
                    (CONSP (CDR y))
                    (CONSP (CDDR y))
                    (NOT (CDDDR y)))
-              (equal (rp-evl y a)
-                     (adder-sum (RP-EVL (CADR y) A)
-                                (RP-EVL (CADDR y) A))))
+              (equal (rp-evlt y a)
+                     (adder-sum (RP-EVLT (CADR y) A)
+                                (RP-EVLT (CADDR y) A))))
      :hints (("Goal"
-              :in-theory (e/d ( )
+              :in-theory (e/d ( rp-trans)
                               (ex-from-rp
                                adder-sum))))))
 
@@ -576,32 +586,35 @@
                    (CONSP (CDR (EX-FROM-RP Y)))
                    (CONSP (CDDR (EX-FROM-RP Y)))
                    (NOT (CDDDR (EX-FROM-RP Y))))
-              (equal (rp-evl y a)
-                     (adder-sum (RP-EVL (CADR (EX-FROM-RP Y)) A)
-                                (RP-EVL (CADDR (EX-FROM-RP Y)) A))))
+              (equal (rp-evlt y a)
+                     (adder-sum (RP-EVLT (CADR (EX-FROM-RP Y)) A)
+                                (RP-EVLT (CADDR (EX-FROM-RP Y)) A))))
      :hints (("Goal"
-              :in-theory (e/d (rp-evl-ex-from-rp-reverse
+              :in-theory (e/d (rp-evlt-ex-from-rp-reverse
+                               
                                eval-of-adder-sum-1)
                               (ex-from-rp))))))
 
   (local
-   (defthm rp-evl-resolve-adder-sum-order-rec
+   (defthm rp-evlt-resolve-adder-sum-order-rec
      (implies (and (adder-rule-formula-checks state)
                    (rp-evl-meta-extract-global-facts :state state))
-              (equal (rp-evl (mv-nth 0 (resolve-adder-sum-order-rec x y)) a)
-                     (adder-sum (rp-evl x a)
-                                (rp-evl y a))))
+              (equal (rp-evlt (mv-nth 0 (resolve-adder-sum-order-rec x y)) a)
+                     (adder-sum (rp-evlt x a)
+                                (rp-evlt y a))))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-sum-order-rec
+                               rp-trans
                                adder-sum) ())))))
 
   (defthm rp-evl-resolve-adder-sum-order
     (implies (and (adder-rule-formula-checks state)
                   (rp-evl-meta-extract-global-facts :state state))
-             (equal (rp-evl (mv-nth 0 (resolve-adder-sum-order x)) a)
-                    (rp-evl x a)))
+             (equal (rp-evlt (mv-nth 0 (resolve-adder-sum-order x)) a)
+                    (rp-evlt x a)))
     :hints (("Goal"
              :in-theory (e/d (resolve-adder-sum-order
+                              rp-trans
                               merge-adder-b+) ())))))
 
 (local
