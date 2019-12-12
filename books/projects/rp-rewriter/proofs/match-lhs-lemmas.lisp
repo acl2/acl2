@@ -1035,10 +1035,10 @@
           (implies (QUOTEP TERM)
                    (equal (rp-trans term)
                           term))
-          (implies (AND (EQUAL (CAR TERM) 'LIST*)
+          (implies (AND (EQUAL (CAR TERM) 'LIST)
                         (CONSP (CDR TERM)))
                    (equal (rp-trans term)
-                          (TRANS-LIST* (RP-TRANS-LST (CDR TERM))))))))
+                          (TRANS-LIST (RP-TRANS-LST (CDR TERM))))))))
 
   (local
    (defthm is-falist-fc
@@ -1105,7 +1105,7 @@
                                rp-evlt-of-ex-from-rp
                                ex-from-falist
                                (:TYPE-PRESCRIPTION IS-FALIST)
-                               trans-list*
+                               trans-list
                                is-falist
                                ex-from-rp))))))
 
@@ -1351,7 +1351,7 @@
    (defthmd rp-trans-opener-2
      (implies (and (consp x)
                    (not (equal (car x) 'quote))
-                   (not (equal (car x) 'list*))
+                   (not (equal (car x) 'list))
                    (not (is-falist x)))
               (equal (rp-trans x)
                      (CONS (CAR x)
@@ -1365,9 +1365,9 @@
    (defthm lemma6-lemma3
      (implies (and (equal (car (ex-from-rp (ex-from-falist term)))
                           (car rule-lhs))
-                   (not (include-fnc rule-lhs 'list*)))
+                   (not (include-fnc rule-lhs 'list)))
               (not (equal (car (ex-from-rp (ex-from-falist term)))
-                          'list*)))
+                          'list)))
      :rule-classes :forward-chaining))
 
   (local
@@ -1375,7 +1375,7 @@
      (implies
       (and (equal (car (ex-from-rp (ex-from-falist term)))
                   (car rule-lhs))
-           (not (include-fnc rule-lhs 'list*))
+           (not (include-fnc rule-lhs 'list))
            (rp-termp rule-lhs)
            (rp-termp term)
            (not (equal (car rule-lhs) 'quote))
@@ -1417,7 +1417,7 @@
         (implies (and valid-bindings
                       (bindings-alistp acc-bindings)
                       (not (include-fnc rule-lhs 'rp))
-                      (not (include-fnc rule-lhs 'list*))
+                      (not (include-fnc rule-lhs 'list))
                       (alistp a)
                       (not (include-fnc rule-lhs 'synp))
                       (rp-termp rule-lhs)
@@ -1433,7 +1433,7 @@
         (implies (and valid-bindings
                       (alistp a)
                       (not (include-fnc-subterms sublhs 'rp))
-                      (not (include-fnc-subterms sublhs 'list*))
+                      (not (include-fnc-subterms sublhs 'list))
                       (not (include-fnc-subterms sublhs 'synp))
                       (bindings-alistp acc-bindings)
                       (rp-term-listp sublhs)
@@ -1459,7 +1459,7 @@
      (implies (and valid-bindings
                    (bindings-alistp acc-bindings)
                    (not (include-fnc rule-lhs 'rp))
-                   (not (include-fnc rule-lhs 'list*))
+                   (not (include-fnc rule-lhs 'list))
                    (alistp a)
                    (not (include-fnc rule-lhs 'synp))
                    (rp-termp rule-lhs)

@@ -151,7 +151,7 @@
 
   (defthm-apply-bindings
     (defthm rp-trans-of-rp-apply-bindings
-      (implies (and (not (include-fnc term 'list*))
+      (implies (and (not (include-fnc term 'list))
                     (alistp bindings))
                (equal (rp-evlt (rp-apply-bindings term bindings) a)
                       (rp-evl (rp-apply-bindings term
@@ -159,7 +159,7 @@
                               a)))
       :flag rp-apply-bindings)
     (defthm rp-trans-lst-of-rp-apply-bindings-subterms
-      (implies (and (not (include-fnc-subterms subterms 'list*))
+      (implies (and (not (include-fnc-subterms subterms 'list))
                     (alistp bindings))
                (equal (rp-evlt-lst (rp-apply-bindings-subterms subterms
                                                                bindings)
@@ -832,7 +832,7 @@
                             a)
               (rp-termp term)
               (alistp a)
-              (not (include-fnc term 'list*))
+              (not (include-fnc term 'list))
               (bindings-alistp bindings)
               (rp-evlt (list (cadr (cadr term))
                              (ex-from-rp (caddr term)))
@@ -864,7 +864,7 @@
                      (rp-termp term)
                      (alistp a)
                      (bindings-alistp bindings)
-                     (not (include-fnc term 'list*))
+                     (not (include-fnc term 'list))
                      (EVAL-AND-ALL (CONTEXT-FROM-RP TERM NIL)
                                    (APPEND (BIND-BINDINGS-AUX
                                             (rp-trans-bindings bindings) A) A))
@@ -960,18 +960,18 @@
   
   (local
    (defthm include-fnc-lemma
-     (implies (and (NOT (INCLUDE-FNC TERM 'LIST*))
+     (implies (and (NOT (INCLUDE-FNC TERM 'LIST))
                    (NOT (EQUAL (CAR TERM) 'QUOTE)))
-              (and (not (INCLUDE-FNC-SUBTERMS (CDR TERM) 'LIST*))
-                   (not (INCLUDE-FNC (CADR TERM) 'LIST*))
-                   (not (INCLUDE-FNC (CADDR TERM) 'LIST*))
-                   (not (INCLUDE-FNC (CADDDR TERM) 'LIST*))))))
+              (and (not (INCLUDE-FNC-SUBTERMS (CDR TERM) 'LIST))
+                   (not (INCLUDE-FNC (CADR TERM) 'LIST))
+                   (not (INCLUDE-FNC (CADDR TERM) 'LIST))
+                   (not (INCLUDE-FNC (CADDDR TERM) 'LIST))))))
 
   (local
    (defthm-valid-sc-with-apply
      (defthm rp-apply-bindings-to-valid-sc-with-different-a
        (implies (and (rp-termp term)
-                     (not (include-fnc term 'list*))
+                     (not (include-fnc term 'list))
                      (alistp a)
                      (valid-sc-bindings bindings a)
                      (valid-sc term (bind-bindings (rp-trans-bindings bindings) a))
@@ -982,7 +982,7 @@
      (defthm rp-apply-bindings-to-valid-sc-with-different-a-subterms
        (implies (and (rp-term-listp subterms)
                      (alistp a)
-                     (not (include-fnc-subterms subterms 'list*))
+                     (not (include-fnc-subterms subterms 'list))
                      (valid-sc-subterms subterms (bind-bindings (rp-trans-bindings bindings) a))
                      (valid-sc-bindings bindings a)
                      (bindings-alistp bindings))
@@ -1008,8 +1008,8 @@
   (defthm valid-sc-apply-bindings-for-rhs
     (implies
      (and (valid-rulep rule)
-          (not (include-fnc (rp-hyp rule) 'list*))
-          (not (include-fnc (rp-rhs rule) 'list*))
+          (not (include-fnc (rp-hyp rule) 'list))
+          (not (include-fnc (rp-rhs rule) 'list))
           (alistp a)
           (valid-sc-bindings bindings a)
           (bindings-alistp bindings)
@@ -1046,7 +1046,7 @@
 
 (defthm rp-evlt-of-apply-bindings-to-evl
   (implies (and (rp-termp term)
-                (not (include-fnc term 'list*))
+                (not (include-fnc term 'list))
                 (bindings-alistp bindings))
            (and (equal (rp-evlt (rp-apply-bindings term bindings) a)
                        (rp-evl term (bind-bindings (rp-trans-bindings bindings)
@@ -1057,7 +1057,7 @@
 
 (defthm rp-evlt-lst-of-apply-bindings-to-evl-lst
   (implies (and (rp-term-listp subterms)
-                (not (include-fnc-subterms subterms 'list*))
+                (not (include-fnc-subterms subterms 'list))
                 (bindings-alistp bindings))
            (and (equal (rp-evlt-lst (rp-apply-bindings-subterms subterms bindings) a)
                        (rp-evl-lst subterms (bind-bindings (rp-trans-bindings bindings)

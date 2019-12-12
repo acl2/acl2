@@ -576,13 +576,13 @@
 
 
 (defthm eval-and-all-nt-is-eval-and-all
-  (implies (not (include-fnc-subterms lst 'list*))
+  (implies (not (include-fnc-subterms lst 'list))
            (equal (eval-and-all-nt lst a)
                   (eval-and-all lst a))))
 
 (defthm EVAL-AND-ALL-NT-of-context-from-rp
-  (implies (and (not (include-fnc-subterms context 'list*))
-                (not (include-fnc term 'list*)))
+  (implies (and (not (include-fnc-subterms context 'list))
+                (not (include-fnc term 'list)))
            (equal (EVAL-AND-ALL-NT (CONTEXT-FROM-RP TERM context) A)
                   (EVAL-AND-ALL (CONTEXT-FROM-RP TERM context) A)))
   :hints (("Goal"
@@ -595,12 +595,12 @@
          
 (defthm-valid-sc
   (defthm valid-sc-nt-is-valid-sc
-    (implies (not (include-fnc term 'list*))
+    (implies (not (include-fnc term 'list))
              (equal (valid-sc-nt term a)
                     (valid-sc term a)))
     :flag valid-sc)
   (defthm valid-sc-nt-subterms-valid-sc-subterms
-    (implies (not (include-fnc-subterms subterms 'list*))
+    (implies (not (include-fnc-subterms subterms 'list))
              (equal (valid-sc-nt-subterms subterms a)
                     (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
@@ -611,12 +611,12 @@
 
 
   
-(defthm rp-evl-of-trans-list*-lemma
-  (equal (rp-evl (trans-list* lst) a)
-         (rp-evl-of-trans-list* lst a))
+(defthm rp-evl-of-trans-list-lemma
+  (equal (rp-evl (trans-list lst) a)
+         (rp-evl-of-trans-list lst a))
   :hints (("Goal"
            :do-not-induct t
-           :induct (trans-list* lst)
+           :induct (trans-list lst)
            :in-theory (e/d () ()))))
 
 
@@ -631,22 +631,22 @@
             (two-cdr-induct (cdr x) (cdr y))))))
 
 (local
- (defthm rp-evl-of-trans-list*-lemma-3
+ (defthm rp-evl-of-trans-list-lemma-3
    (implies (and (not (consp x))
                  (not (rp-evl-lst y a)))
-            (not (rp-evl-of-trans-list* y a)))))
+            (not (rp-evl-of-trans-list y a)))))
 
 
-(defthm rp-evl-of-trans-list*-lemma-2
+(defthm rp-evl-of-trans-list-lemma-2
   (implies (equal (rp-evl-lst x a1)
                   (rp-evl-lst y a2))
-           (equal (equal (rp-evl-of-trans-list* x a1)
-                         (rp-evl-of-trans-list* y a2))
+           (equal (equal (rp-evl-of-trans-list x a1)
+                         (rp-evl-of-trans-list y a2))
                   t))
   :otf-flg t
   :hints (("goal"
            :do-not-induct t
            :induct (two-cdr-induct x y)
-           :in-theory (e/d (rp-evl-of-trans-list*) ()))))
+           :in-theory (e/d (rp-evl-of-trans-list) ()))))
 
-(in-theory (disable rp-evl-of-trans-list*))
+(in-theory (disable rp-evl-of-trans-list))

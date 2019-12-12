@@ -402,10 +402,10 @@
        (valid-sc term a)))
 
 
-(defun rp-evl-of-trans-list* (lst a)
+(defun rp-evl-of-trans-list (lst a)
      (if (atom lst)
-         (rp-evl nil a)
+         (rp-evl ''nil a)
        (if (atom (cdr lst))
-           (rp-evl (car lst) a)
+           (rp-evl `(cons ,(car lst) 'nil) a)
          (cons (rp-evl (car lst) a)
-               (rp-evl-of-trans-list* (cdr lst) a)))))
+               (rp-evl-of-trans-list (cdr lst) a)))))

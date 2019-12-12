@@ -96,8 +96,8 @@
             (valid-rulesp-with-a (cdr rules) a))))
 
    #|(local
-   (defthm forced-rp-trans-is-term-when-list*-is-absent
-   (implies (force (not (include-fnc term 'list*)))
+   (defthm forced-rp-trans-is-term-when-list-is-absent
+   (implies (force (not (include-fnc term 'list)))
    (equal (rp-evl (rp-trans term) a)
    (rp-evl term a)))))||#
 
@@ -573,7 +573,7 @@
    (defthm lemma1
      (IMPLIES (AND
                (NOT (CONSP SC-TERM))
-               (not (equal sc-type 'list*))
+               (not (equal sc-type 'list))
                (IS-RP (LIST 'RP
                             (LIST 'QUOTE SC-TYPE)
                             SC-TERM))
@@ -594,7 +594,7 @@
    (defthm lemma1-v2
      (IMPLIES (AND
                (NOT (CONSP SC-TERM))
-               (not (equal sc-type 'list*))
+               (not (equal sc-type 'list))
                (IS-RP (LIST 'RP
                             (LIST 'QUOTE SC-TYPE)
                             SC-TERM))
@@ -796,7 +796,7 @@
      (implies (IS-RP (LIST 'RP
                              (LIST 'QUOTE SC-TYPE)
                              SC-TERM))
-              (not (equal sc-type 'list*)))
+              (not (equal sc-type 'list)))
      :hints (("Goal"
               :in-theory (e/d (is-rp) ())))))
 

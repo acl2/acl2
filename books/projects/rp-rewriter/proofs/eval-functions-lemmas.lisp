@@ -202,13 +202,13 @@
 
 
 (defthm-rp-trans
-  (defthm rp-trans-is-term-when-list*-is-absent
-    (implies (not (include-fnc term 'list*))
+  (defthm rp-trans-is-term-when-list-is-absent
+    (implies (not (include-fnc term 'list))
              (equal (rp-evl (rp-trans term) a)
                     (rp-evl term a)))
     :flag rp-trans)
-  (defthm rp-trans-lst-is-lst-when-list*-is-absent
-    (implies (not (include-fnc-subterms lst 'list*))
+  (defthm rp-trans-lst-is-lst-when-list-is-absent
+    (implies (not (include-fnc-subterms lst 'list))
              (equal (rp-evl-lst (rp-trans-lst lst) a)
                     (rp-evl-lst lst a)))
     :flag rp-trans-lst)

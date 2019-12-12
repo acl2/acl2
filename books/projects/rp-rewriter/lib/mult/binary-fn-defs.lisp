@@ -155,8 +155,6 @@
          (bitp (binary-? test x y)))))
 
 
-
-
 (defun binary-cond-macro (clauses)
   (declare (xargs :guard (cond-clausesp clauses)))
   (if (consp clauses)

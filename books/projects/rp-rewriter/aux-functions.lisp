@@ -140,7 +140,7 @@
                          (not (booleanp type))
                          (not (equal type 'quote))
                          (not (equal type 'rp))
-                         (not (equal type 'list*))
+                         (not (equal type 'list))
                          (not (equal type 'falist))))
     (& nil))
   ///
@@ -1216,9 +1216,9 @@
               (and warning
                    (cw "ATTENTION! (no-free-variablep rule) failed! We do not
     support rules with free variables ~%")))
-          (not (include-fnc (rp-lhs rule) 'list*))
-          (not (include-fnc (rp-hyp rule) 'list*))
-          (not (include-fnc (rp-rhs rule) 'list*)))
+          (not (include-fnc (rp-lhs rule) 'list))
+          (not (include-fnc (rp-hyp rule) 'list))
+          (not (include-fnc (rp-rhs rule) 'list)))
          (and (equal warning ':err)
               (hard-error
                'rule-syntaxp
@@ -1581,13 +1581,13 @@
 
 
 
-(defun trans-list* (lst)
+(defun trans-list (lst)
   (declare (xargs :guard t))
   (if (atom lst)
-      nil
+      ''nil
     (if (atom (cdr lst))
-        (car lst)
-      `(cons ,(car lst) ,(trans-list* (cdr lst))))))
+        `(cons ,(car lst) 'nil)
+      `(cons ,(car lst) ,(trans-list (cdr lst))))))
       
     
 
@@ -1598,9 +1598,9 @@
             term)
            ((quotep term)
             term)
-           ((and (equal (car term) 'list*)
+           ((and (equal (car term) 'list)
                  (consp (cdr term)))
-            (trans-list* (rp-trans-lst (cdr term))))
+            (trans-list (rp-trans-lst (cdr term))))
            ((and (is-falist term))
             (rp-trans (caddr term)))
            (t (cons (car term)
@@ -1634,10 +1634,10 @@
           (b* ((a (rp-untrans (cadr term)))
                (b (rp-untrans (caddr term))))
             (case-match b
-              (('list* . rest)
-               `(list* ,a . ,rest))
+              (('list . rest)
+               `(list ,a . ,rest))
               (&
-               `(list* ,a ,b)))))
+               `(list ,a ,b)))))
          (t (cons (car term)
                   (rp-untrans-lst (cdr term))))))
  (defun rp-untrans-lst (lst)

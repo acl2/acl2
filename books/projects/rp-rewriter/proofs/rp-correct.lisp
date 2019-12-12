@@ -92,7 +92,7 @@
   (defthm valid-sc-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a)
                   (rp-termp term)
-                  ;(not (include-fnc-subterms context 'list*))
+                  ;(not (include-fnc-subterms context 'list))
                   
                   (valid-sc term a))
              (valid-sc (mv-nth 1 (attach-sc-from-context context term)) a))
@@ -173,10 +173,10 @@
 
    (local
     (defthm include-fnc-lemma
-      (implies (and (NOT (INCLUDE-FNC term 'LIST*))
+      (implies (and (NOT (INCLUDE-FNC term 'LIST))
                     (not (quotep term)))
-               (and (NOT (INCLUDE-FNC (CADR TERM) 'LIST*))
-                    (NOT (INCLUDE-FNC (CAdDR TERM) 'LIST*))))))
+               (and (NOT (INCLUDE-FNC (CADR TERM) 'LIST))
+                    (NOT (INCLUDE-FNC (CAdDR TERM) 'LIST))))))
    
    (defthm rp-rw-aux-is-correct-lemma
      (implies (and (rp-termp term)

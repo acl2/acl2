@@ -332,7 +332,7 @@
                             (:DEFINITION RP-TRANS-BINDINGS)
                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION IS-FALIST)
-                            (:DEFINITION TRANS-LIST*)
+                            (:DEFINITION TRANS-LIST)
                             (:REWRITE RP-EVL-OF-LAMBDA)
                             (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
                             RP-EQUAL2-IS-symmetric
@@ -1301,21 +1301,21 @@
 
 
 ;; (local
-;;  (defun rp-evl-of-trans-list* (lst a)
+;;  (defun rp-evl-of-trans-list (lst a)
 ;;    (if (atom lst)
 ;;        (rp-evl nil a)
 ;;      (if (atom (cdr lst))
 ;;          (rp-evl (car lst) a)
 ;;        (cons (rp-evl (car lst) a)
-;;              (rp-evl-of-trans-list* (cdr lst) a))))))
+;;              (rp-evl-of-trans-list (cdr lst) a))))))
 
 ;; (local
-;;  (defthm rp-evl-of-trans-list*-lemma
-;;    (equal (rp-evl (trans-list* lst) a)
-;;           (rp-evl-of-trans-list* lst a))
+;;  (defthm rp-evl-of-trans-list-lemma
+;;    (equal (rp-evl (trans-list lst) a)
+;;           (rp-evl-of-trans-list lst a))
 ;;    :hints (("Goal"
 ;;             :do-not-induct t
-;;             :induct (trans-list* lst)
+;;             :induct (trans-list lst)
 ;;             :in-theory (e/d () ())))))
 
 ;; (local
@@ -1328,23 +1328,23 @@
 ;;             (two-cdr-induct (cdr x) (cdr y))))))
 
 ;; (local
-;;  (defthm rp-evl-of-trans-list*-lemma-3
+;;  (defthm rp-evl-of-trans-list-lemma-3
 ;;    (IMPLIES (AND (NOT (CONSP X))
 ;;                  (NOT (RP-EVL-LST Y A)))
-;;             (NOT (RP-EVL-OF-TRANS-LIST* Y A)))))
+;;             (NOT (RP-EVL-OF-TRANS-LIST Y A)))))
 
 ;; (local
-;;  (defthm rp-evl-of-trans-list*-lemma-2
+;;  (defthm rp-evl-of-trans-list-lemma-2
 ;;    (implies (equal (rp-evl-lst x a)
 ;;                    (rp-evl-lst y a))
-;;             (equal (EQUAL (RP-EVL-OF-TRANS-LIST* x A)
-;;                           (RP-EVL-OF-TRANS-LIST* y A))
+;;             (equal (EQUAL (RP-EVL-OF-TRANS-LIST x A)
+;;                           (RP-EVL-OF-TRANS-LIST y A))
 ;;                    t))
 ;;    :otf-flg t
 ;;    :hints (("Goal"
 ;;             :do-not-induct t
 ;;             :induct (two-cdr-induct x y)
-;;             :in-theory (e/d (RP-EVL-OF-TRANS-LIST*) ())))))
+;;             :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
 
 (local
  (defthm lemma4
@@ -1361,8 +1361,8 @@
                              rp-trans
                              is-falist
                              rp-trans-lst)
-                            (trans-list*
-                             rp-evl-of-trans-list*))))))
+                            (trans-list
+                             rp-evl-of-trans-list))))))
 
 (local
  (defthm lemma5
@@ -1599,7 +1599,7 @@
 
   (local
    (defthmd i-lemma3-lemma2
-     (implies (IS-RP (LIST* 'RP CADR-TERM '(NIL)))
+     (implies (IS-RP (LIST 'RP CADR-TERM '(NIL)))
               (not (EQUAL (CADR CADR-TERM) 'QUOTE)))
      :hints (("Goal"
               :in-theory (e/d (is-rp) ())))))
@@ -1657,7 +1657,7 @@
                        (RP-TRANS (LIST (CADR CADR-TERM)
                                        RP-RW-CADDR-TERM))
                        (:free (CADDR-TERM)
-                              (RP-TRANS (LIST 'LIST* CADDR-TERM)))
+                              (RP-TRANS (LIST 'LIST CADDR-TERM)))
                        (RP-TRANS (LIST (CADR CADR-TERM)
                                        (EX-FROM-RP RP-RW-CADDR-TERM)))
                        (RP-TRANS (LIST (CADR CADR-TERM)

@@ -448,17 +448,17 @@
   (equal (cadr term1) (cadr term2))
   rest-equal)
   t1 t2)))
-  ((or (and (equal (car term1) 'list*)
+  ((or (and (equal (car term1) 'list)
   (consp (cdr term1)))
-  (and (equal (car term2) 'list*)
+  (and (equal (car term2) 'list)
   (consp (cdr term2))))
   (b* (((mv rest-equal t1 t2)
   (rp-equal-induct-subterms (cdr term1) (cdr term2)))
-  (t1 (trans-list* t1))
-  (t2 (trans-list* t2)))
-  (mv (and (and (equal (car term1) 'list*)
+  (t1 (trans-list t1))
+  (t2 (trans-list t2)))
+  (mv (and (and (equal (car term1) 'list)
   (consp (cdr term1)))
-  (and (equal (car term2) 'list*)
+  (and (equal (car term2) 'list)
   (consp (cdr term2)))
   rest-equal)
   t1 t2)))
@@ -485,9 +485,9 @@
   (let* ((term (ex-from-rp term)))
   (cond ((atom term) term)
   ((quotep term) term)
-  ((and (equal (car term) 'list*)
+  ((and (equal (car term) 'list)
   (consp (cdr term)))
-  (trans-list* (rp-trans-induct-lst (cdr term))))
+  (trans-list (rp-trans-induct-lst (cdr term))))
   ((and (is-falist term))
   (rp-trans-induct (caddr term)))
   (t (cons (car term)
@@ -541,9 +541,9 @@
       (let* ((term (ex-from-rp term)))
         (cond ((atom term) term)
               ((quotep term) term)
-              ((and (equal (car term) 'list*)
+              ((and (equal (car term) 'list)
                     (consp (cdr term)))
-               (trans-list* (rp-trans-induct-lst (cdr term))))
+               (trans-list (rp-trans-induct-lst (cdr term))))
               ((and (is-falist term))
                (rp-trans-induct (caddr term)))
               (t (cons (car term)
@@ -592,8 +592,8 @@
               :in-theory (e/d (rp-evl-of-fncall-args
                                insert-ex-from-rp-rp-trans)
                               (ex-from-rp
-                               trans-list*
-                               rp-evl-of-trans-list*
+                               trans-list
+                               rp-evl-of-trans-list
                                RP-EVLT-OF-EX-FROM-RP))))))
 
   (defthm rp-evlt-of-rp-equal

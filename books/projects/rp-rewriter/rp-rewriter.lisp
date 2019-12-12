@@ -108,9 +108,9 @@
           (b* ((term1 (rp-apply-bindings (cadr term) bindings))
                (term2 (rp-apply-bindings (caddr term) bindings)))
             (case-match term2
-              (('list* . rest)
-               `(list* ,term1 . ,rest))
-              (& `(list* ,term1 ,term2)))))||#
+              (('list . rest)
+               `(list ,term1 . ,rest))
+              (& `(list ,term1 ,term2)))))||#
          (t 
           (cons-with-hint (car term)
                           (rp-apply-bindings-subterms (cdr term) bindings )
@@ -186,19 +186,19 @@
                                     acc-bindings)))
           ((consp term-w/o-rp) ;; both term and rule is consp,
            (cond #|((and (is-cons rule-lhs)
-                       (equal (car term-w/o-rp) 'list*))
+                       (equal (car term-w/o-rp) 'list))
                   (case-match term-w/o-rp
-                    (('list* & &)
+                    (('list & &)
                      (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
                                             acc-bindings))
-                    (('list* & & . &)
+                    (('list & & . &)
                      (b* ((-  (cw "here1 ~%"))
                           ((mv context acc-bindings valid)
                            (rp-match-lhs (cadr term-w/o-rp) (cadr rule-lhs) context acc-bindings))
                           ((when (not valid)) ;; stop trying if not valid.
                            (mv context acc-bindings nil))
                           (-  (cw "here2 ~%")))
-                       (rp-match-lhs `(list* . ,(cddr term-w/o-rp))
+                       (rp-match-lhs `(list . ,(cddr term-w/o-rp))
                                      (caddr rule-lhs) context acc-bindings)))
                     (& (mv context acc-bindings nil))))||#
                  ((equal (car term-w/o-rp) (car rule-lhs))
@@ -387,7 +387,7 @@
     ;; returns (mv term-changed term)
     (if (or (atom term)
             (eq (car term) 'quote)
-            (eq (car term) 'list*)
+            (eq (car term) 'list)
             (not (quote-listp (cdr term)))
             (consp (hons-get (car term) exc-rules)))
         (mv term rp-state)
@@ -400,7 +400,7 @@
               "Error with ex. counterpart: not a logic-mode function:~p1 ~%"
               fn)
              (mv term rp-state)))
-           #|(term (if (equal fn 'list*) (rp-untrans term) term))||#
+           #|(term (if (equal fn 'list) (rp-untrans term) term))||#
            ((mv err val)
             (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state t nil))
            (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
@@ -1260,7 +1260,7 @@ returns (mv rule rules-rest bindings rp-context)"
                           #|(rp-stat-p rp-state)||#)
                   :verify-guards nil))
   (b* ((step-limit (rw-step-limit rp-state))
-       ((when (include-fnc term 'list*))
+       ((when (include-fnc term 'list))
         (progn$ (hard-error 'rp-rw-aux "unexpected term is given to rp-rw-aux! ~p0"
                             (list (cons #\0 term)))
                 (mv term rp-state)))
