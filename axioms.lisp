@@ -10003,12 +10003,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;
 ; (compile
 ;  (defun update-fgetprop-stats (sym key)
-;    (let* ((sym-entry (assoc sym fgetprop-stats :test #'eq))
-;           (key-entry (assoc key (cdr sym-entry) :test #'eq)))
+;    (let* ((sym-entry (hons-get sym fgetprop-stats))
+;           (key-entry (hons-get key (cdr sym-entry))))
 ;      (cond (key-entry (setf (cdr key-entry) (1+ (cdr key-entry))))
-;            (sym-entry (setf (cdr sym-entry) (cons (cons key 1) (cdr sym-entry))))
+;            (sym-entry (setf (cdr sym-entry)
+;                             (hons-acons key 1 (cdr sym-entry))))
 ;            (t (setq fgetprop-stats
-;                     (cons (cons sym (list (cons key 1))) fgetprop-stats)))))))
+;                     (hons-acons sym
+;                                 (hons-acons key 1 nil)
+;                                 fgetprop-stats)))))))
 ;
 ; (compile
 ;  (defun analyze-fgetprop-stats nil
@@ -27644,8 +27647,9 @@ Lisp definition."
 ; proof obligations; indeed, guard verification would fail for arities-okp.
 
                               (symbolp fn))))
-  (not (eq (getpropc fn 'symbol-class nil wrld)
-           :program)))
+  (or (eq fn 'cons) ; optimization
+      (not (eq (getpropc fn 'symbol-class nil wrld)
+               :program))))
 
 (defmacro logicalp (fn wrld)
 ; DEPRECATED in favor of logicp!
