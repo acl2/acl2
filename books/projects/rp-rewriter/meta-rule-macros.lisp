@@ -260,8 +260,7 @@
              :in-theory (e/d (rp-meta-valid-syntax-listp)
                              (rp-meta-valid-syntaxp-sk))))))
 
-
-(progn  
+(progn
   (define disable-meta-rules-fnc (args)
     (if (atom args)
         nil
@@ -278,7 +277,6 @@
                     nil)
             (enable-meta-rules-fnc (cdr args)))))
 
-
   (defmacro disable-meta-rules (&rest args)
     (if (not args)
         `(value-triple :none)
@@ -290,3 +288,11 @@
         `(value-triple :none)
       `(progn
          ,@(enable-meta-rules-fnc args)))))
+
+(defthm iff-of-RP-EVLt-LST
+  (iff (RP-EVLt-LST subterms A)
+       (consp subterms))
+  :hints (("Goal"
+           :induct (len subterms)
+           :do-not-induct t
+           :in-theory (e/d () ()))))

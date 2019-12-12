@@ -638,7 +638,7 @@
                                rp-trans
                                convert-4vec-concat-to-4vec-concat$)
                               ((:REWRITE DEFAULT-CDR)
-                               RP::TRANS-LIST*
+                               RP::TRANS-LIST
                                (:REWRITE DEFAULT-CAR)
                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
@@ -1017,7 +1017,7 @@
                               rp-trans
                               rp::is-if)
                              ((:definition not)
-                              RP::TRANS-LIST*
+                              RP::TRANS-LIST
                               (:definition natp))))))
 
   (local

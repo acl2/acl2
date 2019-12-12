@@ -144,7 +144,8 @@
                       t))
       :hints (("Goal"
                :in-theory (e/d (rp-evl-of-fncall-args) ())))))
-
+   
+   
    (local
     (defthm lemma2-v2
       (implies (and (equal (rp-evlt-lst (cdr x) a)
@@ -161,7 +162,8 @@
       :hints (("Goal"
                :do-not-induct t
                :cases ((is-falist x))
-               :expand ((RP-TRANS Y))
+               :expand ((RP-TRANS Y)
+                        (RP-EVL-OF-TRANS-LIST NIL A))
                :in-theory (e/d (rp-evl-of-fncall-args) ())))))
 
    (local

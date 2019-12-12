@@ -1229,7 +1229,7 @@
                              SHOULD-B+-CANCEL-AUX-REDEF
                              SHOULD-B+-CANCEL-AUX
                              should-sum-terms-cancel
-                             RP-TRANS-IS-TERM-WHEN-LIST*-IS-ABSENT
+                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
                              merge-b+
                              RP-EVLT-OF-EX-FROM-RP
                              type-fix
@@ -1316,7 +1316,7 @@
                              (:TYPE-PRESCRIPTION TYPE-FIX)
                              (:REWRITE SUM-WHEN-SHOULD-B+-CANCEL)
                              (:REWRITE SHOULD-B+-CANCEL-AUX-REDEF)
-                             rp-trans-is-term-when-list*-is-absent
+                             rp-trans-is-term-when-list-is-absent
                              (:DEFINITION SHOULD-B+-CANCEL-AUX)
                              EX-FROM-RP
                              (:DEFINITION RP-EQUAL-CNT)
