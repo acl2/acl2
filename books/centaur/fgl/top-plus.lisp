@@ -44,9 +44,12 @@
 (install-fgl-metafns top-plus)
 
 #||
-(include-book "xdoc/save" :dir :system)
-(include-book "std/util/defval-tests" :dir :system)
-(include-book "centaur/fty/top" :dir :system)
+(include-book
+ "xdoc/save" :dir :system)
+(include-book
+ "std/util/defval-tests" :dir :system)
+(include-book
+ "centaur/fty/top" :dir :system)
 (xdoc::change-parents fgl (acl2::top))
 (xdoc::save "./manual"
             :redef-okp t
