@@ -13,7 +13,7 @@
 (include-book "std/util/defines" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(local (include-book "kestrel/utilities/system/all-vars-theorems" :dir :system))
+(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 

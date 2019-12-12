@@ -43,10 +43,22 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * See {@link Acl2Variable} for more information about variable indices.
      *
      * @param indices Map from variable symbols to indices.
-     *                Invariants: not null, no null keys, no null values.
-     * @throws IllegalArgumentException If the term or the map are malformed
-     *                                  in a way that some index cannot be set.
-     * @throws IllegalStateException    If some index is already set.
+     *                Invariants:
+     *                not null,
+     *                no null keys,
+     *                no null values,
+     *                no negative values.
+     * @throws IllegalArgumentException If some index is already set,
+     *                                  or this term contains some variable
+     *                                  that is not in the body
+     *                                  of any lambda expression
+     *                                  and that is not a key of the map,
+     *                                  or this term contains some variable
+     *                                  that is in the body
+     *                                  of some lambda expression
+     *                                  and that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     abstract void setVariableIndices(Map<Acl2Symbol, Integer> indices);
 

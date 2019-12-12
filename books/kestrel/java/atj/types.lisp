@@ -10,6 +10,7 @@
 
 (in-package "JAVA")
 
+(include-book "java-primitive-array-model")
 (include-book "java-types")
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
@@ -67,7 +68,7 @@
      prove the type of each result individually.)
      Since we do not want ATJ to attempt any theorem proving,
      we provide a macro @(tsee def-atj-main-function-type)
-     to perform those theorem proving tasks
+     to perform those theorem proving tasks under user control
      and to record the input and output types of ACL2 functions in a table,
      and we have ATJ make use of this table.
      Note that these types are different from
@@ -79,8 +80,8 @@
      via calls of @(tsee def-atj-main-function-type)),
      ATJ performs a type analysis of the ACL2 terms in function bodies
      before translating them to Java.
-     Critically, ATJ compares
-     the type inferred for the actual argument of a function
+     Generally speaking,
+     ATJ compares the type inferred for the actual argument of a function
      (this type is inferred by analyzing terms recursively)
      with the type of the corresponding formal argument of the function
      (this type is retrieved from the table of function types):
@@ -94,14 +95,14 @@
      e.g. to convert from @('int') to @('Acl2Value');
      here the conversion is based on
      the ACL2 representation of Java @('int') values,
-     described " (xdoc::seetopic "atj-primitives" "here") ".")
+     described " (xdoc::seetopic "atj-java-primitives" "here") ".")
    (xdoc::p
     "The ATJ type information stored in the table
      determines/specifies the input and output types of the Java methods
      generated for the corresponding ACL2 functions.
      In general, there may be different choices of types possible
      for certain ACL2 functions:
-     different choices will lead to slightly different Java code.
+     different choices will lead to different Java code.
      The types of these Java methods are part of the ``API''
      that the generated Java code provides to external Java code.")
    (xdoc::p
@@ -109,13 +110,13 @@
      when given inputs of narrower types.
      Prime examples are the arithmetic operations
      @(tsee binary-+), @(tsee binary-*), and @(tsee unary--).
-     Their input and output types are all
+     All of their input and output types are
      the type corresponding to @(tsee acl2-numberp),
      based on their guards:
      this can be recorded via @(tsee def-atj-main-function-type).
      Based on these types, the corresponding Java methods
      will take and return @('Acl2Number') values.
-     Consider a unary function @('f') that takes integers
+     Now, consider a unary function @('f') that takes integers
      (i.e. it has a recorded input type corresponding to @(tsee integerp)),
      and a term @('(f (binary-+ <i> <j>))'),
      where @('<i>') and @('<j>') are integer-valued terms.
@@ -127,7 +128,7 @@
    (xdoc::p
     "However, due to well-known closure properties,
      @(tsee binary-+), like @(tsee binary-+) and @(tsee unary--),
-     map @(tsee rationalp) inputs to @(tsee rationalp) outputs,
+     maps @(tsee rationalp) inputs to @(tsee rationalp) outputs,
      and @(tsee integerp) inputs to @(tsee integerp) outputs.
      This means that we could generate three overloaded methods
      for each such ACL2 function:
@@ -147,7 +148,7 @@
      the internal computations may be more efficient on narrower inputs,
      e.g. the cast in the example above can be avoided
      when that call of @('f') is part of some function @('g')
-     that may not even return numbers (it may perhaps return booleans).")
+     that may not even return numbers (e.g. it may return booleans).")
    (xdoc::p
     "Thus, we provide another macro, @(tsee def-atj-other-function-type),
      to record additional input and output types for ACL2 functions.
@@ -186,7 +187,13 @@
    :jbyte
    :jshort
    :jint
-   :jlong)
+   :jlong
+   :jboolean[]
+   :jchar[]
+   :jbyte[]
+   :jshort[]
+   :jint[]
+   :jlong[])
   :short "Recognize ATJ types."
   :long
   (xdoc::topstring
@@ -201,8 +208,10 @@
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
      whose names start with @('a') for `ACL2',
-     as well as type for the Java primitive types
-     except @('float') and @('double').
+     as well as types for the Java primitive types
+     except @('float') and @('double'),
+     and types for Java primitive array types
+     except @('float[]') and @('double[]').
      More types may be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
@@ -292,9 +301,15 @@
    (xdoc::p
     "The predicates for the @(':a...') types are straightforward.
      The predicates for the @(':j...') types are
-     the recognizers of the corresponding Java primitive types
-     in our Java language formalization.
-     Also see " (xdoc::seetopic "atj-primitives" "here") "."))
+     the recognizers of the corresponding
+     Java primitive types and primitive array types
+     in our Java language formalization (for primitive types)
+     and in our ATJ's model of primitive arrays (for primitive array types).
+     Also see "
+    (xdoc::seetopic "atj-java-primitives" "here")
+    " and "
+    (xdoc::seetopic "atj-java-primitive-arrays" "here")
+    "."))
   (case x
     (:acharacter 'characterp)
     (:astring 'stringp)
@@ -310,6 +325,12 @@
     (:jshort 'short-value-p)
     (:jint 'int-value-p)
     (:jlong 'long-value-p)
+    (:jboolean[] 'boolean-array-p)
+    (:jchar[] 'char-array-p)
+    (:jbyte[] 'byte-array-p)
+    (:jshort[] 'short-array-p)
+    (:jint[] 'int-array-p)
+    (:jlong[] 'long-array-p)
     (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -325,13 +346,18 @@
      this denotation is defined by @(tsee atj-type-to-pred).")
    (xdoc::p
     "The ordering on the @('a...') types is straightforward.
-     The @(':j...') types denote ACL2 predicates
-     satisfied only by @(tsee cons)es
+     The @(':j...') types not ending with @('[]')
+     denote ACL2 predicates satisfied only by @(tsee cons)es
      (satisfying additional properties; see "
-    (xdoc::seetopic "atj-primitives" "here")
-    "); thus, the @(':j...') types are below @(':acons') in the partial order.
-     The @('j...') types are unrelated to each other in the partial order,
-     because the corresponding predicates are disjoint.")
+    (xdoc::seetopic "atj-java-primitives" "here")
+    "); thus, such types are below @(':acons') in the partial order.
+     The @(':j...[]') types denote true lists,
+     which are either @(tsee cons)es or (@('nil')) symbols;
+     thus, such types are below @(':avalue') in the partial order.
+     The @('j...') types are unrelated to each other in the partial order;
+     the corresponding predicates are mostly all disjoint,
+     except that the predicates for the @(':j...[]') types
+     share @('nil') as the model of the empty array.")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -342,7 +368,7 @@
      also satisfies the supertype's predicate;
      we generate a theorem for each such pair,
      because the predicate inclusion relation is at the meta level.
-     The motonocity validates that the partial order
+     The motonocity theorem validates that the partial order
      is consistent with the inclusion of the denoted ACL2 types.")
    (xdoc::p
     "It is also not difficult to see that,
@@ -368,6 +394,12 @@
     (:jshort (and (member-eq sup '(:jshort :acons :avalue)) t))
     (:jint (and (member-eq sup '(:jint :acons :avalue)) t))
     (:jlong (and (member-eq sup '(:jlong :acons :avalue)) t))
+    (:jboolean[] (and (member-eq sup '(:jboolean[] :avalue)) t))
+    (:jchar[] (and (member-eq sup '(:jchar[] :avalue)) t))
+    (:jbyte[] (and (member-eq sup '(:jbyte[] :avalue)) t))
+    (:jshort[] (and (member-eq sup '(:jshort[] :avalue)) t))
+    (:jint[] (and (member-eq sup '(:jint[] :avalue)) t))
+    (:jlong[] (and (member-eq sup '(:jlong[] :avalue)) t))
     (otherwise (impossible)))
   ///
 
@@ -430,7 +462,13 @@
                   :jbyte
                   :jshort
                   :jint
-                  :jlong)))
+                  :jlong
+                  :jboolean[]
+                  :jchar[]
+                  :jbyte[]
+                  :jshort[]
+                  :jint[]
+                  :jlong[])))
       `(encapsulate
          ()
          (set-ignore-ok t)
@@ -525,6 +563,24 @@
               (:jlong :jlong)
               ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
               (t :avalue)))
+    (:jboolean[] (case y
+                   (:jboolean[] :jboolean[])
+                   (t :avalue)))
+    (:jchar[] (case y
+                (:jchar[] :jchar[])
+                (t :avalue)))
+    (:jbyte[] (case y
+                (:jbyte[] :jbyte[])
+                (t :avalue)))
+    (:jshort[] (case y
+                 (:jshort[] :jshort[])
+                 (t :avalue)))
+    (:jint[] (case y
+               (:jint[] :jint[])
+               (t :avalue)))
+    (:jlong[] (case y
+                (:jlong[] :jlong[])
+                (t :avalue)))
     (otherwise (impossible)))
   ///
 
@@ -609,7 +665,10 @@
   (xdoc::topstring
    (xdoc::p
     "The @(':a...') types denote the corresponding AIJ class types.
-     The @(':j...') types denote the corresponding Java primitive types."))
+     The @(':j...') types that do not end with @('[]') denote
+     the corresponding Java primitive types.
+     The @(':j...[]') types denote
+     the corresponding Java primitive array types."))
   (case type
     (:acharacter *aij-type-char*)
     (:astring *aij-type-string*)
@@ -625,6 +684,12 @@
     (:jshort (jtype-short))
     (:jint (jtype-int))
     (:jlong (jtype-long))
+    (:jboolean[] (jtype-array (jtype-boolean)))
+    (:jchar[] (jtype-array (jtype-char)))
+    (:jbyte[] (jtype-array (jtype-byte)))
+    (:jshort[] (jtype-array (jtype-short)))
+    (:jint[] (jtype-array (jtype-int)))
+    (:jlong[] (jtype-array (jtype-long)))
     (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

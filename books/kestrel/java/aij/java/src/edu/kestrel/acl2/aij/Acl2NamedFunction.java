@@ -171,18 +171,29 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * Defines this named function.
      * This also sets the indices of all the variables in the defining body;
      * see {@link Acl2Variable} for more information about variable indices.
+     * The {@link Acl2Variable}s in the body term must not be shared,
+     * directly or indirectly,
+     * within the body term
+     * or with body terms passed to other calls of this method:
+     * this way, variable indices can be set appropriately,
+     * based on where the variables occur in terms,
+     * and not on the variables themselves alone;
+     * otherwise, the variable index setting process may stop with an error
+     * due to some index being already set.
      *
      * @param parameters The formal parameters of the function definition.
      * @param body       The body of the function definition.
      * @throws IllegalArgumentException If {@code parameters} is null,
      *                                  or any of its elements is null,
      *                                  or {@code body} is null,
-     *                                  or the function definition is malformed
-     *                                  in a way that
-     *                                  some variable index cannot be set.
-     * @throws IllegalStateException    If the function is
-     *                                  already defined or native,
-     *                                  or some variable index is already set.
+     *                                  or the function is native,
+     *                                  or the function definition
+     *                                  (viewed as a lambda expression)
+     *                                  contains some variable
+     *                                  that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression
+     *                                  or that has an index already set.
      */
     public abstract void define(Acl2Symbol[] parameters, Acl2Term body);
 

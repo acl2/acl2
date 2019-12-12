@@ -814,7 +814,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name len-of-parse-vchar-<
+               :name len-of-parse-vchar-linear
                :rule-classes :linear))
 
   (defrule parse-vchar-of-nat-list-fix

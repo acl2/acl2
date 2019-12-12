@@ -2323,7 +2323,7 @@
 
 ; The symbol-class of a symbol is one of three keywords:
 
-; :program                  - not defined within the logic
+; :program               - not defined within the logic
 ; :ideal                 - defined in the logic but not known to be CL compliant
 ; :common-lisp-compliant - defined in the logic and known to be compliant with
 ;                          Common Lisp
@@ -2367,10 +2367,12 @@
 
   (declare (xargs :guard (and (symbolp sym)
                               (plist-worldp wrld))))
-  (or (getpropc sym 'symbol-class nil wrld)
-      (if (getpropc sym 'theorem nil wrld)
-          :ideal
-          :program)))
+  (if (eq sym 'cons) ; optimization
+      :COMMON-LISP-COMPLIANT
+    (or (getpropc sym 'symbol-class nil wrld)
+        (if (getpropc sym 'theorem nil wrld)
+            :ideal
+          :program))))
 
 (defmacro fdefun-mode (fn wrld)
 

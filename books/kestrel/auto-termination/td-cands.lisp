@@ -3871,7 +3871,7 @@
              (ACL2-COUNT LST)))))
    (FLAG-ALL-VARS1 4 :SYSTEM
                    .
-                   "kestrel/utilities/system/all-vars-theorems")))
+                   "kestrel/std/system/all-vars")))
  ((JUSTIFICATION (X FLAG)
                  (NIL O-P . O<)
                  ((IF (EQL FLAG 'FIND-MATCHING-TERMS)

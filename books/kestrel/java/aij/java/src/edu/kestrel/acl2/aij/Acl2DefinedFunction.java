@@ -180,11 +180,13 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * @throws IllegalArgumentException If {@code parameters} is null,
      *                                  or any of its elements is null,
      *                                  or {@code body} is null,
-     *                                  or the function definition is malformed
-     *                                  in a way that
-     *                                  some valid variable index cannot be set.
-     * @throws IllegalStateException    If the function is already defined,
-     *                                  or some variable index is already set.
+     *                                  or the function definition
+     *                                  (viewed as a lambda expression)
+     *                                  contains some variable
+     *                                  that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression
+     *                                  or that has an index already set.
      */
     @Override
     public void define(Acl2Symbol[] parameters, Acl2Term body) {

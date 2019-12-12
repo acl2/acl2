@@ -12,7 +12,7 @@
 
 (include-book "pseudo-lambdap")
 
-(local (include-book "kestrel/utilities/system/all-vars-theorems" :dir :system))
+(local (include-book "kestrel/std/system/all-vars" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

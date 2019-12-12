@@ -13,7 +13,7 @@
 ; Avoid failure for atj-gen-number in ACL2(r):
 ; cert_param: non-acl2r
 
-(include-book "abstract-syntax")
+(include-book "java-abstract-syntax")
 (include-book "aij-notions")
 (include-book "name-translation")
 (include-book "test-structures")

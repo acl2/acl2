@@ -12,6 +12,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This file is temporary.
+; Its previous contents have been moved under Std/system,
+; each utility in its individual file for greater modularity.
+; When all the existing inclusions of this file
+; will be replaced by inclusions of some of those new individual files,
+; this file will be removed.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
@@ -20,9 +29,12 @@
 (include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
 (include-book "kestrel/std/system/all-pkg-names" :dir :system)
 (include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-vars-in-untranslated-term" :dir :system)
 (include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/apply-terms-same-args" :dir :system)
 (include-book "kestrel/std/system/apply-unary-to-terms" :dir :system)
+(include-book "kestrel/std/system/check-user-lambda" :dir :system)
+(include-book "kestrel/std/system/check-user-term" :dir :system)
 (include-book "kestrel/std/system/fapply-term" :dir :system)
 (include-book "kestrel/std/system/fapply-terms-same-args" :dir :system)
 (include-book "kestrel/std/system/fapply-unary-to-terms" :dir :system)
@@ -39,150 +51,3 @@
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "world-queries")
-
-(local (include-book "all-vars-theorems"))
-(local (include-book "world-theorems"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc term-utilities
-  :parents (system-utilities-non-built-in)
-  :short "Utilities for @(see term)s.")
-
-(define check-user-term (x (wrld plist-worldp))
-  :returns (mv (term/message "A @(tsee pseudo-termp) or @(tsee msgp).")
-               (stobjs-out "A @(tsee symbol-listp)."))
-  :mode :program
-  :parents (term-utilities)
-  :short "Recognize <see topic='@(url term)'>untranslated</see> terms
-          that are valid for evaluation."
-  :long
-  "<p>
-   An untranslated @(see term) is a term as entered by the user.
-   This function checks @('x') by attempting to translate it.
-   If the translation succeeds, the translated term is returned,
-   along with the @(tsee stobjs-out) list of the term (see below for details).
-   Otherwise, a structured error message is returned (printable with @('~@')),
-   along with @('nil') as @(tsee stobjs-out) list.
-   These two possible outcomes can be distinguished by the fact that
-   the former yields a <see topic='@(url pseudo-termp)'>pseudo-term</see>
-   while the latter does not.
-   </p>
-   <p>
-   The @(tsee stobjs-out) list of a term is the term analogous
-   of the @(tsee stobjs-out) property of a function,
-   namely a list of symbols that is like a &ldquo;mask&rdquo; for the result.
-   A @('nil') in the list means that
-   the corresponding result is a non-@(see stobj) value,
-   while the name of a @(see stobj) in the list means that
-   the corresponding result is the named @(see stobj).
-   The list is a singleton, unless the term returns
-   <see topic='@(url mv)'>multiple values</see>.
-   </p>
-   <p>
-   The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
-   passed to @('translate1-cmp') as bindings
-   mean that the term is checked to be valid for evaluation.
-   This is stricter than checking the term to be valid for use in a theorem,
-   and weaker than checking the term to be valid
-   for use in the body of an executable function;
-   these different checks are performed by passing different values
-   to the second and third arguments of @('translate1-cmp')
-   (see the ACL2 source code for details).
-   However, for terms whose functions are all in logic mode,
-   validity for evaluation and validity for executable function bodies
-   should coincide.
-   </p>
-   <p>
-   If @('translate1-cmp') is successful,
-   it returns updated bindings that associate @(':stobjs-out')
-   to the output stobjs of the term.
-   </p>
-   <p>
-   The @(tsee check-user-term) function does not terminate
-   if the translation expands an ill-behaved macro that does not terminate.
-   </p>"
-  (mv-let (ctx term/message bindings)
-    (translate1-cmp x
-                    :stobjs-out
-                    '((:stobjs-out . :stobjs-out))
-                    t
-                    __function__
-                    wrld
-                    (default-state-vars nil))
-    (declare (ignore ctx))
-    (if (pseudo-termp term/message)
-        (mv term/message
-            (cdr (assoc :stobjs-out bindings)))
-      (mv term/message nil))))
-
-(define check-user-lambda (x (wrld plist-worldp))
-  :returns (mv (lambd/message  "A @(tsee pseudo-termp) or @(tsee msgp).")
-               (stobjs-out "A @(tsee symbol-listp)."))
-  :mode :program
-  :parents (term-utilities)
-  :short "Recognize <see topic='@(url term)'>untranslated</see>
-          lambda expressions that are valid for evaluation."
-  :long
-  "<p>
-   An untranslated @(see lambda) expression is
-   a lambda expression as entered by the user.
-   This function checks whether @('x')is
-   a true list of exactly three elements,
-   whose first element is the symbol @('lambda'),
-   whose second element is a list of legal variable symbols without duplicates,
-   and whose third element is an untranslated term that is valid for evaluation.
-   </p>
-   <p>
-   If the check succeeds, the translated lambda expression is returned,
-   along with the @(tsee stobjs-out) list of the body of the lambda expression
-   (see @(tsee check-user-term) for an explanation
-   of the @(tsee stobjs-out) list of a term).
-   Otherwise, a possibly structured error message is returned
-   (printable with @('~@')),
-   along with @('nil') as @(tsee stobjs-out) list.
-   </p>
-   <p>
-   The @(tsee check-user-lambda) function does not terminate
-   if @(tsee check-user-term) does not terminate.
-   </p>"
-  (b* (((unless (true-listp x))
-        (mv (msg "~x0 is not a true list." x) nil))
-       ((unless (= (len x) 3))
-        (mv (msg "~x0 does not consist of exactly three elements." x) nil))
-       ((unless (eq (first x) 'lambda))
-        (mv (msg "~x0 does not start with LAMBDA." x) nil))
-       ((unless (arglistp (second x)))
-        (mv (msg "~x0 does not have valid formal parameters." x) nil))
-       ((mv term/message stobjs-out) (check-user-term (third x) wrld))
-       ((when (msgp term/message))
-        (mv (msg "~x0 does not have a valid body.  ~@1" x term/message) nil)))
-    (mv `(lambda ,(second x) ,term/message) stobjs-out)))
-
-(define all-vars-in-untranslated-term (x (wrld plist-worldp))
-  :returns (term "A @(tsee pseudo-termp).")
-  :mode :program
-  :parents (term-utilities)
-  :short "The variables free in the given untranslated term."
-  :long
-  "<p>
-   This function returns the variables of the given untranslated term.  They
-   are returned in reverse order of print occurrence, for consistency with the
-   function, @(tsee all-vars).
-   </p>
-   <p>
-   The input is translated for reasoning, so restrictions for executability are
-   not enforced.  There is also no restriction on the input being in
-   @(':')@(tsee logic) mode.
-   </p>"
-  (let ((ctx 'all-vars-in-untranslated-term))
-    (mv-let (erp term)
-      (translate-cmp x
-                     t ; stobjs-out
-                     nil ; logic-modep (not required)
-                     nil ; known-stobjs
-                     ctx
-                     wrld
-                     (default-state-vars nil))
-      (cond (erp (er hard erp "~@0" term))
-            (t (all-vars term))))))
