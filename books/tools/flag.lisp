@@ -985,7 +985,7 @@ one such form may affect what you might think of as the proof of another.</p>
                                 (cons rhs expands)
                               expands)))
               (and expands
-                   `(:expand ,expands))))
+                   `(:expand (:lambdas . ,expands)))))
            (&
             nil)))))
 
@@ -1416,3 +1416,4 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
 (defmacro def-doublevar-induction (name &key orig-fn old-var new-var hints take)
   `(make-event
     (def-doublevar-induction-fn ',name ',orig-fn ',old-var ',new-var ',hints ',take (w state))))
+

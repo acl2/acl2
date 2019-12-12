@@ -1,5 +1,5 @@
-; ACL2 Books Documentation
-; Copyright (C) 2014 Centaur Technology
+; Record Like Stobjs
+; Copyright (C) 2011-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,23 +28,10 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-(include-book "kestrel/soft/portcullis" :dir :system)
-(include-book "kestrel/apt/portcullis" :dir :system)
-(include-book "centaur/acre/portcullis" :dir :system)
-(include-book "centaur/gl/portcullis" :dir :system)
-(include-book "centaur/defrstobj/portcullis" :dir :system)
-(include-book "centaur/defrstobj2/portcullis" :dir :system)
-(include-book "kestrel/java/portcullis" :dir :system)
-(include-book "kestrel/ethereum/portcullis" :dir :system)
-(include-book "kestrel/bitcoin/portcullis" :dir :system)
-(include-book "kestrel/utilities/omaps/portcullis" :dir :system)
-(include-book "projects/irv/portcullis" :dir :system)
-(include-book "kestrel/hdwallet/portcullis" :dir :system)
-(include-book "kestrel/crypto/keccak/portcullis" :dir :system)
-(include-book "kestrel/abnf/portcullis" :dir :system)
-(include-book "projects/x86isa/portcullis/portcullis" :dir :system)
-(include-book "xdoc/constructors" :dir :system)
 
-; cert-flags: ? t :ttags :all
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "package.lsp")
+
+(in-package "RSTOBJ2")

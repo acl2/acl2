@@ -96,6 +96,7 @@
 (include-book "centaur/lispfloat/top" :dir :system)
 
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
+(include-book "centaur/defrstobj2/defrstobj" :dir :system)
 
 
 (include-book "centaur/getopt/top" :dir :system)

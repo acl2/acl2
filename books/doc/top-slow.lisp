@@ -115,6 +115,7 @@
 (include-book "centaur/lispfloat/top" :dir :system)
 
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
+(include-book "centaur/defrstobj2/defrstobj" :dir :system)
 
 (include-book "centaur/esim/stv/stv-top" :dir :system)
 (include-book "centaur/esim/stv/stv-debug" :dir :system)
