@@ -484,6 +484,10 @@
                      :rule-classes nil)
                    (gbc-add-rule ,name ,alist ,syntaxp-trans)))))
 
+
+(defun fgl-bool-fix (x)
+  (and x t))
+
 (defsection def-fgl-boolean-constraint
   :parents (reference term-level-reasoning)
   :short "Define a rule that recognizes constraints among FGL generated Boolean variables"
