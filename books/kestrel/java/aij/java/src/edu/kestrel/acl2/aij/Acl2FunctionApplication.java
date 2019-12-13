@@ -48,7 +48,8 @@ public final class Acl2FunctionApplication extends Acl2Term {
 
     /**
      * Validates all the function calls in this function application.
-     * We check that the number of arguments matches the arity;
+     * We check that the called function is defined
+     * and that the number of arguments matches the arity;
      * this implicitly also checks that,
      * if the function is a defined function,
      * it has an actual definition.
@@ -56,7 +57,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * but also the function calls in the argument terms
      * and in the function itself (if the function is a lambda expression).
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws IllegalStateException If some call is invalid.
      */
     @Override
     void validateFunctionCalls() {

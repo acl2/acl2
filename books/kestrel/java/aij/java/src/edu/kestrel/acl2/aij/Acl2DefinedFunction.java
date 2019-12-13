@@ -55,11 +55,13 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     private Acl2LambdaExpression definiens = null;
 
     /**
-     * Flag saying whether this function has a validated definition.
-     * This is set once by {@link #validateDefinition()},
+     * Flag saying whether all the function calls
+     * in this function's definition
+     * are valid.
+     * This is set once by {@link #validateFunctionCallsInDefinition()},
      * and never changes back to {@code false}.
      */
-    private boolean validated = false;
+    private boolean validatedFunctionCalls = false;
 
     //////////////////////////////////////// package-private members:
 
@@ -78,33 +80,33 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * Ensure that this function has a valid definition.
+     * Ensure that all the function calls in this function's definition
+     * are valid.
      * This means that all the function calls in the body of the function
-     * are validated, i.e. the arguments match the arities
-     * (see @{@link Acl2Term#validateFunctionCalls()}).
-     * Returns quickly if the function is already validated.
+     * are validated.
+     * Returns quickly if this validation has already been performed.
      *
-     * @throws IllegalStateException If the check fails.
+     * @throws IllegalStateException If some call is invalid.
      */
-    void validateDefinition() {
-        if (validated)
+    void validateFunctionCallsInDefinition() {
+        if (validatedFunctionCalls)
             return;
         this.definiens.validateFunctionCalls();
-        validated = true;
+        validatedFunctionCalls = true;
     }
 
     /**
      * Ensure that all the defined functions created so far
      * have valid definitions.
-     * We call {@link #validateDefinition()}
+     * We call {@link #validateFunctionCallsInDefinition()}
      * on all the functions created so far.
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws IllegalStateException If some call is invalid.
      */
-    static void validateAllDefinitions() {
+    static void validateFunctionCallsInAllDefinitions() {
         for (Acl2DefinedFunction function : functions.values())
-            function.validateDefinition();
-        Acl2NamedFunction.setValidatedAll(true);
+            function.validateFunctionCallsInDefinition();
+        Acl2NamedFunction.setValidatedAllFunctionCalls(true);
     }
 
     /**
@@ -163,7 +165,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
             return function;
         function = new Acl2DefinedFunction(name);
         functions.put(name, function);
-        Acl2NamedFunction.setValidatedAll(false);
+        Acl2NamedFunction.setValidatedAllFunctionCalls(false);
         return function;
     }
 
