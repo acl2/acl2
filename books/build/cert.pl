@@ -710,7 +710,7 @@ if ($acl2) {
     $ENV{"ACL2"} = $acl2;
 } else {
     unless ($quiet || $no_build) {
-        print($STDERR,
+        print(STDERR 
 "ACL2 executable not found.  Please specify with --acl2 command line
 flag or ACL2 environment variable.\n");
     }
@@ -757,7 +757,7 @@ if (! $acl2_books ) {
 
 if (! $acl2_books ) {
     unless ($quiet || $no_build) {
-        print($STDERR,
+        print(STDERR 
 "ACL2 system books not found.  Please specify with --acl2-books
 command line flag or ACL2_SYSTEM_BOOKS environment variable.");
     }
@@ -765,7 +765,7 @@ command line flag or ACL2_SYSTEM_BOOKS environment variable.");
 
 $acl2_books = abs_canonical_path($acl2_books);
 unless($quiet) {
-    print($STDERR, "System books directory is ${acl2_books}\n");
+    print(STDERR "System books directory is ${acl2_books}\n");
 }
 
 certlib_add_dir("SYSTEM", $acl2_books);
