@@ -1294,7 +1294,7 @@
     :in-theory (enable bpb_bytspersec resize-data-region))))
 
 (defthm
-  update-fati-of-fati
+  update-fati-of-fati-when-fat32-in-memoryp
   (implies (and (fat32-in-memoryp fat32-in-memory)
                 (< (nfix i)
                    (fat-length fat32-in-memory)))
@@ -1302,9 +1302,8 @@
                                fat32-in-memory)
                   fat32-in-memory))
   :hints
-  (("goal"
-    :in-theory (enable update-fati
-                       fati fat-length fat32-in-memoryp))))
+  (("goal" :in-theory (enable fati update-fati
+                              fat-length fat32-in-memoryp))))
 
 (defmacro
     update-bpb_secperclus-macro
@@ -1569,18 +1568,6 @@
      (equal (resize-data-region i fat32-in-memory)
             fat32-in-memory))
     :hints (("goal" :in-theory (enable resize-data-region))))))
-
-(defthm
-  update-fati-of-fati-when-fat32-in-memoryp
-  (implies (and (fat32-in-memoryp fat32-in-memory)
-                (< (nfix i)
-                   (fat-length fat32-in-memory)))
-           (equal (update-fati i (fati i fat32-in-memory)
-                               fat32-in-memory)
-                  fat32-in-memory))
-  :hints
-  (("goal" :in-theory (enable fati update-fati
-                              fat-length fat32-in-memoryp))))
 
 (defthm
   nth-of-resize-data-region

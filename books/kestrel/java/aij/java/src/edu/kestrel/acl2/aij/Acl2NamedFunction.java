@@ -27,6 +27,17 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      */
     private final Acl2Symbol name;
 
+    /**
+     * Flag saying whether all the function calls
+     * in all the defined functions created so far
+     * are valid.
+     * This is initially true because there are no defined functions initially.
+     * This is set to false whenever a new defined function is created,
+     * because that one has not been validated yet.
+     * This is set to true by {@link #validateAllFunctionCalls()}.
+     */
+    private static boolean validatedAllFunctionCalls = true;
+
     //////////////////////////////////////// package-private members:
 
     /**
@@ -51,24 +62,15 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Flag saying whether all the defined functions created so far
-     * (which are all named functions) have valid definitions.
-     * This is initially true because there are no defined functions initially.
-     * This is set to false whenever a new defined function is created,
-     * because that one has not been validated yet.
-     * This is set to true by {@link #validateAll()}.
-     */
-    private static boolean validatedAll = true;
-
-    /**
-     * Sets the flag that says whether
-     * all the defined functions created so far have valid definitions.
+     * Sets the flag that says whether all the function calls
+     * in all the defined functions created so far
+     * are valid.
      * This is called only by the subclass {@link Acl2DefinedFunction}.
      *
-     * @param value The value to set the @{link #validatedAll} flag to.
+     * @param value The value for the @{link #validatedAllFunctionCalls} flag.
      */
-    static void setValidatedAll(boolean value) {
-        validatedAll = value;
+    static void setValidatedAllFunctionCalls(boolean value) {
+        validatedAllFunctionCalls = value;
     }
 
     /**
@@ -158,13 +160,16 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Ensure that all the defined functions created so far
-     * have valid definitions.
+     * Ensure that all the function calls
+     * in all the defined functions created so far
+     * are valid.
+     * That is, each call references an existing function
+     * and has a number of actual arguments that matches the arity.
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws IllegalStateException If some call is invalid.
      */
-    public static void validateAll() {
-        Acl2DefinedFunction.validateAllDefinitions();
+    public static void validateAllFunctionCalls() {
+        Acl2DefinedFunction.validateFunctionCallsInAllDefinitions();
     }
 
     /**
@@ -213,7 +218,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      */
     public Acl2Value call(Acl2Value[] values)
             throws Acl2UndefinedPackageException {
-        if (!validatedAll)
+        if (!validatedAllFunctionCalls)
             throw new IllegalStateException
                     ("Not all function definitions have been validated.");
         if (values == null)

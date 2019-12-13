@@ -18,12 +18,16 @@
 
 (java::def-atj-main-function-type read-from-array (:jint[] :jint :jint) :jint)
 
+(java::def-atj-main-function-type add-lengths-of-arrays
+                                  (:jbyte[] :jshort[]) :jint)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the tested functions.
 ; The automatic generation of tests is not supported yet.
 
 (java::atj read-from-array
+           add-lengths-of-arrays
            :deep nil
            :guards t
            :java-class "PrimarraysShallowGuarded")

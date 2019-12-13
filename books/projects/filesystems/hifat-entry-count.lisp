@@ -243,18 +243,35 @@
                      (hifat-file-alist (cdr fs)))))))
 
 (defthm
+  consp-of-assoc-of-hifat-file-alist-fix
+  (implies (m1-file-alist-p hifat-file-alist)
+           (iff (consp (assoc-equal name
+                                    (hifat-file-alist-fix hifat-file-alist)))
+                (consp (assoc-equal name hifat-file-alist))))
+  :hints (("goal" :in-theory (enable hifat-file-alist-fix)
+           :induct (assoc-equal name hifat-file-alist))))
+
+(defthm
   hifat-entry-count-of-put-assoc-equal
   (implies
    (and (m1-file-alist-p fs)
         (hifat-no-dups-p fs)
-        (m1-directory-file-p (cdr (assoc-equal name fs)))
-        (m1-directory-file-p val)
-        (hifat-no-dups-p (m1-file->contents val)))
+        (m1-file-p val)
+        (fat32-filename-p name))
    (equal
     (hifat-entry-count (put-assoc-equal name val fs))
-    (+ (hifat-entry-count fs)
+    (+
+     (hifat-entry-count fs)
+     (if
+      (atom (assoc-equal name fs))
+      1
+      (if
+       (m1-directory-file-p (cdr (assoc-equal name fs)))
        (- (hifat-entry-count (m1-file->contents (cdr (assoc-equal name fs)))))
-       (hifat-entry-count (m1-file->contents val)))))
+       0))
+     (if (m1-directory-file-p val)
+         (hifat-entry-count (m1-file->contents val))
+         0))))
   :hints (("goal" :in-theory (enable hifat-entry-count hifat-no-dups-p)
            :induct (assoc-equal name fs))))
 
