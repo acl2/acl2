@@ -598,12 +598,6 @@
                                (curr-pkg stringp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 value."
-  :long
-  (xdoc::topstring-p
-   "For numbers, characters, strings, and symbols,
-    we use functions specialized to the shallow embedding.
-    For other values (i.e. @(tsee cons) pair),
-    for now we use @(tsee atj-gen-value-flat).")
   (cond ((acl2-numberp value) (atj-gen-shallow-number value))
         ((characterp value) (atj-gen-shallow-char value))
         ((stringp value) (atj-gen-shallow-string value))
