@@ -31,3 +31,13 @@
                   (integer-range-p 0 (len array) (java::int-value->int j)))))
   (java::int-add (java::int-array-read array i)
                  (java::int-array-read array j)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A function that obtains and adds the lengths of a byte[] and short[] array.
+
+(defun add-lengths-of-arrays (bytearray shortarray)
+  (declare (xargs :guard (and (java::byte-array-p bytearray)
+                              (java::short-array-p shortarray))))
+  (java::int-add (java::byte-array-length bytearray)
+                 (java::short-array-length shortarray)))

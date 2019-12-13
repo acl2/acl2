@@ -6586,14 +6586,26 @@
 
 (defparameter *known-worlds* nil)
 
+(defvar *saved-user-stobj-alist* nil)
+
 (defun update-wrld-structures (wrld state)
   (install-global-enabled-structure wrld state)
   (recompress-global-enabled-structure
    'global-arithmetic-enabled-structure
    wrld)
-  (recompress-stobj-accessor-arrays
-   (strip-cars *user-stobj-alist*)
-   wrld)
+  (when (not (eq *saved-user-stobj-alist* *user-stobj-alist*))
+
+; On 12/12/2019 we found, using CCL on a Mac, that the time for (include-book
+; "centaur/sv/top" :dir :system) was reduced by 2.6% by adding the test above
+; before calling recompress-stobj-accessor-arrays.  The time reduction however
+; was only 0.2% for (include-book "projects/x86isa/top" :dir :system).  The
+; former book involved many more stobjs: 27 after including it, vs. only 4 for
+; the latter book.  So this change seems important mainly for scalability.
+
+    (recompress-stobj-accessor-arrays
+     (strip-cars *user-stobj-alist*)
+     wrld)
+    (setq *saved-user-stobj-alist* *user-stobj-alist*))
   #+hons
   (update-memo-entries-for-attachments *defattach-fns* wrld state)
   nil)

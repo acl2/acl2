@@ -54,7 +54,7 @@
 
 (defval *atj-java-primarray-reads*
   :short "List of the (the names of) the ACL2 functions that model
-          the reading from Java primitive arrays."
+          the reading of components from Java primitive arrays."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -70,15 +70,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-java-primarray-lengths*
+  :short "List of the (the names of) the ACL2 functions that model
+          the obtaining of lengths of Java primitive arrays."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The consists of the length functions for all the Java primitive array types
+     except @('float[]') and @('double[]'),
+     which are currently not supported by ATJ."))
+  '(boolean-array-length
+    char-array-length
+    byte-array-length
+    short-array-length
+    int-array-length
+    long-array-length))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primarray-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This just consists of the reader functions for now.
+    "This just consists of the read and length functions for now.
      More will be added in the future."))
-  *atj-java-primarray-reads*
+  (append *atj-java-primarray-reads*
+          *atj-java-primarray-lengths*)
   ///
   (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
@@ -100,4 +119,18 @@
 
   (def-atj-main-function-type int-array-read (:jint[] :jint) :jint)
 
-  (def-atj-main-function-type long-array-read (:jlong[] :jint) :jlong))
+  (def-atj-main-function-type long-array-read (:jlong[] :jint) :jlong)
+
+  ;; length operations:
+
+  (def-atj-main-function-type boolean-array-length (:jboolean[]) :jint)
+
+  (def-atj-main-function-type char-array-length (:jchar[]) :jint)
+
+  (def-atj-main-function-type byte-array-length (:jbyte[]) :jint)
+
+  (def-atj-main-function-type short-array-length (:jshort[]) :jint)
+
+  (def-atj-main-function-type int-array-length (:jint[]) :jint)
+
+  (def-atj-main-function-type long-array-length (:jlong[]) :jint))

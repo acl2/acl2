@@ -598,12 +598,6 @@
                                (curr-pkg stringp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 value."
-  :long
-  (xdoc::topstring-p
-   "For numbers, characters, strings, and symbols,
-    we use functions specialized to the shallow embedding.
-    For other values (i.e. @(tsee cons) pair),
-    for now we use @(tsee atj-gen-value-flat).")
   (cond ((acl2-numberp value) (atj-gen-shallow-number value))
         ((characterp value) (atj-gen-shallow-char value))
         ((stringp value) (atj-gen-shallow-string value))
@@ -2025,6 +2019,56 @@
                                   (acl2-count index))
                                1))
 
+  (define atj-gen-shallow-jprimarr-length-app
+    ((array pseudo-termp)
+     (src-type atj-typep)
+     (dst-type atj-typep)
+     (jvar-result-base stringp)
+     (jvar-result-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded
+            ACL2 application of a Java primitive array length operation."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model Java primitive array length operations
+       (i.e. @(tsee byte-array-read) etc.) are treated specially.
+       We generate Java code to compute the array operand,
+       and generate a Java field access expression for the length."))
+    (b* (((mv array-block
+              array-expr
+              jvar-result-index) (atj-gen-shallow-term array
+                                                       jvar-result-base
+                                                       jvar-result-index
+                                                       pkg-class-names
+                                                       fn-method-names
+                                                       curr-pkg
+                                                       qpairs
+                                                       t ; GUARDS$
+                                                       wrld))
+         (block array-block)
+         (expr (jexpr-field array-expr "length")))
+      (mv block
+          (atj-adapt-expr-to-type expr src-type dst-type)
+          jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count array)
+                               1))
+
   (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
                                   (args pseudo-term-listp)
                                   (src-type atj-typep)
@@ -2164,6 +2208,19 @@
                                              curr-pkg
                                              qpairs
                                              wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-java-primarray-lengths*)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-jprimarr-length-app (car args)
+                                               src-type
+                                               dst-type
+                                               jvar-result-base
+                                               jvar-result-index
+                                               pkg-class-names
+                                               fn-method-names
+                                               curr-pkg
+                                               qpairs
+                                               wrld))
          ((mv arg-blocks
               arg-exprs
               jvar-result-index) (atj-gen-shallow-terms args
