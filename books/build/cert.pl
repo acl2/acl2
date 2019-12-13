@@ -705,7 +705,7 @@ if ($acl2) {
     # canonicalize the path
     $acl2 = abs_canonical_path($acl2);
     unless($quiet || $no_build) {
-        print $STDERR "ACL2 executable is ${acl2}\n";
+        print STDERR "ACL2 executable is ${acl2}\n";
     }
     $ENV{"ACL2"} = $acl2;
 } else {
@@ -805,8 +805,8 @@ my %labels = %$labels_ref;
 # print "end targets\n";
 
 unless (@targets) {
-    print $STDERR "\nError: No targets provided.\n";
-    print $STDERR $helpstr;
+    print STDERR "\nError: No targets provided.\n";
+    print STDERR $helpstr;
     exit 1;
 }
 
@@ -1161,8 +1161,8 @@ unless ($no_makefile) {
                     # print $mf " \\\n     " . rel_path($bin_dir, $image);
                     print $mf " \\\n     " . make_encode(File::Spec->catfile($bin_dir, $image));
                 } elsif (! $warned_bindir) {
-                    print $STDERR "Warning: no --bin set, so not adding image dependencies,\n";
-                    print $STDERR " e.g.   $cert : $image\n";
+                    print STDERR "Warning: no --bin set, so not adding image dependencies,\n";
+                    print STDERR " e.g.   $cert : $image\n";
                     $warned_bindir = 1;
                 }
             }
@@ -1206,8 +1206,8 @@ unless ($no_makefile) {
                 # print $mf " \\\n     " . rel_path($bin_dir, $image);
                 print $mf " \\\n     " . make_encode(File::Spec->catfile($bin_dir, $image));
             } elsif (! $warned_bindir) {
-                print $STDERR "Warning: no --bin set, so not adding image dependencies,\n";
-                print $STDERR " e.g.   $cert : $image\n";
+                print STDERR "Warning: no --bin set, so not adding image dependencies,\n";
+                print STDERR " e.g.   $cert : $image\n";
                 $warned_bindir = 1;
             }
         }
