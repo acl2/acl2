@@ -657,7 +657,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * @throws IllegalArgumentException If {@code elements} is {@code null},
      *                                  or any of its elements is {@code null}.
      */
-    public Acl2Value makeList(Acl2Value[] elements) {
+    public static Acl2Value makeList(Acl2Value[] elements) {
         if (elements == null)
             throw new IllegalArgumentException("Null array of list elements.");
         Acl2Value list = Acl2Symbol.NIL;
@@ -678,7 +678,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      *                                  or it is an empty array,
      *                                  or any of its elements is {@code null}.
      */
-    public Acl2Value makeListStar(Acl2Value[] elements) {
+    public static Acl2Value makeListStar(Acl2Value[] elements) {
         if (elements == null)
             throw new IllegalArgumentException
                     ("Null array of list elements.");
