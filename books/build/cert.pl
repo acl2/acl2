@@ -591,12 +591,13 @@ sub add_command {
     	  sub { my $target = shift;
     		my $line = $opt_value;
     		$line =~ s/{}/$target/g;
+		# Print outputs from commands
     		print `$line`;
     	  });
 }
 
-GetOptions ("help|h"               => sub { print $summary_str;
-                                            print $helpstr;
+GetOptions ("help|h"               => sub { print $STDERR $summary_str;
+                                            print $STDERR $helpstr;
                                             exit 0 ; },
             "jobs|j=i"             => \$jobs,
             "clean-certs|cc"       => \$certlib_opts{"clean_certs"},
@@ -608,7 +609,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
             "no-boilerplate"       => \$no_boilerplate,
             "var-prefix=s"         => \$var_prefix,
             "o=s"                  => \$mf_name,
-            "all-deps|d"           => sub { print("The --all-deps/-d option no longer does anything."); },
+            "all-deps|d"           => sub { print $STDERR "The --all-deps/-d option no longer does anything."; },
             "static-makefile|s=s"  => sub {shift;
                                            $mf_name = shift;
                                            $certlib_opts{"all_deps"} = 1;
@@ -638,12 +639,14 @@ GetOptions ("help|h"               => sub { print $summary_str;
             },
             "svn-status"           => sub {push (@run_sources,
                                                  sub { my $target = shift;
+						       # print command outputs  to stdout
                                                        print `svn status --no-ignore $target`;
                                                    })},
             "tags-file=s"          => sub { shift;
                                             my $tagfile = shift;
                                             push (@run_sources,
                                                   sub { my $target = shift;
+							# print command outputs to stdout
                                                         print `etags -a -o $tagfile $target`;})},
             "source-cmd=s"          => \&add_command,
             "otherdep-cmd=s"        => \&add_command,
@@ -702,14 +705,14 @@ if ($acl2) {
     # canonicalize the path
     $acl2 = abs_canonical_path($acl2);
     unless($quiet || $no_build) {
-        print "ACL2 executable is ${acl2}\n";
+        print $STDERR "ACL2 executable is ${acl2}\n";
     }
     $ENV{"ACL2"} = $acl2;
 } else {
     unless ($quiet || $no_build) {
-        print
+        print($STDERR,
 "ACL2 executable not found.  Please specify with --acl2 command line
-flag or ACL2 environment variable.\n";
+flag or ACL2 environment variable.\n");
     }
 }
 
@@ -754,15 +757,15 @@ if (! $acl2_books ) {
 
 if (! $acl2_books ) {
     unless ($quiet || $no_build) {
-        print
+        print($STDERR,
 "ACL2 system books not found.  Please specify with --acl2-books
-command line flag or ACL2_SYSTEM_BOOKS environment variable.";
+command line flag or ACL2_SYSTEM_BOOKS environment variable.");
     }
 }
 
 $acl2_books = abs_canonical_path($acl2_books);
 unless($quiet) {
-    print "System books directory is ${acl2_books}\n";
+    print($STDERR, "System books directory is ${acl2_books}\n");
 }
 
 certlib_add_dir("SYSTEM", $acl2_books);
@@ -802,8 +805,8 @@ my %labels = %$labels_ref;
 # print "end targets\n";
 
 unless (@targets) {
-    print "\nError: No targets provided.\n";
-    print $helpstr;
+    print $STDERR "\nError: No targets provided.\n";
+    print $STDERR $helpstr;
     exit 1;
 }
 
@@ -906,6 +909,7 @@ foreach my $cert (@certs) {
     }
 }
 if (%stubs && ! $quiet) {
+    # Print relocation warnings to STDOUT.  Skipped when $quiet.
     print "Relocation warnings:\n";
     print "--------------------------\n";
     my @stubbooks = sort(keys %stubs);
@@ -1157,8 +1161,8 @@ unless ($no_makefile) {
                     # print $mf " \\\n     " . rel_path($bin_dir, $image);
                     print $mf " \\\n     " . make_encode(File::Spec->catfile($bin_dir, $image));
                 } elsif (! $warned_bindir) {
-                    print "Warning: no --bin set, so not adding image dependencies,\n";
-                    print " e.g.   $cert : $image\n";
+                    print $STDERR "Warning: no --bin set, so not adding image dependencies,\n";
+                    print $STDERR " e.g.   $cert : $image\n";
                     $warned_bindir = 1;
                 }
             }
@@ -1202,8 +1206,8 @@ unless ($no_makefile) {
                 # print $mf " \\\n     " . rel_path($bin_dir, $image);
                 print $mf " \\\n     " . make_encode(File::Spec->catfile($bin_dir, $image));
             } elsif (! $warned_bindir) {
-                print "Warning: no --bin set, so not adding image dependencies,\n";
-                print " e.g.   $cert : $image\n";
+                print $STDERR "Warning: no --bin set, so not adding image dependencies,\n";
+                print $STDERR " e.g.   $cert : $image\n";
                 $warned_bindir = 1;
             }
         }
@@ -1248,8 +1252,8 @@ unless ($no_makefile) {
                                   ($keep_going ? " -k" : ""),
                                   @make_args,
                                   "all-cert-pl-certs"));
-        print "$make_cmd\n";
         if ($certlib_opts{"debugging"}) {
+	    # Print debugging output on stdout
             print "$make_cmd\n";
         }
         exec $make_cmd;

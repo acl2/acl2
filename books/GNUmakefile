@@ -1640,7 +1640,7 @@ git_status:
                       --write-sources $(BUILD_DIR)/git_source_deps \
                       --write-otherdeps $(BUILD_DIR)/git_other_deps \
                       --targets $(BUILD_DIR)/git_lisp_sources
-	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | xargs --delimiter='\n' git status --
+	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | xargs --delimiter='\n' git status -u --
 
 
 ##############################
