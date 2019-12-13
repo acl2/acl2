@@ -16,7 +16,7 @@
                      loghead logtail)))
 
 (local
- (in-theory (disable nth update-nth floor mod true-listp)))
+ (in-theory (disable nth update-nth ceiling floor mod true-listp)))
 
 (defconst *initialbytcnt* 16)
 

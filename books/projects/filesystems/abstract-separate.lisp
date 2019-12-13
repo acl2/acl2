@@ -13,7 +13,7 @@
                      loghead logtail)))
 
 (local
- (in-theory (disable nth update-nth floor mod true-listp take member-equal)))
+ (in-theory (disable nth update-nth ceiling floor mod true-listp take member-equal)))
 
 ;; This is explicitly a replacement for assoc-equal with a vacuous guard.
 (defund abs-assoc (x alist)
