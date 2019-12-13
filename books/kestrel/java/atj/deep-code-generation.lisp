@@ -534,7 +534,7 @@
                       :code (append (atj-gen-pkgs pkgs)
                                     (atj-gen-deep-fndefs fns-to-translate)
                                     (jblock-smethod *aij-type-named-fn*
-                                                    "validateAll"
+                                                    "validateAllFunctionCalls"
                                                     nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
