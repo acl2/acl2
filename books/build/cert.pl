@@ -710,7 +710,7 @@ if ($acl2) {
     $ENV{"ACL2"} = $acl2;
 } else {
     unless ($quiet || $no_build) {
-        print(STDERR 
+        print(STDERR
 "ACL2 executable not found.  Please specify with --acl2 command line
 flag or ACL2 environment variable.\n");
     }
@@ -757,7 +757,7 @@ if (! $acl2_books ) {
 
 if (! $acl2_books ) {
     unless ($quiet || $no_build) {
-        print(STDERR 
+        print(STDERR
 "ACL2 system books not found.  Please specify with --acl2-books
 command line flag or ACL2_SYSTEM_BOOKS environment variable.");
     }
@@ -1015,7 +1015,7 @@ unless ($no_makefile) {
         # }
     }
     print $mf "\n\n";
-    
+
 
     # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
     # print $mf "${var_prefix}_CERTS := \$(${var_prefix}_CERTS)";
