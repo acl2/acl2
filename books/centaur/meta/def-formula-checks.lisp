@@ -114,17 +114,69 @@
     (cons (acl2::make-tmplsubst :atoms `((<formal> . ,(car formals))))
           (formals-subsubsts (cdr formals)))))
 
+(defun def-formula-check-definition-thm-fn-aux (name-lst evl flags
+                                                         formula-check wrld)
+  (declare (xargs :mode :program))
+  (cond
+   ((atom name-lst)
+    (mv nil nil nil))
+   (t
+    (b* ((name (car name-lst))
+         (formals (acl2::formals name wrld))
+         ((mv rest-lemma rest-hint rest-defthm)
+          (def-formula-check-definition-thm-fn-aux
+            (cdr name-lst) evl flags formula-check wrld))
+         (flag (if flags `(:flag ,(cdr (assoc-equal name flags))) nil))
+         
+         ((list lemma hint defthm)
+          (acl2::template-subst
+           `((defthmd <evl>-of-<name>-lemma
+               (implies (and (<formula-check> state)
+                             (<evl>-meta-extract-global-facts))
+                        (equal (<evl> '(<name> . <formals>)
+                                      (list (:@proj <formals> (cons '<formal> <formal>))))
+                               (<name> . <formals>)))
+               ,@flag)
+             
+             (:instance <evl>-meta-extract-formula
+                        (acl2::name '<name>)
+                        (acl2::a
+                         (list (:@proj <formals> (cons '<formal> <formal>))))
+                        (acl2::st state))
+             
+             (defthm <evl>-of-<name>-when-<formula-check>
+               (implies (and (<formula-check> state)
+                             (<evl>-meta-extract-global-facts))
+                        (equal (<evl> (list '<name> . <formals>) env)
+                               (<name> (:@proj <formals>
+                                               (<evl> <formal> env)))))
+               :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
+                                               (:@proj <formals> (<formal> (<evl> <formal> env)))))
+                       :in-theory (enable <evl>-of-fncall-args)))))
+           :str-alist `(("<NAME>" . ,(symbol-name name))
+                        ("<EVL>" . ,(symbol-name evl))
+                        ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
+           :atom-alist `((<name> . ,name)
+                         (<evl> . ,evl)
+                         (<formula-check> . ,formula-check)
+                         (<formals> . ,formals))
+           :subsubsts `((<formals> . ,(formals-subsubsts formals)))
+           :pkg-sym formula-check)))
+      (mv (cons lemma rest-lemma)
+          (cons hint rest-hint)
+          (cons defthm rest-defthm))))))
+
 (defun def-formula-check-definition-thm-fn (name evl formula-check wrld)
   (declare (xargs :mode :program))
   (b* ((recursivep (fgetprop name 'acl2::recursivep nil wrld))
        (formals (acl2::formals name wrld))
-       ((mv name formals name2 formals2) ;; for 2 mutually recursive functions
+       #|((mv name formals name2 formals2) ;; for 2 mutually recursive functions
         (if (>= (len recursivep) 2)
             (mv (car recursivep)
                 (acl2::formals (car recursivep) wrld)
                 (cadr recursivep)
                 (acl2::formals (cadr recursivep) wrld))
-          (mv name formals nil nil))))
+          (mv name formals nil nil)))||#)
     (acl2::template-subst
      (cond
       ((equal recursivep nil)
@@ -166,7 +218,7 @@
             :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
                                             (:@proj <formals> (<formal> (<evl> <formal> env)))))
                     :in-theory (enable <evl>-of-fncall-args))))))
-      ((equal (len recursivep) 2)
+      (t
        (b* ((flag-fns (table-alist 'flag::flag-fns wrld))
             (entry (assoc-equal (car recursivep) flag-fns))
             (- (if entry nil
@@ -174,75 +226,30 @@
                              "You need to have make-flag for ~p0 ~%"
                              (list (cons #\0 recursivep)))))
             (flags (nth 2 entry))
-            (macro-name (nth 3 entry)))
+            (macro-name (nth 3 entry))
+            ((mv lemmas lemma-hints defthms)
+             (def-formula-check-definition-thm-fn-aux
+               recursivep evl flags formula-check wrld)))
          `(encapsulate
             nil
             (local
              (,macro-name
-              (defthmd <evl>-of-<name>-lemma
-                (implies (and (<formula-check> state)
-                              (<evl>-meta-extract-global-facts))
-                         (equal (<evl> '(<name> . <formals>)
-                                       (list (:@proj <formals> (cons '<formal> <formal>))))
-                                (<name> . <formals>)))
-                :flag ,(cdr (assoc-equal name flags)))
-              (defthmd <evl>-of-<name2>-lemma
-                (implies (and (<formula-check> state)
-                              (<evl>-meta-extract-global-facts))
-                         (equal (<evl> '(<name2> . <formals2>)
-                                       (list (:@proj <formals2> (cons '<formal> <formal>))))
-                                (<name2> . <formals2>)))
-                :flag ,(cdr (assoc-equal name2 flags)))
+
+              ,@lemmas
               :hints (("Goal"
-                       :in-theory (e/d (<name> <name2>)
-                                       ()))
-                      '(:use ((:instance <evl>-meta-extract-formula
-                                         (acl2::name '<name>)
-                                         (acl2::a
-                                          (list (:@proj <formals> (cons '<formal> <formal>))))
-                                         (acl2::st state))
-                              (:instance <evl>-meta-extract-formula
-                                         (acl2::name '<name2>)
-                                         (acl2::a
-                                          (list (:@proj <formals2> (cons '<formal> <formal>))))
-                                         (acl2::st state)))
-                             :in-theory (enable <evl>-of-fncall-args <name>
-                                                <name2>)))))
-
-            (defthm <evl>-of-<name>-when-<formula-check>
-              (implies (and (<formula-check> state)
-                            (<evl>-meta-extract-global-facts))
-                       (equal (<evl> (list '<name> . <formals>) env)
-                              (<name> (:@proj <formals>
-                                              (<evl> <formal> env)))))
-              :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
-                                              (:@proj <formals> (<formal> (<evl> <formal> env)))))
-                      :in-theory (enable <evl>-of-fncall-args))))
-
-            (defthm <evl>-of-<name2>-when-<formula-check>
-              (implies (and (<formula-check> state)
-                            (<evl>-meta-extract-global-facts))
-                       (equal (<evl> (list '<name2> . <formals2>) env)
-                              (<name2> (:@proj <formals2>
-                                               (<evl> <formal> env)))))
-              :hints(("Goal" :use ((:instance <evl>-of-<name2>-lemma
-                                              (:@proj <formals2> (<formal> (<evl> <formal> env)))))
-                      :in-theory (enable <evl>-of-fncall-args)))))))
-      (t `(value-triple (cw  "~%~%WARNING! DEF-FORMULA-CHECKS DOES NOT ~
-              SUPPORT MUTUALLY RECURSIVE DEFINITIONS WITH MORE THAN 2 FUNCTIONS ~
-              IN A CLIQUE YET. PROCEED WITH CAUTION. THIS HAPPENED WITH ~p0 ~% ~%" ',recursivep))))
+                       :in-theory (e/d ,recursivep ()))
+                      '(:use ,lemma-hints
+                             :in-theory (e/d (<evl>-of-fncall-args
+                                              . ,recursivep) ())))))
+            ,@defthms))))
      :str-alist `(("<NAME>" . ,(symbol-name name))
-                  ("<NAME2>" . ,(symbol-name name2))
                   ("<EVL>" . ,(symbol-name evl))
                   ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
      :atom-alist `((<name> . ,name)
-                   (<name2> . ,name2)
                    (<evl> . ,evl)
                    (<formula-check> . ,formula-check)
-                   (<formals> . ,formals)
-                   (<formals2> . ,formals2))
-     :subsubsts `((<formals> . ,(formals-subsubsts formals))
-                  (<formals2> . ,(formals-subsubsts formals2)))
+                   (<formals> . ,formals))
+     :subsubsts `((<formals> . ,(formals-subsubsts formals)))
      :pkg-sym formula-check)))
 
 (defmacro def-formula-check-definition-thm (name evl formula-check)
