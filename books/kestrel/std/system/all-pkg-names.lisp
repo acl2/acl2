@@ -15,8 +15,8 @@
 
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 
+(local (include-book "std/lists/union" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
-(local (include-book "kestrel/utilities/lists/union-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/string-listp-theorems" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
