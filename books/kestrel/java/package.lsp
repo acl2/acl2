@@ -17,6 +17,7 @@
 (defpkg "JAVA" (append *std-pkg-symbols*
                        '(*pkg-witness-name*
                          *primitive-formals-and-guards*
+                         *stobjs-out-invalid*
                          add-const-to-untranslate-preprocess
                          add-suffix
                          all-ffn-symbs
@@ -88,10 +89,12 @@
                          logicp
                          lower-case-p
                          make-lambda
+                         maybe-natp
                          maybe-stringp
                          msg-listp
                          nats=>string
                          no-stobjs-p
+                         number-of-results+
                          organize-symbols-by-name
                          organize-symbols-by-pkg
                          packn
