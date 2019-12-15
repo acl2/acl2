@@ -666,7 +666,7 @@
 
 (define atj-type-list-join ((x atj-type-listp) (y atj-type-listp))
   :returns (lub atj-type-listp :hyp :guard)
-  :short "Lift @(tsee atj-type-joint) to lists."
+  :short "Lift @(tsee atj-type-join) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
