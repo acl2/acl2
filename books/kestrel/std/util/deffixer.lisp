@@ -51,7 +51,7 @@
     "          :long ..."
     "  )")
 
-   (xdoc::h3 "Input")
+   (xdoc::h3 "Inputs")
 
    (xdoc::desc
     "@('name')"
