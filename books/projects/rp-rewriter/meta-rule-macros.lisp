@@ -296,3 +296,22 @@
            :induct (len subterms)
            :do-not-induct t
            :in-theory (e/d () ()))))
+
+
+(defun create-regular-eval-lemma-fn (fn argc formula-checks)
+  `(defthm ,(sa 'regular-rp-evl-of fn 'when formula-checks)
+     (implies (and (rp-evl-meta-extract-global-facts :state state)
+                   (,formula-checks state)
+                   (case-match x ((',fn . ,(repeat argc '&)) t)))
+              (and (equal (rp-evl x a)
+                          (,fn . ,(loop$ for i from 1 to argc
+                                         collect `(rp-evl (nth ,i x) a))))
+                   (equal (rp-evlt x a)
+                          (,fn . ,(loop$ for i from 1 to argc
+                                         collect `(rp-evlt (nth ,i x) a))))))))
+
+
+
+(defmacro create-regular-eval-lemma (fn argc formula-checks)
+  `(make-event
+    (create-regular-eval-lemma-fn ',fn ',argc ',formula-checks)))  

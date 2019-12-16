@@ -59,6 +59,8 @@
 (local
  (in-theory (enable rule-syntaxp)))
 
+(defconst *rp-hard-error-returns-nilp* t)
+
 (encapsulate
   nil
 
@@ -402,7 +404,7 @@
              (mv term rp-state)))
            #|(term (if (equal fn 'list) (rp-untrans term) term))||#
            ((mv err val)
-            (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state t nil))
+            (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state *rp-hard-error-returns-nilp* nil))
            (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (if err
@@ -451,7 +453,7 @@
                      :mode :logic))
     (b* ((params (rp-apply-bindings-subterms params var-bindings))
          ((mv err val)
-          (magic-ev-fncall fn-name (unquote-all params) state t nil)))
+          (magic-ev-fncall fn-name (unquote-all params) state *rp-hard-error-returns-nilp* nil)))
       (if err
           (progn$ (hard-error 'rp-ev-fncall
                               "Magic-ev-fncall error for syntaxp check. val: ~p0 for term: ~p1 ~%"
@@ -665,7 +667,7 @@ returns (mv rule rules-rest bindings rp-context)"
           (magic-ev-fncall (rp-meta-fnc meta-rule)
                            (list term)
                            state
-                           t
+                           *rp-hard-error-returns-nilp*
                            nil))
          ((when (or error
                     (not (mbe :logic (acl2::logicp (rp-meta-fnc meta-rule) (w state))

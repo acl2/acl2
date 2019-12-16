@@ -53,7 +53,7 @@
 
   (update-rp-clause-proc svl-multiplier))
 
-
+  
 (local
  (rp::fetch-new-events
   (include-book "arithmetic-5/top" :dir :system)

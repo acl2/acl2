@@ -169,14 +169,7 @@
 (defun def-formula-check-definition-thm-fn (name evl formula-check wrld)
   (declare (xargs :mode :program))
   (b* ((recursivep (fgetprop name 'acl2::recursivep nil wrld))
-       (formals (acl2::formals name wrld))
-       #|((mv name formals name2 formals2) ;; for 2 mutually recursive functions
-        (if (>= (len recursivep) 2)
-            (mv (car recursivep)
-                (acl2::formals (car recursivep) wrld)
-                (cadr recursivep)
-                (acl2::formals (cadr recursivep) wrld))
-          (mv name formals nil nil)))||#)
+       (formals (acl2::formals name wrld)))
     (acl2::template-subst
      (cond
       ((equal recursivep nil)
@@ -201,13 +194,16 @@
                                           (list (:@proj <formals> (cons '<formal> <formal>))))
                                    (<name> . <formals>)))
                    :hints(("Goal" :in-theory (enable <name>)
-                           :induct (<name> . <formals>))
+                           :induct (<name> . <formals>)
+                           :do-not-induct t)
                           '(:use ((:instance <evl>-meta-extract-formula
                                              (acl2::name '<name>)
                                              (acl2::a
                                               (list (:@proj <formals> (cons '<formal> <formal>))))
                                              (acl2::st state)))
-                                 :in-theory (enable <evl>-of-fncall-args <name>)))))
+                                 :do-not-induct t
+                                 :in-theory (e/d (<evl>-of-fncall-args <name>)
+                                                 (<evl>-meta-extract-formula))))))
 
           (defthm <evl>-of-<name>-when-<formula-check>
             (implies (and (<formula-check> state)
@@ -215,8 +211,10 @@
                      (equal (<evl> (list '<name> . <formals>) env)
                             (<name> (:@proj <formals>
                                             (<evl> <formal> env)))))
-            :hints(("Goal" :use ((:instance <evl>-of-<name>-lemma
-                                            (:@proj <formals> (<formal> (<evl> <formal> env)))))
+            :hints(("Goal"
+                    :do-not-induct t
+                    :use ((:instance <evl>-of-<name>-lemma
+                                     (:@proj <formals> (<formal> (<evl> <formal> env)))))
                     :in-theory (enable <evl>-of-fncall-args))))))
       (t
        (b* ((flag-fns (table-alist 'flag::flag-fns wrld))
@@ -234,13 +232,14 @@
             nil
             (local
              (,macro-name
-
               ,@lemmas
               :hints (("Goal"
+                       :do-not-induct t
                        :in-theory (e/d ,recursivep ()))
                       '(:use ,lemma-hints
                              :in-theory (e/d (<evl>-of-fncall-args
-                                              . ,recursivep) ())))))
+                                              . ,recursivep) ())
+                             :do-not-induct t))))
             ,@defthms))))
      :str-alist `(("<NAME>" . ,(symbol-name name))
                   ("<EVL>" . ,(symbol-name evl))

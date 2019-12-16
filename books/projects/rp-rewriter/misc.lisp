@@ -258,7 +258,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                        (enable-meta-rules 'nil)
                        (enable-rules 'nil)
                        (disable-rules 'nil)
-                       (runes 'nil))
+                       (runes 'nil)
+                       (not-simplified-action ':warning))
   `(encapsulate
      nil
 
@@ -296,7 +297,7 @@ Try using (rp::update-rp-brr t rp::rp-state) and
            (rules-alist (get-rules runes state :new-synps new-synps))
            (rp-state (rp-state-new-run rp-state))
            (old-not-simplified-action (not-simplified-action rp-state))
-           (rp-state (update-not-simplified-action :warning rp-state))
+           (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
            (meta-rules  (make-fast-alist (cdr (assoc-equal 'meta-rules-list (table-alist
                                                                              'rp-rw (w state))))))
 
