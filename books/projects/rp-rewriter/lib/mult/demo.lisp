@@ -46,6 +46,7 @@
 (include-book "centaur/sv/top" :dir :system)
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "oslib/ls" :dir :system)
+
 (include-book "centaur/svl/top" :dir :system)
 
 ;; for correctness proof
@@ -111,17 +112,15 @@
                               svl-design)
       :vars-to-avoid (svl-design delayed-env))
 
-    ;; value lemma
+    ;; in/out lemma for full adder
     (def-rp-rule svl-run-phase-of-FullAdder-tem
       (implies (and (bitp x)
                     (bitp y)
-                    (bitp z)
-                    (force (equal (assoc-equal "fa" svl-design)
-                                  ',(assoc-equal "fa" *svl-design*))))
+                    (bitp z))
                (equal (svl::svl-run-phase-wog "fa"
                                               (list x y z)
                                               '(nil nil)
-                                              svl-design)
+                                              *svl-design*)
                       (mv (list-m2-f2 (merge-sum x y z))
                           '(nil nil))))
       :hints (("Goal"
@@ -155,7 +154,7 @@
     (def-rw-opener-error
       svl-run-phase-of-HalfAdder_opener-error
       (svl::svl-run-phase-wog "ha"
-                              ins
+                              (list x y)
                               delayed-env
                               svl-design)
       :vars-to-avoid (svl-design delayed-env))
@@ -203,10 +202,10 @@
                                           (list in1 in2)
                                           '(nil nil)
                                           *svl-design*)
-                  (list (list (rp::4vec-adder (svl::bits in1 0 128)
-                                              (svl::bits in2 0 128 )
-                                              0 129))
-                        (svl::make-svl-env))))
+                  (mv (list (rp::4vec-adder (svl::bits in1 0 128)
+                                            (svl::bits in2 0 128 )
+                                            0 129))
+                      (svl::make-svl-env))))
   :disable-meta-rules (resolve-pp-sum-order-main)
   :enable-rules rp::*adder-rules*
   :disable-rules rp::*pp-rules*)
@@ -244,7 +243,25 @@
                                           (list in1 in2)
                                           '(nil nil)
                                           *svl-design*)
-                  (list  (list (loghead 128 (* (sign-ext in1 64)
+                  (mv  (list (loghead 128 (* (sign-ext in1 64)
                                                (sign-ext in2 64))))
-                         (svl::make-svl-env)))))
+                       (svl::make-svl-env)))))
 
+
+
+;; ;; Let's make the proof fail
+;; (disable-rules '((:rewrite bitp-binary-and)
+;;                  (:rewrite bitp-binary-or)
+;;                  (:rewrite bitp-binary-xor)
+;;                  (:rewrite multiplier-correct-v2)))
+
+;; (defthmrp multiplier-correct-to-fail
+;;   (implies (and (integerp in1)
+;;                 (integerp in2))
+;;            (equal (svl::svl-run-phase-wog "DT_SB4_HC_64_64"
+;;                                           (list in1 in2)
+;;                                           '(nil nil)
+;;                                           *svl-design*)
+;;                   (mv  (list (loghead 128 (* (sign-ext in1 64)
+;;                                                (sign-ext in2 64))))
+;;                        (svl::make-svl-env)))))

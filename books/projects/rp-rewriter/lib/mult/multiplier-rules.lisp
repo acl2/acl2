@@ -1343,6 +1343,17 @@
                             bit-fix
                             bitp) ()))))
 
+(def-rp-rule binary-xor-of-1
+  (and (equal (binary-xor x 1)
+              (not$ x))
+       (equal (binary-xor 1 x)
+              (not$ x)))
+  :hints (("Goal"
+           :in-theory (e/d (binary-xor
+                            bit-fix
+                            not$
+                            bitp) ()))))
+
 (def-rp-rule not$-of-not$
   (equal (not$ (not$ x))
          (bit-fix x))
@@ -1407,6 +1418,7 @@
     not$-of-not$
     binary-?-of-constants
     and$-of-0
+    binary-xor-of-1
     or$-of-0
     or$-of-1))
 

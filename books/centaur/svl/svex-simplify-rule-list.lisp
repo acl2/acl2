@@ -321,6 +321,9 @@
       (:rewrite 4vec-p-of-svex-env-fastlookup-wog)
       (:rewrite 4vec-bitor-of-negated-same-var-with-bitnot$)
       (:rewrite 4vec-bitor-with-one)
+      (:rewrite 4vec-bitand-of-4vec-concat$)
+      (:rewrite 4vec-bitor-of-4vec-concat$)
+      (:rewrite 4vec-bitxor-of-4vec-concat$)
 
       (:rewrite logxor-to-4vec-bitxor)
       (:rewrite logand-to-4vec-bitand)
@@ -329,6 +332,8 @@
       (:rewrite ash-to-4vec-rsh)
       (:rewrite logtail-to-4vec-rsh)
       (:rewrite loghead-to-4vec-part-select)
+
+      
       ))
 
   (make-event
