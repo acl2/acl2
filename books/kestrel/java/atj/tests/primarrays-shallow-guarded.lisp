@@ -21,6 +21,8 @@
 (java::def-atj-main-function-type add-lengths-of-arrays
                                   (:jbyte[] :jshort[]) :jint)
 
+(java::def-atj-main-function-type create-array-of-length (:jbyte) :jchar[])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the tested functions.
@@ -28,6 +30,7 @@
 
 (java::atj read-from-array
            add-lengths-of-arrays
+           create-array-of-length
            :deep nil
            :guards t
            :java-class "PrimarraysShallowGuarded")
