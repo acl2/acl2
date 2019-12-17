@@ -693,7 +693,7 @@ debug-create-dir: $(MOUNTPOINT) cp-replicant.lisp
 	sudo umount $(MOUNTPOINT)
 	true
 
-debug-create-dir-and-file: $(MOUNTPOINT) cp-replicant.lisp
+debug-create-dir-and-file: $(MOUNTPOINT)
 	rm -f $(DISK)
 	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
 	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
@@ -703,7 +703,7 @@ debug-create-dir-and-file: $(MOUNTPOINT) cp-replicant.lisp
 	sudo umount $(MOUNTPOINT)
 	true
 
-debug-create-dir-copy-file: $(MOUNTPOINT) cp-replicant.lisp
+debug-create-dir-copy-file: $(MOUNTPOINT)
 	rm -f $(DISK)
 	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
 	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
@@ -714,7 +714,7 @@ debug-create-dir-copy-file: $(MOUNTPOINT) cp-replicant.lisp
 	sudo umount $(MOUNTPOINT)
 	true
 
-debug-create-dir-and-file-rm: $(MOUNTPOINT) cp-replicant.lisp
+debug-create-dir-and-file-rm: $(MOUNTPOINT)
 	rm -f $(DISK)
 	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
 	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
@@ -726,7 +726,7 @@ debug-create-dir-and-file-rm: $(MOUNTPOINT) cp-replicant.lisp
 	sudo umount $(MOUNTPOINT)
 	true
 
-debug-create-dir-and-file-mv: $(MOUNTPOINT) cp-replicant.lisp
+debug-create-dir-and-file-mv: $(MOUNTPOINT)
 	rm -f $(DISK)
 	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
 	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
@@ -736,6 +736,22 @@ debug-create-dir-and-file-mv: $(MOUNTPOINT) cp-replicant.lisp
 	mv $(MOUNTPOINT)/tmp/ticket1.txt $(MOUNTPOINT)/tmp/ticket2.txt
 	sleep 1
 	sudo umount $(MOUNTPOINT)
+	true
+
+create-tar-1: $(MOUNTPOINT)
+	rm -f $(DISK)
+	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
+	mkdir -p $(MOUNTPOINT)/tmp/tickets1
+	cp input-4623-bytes.txt $(MOUNTPOINT)/tmp/tickets1/ticket1.txt
+	cp input-4623-bytes.txt $(MOUNTPOINT)/tmp/tickets1/ticket2.txt
+	cd $(MOUNTPOINT)/tmp; tar --create --file tickets1.tar \
+	--verbose tickets1
+	mv $(MOUNTPOINT)/tmp/tickets1 $(MOUNTPOINT)/tmp/tickets2
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	env DISK=disk1.raw TAR_INPUT="/tmp/tickets1.tar" \
+	TAR_OUTPUT="/tmp" saved_acl2 < tar-reader.lisp
 	true
 
 # The following test creates a 128 MB disk image, copies a file to the

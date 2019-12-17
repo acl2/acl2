@@ -134,11 +134,34 @@ the list @('y')."
                     (prefixp x y)))
     :hints(("Goal"
             :induct (prefixp x y)
-            :in-theory (enable prefixp
-                               list-equiv))))
+            :in-theory (enable prefixp list-equiv))))
 
   (defthm prefixp-when-equal-lengths
     (implies (equal (len x) (len y))
              (equal (prefixp x y)
                     (list-equiv x y)))
-    :hints(("Goal" :in-theory (enable prefixp list-equiv)))))
+    :hints(("Goal" :in-theory (enable prefixp list-equiv))))
+
+  ;; Mihir M. mod: Three lemmas, prefixp-transitive, prefixp-append-append, and
+  ;; prefixp-nthcdr-nthcdr, are added. prefixp-transitive generates two rewrite
+  ;; rules which are identical except in how they bind the free variable y.
+  (defthm
+    prefixp-transitive
+    (implies (and (prefixp x y) (prefixp y z))
+             (prefixp x z))
+    :hints (("goal" :in-theory (enable prefixp)))
+    :rule-classes
+    (:rewrite (:rewrite :corollary (implies (and (prefixp y z) (prefixp x y))
+                                            (prefixp x z)))))
+
+  (defthm prefixp-append-append
+    (equal (prefixp (append x1 x2) (append x1 y))
+           (prefixp x2 y))
+    :hints (("goal" :in-theory (enable prefixp))))
+
+  (defthm prefixp-nthcdr-nthcdr
+    (implies (and (>= (len l2) n)
+                  (equal (take n l1) (take n l2)))
+             (equal (prefixp (nthcdr n l1) (nthcdr n l2))
+                    (prefixp l1 l2)))
+    :hints (("goal" :in-theory (enable prefixp)))))
