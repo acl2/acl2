@@ -3451,7 +3451,7 @@
 ; We start with pushing a new value onto the stack for a given key.
 ; Complicating things is our decision to order the keys in the alists by (a
 ; priori) frequency of access.  The aim is to speed up getprop.  We record
-; the results of many experiments below.
+; the results of many early experiments below.
 
 ; Recall that the current-acl2-world is implemented so that the logical
 ; properties are stored in an alist which is obtained via a raw lisp get of the
@@ -3460,23 +3460,23 @@
 ; encountered by the raw lisp get and the order of the keys encountered by the
 ; assoc :test #'eq.
 
-; The basic experiment addressed one particular proof in the Nqthm package.  To
-; set the stage, the Nqthm package was loaded and then undone back through
-; NQTHM-COUNT-SYMBOL-IS-COUNT-FN-UNPACK, a theorem whose reported proof time is
-; 35.23 by the current Version 1.8.  Then that theorem was proved again while a
-; patch was in place inside of fgetprop.  The patch collected together an alist
-; recording the calls of fgetprop.  In particular the alist entries were of the
-; form (symb (key1 . cnt1) ... (keyk . cntk)) indicating that (fgetprop symb
-; keyi <some-default> <current-acl2-world>) was called cnti times during the
-; proof.  We then wrote and compiled a program that swept the alist and
-; repeated every call of fgetprop simply to allow us to measure the total time
-; spent in fgetprop.  There were a total of 102781 calls.  To sweep the alist
-; with a no-op function of the same arity as fgetprop required 0.25 seconds.
-; We therefore consider that to be the overhead of the sweep itself.  To sweep
-; with fgetprop required 0.75 seconds, indicating that a "net" 0.50 seconds
-; were actually spent in fgetprop on the actual calls in the sample theorem.
-; (We will use "net" henceforth to mean the measured time minus 0.25.)  This
-; gives an expected "per call" time of 4.86E-6.
+; An early basic experiment addressed one particular proof in the Nqthm
+; package.  To set the stage, the Nqthm package was loaded and then undone back
+; through NQTHM-COUNT-SYMBOL-IS-COUNT-FN-UNPACK, a theorem whose reported proof
+; time is 35.23 by the current Version 1.8.  Then that theorem was proved again
+; while a patch was in place inside of fgetprop.  The patch collected together
+; an alist recording the calls of fgetprop.  In particular the alist entries
+; were of the form (symb (key1 . cnt1) ... (keyk . cntk)) indicating that
+; (fgetprop symb keyi <some-default> <current-acl2-world>) was called cnti
+; times during the proof.  We then wrote and compiled a program that swept the
+; alist and repeated every call of fgetprop simply to allow us to measure the
+; total time spent in fgetprop.  There were a total of 102781 calls.  To sweep
+; the alist with a no-op function of the same arity as fgetprop required 0.25
+; seconds.  We therefore consider that to be the overhead of the sweep itself.
+; To sweep with fgetprop required 0.75 seconds, indicating that a "net" 0.50
+; seconds were actually spent in fgetprop on the actual calls in the sample
+; theorem.  (We will use "net" henceforth to mean the measured time minus
+; 0.25.)  This gives an expected "per call" time of 4.86E-6.
 
 ; For what it is worth, a noop that calls get has an overhead of 0.267 for
 ; a net of 0.017 or a per call time of 1.65E-7 seconds.  Thus an fgetprop
@@ -3492,7 +3492,7 @@
 ; We now move on to ordering the keys seen by assoc :test #'eq.  In prior
 ; experiments we had determined the frequency with which the various keys are
 ; accessed (during the entire Nqthm package proof).  For what it is worth, here
-; is the key list, in order from most frequently accessed to least:
+; is the key list we found, in order from most frequently accessed to least:
 
 ;   '(COARSENINGS GLOBAL-VALUE CONGRUENCES SYMBOL-CLASS TYPE-PRESCRIPTIONS
 ;     LEMMAS RUNIC-MAPPING-PAIRS MULTIPLICITY STATE-IN
@@ -3737,6 +3737,39 @@
 ;
 ; ============================================================
 
+; In December 2019 we did several experiments to improve
+; *current-acl2-world-key-ordering*, since it had probably been many years
+; since that was attempted and also because RECOGNIZER-ALIST had recently been
+; added as a new property (with property GLOBAL-VALUE therefore being accessed
+; less often).  Several community books were included or LDed, as follows, in
+; each case after adding the commented-out call of update-fgetprop-stats to the
+; definition of fgetprop (together with the commented-out definitions,
+; including the one for update-fgetprop-stats, just above fgetprop's definition
+; in axioms.lisp).
+
+;   (include-book "centaur/sv/top" :dir :system)
+
+;   (ld "proof-by-generalization-mult.lisp") ; in workshops/2004/legato/support/
+
+;   (include-book "centaur/gl/gl" :dir :system)
+
+;   (ld "centaur/aignet/cert.acl2" :dir :system)
+;   (ld "centaur/aignet/cuts4.lisp" :dir :system)
+
+;   (ld "centaur/bitops/cert.acl2" :dir :system)
+;   (ld "centaur/bitops/ihsext-basics.lisp" :dir :system)
+
+;   (include-book "centaur/bitops/ihsext-basics" :dir :system)
+
+;   (include-book "projects/x86isa/top" :dir :system)
+
+;   (ld "projects/x86isa/proofs/popcount/cert.acl2" :dir :system)
+;   (ld "projects/x86isa/proofs/popcount/popcount.lisp" :dir :system)
+
+; We then called analyze-fgetprop-stats in each case to get suitable
+; statistics.  Finally, we modified *current-acl2-world-key-ordering* by
+; inspecting the results.
+
 ; End of Experimental Results.
 
 ; Below we list the most important property keys according to the results
@@ -3747,23 +3780,20 @@
 ; system are in this list (see below).
 
 (defparameter *current-acl2-world-key-ordering*
-  '(COARSENINGS
-    GLOBAL-VALUE ; mostly looked up for RECOGNIZER-ALIST (until after
-                 ; Version_8.2) and UNTOUCHABLES,which do not have other
-                 ; properties
-    RECOGNIZER-ALIST
-    RUNIC-MAPPING-PAIRS
-    DEF-BODIES
+  '(COARSENINGS ; during proofs more than include-book
+    GLOBAL-VALUE ; largely for untouchables when including a book
+    RECOGNIZER-ALIST ; during proofs more than include-book
+    RUNIC-MAPPING-PAIRS ; during proofs more than include-book
+    DEF-BODIES ; during proofs more than include-book
+    SYMBOL-CLASS
+    STOBJS-OUT
     TYPE-PRESCRIPTIONS
     TABLE-ALIST
+    LEMMAS
     CONGRUENCES
     PEQUIVS
-    SYMBOL-CLASS
-    LEMMAS
-    STOBJS-OUT
-    MACRO-BODY
-    FORMALS
-    FORWARD-CHAINING-RULES
+    MACRO-BODY ; during include-book more than proofs
+    FORMALS ; during include-book more than proofs
 
 ; Note: As of this writing there are many properties not included above, all of
 ; which fall into the low priority category.  We have omitted keys simply to
@@ -6556,14 +6586,26 @@
 
 (defparameter *known-worlds* nil)
 
+(defvar *saved-user-stobj-alist* nil)
+
 (defun update-wrld-structures (wrld state)
   (install-global-enabled-structure wrld state)
   (recompress-global-enabled-structure
    'global-arithmetic-enabled-structure
    wrld)
-  (recompress-stobj-accessor-arrays
-   (strip-cars *user-stobj-alist*)
-   wrld)
+  (when (not (eq *saved-user-stobj-alist* *user-stobj-alist*))
+
+; On 12/12/2019 we found, using CCL on a Mac, that the time for (include-book
+; "centaur/sv/top" :dir :system) was reduced by 2.6% by adding the test above
+; before calling recompress-stobj-accessor-arrays.  The time reduction however
+; was only 0.2% for (include-book "projects/x86isa/top" :dir :system).  The
+; former book involved many more stobjs: 27 after including it, vs. only 4 for
+; the latter book.  So this change seems important mainly for scalability.
+
+    (recompress-stobj-accessor-arrays
+     (strip-cars *user-stobj-alist*)
+     wrld)
+    (setq *saved-user-stobj-alist* *user-stobj-alist*))
   #+hons
   (update-memo-entries-for-attachments *defattach-fns* wrld state)
   nil)

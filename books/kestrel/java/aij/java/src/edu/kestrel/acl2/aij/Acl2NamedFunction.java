@@ -27,6 +27,17 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      */
     private final Acl2Symbol name;
 
+    /**
+     * Flag saying whether all the function calls
+     * in all the defined functions created so far
+     * are valid.
+     * This is initially true because there are no defined functions initially.
+     * This is set to false whenever a new defined function is created,
+     * because that one has not been validated yet.
+     * This is set to true by {@link #validateAllFunctionCalls()}.
+     */
+    private static boolean validatedAllFunctionCalls = true;
+
     //////////////////////////////////////// package-private members:
 
     /**
@@ -51,24 +62,15 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Flag saying whether all the defined functions created so far
-     * (which are all named functions) have valid definitions.
-     * This is initially true because there are no defined functions initially.
-     * This is set to false whenever a new defined function is created,
-     * because that one has not been validated yet.
-     * This is set to true by {@link #validateAll()}.
-     */
-    private static boolean validatedAll = true;
-
-    /**
-     * Sets the flag that says whether
-     * all the defined functions created so far have valid definitions.
+     * Sets the flag that says whether all the function calls
+     * in all the defined functions created so far
+     * are valid.
      * This is called only by the subclass {@link Acl2DefinedFunction}.
      *
-     * @param value The value to set the @{link #validatedAll} flag to.
+     * @param value The value for the @{link #validatedAllFunctionCalls} flag.
      */
-    static void setValidatedAll(boolean value) {
-        validatedAll = value;
+    static void setValidatedAllFunctionCalls(boolean value) {
+        validatedAllFunctionCalls = value;
     }
 
     /**
@@ -158,31 +160,45 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
-     * Ensure that all the defined functions created so far
-     * have valid definitions.
+     * Ensure that all the function calls
+     * in all the defined functions created so far
+     * are valid.
+     * That is, each call references an existing function
+     * and has a number of actual arguments that matches the arity.
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
-    public static void validateAll() {
-        Acl2DefinedFunction.validateAllDefinitions();
+    public static void validateAllFunctionCalls() {
+        Acl2DefinedFunction.validateFunctionCallsInAllDefinitions();
     }
 
     /**
      * Defines this named function.
      * This also sets the indices of all the variables in the defining body;
      * see {@link Acl2Variable} for more information about variable indices.
+     * The {@link Acl2Variable}s in the body term must not be shared,
+     * directly or indirectly,
+     * within the body term
+     * or with body terms passed to other calls of this method:
+     * this way, variable indices can be set appropriately,
+     * based on where the variables occur in terms,
+     * and not on the variables themselves alone;
+     * otherwise, the variable index setting process may stop with an error
+     * due to some index being already set.
      *
      * @param parameters The formal parameters of the function definition.
      * @param body       The body of the function definition.
      * @throws IllegalArgumentException If {@code parameters} is null,
      *                                  or any of its elements is null,
      *                                  or {@code body} is null,
-     *                                  or the function definition is malformed
-     *                                  in a way that
-     *                                  some variable index cannot be set.
-     * @throws IllegalStateException    If the function is
-     *                                  already defined or native,
-     *                                  or some variable index is already set.
+     *                                  or the function is native,
+     *                                  or the function definition
+     *                                  (viewed as a lambda expression)
+     *                                  contains some variable
+     *                                  that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression
+     *                                  or that has an index already set.
      */
     public abstract void define(Acl2Symbol[] parameters, Acl2Term body);
 
@@ -191,17 +207,18 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @param values The arguments of the call.
      * @return The result of calling this named function on the arguments.
-     * @throws IllegalArgumentException If {@code values} is null,
-     *                                  or any of its elements is null,
-     *                                  or {@code values.length} differs from
-     *                                  the function's arity.
-     * @throws IllegalStateException    If not all the defined functions
-     *                                  have been validated.
-     * @throws Acl2EvaluationException  If a call of {@code pkg-imports}
-     *                                  or {@code pkg-witness} fails.
+     * @throws IllegalArgumentException      If {@code values} is null,
+     *                                       or any of its elements is null,
+     *                                       or {@code values.length} differs
+     *                                       from the function's arity.
+     * @throws IllegalStateException         If not all the defined functions
+     *                                       have been validated.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
-    public Acl2Value call(Acl2Value[] values) throws Acl2EvaluationException {
-        if (!validatedAll)
+    public Acl2Value call(Acl2Value[] values)
+            throws Acl2UndefinedPackageException {
+        if (!validatedAllFunctionCalls)
             throw new IllegalStateException
                     ("Not all function definitions have been validated.");
         if (values == null)

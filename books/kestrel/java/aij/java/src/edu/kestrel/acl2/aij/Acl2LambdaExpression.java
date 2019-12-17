@@ -59,7 +59,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Validates all the function calls in this lambda expression.
      * We recursively validate the function calls in the body.
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     @Override
     void validateFunctionCalls() {
@@ -73,9 +73,12 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * in the formal parameters of this lambda expression.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException If this function is malformed
-     *                                  in a way that some index cannot be set.
-     * @throws IllegalStateException    If some index is already set.
+     * @throws IllegalArgumentException If some index is already set,
+     *                                  or this lambda expression
+     *                                  contains some variable
+     *                                  that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     @Override
     void setVariableIndices() {
@@ -96,11 +99,11 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * @param values The actual arguments to pass to the function.
      *               Invariant: not null, no null elements.
      * @return The result of the lambda expression on the given arguments.
-     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
     @Override
-    Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+    Acl2Value apply(Acl2Value[] values) throws Acl2UndefinedPackageException {
         return this.body.eval(values);
     }
 

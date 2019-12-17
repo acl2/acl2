@@ -50,7 +50,11 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * See {@link Acl2Variable} for more information about variable indices.
      *
      * @param indices Map from variable symbols to indices.
-     *                Invariant: not null.
+     *                Invariants:
+     *                not null,
+     *                no null keys,
+     *                no null values,
+     *                no negative values.
      */
     @Override
     void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
@@ -64,7 +68,11 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * This evaluation never fails.
      *
      * @param binding The binding of variable indices to values.
-     *                Invariants: not null, no null elements.
+     *                Invariants:
+     *                not null,
+     *                no null keys,
+     *                no null values,
+     *                no negative values.
      * @return The value that results from evaluation.
      */
     @Override

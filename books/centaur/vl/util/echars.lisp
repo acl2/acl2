@@ -448,7 +448,7 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
 
 (fty::deflist vl-echarlist :elt-type vl-echar-p
   :elementp-of-nil nil
-  :true-listp nil)
+  :true-listp t)
 
 (defprojection vl-echarlist->chars ((x vl-echarlist-p))
   :returns (chars character-listp)

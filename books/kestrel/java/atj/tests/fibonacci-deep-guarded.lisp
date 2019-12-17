@@ -17,6 +17,7 @@
 ; Generate Java code for the Fibonacci function, with testing code.
 
 (java::atj fib
+           fib-tail
            :deep t
            :guards t
            :java-class "FibonacciDeepGuarded"

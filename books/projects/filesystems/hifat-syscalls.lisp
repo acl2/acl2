@@ -99,19 +99,14 @@
       :st_size st_size)
      0 0)))
 
-(defun hifat-open (pathname fs fd-table file-table)
-  (declare (xargs :guard (and (m1-file-alist-p fs)
-                              (hifat-no-dups-p fs)
-                              (fat32-filename-list-p pathname)
+;; By default, we aren't going to check whether the file exists.
+(defun hifat-open (pathname fd-table file-table)
+  (declare (xargs :guard (and (fat32-filename-list-p pathname)
                               (fd-table-p fd-table)
                               (file-table-p file-table))))
   (b*
       ((fd-table (fd-table-fix fd-table))
        (file-table (file-table-fix file-table))
-       ((mv & errno)
-        (hifat-find-file fs pathname))
-       ((unless (equal errno 0))
-        (mv fd-table file-table -1 errno))
        (file-table-index
         (find-new-index (strip-cars file-table)))
        (fd-table-index
@@ -127,16 +122,30 @@
 
 (defthm hifat-open-correctness-1
   (b*
-      (((mv fd-table file-table & &) (hifat-open pathname fs fd-table file-table)))
+      (((mv fd-table file-table fd &) (hifat-open pathname fd-table file-table)))
     (and
      (fd-table-p fd-table)
-     (file-table-p file-table))))
+     (file-table-p file-table)
+     (integerp fd)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (b*
+        (((mv fd-table file-table & &) (hifat-open pathname fd-table file-table)))
+      (and
+       (fd-table-p fd-table)
+       (file-table-p file-table))))
+   (:type-prescription
+    :corollary
+    (b*
+        (((mv & & fd &) (hifat-open pathname fd-table file-table)))
+      (integerp fd)))))
 
 (defthm
   hifat-open-correctness-2
   (implies (no-duplicatesp (strip-cars (fd-table-fix fd-table)))
            (b* (((mv fd-table & & &)
-                 (hifat-open pathname fs fd-table file-table)))
+                 (hifat-open pathname fd-table file-table)))
              (no-duplicatesp (strip-cars fd-table)))))
 
 (defthm
@@ -144,7 +153,7 @@
   (implies
    (no-duplicatesp (strip-cars (file-table-fix file-table)))
    (b* (((mv & file-table & &)
-         (hifat-open pathname fs fd-table file-table)))
+         (hifat-open pathname fd-table file-table)))
      (no-duplicatesp (strip-cars file-table)))))
 
 ;; Per the man page pread(2), this should not change the offset of the file

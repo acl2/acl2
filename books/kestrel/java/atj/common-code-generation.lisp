@@ -13,7 +13,7 @@
 ; Avoid failure for atj-gen-number in ACL2(r):
 ; cert_param: non-acl2r
 
-(include-book "abstract-syntax")
+(include-book "java-abstract-syntax")
 (include-book "aij-notions")
 (include-book "name-translation")
 (include-book "test-structures")
@@ -103,8 +103,7 @@
     Otherwise, we cast the value to @('char').")
   (if (< char 256)
       (jexpr-literal-character (code-char char))
-    (jexpr-paren
-     (jexpr-cast (jtype-char) (jexpr-literal-integer-decimal char)))))
+    (jexpr-cast (jtype-char) (jexpr-literal-integer-decimal char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +122,7 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('byte')
           from a signed 8-bit ACL2 integer."
-  (jexpr-paren (jexpr-cast (jtype-byte) (atj-gen-jint byte)))
+  (jexpr-cast (jtype-byte) (atj-gen-jint byte))
   :guard-hints (("Goal" :in-theory (enable sbyte8p sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,7 +131,7 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('short')
           from a signed 16-bit signed ACL2 integer."
-  (jexpr-paren (jexpr-cast (jtype-short) (atj-gen-jint short)))
+  (jexpr-cast (jtype-short) (atj-gen-jint short))
   :guard-hints (("Goal" :in-theory (enable sbyte16p sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -345,58 +344,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For a @(tsee cons) pair,
+    "For a @(tsee cons) pair that is also a true list,
+     the generated code builds all the elements
+     and then calls @('Acl2Value.makeList()') (a variable arity method)
+     with the elements;
+     the result is cast to @('Acl2ConsPair').
+     For a @(tsee cons) pair that is not a true list,
      the generated code
      builds the @(tsee car),
      sets a local variable to it,
      builds the @(tsee cdr),
      sets another local variable to it,
-     and returns an expression that builds the pair
-     from the two local variables.")
+     and then calls @('Acl2ConsValue.make()') with the two local variables.")
    (xdoc::@def "atj-gen-value")
+   (xdoc::@def "atj-gen-values")
+   (xdoc::@def "atj-gen-list")
    (xdoc::@def "atj-gen-cons"))
-
-  (define atj-gen-cons ((conspair consp)
-                        (jvar-value-base stringp)
-                        (jvar-value-index posp))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-    :parents nil
-    (b* (((unless (mbt (consp conspair)))
-          (mv nil (jexpr-name "this-is-irrelevant") jvar-value-index))
-         ((mv car-block
-              car-expr
-              jvar-value-index) (atj-gen-value (car conspair)
-                                               jvar-value-base
-                                               jvar-value-index))
-         ((mv car-locvar-block
-              car-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *aij-type-value*
-                                                         jvar-value-base
-                                                         jvar-value-index
-                                                         car-expr))
-         ((mv cdr-block
-              cdr-expr
-              jvar-value-index) (atj-gen-value (cdr conspair)
-                                               jvar-value-base
-                                               jvar-value-index))
-         ((mv cdr-locvar-block
-              cdr-jvar
-              jvar-value-index) (atj-gen-jlocvar-indexed *aij-type-value*
-                                                         jvar-value-base
-                                                         jvar-value-index
-                                                         cdr-expr))
-         (block (append car-block
-                        car-locvar-block
-                        cdr-block
-                        cdr-locvar-block))
-         (expr (jexpr-smethod *aij-type-cons*
-                              "make"
-                              (list (jexpr-name car-jvar)
-                                    (jexpr-name cdr-jvar)))))
-      (mv block expr jvar-value-index))
-    :measure (two-nats-measure (acl2-count conspair) 0))
 
   (define atj-gen-value (value
                          (jvar-value-base stringp)
@@ -423,6 +386,9 @@
           ((acl2-numberp value) (mv nil
                                     (atj-gen-number value)
                                     jvar-value-index))
+          ((true-listp value) (atj-gen-list value
+                                            jvar-value-base
+                                            jvar-value-index))
           ((consp value) (atj-gen-cons value
                                        jvar-value-base
                                        jvar-value-index))
@@ -431,42 +397,101 @@
                      (mv nil
                          (jexpr-name "this-is-irrelevant")
                          jvar-value-index))))
-    ;; 2nd component is non-0
-    ;; so that the call of ATJ-GEN-CONS decreases:
-    :measure (two-nats-measure (acl2-count value) 1))
+    ;; 2nd component is larger than 1 and 0
+    ;; so that the calls of ATJ-GEN-LIST and ATJ-GEN-CONS decrease:
+    :measure (two-nats-measure (acl2-count value) 2))
+
+  (define atj-gen-values ((values true-listp)
+                          (jvar-value-base stringp)
+                          (jvar-value-index posp))
+    :returns (mv (block jblockp)
+                 (exprs (and (jexpr-listp exprs)
+                             (equal (len exprs) (len values))))
+                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+    (cond ((endp values) (mv nil nil jvar-value-index))
+          (t (b* (((mv first-block
+                       first-expr
+                       jvar-value-index)
+                   (atj-gen-value (car values)
+                                  jvar-value-base
+                                  jvar-value-index))
+                  ((mv rest-block
+                       rest-jexrps
+                       jvar-value-index)
+                   (atj-gen-values (cdr values)
+                                   jvar-value-base
+                                   jvar-value-index)))
+               (mv (append first-block rest-block)
+                   (cons first-expr rest-jexrps)
+                   jvar-value-index))))
+    :measure (two-nats-measure (acl2-count values) 0))
+
+  (define atj-gen-list ((list true-listp)
+                        (jvar-value-base stringp)
+                        (jvar-value-index posp))
+    :guard (consp list)
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+    (b* (((mv block exprs jvar-value-index) (atj-gen-values list
+                                                            jvar-value-base
+                                                            jvar-value-index))
+         (expr (jexpr-smethod *aij-type-value* "makeList" exprs)))
+      (mv block
+          (jexpr-cast *aij-type-cons* expr)
+          jvar-value-index))
+    ;; 2nd component is non-0 so that the call of ATJ-GEN-VALUES decreases:
+    :measure (two-nats-measure (acl2-count list) 1))
+
+  (define atj-gen-cons ((conspair consp)
+                        (jvar-value-base stringp)
+                        (jvar-value-index posp))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+    :parents nil
+    (b* (((unless (mbt (consp conspair)))
+          (mv nil (jexpr-name "this-is-irrelevant") jvar-value-index))
+         ((mv car-block
+              car-expr
+              jvar-value-index)
+          (atj-gen-value (car conspair)
+                         jvar-value-base
+                         jvar-value-index))
+         ((mv car-locvar-block
+              car-jvar
+              jvar-value-index)
+          (atj-gen-jlocvar-indexed *aij-type-value*
+                                   jvar-value-base
+                                   jvar-value-index
+                                   car-expr))
+         ((mv cdr-block
+              cdr-expr
+              jvar-value-index)
+          (atj-gen-value (cdr conspair)
+                         jvar-value-base
+                         jvar-value-index))
+         ((mv cdr-locvar-block
+              cdr-jvar
+              jvar-value-index)
+          (atj-gen-jlocvar-indexed *aij-type-value*
+                                   jvar-value-base
+                                   jvar-value-index
+                                   cdr-expr))
+         (block (append car-block
+                        car-locvar-block
+                        cdr-block
+                        cdr-locvar-block))
+         (expr (jexpr-smethod *aij-type-cons*
+                              "make"
+                              (list (jexpr-name car-jvar)
+                                    (jexpr-name cdr-jvar)))))
+      (mv block expr jvar-value-index))
+    :measure (two-nats-measure (acl2-count conspair) 0))
 
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-value))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-values ((values true-listp)
-                        (jvar-value-base stringp)
-                        (jvar-value-index posp))
-  :returns (mv (block jblockp)
-               (exprs jexpr-listp)
-               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-  :short "Lift @(tsee atj-gen-value) to lists."
-  (cond ((endp values) (mv nil nil jvar-value-index))
-        (t (b* (((mv first-block
-                     first-expr
-                     jvar-value-index) (atj-gen-value (car values)
-                                                      jvar-value-base
-                                                      jvar-value-index))
-                ((mv rest-block
-                     rest-jexrps
-                     jvar-value-index) (atj-gen-values (cdr values)
-                                                       jvar-value-base
-                                                       jvar-value-index)))
-             (mv (append first-block rest-block)
-                 (cons first-expr rest-jexrps)
-                 jvar-value-index))))
-  ///
-
-  (defret len-of-atj-gen-values.exprs
-    (equal (len exprs)
-           (len values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -481,7 +506,44 @@
      We generate a single expression, without blocks;
      in this sense it is ``flat''.")
    (xdoc::@def "atj-gen-value-flat")
+   (xdoc::@def "atj-gen-values-flat")
+   (xdoc::@def "atj-gen-list-flat")
    (xdoc::@def "atj-gen-cons-flat"))
+
+  (define atj-gen-value-flat (value)
+    :returns (expr jexprp)
+    :parents nil
+    (cond ((characterp value) (atj-gen-char value))
+          ((stringp value) (atj-gen-string value))
+          ((symbolp value) (atj-gen-symbol value))
+          ((integerp value) (atj-gen-integer value))
+          ((rationalp value) (atj-gen-rational value))
+          ((acl2-numberp value) (atj-gen-number value))
+          ((true-listp value) (atj-gen-list-flat value))
+          ((consp value) (atj-gen-cons-flat value))
+          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
+                            value)
+                     (jexpr-name "this-is-irrelevant"))))
+    ;; 2nd component is larger than 1 and 0
+    ;; so that the calls of ATJ-GEN-LIST_FLAT and ATJ-GEN-CONS-FLAT decrease:
+    :measure (two-nats-measure (acl2-count value) 2))
+
+  (define atj-gen-values-flat ((values true-listp))
+    :returns (exprs (and (jexpr-listp exprs)
+                         (equal (len exprs) (len values))))
+    (cond ((endp values) nil)
+          (t (cons (atj-gen-value-flat (car values))
+                   (atj-gen-values-flat (cdr values)))))
+    :measure (two-nats-measure (acl2-count values) 0))
+
+  (define atj-gen-list-flat ((list true-listp))
+    :returns (expr jexprp)
+    (jexpr-cast *aij-type-cons*
+                (jexpr-smethod *aij-type-value*
+                               "makeList"
+                               (atj-gen-values-flat list)))
+    ;; 2nd component is non-0 so that the call of ATJ-GEN-VALUES-FLAT decreases:
+    :measure (two-nats-measure (acl2-count list) 1))
 
   (define atj-gen-cons-flat ((conspair consp))
     :returns (expr jexprp)
@@ -495,39 +557,9 @@
                            cdr-expr)))
     :measure (two-nats-measure (acl2-count conspair) 0))
 
-  (define atj-gen-value-flat (value)
-    :returns (expr jexprp)
-    :parents nil
-    (cond ((characterp value) (atj-gen-char value))
-          ((stringp value) (atj-gen-string value))
-          ((symbolp value) (atj-gen-symbol value))
-          ((integerp value) (atj-gen-integer value))
-          ((rationalp value) (atj-gen-rational value))
-          ((acl2-numberp value) (atj-gen-number value))
-          ((consp value) (atj-gen-cons-flat value))
-          (t (prog2$ (raise "Internal error: the value ~x0 is a bad atom."
-                            value)
-                     (jexpr-name "this-is-irrelevant"))))
-    ;; 2nd component is non-0
-    ;; so that the call of ATJ-GEN-CONS decreases:
-    :measure (two-nats-measure (acl2-count value) 1))
-
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-value-flat))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-values-flat ((values true-listp))
-  :returns (exprs jexpr-listp)
-  :short "Lift @(tsee atj-gen-value-flat) to lists."
-  (cond ((endp values) nil)
-        (t (cons (atj-gen-value-flat (car values))
-                 (atj-gen-values-flat (cdr values)))))
-  ///
-
-  (defret len-of-atj-gen-values-flat
-    (equal (len exprs) (len values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -843,5 +875,5 @@
                   :result (jresult-void)
                   :name "main"
                   :params (list method-param)
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body)))

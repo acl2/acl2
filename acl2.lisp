@@ -41,6 +41,11 @@
 ; non-CLTL, assumptions that we make about Common Lisps in which ACL2 is to
 ; run.
 
+; Other programs may want a compile-time check for whether ACL2 is running, so
+; we push this feature.
+
+(push :ACL2 *features*)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            CLTL1/CLTL2
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

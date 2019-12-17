@@ -176,6 +176,7 @@
         (mv vcd-vals (vl::vl-printedlist-fix p) (svex-env-fix prev-state)))
        (in-vals (svex-alist-eval (svtv-phase-inputs phase ins ovlines invars)
                                  inalist))
+       (- (clear-memoize-table 'svex-eval))
        (eval-alist (append in-vals prev-state))
        ((mv wirevals next-state)
         (with-fast-alist eval-alist

@@ -263,10 +263,10 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * it is overridden in {@link Acl2String}.
      *
      * @return The list of imported symbols.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
      */
-    Acl2Value pkgImports() throws Acl2EvaluationException {
+    Acl2Value pkgImports() throws Acl2UndefinedPackageException {
         return Acl2Symbol.NIL;
     }
 
@@ -279,11 +279,11 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * invokes its overriding method on the ACL2 string "ACL2".
      *
      * @return The witness symbol.
-     * @throws Acl2EvaluationException If the package name is invalid
-     *                                 or the package is not defined.
-     * @throws IllegalStateException   If the package witness is not set yet.
+     * @throws Acl2UndefinedPackageException If the package name is invalid
+     *                                       or the package is not defined.
+     * @throws IllegalStateException         If the package witness is not set yet.
      */
-    Acl2Symbol pkgWitness() throws Acl2EvaluationException {
+    Acl2Symbol pkgWitness() throws Acl2UndefinedPackageException {
         return Acl2String.ACL2.pkgWitness();
     }
 
@@ -646,5 +646,49 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     @Override
     public abstract int compareTo(Acl2Value o);
+
+    /**
+     * Returns a true list consisting of the elements passed as arguments,
+     * in the same order.
+     * This is somewhat analogous to the ACL2 macro {@code list}.
+     * This is a variable arity method.
+     *
+     * @param elements The list elements.
+     * @return The list.
+     * @throws IllegalArgumentException If any of the {@code elements} arguments
+     *                                  is {@code null}.
+     */
+    public static Acl2Value makeList(Acl2Value... elements) {
+        Acl2Value list = Acl2Symbol.NIL;
+        for (int i = elements.length - 1; i >= 0; --i) {
+            list = Acl2ConsPair.make(elements[i], list);
+        }
+        return list;
+    }
+
+    /**
+     * Returns a dotted list consisting of the elements passed as arguments,
+     * in the same order, with the last element as the final {@code cdr}.
+     * This is somewhat analogous to the ACL2 macro {@code list*}.
+     * This is a variable arity method.
+     *
+     * @param elements The list elements.
+     * @return The list.
+     * @throws IllegalArgumentException If any of the {@code elements} arguments
+     *                                  is {@code null}.
+     */
+    public static Acl2Value makeListStar(Acl2Value... elements) {
+        if (elements.length == 0)
+            throw new IllegalArgumentException("No list elements.");
+        Acl2Value finalCdr = elements[elements.length - 1];
+        if (finalCdr == null)
+            throw new IllegalArgumentException
+                    ("Null final element of dotted list.");
+        Acl2Value list = finalCdr;
+        for (int i = elements.length - 2; i >= 0; --i) {
+            list = Acl2ConsPair.make(elements[i], list);
+        }
+        return list;
+    }
 
 }

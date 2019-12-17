@@ -171,8 +171,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As explained <see topic='@(url tree)'>here</see>,
-       these are the inner lists that correspond to repetitions."))
+      "As explained "
+      (xdoc::seetopic "tree" "here")
+      ", these are the inner lists that correspond to repetitions."))
     :elt-type tree
     :true-listp t
     :elementp-of-nil nil
@@ -184,8 +185,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As explained <see topic='@(url tree)'>here</see>,
-       these are the outer lists that correspond to concatenations."))
+      "As explained "
+      (xdoc::seetopic "tree" "here")
+      ", these are the outer lists that correspond to concatenations."))
     :elt-type tree-list
     :true-listp t
     :pred tree-list-listp
@@ -555,8 +557,9 @@
           from some rules."
   :long
   (xdoc::topstring-p
-   "For <see topic='@(url rule-wfp)'>well-formed rules</see>,
-    this function is an appropriate way to test whether @('rulename')
+   "For "
+   (xdoc::seetopic "rule-wfp" "well-formed rules")
+   ", this function is an appropriate way to test whether @('rulename')
     appears (on the left side of) some rule in @('rules').
     The reason is that well-formed rules
     must have non-empty alternations as definientia.")

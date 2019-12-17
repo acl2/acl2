@@ -13,8 +13,15 @@
 (include-book "all-fnnames")
 (include-book "all-free-bound-vars")
 (include-book "all-lambdas")
+(include-book "all-non-gv-exec-ffn-symbs")
+(include-book "all-non-gv-ffn-symbs")
+(include-book "all-pkg-names")
 (include-book "all-program-ffn-symbs")
+(include-book "all-vars")
+(include-book "all-vars-in-untranslated-term")
 (include-book "all-vars-open")
+(include-book "check-user-lambda")
+(include-book "check-user-term")
 (include-book "dumb-occur-var-open")
 (include-book "guard-verified-exec-fnsp")
 (include-book "guard-verified-fnsp")
@@ -22,6 +29,7 @@
 (include-book "lambda-guard-verified-exec-fnsp")
 (include-book "lambda-guard-verified-fnsp")
 (include-book "lambda-logic-fnsp")
+(include-book "term-guard-obligation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

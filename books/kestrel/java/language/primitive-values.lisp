@@ -45,7 +45,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod boolean-value
-  :short "Java @('boolean') values [JLS:4.2.5]."
+  :short "Fixtype of Java @('boolean') values [JLS:4.2.5]."
   ((bool bool))
   :tag :boolean
   :layout :list
@@ -60,7 +60,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-value
-  :short "Java @('char') values [JLS:4.2.1]."
+  :short "Fixtype of Java @('char') values [JLS:4.2.1]."
   ((nat ubyte16))
   :tag :char
   :layout :list
@@ -76,7 +76,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod byte-value
-  :short "Java @('byte') values [JLS:4.2.1]."
+  :short "Fixtype of Java @('byte') values [JLS:4.2.1]."
   ((int sbyte8))
   :tag :byte
   :layout :list
@@ -99,7 +99,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod short-value
-  :short "Java @('short') values [JLS:4.2.1]."
+  :short "Fixtype of Java @('short') values [JLS:4.2.1]."
   ((int sbyte16))
   :tag :short
   :layout :list
@@ -122,7 +122,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod int-value
-  :short "Java @('int') values [JLS:4.2.1]."
+  :short "Fixtype of Java @('int') values [JLS:4.2.1]."
   ((int sbyte32))
   :tag :int
   :layout :list
@@ -145,7 +145,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod long-value
-  :short "Java @('long') values [JLS:4.2.1]."
+  :short "Fixtype of Java @('long') values [JLS:4.2.1]."
   ((int sbyte64))
   :tag :long
   :layout :list
@@ -168,7 +168,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection float-value
-  :short "Java @('float') values in the float value set [JLS:4.2.3]."
+  :short "Fixtype of Java @('float') values
+          in the float value set [JLS:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -221,7 +222,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection double-value
-  :short "Java @('double') values in the double value set [JLS:4.2.3]."
+  :short "Fixtype of Java @('double') values
+          in the double value set [JLS:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -372,8 +374,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection floatx-value
-  :short "Java @('float') values in the float-extended-exponent value set
-          [JLS.4.2.3]."
+  :short "Fixtype of Java @('float') values
+          in the float-extended-exponent value set [JLS.4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -433,8 +435,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublex-value
-  :short "Java @('double') values in the double-extended-exponent value set
-          [JLS.4.2.3]."
+  :short "Fixtype of Java @('double') values
+          in the double-extended-exponent value set [JLS.4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -494,7 +496,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum integral-value
-  :short "Java integral values [JLS:4.2.1]."
+  :short "Fixtype of Java integral values [JLS:4.2.1]."
   (:char
    :fields ((get :type char-value :acc-body x))
    :ctor-body get
@@ -551,7 +553,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum numeric-value
-  :short "Java numeric values [JLS:4.2],
+  :short "Fixtype of Java numeric values [JLS:4.2],
           excluding extended-exponent values [JLS:4.2.3]."
   (:char
    :fields ((get :type char-value :acc-body x))
@@ -614,7 +616,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection numericx-value
-  :short "Java numeric values [JLS:4.2],
+  :short "Fixtype of Java numeric values [JLS:4.2],
           including extended-exponent values [JLS:4.2.3]."
 
   (define numericx-value-p (x)
@@ -652,7 +654,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum primitive-value
-  :short "Java primitive values [JLS:4.2],
+  :short "Fixtype of Java primitive values [JLS:4.2],
           excluding extended-exponent values [JLS:4.2.3]."
   (:boolean
    :fields ((get :type boolean-value :acc-body x))
@@ -717,7 +719,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection primitivex-value
-  :short "Java primitive values [JLS:4.2],
+  :short "Fixtype of Java primitive values [JLS:4.2],
           including extended-exponent values [JLS:4.2.3]."
 
   (define primitivex-value-p (x)

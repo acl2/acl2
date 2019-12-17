@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "abstract-syntax")
+(include-book "java-abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +21,7 @@
   (xdoc::topstring
    (xdoc::p
     "These operartions, like the "
-    (xdoc::seetopic "atj-abstract-syntax" "abstract syntax of Java")
+    (xdoc::seetopic "atj-java-abstract-syntax" "abstract syntax of Java")
     ", are more general than ATJ and will be eventually moved
      to a new library for manipulating Java code.
      For now, these are parts of ATJ, which is their only user so far."))
@@ -59,6 +59,7 @@
                 :unary (jexpr-vars expr.arg)
                 :binary (union-equal (jexpr-vars expr.left)
                                      (jexpr-vars expr.right))
+                :instanceof (jexpr-vars expr.left)
                 :cond (union-equal (jexpr-vars expr.test)
                                    (union-equal (jexpr-vars expr.then)
                                                 (jexpr-vars expr.else)))
@@ -271,8 +272,7 @@
      e.g. by distributing the negation over conjunctions and disjunctions,
      and over the `then' and `else' branches
      of the ternary condition operator @('? ... : ...')."))
-  (b* ((default-result
-         (jexpr-paren (jexpr-unary (junop-logcompl) (jexpr-paren expr)))))
+  (b* ((default-result (jexpr-unary (junop-logcompl) expr)))
     (case (jexpr-kind expr)
       (:literal (b* ((literal (jexpr-literal->get expr)))
                   (if (jliteral-case literal :boolean)
@@ -283,17 +283,17 @@
       (:unary (b* ((op (jexpr-unary->op expr))
                    (arg (jexpr-unary->arg expr)))
                 (if (junop-case op :logcompl)
-                    (jexpr-paren arg)
+                    arg
                   default-result)))
       (:binary (b* ((op (jexpr-binary->op expr))
                     (left (jexpr-binary->left expr))
                     (right (jexpr-binary->right expr)))
                  (case (jbinop-kind op)
-                   (:lt (jexpr-paren (jexpr-binary (jbinop-ge) left right)))
-                   (:gt (jexpr-paren (jexpr-binary (jbinop-le) left right)))
-                   (:le (jexpr-paren (jexpr-binary (jbinop-gt) left right)))
-                   (:ge (jexpr-paren (jexpr-binary (jbinop-lt) left right)))
-                   (:eq (jexpr-paren (jexpr-binary (jbinop-ne) left right)))
-                   (:ne (jexpr-paren (jexpr-binary (jbinop-eq) left right)))
+                   (:lt (jexpr-binary (jbinop-ge) left right))
+                   (:gt (jexpr-binary (jbinop-le) left right))
+                   (:le (jexpr-binary (jbinop-gt) left right))
+                   (:ge (jexpr-binary (jbinop-lt) left right))
+                   (:eq (jexpr-binary (jbinop-ne) left right))
+                   (:ne (jexpr-binary (jbinop-eq) left right))
                    (otherwise default-result))))
       (otherwise default-result))))

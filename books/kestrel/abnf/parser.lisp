@@ -79,7 +79,9 @@
      and (iii) the remaining suffix of the input that must still be parsed.
      The indication of success or failure is
      either @('nil') to indicate success,
-     or a <see topic='@(url msg)'>message</see> to describe the failure.
+     or a "
+    (xdoc::seetopic "msg" "message")
+    " to describe the failure.
      This is consistent with the <i>@(see Seq)</i> macros,
      with which these parsing functions are implemented.")
 
@@ -812,7 +814,7 @@
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
-               :name len-of-parse-vchar-<
+               :name len-of-parse-vchar-linear
                :rule-classes :linear))
 
   (defrule parse-vchar-of-nat-list-fix

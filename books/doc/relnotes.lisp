@@ -532,8 +532,7 @@
    (xdoc::p
     "ATJ has been extended with an option to generate Java code
      according to a shallow embedding approach,
-     besides the previous deep embedding approach.
-     See the documentation for details.")
+     besides the previous deep embedding approach.")
 
    (xdoc::p
     "ATJ has been extended with an option to generate Java code
@@ -541,6 +540,24 @@
      This option should be used only with guard-verified ACL2 code
      and with external Java code that calls the generated Java code
      always with values that satisfy the guards.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java code
+     that uses Java primitive values and operations.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java code
+     that operates on narrower types than the one for all ACL2 values.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java loops
+     from tail-recursive ACL2 functions.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -557,6 +574,19 @@
    (xdoc::p
     "Some of the native Java implementations of the ACL2 primitive functions
      have been optimized.")
+
+   (xdoc::p
+    "Variant native Java implementations of the ACL2 primitive functions
+     have been added that operate
+     on narrower types than the one for all ACL2 values.
+     These are used by ATJ-generated code that operates on narrower types
+     (see release notes about ATJ).")
+
+   (xdoc::p
+    "The documentation of AIJ has been extended and improved.
+     In particular, explicit preconditions have been added for public methods,
+     and explicit invariants have been added for non-public fields
+     and for arguments and results of non-public methods.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -588,7 +618,16 @@
      has been proved.")
 
    (xdoc::p
-    "Models have been added of all the boolean and integer operations.")
+    "Models have been added
+     of the decimal, hexadecimal, octal, and binary digits.")
+
+   (xdoc::p
+    "A model of the processing of Unicode escapes has been added.
+     This is Java's first lexical translation steps.")
+
+   (xdoc::p
+    "Models have been added of all the boolean and integer operations,
+     as well as of all the primitive conversions on integral values.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,6 +648,16 @@
 
    (xdoc::p
     "A theorem about @(tsee prefixp) has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "remove-hyps" "Remove-hyps utility"))
+
+   (xdoc::p
+    "Now, @(tsee remove-hyps) succeeds when applied to a call of @(tsee thm)
+    whose formula is not in the form of a valid rewrite rule.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1552,11 +1601,10 @@
  function recognizers</see> with recognizers for true lists of
  (pseudo-)lambda-expressions and (pseudo-)term-functions.</p>
 
- <p>Extended the <see topic='@(url term-utilities)'>term utilities</see> with
- operations to substitute function symbols without performing simplification,
- to construct terms that are functions applications of certain forms, to
- collect all the lambda expressions in terms, and to collect all the package
- names in (symbols in) terms.</p>
+ <p>Extended the Kestrel term utilities with operations to substitute function
+ symbols without performing simplification, to construct terms that are
+ functions applications of certain forms, to collect all the lambda expressions
+ in terms, and to collect all the package names in (symbols in) terms.</p>
 
  <p>The utility @(tsee install-not-norm-event) now includes option @(':allp
  nil') in the generated @(tsee install-not-normalized) event.  The new utility,
@@ -1955,11 +2003,10 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The <see topic='@(url world-queries)'>world query utilities</see>, <see
- topic='@(url term-utilities)'>term utilities</see>, <see topic='@(url
- string-utilities)'>string utilities</see>, and character
- utilities (@('[books]/kestrel/utilities/characters.lisp')) have undergone
- several improvements and extensions.</p>
+ <p>The Kestrel <see topic='@(url world-queries)'>world query utilities</see>,
+ term utilities, <see topic='@(url string-utilities)'>string utilities</see>,
+ and character utilities (@('[books]/kestrel/utilities/characters.lisp')) have
+ undergone several improvements and extensions.</p>
 
  <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
  about world-related functions</see> and theorems about lists (in

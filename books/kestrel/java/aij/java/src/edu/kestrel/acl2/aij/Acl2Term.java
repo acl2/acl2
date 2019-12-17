@@ -33,7 +33,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * Validates all the function calls in this term.
      * See the implementing methods for details.
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     abstract void validateFunctionCalls();
 
@@ -43,10 +43,22 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * See {@link Acl2Variable} for more information about variable indices.
      *
      * @param indices Map from variable symbols to indices.
-     *                Invariants: not null, no null keys, no null values.
-     * @throws IllegalArgumentException If the term or the map are malformed
-     *                                  in a way that some index cannot be set.
-     * @throws IllegalStateException    If some index is already set.
+     *                Invariants:
+     *                not null,
+     *                no null keys,
+     *                no null values,
+     *                no negative values.
+     * @throws IllegalArgumentException If some index is already set,
+     *                                  or this term contains some variable
+     *                                  that is not in the body
+     *                                  of any lambda expression
+     *                                  and that is not a key of the map,
+     *                                  or this term contains some variable
+     *                                  that is in the body
+     *                                  of some lambda expression
+     *                                  and that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     abstract void setVariableIndices(Map<Acl2Symbol, Integer> indices);
 
@@ -61,10 +73,11 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * @param binding The binding of variable indices to values.
      *                Invariants: not null, not null elements.
      * @return The value that results from the evaluation.
-     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
-    abstract Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException;
+    abstract Acl2Value eval(Acl2Value[] binding)
+            throws Acl2UndefinedPackageException;
 
     //////////////////////////////////////// public members:
 

@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-primitives
+(defxdoc+ atj-java-primitives
   :parents (atj-implementation)
   :short "Representation of Java primitive types and operations for ATJ."
   :long
@@ -128,7 +128,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-primitive-constructors*
+(defval *atj-java-primitive-constructors*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive types."
   :long
@@ -144,7 +144,9 @@
     int-value
     long-value))
 
-(defval *atj-primitive-unops*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-java-primitive-unops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive unary operations."
   :long
@@ -186,7 +188,9 @@
     ;; widening and narrowing conversions:
     byte-to-char))
 
-(defval *atj-primitive-binops*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-java-primitive-binops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive binary operations."
   :long
@@ -242,19 +246,21 @@
     long-int-ushiftr
     int-long-ushiftr))
 
-(defval *atj-primitive-fns*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-java-primitive-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
-  (append *atj-primitive-constructors*
-          *atj-primitive-unops*
-          *atj-primitive-binops*)
+  (append *atj-java-primitive-constructors*
+          *atj-java-primitive-unops*
+          *atj-java-primitive-binops*)
   ///
-  (assert-event (function-name-listp *atj-primitive-fns* (w state)))
-  (assert-event (no-duplicatesp-eq *atj-primitive-fns*)))
+  (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
+  (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atj-types-for-primitives
+(defsection atj-types-for-java-primitives
   :short "ATJ types for the Java primitive constructors and operations."
 
   ;; primitive constructors:

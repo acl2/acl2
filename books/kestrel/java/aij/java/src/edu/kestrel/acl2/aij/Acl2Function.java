@@ -27,7 +27,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Validates all the function calls in this function.
      * See the overriding methods for details.
      *
-     * @throws IllegalStateException If validation fails.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     abstract void validateFunctionCalls();
 
@@ -44,10 +44,13 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Sets the indices of all the variables in this function.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws IllegalArgumentException If this function is malformed
-     *                                  in a way that
-     *                                  some valid index cannot be set.
-     * @throws IllegalStateException    If some index is already set.
+     * @throws IllegalArgumentException If some index is already set,
+     *                                  or this function contains some variable
+     *                                  that is in the body
+     *                                  of some lambda expression
+     *                                  and that is not bound in the formals of
+     *                                  its smallest enclosing
+     *                                  lambda expression.
      */
     abstract void setVariableIndices();
 
@@ -75,10 +78,10 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * @param values The actual arguments to pass to the function.
      *               Invariants: not null, no null elements.
      * @return The result of the function on the given arguments.
-     * @throws Acl2EvaluationException If a call of {@code pkg-imports}
-     *                                 or {@code pkg-witness} fails.
+     * @throws Acl2UndefinedPackageException If a call of {@code pkg-imports}
+     *                                       or {@code pkg-witness} fails.
      */
-    abstract Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException;
+    abstract Acl2Value apply(Acl2Value[] values) throws Acl2UndefinedPackageException;
 
     //////////////////////////////////////// public members:
 

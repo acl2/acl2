@@ -54,7 +54,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum primitive-type
-  :short "Java (unannotated) primitive types [JLS:4.2] [JLS:8.3]."
+  :short "Fixtype of Java (unannotated) primitive types [JLS:4.2] [JLS:8.3]."
   (:boolean ())
   (:char ())
   (:byte ())
@@ -68,7 +68,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum numeric-type
-  :short "Java numeric types [JLS:4.2]."
+  :short "Fixtype of Java numeric types [JLS:4.2]."
   (:char ())
   (:byte ())
   (:short ())
@@ -87,7 +87,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum integral-type
-  :short "Java integral types [JLS:4.2]."
+  :short "Fixtype of Java integral types [JLS:4.2]."
   (:char ())
   (:byte ())
   (:short ())
@@ -104,7 +104,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum floating-point-type
-  :short "Java floating-point types [JLS:4.2]."
+  :short "Fixtype of Java floating-point types [JLS:4.2]."
   (:float ())
   (:double ())
   :pred floating-point-typep

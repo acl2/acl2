@@ -34,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbyte unicode
-  :short "Java Unicode characters."
+  :short "Fixtype of Java Unicode characters."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbytelist unicode-list
-  :short "True lists of Java Unicode characters."
+  :short "Fixtype of true lists of Java Unicode characters."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -63,7 +63,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbyte ascii
-  :short "ASCII characters."
+  :short "Fixtype of ASCII characters."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -85,7 +85,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbytelist ascii-list
-  :short "True lists of ASCII characters."
+  :short "Fixtype of true lists of ASCII characters."
   :long
   (xdoc::topstring
    (xdoc::p

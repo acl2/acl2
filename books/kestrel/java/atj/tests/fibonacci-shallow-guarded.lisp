@@ -20,11 +20,15 @@
 
 (java::def-atj-main-function-type fib (:ainteger) :ainteger)
 
+(java::def-atj-main-function-type fib-tail
+                                  (:ainteger :ainteger :ainteger) :ainteger)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the Fibonacci function, with testing code.
 
 (java::atj fib
+           fib-tail
            :deep nil
            :guards t
            :java-class "FibonacciShallowGuarded"

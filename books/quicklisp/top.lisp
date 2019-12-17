@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "base")
@@ -77,6 +78,14 @@ sufficiently ANSI-compliant for the use of Quicklisp except for GCL.</p>
 that depend on them, you may <b>need to manually enable</b> the Quicklisp
 build.  Please see the instructions in @(see books-certification) for the most
 up-to-date details about how to do this.</p>
+
+<p>In order to certify the Quicklisp books, OpenSSL may need to be installed in
+the system.  At least one instance was observed in which the certification of
+the Quicklisp books on MacOS Catalina with SBCL failed initially, but worked
+after installing OpenSSL via Homebrew (using the command @('brew install
+openssl')).  The initial certification error did not explicitly mention
+OpenSSL, but rather a @('SIGABRT'); thus, if this kind of certification error
+is observed, installing OpenSSL may solve the problem.</p>
 
 
 <h3>Using the Quicklisp Books</h3>

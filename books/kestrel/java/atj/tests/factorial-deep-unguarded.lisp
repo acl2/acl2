@@ -14,9 +14,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the factorial function, with testing code.
+; Generate Java code for the factorial functions, with testing code.
 
 (java::atj fact
+           fact-tail
            :deep t
            :guards nil
            :java-class "FactorialDeepUnguarded"

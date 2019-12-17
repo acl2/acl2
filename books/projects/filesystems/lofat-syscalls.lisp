@@ -8,74 +8,47 @@
 (include-book "lofat")
 (include-book "hifat-syscalls")
 
-(defund lofat-open (pathname fat32-in-memory fd-table file-table)
-  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
-                              (fat32-filename-list-p pathname)
+(defund lofat-open (pathname fd-table file-table)
+  (declare (xargs :guard (and (fat32-filename-list-p pathname)
                               (fd-table-p fd-table)
-                              (file-table-p file-table))
-                  :stobjs fat32-in-memory))
-  (b*
-      ((fd-table (fd-table-fix fd-table))
-       (file-table (file-table-fix file-table))
-       ((mv root-dir-ent-list &)
-        (root-dir-ent-list fat32-in-memory))
-       ((mv & errno)
-        (lofat-find-file
-         fat32-in-memory
-         root-dir-ent-list
-         pathname))
-       ((unless (equal errno 0))
-        (mv fd-table file-table -1 errno))
-       (file-table-index
-        (find-new-index (strip-cars file-table)))
-       (fd-table-index
-        (find-new-index (strip-cars fd-table))))
-    (mv
-     (cons
-      (cons fd-table-index file-table-index)
-      fd-table)
-     (cons
-      (cons file-table-index (make-file-table-element :pos 0 :fid pathname))
-      file-table)
-     fd-table-index 0)))
+                              (file-table-p file-table))))
+  (hifat-open pathname fd-table file-table))
 
 ;; This proof makes me wonder whether I should restructure
 ;; lofat-find-file-correctness-1 and
 ;; lofat-find-file-correctness-2 to avoid free variables... it's
 ;; not ideal to have to instantiate them here.
-(defthm
+(defthmd
   lofat-open-refinement
   (implies
    (and (lofat-fs-p fat32-in-memory)
         (equal (mv-nth 1 (lofat-to-hifat fat32-in-memory))
                0))
    (equal
-    (lofat-open pathname
-                fat32-in-memory fd-table file-table)
+    (lofat-open pathname fd-table file-table)
     (hifat-open pathname
-                (mv-nth 0 (lofat-to-hifat fat32-in-memory))
                 fd-table file-table)))
   :hints
   (("goal"
     :in-theory
-    (e/d (lofat-to-hifat lofat-open)
-         ((:rewrite lofat-find-file-correctness-1)
-          (:rewrite lofat-find-file-correctness-2)))
-    :use
-    ((:instance
-      (:rewrite lofat-find-file-correctness-1)
-      (pathname pathname)
-      (dir-ent-list
-       (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
-      (fat32-in-memory fat32-in-memory)
-      (entry-limit (max-entry-count fat32-in-memory)))
-     (:instance
-      (:rewrite lofat-find-file-correctness-2)
-      (pathname pathname)
-      (dir-ent-list
-       (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
-      (fat32-in-memory fat32-in-memory)
-      (entry-limit (max-entry-count fat32-in-memory)))))))
+    (e/d (lofat-open)))))
+
+(defthm
+  fd-table-p-of-lofat-open
+  (fd-table-p (mv-nth 0
+                      (lofat-open pathname fd-table file-table)))
+  :hints (("goal" :in-theory (enable lofat-open))))
+
+(defthm
+  file-table-p-of-lofat-open
+  (file-table-p (mv-nth 1
+                        (lofat-open pathname fd-table file-table)))
+  :hints (("goal" :in-theory (enable lofat-open))))
+
+(defthm integerp-of-lofat-open
+  (integerp (mv-nth 2
+                    (lofat-open pathname fd-table file-table)))
+  :hints (("goal" :in-theory (enable lofat-open))))
 
 (defund
   lofat-pread
@@ -1140,3 +1113,70 @@
      :f_ffree 0
      :f_fsid 0
      :f_namelen 72)))
+
+(defund lofat-pwrite (fd buf offset fat32-in-memory fd-table file-table)
+  (declare (xargs :stobjs fat32-in-memory
+                  :guard (and (lofat-fs-p fat32-in-memory)
+                              (natp fd)
+                              (stringp buf)
+                              (natp offset)
+                              (fd-table-p fd-table)
+                              (file-table-p file-table))))
+  (b*
+      (((mv fs error-code) (lofat-to-hifat fat32-in-memory))
+       ((unless (equal error-code 0)) (mv fat32-in-memory -1 *eio*))
+       ((mv fs retval error-code)
+        (hifat-pwrite fd buf offset fs fd-table file-table))
+       ((mv fat32-in-memory &) (hifat-to-lofat fat32-in-memory fs)))
+    (mv fat32-in-memory retval error-code)))
+
+(defthm integerp-of-lofat-pwrite
+  (integerp (mv-nth 1 (lofat-pwrite fd buf offset fat32-in-memory fd-table
+                                    file-table)))
+  :hints (("Goal" :in-theory (enable lofat-pwrite)) )
+  :rule-classes :type-prescription)
+
+(defthm lofat-fs-p-of-lofat-pwrite
+  (implies
+   (lofat-fs-p fat32-in-memory)
+   (lofat-fs-p (mv-nth 0 (lofat-pwrite fd buf offset fat32-in-memory fd-table
+                                       file-table))))
+  :hints (("Goal" :in-theory (enable lofat-pwrite)) ))
+
+(defund lofat-close (fd fd-table file-table)
+  (declare (xargs :guard (and (fd-table-p fd-table)
+                              (file-table-p file-table))))
+  (hifat-close fd fd-table file-table))
+
+(defund lofat-truncate (fat32-in-memory pathname size)
+  (declare (xargs :stobjs fat32-in-memory
+                  :guard (and (lofat-fs-p fat32-in-memory)
+                              (fat32-filename-list-p pathname)
+                              (natp size))))
+  (b*
+      (((mv fs error-code) (lofat-to-hifat fat32-in-memory))
+       ((unless (equal error-code 0)) (mv fat32-in-memory -1 *eio*))
+       ((mv fs retval error-code) (hifat-truncate fs pathname size))
+       ((mv fat32-in-memory &) (hifat-to-lofat fat32-in-memory fs)))
+    (mv fat32-in-memory retval error-code)))
+
+(defund lofat-mkdir (fat32-in-memory pathname)
+  (declare (xargs :stobjs fat32-in-memory
+                  :guard (and (lofat-fs-p fat32-in-memory)
+                              (fat32-filename-list-p pathname))))
+  (b*
+      (((mv fs error-code) (lofat-to-hifat fat32-in-memory))
+       ((unless (equal error-code 0)) (mv fat32-in-memory -1 *eio*))
+       ((mv fs retval error-code) (hifat-mkdir fs pathname))
+       ((mv fat32-in-memory &) (hifat-to-lofat fat32-in-memory fs)))
+    (mv fat32-in-memory retval error-code)))
+
+(defthm integerp-of-lofat-mkdir
+  (integerp (mv-nth 1 (lofat-mkdir fat32-in-memory pathname)))
+  :hints (("Goal" :in-theory (enable lofat-mkdir)) ))
+
+(defthm lofat-fs-p-of-lofat-mkdir
+  (implies
+   (lofat-fs-p fat32-in-memory)
+   (lofat-fs-p (mv-nth 0 (lofat-mkdir fat32-in-memory pathname))))
+  :hints (("Goal" :in-theory (enable lofat-mkdir)) ))

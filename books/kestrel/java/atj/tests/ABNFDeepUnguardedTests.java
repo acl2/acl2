@@ -33,7 +33,7 @@ public class ABNFDeepUnguardedTests {
     private static boolean failures = false;
 
     private static void test_Parse(String testName, Acl2Value input, int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         System.out.print("Testing '" + testName + "'...");
         Acl2Value[] functionArguments = new Acl2Value[]{input};
@@ -83,7 +83,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseABNF(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseABNF";
         Acl2Value input = getInputFromFile("abnf-files/abnf.txt");
@@ -91,7 +91,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseJSON(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseJSON";
         Acl2Value input = getInputFromFile("abnf-files/json.txt");
@@ -99,7 +99,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseURI(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseURI";
         Acl2Value input = getInputFromFile("abnf-files/uri.txt");
@@ -107,7 +107,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseHTTP(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseHTTP";
         Acl2Value input = getInputFromFile("abnf-files/http.txt");
@@ -115,7 +115,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseIMF(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseIMF";
         Acl2Value input = getInputFromFile("abnf-files/imf.txt");
@@ -123,7 +123,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseSMTP(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseSMTP";
         Acl2Value input = getInputFromFile("abnf-files/smtp.txt");
@@ -131,7 +131,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     private static void test_ParseIMAP(int n)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseIMAP";
         Acl2Value input = getInputFromFile("abnf-files/imap.txt");
@@ -139,7 +139,7 @@ public class ABNFDeepUnguardedTests {
     }
 
     public static void main(String[] args)
-        throws Acl2EvaluationException,
+        throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         int n = 0;
         if (args.length == 1) {

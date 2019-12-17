@@ -22,10 +22,15 @@
 (include-book "keywords-validation")
 (include-book "identifiers")
 (include-book "decimal-digits")
+(include-book "decimal-digits-validation")
 (include-book "hexadecimal-digits")
+(include-book "hexadecimal-digits-validation")
 (include-book "octal-digits")
+(include-book "octal-digits-validation")
 (include-book "binary-digits")
+(include-book "binary-digits-validation")
 (include-book "primitive-types")
+(include-book "unicode-escapes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

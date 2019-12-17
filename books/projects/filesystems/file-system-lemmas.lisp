@@ -987,3 +987,43 @@
                   (if (consp (assoc-equal x1 x2))
                       (assoc-equal x1 x2)
                       (assoc-equal x1 y)))))
+
+(encapsulate
+  ()
+
+  (local (defthm lemma-1
+           (iff (equal (cons (car x) y) x)
+                (and (consp x) (equal (cdr x) y)))))
+
+  (local
+   (defthm
+     lemma-2
+     (iff (equal alist (put-assoc-equal name val alist))
+          (and (consp (assoc-equal name alist))
+               (equal (cdr (assoc-equal name alist))
+                      val)))
+     :rule-classes
+     (:rewrite
+      (:rewrite
+       :corollary (iff (equal (put-assoc-equal name val alist)
+                              alist)
+                       (and (consp (assoc-equal name alist))
+                            (equal (cdr (assoc-equal name alist))
+                                   val)))))))
+
+  (defthmd put-assoc-equal-match
+    (iff (equal (put-assoc-equal name1 val1 alist)
+                (put-assoc-equal name2 val2 alist))
+         (or (and (equal name1 name2)
+                  (equal val1 val2))
+             (and (consp (assoc-equal name1 alist))
+                  (equal (cdr (assoc-equal name1 alist))
+                         val1)
+                  (consp (assoc-equal name2 alist))
+                  (equal (cdr (assoc-equal name2 alist))
+                         val2))))))
+
+(defthm assoc-of-remove
+  (implies (and (atom x1) (not (null x2)))
+           (equal (assoc-equal x2 (remove-equal x1 l))
+                  (assoc-equal x2 l))))

@@ -16,10 +16,9 @@
 (include-book "aij-notions")
 (include-book "types")
 (include-book "test-structures")
-(include-book "pretty-printer")
+(include-book "java-pretty-printer")
 (include-book "pre-translation")
 (include-book "post-translation")
-(include-book "primitives")
 (include-book "name-translation")
 (include-book "deep-code-generation")
 (include-book "shallow-code-generation")
@@ -463,7 +462,7 @@
                   :params (list (make-jparam :final? nil
                                              :type (jtype-int)
                                              :name "n"))
-                  :throws (list *aij-class-eval-exc*)
+                  :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body))
 
   :prepwork

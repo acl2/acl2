@@ -836,8 +836,7 @@
        pathname))
      size)))
   :hints (("goal" :do-not-induct t
-           :in-theory (e/d (wc-1)
+           :in-theory (e/d (wc-1 lofat-open)
                            (truncate-list-correctness-1))
            :use
            truncate-list-correctness-1)))
-

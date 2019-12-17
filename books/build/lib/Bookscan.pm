@@ -190,12 +190,12 @@ sub scan_depends_on {
 	debug_print_event($base, "depends_on", \@res);
 	# Disallow depends-on of a certificate, for now.
 	if ($res[0] =~ m/\.cert$/) {
-	    print("**************************** WARNING **************************************\n");
-	    print("$base has a \'depends-on\' dependency on a certificate, $res[0].\n");
-	    print("It is better to use \'include-book\' (in a multiline comment, if necessary)\n");
-	    print("to specify dependencies on books, because \'depends-on\' doesn't trigger\n");
-	    print("a scan of the target's dependencies.\n");
-	    print("***************************************************************************\n");
+	    print($STDERR, "**************************** WARNING **************************************\n");
+	    print($STDERR, "$base has a \'depends-on\' dependency on a certificate, $res[0].\n");
+	    print($STDERR, "It is better to use \'include-book\' (in a multiline comment, if necessary)\n");
+	    print($STDERR, "to specify dependencies on books, because \'depends-on\' doesn't trigger\n");
+	    print($STDERR, "a scan of the target's dependencies.\n");
+	    print($STDERR, "***************************************************************************\n");
 	}
 	return [depends_on_event, $res[0], $res[1]];
     }
@@ -264,13 +264,13 @@ sub scan_cert_param {
     $regexp = ";; two-pass certification";
     if ($the_line =~ m/$regexp/) {
 	if ($two_pass_warning_printed) {
-	    print "$base has two-pass certification directive\n";
+	    print $STDERR "$base has two-pass certification directive\n";
 	} else {
 	    $two_pass_warning_printed = 1;
-	    print "\nin $base:\n";
-	    print "Note: Though we still recognize the \";; two-pass certification\"\n";
-	    print "directive, it is deprecated in favor of:\n";
-	    print ";; cert_param: (acl2x)\n\n";
+	    print $STDERR "\nin $base:\n";
+	    print $STDERR "Note: Though we still recognize the \";; two-pass certification\"\n";
+	    print $STDERR "directive, it is deprecated in favor of:\n";
+	    print $STDERR ";; cert_param: (acl2x)\n\n";
 	}
 	return [cert_param_event, [["acl2x", 1]]];
     }
@@ -317,11 +317,11 @@ sub parse_max_mem_arg
 	$ret      = 2 ** $rexpt;                      # 64 (e.g., 2^6)
     }
     else {
-	print "Warning in $filename: skipping unsupported set-max-mem line: $arg\n";
-	print "Currently supported forms:\n";
-	print "  - (set-max-mem (expt 2 k))\n";
-	print "  - (set-max-mem (* n (expt 2 30)))\n";
-	print "  - (set-max-mem (* (expt 2 30) n))\n";
+	print $STDERR "Warning in $filename: skipping unsupported set-max-mem line: $arg\n";
+	print $STDERR "Currently supported forms:\n";
+	print $STDERR "  - (set-max-mem (expt 2 k))\n";
+	print $STDERR "  - (set-max-mem (* n (expt 2 30)))\n";
+	print $STDERR "  - (set-max-mem (* (expt 2 30) n))\n";
     }
     return $ret;
 }

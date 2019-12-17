@@ -1,28 +1,30 @@
-; System Utilities -- Theorems about ALL-VARS (and ALL-VARS1)
+; Standard System Library
 ;
-; Copyright (C) 2016 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: A 3-clause BSD license. See the file [books]/3BSD-mod.txt.
 ;
-; Author: Eric Smith (eric.smith@kestrel.edu)
+; Main Author: Eric Smith (eric.smith@kestrel.edu)
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
 (include-book "tools/flag" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc theorems-about-all-vars
-  :parents (theorems-about-non-kestrel-books system-utilities-non-built-in)
+(defxdoc std/system/all-vars
+  :parents (std/system/term-queries)
   :short "Theorems about @(tsee all-vars)."
   :long
-  "<p>
-   See the file for lemmas about @('all-vars1').
-   </p>
-   @(def symbol-listp-of-all-vars)
-   @(def true-listp-of-all-vars)")
+  (xdoc::topstring
+   (xdoc::p
+    "See the file for lemmas about @('all-vars1').")
+   (xdoc::@def "symbol-listp-of-all-vars")
+   (xdoc::@def "true-listp-of-all-vars")))
 
 ;;;  Theorems about all-vars1
 
