@@ -1602,13 +1602,15 @@
             (trans-list (rp-trans-lst (cdr term))))
            ((and (is-falist term))
             (rp-trans (caddr term)))
-           (t (cons (car term)
-                    (rp-trans-lst (cdr term))))))
+           (t (cons-with-hint (car term)
+                              (rp-trans-lst (cdr term))
+                              term))))
    (defun rp-trans-lst (lst)
      (if (atom lst)
          nil
-       (cons (rp-trans (car lst))
-             (rp-trans-lst (cdr lst))))))
+       (cons-with-hint (rp-trans (car lst))
+                       (rp-trans-lst (cdr lst))
+                       lst))))
 
   (make-flag rp-trans :defthm-macro-name defthm-rp-trans)
 
@@ -1620,7 +1622,9 @@
               :induct (len lst)
               :in-theory (e/d () ())))))
 
-  (verify-guards rp-trans))
+  (verify-guards rp-trans)
+
+  (memoize 'rp-trans))
 
 (mutual-recursion
  (defun rp-untrans (term)

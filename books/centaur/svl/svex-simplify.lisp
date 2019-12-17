@@ -176,7 +176,7 @@
     (('4vec-lsh & &)              (mv nil (cons 'sv::lsh      (cdr term))))
     (('4vec-plus & &)             (mv nil (cons '+            (cdr term))))
     (('sv::4vec-minus & &)        (mv nil (cons 'sv::b-       (cdr term))))
-    (('sv::4vec-uminus &)       (mv nil (cons 'sv::u-       (cdr term))))
+    (('sv::4vec-uminus &)         (mv nil (cons 'sv::u-       (cdr term))))
     (('sv::4vec-times & &)        (mv nil (cons '*            (cdr term))))
     (('sv::4vec-quotient & &)     (mv nil (cons '/            (cdr term))))
     (('sv::4vec-remainder & &)    (mv nil (cons 'sv::%        (cdr term))))
