@@ -123,6 +123,15 @@
     (implies (nodesdb-p x)
              (reuse-statsp x))))
 
+(define reverse-nodesdb-p (x)
+  :enabled t
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (natp (caar x))
+         (svex-p (cdar x))
+         (reverse-nodesdb-p (cdr x)))))
+
 (define node-env-p (x)
   :measure (acl2-count x)
   (if (atom x)
@@ -340,6 +349,126 @@
                          :top-nodelist new-node-lst
                          :node-alist svexl-node-alist)))
     svexllist))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Svexl to Svex functions (convert back)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::defines
+ svexl-node-to-svex
+ :flag-local nil
+ :flag-defthm-macro defthm-svexl-node-to-svex
+ :prepwork
+ ((local
+   (in-theory (e/d ( ;svexl-node-kind
+                    sv::svexlist-p
+                    svexl-node-p
+                    reverse-nodesdb-p
+                    svexl-node-alist-p
+                    sv::svex-p)
+                   ())))
+  (local
+   (defthm lemma1
+     (implies (and 
+               
+               (hons-assoc-equal x
+                                 reverse-nodesdb)
+               (reverse-nodesdb-p reverse-nodesdb))
+              (svex-p (cdr (hons-assoc-equal x
+                                             reverse-nodesdb))))
+     :hints (("Goal"
+              :induct (reverse-nodesdb-p reverse-nodesdb)
+              :do-not-induct t
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm lemma2
+     (implies (and (equal (svexl-node-kind x) :var)
+                   (svexl-node-p x))
+              (svex-p x))
+     :hints (("Goal"
+              :in-theory (e/d (svexl-node-p svex-p svexl-node-kind) ())))))
+
+  (local
+   (defthm lemma3
+     (implies (and (equal (svexl-node-kind x) :quote)
+                   (svexl-node-p x))
+              (svex-p x))
+     :hints (("Goal"
+              :in-theory (e/d (svexl-node-p svex-p svexl-node-kind) ()))))))
+
+ (define svexl-node-to-svex ((x svexl-node-p)
+                             (reverse-nodesdb reverse-nodesdb-p))
+   :measure (svexl-node-count x)
+   :verify-guards nil
+   :returns (res sv::svex-p :hyp (and (svexl-node-p x)
+                                      (reverse-nodesdb-p reverse-nodesdb)))
+   (svexl-node-case
+    x
+    :var x
+    :quote x
+    :node (b* ((node (hons-get x.node-id reverse-nodesdb)))
+            (if node
+                (cdr node)
+              (list 'quote (sv::4vec-x))))
+    :call (cons
+           x.fn
+           (svexl-nodelist-to-svexlist x.args
+                                       reverse-nodesdb))))
+ 
+ (define svexl-nodelist-to-svexlist ((lst svexl-nodelist-p)
+                                     (reverse-nodesdb reverse-nodesdb-p))
+   :returns (res sv::svexlist-p :hyp (and (svexl-nodelist-p lst)
+                                          (reverse-nodesdb-p reverse-nodesdb)))
+   :measure (svexl-nodelist-count lst)
+   (if (atom lst)
+       nil
+     (cons (svexl-node-to-svex (car lst) reverse-nodesdb)
+           (svexl-nodelist-to-svexlist (cdr lst) reverse-nodesdb))))
+
+ ///
+
+ (verify-guards svexl-node-to-svex))
+
+
+(define svexl-to-svex-aux ((x svexl-node-alist-p))
+  :verify-guards nil
+  :prepwork
+  ((local
+    (in-theory (e/d (svexl-node-alist-p
+                     node-env-p)
+                    ()))))
+  :returns (reverse-nodesdb reverse-nodesdb-p :hyp (svexl-node-alist-p x))
+  (if (atom x)
+      nil
+    (b* ((reverse-nodesdb (svexl-to-svex-aux (cdr x)))
+         (node-id (caar x))
+         (node (cdar x))
+         (res (svexl-node-to-svex node reverse-nodesdb)))
+      (hons-acons node-id res reverse-nodesdb)))
+  ///
+  (verify-guards svexl-to-svex-aux))
+
+(define svexl-to-svex ((svexl svexl-p))
+  :returns (svex svex-p :hyp (svexl-p svexl)) 
+  (b* ((node (svexl->top-node svexl))
+       (node-alist (svexl->node-alist svexl))
+       (reverse-nodesdb (svexl-to-svex-aux node-alist))
+       (res (svexl-node-to-svex node reverse-nodesdb))
+       (- (fast-alist-free reverse-nodesdb)))
+    res))
+
+(define svexllist-to-svexlist ((svexllist svexllist-p))
+  :returns (svexlist svexlist-p :hyp (svexllist-p svexllist)) 
+  (b* ((top-nodelist (svexllist->top-nodelist svexllist))
+       (node-alist (svexllist->node-alist svexllist))
+       (reverse-nodesdb (svexl-to-svex-aux node-alist))
+       (res (svexl-nodelist-to-svexlist top-nodelist reverse-nodesdb))
+       (- (fast-alist-free reverse-nodesdb)))
+    res))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Eval functions
