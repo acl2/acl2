@@ -346,8 +346,8 @@
    (xdoc::p
     "For a @(tsee cons) pair that is also a true list,
      the generated code builds all the elements
-     and then calls @('Acl2Value.makeList()')
-     with an array consisting of the elements;
+     and then calls @('Acl2Value.makeList()') (a variable arity method)
+     with the elements;
      the result is cast to @('Acl2ConsPair').
      For a @(tsee cons) pair that is not a true list,
      the generated code
@@ -436,8 +436,7 @@
     (b* (((mv block exprs jvar-value-index) (atj-gen-values list
                                                             jvar-value-base
                                                             jvar-value-index))
-         (array-expr (jexpr-newarray-init *aij-type-value* exprs))
-         (expr (jexpr-smethod *aij-type-value* "makeList" (list array-expr))))
+         (expr (jexpr-smethod *aij-type-value* "makeList" exprs)))
       (mv block
           (jexpr-cast *aij-type-cons* expr)
           jvar-value-index))
@@ -539,12 +538,10 @@
 
   (define atj-gen-list-flat ((list true-listp))
     :returns (expr jexprp)
-    (b* ((exprs (atj-gen-values-flat list))
-         (array-expr (jexpr-newarray-init *aij-type-value* exprs)))
-      (jexpr-cast *aij-type-cons*
-                  (jexpr-smethod *aij-type-value*
-                                 "makeList"
-                                 (list array-expr))))
+    (jexpr-cast *aij-type-cons*
+                (jexpr-smethod *aij-type-value*
+                               "makeList"
+                               (atj-gen-values-flat list)))
     ;; 2nd component is non-0 so that the call of ATJ-GEN-VALUES-FLAT decreases:
     :measure (two-nats-measure (acl2-count list) 1))
 

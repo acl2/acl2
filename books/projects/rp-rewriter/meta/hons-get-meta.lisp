@@ -474,9 +474,9 @@
               :in-theory (e/d (hons-get-meta) ()))))))
 
 (local
- (defthmd rp-evl-of-ex-from-rp
-   (equal (rp-evl (ex-from-rp term) a)
-          (rp-evl term a))
+ (defthmd rp-evlt-of-ex-from-rp
+   (equal (rp-evlt (ex-from-rp term) a)
+          (rp-evlt term a))
    :hints (("Goal"
             :in-theory (e/d (ex-from-rp is-rp) ())))))
 
@@ -489,8 +489,8 @@
       (implies (and ;(rp-termp alist)
                 (rp-evl-meta-extract-global-facts)
                 (hons-get-meta-formula-checks state))
-               (equal (rp-evl (resolve-assoc-eq-val-rec key alist) a)
-                      (assoc-eq-val key (rp-evl alist a))))
+               (equal (rp-evlt (resolve-assoc-eq-val-rec key alist) a)
+                      (assoc-eq-val key (rp-evlt alist a))))
       :hints (("Goal" :in-theory (e/d (assoc-eq-val)
                                       ((:REWRITE
                                         RP-TERMP-IMPLIES-CDR-LISTP)
@@ -504,8 +504,8 @@
 ;(rp-termp keys)
                 (rp-evl-meta-extract-global-facts)
                 (hons-get-meta-formula-checks state))
-               (equal (rp-evl (resolve-assoc-eq-vals-rec keys alist) a)
-                      (assoc-eq-vals (rp-evl keys a) (rp-evl alist a))))
+               (equal (rp-evlt (resolve-assoc-eq-vals-rec keys alist) a)
+                      (assoc-eq-vals (rp-evlt keys a) (rp-evlt alist a))))
       :hints (("Goal" :in-theory (e/d (assoc-eq-vals)
                                       ((:REWRITE
                                         RP-TERMP-IMPLIES-CDR-LISTP)
@@ -556,33 +556,54 @@
    (local
     (defthmd lemma9
       (implies (syntaxp (equal term 'term))
-               (equal (rp-evl (caddr term) a)
-                      (rp-evl (ex-from-rp (caddr term)) a)))
+               (equal (rp-evlt (caddr term) a)
+                      (rp-evlt (ex-from-rp (caddr term)) a)))
       :hints (("Goal"
-               :in-theory (e/d (rp-evl-of-ex-from-rp) ())))))
+               :in-theory (e/d (rp-evlt-of-ex-from-rp) ())))))
 
    (local
     (defthm lemma10
       (implies (and (HONS-GET key falist)
                     (FALIST-CONSISTENT-AUX falist term))
-               (HONS-GET key (RP-EVL term A)))))
+               (HONS-GET key (RP-EVLt term A)))))
 
    (local
     (defthm lemma10-5
       (implies (and (not (HONS-GET key falist))
                     (FALIST-CONSISTENT-AUX falist term))
-               (not (HONS-GET key (RP-EVL term A))))))
+               (not (HONS-GET key (RP-EVLt term A))))))
 
    (local
     (defthm lemma11
       (implies (and (FALIST-CONSISTENT-AUX falist term))
-               (ALISTP (RP-EVL term A)))))
+               (ALISTP (RP-EVLt term A)))))
 
    (local
     (defthm lemma12
       (implies (and (rp-termp term)
                     (is-falist term))
-               (ALISTP (RP-EVL (CADDR term) A)))))
+               (ALISTP (RP-EVLt (CADDR term) A)))))
+
+   (local
+    (defthmd rp-evlt-of-term-is-hons-get
+      (implies (and (rp-evl-meta-extract-global-facts)
+                    (hons-get-meta-formula-checks state)
+                    (equal (car term) 'hons-get)
+                    (CONSP TERM)
+                    (CONSP (CDR TERM))
+                    (CONSP (CDDR TERM))
+                    (NOT (CDDDR TERM)))
+               (equal (rp-evlt term a)
+                      (hons-get (rp-evlt (cadr term) a)
+                                (rp-evlt (caddr term) a))))
+      :hints (("Goal"
+               :use ((:instance
+                      RP-EVL-OF-HONS-GET-WHEN-HONS-GET-META-FORMULA-CHECKS
+                      (acl2::key (rp-trans (cadr term)))
+                      (acl2::alist (rp-trans (caddr term)))
+                      (acl2::env a)))
+               :in-theory (e/d () (hons-get
+                                   RP-EVL-OF-HONS-GET-WHEN-HONS-GET-META-FORMULA-CHECKS))))))
 
    (local
     (defthmd rp-evl-of-term-is-hons-get
@@ -634,15 +655,33 @@
      (implies (and (rp-termp term)
                    (rp-evl-meta-extract-global-facts)
                    (hons-get-meta-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (hons-get-meta term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (hons-get-meta term)) a)
+                     (rp-evlt term a)))
+     :otf-flg t
      :hints (("goal"
               :in-theory (e/d (hons-get-meta
                                lemma9
                                rp-evl-of-term-is-hons-get)
                               (hons-get
-                               rp-evl-of-ex-from-rp
+                               rp-evlt-of-ex-from-rp
                                RP-EVL-OF-HONS-GET-WHEN-HONS-GET-META-FORMULA-CHECKS)))))
+
+   (local
+    (defthmd rp-evlt-of-term-is-assoc-eq-vals
+      (implies (and (rp-evl-meta-extract-global-facts)
+                    (hons-get-meta-formula-checks state)
+                    (equal (car term) 'assoc-eq-vals)
+                    (CONSP TERM)
+                    (CONSP (CDR TERM))
+                    (CONSP (CDDR TERM))
+                    (NOT (CDDDR TERM)))
+               (equal (rp-evlt term a)
+                      (assoc-eq-vals (rp-evlt (cadr term) a)
+                                     (rp-evlt (caddr term) a))))
+      :hints (("Goal"
+               :in-theory (e/d
+                           (RP-EVL-OF-assoc-eq-vals-WHEN-HONS-GET-META-FORMULA-CHECKS)
+                           (hons-get))))))
 
    (local
     (defthmd rp-evl-of-term-is-assoc-eq-vals
@@ -657,13 +696,9 @@
                       (assoc-eq-vals (rp-evl (cadr term) a)
                                      (rp-evl (caddr term) a))))
       :hints (("Goal"
-               :use ((:instance
-                      RP-EVL-OF-assoc-eq-vals-WHEN-HONS-GET-META-FORMULA-CHECKS
-                      (acl2::keys (cadr term))
-                      (acl2::alist (caddr term))
-                      (acl2::env a)))
-               :in-theory (e/d () (hons-get
-                                   RP-EVL-OF-assoc-eq-vals-WHEN-HONS-GET-META-FORMULA-CHECKS))))))
+               :in-theory (e/d
+                           (RP-EVL-OF-assoc-eq-vals-WHEN-HONS-GET-META-FORMULA-CHECKS)
+                           (hons-get))))))
 
    (local
     (defthm hons-get-is-resolve-assoc-eq-value-rec-not-consp
@@ -671,7 +706,7 @@
        (and (falist-consistent-aux falist term)
             (rp-termp term)
             (not (hons-get key falist)))
-       (equal (assoc-eq-val key (rp-evl term a))
+       (equal (assoc-eq-val key (rp-evlt term a))
               nil))))
 
    (local
@@ -689,10 +724,10 @@
                     (rp-termp term)
                     (rp-evl-meta-extract-global-facts)
                     (hons-get-meta-formula-checks state))
-               (equal (rp-evl (hons-get-list-values-term keys falist) a)
-                      (assoc-eq-vals keys (rp-evl term a))))
+               (equal (rp-evlt (hons-get-list-values-term keys falist) a)
+                      (assoc-eq-vals keys (rp-evlt term a))))
       :hints (("Goal"
-               :expand (ASSOC-EQ-VALS KEYS (RP-EVL TERM A))
+               :expand (ASSOC-EQ-VALS KEYS (RP-EVLt TERM A))
                :in-theory
                (e/d (RESOLVE-ASSOC-EQ-VAL-REC-CORRECT)
                     (hons-get
@@ -736,8 +771,8 @@
                    (rp-termp term)
                    (rp-evl-meta-extract-global-facts)
                    (hons-get-meta-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (assoc-eq-vals-meta term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (assoc-eq-vals-meta term)) a)
+                     (rp-evlt term a)))
      :hints (("goal"
               :use ((:instance rp-evl-of-hons-get-list-values-term-lemma
                                (keys  (CADR (CADR TERM)))

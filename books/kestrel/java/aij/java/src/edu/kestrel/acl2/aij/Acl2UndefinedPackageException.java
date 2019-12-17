@@ -18,7 +18,7 @@ public final class Acl2UndefinedPackageException extends Exception {
 
     /**
      * Constructs an undefined package exception
-     * with a null detail message.
+     * with a {@code null} detail message.
      */
     public Acl2UndefinedPackageException() {
         super();
@@ -38,7 +38,7 @@ public final class Acl2UndefinedPackageException extends Exception {
      * Constructs an undefined package exception
      * with the given detail message and cause.
      *
-     * @param message The details message for the exception.
+     * @param message The detail message for the exception.
      * @param cause   The cause of the exception.
      */
     public Acl2UndefinedPackageException(String message, Throwable cause) {

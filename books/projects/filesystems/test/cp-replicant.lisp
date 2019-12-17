@@ -19,7 +19,7 @@
       (mv fat32-in-memory state))
      (file-length (struct-stat->st_size val))
      ((mv fd-table file-table fd &)
-      (lofat-open fat32-pathname fat32-in-memory nil nil))
+      (lofat-open fat32-pathname nil nil))
      ((mv file-text file-read-length &)
       (lofat-pread
        fd file-length 0 fat32-in-memory fd-table file-table))

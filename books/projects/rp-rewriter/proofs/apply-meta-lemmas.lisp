@@ -171,9 +171,9 @@
   (implies (and (valid-rp-meta-rulep meta-rule state)
                 (rp-termp term)
                 (valid-sc term a))
-           (equal (rp-evl (mv-nth 1 (rp-rw-meta-rule term meta-rule rp-state state))
+           (equal (rp-evlt (mv-nth 1 (rp-rw-meta-rule term meta-rule rp-state state))
                           a)
-                  (rp-evl term a)))
+                  (rp-evlt term a)))
 
   :hints (("Goal"
            :expand ((:free (x y) (mv-nth x y)))
@@ -213,9 +213,9 @@
   (implies (and (valid-rp-meta-rule-listp meta-rules state)
                 (rp-termp term)
                 (valid-sc term a))
-           (equal (rp-evl (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state))
+           (equal (rp-evlt (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state))
                           a)
-                  (rp-evl term a)))
+                  (rp-evlt term a)))
   :hints (("Goal"
            :in-theory (e/d (
                             VALID-RP-META-RULE-LISTP)

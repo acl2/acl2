@@ -166,7 +166,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * That is, each call references an existing function
      * and has a number of actual arguments that matches the arity.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     public static void validateAllFunctionCalls() {
         Acl2DefinedFunction.validateFunctionCallsInAllDefinitions();

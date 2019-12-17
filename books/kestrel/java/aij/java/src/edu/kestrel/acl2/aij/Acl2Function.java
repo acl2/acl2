@@ -27,7 +27,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * Validates all the function calls in this function.
      * See the overriding methods for details.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     abstract void validateFunctionCalls();
 

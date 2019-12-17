@@ -131,8 +131,8 @@
 (local
  (defthm rp-evl-of-rp-equal-meta
    (implies (rp-termp term)
-            (equal (rp-evl (mv-nth 0 (rp-equal-meta term)) a)
-                   (rp-evl term a)))
+            (equal (rp-evlt (mv-nth 0 (rp-equal-meta term)) a)
+                   (rp-evlt term a)))
    :hints (("Goal"
             :in-theory (e/d (rp-equal-meta)
                             ())))))

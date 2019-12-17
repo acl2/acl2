@@ -42,10 +42,29 @@
   use-arithmetic-5
   :disabled t))
 
-(encapsulate
-  nil
+(encapsulate nil
 
   ;;low priority lemmas:
+
+  (local
+   (use-arithmetic-5 t))
+  
+  (def-rp-rule$ t t
+    bits-of-a-bit-for-big-start
+    (implies (and (bitp x)
+                  (natp size)
+                  (integerp start)
+                  (> start 0))
+             (and (equal (bits x start size)
+                         0)))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-RSH
+                              4VEC-CONCAT
+                              4VEC-SHIFT-CORE) ()))))
+  
   (def-rp-rule$ t t
     bits-01-of-a-bit
     (implies (and (bitp x))

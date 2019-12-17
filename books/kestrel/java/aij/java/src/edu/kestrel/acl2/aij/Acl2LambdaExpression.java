@@ -59,7 +59,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Validates all the function calls in this lambda expression.
      * We recursively validate the function calls in the body.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     @Override
     void validateFunctionCalls() {

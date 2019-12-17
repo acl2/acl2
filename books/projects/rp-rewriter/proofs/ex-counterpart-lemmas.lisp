@@ -78,26 +78,32 @@
  (defthm lemma1
    (implies (and (rp-term-listp subterms)
                  (quote-listp subterms))
-            (equal (RP-EVL-LST subterms A)
+            (equal (RP-EVLt-LST subterms A)
                    (UNQUOTE-ALL subterms)))))
+
+(local
+ (defthm lemma3
+   (implies (and (rp-term-listp subterms)
+                 (quote-listp subterms))
+            (equal (RP-EVL-LST subterms A)
+                   (UNQUOTE-ALL subterms)))
+   :hints (("Goal"
+            :induct (UNQUOTE-ALL subterms)
+            :do-not-induct t
+            :in-theory (e/d () ())))))
+
 
 (defthm rp-evl-of-rp-ex-counterpart
   (implies
    (and (rp-termp term)
         (rp-evl-meta-extract-global-facts :state state)
         (symbol-alistp exc-rules))
-   (equal (rp-evl
+   (equal (rp-evlt
            (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state)) a)
-          (rp-evl term a)))
+          (rp-evlt term a)))
   :hints (("Goal"
-           :in-theory (e/d (rp-ex-counterpart rp-evl-of-fncall-args) ()))))
-
-#|(skip-proofs
- ;;; CORRECTNESS LEMMA
-(defthmd rp-evl-of-rp-ex-counterpart-
-(implies
-(and (rp-termp term)
-(symbol-alistp exc-rules))
-(equal (rp-evl
-(mv-nth 0 (rp-ex-counterpart term exc-rules stat state)) a)
-(rp-evl term a)))))||#
+           :do-not-induct t
+           :cases ((is-falist term))
+           :in-theory (e/d (rp-ex-counterpart
+                            rp-evl-of-fncall-args)
+                           ()))))

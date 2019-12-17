@@ -141,16 +141,16 @@
 
   (define is-bits-of-bitand/or/xor (term)
     (case-match term
-                 (('bits ('4vec-bitand & &) ('quote s) ('quote w))
-                  (and (natp s)
-                       (natp w)))
-                 (('bits ('4vec-bitor & &) ('quote s) ('quote w))
-                  (and (natp s)
-                       (natp w)))
-                 (('bits ('sv::4vec-bitxor & &) ('quote s) ('quote w))
-                  (and (natp s)
-                       (natp w)))
-                 (& nil))
+      (('bits ('4vec-bitand & &) ('quote s) ('quote w))
+       (and (natp s)
+            (natp w)))
+      (('bits ('4vec-bitor & &) ('quote s) ('quote w))
+       (and (natp s)
+            (natp w)))
+      (('bits ('sv::4vec-bitxor & &) ('quote s) ('quote w))
+       (and (natp s)
+            (natp w)))
+      (& nil))
     ///
     (defthm is-bits-of-bitand/or/xor-implies
       (implies (is-bits-of-bitand/or/xor term)
@@ -594,6 +594,20 @@
                                 concat-of-meta-fn
                                 )))
 
+;; (local
+;;  (defthm rp-evlt-of-is-concat
+;;    (implies (and (is-concat term)
+;;                  (rp-evl-meta-extract-global-facts)
+;;                  (concat-of-formula-checks state))
+;;             (equal (rp-evlt term a)
+;;                    (4vec-concat (rp-evlt (car term)
+
+(local
+ (defthm rp-trans-when-quotep
+   (implies (quotep x)
+            (equal (rp-trans x)
+                   x))))
+
 (encapsulate
   nil
 
@@ -601,11 +615,34 @@
    (defthm eval-of-concat-of-meta-fn
      (implies (and (rp-evl-meta-extract-global-facts)
                    (concat-of-formula-checks state))
-              (equal (rp::rp-evl (mv-nth 0 (concat-of-meta-fn term limit)) a)
-                     (rp::rp-evl term a)))
+              (equal (rp::rp-evlt (mv-nth 0 (concat-of-meta-fn term limit)) a)
+                     (rp::rp-evlt term a)))
      :hints (("Goal"
-              :in-theory (e/d (rp-evl-of-fncall-args
-                               convert-4vec-concat-to-4vec-concat$) ())))))
+              :expand (;; (:free (x) (rp-trans (cons '4vec-concat$ x)))
+                       ;; (:free (x) (rp-trans (cons 'quote x)))
+                       ;; (:free (x) (rp-trans (cons 'bits x)))
+                       ;; (:free (x) (rp-trans (cons '4VEC-CONCAT x)))
+                       ;; (:free (x) (rp-trans (cons 'sv::4VEC-FIX$INLINE x)))
+                       (RP-TRANS-LST (CDDR TERM))
+                       (RP-TRANS-LST (CDR TERM))
+                       (RP-TRANS TERM)
+                       (RP-TRANS-LST (CDR (CADDR TERM)))
+                       (RP-TRANS-LST (CDDR (CADDR TERM)))
+                       (RP-TRANS-LST (CDDDR (CADDR TERM)))
+                       (RP-TRANS (CADDR TERM))
+                       ;(RP-TRANS (CADDDR TERM))
+                       (RP-TRANS-LST (CDDDR TERM)))
+              :induct (concat-of-meta-fn term limit)
+              :do-not-induct t
+              :in-theory (e/d (;rp-evl-of-fncall-args
+                               rp-trans
+                               convert-4vec-concat-to-4vec-concat$)
+                              ((:REWRITE DEFAULT-CDR)
+                               RP::TRANS-LIST
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
+                               (:TYPE-PRESCRIPTION QUOTEP)))))))
 
   (local
    (defthm rp-termp-of-concat-of-meta-fn-lemma1
@@ -660,43 +697,43 @@
                                (:definition true-listp)))))))
 
   #|(local
-   (defthm rp-syntaxp-of-concat-of-meta-fn-lemma1
-     (implies (and (or (IS-CONCAT-OF-CONCAT$ TERM)
-                       (IS-CONCAT$-OF-CONCAT$ TERM))
-                   (RP::RP-SYNTAXP term))
-              (RP::RP-SYNTAXP (CADDDR (CADDR TERM))))
-     :hints (("Goal"
-              :in-theory (e/d (IS-CONCAT-OF-CONCAT$
-                               IS-CONCAT$-OF-CONCAT$) ())))))||#
+  (defthm rp-syntaxp-of-concat-of-meta-fn-lemma1
+  (implies (and (or (IS-CONCAT-OF-CONCAT$ TERM)
+  (IS-CONCAT$-OF-CONCAT$ TERM))
+  (RP::RP-SYNTAXP term))
+  (RP::RP-SYNTAXP (CADDDR (CADDR TERM))))
+  :hints (("Goal"
+  :in-theory (e/d (IS-CONCAT-OF-CONCAT$
+  IS-CONCAT$-OF-CONCAT$) ())))))||#
 
   #|(local
-   (defthm rp-syntaxp-of-concat-of-meta-fn
-     (implies (rp::rp-syntaxp term)
-              (rp::rp-syntaxp (mv-nth 0 (concat-of-meta-fn term limit))))
-     :hints (("Goal"
-              :do-not-induct t
-              :induct (concat-of-meta-fn term limit)
-              :in-theory (e/d () ())))))||#
+  (defthm rp-syntaxp-of-concat-of-meta-fn
+  (implies (rp::rp-syntaxp term)
+  (rp::rp-syntaxp (mv-nth 0 (concat-of-meta-fn term limit))))
+  :hints (("Goal"
+  :do-not-induct t
+  :induct (concat-of-meta-fn term limit)
+  :in-theory (e/d () ())))))||#
 
   #|(local
-   (defthm all-falist-consistent-concat-of-meta-fn-lemma1
-     (implies (and (or (IS-CONCAT-OF-CONCAT$ TERM)
-                       (IS-CONCAT$-OF-CONCAT$ TERM))
-                   (RP::ALL-FALIST-CONSISTENT term))
-              (RP::ALL-FALIST-CONSISTENT (CADDDR (CADDR TERM))))
-     :hints (("Goal"
-              :in-theory (e/d (IS-CONCAT-OF-CONCAT$
-                               IS-CONCAT$-OF-CONCAT$) ())))))||#
+  (defthm all-falist-consistent-concat-of-meta-fn-lemma1
+  (implies (and (or (IS-CONCAT-OF-CONCAT$ TERM)
+  (IS-CONCAT$-OF-CONCAT$ TERM))
+  (RP::ALL-FALIST-CONSISTENT term))
+  (RP::ALL-FALIST-CONSISTENT (CADDDR (CADDR TERM))))
+  :hints (("Goal"
+  :in-theory (e/d (IS-CONCAT-OF-CONCAT$
+  IS-CONCAT$-OF-CONCAT$) ())))))||#
 
   #|(local
-   (defthm all-falist-consistent-concat-of-meta-fn
-     (implies (and (rp::all-falist-consistent term))
-              (rp::all-falist-consistent
-               (mv-nth 0 (concat-of-meta-fn term limit))))
-     :hints (("Goal"
-              :do-not-induct t
-              :induct (concat-of-meta-fn term limit)
-              :in-theory (e/d () ())))))||#
+  (defthm all-falist-consistent-concat-of-meta-fn
+  (implies (and (rp::all-falist-consistent term))
+  (rp::all-falist-consistent
+  (mv-nth 0 (concat-of-meta-fn term limit))))
+  :hints (("Goal"
+  :do-not-induct t
+  :induct (concat-of-meta-fn term limit)
+  :in-theory (e/d () ())))))||#
 
   (local
    (defthm valid-sc-concat-of-meta-fn-lemma1
@@ -725,9 +762,9 @@
      (rp::dont-rw-syntaxp  (mv-nth 1 (concat-of-meta-fn term limit)))))
 
   #|(local
-   (defthm rp-valid-termp-concat-of-meta-fn
-     (implies (rp::rp-valid-termp term)
-              (rp::rp-valid-termp (mv-nth 0 (concat-of-meta-fn term limit))))))||#
+  (defthm rp-valid-termp-concat-of-meta-fn
+  (implies (rp::rp-valid-termp term)
+  (rp::rp-valid-termp (mv-nth 0 (concat-of-meta-fn term limit))))))||#
 
   (defthm  valid-rp-meta-rulep-concat-of-meta-fn-main
     (implies (and
@@ -777,21 +814,21 @@
   nil
 
   (local
-   (defthm rp-evl-of-ex-from-rp
-     (equal (rp::rp-evl (rp::ex-from-rp x) a)
-            (rp::rp-evl x a))
+   (defthm rp-evlt-of-ex-from-rp
+     (equal (rp::rp-evlt (rp::ex-from-rp x) a)
+            (rp::rp-evlt x a))
      :hints (("goal"
               :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
 
   (local
-   (defthmd rp-evl-of-ex-from-rp-reverse
+   (defthmd rp-evlt-of-ex-from-rp-reverse
      (implies (syntaxp (or (atom x)
                            (not (equal (car x)
                                        'rp::ex-from-rp))))
-              (equal (rp::rp-evl x a)
-                     (rp::rp-evl (rp::ex-from-rp x) a)))
+              (equal (rp::rp-evlt x a)
+                     (rp::rp-evlt (rp::ex-from-rp x) a)))
      :hints (("goal"
-              :in-theory '(rp-evl-of-ex-from-rp)))))
+              :in-theory '(rp-evlt-of-ex-from-rp)))))
 
   (local
    (defthm valid-sc-bits-instance
@@ -810,7 +847,7 @@
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state)
                    (rp::valid-sc term a))
-              (bitp (rp::rp-evl (caddr (cadr term)) a)))
+              (bitp (rp::rp-evlt (caddr (cadr term)) a)))
      :hints (("goal"
               :do-not '(preprocess)
               :expand ((rp::valid-sc (cadr term) a)
@@ -828,7 +865,7 @@
                        (rp::valid-sc term a)
                        (rp::context-from-rp (cadddr term) nil))
               :in-theory (e/d (is-bits-0-1-of-a-bitp
-                               rp-evl-of-ex-from-rp
+                               rp-evlt-of-ex-from-rp
                                rp::is-if rp::is-rp)
                               (bitp
                                ))))))
@@ -856,33 +893,32 @@
                                rp::is-if) ())))))
 
   (local
-   (defthmd rp-evl-of-sbits-when-is-bits-of-sbits-lemma
+   (defthmd rp-evlt-of-sbits-when-is-bits-of-sbits-lemma
      (implies (and (syntaxp (equal term 'term))
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state))
-              (equal (rp::rp-evl (cadr term) a)
-                     (rp::rp-evl (rp::ex-from-rp (cadr term)) a)))))
+              (equal (rp::rp-evlt (cadr term) a)
+                     (rp::rp-evlt (rp::ex-from-rp (cadr term)) a)))))
 
   (local
-   (defthm rp-evl-of-sbits-when-is-bits-of-sbits
+   (defthm rp-evlt-of-sbits-when-is-bits-of-sbits
      (implies (and (is-bits-of-sbits term)
                    (rp-evl-meta-extract-global-facts)
                    (bits-of-formula-checks state))
-              (EQUAL (rp::rp-evl (cadr term) a)
+              (EQUAL (rp::rp-evlt (cadr term) a)
                      (sbits (cadr (cadr (rp::ex-from-rp (cadr term))))
                             (cadr (caddr (rp::ex-from-rp (cadr term))))
-                            (rp::rp-evl (cadddr (rp::ex-from-rp (cadr term)))
+                            (rp::rp-evlt (cadddr (rp::ex-from-rp (cadr term)))
                                         a)
-                            (rp::rp-evl (car (cddddr (rp::ex-from-rp (cadr term))))
+                            (rp::rp-evlt (car (cddddr (rp::ex-from-rp (cadr term))))
                                         a))))
      :hints (("goal"
               :in-theory (e/d (is-bits-of-sbits
                                rp-evl-of-fncall-args
-                               rp-evl-of-sbits-when-is-bits-of-sbits-lemma
+                               rp-evlt-of-sbits-when-is-bits-of-sbits-lemma
                                rp::ex-from-rp
                                rp::is-rp)
-                              (rp-evl-of-ex-from-rp))))))
-
+                              (rp-evlt-of-ex-from-rp))))))
 
   (local
    (defthm valid-sc-implies-when-is-IS-BITS-OF-BITAND/OR/XOR
@@ -909,34 +945,79 @@
      (implies (and (rp-evl-meta-extract-global-facts)
                    (IS-BITS-OF-BITAND/OR/XOR term)
                    (bits-of-formula-checks state)
-                   (equal (rp-evl x a) (BITS (RP-EVL (CADR (CADR TERM)) A)
-                                             (RP-EVL (CADDR TERM) A)
-                                             (RP-EVL (CADDDR TERM) A)))
-                   (equal (rp-evl y a) (BITS (RP-EVL (CADDR (CADR TERM)) A)
-                                             (RP-EVL (CADDR TERM) A)
-                                             (RP-EVL (CADDDR TERM) A))))
-              (EQUAL (RP-EVL (LIST (CAR (CADR TERM)) x y) A)
-                     (BITS (RP-EVL (CADR TERM) A)
-                           (RP-EVL (CADDR TERM) A)
-                           (RP-EVL (CADDDR TERM) A))))
+                   (equal (rp-evlt x a) (BITS (RP-EVLt (CADR (CADR TERM)) A)
+                                              (RP-EVLt (CADDR TERM) A)
+                                              (RP-EVLt (CADDDR TERM) A)))
+                   (equal (rp-evlt y a) (BITS (RP-EVLt (CADDR (CADR TERM)) A)
+                                              (RP-EVLt (CADDR TERM) A)
+                                              (RP-EVLt (CADDDR TERM) A))))
+              (EQUAL (RP-EVL (LIST (CAR (CADR TERM)) (rp-trans x) (rp-trans y)) A)
+                     (BITS (RP-EVLt (CADR TERM) A)
+                           (RP-EVLt (CADDR TERM) A)
+                           (RP-EVLt (CADDDR TERM) A))))
      :hints (("Goal"
               :in-theory (e/d (IS-BITS-OF-BITAND/OR/XOR) ())))))
 
-  
+  (local
+   (defthm rp-trans-when-IS-BITS-OF-BITS
+     (implies (and (IS-BITS-OF-BITS TERM))
+              (equal (rp-trans term)
+                     `(bits (bits ,(rp-trans (cadr (cadr term)))
+                                 ,(caddr (cadr term))
+                                 ,(cadddr (cadr term)))
+                           ,(caddr term)
+                           ,(cadddr term))))
+     :hints (("Goal"
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm rp-trans-when-is-bits-0-1-of-a-bitp
+     (implies (and (IS-BITS-0-1-OF-A-BITP TERM))
+              (equal (rp-trans term)
+                     (LIST* 'BITS
+                            (LIST 'RP
+                                  ''BITP
+                                  (RP-TRANS (CADDR (CADR TERM))))
+                            '('0 '1))))
+     :hints (("Goal"
+              :in-theory (e/d (IS-BITS-0-1-OF-A-BITP) ())))))
+  (local
+   (defthm rp-trans-when-is-IS-BITS-OF-CONCAT
+     (implies (and (is-bits-of-concat TERM))
+              (equal (rp-trans term)
+                     (LIST 'BITS
+                      (LIST '4VEC-CONCAT$
+                            (CADR (CADR TERM))
+                            (RP-TRANS (CADDR (CADR TERM)))
+                            (RP-TRANS (CADDDR (CADR TERM))))
+                      (CADDR TERM)
+                      (CADDDR TERM))))
+     :hints (("Goal"
+              :expand ((RP-TRANS-LST (CDDR (CADR TERM)))
+                       (RP-TRANS TERM)
+                       (RP-TRANS-LST (CDR TERM))
+                       (RP-TRANS-LST (CDDDR (CADR TERM)))
+                       (RP-TRANS (CADR TERM))
+                       (RP-TRANS-LST (CDR (CADR TERM))))
+              :in-theory (e/d (is-bits-of-concat) ())))))
+
   (defthm eval-of-bits-of-meta-fn
     (implies (and (rp::valid-sc term a)
                   (rp-evl-meta-extract-global-facts)
                   (bits-of-formula-checks state))
-             (EQUAL (rp::rp-evl (mv-nth 0 (bits-of-meta-fn term)) a)
-                    (rp::rp-evl term a)))
+             (EQUAL (rp::rp-evlt (mv-nth 0 (bits-of-meta-fn term)) a)
+                    (rp::rp-evlt term a)))
     :hints (("goal"
              :do-not-induct t
              :induct (bits-of-meta-fn term)
+             :expand ((RP-TRANS-LST (CDR TERM)))
              :in-theory (e/d (rp::is-rp
-                              rp-evl-of-fncall-args
+                              ;rp-evl-of-fncall-args
                               bits-01-of-a-bit
+                              rp-trans
                               rp::is-if)
                              ((:definition not)
+                              RP::TRANS-LIST
                               (:definition natp))))))
 
   (local
@@ -951,58 +1032,58 @@
                                (:elim car-cdr-elim)))))))
 
   #|(local
-   (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma1
-     (implies (syntaxp (equal term 'term))
-              (equal (rp::rp-syntaxp term)
-                     (rp::rp-syntaxp (rp::ex-from-rp term))))
-     :rule-classes :rewrite
-     :hints (("Goal"
-              :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp) ())))))||#
+  (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma1
+  (implies (syntaxp (equal term 'term))
+  (equal (rp::rp-syntaxp term)
+  (rp::rp-syntaxp (rp::ex-from-rp term))))
+  :rule-classes :rewrite
+  :hints (("Goal"
+  :in-theory (e/d (rp::ex-from-rp
+  rp::is-rp) ())))))||#
 
   #|(local
-   (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma2
-     (implies (syntaxp (equal term 'term))
-              (equal (rp::rp-syntaxp (cadr term))
-                     (rp::rp-syntaxp (rp::ex-from-rp (cadr term)))))
-     :rule-classes :rewrite
-     :hints (("Goal"
-              :use ((:instance rp-syntaxp-when-is-bits-of-sbits-lemma1
-                               (term (cadr term))))
-              :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp) ())))))||#
+  (defthmd rp-syntaxp-when-is-bits-of-sbits-lemma2
+  (implies (syntaxp (equal term 'term))
+  (equal (rp::rp-syntaxp (cadr term))
+  (rp::rp-syntaxp (rp::ex-from-rp (cadr term)))))
+  :rule-classes :rewrite
+  :hints (("Goal"
+  :use ((:instance rp-syntaxp-when-is-bits-of-sbits-lemma1
+  (term (cadr term))))
+  :in-theory (e/d (rp::ex-from-rp
+  rp::is-rp) ())))))||#
 
   #|(local
-   (defthm rp-syntaxp-when-is-bits-of-sbits
-     (implies (and (is-bits-of-sbits term)
-                   (rp::rp-syntaxp term))
-              (and (rp::rp-syntaxp (cadddr (rp::ex-from-rp (cadr term))))
-                   (rp::rp-syntaxp (car (cddddr (rp::ex-from-rp (cadr
-                                                                 term)))))))
-     :hints (("goal"
-              :do-not '(preprocess)
-              :expand ((RP::RP-SYNTAXP-LST (CDDDR (RP::EX-FROM-RP (CADR
-                                                                   TERM))))
-                       (RP::RP-SYNTAXP-LST (CDDR (RP::EX-FROM-RP (CADR
-                                                                  TERM))))
-                       (RP::RP-SYNTAXP-LST (CDR (RP::EX-FROM-RP (CADR TERM))))
-                       (RP::RP-SYNTAXP (RP::EX-FROM-RP (CADR TERM))))
-              :in-theory (e/d (is-bits-of-sbits
-                               rp-syntaxp-when-is-bits-of-sbits-lemma2) ())))))||#
+  (defthm rp-syntaxp-when-is-bits-of-sbits
+  (implies (and (is-bits-of-sbits term)
+  (rp::rp-syntaxp term))
+  (and (rp::rp-syntaxp (cadddr (rp::ex-from-rp (cadr term))))
+  (rp::rp-syntaxp (car (cddddr (rp::ex-from-rp (cadr
+  term)))))))
+  :hints (("goal"
+  :do-not '(preprocess)
+  :expand ((RP::RP-SYNTAXP-LST (CDDDR (RP::EX-FROM-RP (CADR
+  TERM))))
+  (RP::RP-SYNTAXP-LST (CDDR (RP::EX-FROM-RP (CADR
+  TERM))))
+  (RP::RP-SYNTAXP-LST (CDR (RP::EX-FROM-RP (CADR TERM))))
+  (RP::RP-SYNTAXP (RP::EX-FROM-RP (CADR TERM))))
+  :in-theory (e/d (is-bits-of-sbits
+  rp-syntaxp-when-is-bits-of-sbits-lemma2) ())))))||#
 
   #|(local
-   (defthm rp-syntaxp-bits-of-meta-fn
-     (implies (rp::rp-syntaxp term)
-              (rp::rp-syntaxp (mv-nth 0 (bits-of-meta-fn term))))
-     :hints (("Goal"
-              :induct (bits-of-meta-fn term)
-              :do-not-induct t
-              :in-theory (e/d ()
-                              ((:DEFINITION NOT)
-                               (:REWRITE ASSOCIATIVITY-OF-+)
-                               (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
-                               (:REWRITE COMMUTATIVITY-OF-+)
-                               (:DEFINITION NATP)))))))||#
+  (defthm rp-syntaxp-bits-of-meta-fn
+  (implies (rp::rp-syntaxp term)
+  (rp::rp-syntaxp (mv-nth 0 (bits-of-meta-fn term))))
+  :hints (("Goal"
+  :induct (bits-of-meta-fn term)
+  :do-not-induct t
+  :in-theory (e/d ()
+  ((:DEFINITION NOT)
+  (:REWRITE ASSOCIATIVITY-OF-+)
+  (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
+  (:REWRITE COMMUTATIVITY-OF-+)
+  (:DEFINITION NATP)))))))||#
 
   (local
    (defthm rp-termp-bits-of-meta-fn-lemma1
@@ -1025,7 +1106,7 @@
      (implies (and (IS-BITS-OF-SBITS TERM)
                    (rp::rp-termp term))
               (and (RP::RP-TERMP (CAR (CDDDDR (RP::EX-FROM-RP (CADR
-                                                                    TERM)))))
+                                                               TERM)))))
                    (RP::RP-TERMP (CADDDR (RP::EX-FROM-RP (CADR TERM))))))
      :hints (("Goal"
               :use ((:instance
@@ -1074,41 +1155,41 @@
                                (:REWRITE DEFAULT-+-1)))))))
 
   #|(local
-   (defthmd all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
-     (implies (rp::all-falist-consistent term)
-              (rp::all-falist-consistent (rp::ex-from-rp term)))
-     :hints (("Goal"
-              :in-theory (e/d (rp::ex-from-rp
-                               rp::is-rp) ())))))||#
+  (defthmd all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
+  (implies (rp::all-falist-consistent term)
+  (rp::all-falist-consistent (rp::ex-from-rp term)))
+  :hints (("Goal"
+  :in-theory (e/d (rp::ex-from-rp
+  rp::is-rp) ())))))||#
 
   #|(local
-   (defthm all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS
-     (implies (and (IS-BITS-OF-SBITS TERM)
-                   (rp::all-falist-consistent term))
-              (and (RP::ALL-FALIST-CONSISTENT (CAR (CDDDDR (RP::EX-FROM-RP
-                                                            (CADR TERM)))))
-                   (RP::ALL-FALIST-CONSISTENT (CADDDR (RP::EX-FROM-RP (CADR
-                                                                       TERM))))))
-     :hints (("Goal"
-              :use ((:instance
-                     all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
-                     (term (cadr term))))
-              :in-theory (e/d (IS-BITS-OF-SBITS) ())))))||#
+  (defthm all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS
+  (implies (and (IS-BITS-OF-SBITS TERM)
+  (rp::all-falist-consistent term))
+  (and (RP::ALL-FALIST-CONSISTENT (CAR (CDDDDR (RP::EX-FROM-RP
+  (CADR TERM)))))
+  (RP::ALL-FALIST-CONSISTENT (CADDDR (RP::EX-FROM-RP (CADR
+  TERM))))))
+  :hints (("Goal"
+  :use ((:instance
+  all-falist-consistent-bits-of-meta-fn-when-IS-BITS-OF-SBITS-lemma
+  (term (cadr term))))
+  :in-theory (e/d (IS-BITS-OF-SBITS) ())))))||#
 
   #|(local
-   (defthm all-falist-consistent-bits-of-meta-fn
-     (implies (rp::all-falist-consistent term)
-              (rp::all-falist-consistent (mv-nth 0 (bits-of-meta-fn term))))
-     :hints (("Goal"
-              :induct (bits-of-meta-fn term)
-              :do-not-induct t
-              :in-theory (e/d ()
-                              ((:DEFINITION NOT)
-                               (:REWRITE ASSOCIATIVITY-OF-+)
-                               (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
-                               (:REWRITE COMMUTATIVITY-OF-+)
-                               (:DEFINITION NATP)
-                               (:DEFINITION TRUE-LISTP)))))))||#
+  (defthm all-falist-consistent-bits-of-meta-fn
+  (implies (rp::all-falist-consistent term)
+  (rp::all-falist-consistent (mv-nth 0 (bits-of-meta-fn term))))
+  :hints (("Goal"
+  :induct (bits-of-meta-fn term)
+  :do-not-induct t
+  :in-theory (e/d ()
+  ((:DEFINITION NOT)
+  (:REWRITE ASSOCIATIVITY-OF-+)
+  (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
+  (:REWRITE COMMUTATIVITY-OF-+)
+  (:DEFINITION NATP)
+  (:DEFINITION TRUE-LISTP)))))))||#
 
   (defthm rp-valid-termp-bits-of-meta-fn
     (implies (rp::rp-termp term)
@@ -1119,7 +1200,6 @@
                              (
                               bits-of-meta-fn
                               rp::rp-termp)))))
-     
 
   (defthm valid-sc-resolve-bits-of-meta-fn
     (implies (and (rp::valid-sc term a)

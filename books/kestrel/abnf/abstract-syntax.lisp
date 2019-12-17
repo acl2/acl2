@@ -608,7 +608,6 @@
   (define def-rule-const-fn ((name legal-constantp)
                              (concatenation-forms pseudo-event-form-listp))
     :returns (const-event pseudo-event-formp)
-    :prepwork ((program))
     (b* ((name-string (symbol-name name))
          (name-chars (explode name-string))
          (name-chars-without-1st-* (cdr name-chars))

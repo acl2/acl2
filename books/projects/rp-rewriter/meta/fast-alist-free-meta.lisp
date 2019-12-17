@@ -91,8 +91,8 @@
    (implies (and (fast-alist-free-meta-formula-checks state)
                  (rp-evl-meta-extract-global-facts))
             (equal
-             (rp-evl (mv-nth 0 (fast-alist-free-meta term)) a)
-             (rp-evl term a)))
+             (rp-evlt (mv-nth 0 (fast-alist-free-meta term)) a)
+             (rp-evlt term a)))
    :hints (("Goal"
             :in-theory (e/d (fast-alist-free-meta) ())))))
 

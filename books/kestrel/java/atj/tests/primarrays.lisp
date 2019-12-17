@@ -41,3 +41,18 @@
                               (java::short-array-p shortarray))))
   (java::int-add (java::byte-array-length bytearray)
                  (java::short-array-length shortarray)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A function that creates a new char[] array of a certain length.
+
+(defun create-array-of-length (length)
+  (declare (xargs :guard (and (java::byte-value-p length)
+                              (>= (java::byte-value->int length) 0))
+                  :guard-hints (("Goal" :in-theory (enable java::byte-to-short
+                                                           java::short-to-int
+                                                           sbyte16-fix
+                                                           sbyte32-fix)))))
+  (b* ((length (java::byte-to-short length))
+       (length (java::short-to-int length)))
+    (java::char-array-of-length length)))

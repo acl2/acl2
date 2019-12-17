@@ -548,10 +548,11 @@
                   (atj-maybe-jtype-list-<= (atj-maybe-jtype-list-meet x y) y)))
     :enable atj-maybe-jtype-list-<=)
 
-  (defrule atj-maybe-jtype-meet-greatest
-    (implies (and (atj-maybe-jtypep x)
-                  (atj-maybe-jtypep y)
-                  (atj-maybe-jtypep z)
-                  (atj-maybe-jtype-<= z x)
-                  (atj-maybe-jtype-<= z y))
-             (atj-maybe-jtype-<= z (atj-maybe-jtype-meet x y)))))
+  (defrule atj-maybe-jtype-list-meet-greatest
+    (implies (and (atj-maybe-jtype-listp x)
+                  (atj-maybe-jtype-listp y)
+                  (atj-maybe-jtype-listp z)
+                  (atj-maybe-jtype-list-<= z x)
+                  (atj-maybe-jtype-list-<= z y))
+             (atj-maybe-jtype-list-<= z (atj-maybe-jtype-list-meet x y)))
+    :enable atj-maybe-jtype-list-<=))

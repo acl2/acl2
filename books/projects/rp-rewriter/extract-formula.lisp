@@ -159,11 +159,41 @@
          new-terms)))))
 
 
+(mutual-recursion
+ (defun insert-iff-to-force (term iff-flg)
+   (declare (xargs :guard t))
+   (cond ((or (atom term)
+              (quotep term))
+          term)
+         (t
+          (case-match term
+            (('implies p q)
+             `(implies ,(insert-iff-to-force p t)
+                       ,(insert-iff-to-force q t)))
+            (('force x)
+             (if iff-flg
+                 `(force (if ,(insert-iff-to-force x iff-flg) 't 'nil))
+               `(force ,(insert-iff-to-force x iff-flg))))
+            (('if test then else)
+             `(if ,(insert-iff-to-force test t)
+                  ,(insert-iff-to-force then iff-flg)
+                ,(insert-iff-to-force else iff-flg)))
+            (&
+             (cons (car term)
+                   (insert-iff-to-force-lst (cdr term))))))))
+ (defun insert-iff-to-force-lst (lst)
+   (if (atom lst)
+       nil
+     (cons (insert-iff-to-force (car lst) nil)
+           (insert-iff-to-force-lst (cdr lst))))))
+   
+
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
   (if (atom formulas)
       nil
     (b* ((formula (car formulas))
+         
          ((mv flg hyp lhs rhs)
           (custom-rewrite-from-formula formula))
          (hyp (if rule-new-synp
@@ -171,6 +201,7 @@
                        ,hyp
                      'nil)
                 hyp))
+         
          (rule (make custom-rewrite-rule
                      :rune rune
                      :hyp hyp
@@ -191,6 +222,7 @@
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
+       (formula (insert-iff-to-force formula nil))
        #|((when (equal formula ''t))
         nil)||#
        ((when (not (pseudo-termp formula)))
@@ -507,8 +539,9 @@
          "Something is wrong with the rewrite rule list format"
          nil))
        (- (fast-alist-free rule-fnc-alist))
-       (rules-alist (rule-list-to-alist rule-list)))
-    (to-fast-alist rules-alist)))
+       (rules-alist (rule-list-to-alist rule-list))
+       (rules-alist (to-fast-alist rules-alist)))
+    rules-alist))
 
 #|(defun get-enabled-exec-rules (runes)
   ;; get the names of enabled executable counterpart rules

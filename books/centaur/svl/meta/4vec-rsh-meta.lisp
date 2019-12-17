@@ -115,30 +115,39 @@
    nil
 
    (local
-    (defthmd rp-evl-of-ex-from-rp-reverse
+    (defthmd rp-evlt-of-ex-from-rp-reverse
       (implies (syntaxp (or (atom x)
                             (Not (equal (car x)
                                         'rp::ex-from-rp))))
-               (equal (rp-evl x a)
-                      (rp-evl (rp::ex-from-rp x) a)))
+               (equal (rp-evlt x a)
+                      (rp-evlt (rp::ex-from-rp x) a)))
       :hints (("Goal"
                :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
    (local
-    (defthmd rp-evl-of-ex-from-rp
+    (defthmd rp-evlt-of-ex-from-rp
       (implies t
-               (equal (rp-evl (rp::ex-from-rp x) a)
-                      (rp-evl x a)))
+               (equal (rp-evlt (rp::ex-from-rp x) a)
+                      (rp-evlt x a)))
       :hints (("Goal"
                :in-theory (e/d (rp::ex-from-rp rp::is-rp) ())))))
 
    (local
-    (defthmd rp-evl-of-ex-from-rp-reverse-caddr
+    (defthmd rp-evlt-of-ex-from-rp-reverse-caddr
       (implies (syntaxp (equal term 'term))
-               (equal (rp-evl (caddr term) a)
-                      (rp-evl (rp::ex-from-rp (caddr term)) a)))
+               (equal (rp-evlt (caddr term) a)
+                      (rp-evlt (rp::ex-from-rp (caddr term)) a)))
       :hints (("Goal"
-               :in-theory (e/d (rp-evl-of-ex-from-rp) ())))))
+               :in-theory (e/d (rp-evlt-of-ex-from-rp) ())))))
 
+
+   (local
+    (defthm rp-evl-of-ex-from-rp
+      (EQUAL (RP-EVL (RP::EX-FROM-RP X) A)
+             (RP-EVL X A))
+      :hints (("Goal"
+               :in-theory (e/d (rp::ex-from-rp
+                                rp::is-rp) ())))))
+   
    (local
     (defthm eval-of-4vec-rsh-when-4vec-rsh-of-formula-checks
       (implies (and (CONSP X)
@@ -149,14 +158,20 @@
 
                     (and (rp-evl-meta-extract-global-facts)
                          (4vec-rsh-of-formula-checks state)))
-               (and (equal (rp-evl x a)
+               (and (equal (rp-evlt x a)
+                           (4vec-rsh (rp-evlt (cadr x) a)
+                                     (rp-evlt (caddr x) a)))
+                    (equal (rp-evlt (rp::ex-from-rp x) a)
+                           (4vec-rsh (rp-evlt (cadr x) a)
+                                     (rp-evlt (caddr x) a)))
+                    (equal (rp-evl x a)
                            (4vec-rsh (rp-evl (cadr x) a)
                                      (rp-evl (caddr x) a)))
                     (equal (rp-evl (rp::ex-from-rp x) a)
                            (4vec-rsh (rp-evl (cadr x) a)
                                      (rp-evl (caddr x) a)))))
       :hints (("Goal"
-               :in-theory (e/d (rp-evl-of-ex-from-rp) (rp::ex-from-rp))))))
+               :in-theory (e/d (rp-evlt-of-ex-from-rp) (rp::ex-from-rp))))))
 
    (local
     (defthm eval-of-4vec-concat$-when-4vec-rsh-of-formula-checks
@@ -169,7 +184,15 @@
 
                     (and (rp-evl-meta-extract-global-facts)
                          (4vec-rsh-of-formula-checks state)))
-               (and (equal (rp-evl x a)
+               (and (equal (rp-evlt x a)
+                           (4vec-concat$ (rp-evlt (cadr x) a)
+                                         (rp-evlt (caddr x) a)
+                                         (rp-evlt (cadddr x) a)))
+                    (equal (rp-evlt (rp::ex-from-rp x) a)
+                           (4vec-concat$ (rp-evlt (cadr x) a)
+                                         (rp-evlt (caddr x) a)
+                                         (rp-evlt (cadddr x) a)))
+                    (equal (rp-evl x a)
                            (4vec-concat$ (rp-evl (cadr x) a)
                                          (rp-evl (caddr x) a)
                                          (rp-evl (cadddr x) a)))
@@ -178,7 +201,37 @@
                                          (rp-evl (caddr x) a)
                                          (rp-evl (cadddr x) a)))))
       :hints (("Goal"
-               :in-theory (e/d (rp-evl-of-ex-from-rp) (rp::ex-from-rp))))))
+               :in-theory (e/d (rp-evlt-of-ex-from-rp) (rp::ex-from-rp))))))
+
+   (local
+    (defthm eval-of-bits-when-4vec-rsh-of-formula-checks
+      (implies (and (CONSP X)
+                    (EQUAL (CAR X) 'bits)
+                    (CONSP (CDR X))
+                    (CONSP (CDdR X))
+                    (CONSP (CDddR X))
+                    (not (CDdddR X))
+
+                    (and (rp-evl-meta-extract-global-facts)
+                         (4vec-rsh-of-formula-checks state)))
+               (and (equal (rp-evlt x a)
+                           (bits (rp-evlt (cadr x) a)
+                                         (rp-evlt (caddr x) a)
+                                         (rp-evlt (cadddr x) a)))
+                    (equal (rp-evlt (rp::ex-from-rp x) a)
+                           (bits (rp-evlt (cadr x) a)
+                                         (rp-evlt (caddr x) a)
+                                         (rp-evlt (cadddr x) a)))
+                    (equal (rp-evl x a)
+                           (bits (rp-evl (cadr x) a)
+                                         (rp-evl (caddr x) a)
+                                         (rp-evl (cadddr x) a)))
+                    (equal (rp-evl (rp::ex-from-rp x) a)
+                           (bits (rp-evl (cadr x) a)
+                                         (rp-evl (caddr x) a)
+                                         (rp-evl (cadddr x) a)))))
+      :hints (("Goal"
+               :in-theory (e/d (rp-evlt-of-ex-from-rp) (rp::ex-from-rp))))))
 
    (local
     (defthm EX-FROM-RP-of-not-rp
@@ -190,15 +243,23 @@
                :in-theory (e/d (rp::ex-from-rp
                                 rp::is-rp) ())))))
 
+   
+   
    (defthm rp-evl-of-4vec-rsh-of-meta
      (implies (and (rp-evl-meta-extract-global-facts)
                    (4vec-rsh-of-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (4vec-rsh-of-meta term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (4vec-rsh-of-meta term)) a)
+                     (rp-evlt term a)))
+     :otf-flg t
      :hints (("Goal"
+              :do-not-induct t
+              :induct (4vec-rsh-of-meta term)
               :in-theory (e/d (4vec-rsh-of-meta
-                               rp-evl-of-ex-from-rp-reverse-caddr)
+                               rp-evlt-of-ex-from-rp-reverse-caddr)
                               (natp
+                               rp-trans
+                               rp-trans-lst
+                               RP::RP-EVLT-OF-EX-FROM-RP
                                rp::ex-from-rp)))))))
 
 (local

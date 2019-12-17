@@ -15,6 +15,7 @@
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)
+(include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
@@ -57,23 +58,21 @@
      for a Java method generated from an ACL2 function
      may involve arbitrarily hard theorem proving:
      (i) proving that the guard implies that the inputs of the ACL2 function
-     satisfies the ACL2 predicates corresponding to the input types, and
-     (ii) proving that the guard implies that the output of the ACL2 function
-     satisfies the ACL2 predicate corresponding to the output type.
-     (Currently ATJ treats ACL2 functions that return "
-    (xdoc::seetopic "mv" "multiple values")
-    "as if they returned one list value;
-     future versions of ATJ may treat these differently,
-     in which case (ii) above should be modified to
-     prove the type of each result individually.)
+     satisfy the ACL2 predicates corresponding to the input types, and
+     (ii) proving that the guard implies that the outputs of the ACL2 function
+     satisfy the ACL2 predicates corresponding to the output types;
+     the number of outputs of an ACL2 function is greater than 1
+     if the function returns an @(tsee mv) value;
+     otherwise the number of outputs is 1.
      Since we do not want ATJ to attempt any theorem proving,
      we provide a macro @(tsee def-atj-main-function-type)
      to perform those theorem proving tasks under user control
      and to record the input and output types of ACL2 functions in a table,
      and we have ATJ make use of this table.
      Note that these types are different from
-     both ACL2's built-in types used for typeset reasoning
-     and ACL2's tau system types.")
+     ACL2's built-in types used for typeset reasoning,
+     ACL2's tau system types,
+     and (our model of) Java types.")
    (xdoc::p
     "With a table of the types of the involved ACL2 functions at hand
      (the table being constructed
@@ -103,6 +102,11 @@
      In general, there may be different choices of types possible
      for certain ACL2 functions:
      different choices will lead to different Java code.
+     For instance,
+     if a function's guard implies that an argument satisfies @(tsee integerp),
+     that function's argument can be assigned
+     a type corresponding to @('Acl2Integer'),
+     or a type corresponding to @('Acl2Rational').
      The types of these Java methods are part of the ``API''
      that the generated Java code provides to external Java code.")
    (xdoc::p
@@ -155,7 +159,9 @@
      ATJ makes use of these additional types
      to generate multiple overloaded methods for single ACL2 functions.
      In general, via these two macros, each ACL2 function may have
-     more than one input/output type associated with it:
+     more than one input/output type associated with it
+     (where an input/output type is a full function type,
+     consisting of zero or more input types and one or more output types):
      (i) a primary (`main') input/output type,
      provable from the guards as described above; and
      (ii) zero or more secondary (`other') input/output types.
@@ -658,6 +664,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-list-join ((x atj-type-listp) (y atj-type-listp))
+  :returns (lub atj-type-listp :hyp :guard)
+  :short "Lift @(tsee atj-type-join) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done element-wise.
+     When the shorter list is exhausted,
+     we return (what remains of) the longer list.")
+   (xdoc::p
+    "We show that this indeed returns the least upper bound
+     of the order relation lifted to lists."))
+  (cond ((endp x) y)
+        ((endp y) x)
+        (t (cons (atj-type-join (car x) (car y))
+                 (atj-type-list-join (cdr x) (cdr y)))))
+  ///
+
+  (defrule atj-type-list-join-upper-bound
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y))
+             (and (atj-type-list-<= x (atj-type-list-join x y))
+                  (atj-type-list-<= y (atj-type-list-join x y))))
+    :enable atj-type-list-<=)
+
+  (defrule atj-type-list-join-least
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y)
+                  (atj-type-listp z)
+                  (atj-type-list-<= x z)
+                  (atj-type-list-<= y z))
+             (atj-type-list-<= (atj-type-list-join x y) z))
+    :enable atj-type-list-<=))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-to-jtype ((type atj-typep))
   :returns (jtype atj-jtypep :hyp :guard)
   :short "Java type denoted by an ATJ type."
@@ -751,17 +793,59 @@
   (xdoc::topstring
    (xdoc::p
     "An ATJ function type consists of
-     types for the arguments (i.e. inputs)
-     and a type for the result (i.e. output).
-     This is like an arrow type in higher-order languages.")
-   (xdoc::p
-    "This may be extended in the future
-     to have a list of output types instead of a single one,
-     for functions that return multiple results.
-     For now these functions are regarded
-     as returning a single (list) result."))
+     (zero or more) types for the arguments (i.e. inputs)
+     and (one or more) types for the results (i.e. outputs).
+     This is like an arrow type in higher-order languages."))
   ((inputs atj-type-listp)
-   (output atj-typep)))
+   (outputs atj-type-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-function-type->output ((fn-type atj-function-type-p))
+  :returns (out-type atj-typep
+                     :hyp :guard
+                     :hints (("Goal"
+                              :in-theory
+                              (disable atj-type-iff-when-atj-maybe-typep))))
+  :short "Return a single output type for an ATJ function type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We are in the process of adding to ATJ
+     support for multiple output types.
+     We are doing this in stages,
+     starting with the present file.
+     Previously, the @(tsee atj-function-type-p) aggregate
+     had a single output type,
+     and a destructor @('atj-function-type->output')
+     to return that output type:
+     code in other files uses that destructor
+     to retrieve the output type of a function.
+     So here we provide a function that operates like that destructor
+     (note that the destructor for the aggregate
+     have been changed to @(tsee atj-function-type->outputs)),
+     so that external code can still treat all ACL2 functions
+     as if they had a single output type.")
+   (xdoc::p
+    "If the list of output types in the aggregate is a singleton,
+     we return the single output type.
+     Otherwise, we return the type @(':acons'),
+     because a function returning multiple values,
+     if treated as single-values,
+     always returns a non-empty true list.
+     The list of output types can never be empty:
+     this is enforced by
+     @(tsee def-atj-main-function-type) and @(tsee def-atj-other-function-type).
+     Here we defensively check that the list is not empty,
+     which would signal a bug in our code if that were ever the case."))
+  (b* ((out-types (atj-function-type->outputs fn-type))
+       ((unless (consp out-types))
+        (raise "Internal error: ~
+                the ATJ function type ~x0 has no output types."
+               fn-type)
+        :avalue) ; irrelevant
+       ((when (null (cdr out-types))) (car out-types)))
+    :acons))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,14 +945,27 @@
   :returns (fn-info atj-function-type-info-p)
   :short "Default ATJ function type information for a function."
   :long
-  (xdoc::topstring-p
-   "This is used when a function has no entry in the table.
-    It consists of a primary function type of all @(':avalue') types,
-    and no secondary function types.")
-  (make-atj-function-type-info
-   :main (make-atj-function-type :inputs (repeat (arity+ fn wrld) :avalue)
-                                 :output :avalue)
-   :others nil))
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when a function has no entry in the table.
+     It consists of a primary function type of all @(':avalue') types,
+     and no secondary function types.")
+   (xdoc::p
+    "To calculate the output types,
+     we need the number of results returned by @('fn'),
+     which cannot be determined if @('fn') is
+     one of the functions whose output stobjs are invalid,
+     i.e. @(tsee if) or @(tsee return-last).
+     We regard these two functions as returning a single result."))
+  (b* ((number-of-inputs (arity+ fn wrld))
+       (number-of-outputs (if (member-eq fn *stobjs-out-invalid*)
+                              1
+                            (number-of-results+ fn wrld))))
+    (make-atj-function-type-info
+     :main (make-atj-function-type
+            :inputs (repeat number-of-inputs :avalue)
+            :outputs (repeat number-of-outputs :avalue))
+     :others nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -896,7 +993,7 @@
 (define atj-main-function-type-input-theorem ((fn symbolp)
                                               (guard pseudo-termp)
                                               (formal symbolp)
-                                              (type atj-typep)
+                                              (in-type atj-typep)
                                               (wrld plist-worldp))
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
   :mode :program ; because of UNTRANSLATE
@@ -913,10 +1010,10 @@
      to make sure that its formula holds.
      The theorem is local (to the @(tsee encapsulate) generated by the macro)
      for the same reason."))
-  (b* ((thm-name (packn-pos (list 'atj- fn '-input- formal '- type)
+  (b* ((thm-name (packn-pos (list 'atj- fn '-input- formal '- in-type)
                             (pkg-witness (symbol-package-name fn))))
        (thm-formula (implicate guard
-                               `(,(atj-type-to-pred type) ,formal))))
+                               `(,(atj-type-to-pred in-type) ,formal))))
     `(local
       (defthm ,thm-name
         ,(untranslate thm-formula t wrld)
@@ -927,9 +1024,9 @@
 (define atj-main-function-type-input-theorems ((fn symbolp)
                                                (guard pseudo-termp)
                                                (formals symbol-listp)
-                                               (types atj-type-listp)
+                                               (in-types atj-type-listp)
                                                (wrld plist-worldp))
-  :guard (= (len formals) (len types))
+  :guard (= (len formals) (len in-types))
   :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
   :mode :program ; because of ATJ-MAIN-FUNCTION-TYPE-INPUT-THEOREM
   :short "Theorems generated by @(tsee def-atj-main-function-type)
@@ -941,37 +1038,46 @@
   (if (endp formals)
       nil
     (cons (atj-main-function-type-input-theorem
-           fn guard (car formals) (car types) wrld)
+           fn guard (car formals) (car in-types) wrld)
           (atj-main-function-type-input-theorems
-           fn guard (cdr formals) (cdr types) wrld))))
+           fn guard (cdr formals) (cdr in-types) wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-main-function-type-output-theorem ((fn symbolp)
                                                (guard pseudo-termp)
                                                (formals symbol-listp)
-                                               (type atj-typep)
+                                               (result maybe-natp)
+                                               (out-type atj-typep)
                                                (wrld plist-worldp))
-  :mode :program ; because of UNTRANSLATE
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
+  :mode :program ; because of UNTRANSLATE
   :short "Theorem generated by @(tsee def-atj-main-function-type)
-          for the output of an ACL2 function."
+          for the/an output of an ACL2 function."
   :long
   (xdoc::topstring
    (xdoc::p
+    "The @('result') parameter is @('nil') if @('fn') returns a single result;
+     otherwise, it is the (0-based) index of one of the @('fn')'s results.")
+   (xdoc::p
     "The theorem states that, under the guard,
-     the function (applied to its formals) satisfies the predicate
-     that corresponds to the specified type.")
+     the result of the function (applied to its formals)
+     satisfies the predicate that corresponds to the specified type.")
    (xdoc::p
     "The theorem has no rule classes because its only purpose is
      to make sure that its formula holds.
      The theorem is local (to the @(tsee encapsulate) generated by the macro)
      for the same reason."))
-  (b* ((thm-name (packn-pos (list 'atj- fn '-output- type)
-                            (pkg-witness (symbol-package-name fn))))
+  (b* ((thm-name (if result
+                     (packn-pos (list 'atj- fn '-output- result '- out-type)
+                                (pkg-witness (symbol-package-name fn)))
+                   (packn-pos (list 'atj- fn '-output- out-type)
+                              (pkg-witness (symbol-package-name fn)))))
+       (fn-result (if result
+                      `(mv-nth ,result (,fn ,@formals))
+                    `(,fn ,@formals)))
        (thm-formula (implicate guard
-                               `(,(atj-type-to-pred type)
-                                 (,fn ,@formals)))))
+                               `(,(atj-type-to-pred out-type) ,fn-result))))
     `(local
       (defthm ,thm-name
         ,(untranslate thm-formula t wrld)
@@ -979,9 +1085,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-main-function-type-output-theorems ((fn symbolp)
+                                                (guard pseudo-termp)
+                                                (formals symbol-listp)
+                                                (nresults natp)
+                                                (out-types atj-type-listp)
+                                                (wrld plist-worldp))
+  :guard (= nresults (len out-types))
+  :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
+  :mode :program ; because of ATJ-MAIN-FUNCTION-TYPE-OUTPUT-THEOREM
+  :short "Theorems generated by @(tsee def-atj-main-function-type)
+          for all the outputs of a multi-valued ACL2 function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used when @('fn') returns multiple values.
+     We generate an output type theorem for each,
+     counting down from @('nresults - 1') to 0."))
+  (if (zp nresults)
+      nil
+    (cons (atj-main-function-type-output-theorem
+           fn guard formals (1- nresults) (car out-types) wrld)
+          (atj-main-function-type-output-theorems
+           fn guard formals (1- nresults) (cdr out-types) wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define def-atj-main-function-type-fn (fn
                                        in-types
-                                       out-type
+                                       out-type/types
                                        (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program ; because of ATJ-MAIN-FUNCTION-TYPE-INPUT/OUTPUT-THEOREM(S)
@@ -989,13 +1121,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This includes the theorems for the function inputs
-     and the theorem for the function output,
+    "This includes the theorems for the function inputs and outputs,
      as well as an event to record the function type in the table.")
    (xdoc::p
     "If the table already includes an entry for the function,
-     the proposed function type are compared with the existing ones.
-     If they are the same, the all is considered redundant
+     the proposed function type is compared with the existing one.
+     If they are the same, the call is considered redundant
      and no further action is taken.
      If they differ, it is an error."))
   (b* (((unless (symbolp fn))
@@ -1008,33 +1139,54 @@
         (raise "The number of input types ~x0 must match ~
                 the arity ~x1 of the function ~x2."
                in-types (len formals) fn))
-       ((unless (atj-typep out-type))
-        (raise "The third input, ~x0, must be a type." out-type))
+       (nresults (if (member-eq fn *stobjs-out-invalid*)
+                     1
+                   (number-of-results+ fn wrld)))
+       (out-types (if (= nresults 1)
+                      (if (atj-typep out-type/types)
+                          (list out-type/types)
+                        (raise "The third input, ~x0, must be a type; ~
+                                note that ~x1 returns a single result."
+                               out-type/types fn))
+                    (if (atj-type-listp out-type/types)
+                        out-type/types
+                      (raise "The third input, ~x0, ~
+                              must be a true list of types; ~
+                              note that ~x1 returns multiple results."
+                             out-type/types fn))))
+       ((unless (= nresults (len out-types)))
+        (raise "The number of output types ~x0 must match ~
+                the number of results ~x1 of the function ~x2."
+               out-types nresults fn))
        (fn-info? (atj-get-function-type-info-from-table fn wrld))
        ((when fn-info?)
         (b* ((main (atj-function-type-info->main fn-info?)))
           (if (and (equal (atj-function-type->inputs main) in-types)
-                   (equal (atj-function-type->output main) out-type))
+                   (equal (atj-function-type->outputs main) out-types))
               `(value-triple :redundant)
             (raise "The proposed ATJ main function type [~x0 -> ~x1] for ~x2 ~
                     differs from the already recorded [~x3 -> ~x4]."
                    in-types
-                   out-type
+                   out-types
                    fn
                    (atj-function-type->inputs main)
-                   (atj-function-type->output main)))))
+                   (atj-function-type->outputs main)))))
        (guard (guard fn nil wrld))
        (input-thms
         (atj-main-function-type-input-theorems fn guard formals in-types wrld))
-       (output-thm
-        (atj-main-function-type-output-theorem fn guard formals out-type wrld))
-       (fn-ty (make-atj-function-type :inputs in-types :output out-type))
+       (output-thms
+        (if (= nresults 1)
+            (list (atj-main-function-type-output-theorem
+                   fn guard formals nil (car out-types) wrld))
+          (atj-main-function-type-output-theorems
+           fn guard formals nresults out-types wrld)))
+       (fn-ty (make-atj-function-type :inputs in-types :outputs out-types))
        (fn-info (make-atj-function-type-info :main fn-ty :others nil)))
     `(encapsulate
        ()
        (set-ignore-ok t)
        ,@input-thms
-       ,output-thm
+       ,@output-thms
        (table ,*atj-function-type-info-table-name* ',fn ',fn-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1061,42 +1213,54 @@
    (xdoc::p
     "If ATJ encounters a function that is not in the table,
      it assumes the widest possible type (i.e. the one for all ACL2 values)
-     for inputs and output of the function.
+     for all the inputs and outputs of the function.
      See the code generation functions for details.")
    (xdoc::@def "def-atj-main-function-type"))
-  (defmacro def-atj-main-function-type (fn in-types out-type)
+  (defmacro def-atj-main-function-type (fn in-types out-type/types)
     `(make-event
-      (def-atj-main-function-type-fn ',fn ',in-types ',out-type (w state)))))
+      (def-atj-main-function-type-fn
+        ',fn ',in-types ',out-type/types (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-other-function-type-theorem ((fn symbolp)
+                                         (guard pseudo-termp)
                                          (formals symbol-listp)
                                          (in-types atj-type-listp)
+                                         (result maybe-natp)
                                          (out-type atj-typep)
                                          (wrld plist-worldp))
   :guard (= (len formals) (len in-types))
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
   :mode :program ; because of UNTRANSLATE
-  :short "Theorem generated by @(tsee def-atj-other-function-type)."
+  :short "Theorem generated by @(tsee def-atj-other-function-type)
+          for the/an output of an ACL2 function."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The @('result') parameter is @('nil') if @('fn') returns a single result;
+     otherwise, it is the (0-based) index of one of the @('fn')'s results.")
    (xdoc::p
     "The theorem states that if the formal parameters
      satisfy both the function's guard
      and the predicates that correspond to the input types,
-     then the function (applied to the formal parameters)
+     then the result of the function (applied to its formal parameters)
      satisfies the predicate that corresponds to the output type.")
    (xdoc::p
     "The theorem has no rule classes because its only purpose is
      to make sure that its formula holds.
      The theorem is local (to the @(tsee encapsulate) generated by the macro)
      for the same reason."))
-  (b* ((thm-name (packn-pos (list 'atj- fn '-other-type)
-                            (pkg-witness (symbol-package-name fn))))
-       (guard (guard fn nil wrld))
+  (b* ((thm-name (if result
+                     (packn-pos (list 'atj- fn '-other-type- result '- out-type)
+                                (pkg-witness (symbol-package-name fn)))
+                   (packn-pos (list 'atj- fn '-other-type)
+                              (pkg-witness (symbol-package-name fn)))))
        (type-hyps (atj-other-function-type-theorem-aux formals in-types))
-       (concl `(,(atj-type-to-pred out-type) (,fn ,@formals)))
+       (fn-result (if result
+                      `(mv-nth ,result (,fn ,@formals))
+                    `(,fn ,@formals)))
+       (concl `(,(atj-type-to-pred out-type) ,fn-result))
        (thm-formula (implicate (conjoin (cons guard type-hyps)) concl)))
     `(local
       (defthm ,thm-name
@@ -1115,6 +1279,33 @@
            (t (cons `(,(atj-type-to-pred (car in-types)) ,(car formals))
                     (atj-other-function-type-theorem-aux (cdr formals)
                                                          (cdr in-types))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-other-function-type-theorems ((fn symbolp)
+                                          (guard pseudo-termp)
+                                          (formals symbol-listp)
+                                          (in-types atj-type-listp)
+                                          (nresults natp)
+                                          (out-types atj-type-listp)
+                                          (wrld plist-worldp))
+  :guard (= nresults (len out-types))
+  :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
+  :mode :program ; because of ATJ-OTHER-FUNCTION-TYPE-THEOREM
+  :short "Theorems generated by @(tsee def-atj-other-function-type)
+          for all the outputs of a multi-valued ACL2 function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only used when @('fn') returns multiple values.
+     We generate an output type theorem for each,
+     counting down from @('nresults - 1') to 0."))
+  (if (zp nresults)
+      nil
+    (cons (atj-other-function-type-theorem
+           fn guard formals in-types (1- nresults) (car out-types) wrld)
+          (atj-other-function-type-theorems
+           fn guard formals in-types (1- nresults) (cdr out-types) wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1177,20 +1368,19 @@
      Redundant calls of @(tsee def-atj-other-function-type)
      are handled before calling this function.")
    (xdoc::p
-    "The @('new-in-types') and @('new-out-type') parameters of this function
-     consist of the new proposed input and output types.
+    "The @('new-in-types') parameter of this function
+     consist of the new proposed input types.
      The @('old-fn-types') parameter
-     consists of all the existing secondary function types
-     already in the table, which we @(tsee cdr) through
-     and compare against @('new-in-types') and @('new-out-type').
+     consists of all the existing secondary input types already in the table,
+     which we @(tsee cdr) through and compare against @('new-in-types').
      The @('all-in-jtypess') parameter of this function
-     consists of all the tuples of existing secondary input types in the table,
+     consists of the Java type counterparts of
+     all the tuples of existing secondary input types in the table,
      plus @('new-in-types');
      this stays constant, we do not @(tsee cdr) through it
      because we need the whole collection to check the closure property.
-     These are actually all Java types, counterparts of the ATJ types.
-     We include @('new-in-types') because the new proposed input types
-     contribute to the closure properties:
+     We include (the Java type counterpart of) @('new-in-types')
+     because the new proposed input types contribute to the closure properties:
      they will be in the table if all the checks succeed;
      for instance, if only @(':arational') is in the table
      and we are trying to add @(':ainteger'),
@@ -1236,7 +1426,7 @@
 
 (define def-atj-other-function-type-fn (fn
                                         in-types
-                                        out-type
+                                        out-type/types
                                         (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program ; because of ATJ-OTHER-FUNCTION-TYPE-THEOREM
@@ -1244,27 +1434,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This includes the theorem stating that
-     the guard and input types imply the output type,
+    "This includes the theorem(s) stating that
+     the guard and input types imply the output type(s),
      as well as an event to record the function type in the table.")
    (xdoc::p
     "It is an error if the function does not have a primary type already;
      that is, @(tsee def-atj-main-function-type) must be called
      before calling @(tsee def-atj-other-function-type).")
    (xdoc::p
-    "The proposed input types must be narrower,
-     according to the ACL2-based partial order,
-     than the primary input types;
+    "The proposed input types must be narrower than the primary input types;
      otherwise, there would be no advantage
      in adding these secondary input types,
      and in generating overloaded method corresponding to these types.
-     The proposed output type must be narrower than or the same as
-     the primary output types,
-     also according to the ACL2-based partial order:
-     since the primary output type is proved under the guard assumption only,
-     while the secondary output type is proved with additional type hypotheses,
-     it does not make sense that the secondary output type
-     is wider than, or unrelated to, the primary output type;
+     The proposed output types must be narrower than or the same as
+     the primary output types:
+     since the primary output types are proved under the guard assumption only,
+     while the secondary output types are proved
+     with additional type hypotheses,
+     it does not make sense that the secondary output types
+     is wider than, or unrelated to, the primary output types;
      this situation probably signals the misstatement of some types
      to either @(tsee def-atj-main-function-type)
      or @(tsee def-atj-other-function-type).")
@@ -1282,7 +1470,7 @@
      some already existing secondary types,
      then the output types must satisfy that relation too.
      The reason is analogous to the one discussed above
-     to motivate the check against the primary output type;
+     to motivate the check against the primary output types;
      but here we are talking about the secondary output types."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
@@ -1293,8 +1481,25 @@
         (raise "The number of input types ~x0 must match ~
                 the arity ~x1 of the function ~x2."
                in-types (len formals) fn))
-       ((unless (atj-typep out-type))
-        (raise "The third input, ~x0, must be a type." out-type))
+       (nresults (if (member-eq fn *stobjs-out-invalid*)
+                     1
+                   (number-of-results+ fn wrld)))
+       (out-types (if (= nresults 1)
+                      (if (atj-typep out-type/types)
+                          (list out-type/types)
+                        (raise "The third input, ~x0, must be a type; ~
+                                note that ~x1 returns a single result."
+                               out-type/types fn))
+                    (if (atj-type-listp out-type/types)
+                        out-type/types
+                      (raise "The third input, ~x0, ~
+                              must be a true list of types; ~
+                              note that ~x1 returns multiple results."
+                             out-type/types fn))))
+       ((unless (= nresults (len out-types)))
+        (raise "The number of output types ~x0 must match ~
+                the number of results ~x1 of the function ~x2."
+               out-types nresults fn))
        (fn-info? (atj-get-function-type-info-from-table fn wrld))
        ((unless fn-info?)
         (raise "The function ~x0 does not have a primary function type yet. ~
@@ -1303,20 +1508,19 @@
                fn))
        (main-fn-type (atj-function-type-info->main fn-info?))
        (main-in-types (atj-function-type->inputs main-fn-type))
-       (main-out-type (atj-function-type->output main-fn-type))
+       (main-out-types (atj-function-type->outputs main-fn-type))
        ((unless (atj-type-list-< in-types main-in-types))
-        (raise "The proposed inputs types ~x0 must be strictly narrower, ~
-                according to the ACL2-based partial ordering, ~
+        (raise "The proposed inputs types ~x0 must be strictly narrower ~
                 than the primary input types ~x1."
                in-types main-in-types))
-       ((unless (atj-type-<= out-type main-out-type))
-        (raise "The proposed output type ~x0 must be ~
+       ((unless (atj-type-list-<= out-types main-out-types))
+        (raise "The proposed output types ~x0 must be ~
                 narrower than or equal to, ~
-                according to the ACL2-based partial ordering, ~
-                the primary output type ~x1."
-               out-type main-out-type))
+                the primary output types ~x1."
+               out-types main-out-types))
        (other-fn-types (atj-function-type-info->others fn-info?))
-       (new-fn-type (make-atj-function-type :inputs in-types :output out-type))
+       (new-fn-type (make-atj-function-type :inputs in-types
+                                            :outputs out-types))
        ((when (member-equal new-fn-type other-fn-types))
         `(value-triple :redundant))
        (other-in-types (atj-function-type-list->inputs other-fn-types))
@@ -1325,13 +1529,19 @@
        (- (atj-check-other-function-type in-types
                                          other-fn-types
                                          all-in-jtypess))
-       (thm (atj-other-function-type-theorem fn formals in-types out-type wrld))
+       (guard (guard fn nil wrld))
+       (thms
+        (if (= nresults 1)
+            (list (atj-other-function-type-theorem
+                   fn guard formals in-types nil (car out-types) wrld))
+          (atj-other-function-type-theorems
+           fn guard formals in-types nresults out-types wrld)))
        (new-fn-info (change-atj-function-type-info
                      fn-info? :others (cons new-fn-type other-fn-types))))
     `(encapsulate
        ()
        (set-ignore-ok t)
-       ,thm
+       ,@thms
        (table ,*atj-function-type-info-table-name* ',fn ',new-fn-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1355,9 +1565,10 @@
    (xdoc::p
     "Each of the successful calls of this macro
      will result in an overloaded method with the specified types."))
-  (defmacro def-atj-other-function-type (fn in-types out-type)
+  (defmacro def-atj-other-function-type (fn in-types out-type/types)
     `(make-event
-      (def-atj-other-function-type-fn ',fn ',in-types ',out-type (w state)))))
+      (def-atj-other-function-type-fn
+        ',fn ',in-types ',out-type/types (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1367,6 +1578,9 @@
   :short "Output type for the minimum input types."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is still regarding all functions as returning a single value;
+     see @(tsee atj-function-type->output) for a discussion about this.")
    (xdoc::p
     "When this function is called,
      @('in-types') are the types inferred for

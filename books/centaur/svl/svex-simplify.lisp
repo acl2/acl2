@@ -141,7 +141,7 @@
             (err)
             (res svex-p :hyp (or (atom term) (svexlist-p (cdr term)))))
   (case-match term
-    
+
     ;; (('svl::4vec-bitor$ size x y)   `(partsel 0 ,size (sv::bitor ,x ,y)))
     ;; (('svl::4vec-bitand$ size x y)  `(partsel 0 ,size (sv::bitand ,x ,y)))
     ;; (('svl::4vec-bitxor$ size x y)  `(partsel 0 ,size (sv::bitxor ,x ,y)))
@@ -150,6 +150,7 @@
     (('svl::bits val s w)         (mv nil (list 'sv::partsel s w val)))
     (('svl::sbits s w new old)    (mv nil (list 'sv::partinst s w old new)))
     (('svl::4vec-concat$ & & &)   (mv nil (cons 'sv::concat   (cdr term))))
+
     (('sv::4vec-fix$inline &)     (mv nil (cons 'id            (cdr term))))
     (('svl::4vec-fix-wog &)       (mv nil (cons 'id           (cdr term))))
     (('sv::4vec-bit-extract & &)  (mv nil (cons 'sv::bitsel   (cdr term))))
@@ -175,7 +176,7 @@
     (('4vec-lsh & &)              (mv nil (cons 'sv::lsh      (cdr term))))
     (('4vec-plus & &)             (mv nil (cons '+            (cdr term))))
     (('sv::4vec-minus & &)        (mv nil (cons 'sv::b-       (cdr term))))
-    (('sv::4vec-uminus & &)       (mv nil (cons 'sv::u-       (cdr term))))
+    (('sv::4vec-uminus &)         (mv nil (cons 'sv::u-       (cdr term))))
     (('sv::4vec-times & &)        (mv nil (cons '*            (cdr term))))
     (('sv::4vec-quotient & &)     (mv nil (cons '/            (cdr term))))
     (('sv::4vec-remainder & &)    (mv nil (cons 'sv::%        (cdr term))))
@@ -198,10 +199,10 @@
     (('4vec-part-install & & & &) (mv nil (cons 'sv::partinst (cdr term))))
 
     (& (progn$
-        (cw "cannot match ~p0 with ~p1 arguments to any ~
+        (cw "ATTENTION! Cannot match ~p0 with ~p1 arguments to any ~
   svex function. If you think this is a bug, consider changing ~
   svl::to-svex-fnc. ~%"
-            (if (consp term) (car term) term) 
+            (if (consp term) (car term) term)
             (1- (len term)))
         (mv t '0))))
   ///
@@ -264,7 +265,8 @@
      (cond ((atom term)
             (if (svex-p term)
                 (mv nil term)
-              (progn$ (cw "unexpected term ~p0 ~%" term)
+              (progn$ (cw "ATTENTION! unexpected term ~p0 this atom does not ~
+              satisfy svex-p ~%" term)
                       (mv t 0))))
            ((and (quotep term)
                  (consp (cdr term)))
@@ -276,7 +278,8 @@
                      (mv nil term))
                     (t
                      (progn$
-                      (cw "unexpected term ~p0 ~%" term)
+                      (cw "ATTENTION! unexpected term ~p0. This quoted term
+   does not satisfy svex-p ~%" term)
                       (mv t 0))))))
            ((case-match term
               (('svex-env-fastlookup-wog ('quote var) env)
@@ -339,7 +342,7 @@
                  )
                 (4vec-to-svex-lst
                  4vec-to-svex
-                 
+
                  (:rewrite default-cdr)
                  (:rewrite bitp-implies-natp)
                  (:type-prescription lognot)
@@ -371,55 +374,53 @@
                   acl2::nat-listp-of-cdr-when-nat-listp)
                  (:rewrite default-car)))))))
 
+(progn
+  (define 4vec-to-svex-termlist-quote (lst)
+    :prepwork
+    ((local
+      (in-theory (enable SVEXL-NODE-P
+                         4VEC-P
+                         svex-p
 
+                         SVEXL-NODELIST-P))))
+    :returns (mv (err)
+                 (res svexl-nodelist-p))
+    (cond ((equal lst nil)
+           (mv nil nil))
+          ((atom lst)
+           (mv t nil))
+          (t
+           (b* (((mv err rest) (4vec-to-svex-termlist-quote (cdr lst))))
+             (cond ((integerp (car lst))
+                    (mv err (cons (car lst) rest)))
+                   ((4vec-p (car lst))
+                    (mv err
+                        (cons (list 'quote (car lst))
+                              rest)))
+                   (t
+                    (mv t nil))))))
+    ///
+    (std::defret svexlist-p-of-4vec-to-svex-termlist-quote
+                 (implies (not svexl-node-flg)
+                          (svexlist-p res))))
 
-(define 4vec-to-svex-termlist-quote (lst)
-  :prepwork
-  ((local
-    (in-theory (enable SVEXL-NODE-P
-                       4VEC-P
-                       svex-p
-                       
-                       SVEXL-NODELIST-P))))
-  :returns (mv (err)
-               (res svexl-nodelist-p))
-  (cond ((equal lst nil)
-         (mv nil nil))
-        ((atom lst)
-         (mv t nil))
-        (t 
-         (b* (((mv err rest) (4vec-to-svex-termlist-quote (cdr lst))))
-           (cond ((integerp (car lst))
-                  (mv err (cons (car lst) rest)))
-                 ((4vec-p (car lst))
-                  (mv err
-                      (cons (list 'quote (car lst))
-                            rest)))
-                 (t
-                  (mv t nil))))))
-  ///
-  (std::defret svexlist-p-of-4vec-to-svex-termlist-quote
-               (implies (not svexl-node-flg)
-                        (svexlist-p res))))
-  
-
-(define 4vec-to-svex-termlist (term svexl-node-flg memoize-flg)
-  :returns (mv (err)
-               (res svexl-nodelist-p))
-  (case-match term
-    (('cons x rest)
-     (b* (((mv err1 res1) (4vec-to-svex x svexl-node-flg memoize-flg))
-          ((mv err2 res2) (4vec-to-svex-termlist rest svexl-node-flg memoize-flg)))
-       (mv (or err1 err2)
-           (cons res1 res2))))
-    (('quote a)
-     (4vec-to-svex-termlist-quote a))
-    (&
-     (mv t nil)))
-  ///
-  (std::defret svexlist-p-of-4vec-to-svex-termlist
-   (implies (not svexl-node-flg)
-            (svexlist-p res))))
+  (define 4vec-to-svex-termlist (term svexl-node-flg memoize-flg)
+    :returns (mv (err)
+                 (res svexl-nodelist-p))
+    (case-match term
+      (('cons x rest)
+       (b* (((mv err1 res1) (4vec-to-svex x svexl-node-flg memoize-flg))
+            ((mv err2 res2) (4vec-to-svex-termlist rest svexl-node-flg memoize-flg)))
+         (mv (or err1 err2)
+             (cons res1 res2))))
+      (('quote a)
+       (4vec-to-svex-termlist-quote a))
+      (&
+       (mv t nil)))
+    ///
+    (std::defret svexlist-p-of-4vec-to-svex-termlist
+                 (implies (not svexl-node-flg)
+                          (svexlist-p res)))))
 
 (local
  (defthm natp-rp-rw-step-limit
@@ -473,13 +474,13 @@
               (access svex-simplify-preloaded rules
                       :meta-rules)))
          (term `(svexl-node-eval-wog ',node
-                                    (rp::rp 'node-env-p node-env)
-                                    (rp::rp 'sv::svex-env-p svex-env)))
+                                     (rp::rp 'node-env-p node-env)
+                                     (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
            exc-rules meta-rules nil rp::rp-state state))
-         
+
          ((mv err node-new) (4vec-to-svex rw t nil))
          (- (and err
                  (hard-error
@@ -530,7 +531,7 @@
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
            exc-rules meta-rules nil rp::rp-state state))
-         
+
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
                  (hard-error
@@ -592,10 +593,10 @@
           (svex-simplify-linearize-aux node-alist preloaded-rules context))
          (top-node (svexl->top-node svexl))
          ((mv top-node rp::rp-state)
-          (svexl-node-simplify top-node preloaded-rules context))) 
+          (svexl-node-simplify top-node preloaded-rules context)))
       (mv (make-svexl
-                :node-alist node-alist
-                :top-node top-node)
+           :node-alist node-alist
+           :top-node top-node)
           rp::rp-state)))
 
   (define svexlist-simplify-linearize ((svexlist svexlist-p)
@@ -616,19 +617,18 @@
          ((mv node-alist rp::rp-state)
           (svex-simplify-linearize-aux node-alist preloaded-rules context))
          ((mv top-node rp::rp-state)
-          (svexl-nodelist-simplify top-node preloaded-rules context))) 
+          (svexl-nodelist-simplify top-node preloaded-rules context)))
       (mv (make-svexllist
-                :node-alist node-alist
-                :top-nodelist top-node)
+           :node-alist node-alist
+           :top-nodelist top-node)
           rp::rp-state))))
-
 
 (define cons-count-compare ((term)
                             (cnt natp))
   (cond ((zp cnt) cnt)
         ((atom term)
          (- cnt 1))
-        (t 
+        (t
          (b* ((cnt (cons-count-compare (car term) cnt))
               ((when (zp cnt)) cnt)
               (cnt (cons-count-compare (cdr term) cnt)))
@@ -641,7 +641,8 @@
                                (context 'nil)
                                (linearize ':auto)
                                (preloaded-rules 'nil)
-                               (runes 'nil))
+                               (runes 'nil)
+                               (only-local 'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -665,7 +666,7 @@
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
-                     
+
                      (:definition rp::rp-rw-subterms)
                      (:rewrite
                       rp::valid-rules-alistp-implies-rules-alistp)
@@ -675,13 +676,14 @@
 
   :guard (and (svex-simplify-preloaded-guard preloaded-rules state)
               (or (rp::context-syntaxp context)
-                  (cw "Given context must satisfy rp::context-syntaxp ~%")))
+                  (cw "ATTENTION! Given context must satisfy rp::context-syntaxp ~%")))
 
   (b* ((world (w state))
-       (linearize (if (eq linearize ':auto)
-                      (zp (cons-count-compare svex 2048))
-                    linearize))
-       
+       (linearize (or only-local
+                      (if (eq linearize ':auto)
+                          (zp (cons-count-compare svex 2048))
+                        linearize)))
+
        ;; do not let rp-rewriter complain when simplified term is not ''t
        (tmp-rp-not-simplified-action (rp::not-simplified-action rp::rp-state))
        (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
@@ -701,7 +703,7 @@
                      "Something is wrong with the rules. ~%"
                      nil)
          (mv term rp::rp-state)))
-       
+
        ((mv exc-rules rules-alist meta-rules)
         (mv (access svex-simplify-preloaded rules
                     :exc-rules)
@@ -709,13 +711,13 @@
                     :rules)
             (access svex-simplify-preloaded rules
                     :meta-rules)))
-       
+
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil (rp::rw-step-limit rp::rp-state) rules-alist
          exc-rules meta-rules rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
-       
+
        ((mv svexl rp::rp-state)
         (if linearize
             (svex-simplify-linearize svex rules context)
@@ -723,11 +725,13 @@
        (term (if linearize
                  `(svexl-eval-wog ',svexl (rp::rp 'sv::svex-env-p svex-env))
                term))
-       
+
        ((mv rw rp::rp-state)
-        (rp::rp-rw
-         term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-         exc-rules meta-rules nil rp::rp-state state))
+        (if only-local
+            (mv term rp::rp-state)
+          (rp::rp-rw
+           term nil context (rp::rw-step-limit rp::rp-state) rules-alist
+           exc-rules meta-rules nil rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -744,7 +748,8 @@
                                    (context 'nil)
                                    (linearize ':auto)
                                    (preloaded-rules 'nil)
-                                   (runes 'nil))
+                                   (runes 'nil)
+                                   (only-local 'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -768,7 +773,7 @@
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
-                     
+
                      (:definition rp::rp-rw-subterms)
                      (:rewrite
                       rp::valid-rules-alistp-implies-rules-alistp)
@@ -778,13 +783,14 @@
 
   :guard (and (svex-simplify-preloaded-guard preloaded-rules state)
               (or (rp::context-syntaxp context)
-                  (cw "Given context must satisfy rp::context-syntaxp ~%")))
+                  (cw "ATTENTION!  Given context must satisfy rp::context-syntaxp ~%")))
 
   (b* ((world (w state))
-       (linearize (if (eq linearize ':auto)
-                      (zp (cons-count-compare svexlist 2048))
-                    linearize))
-       
+       (linearize (or only-local
+                      (if (eq linearize ':auto)
+                          (zp (cons-count-compare svexlist 2048))
+                        linearize)))
+
        ;; do not let rp-rewriter complain when simplified term is not ''t
        (tmp-rp-not-simplified-action (rp::not-simplified-action rp::rp-state))
        (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
@@ -804,7 +810,7 @@
                      "Something is wrong with the rules. ~%"
                      nil)
          (mv term rp::rp-state)))
-       
+
        ((mv exc-rules rules-alist meta-rules)
         (mv (access svex-simplify-preloaded rules
                     :exc-rules)
@@ -812,13 +818,13 @@
                     :rules)
             (access svex-simplify-preloaded rules
                     :meta-rules)))
-       
+
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil (rp::rw-step-limit rp::rp-state) rules-alist
          exc-rules meta-rules rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
-       
+
        ((mv svexllist rp::rp-state)
         (if linearize
             (svexlist-simplify-linearize svexlist rules context)
@@ -826,11 +832,13 @@
        (term (if linearize
                  `(svexllist-eval-wog ',svexllist (rp::rp 'sv::svex-env-p svex-env))
                term))
-       
+
        ((mv rw rp::rp-state)
-        (rp::rp-rw
-         term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-         exc-rules meta-rules nil rp::rp-state state))
+        (if only-local
+            (mv term rp::rp-state)
+          (rp::rp-rw
+           term nil context (rp::rw-step-limit rp::rp-state) rules-alist
+           exc-rules meta-rules nil rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -839,7 +847,56 @@
        (- (and (not preloaded-rules)
                (svex-rw-free-preload rules state))))
     (mv rw rp::rp-state)))
-         
+
+
+(define locally-simplified-to-svex (term)
+  ;; :guard (case-match term
+  ;;          (('svexl-eval-wog ('quote svexl) &)
+  ;;           (svexl-p svexl))
+  ;;          (('svexllist-eval-wog ('quote svexllist) &)
+  ;;           (svexllist-p svexllist)))
+  :returns (mv (err)
+               (res svex-p))
+  (case-match term
+    (('svexl-eval-wog ('quote svexl) &)
+     (if (svexl-p svexl)
+         (mv nil (svexl-to-svex svexl))
+       (progn$ (hard-error 'locally-simplified-to-svex
+                           "ATTENTION! The locally simplification yielded something ~
+other than svexl-p~%"
+                           (list (cons #\0 term)))
+               (mv t 0))))
+    (&    
+     (progn$ (hard-error 'locally-simplified-to-svex
+                         "ATTENTION! Something is wrong with the only locally ~
+simplified term ~%"
+                         (list (cons #\0 term)))
+             (mv t 0)))))
+
+
+(define locally-simplified-to-svexlist (term)
+  ;; :guard (case-match term
+  ;;          (('svexl-eval-wog ('quote svexl) &)
+  ;;           (svexl-p svexl))
+  ;;          (('svexllist-eval-wog ('quote svexllist) &)
+  ;;           (svexllist-p svexllist)))
+  :returns (mv (err)
+               (res svexlist-p)) 
+  (case-match term
+    (('svexllist-eval-wog ('quote svexllist) &)
+     (if (svexllist-p svexllist)
+         (mv nil (svexllist-to-svexlist svexllist))
+       (progn$ (hard-error 'locally-simplified-to-svex
+                           "ATTENTION! The locally simplification yielded something ~
+other than svexllist-p~%"
+                           (list (cons #\0 term)))
+               (mv t nil))))
+    (&    
+     (progn$ (hard-error 'locally-simplified-to-svexlist
+                         "ATTENTION! Something is wrong with the only locally ~
+simplified term ~%"
+                           (list (cons #\0 term)))
+             (mv t nil)))))
 
 (define svex-simplify ((svex svex-p)
                        &KEY
@@ -852,6 +909,7 @@
                        ;; structure  creation for the rewriter. This value
                        ;; can be created with (svex-simplify-preload)
                        (linearize ':auto)
+                       (only-local 'nil)
                        )
   :stobjs (state rp::rp-state)
   :returns (mv (res svex-p)
@@ -859,7 +917,7 @@
                                                      rp::rp-state)))
   :guard (and (svex-simplify-preloaded-guard preloaded-rules state)
               (or (rp::context-syntaxp context)
-                  (cw "Given context must satisfy rp::context-syntaxp ~%")))
+                  (cw "ATTENTION!  Given context must satisfy rp::context-syntaxp ~%")))
   (b* ((linearize (if (eq linearize ':auto)
                       (zp (cons-count-compare svex 2048))
                     linearize))
@@ -869,16 +927,19 @@
                                :context context
                                :runes runes
                                :preloaded-rules preloaded-rules
-                               :linearize linearize))
+                               :linearize linearize
+                               :only-local only-local))
        ((mv err svex-res)
-        (4vec-to-svex rw nil linearize))
+        (if only-local
+            (locally-simplified-to-svex rw)
+          (4vec-to-svex rw nil linearize)))
        (- (and err
                (hard-error
                 'svex-simplify
-                "4vec-to-svex returned an error for the term: ~p0 ~%"
+                "There was a problem while converting the term below to its ~
+svex equivalent. Read above for the printed messages. ~p0 ~%"
                 (list (cons #\0 rw))))))
     (mv svex-res rp::rp-state)))
-
 
 (define svexlist-simplify ((svexlist svexlist-p)
                            &KEY
@@ -889,8 +950,9 @@
                            ;; "if need to work with only certain rules other than current-theory"
                            (preloaded-rules 'nil) ;; Non-nil overrides rule
                            ;; structure  creation for the rewriter. This value
-                       ;; can be created with (svex-simplify-preload)
+                           ;; can be created with (svex-simplify-preload)
                            (linearize ':auto)
+                           (only-local 'nil)
                            )
   :stobjs (state rp::rp-state)
   :returns (mv (res svexlist-p)
@@ -898,7 +960,7 @@
                                                      rp::rp-state)))
   :guard (and (svex-simplify-preloaded-guard preloaded-rules state)
               (or (rp::context-syntaxp context)
-                  (cw "Given context must satisfy rp::context-syntaxp ~%")))
+                  (cw "ATTENTION!  Given context must satisfy rp::context-syntaxp ~%")))
   (b* ((linearize (if (eq linearize ':auto)
                       (zp (cons-count-compare svexlist 2048))
                     linearize))
@@ -908,16 +970,19 @@
                                    :context context
                                    :runes runes
                                    :preloaded-rules preloaded-rules
-                                   :linearize linearize))
+                                   :linearize linearize
+                                   :only-local only-local))
        ((mv err svexlist-res)
-        (4vec-to-svex-termlist rw nil linearize))
+        (if only-local
+            (locally-simplified-to-svexlist rw)
+          (4vec-to-svex-termlist rw nil linearize)))
        (- (and err
                (hard-error
-                'svex-simplify
-                "4vec-to-svex returned an error for the term: ~p0 ~%"
+                'svexlist-simplify
+                "There was a problem while converting the term below to its ~
+svex equivalent. Read above for the printed messages. ~p0 ~%"
                 (list (cons #\0 rw))))))
     (mv svexlist-res rp::rp-state)))
-
 
 (acl2::defxdoc svex-simplify
                :parents (projects/svl)
