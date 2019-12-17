@@ -86,7 +86,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * are validated.
      * Returns quickly if this validation has already been performed.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     void validateFunctionCallsInDefinition() {
         if (validatedFunctionCalls)
@@ -101,7 +101,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * We call {@link #validateFunctionCallsInDefinition()}
      * on all the functions created so far.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     static void validateFunctionCallsInAllDefinitions() {
         for (Acl2DefinedFunction function : functions.values())
