@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "JAVA" (append *std-pkg-symbols*
-                       '(*pkg-witness-name*
+                       '(*nil*
+                         *pkg-witness-name*
                          *primitive-formals-and-guards*
                          *stobjs-out-invalid*
                          add-const-to-untranslate-preprocess
