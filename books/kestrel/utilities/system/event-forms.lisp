@@ -34,9 +34,10 @@
    (xdoc::p
     "This is a shallow check.
      Its satisfaction does not guarantee that @('x') is a valid event form."))
-  (and x
+  (and (consp x)
        (true-listp x)
        (symbolp (car x)))
+  :no-function t
   ///
   (defrule pseudo-event-formp-of-cons
     (equal (pseudo-event-formp (cons a b))
