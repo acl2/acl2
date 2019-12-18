@@ -56,3 +56,13 @@
   (b* ((length (java::byte-to-short length))
        (length (java::short-to-int length)))
     (java::char-array-of-length length)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A function that creates a new long[] array from a list of components.
+
+(defun create-array-with-components (x y z)
+  (declare (xargs :guard (and (java::long-value-p x)
+                              (java::long-value-p y)
+                              (java::long-value-p z))))
+  (java::long-array (list x y z)))
