@@ -17,8 +17,6 @@
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
-(include-book "std/strings/coerce" :dir :system)
-(include-book "std/util/deflist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
