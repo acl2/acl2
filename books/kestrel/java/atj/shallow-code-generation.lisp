@@ -2204,7 +2204,7 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model Java primitive array constructors from lengths
-       (i.e. @(tsee byte-array-of-ength) etc.) are treated specially.
+       (i.e. @(tsee byte-array-of-length) etc.) are treated specially.
        We generate Java code to compute the length operand,
        and generate a Java array creation expression without initializer."))
     (b* (((mv length-block
