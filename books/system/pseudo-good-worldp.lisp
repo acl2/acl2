@@ -4,6 +4,16 @@
 
 (in-package "ACL2")
 
+; -----------------------------------------------------------------
+
+; The files included here were originally part of this file, but they have been
+; factored out so that they can be used by other files in the community books
+; in a more modular way.
+
+(include-book "pseudo-event-form-listp")
+
+; -----------------------------------------------------------------
+
 ; This book is used by the book worldp-check.lisp to check the concept of a
 ; ``good world'', as discussed below.  If that check fails, proceed as follows.
 
@@ -259,17 +269,6 @@
       (null lst)
       (and (pseudo-function-symbolp (car lst) n)
            (pseudo-function-symbol-listp (cdr lst) n))))
-
-(defun pseudo-event-formp (x)
-  (and (consp x)
-       (true-listp x)
-       (symbolp (car x)))) ; This symbolp could be a macro or a function.
-
-(defun pseudo-event-form-listp (x)
-  (if (atom x)
-      (equal x nil)
-      (and (pseudo-event-formp (car x))
-           (pseudo-event-form-listp (cdr x)))))
 
 (defun string-or-symbol-listp (x)
   (if (atom x)
