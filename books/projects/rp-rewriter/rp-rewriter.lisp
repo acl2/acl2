@@ -559,7 +559,7 @@
       ((and (case-match term (('synp & & ('quote &)) t) (& nil))
             #|(check-synp-syntax-aux term)||#)
        (b* ((hyp (unquote (cadddr term)))
-            (exc (rp-apply-bindings (rp-exc-all hyp bindings state) bindings))
+            (exc (rp-exc-all hyp bindings state))
             (res (nonnil-p exc)))
          res))
       (t (rp-rw-relieve-synp-subterms (cdr term) bindings exc-rules state))))
