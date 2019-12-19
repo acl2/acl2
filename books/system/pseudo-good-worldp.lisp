@@ -4,6 +4,16 @@
 
 (in-package "ACL2")
 
+; -----------------------------------------------------------------
+
+; The files included here were originally part of this file, but they have been
+; factored out so that they can be used by other files in the community books
+; in a more modular way.
+
+(include-book "pseudo-event-form-listp")
+
+; -----------------------------------------------------------------
+
 ; This book is used by the book worldp-check.lisp to check the concept of a
 ; ``good world'', as discussed below.  If that check fails, proceed as follows.
 
@@ -234,16 +244,6 @@
 
 ; EVENT-LANDMARK [GLOBAL-VALUE]
 
-; A ``form'' in the sense used here is an untranslated event or command form or
-; even a raw List form.  Because of macros it is almost impossible to put
-; constraints on forms.  For example, with an appropriate defmacro of barf,
-; this could be a form (barf (1 . 2)).  But even macros have to be symbols and
-; take a true-list of args.  So we know that much at the top but all bets are
-; off after that.  The most rigorous test would translate the alleged form, but
-; that would require state and the specification of translate's many options
-; like whether stobjs are treated specially.  Until we need it, we're not going
-; to try to implement the stronger test.
-
 (defun pseudo-function-symbolp (fn n)
 
 ; The n above is just a placeholder to allow me to record the requirements on
@@ -259,17 +259,6 @@
       (null lst)
       (and (pseudo-function-symbolp (car lst) n)
            (pseudo-function-symbol-listp (cdr lst) n))))
-
-(defun pseudo-event-formp (x)
-  (and (consp x)
-       (true-listp x)
-       (symbolp (car x)))) ; This symbolp could be a macro or a function.
-
-(defun pseudo-event-form-listp (x)
-  (if (atom x)
-      (equal x nil)
-      (and (pseudo-event-formp (car x))
-           (pseudo-event-form-listp (cdr x)))))
 
 (defun string-or-symbol-listp (x)
   (if (atom x)
