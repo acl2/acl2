@@ -120,12 +120,12 @@
      for all the Java primitive types
      except @('float[]') and @('double[]'),
      which currently are not supported by ATJ."))
-  '(boolean-array
-    char-array
-    byte-array
-    short-array
-    int-array
-    long-array))
+  '(boolean-array-with-comps
+    char-array-with-comps
+    byte-array-with-comps
+    short-array-with-comps
+    int-array-with-comps
+    long-array-with-comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,14 +194,14 @@
 
   ;; constructors from components:
 
-  (def-atj-main-function-type boolean-array (:avalue) :jboolean[])
+  (def-atj-main-function-type boolean-array-with-comps (:avalue) :jboolean[])
 
-  (def-atj-main-function-type char-array (:avalue) :jchar[])
+  (def-atj-main-function-type char-array-with-comps (:avalue) :jchar[])
 
-  (def-atj-main-function-type byte-array (:avalue) :jbyte[])
+  (def-atj-main-function-type byte-array-with-comps (:avalue) :jbyte[])
 
-  (def-atj-main-function-type short-array (:avalue) :jshort[])
+  (def-atj-main-function-type short-array-with-comps (:avalue) :jshort[])
 
-  (def-atj-main-function-type int-array (:avalue) :jint[])
+  (def-atj-main-function-type int-array-with-comps (:avalue) :jint[])
 
-  (def-atj-main-function-type long-array (:avalue) :jlong[]))
+  (def-atj-main-function-type long-array-with-comps (:avalue) :jlong[]))

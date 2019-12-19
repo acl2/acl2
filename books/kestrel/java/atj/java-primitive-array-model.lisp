@@ -499,7 +499,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-array ((list boolean-value-listp))
+(define boolean-array-with-comps ((list boolean-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array boolean-array-p
                   :hyp :guard
@@ -510,7 +510,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char-array ((list char-value-listp))
+(define char-array-with-comps ((list char-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array char-array-p
                   :hyp :guard
@@ -521,7 +521,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define byte-array ((list byte-value-listp))
+(define byte-array-with-comps ((list byte-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array byte-array-p
                   :hyp :guard
@@ -532,7 +532,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define short-array ((list short-value-listp))
+(define short-array-with-comps ((list short-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array short-array-p
                   :hyp :guard
@@ -543,7 +543,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define int-array ((list int-value-listp))
+(define int-array-with-comps ((list int-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array int-array-p
                   :hyp :guard
@@ -554,7 +554,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define long-array ((list long-value-listp))
+(define long-array-with-comps ((list long-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array long-array-p
                   :hyp :guard
@@ -565,7 +565,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define float-array ((list float-value-listp))
+(define float-array-with-comps ((list float-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array float-array-p
                   :hyp :guard
@@ -576,7 +576,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define double-array ((list double-value-listp))
+(define double-array-with-comps ((list double-value-listp))
   :guard (< (len list) (expt 2 31))
   :returns (array double-array-p
                   :hyp :guard

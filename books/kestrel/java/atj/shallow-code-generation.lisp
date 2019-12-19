@@ -2287,12 +2287,12 @@
     (b* (((mv list-call? elements) (atj-check-type-annotated-list-call arg)))
       (if list-call?
           (b* ((type (case fn
-                       (boolean-array :jboolean)
-                       (char-array :jchar)
-                       (byte-array :jbyte)
-                       (short-array :jshort)
-                       (int-array :jint)
-                       (long-array :jlong)
+                       (boolean-array-with-comps :jboolean)
+                       (char-array-with-comps :jchar)
+                       (byte-array-with-comps :jbyte)
+                       (short-array-with-comps :jshort)
+                       (int-array-with-comps :jint)
+                       (long-array-with-comps :jlong)
                        (otherwise (impossible))))
                (elements
                 (atj-type-rewrap-array-initialzer-elements elements type))
@@ -2310,12 +2310,12 @@
                                        wrld))
                (block (flatten blocks))
                (jtype (case fn
-                        (boolean-array (jtype-boolean))
-                        (char-array (jtype-char))
-                        (byte-array (jtype-byte))
-                        (short-array (jtype-short))
-                        (int-array (jtype-int))
-                        (long-array (jtype-long))
+                        (boolean-array-with-comps (jtype-boolean))
+                        (char-array-with-comps (jtype-char))
+                        (byte-array-with-comps (jtype-byte))
+                        (short-array-with-comps (jtype-short))
+                        (int-array-with-comps (jtype-int))
+                        (long-array-with-comps (jtype-long))
                         (otherwise (impossible))))
                (expr (jexpr-newarray-init jtype exprs)))
             (mv block
@@ -2334,12 +2334,12 @@
                                     t ; GUARDS$
                                     wrld))
              (type (case fn
-                     (boolean-array :jboolean[])
-                     (char-array :jchar[])
-                     (byte-array :jbyte[])
-                     (short-array :jshort[])
-                     (int-array :jint[])
-                     (long-array :jlong[])
+                     (boolean-array-with-comps :jboolean[])
+                     (char-array-with-comps :jchar[])
+                     (byte-array-with-comps :jbyte[])
+                     (short-array-with-comps :jshort[])
+                     (int-array-with-comps :jint[])
+                     (long-array-with-comps :jlong[])
                      (otherwise (impossible))))
              (expr (atj-adapt-expr-to-type expr :avalue type)))
           (mv block

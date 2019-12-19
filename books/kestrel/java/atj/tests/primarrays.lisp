@@ -65,4 +65,4 @@
   (declare (xargs :guard (and (java::long-value-p x)
                               (java::long-value-p y)
                               (java::long-value-p z))))
-  (java::long-array (list x y z)))
+  (java::long-array-with-comps (list x y z)))
