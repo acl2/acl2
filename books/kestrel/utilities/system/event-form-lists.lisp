@@ -13,15 +13,9 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "event-forms")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(include-book "system/pseudo-event-form-listp" :dir :system)
 
-; for compatibility with [books]/system/pseudo-good-worldp.lisp:
-(defun pseudo-event-form-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (equal x nil)
-    (and (pseudo-event-formp (car x))
-         (pseudo-event-form-listp (cdr x)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist pseudo-event-form-listp (x)
   (pseudo-event-formp x)
