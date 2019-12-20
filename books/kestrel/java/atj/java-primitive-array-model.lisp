@@ -167,79 +167,247 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('boolean') arrays."
-  (and (boolean-value-listp x)
-       (< (len x) (expt 2 31))))
+(defsection boolean-array
+  :short "Fixtype of (our model of) Java @('boolean') arrays."
+
+  (define boolean-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (boolean-array)
+    :short "Recognizer for @(tsee boolean-array)."
+    (and (boolean-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule boolean-value-listp-when-boolean-array-p
+      (implies (boolean-array-p x)
+               (boolean-value-listp x))))
+
+  (std::deffixer boolean-array-fix
+    :pred boolean-array-p
+    :body-fix nil
+    :parents (boolean-array)
+    :short "Fixer for @(tsee boolean-array).")
+
+  (fty::deffixtype boolean-array
+    :pred boolean-array-p
+    :fix boolean-array-fix
+    :equiv boolean-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('char') arrays."
-  (and (char-value-listp x)
-       (< (len x) (expt 2 31))))
+(defsection char-array
+  :short "Fixtype of (our model of) Java @('char') arrays."
+
+  (define char-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (boolean-array)
+    :short "Recognizer for @(tsee char-array)."
+    (and (char-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule char-value-listp-when-char-array-p
+      (implies (char-array-p x)
+               (char-value-listp x))))
+
+  (std::deffixer char-array-fix
+    :pred char-array-p
+    :body-fix nil
+    :parents (char-array)
+    :short "Fixer for @(tsee char-array).")
+
+  (fty::deffixtype char-array
+    :pred char-array-p
+    :fix char-array-fix
+    :equiv char-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define byte-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('byte') arrays."
-  (and (byte-value-listp x)
-       (< (len x) (expt 2 31))))
+(defsection byte-array
+  :short "Fixtype of (our model of) Java @('byte') arrays."
+
+  (define byte-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (byte-array)
+    :short "Recognizer for @(tsee byte-array)."
+    (and (byte-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule byte-value-listp-when-byte-array-p
+      (implies (byte-array-p x)
+               (byte-value-listp x))))
+
+  (std::deffixer byte-array-fix
+    :pred byte-array-p
+    :body-fix nil
+    :parents (byte-array)
+    :short "Fixer for @(tsee byte-array).")
+
+  (fty::deffixtype byte-array
+    :pred byte-array-p
+    :fix byte-array-fix
+    :equiv byte-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define short-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('short') arrays."
-  (and (short-value-listp x)
-       (< (len x) (expt 2 31))))
+(defsection short-array
+  :short "Fixtype of (our model of) Java @('short') arrays."
+
+  (define short-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (short-array)
+    :short "Recognizer for @(tsee short-array)."
+    (and (short-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule short-value-listp-when-short-array-p
+      (implies (short-array-p x)
+               (short-value-listp x))))
+
+  (std::deffixer short-array-fix
+    :pred short-array-p
+    :body-fix nil
+    :parents (short-array)
+    :short "Fixer for @(tsee short-array).")
+
+  (fty::deffixtype short-array
+    :pred short-array-p
+    :fix short-array-fix
+    :equiv short-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define int-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('int') arrays."
-  (and (int-value-listp x)
-       (< (len x) (expt 2 31))))
+(defsection int-array
+  :short "Fixtype of (our model of) Java @('int') arrays."
+
+  (define int-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (int-array)
+    :short "Recognizer for @(tsee int-array)."
+    (and (int-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule int-value-listp-when-int-array-p
+      (implies (int-array-p x)
+               (int-value-listp x))))
+
+  (std::deffixer int-array-fix
+    :pred int-array-p
+    :body-fix nil
+    :parents (int-array)
+    :short "Fixer for @(tsee int-array).")
+
+  (fty::deffixtype int-array
+    :pred int-array-p
+    :fix int-array-fix
+    :equiv int-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define long-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('long') arrays."
-  (and (long-value-listp x)
-       (< (len x) (expt 2 31))))
+(defsection long-array
+  :short "Fixtype of (our model of) Java @('long') arrays."
+
+  (define long-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (long-array)
+    :short "Recognizer for @(tsee long-array)."
+    (and (long-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule long-value-listp-when-long-array-p
+      (implies (long-array-p x)
+               (long-value-listp x))))
+
+  (std::deffixer long-array-fix
+    :pred long-array-p
+    :body-fix nil
+    :parents (long-array)
+    :short "Fixer for @(tsee long-array).")
+
+  (fty::deffixtype long-array
+    :pred long-array-p
+    :fix long-array-fix
+    :equiv long-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define float-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('float') arrays."
+(defsection float-array
+  :short "Fixtype of (our model of) Java @('float') arrays."
   :long
   (xdoc::topstring-p
    "The components of a @('float') array
     are always in the float value set [JLS:10].
     Thus, we use @(tsee float-value) for the components,
     not @(tsee floatx-value).")
-  (and (float-value-listp x)
-       (< (len x) (expt 2 31))))
+
+  (define float-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (float-array)
+    :short "Recognizer for @(tsee float-array)."
+    (and (float-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule float-value-listp-when-float-array-p
+      (implies (float-array-p x)
+               (float-value-listp x))))
+
+  (std::deffixer float-array-fix
+    :pred float-array-p
+    :body-fix nil
+    :parents (float-array)
+    :short "Fixer for @(tsee float-array).")
+
+  (fty::deffixtype float-array
+    :pred float-array-p
+    :fix float-array-fix
+    :equiv float-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define double-array-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize (our model of) Java @('double') arrays."
+(defsection double-array
+  :short "Fixtype of (our model of) Java @('double') arrays."
   :long
   (xdoc::topstring-p
    "The components of a @('double') array
      are always in the double value set [JLS:10].
      Thus, we use @(tsee double-value) for the components,
      not @(tsee doublex-value).")
-  (and (double-value-listp x)
-       (< (len x) (expt 2 31))))
+
+  (define double-array-p (x)
+    :returns (yes/no booleanp)
+    :parents (double-array)
+    :short "Recognizer for @(tsee double-array)."
+    (and (double-value-listp x)
+         (< (len x) (expt 2 31)))
+    ///
+    (defrule double-value-listp-when-double-array-p
+      (implies (double-array-p x)
+               (double-value-listp x))))
+
+  (std::deffixer double-array-fix
+    :pred double-array-p
+    :body-fix nil
+    :parents (double-array)
+    :short "Fixer for @(tsee double-array).")
+
+  (fty::deffixtype double-array
+    :pred double-array-p
+    :fix double-array-fix
+    :equiv double-array-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

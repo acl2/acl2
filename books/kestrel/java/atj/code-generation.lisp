@@ -128,27 +128,51 @@
    :jvalue-boolean (mv nil
                        (atj-gen-jboolean (boolean-value->bool tvalue.get))
                        :jboolean
-                     jvar-value-index)
+                       jvar-value-index)
    :jvalue-char (mv nil
                     (atj-gen-jchar (char-value->nat tvalue.get))
                     :jchar
-                 jvar-value-index)
+                    jvar-value-index)
    :jvalue-byte (mv nil
                     (atj-gen-jbyte (byte-value->int tvalue.get))
                     :jbyte
-                  jvar-value-index)
+                    jvar-value-index)
    :jvalue-short (mv nil
                      (atj-gen-jshort (short-value->int tvalue.get))
                      :jshort
-                   jvar-value-index)
+                     jvar-value-index)
    :jvalue-int (mv nil
                    (atj-gen-jint (int-value->int tvalue.get))
                    :jint
-                 jvar-value-index)
+                   jvar-value-index)
    :jvalue-long (mv nil
                     (atj-gen-jlong (long-value->int tvalue.get))
                     :jlong
-                  jvar-value-index)))
+                    jvar-value-index)
+   :jvalue-boolean-array (mv nil
+                             (atj-gen-jboolean-array tvalue.get)
+                             :jboolean[]
+                             jvar-value-index)
+   :jvalue-char-array (mv nil
+                          (atj-gen-jchar-array tvalue.get)
+                          :jchar[]
+                          jvar-value-index)
+   :jvalue-byte-array (mv nil
+                          (atj-gen-jbyte-array tvalue.get)
+                          :jbyte[]
+                          jvar-value-index)
+   :jvalue-short-array (mv nil
+                           (atj-gen-jshort-array tvalue.get)
+                           :jshort[]
+                           jvar-value-index)
+   :jvalue-int-array (mv nil
+                         (atj-gen-jint-array tvalue.get)
+                         :jint[]
+                         jvar-value-index)
+   :jvalue-long-array (mv nil
+                          (atj-gen-jlong-array tvalue.get)
+                          :jlong[]
+                          jvar-value-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,30 +292,51 @@
        ((mv args-block
             args-exprs
             args-types
-            jvar-value-index) (atj-gen-test-values test.inputs "value" 1))
+            jvar-value-index)
+        (atj-gen-test-values test.inputs "value" 1))
        ((mv ares-block
             ares-expr
             ares-type
-            &) (atj-gen-test-value test.output "value" jvar-value-index))
-       (res-type (cond ((eq ares-type :jboolean) (jtype-boolean))
-                       ((eq ares-type :jchar) (jtype-char))
-                       ((eq ares-type :jbyte) (jtype-byte))
-                       ((eq ares-type :jshort) (jtype-short))
-                       ((eq ares-type :jint) (jtype-int))
-                       ((eq ares-type :jlong) (jtype-long))
-                       (t *aij-type-value*)))
-       (cmp-res-expr (if (member-eq ares-type '(:jboolean
-                                                :jchar
-                                                :jbyte
-                                                :jshort
-                                                :jint
-                                                :jlong))
-                         (jexpr-binary (jbinop-eq)
-                                       (jexpr-name "resultAcl2")
-                                       (jexpr-name "resultJava"))
-                       (jexpr-imethod (jexpr-name "resultAcl2")
-                                      "equals"
-                                      (list (jexpr-name "resultJava")))))
+            &)
+        (atj-gen-test-value test.output "value" jvar-value-index))
+       (res-type (case ares-type
+                   (:jboolean (jtype-boolean))
+                   (:jchar (jtype-char))
+                   (:jbyte (jtype-byte))
+                   (:jshort (jtype-short))
+                   (:jint (jtype-int))
+                   (:jlong (jtype-long))
+                   (:jboolean[] (jtype-array (jtype-boolean)))
+                   (:jchar[] (jtype-array (jtype-char)))
+                   (:jbyte[] (jtype-array (jtype-byte)))
+                   (:jshort[] (jtype-array (jtype-short)))
+                   (:jint[] (jtype-array (jtype-int)))
+                   (:jlong[] (jtype-array (jtype-long)))
+                   (otherwise *aij-type-value*)))
+       (cmp-res-expr (case ares-type
+                       ((:jboolean
+                         :jchar
+                         :jbyte
+                         :jshort
+                         :jint
+                         :jlong)
+                        (jexpr-binary (jbinop-eq)
+                                      (jexpr-name "resultAcl2")
+                                      (jexpr-name "resultJava")))
+                       ((:jboolean[]
+                         :jchar[]
+                         :jbyte[]
+                         :jshort[]
+                         :jint[]
+                         :jlong[])
+                        (jexpr-smethod (jtype-class "Arrays")
+                                       "equals"
+                                       (list (jexpr-name "resultAcl2")
+                                             (jexpr-name "resultJava"))))
+                       (otherwise
+                        (jexpr-imethod (jexpr-name "resultAcl2")
+                                       "equals"
+                                       (list (jexpr-name "resultJava"))))))
        (current-time-expr (jexpr-smethod (jtype-class "System")
                                          "currentTimeMillis"
                                          nil))
@@ -587,7 +632,8 @@
         (cw "~%Generate the test Java compilation unit.~%")))
     (make-jcunit :package? java-package$
                  :imports (list (jimport nil (str::cat *aij-package* ".*"))
-                                (jimport nil "java.math.BigInteger"))
+                                (jimport nil "java.math.BigInteger")
+                                (jimport nil "java.util.Arrays"))
                  :types (list class))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
