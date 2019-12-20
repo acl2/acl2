@@ -14,6 +14,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "system/pseudo-event-formp" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc event-forms
@@ -22,8 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pseudo-event-formp (x)
-  :returns (yes/no booleanp)
+(defsection pseudo-event-formp
   :parents (event-forms)
   :short "Recognize the basic structure of an event form."
   :long
@@ -33,16 +34,20 @@
      (like a function or macro call).")
    (xdoc::p
     "This is a shallow check.
-     Its satisfaction does not guarantee that @('x') is a valid event form."))
-  (and (consp x)
-       (true-listp x)
-       (symbolp (car x)))
-  :no-function t
-  ///
+     Its satisfaction does not guarantee that @('x') is a valid event form.")
+   (xdoc::@def "pseudo-event-formp"))
+
+  (defrule booleanp-of-pseudo-event-formp
+    (booleanp (pseudo-event-formp x)))
+
   (defrule pseudo-event-formp-of-cons
     (equal (pseudo-event-formp (cons a b))
            (and (symbolp a)
-                (true-listp b)))))
+                (true-listp b))))
+
+  (in-theory (disable pseudo-event-formp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define maybe-pseudo-event-formp (x)
   :returns (yes/no booleanp)
