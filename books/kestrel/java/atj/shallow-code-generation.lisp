@@ -2800,7 +2800,10 @@
      different methods in @('Acl2NativeFunction') based on the types;
      the called methods are resolved by the Java compiler."))
   (b* ((in-types (atj-function-type->inputs fn-type))
-       (out-type (atj-function-type->output fn-type))
+       (out-types (atj-function-type->outputs fn-type))
+       (out-type (if (= (len out-types) 1)
+                     (car out-types)
+                   :acons))
        ((unless (= (len in-types) (len method-param-names)))
         (raise "Internal error: ~
                 the number ~x0 of input types for ~x1 ~
@@ -2820,7 +2823,12 @@
                            method-param-names
                            (atj-type-list-to-jtype-list in-types))
                   :throws (list *aij-class-undef-pkg-exc*)
-                  :body method-body)))
+                  :body method-body))
+  :prepwork ((local (include-book "std/lists/len" :dir :system)))
+  :guard-hints (("Goal"
+                 :in-theory (disable
+                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
+                             atj-maybe-typep-when-atj-typep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3002,7 +3010,10 @@
      but for greater implementation simplicity here we repeat them
      for every overloaded method."))
   (b* ((in-types (atj-function-type->inputs fn-type))
-       (out-type (atj-function-type->output fn-type))
+       (out-types (atj-function-type->outputs fn-type))
+       (out-type (if (= (len out-types) 1)
+                     (car out-types)
+                   :acons))
        ((unless (= (len in-types) (len formals)))
         (raise "Internal error: ~
                 the number ~x0 of parameters of ~x1 ~
@@ -3047,7 +3058,12 @@
                              :params method-params
                              :throws (list *aij-class-undef-pkg-exc*)
                              :body method-body)))
-    (mv method qconsts)))
+    (mv method qconsts))
+  :prepwork ((local (include-book "std/lists/len" :dir :system)))
+  :guard-hints (("Goal"
+                 :in-theory (disable
+                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
+                             atj-maybe-typep-when-atj-typep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3300,7 +3316,10 @@
      This function generates the overloaded method
      for the function type passed as argument."))
   (b* ((in-types (atj-function-type->inputs fn-type))
-       (out-type (atj-function-type->output fn-type))
+       (out-types (atj-function-type->outputs fn-type))
+       (out-type (if (= (len out-types) 1)
+                     (car out-types)
+                   :acons))
        (fn-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
@@ -3333,7 +3352,12 @@
                   :name method-name
                   :params method-params
                   :throws (list *aij-class-undef-pkg-exc*)
-                  :body method-body)))
+                  :body method-body))
+  :prepwork ((local (include-book "std/lists/len" :dir :system)))
+  :guard-hints (("Goal"
+                 :in-theory (disable
+                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
+                             atj-maybe-typep-when-atj-typep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

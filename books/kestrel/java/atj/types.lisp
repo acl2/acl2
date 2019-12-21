@@ -801,54 +801,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-function-type->output ((fn-type atj-function-type-p))
-  :returns (out-type atj-typep
-                     :hyp :guard
-                     :hints (("Goal"
-                              :in-theory
-                              (disable atj-type-iff-when-atj-maybe-typep))))
-  :short "Return a single output type for an ATJ function type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We are in the process of adding to ATJ
-     support for multiple output types.
-     We are doing this in stages,
-     starting with the present file.
-     Previously, the @(tsee atj-function-type-p) aggregate
-     had a single output type,
-     and a destructor @('atj-function-type->output')
-     to return that output type:
-     code in other files uses that destructor
-     to retrieve the output type of a function.
-     So here we provide a function that operates like that destructor
-     (note that the destructor for the aggregate
-     have been changed to @(tsee atj-function-type->outputs)),
-     so that external code can still treat all ACL2 functions
-     as if they had a single output type.")
-   (xdoc::p
-    "If the list of output types in the aggregate is a singleton,
-     we return the single output type.
-     Otherwise, we return the type @(':acons'),
-     because a function returning multiple values,
-     if treated as single-values,
-     always returns a non-empty true list.
-     The list of output types can never be empty:
-     this is enforced by
-     @(tsee def-atj-main-function-type) and @(tsee def-atj-other-function-type).
-     Here we defensively check that the list is not empty,
-     which would signal a bug in our code if that were ever the case."))
-  (b* ((out-types (atj-function-type->outputs fn-type))
-       ((unless (consp out-types))
-        (raise "Internal error: ~
-                the ATJ function type ~x0 has no output types."
-               fn-type)
-        :avalue) ; irrelevant
-       ((when (null (cdr out-types))) (car out-types)))
-    :acons))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::deflist atj-function-type-listp (x)
   :short "Recognize true lists of ATJ function types."
   (atj-function-type-p x)

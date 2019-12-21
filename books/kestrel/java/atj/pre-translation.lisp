@@ -653,8 +653,10 @@
      If there are no function types satisfying the above condition,
      we look at the primary function type (which always exists),
      and its input types become the required ones for the argument terms,
-     while the output type is the one inferred for the call,
-     which is then wrapped as needed to match the required type if any.")
+     while the output types are used to infer the type for the call,
+     which is then wrapped as needed to match the required type if any;
+     if the output types are not a singleton list,
+     they are turned into a single @(':acons') type as explained above.")
    (xdoc::p
     "An annotated term is still a regular term,
      but it has a certain structure."))
@@ -763,7 +765,7 @@
                                           required-type?)
                       (or required-type? type)))
               (b* ((in-types (atj-function-type->inputs main-fn-type))
-                   (out-type (atj-function-type->output main-fn-type))
+                   (out-types (atj-function-type->outputs main-fn-type))
                    ((unless (= (len in-types)
                                (len args))) ; should be always true
                     (raise "Internal error: ~
@@ -771,7 +773,15 @@
                             but a different number of input types ~x2."
                            fn (len args) (len in-types))
                     (mv nil :avalue)) ; irrelevant
-                   (args (atj-type-rewrap-terms args types in-types)))
+                   (args (atj-type-rewrap-terms args types in-types))
+                   ((unless (consp out-types))
+                    (raise "Internal error: ~
+                            the function ~x0 has an empty list of output types."
+                           fn)
+                    (mv nil :avalue)) ; irrelevant
+                   (out-type (if (= (len out-types) 1)
+                                 (car out-types)
+                               :acons)))
                 (mv (atj-type-wrap-term (fcons-term fn args)
                                         out-type
                                         required-type?)
