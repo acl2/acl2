@@ -1585,14 +1585,13 @@
     "When this function is called,
      @('in-types') are the types inferred for
      the actual arguments of a function call,
-     and @('fn-types') are the secondary function types of the called function.
-     The goal here is to see if the argument types match
-     any secondary function type,
+     and @('fn-types') are all the function types of the called function.
+     The goal here is to see if the argument types match any function type,
      in the sense that the Java counterparts
-     of the input types of the secondary function type
+     of the input types of the function type
      are greater than or equal to the Java counterparts
      of the types of the actual arguments.
-     If no such secondary function type is found, we return @('nil').
+     If no such function type is found, we return @('nil').
      If instead some exist, we select the minimum one,
      which should always exist because of the closure property
      enforced by @(tsee def-atj-other-function-type),

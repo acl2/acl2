@@ -629,29 +629,28 @@
      but note that the new @('var-types') has non-annotated variable names.")
    (xdoc::p
     "For a named function call, the function's types are obtained.
-     If there is just a primary function type,
-     the input types become the required ones for the argument terms,
-     while the output type is the one inferred for the call,
-     which is then wrapped as needed to match the required type if any.
-     However, if there are one or more secondary function types,
-     we first try annotating the argument terms without required types
+
+     We first try annotating the argument terms without required types
      (as done for a lambda expression as explained above),
      thus inferring types for the arguments.
-     Then we look for the secondary function types
+     Then we look for the function types (of the named function)
      whose input types are wider than or the same as
      the inferred argument types.
-     If there are none, we fall back to using the primary function type,
-     as if there were no secondary function types.
-     If there are some, we select the one whose input types are the least;
-     this should always exist because of the closure property
+     If there are some, we select the one whose input types are the least
+     (this should always exist because of the closure property
      checked by @(tsee def-atj-other-function-type);
-     see the documentation of that macro and supporting functions for details.
-     We then use the output type of the selected secondary function type
+     see the documentation of that macro and supporting functions for details);
+     we then use the output type of the selected function type
      as the type inferred for the function call,
      and wrap it to adapt to the required type for the function call if any.
-     The successful selection of a secondary function type means that,
+     The successful selection of such a function type means that,
      in the translated Java code, an overloaded method will be called
-     based on the argument types inferred by the Java compiler.")
+     based on the argument types inferred by the Java compiler.
+     If there are no function types satisfying the above condition,
+     we look at the primary function type (which always exists),
+     and its input types become the required ones for the argument terms,
+     while the output type is the one inferred for the call,
+     which is then wrapped as needed to match the required type if any.")
    (xdoc::p
     "An annotated term is still a regular term,
      but it has a certain structure."))
@@ -746,16 +745,16 @@
                                                    wrld))
          ((when (symbolp fn))
           (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
+               (main-fn-type (atj-function-type-info->main fn-info))
                (other-fn-types (atj-function-type-info->others fn-info))
-               (type? (atj-output-type-of-min-input-types types
-                                                          other-fn-types)))
+               (all-fn-types (cons main-fn-type other-fn-types))
+               (type? (atj-output-type-of-min-input-types types all-fn-types)))
             (if type?
                 (mv (atj-type-wrap-term (fcons-term fn args)
                                         type?
                                         required-type?)
                     (or required-type? type?))
-              (b* ((main-fn-type (atj-function-type-info->main fn-info))
-                   (in-types (atj-function-type->inputs main-fn-type))
+              (b* ((in-types (atj-function-type->inputs main-fn-type))
                    (out-type (atj-function-type->output main-fn-type))
                    ((unless (= (len in-types)
                                (len args))) ; should be always true
