@@ -569,7 +569,12 @@
      the type required for the term, if any.
      At the top level (see @(tsee atj-type-annotate-formals+body)),
      this is the output type of the function:
-     the body of the function must have the output type of the function.")
+     the body of the function must have the output type of the function.
+     The recursive function @('atj-type-annotate-terms')
+     that operates on lists of terms
+     does not take a list of required types as input:
+     if it did, it would be always consist of @('nil')s,
+     so we simply avoid it.")
    (xdoc::p
     "The result of annotating a term is not only the annotated term,
      but also the type of the wrapped term.
@@ -736,7 +741,6 @@
                     type)))))
          (args (fargs term))
          ((mv args types) (atj-type-annotate-terms args
-                                                   (repeat (len args) nil)
                                                    var-types
                                                    guards$
                                                    wrld))
@@ -778,11 +782,9 @@
           (or required-type? type))))
 
   (define atj-type-annotate-terms ((terms pseudo-term-listp)
-                                   (required-types? atj-maybe-type-listp)
                                    (var-types atj-symbol-type-alistp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
-    :guard (int= (len terms) (len required-types?))
     :returns (mv (annotated-terms (and (pseudo-term-listp annotated-terms)
                                        (equal (len annotated-terms)
                                               (len terms)))
@@ -793,12 +795,11 @@
                                   :hyp :guard))
     (b* (((when (endp terms)) (mv nil nil))
          ((mv term type) (atj-type-annotate-term (car terms)
-                                                 (car required-types?)
+                                                 nil ; REQUIRED-TYPE?
                                                  var-types
                                                  guards$
                                                  wrld))
          ((mv terms types) (atj-type-annotate-terms (cdr terms)
-                                                    (cdr required-types?)
                                                     var-types
                                                     guards$
                                                     wrld)))
@@ -815,9 +816,7 @@
     (defret true-listp-of-atj-type-annotate-term.annotated-terms
       (true-listp annotated-terms)
       :rule-classes :type-prescription
-      :fn atj-type-annotate-terms)
-    :hints ('(:expand ((atj-type-annotate-terms
-                        terms required-types? var-types guards$ wrld)))))
+      :fn atj-type-annotate-terms))
 
   (defret-mutual atj-type-annotate-term
     (defret true-listp-of-atj-type-annotate-term.resulting-types-aux
@@ -827,9 +826,7 @@
     (defret true-listp-of-atj-type-annotate-term.resulting-types
       (true-listp resulting-types)
       :rule-classes :type-prescription
-      :fn atj-type-annotate-terms)
-    :hints ('(:expand ((atj-type-annotate-terms
-                        terms required-types? var-types guards$ wrld)))))
+      :fn atj-type-annotate-terms))
 
   (verify-guards atj-type-annotate-term
     :hints (("Goal" :expand ((pseudo-termp term))))))
