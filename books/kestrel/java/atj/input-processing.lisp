@@ -541,7 +541,12 @@
      we ensure that the inputs will select an overloaded methods,
      and we will obtain the corresponding output type
      to contruct the appropriate kind of output test value.
-     We create and return an @(tsee atj-test) record."))
+     We create and return an @(tsee atj-test) record.")
+   (xdoc::p
+    "For now functions that return @(tsee mv) values
+     are regarded as returning a single non-empty list value.
+     Thus, if the result of @(tsee atj-output-types-of-min-input-types)
+     is not a singleton list, we treat it as a single @(':acons') type."))
   (b* (((er &) (ensure-string$ name
                                (msg "The test name ~x0 in the :TESTS input"
                                     name)
@@ -605,14 +610,17 @@
           (value (atj-test name fn test-inputs test-output))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
-       (out-type? (atj-output-type-of-min-input-types in-types all-fn-types))
-       ((when (null out-type?))
+       (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
+       ((when (null out-types?))
         (er-soft+ ctx t nil
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
+       (out-type (if (= (len out-types?) 1)
+                     (car out-types?)
+                   :acons))
        (test-output
-        (case out-type?
+        (case out-type
           (:jboolean (atj-test-value-jvalue-boolean output))
           (:jchar (atj-test-value-jvalue-char output))
           (:jbyte (atj-test-value-jvalue-byte output))

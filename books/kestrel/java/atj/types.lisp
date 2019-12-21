@@ -1572,20 +1572,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-output-type-of-min-input-types ((in-types atj-type-listp)
-                                            (fn-types atj-function-type-listp))
-  :returns (out-type? atj-maybe-typep :hyp :guard)
-  :short "Output type for the minimum input types."
+(define atj-output-types-of-min-input-types ((in-types atj-type-listp)
+                                             (fn-types atj-function-type-listp))
+  :returns (out-types? atj-type-listp :hyp :guard)
+  :short "Output types for the minimum input types."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This is still regarding all functions as returning a single value;
-     see @(tsee atj-function-type->output) for a discussion about this.")
    (xdoc::p
     "When this function is called,
      @('in-types') are the types inferred for
      the actual arguments of a function call,
-     and @('fn-types') are all the function types of the called function.
+     and @('fn-types') are all the function types (primary and secondary)
+     of the called function.
      The goal here is to see if the argument types match any function type,
      in the sense that the Java counterparts
      of the input types of the function type
@@ -1593,13 +1591,19 @@
      of the types of the actual arguments.
      If no such function type is found, we return @('nil').
      If instead some exist, we select the minimum one,
-     which should always exist because of the closure property
+     which always exists because of the closure property
      enforced by @(tsee def-atj-other-function-type),
-     and we return its corresponding output type.
+     and we return its corresponding output types.
      In other words, given the types of the actual arguments,
-     the returned output type (if any) tells us
+     the returned output types (if any) tell us
      the result type of the overloaded method
-     that will be resolved at compile time."))
+     that will be resolved at compile time.")
+   (xdoc::p
+    "A function type always has one or more output types
+     (this is enforced by @(tsee def-atj-main-function-type)
+     and @(tsee def-atj-other-function-type)),
+     so it is appropriate to use @('nil') here to signal that
+     no function types matching the criteria were found."))
   (atj-output-type-of-min-input-types-aux (atj-type-list-to-jtype-list in-types)
                                           fn-types
                                           nil
@@ -1610,20 +1614,20 @@
      ((in-jtypes atj-jtype-listp)
       (fn-types atj-function-type-listp)
       (current-min-in-jtypes atj-jtype-listp)
-      (current-out-type? atj-maybe-typep))
-     :returns (out-type? atj-maybe-typep :hyp :guard)
-     (b* (((when (endp fn-types)) current-out-type?)
+      (current-out-types? atj-type-listp))
+     :returns (out-types? atj-type-listp :hyp :guard)
+     (b* (((when (endp fn-types)) current-out-types?)
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
           (fn-in-jtypes (atj-type-list-to-jtype-list fn-in-types))
-          ((mv current-min-in-jtypes current-out-type?)
+          ((mv current-min-in-jtypes current-out-types?)
            (if (and (atj-maybe-jtype-list-<= in-jtypes fn-in-jtypes)
-                    (or (null current-out-type?)
+                    (or (null current-out-types?) ; i.e. none found yet
                         (atj-maybe-jtype-list-< fn-in-jtypes
                                                 current-min-in-jtypes)))
-               (mv fn-in-jtypes (atj-function-type->output fn-type))
-             (mv current-min-in-jtypes current-out-type?))))
+               (mv fn-in-jtypes (atj-function-type->outputs fn-type))
+             (mv current-min-in-jtypes current-out-types?))))
        (atj-output-type-of-min-input-types-aux in-jtypes
                                                (cdr fn-types)
                                                current-min-in-jtypes
-                                               current-out-type?)))))
+                                               current-out-types?)))))

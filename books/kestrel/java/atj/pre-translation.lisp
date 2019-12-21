@@ -629,7 +629,6 @@
      but note that the new @('var-types') has non-annotated variable names.")
    (xdoc::p
     "For a named function call, the function's types are obtained.
-
      We first try annotating the argument terms without required types
      (as done for a lambda expression as explained above),
      thus inferring types for the arguments.
@@ -637,11 +636,16 @@
      whose input types are wider than or the same as
      the inferred argument types.
      If there are some, we select the one whose input types are the least
-     (this should always exist because of the closure property
+     (this always exists because of the closure property
      checked by @(tsee def-atj-other-function-type);
      see the documentation of that macro and supporting functions for details);
      we then use the output type of the selected function type
-     as the type inferred for the function call,
+     as the type inferred for the function call
+     (if the function has multiple output types,
+     it means that it returns an @(tsee mv) result,
+     which for now we regard just as a non-empty list,
+     and thus we ``adjust'' the non-singleton type list
+     to a single type @(':acons') in this case),
      and wrap it to adapt to the required type for the function call if any.
      The successful selection of such a function type means that,
      in the translated Java code, an overloaded method will be called
@@ -748,12 +752,16 @@
                (main-fn-type (atj-function-type-info->main fn-info))
                (other-fn-types (atj-function-type-info->others fn-info))
                (all-fn-types (cons main-fn-type other-fn-types))
-               (type? (atj-output-type-of-min-input-types types all-fn-types)))
-            (if type?
-                (mv (atj-type-wrap-term (fcons-term fn args)
-                                        type?
-                                        required-type?)
-                    (or required-type? type?))
+               (types?
+                (atj-output-types-of-min-input-types types all-fn-types)))
+            (if types?
+                (b* ((type (if (= (len types?) 1)
+                               (car types?)
+                             :acons)))
+                  (mv (atj-type-wrap-term (fcons-term fn args)
+                                          type
+                                          required-type?)
+                      (or required-type? type)))
               (b* ((in-types (atj-function-type->inputs main-fn-type))
                    (out-type (atj-function-type->output main-fn-type))
                    ((unless (= (len in-types)
@@ -803,6 +811,9 @@
                                                     guards$
                                                     wrld)))
       (mv (cons term terms) (cons type types))))
+
+  :prepwork ((local (in-theory (e/d (atj-maybe-typep)
+                                    (atj-type-iff-when-atj-maybe-typep)))))
 
   :verify-guards nil ; done below
   ///
