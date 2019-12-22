@@ -15,6 +15,7 @@
 (include-book "java-primitive-arrays")
 (include-book "test-structures")
 
+(include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
@@ -440,7 +441,7 @@
        ((unless (= (len args) 1))
         (er-soft+ ctx t irrelevant "~@0" err-msg))
        (arg (car args))
-       ((mv okp elements) (check-term-is-list-call arg))
+       ((mv okp elements) (check-list-call arg))
        ((unless okp)
         (er-soft+ ctx t irrelevant "~@0" err-msg))
        (comptype (case type

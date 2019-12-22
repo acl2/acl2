@@ -39,6 +39,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-list-call
                          conjoin
                          cons-pos-alistp
                          define-sk
