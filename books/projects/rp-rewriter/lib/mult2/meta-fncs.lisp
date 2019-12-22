@@ -679,6 +679,89 @@
        )
     s-arg))
 
+(define extra-s-can-be-pp (pp c/d)
+  :inline t
+  (and (equal c/d ''0)
+       (case-match pp (('list ('binary-and & &)) t)))
+  ///
+  (defthm extra-s-can-be-pp-implies
+    (implies (extra-s-can-be-pp pp c/d)
+             (and (equal c/d ''0)
+                  (case-match pp (('list ('binary-and & &)) t))))
+    :rule-classes :forward-chaining))
+
+;; (mutual-recursion
+;;  (defun search-pattern (term)
+;;    (declare (xargs :guard t))
+;;    (cond ((extra-s-can-be-pp term)
+;;           (list term))
+;;          ((or (atom term)
+;;               (quotep term))
+;;           nil)
+;;          (t
+;;           (search-pattern-lst (cdr term)))))
+;;  (defun search-pattern-lst (lst)
+;;    (if (atom lst)
+;;        nil
+;;      (append (search-pattern (car lst))
+;;              (search-pattern-lst (cdr lst))))))
+
+;; (make-flag search-pattern :defthm-macro-name defthm-search-pattern)
+
+;; (memoize 'search-pattern)
+
+
+(local
+ (defthm is-rp-of-evenpi
+   (IS-RP `(RP 'EVENPI ,x))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp) ())))))
+
+(local
+ (defthm is-rp-of-bitp
+   (IS-RP `(RP 'bitp ,x))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp) ())))))
+
+
+
+(local
+ (defthm rp-termp-of-d
+   (iff (rp-termp `(d ,x))
+        (rp-termp x))))
+
+(local
+ (defthm rp-termp-of---
+   (iff (rp-termp `(-- ,x))
+        (rp-termp x))))
+
+(local
+ (defthm rp-termp-of-list
+   (iff (rp-termp `(list . ,x))
+        (rp-term-listp x))))
+
+
+
+(local
+ (defthm rp-termp-of-d-sum
+   (iff (rp-termp `(d-sum ,x ,y ,z))
+        (and (rp-termp x)
+             (rp-termp y)
+             (rp-termp z)))))
+
+(local
+ (defthm rp-termp-of-of-rp-evenpi
+   (iff (rp-termp `(rp 'evenpi ,x))
+        (rp-termp x))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp) ())))))
+
+(define is-a-negated-minterm (term)
+  :inline t
+  (case-match term
+    (('list ('-- ('binary-and & &))) t)))
+  
+
 (define c/d-merge-slow-aux (pp-arg1 pp-arg2 pp-coughed-from-arg
                                     s-arg1 s-arg2 s-coughed-from-arg
                                     extra-s-arg1
@@ -688,22 +771,91 @@
                                     c/d1-is-c
                                     c/d2-is-c)
   :inline t
+  :prepwork ((local
+              (in-theory (disable falist-consistent
+                                  (:TYPE-PRESCRIPTION RP-TERMP)
+                                  (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                                  (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                                  (:TYPE-PRESCRIPTION FALIST-CONSISTENT)
+                                  (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                                  (:FORWARD-CHAINING RP-TERMP-IMPLIES)
+                                  (:FORWARD-CHAINING
+                                   EXTRACT-FROM-SYNP-PSEUDO-TERM-LISTP)
+                                  (:REWRITE DEFAULT-CDR)
+                                  (:TYPE-PRESCRIPTION O<)
+                                  (:REWRITE ACL2::O-P-O-INFP-CAR)
+                                  (:REWRITE DEFAULT-CAR)
+                                  (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+                                  (:TYPE-PRESCRIPTION O-P)
+                                  rp-termp
+                                  (:REWRITE ACL2::MV-NTH-OF-CONS)))))
+  :returns (mv (s-coughed rp-termp
+                          :hyp (and (rp-termp pp-arg1)
+                                    (rp-termp pp-arg2)
+                                    (rp-termp pp-coughed-from-arg)
+                                    (rp-termp s-arg1)
+                                    (rp-termp s-arg2)
+                                    (rp-termp s-coughed-from-arg)
+                                    (if c/d1-is-c (rp-termp extra-s-arg1) t)
+                                    (if c/d2-is-c (rp-termp extra-s-arg2) t)
+                                    (rp-termp c/d-arg)))
+               (pp-coughed rp-termp
+                           :hyp (and (rp-termp pp-arg1)
+                                     (rp-termp pp-arg2)
+                                     (rp-termp pp-coughed-from-arg)
+                                     (rp-termp s-arg1)
+                                     (rp-termp s-arg2)
+                                     (rp-termp s-coughed-from-arg)
+                                     (if c/d1-is-c (rp-termp extra-s-arg1) t)
+                                     (if c/d2-is-c (rp-termp extra-s-arg2) t)
+                                     (rp-termp c/d-arg)))
+               (c/d-merged rp-termp
+                           :hyp (and (rp-termp pp-arg1)
+                                     (rp-termp pp-arg2)
+                                     (rp-termp pp-coughed-from-arg)
+                                     (rp-termp s-arg1)
+                                     (rp-termp s-arg2)
+                                     (rp-termp s-coughed-from-arg)
+                                     (if c/d1-is-c (rp-termp extra-s-arg1) t)
+                                     (if c/d2-is-c (rp-termp extra-s-arg2) t)
+                                     (rp-termp c/d-arg))))
   (b* (((mv pp-arg pp-arg-cnt1) (pp-sum-merge pp-arg1 pp-arg2))
        ((mv pp-arg pp-arg-cnt2) (pp-sum-merge pp-coughed-from-arg pp-arg))
-       (pp-arg-cnt (+ ;;(expt 2 20) ;;test and remove later when sure...
-                    pp-arg-cnt1 pp-arg-cnt2))
 
        (s-arg (s-sum-merge s-arg2 s-coughed-from-arg))
        (s-arg (s-sum-merge s-arg1 s-arg))
-       (s-arg (cond ((and c/d1-is-c c/d2-is-c)
-                     (s-sum-merge s-arg (s-sum-merge extra-s-arg1 extra-s-arg2)))
-                    (c/d1-is-c (s-sum-merge s-arg extra-s-arg1))
-                    (c/d2-is-c (s-sum-merge s-arg extra-s-arg2))
-                    (t s-arg)))
+       ((mv s-arg pp-arg pp-arg-cnt3)
+        (cond (c/d1-is-c
+               (if (is-a-negated-minterm extra-s-arg1)
+                   (b* (((mv pp-arg pp-arg-cnt3)
+                        (pp-sum-merge pp-arg extra-s-arg1)))
+                     (mv s-arg pp-arg pp-arg-cnt3))
+                 (mv (s-sum-merge extra-s-arg1 s-arg)
+                        pp-arg
+                        0)))
+              (t (mv s-arg pp-arg 0))))
+       ((mv s-arg pp-arg pp-arg-cnt4)
+        (cond (c/d2-is-c
+               (if (is-a-negated-minterm extra-s-arg2)
+                   (b* (((mv pp-arg pp-arg-cnt4)
+                         (pp-sum-merge pp-arg extra-s-arg2)))
+                     (mv s-arg pp-arg pp-arg-cnt4))
+                 (mv (s-sum-merge extra-s-arg2 s-arg)
+                     pp-arg
+                     0)))
+              (t (mv s-arg pp-arg 0))))
+       (pp-arg-cnt (+ ;;(expt 2 20) ;;test and remove later when sure...
+                    pp-arg-cnt1 pp-arg-cnt2 pp-arg-cnt3 pp-arg-cnt4))
+       #|(s-arg (cond ((and c/d1-is-c c/d2-is-c)
+       (s-sum-merge s-arg (s-sum-merge extra-s-arg1 extra-s-arg2)))
+       (c/d1-is-c (s-sum-merge s-arg extra-s-arg1))
+       (c/d2-is-c (s-sum-merge s-arg extra-s-arg2))
+       (t s-arg)))||#
        ((mv s-coughed s-arg pp-coughed pp-arg)
         (clean-c/d-args s-arg pp-arg pp-arg-cnt clean-flg))
        (d-res `(d (rp 'evenpi (d-sum ,s-arg ,pp-arg ,c/d-arg))))
        (c/d-merged (if clean-flg (d-to-c d-res) d-res)))
+
     (mv s-coughed pp-coughed c/d-merged)))
 
 (define c/d-merge-fast-aux (pp-arg1 pp-arg2 pp-coughed-from-arg
@@ -837,8 +989,7 @@
 
             (local
              (in-theory (e/d (remove-s-from-for-fast-merge
-                              c/d-merge-fast-aux
-                              c/d-merge-slow-aux)
+                              c/d-merge-fast-aux)
                              (falist-consistent
                               rp-termp
                               natp)))))
@@ -943,20 +1094,24 @@
              (hard-error 'get-extra-s-arg "" nil)
              `(list (-- (s (binary-append ,s-arg ,pp-arg) ,c/d-arg)))))
     (t (b* (((mv s-pp s-c/d)
-             (s-of-s-fix s-arg pp-arg c/d-arg (1- limit))))
-         (cond ((and (quotep s-pp)
-                     (quotep s-c/d)
-                     (consp (cdr s-pp))
-                     (consp (cdr s-c/d)))
-                (b* ((res (-- (s (unquote s-pp)
-                                 (unquote s-c/d)))))
+             (s-of-s-fix s-arg pp-arg c/d-arg (1- limit)))
+            (res
+             (cond ((and (quotep s-pp)
+                         (quotep s-c/d)
+                         (consp (cdr s-pp))
+                         (consp (cdr s-c/d)))
+                    (b* ((res (-- (s (unquote s-pp)
+                                     (unquote s-c/d)))))
 ;(if (equal res 0)
 ; ''nil
-                  `(list ',res)
+                      `(list ',res)
 ;)
-                  ))
-               (t
-                `(list (-- (s ,s-pp ,s-c/d)))))))))
+                      ))
+                   ((extra-s-can-be-pp s-pp s-c/d)
+                    `(list (-- ,(cadr s-pp))))
+                   (t
+                    `(list (-- (s ,s-pp ,s-c/d)))))))
+         res))))
 
  (define c/d-merge ((c/d1)
                     (c/d2)
@@ -1007,31 +1162,31 @@
      (cond
       (c-merge-fast
        (c/d-merge-fast-aux pp-arg1 pp-arg2 pp-coughed-from-arg
-                                    s-arg2 s-coughed-from-arg
-                                    c/d-arg
-                                    clean-flg)
+                           s-arg2 s-coughed-from-arg
+                           c/d-arg
+                           clean-flg)
        #|(b* ((- (fast-merge-profile))
 
-            ((mv pp-arg pp-arg-cnt1) (pp-sum-merge pp-arg1 pp-arg2))
-            ((mv pp-arg pp-arg-cnt2) (pp-sum-merge pp-coughed-from-arg pp-arg))
-            (pp-arg-cnt (+ ;;(expt 2 20) ;;test and remove later when sure...
-                         pp-arg-cnt1 pp-arg-cnt2))
+       ((mv pp-arg pp-arg-cnt1) (pp-sum-merge pp-arg1 pp-arg2))
+       ((mv pp-arg pp-arg-cnt2) (pp-sum-merge pp-coughed-from-arg pp-arg))
+       (pp-arg-cnt (+ ;;(expt 2 20) ;;test and remove later when sure...
+       pp-arg-cnt1 pp-arg-cnt2))
 
-            (s-arg `(list . ,(cddr s-arg2)))
-            ;;(s-arg (remove-s-from-for-fast-merge s-arg2 pp-arg1 c/d-arg1))
-            ;;(s-arg (s-sum-merge s-arg2 `(list (-- (s ,pp-arg1 ,c/d-arg1)))))
-            (s-arg (s-sum-merge s-arg s-coughed-from-arg))
+       (s-arg `(list . ,(cddr s-arg2)))
+       ;;(s-arg (remove-s-from-for-fast-merge s-arg2 pp-arg1 c/d-arg1))
+       ;;(s-arg (s-sum-merge s-arg2 `(list (-- (s ,pp-arg1 ,c/d-arg1)))))
+       (s-arg (s-sum-merge s-arg s-coughed-from-arg))
 
-            ((mv s-coughed s-arg pp-coughed pp-arg)
-             (clean-c/d-args s-arg pp-arg pp-arg-cnt clean-flg))
-            (c-merged
-             (create-c-instance s-arg pp-arg c/d-arg))
-            #|(if (and (equal s-arg ''nil)
-            (equal c/d-arg ''0)
-            (case-match pp (('list ('binary-and & &)) t)))
-            ''0
-            `(c ,s-arg ,pp-arg ,c/d-arg))||#)
-         (mv s-coughed pp-coughed c-merged))||#)
+       ((mv s-coughed s-arg pp-coughed pp-arg)
+       (clean-c/d-args s-arg pp-arg pp-arg-cnt clean-flg))
+       (c-merged
+       (create-c-instance s-arg pp-arg c/d-arg))
+       #|(if (and (equal s-arg ''nil)
+       (equal c/d-arg ''0)
+       (case-match pp (('list ('binary-and & &)) t)))
+       ''0
+       `(c ,s-arg ,pp-arg ,c/d-arg))||#)
+       (mv s-coughed pp-coughed c-merged))||#)
       (t
        (b* ((c/d1-is-c (eq type1 'c))
             (c/d2-is-c (eq type2 'c))
@@ -1064,13 +1219,13 @@
             ;; (c/d-merged (if clean-flg (d-to-c d-res) d-res))
             )
          (c/d-merge-slow-aux pp-arg1 pp-arg2 pp-coughed-from-arg
-                                    s-arg1 s-arg2 s-coughed-from-arg
-                                    extra-s-arg1
-                                    extra-s-arg2
-                                    c/d-arg
-                                    clean-flg
-                                    c/d1-is-c
-                                    c/d2-is-c)
+                             s-arg1 s-arg2 s-coughed-from-arg
+                             extra-s-arg1
+                             extra-s-arg2
+                             c/d-arg
+                             clean-flg
+                             c/d1-is-c
+                             c/d2-is-c)
          ;;(mv s-coughed pp-coughed c/d-merged)
          ))))))
 
@@ -1117,7 +1272,6 @@
     `(b* (((mv x &) ,term))
        x))
 
-  
   (define new-sum-merge-aux ((term well-formed-new-sum))
     ;; a term to be summed that came from rewrite rules e.g full-adder to s-spec
     ;; and c-spec
@@ -1223,10 +1377,9 @@
     :inline t
     (b* (((mv s pp c/d)
           (new-sum-merge-aux term))
-         ;(s (s-fix-args s))
+;(s (s-fix-args s))
          )
       (mv s pp c/d))))
-
 
 (define light-pp-term-p (term)
   :inline t
@@ -1252,9 +1405,8 @@
       (equal lst nil)
     (and (light-pp-term-p (car lst))
          (light-pp-term-list-p (cdr lst)))))
-    
 
-(define quarternarp-sum-aux ((term well-formed-new-sum))
+(define quarternaryp-sum-aux ((term well-formed-new-sum))
   :returns (mv (res natp
                     :rule-classes (:rewrite :type-prescription))
                (valid booleanp))
@@ -1275,7 +1427,7 @@
                 :rule-classes (:type-prescription :rewrite))))
   (case-match term
     (('cons x rest)
-     (b* (((mv rest-sum valid) (quarternarp-sum-aux rest))
+     (b* (((mv rest-sum valid) (quarternaryp-sum-aux rest))
           ((unless valid)
            (mv 0 nil))
           (x-orig x)
@@ -1293,10 +1445,10 @@
              ((equal x ''1)
               (mv (1+ rest-sum) t))
              #|((case-match x (('quote &) t))
-              (cond ((natp (cadr x))
-                     (mv (+ (cadr x) rest-sum) t))
-                    (t 
-                     (mv 0 nil))))||#
+             (cond ((natp (cadr x))
+             (mv (+ (cadr x) rest-sum) t))
+             (t
+             (mv 0 nil))))||#
              ;; ((case-match x (('sum-list ''nil) t))
              ;;  (mv rest-sum t))
              ;; ((case-match x (('sum-list ('list . &)) t))
@@ -1314,33 +1466,24 @@
            (t (mv 0 nil))))
     (& (mv 0 nil)))
   ///
-  (verify-guards quarternarp-sum-aux
+  (verify-guards quarternaryp-sum-aux
     :hints (("Goal"
              :in-theory (e/d (WELL-FORMED-NEW-SUM) ())))))
 
 (local
  (defthm is-rp-of-bitp
-  (is-rp `(rp 'bitp ,x))
-  :hints (("Goal"
-           :in-theory (e/d (is-rp) ())))))
+   (is-rp `(rp 'bitp ,x))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp) ())))))
 
-(define quarternarp (term)
-  :inline t
-  (or (equal term 0)
-      (equal term 1)
-      (equal term 2)
-      (equal term 3)))
-
-(define quarternarp-sum ((sum well-formed-new-sum))
+(define quarternaryp-sum ((sum well-formed-new-sum))
   :returns (res booleanp)
   (b* (((mv res valid)
-        (quarternarp-sum-aux sum)))
+        (quarternaryp-sum-aux sum)))
     (and valid
-         (quarternarp res))))
-  
+         (quarternaryp res))))
 
-
-(define c-spec-meta-aux (s pp c/d quarternarp)
+(define c-spec-meta-aux (s pp c/d quarternaryp)
   :returns (res rp-termp
                 :hyp (and (rp-termp s)
                           (rp-termp pp)
@@ -1375,12 +1518,12 @@
                 (equal pp-coughed ''nil))
            (if (quotep c-term)
                c-term
-             (if quarternarp
+             (if quarternaryp
                  `(rp 'bitp ,c-term)
                c-term)))
           (t
            (b* ((res `(c-res ,s-coughed ,pp-coughed ,c-term)))
-             (if quarternarp
+             (if quarternaryp
                  `(rp 'bitp ,res)
                res))))))
 
@@ -1401,10 +1544,10 @@
            (if (well-formed-new-sum sum)
                (b* (((mv s pp c/d)
                      (new-sum-merge sum))
-                    (quarternarp (quarternarp-sum sum))
+                    (quarternaryp (quarternaryp-sum sum))
                     #|(- (and (not quarternarp)
-                            (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#)
-                 (c-spec-meta-aux s pp c/d quarternarp))
+                    (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#)
+                 (c-spec-meta-aux s pp c/d quarternaryp))
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
           (& term))))
@@ -1490,23 +1633,27 @@
            (if (well-formed-new-sum sum)
                (b* (((mv s pp c/d)
                      (new-sum-merge sum))
-                    (quarternarp (quarternarp-sum sum))
+                    (quarternaryp (quarternaryp-sum sum))
                     #|(- (and (not quarternarp)
-                            (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#
+                    (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#
                     (s-res (s-spec-meta-aux s pp c/d))
-                    (c-res (c-spec-meta-aux s pp c/d quarternarp)))
-                 `(cons ,s-res (cons ,c-res 'nil)))
+                    (c-res (c-spec-meta-aux s pp c/d quarternaryp))
+                    (res `(cons ,s-res (cons ,c-res 'nil)))
+                    #|(- (if (search-pattern res)
+                           (cw "pattern found s-c-spec-meta ~%")
+                         nil))||#)
+                 res)
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
           (('c-s-spec sum)
            (if (well-formed-new-sum sum)
                (b* (((mv s pp c/d)
                      (new-sum-merge sum))
-                    (quarternarp (quarternarp-sum sum))
+                    (quarternaryp (quarternaryp-sum sum))
                     (s-res (s-spec-meta-aux s pp c/d))
                     #|(- (and (not quarternarp)
-                            (cw "c-s-spec This term is not quarternarp ~p0 ~&" sum)))||#
-                    (c-res (c-spec-meta-aux s pp c/d quarternarp)))
+                    (cw "c-s-spec This term is not quarternarp ~p0 ~&" sum)))||#
+                    (c-res (c-spec-meta-aux s pp c/d quarternaryp)))
                  `(cons ,c-res (cons ,s-res 'nil)))
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
@@ -1638,7 +1785,6 @@
        (equal (eq x y)
               (equal x y)))
 
-
      (defthm if$-of-repeated-boolean
        (implies (booleanp x)
                 (equal (if$ x x nil)
@@ -1669,6 +1815,15 @@
               (equal (EQUAL (RP-EVL Y CMR::ENV) ''1)
                      nil))))
 
+  (local
+   (in-theory (enable extra-s-can-be-pp)))
+
+  (local
+   (defthm EXTRA-S-CAN-BE-PP-def
+     (equal (EXTRA-S-CAN-BE-PP pp c/d)
+             (AND (EQUAL C/D ''0)
+                            (CASE-MATCH PP (('LIST ('BINARY-AND & &)) T))))))
+  
   (with-output
     :off :all
     :gag-mode nil

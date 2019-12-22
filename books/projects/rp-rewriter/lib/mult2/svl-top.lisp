@@ -46,6 +46,8 @@
 
 (include-book "mult-rules")
 
+(include-book "adder-rules")
+
 (include-book "centaur/svl/top" :dir :system)
 
 (local
@@ -297,7 +299,13 @@
        (equal (svl::4vec-fix (and$ x y))
               (and$ x y))
        (equal (svl::4vec-fix (binary-xor x y))
-              (binary-xor x y))))
+              (binary-xor x y))
+       (equal (svl::4vec-fix (adder-and x y))
+              (adder-and x y))
+       (equal (svl::4vec-fix (m2 x))
+              (m2 x))
+       (equal (svl::4vec-fix (f2 x))
+              (f2 x))))
 
 (encapsulate
   nil
@@ -318,10 +326,13 @@
                   (equal (svl::bits (binary-? x y z) start 1 )
                          0)
                   (equal (svl::bits (bit-of x y) start 1 )
+                         0)
+                  (equal (svl::bits (ADDER-AND x y) start 1 )
                          0)))
     :hints (("goal"
              :do-not '(preprocess)
              :in-theory (e/d (or$
+                              ADDER-AND
                               svl::bits
                               svl::4vec-part-select
                               sv::4vec->lower
@@ -352,10 +363,13 @@
                   (equal (svl::bits (binary-? x y z) 0 1 )
                          (binary-? x y z))
                   (equal (svl::bits (bit-of x y) 0 1 )
-                         (bit-of x y))))
+                         (bit-of x y))
+                  (equal (svl::bits (ADDER-AND x y) 0 1 )
+                         (ADDER-AND x y))))
     :hints (("goal"
              :do-not '(preprocess)
              :in-theory (e/d (or$
+                              adder-and
                               svl::bits
                               svl::4vec-part-select
                               sv::4vec->lower
@@ -536,10 +550,22 @@
   :hints (("Goal"
            :in-theory (e/d () ()))))
 
+(def-rp-rule bits-0-1-of-m2
+  (equal (svl::bits (m2 x) 0 1)
+         (m2 x))
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
+
 (def-rp-rule bits-1-1-of-s
   (implies (and (not (zp start))
                 (natp size))
            (equal (svl::bits (s pp c/d) start size)
+                  0)))
+
+(def-rp-rule bits-1-1-of-m2
+  (implies (and (not (zp start))
+                (natp size))
+           (equal (svl::bits (m2 x) start size)
                   0)))
 
 (def-rp-rule equal-of-concat$-with-hyp
@@ -550,6 +576,7 @@
                          (sv::4vec-fix rest2))))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
 
 (rp::def-rp-rule
  bits-of-c-when-bit-when-start>0

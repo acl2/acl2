@@ -38,6 +38,9 @@
 
 (include-book "fnc-defs")
 
+(local
+ (include-book "lemmas"))
+
 
 (local
  (fetch-new-events
@@ -154,3 +157,7 @@
  assoc-equal-opener-nil
  (equal (assoc-equal key nil)
         nil))
+
+
+(def-rp-rule m2-is-bitp
+  (bitp (m2 x)))

@@ -1514,6 +1514,8 @@
                            (rp-termp
                             rp-trans)))))
 
+
+
 (defthm can-c-merge-fast-correct-with-sk
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -2295,6 +2297,39 @@
            :in-theory (e/d (pp-sum-merge)
                            ()))))
 
+
+
+(local
+ (defthm rp-termp-of-d
+   (iff (rp-termp `(d ,x))
+        (rp-termp x))))
+
+(local
+ (defthm rp-termp-of---
+   (iff (rp-termp `(-- ,x))
+        (rp-termp x))))
+
+(local
+ (defthm rp-termp-of-list
+   (iff (rp-termp `(list . ,x))
+        (rp-term-listp x))))
+
+
+
+(local
+ (defthm rp-termp-of-d-sum
+   (iff (rp-termp `(d-sum ,x ,y ,z))
+        (and (rp-termp x)
+             (rp-termp y)
+             (rp-termp z)))))
+
+(local
+ (defthm rp-termp-of-of-rp-evenpi
+   (iff (rp-termp `(rp 'evenpi ,x))
+        (rp-termp x))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp) ())))))
+
 (defthm c/d-merge-slow-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -2328,7 +2363,28 @@
            :in-theory (e/d (c/d-merge-slow-aux
                             clean-c/d-args
                             d2-of-times2-reverse)
-                           (d2-of-times2)))))
+                           (d2-of-times2
+                            (:TYPE-PRESCRIPTION RP-TERMP)
+                            (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
+                            (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                            (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                            (:TYPE-PRESCRIPTION FALIST-CONSISTENT)
+                            falist-consistent
+                            (:TYPE-PRESCRIPTION S-SUM-MERGE)
+                            (:TYPE-PRESCRIPTION BINARY-SUM)
+                            (:REWRITE DEFAULT-CAR)
+                            (:REWRITE EX-FROM-SYNP-LEMMA1)
+                            (:REWRITE DEFAULT-CDR)
+                            (:DEFINITION IS-SYNP$INLINE)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_EVENPI_WHEN_MULT-FORMULA-CHECKS)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
+                            (:REWRITE
+                                REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS)
+                            rp-termp)))))
 
 (defthm c/d-merge-slow-aux-valid-sc
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -2364,6 +2420,9 @@
                             clean-c/d-args
                             d2-of-times2-reverse)
                            (d2-of-times2
+                            
+                            (:TYPE-PRESCRIPTION S-SUM-MERGE)
+                            
                             (:DEFINITION RP-TERMP)
                             (:REWRITE IS-IF-RP-TERMP)
                             (:DEFINITION VALID-SC)
@@ -2436,6 +2495,24 @@
                             clean-c/d-args
                             d2-of-times2-reverse)
                            (d2-of-times2
+                            (:DEFINITION INCLUDE-FNC)
+                            (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
+                            (:TYPE-PRESCRIPTION S-SUM-MERGE)
+                            (:REWRITE EX-FROM-SYNP-LEMMA1)
+                            (:TYPE-PRESCRIPTION VALID-SC)
+                            (:DEFINITION IS-SYNP$INLINE)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE DEFAULT-CAR)
+                            (:REWRITE RP-TRANS-WHEN-LIST)
+                            (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_BIT-OF_WHEN_MULT-FORMULA-CHECKS)
+                            (:REWRITE
+                                REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
                             rp-termp
                             valid-sc
                             c/d-merge-slow-aux-correct)))))
@@ -2632,6 +2709,12 @@
    :hints (("Goal"
             :in-theory (e/d (zp) ())))))
 
+(defthm m2-of-and$
+  (equal (m2 (and$ a b))
+         (and$ a b))
+  :hints (("Goal"
+           :in-theory (e/d (and$) ()))))
+
 (encapsulate
   nil
 
@@ -2739,7 +2822,7 @@
                              (sum (rp-evlt c/d1 a)
                                   (rp-evlt c/d2 a))))))
       :flag c/d-merge)
-    :hints (("Subgoal *1/31"
+    :hints (("Subgoal *1/27"
              :use ((:instance can-c-merge-fast-correct
                               (c/d1 (ex-from-rp c/d1))
                               (c/d2 (ex-from-rp c/d2)))
@@ -2941,11 +3024,11 @@
   :hints (("Goal"
 :in-theory (e/d (new-sum-merge) ()))))||#
 
-(defthm f2-of-quarternarp
-  (implies (quarternarp sum)
+(defthm f2-of-quarternaryp
+  (implies (quarternaryp sum)
            (bitp (f2 sum)))
   :hints (("Goal"
-           :in-theory (e/d (quarternarp) ()))))
+           :in-theory (e/d (quarternaryp) ()))))
 
 (defthm is-rp-of-bitp
   (is-rp `(rp 'bitp ,x))
@@ -3167,20 +3250,20 @@
   
   
   (local
-   (defthm quarternarp-sum-aux-correct
+   (defthm quarternaryp-sum-aux-correct
      (implies (and (rp-evl-meta-extract-global-facts :state state)
                    (mult-formula-checks state)
                    (valid-sc term a)
                    (rp-termp term))
               (b* (((mv res valid)
-                    (quarternarp-sum-aux term)))
+                    (quarternaryp-sum-aux term)))
                 (implies valid
                          (maxp (sum-list (rp-evlt term a))
                                res))))
      :hints (("Goal"
               :do-not-induct t
-              :induct (quarternarp-sum-aux term)
-              :in-theory (e/d (quarternarp-sum-aux
+              :induct (quarternaryp-sum-aux term)
+              :in-theory (e/d (quarternaryp-sum-aux
                                SUM-LIST
                                rp-evlt-of-ex-from-rp-reverse-3)
                               (natp
@@ -3197,11 +3280,11 @@
                                rp-termp))))))
 
   (local
-   (defthm quarternarp-is-maxp
-     (equal (quarternarp x)
+   (defthm quarternaryp-is-maxp
+     (equal (quarternaryp x)
             (maxp x 3))
      :hints (("Goal"
-              :in-theory (e/d (quarternarp maxp) ())))))
+              :in-theory (e/d (quarternaryp maxp) ())))))
 
   (local
    (defthm maxp-trans
@@ -3211,23 +3294,23 @@
      :hints (("Goal"
               :in-theory (e/d (maxp) ())))))
 
-  (defthm quarternarp-sum-correct
+  (defthm quarternaryp-sum-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state)
                   (valid-sc term a)
                   (rp-termp term)
-                  (quarternarp-sum term))
-             (quarternarp (sum-list (rp-evlt term a))))
+                  (quarternaryp-sum term))
+             (quarternaryp (sum-list (rp-evlt term a))))
     :hints (("Goal"
              :use ((:instance maxp-trans
                               (z 3)
-                              (y (MV-NTH 0 (QUARTERNARP-SUM-AUX TERM)))
+                              (y (MV-NTH 0 (quarternaryp-sum-aux TERM)))
                               (x (SUM-LIST (RP-EVL (RP-TRANS TERM) A)))))
-             :in-theory (e/d (quarternarp-sum
-                              quarternarp-sum-aux-correct)
+             :in-theory (e/d (quarternaryp-sum
+                              quarternaryp-sum-aux-correct)
                              (natp
                               maxp-trans
-                              quarternarp-sum-aux
+                              quarternaryp-sum-aux
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS
                               zp
                               REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS
@@ -3260,17 +3343,17 @@
                 (valid-sc c/d a)
                 (rp-termp s)
                 (rp-termp pp)
-                (if quarternarp
-                    (quarternarp (sum (sum-list (rp-evlt s a))
+                (if quarternaryp
+                    (quarternaryp (sum (sum-list (rp-evlt s a))
                                       (sum-list (rp-evlt pp a))
                                       (rp-evlt c/d a)))
                   t)
                 (rp-termp c/d))
-           (and (equal (rp-evlt (c-spec-meta-aux s pp c/d quarternarp) a)
+           (and (equal (rp-evlt (c-spec-meta-aux s pp c/d quarternaryp) a)
                        (f2 (sum (sum-list (rp-evlt s a))
                                 (sum-list (rp-evlt pp a))
                                 (rp-evlt c/d a))))
-                (valid-sc (c-spec-meta-aux s pp c/d quarternarp) a)))
+                (valid-sc (c-spec-meta-aux s pp c/d quarternaryp) a)))
   :hints (("Goal"
            :use ((:instance c/d-fix-s-args-correct
                             (rest 0)
@@ -3325,7 +3408,7 @@
                        (rp-evlt term a))
                 (valid-sc (mv-nth 0 (c-spec-meta term)) a)))
   :hints (("Goal"
-           :cases ((QUARTERNARP-SUM (CADR TERM)))
+           :cases ((quarternaryp-sum (CADR TERM)))
            :in-theory (e/d (c-spec-meta
                             new-sum-merge) ()))))
 
@@ -3435,7 +3518,7 @@
                        (rp-evlt term a))
                 (valid-sc (mv-nth 0 (s-c-spec-meta term)) a)))
   :hints (("Goal"
-           :cases ((QUARTERNARP-SUM (CADR TERM)))
+           :cases ((quarternaryp-sum (CADR TERM)))
            :in-theory (e/d (s-c-spec-meta
                             new-sum-MERGE)
                            (bitp)))))

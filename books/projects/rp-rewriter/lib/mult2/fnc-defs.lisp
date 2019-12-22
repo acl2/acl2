@@ -408,3 +408,10 @@
 
 (define times2 (x)
   (sum x x))
+
+(define quarternaryp (term)
+  :inline t
+  (or (equal term 0)
+      (equal term 1)
+      (equal term 2)
+      (equal term 3)))
