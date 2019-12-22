@@ -2470,7 +2470,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -2777,15 +2777,60 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   (if (atom acl2::x)
       0
     (b* (((sv::lhrange sv::xf) (car acl2::x)))
-      (sv::svex-concat sv::xf.w (sv::lhatom->svex sv::xf.atom)
+      (sv::svex-concat sv::xf.w
+                       (sv::lhatom->svex sv::xf.atom)
                        (lhs->svex (cdr acl2::x))))))
 
 (define lhslist->svex ((lhslist sv::lhslist-p))
-  :returns (res sv::svexlist-p)
   (if (atom lhslist)
       nil
-    (cons (lhs->svex (car lhslist))
-          (lhslist->svex (cdr lhslist)))))
+    (b* ((cur (lhs->svex (car lhslist)))
+         (cur (case-match cur
+                (('sv::concat size ('sv::rsh start name) '0)
+                 `(sv::partsel ,start ,size ,name))
+                (('sv::concat size name '0)
+                 `(sv::partsel 0 ,size ,name))
+                (& cur))))
+      (cons cur
+            (lhslist->svex (cdr lhslist)))))
+  ///
+
+  (local
+   (defthm lemma1
+     (implies (and (force (svex-p a))
+                   (force (svex-p b))
+                   (force (svex-p c)))
+              (SVEX-P (LIST 'PARTSEL a b c)))
+     :hints (("Goal"
+              :expand (SVEX-P (LIST 'PARTSEL a b c))
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm lemma2
+     (implies (and (svex-p main)
+                   (case-match main (('sv::concat & ('sv::rsh & &) '0) t)))
+              (and (svex-p (cadr main))
+                   (svex-p (cadr (caddr main)))
+                   (svex-p (caddr (caddr main)))))
+     :hints (("Goal"
+              :in-theory (e/d (svex-p) ())))))
+
+  (local
+   (defthm lemma3
+     (implies (and (svex-p main)
+                   (case-match main (('sv::concat & & '0) t)))
+              (and (svex-p (cadr main))
+                   (svex-p (caddr main))))
+     :hints (("Goal"
+              :in-theory (e/d (svex-p) ())))))
+
+  (defthm svexlist-p-of-ljslist->svex
+    (sv::svexlist-p (lhslist->svex lhslst))
+    :hints (("Goal"
+             :induct (lhslist->svex lhslst)
+             :do-not-induct t
+             :expand (LHSLIST->SVEX LHSLST)
+             :in-theory (e/d () ())))))
 
 (define tmp-occs->svl-occs-assign ((occ-name occ-name-p)
                                    (outputs wire-list-p)

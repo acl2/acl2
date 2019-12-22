@@ -1806,6 +1806,22 @@
 (rp::add-rp-rule 4vec-p-of-4vec-concat$)
 ;;(rp::add-rp-rule svl::svl-env-p-of-svl-env)
 
+
+(def-rp-rule concat-of-rsh-with-0-to-bits
+  (implies (and (natp start)
+                (natp size))
+           (equal (4vec-concat$ size (4vec-rsh start term) 0)
+                  (bits term start size)))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-concat$
+                            4VEC-RSH
+                            4VEC-CONCAT
+                            4vec-part-select
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER
+                            bits)
+                           ()))))
+
 (encapsulate
   nil
 

@@ -127,3 +127,30 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
+
+
+
+
+
+(rp::def-rp-rule
+ binary-append-opener-cons
+ (equal (append (cons x y) rest)
+        (cons x (append y rest))))
+
+(rp::def-rp-rule
+ binary-append-opener-nil
+ (equal (append nil rest)
+        rest))
+  
+
+(rp::def-rp-rule
+ assoc-equal-opener-cons
+ (equal (assoc-equal key (cons (cons a b) rest))
+        (if (equal key a)
+            (cons a b)
+          (assoc-equal key rest))))
+
+(rp::def-rp-rule
+ assoc-equal-opener-nil
+ (equal (assoc-equal key nil)
+        nil))

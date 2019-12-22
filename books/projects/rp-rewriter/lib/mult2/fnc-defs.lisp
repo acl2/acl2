@@ -96,8 +96,7 @@
   (add-rp-rule integerp-of-d-sum))
 
 (define d ((d-sum integerp))
-  (sum (floor d-sum 2)
-       (-- (mod d-sum 2)))
+  (floor (sum d-sum (-- (mod (ifix d-sum) 2))) 2)
   :returns (res integerp)
   ///
   (add-rp-rule integerp-of-d))
@@ -188,8 +187,10 @@
 (define and-list (lst)
   (if (atom lst)
       1
-    (and$ (car lst)
-          (and-list (cdr lst)))))
+    (if (atom (cdr lst))
+        (car lst)
+      (and$ (car lst)
+            (and-list (cdr lst))))))
 
 (define binary-or (bit1 bit2)
   (if (and (equal (bit-fix bit1) 0)
@@ -371,3 +372,39 @@
   (bit-fix (acl2::logbit pos num))
   ///
   (add-rp-rule bitp-of-bit-of))
+
+
+(rp::def-rw-opener-error
+ s-spec-opener-error
+ (rp::s-spec x))
+
+(rp::def-rw-opener-error
+ c-spec-opener-error
+ (rp::c-spec x))
+
+(rp::def-rw-opener-error
+ s-c-spec-opener-error
+ (rp::s-c-spec x))
+
+(rp::def-rw-opener-error
+ c-s-spec-opener-error
+ (rp::c-s-spec x))
+
+(rp::def-rw-opener-error
+ sort-sum-opener-error
+ (sort-sum x))
+
+
+
+;; for proofs:
+(define m2 (x)
+  (mod (ifix x) 2))
+
+(define f2 (x)
+  (floor (ifix x) 2))
+
+(define d2 (x)
+  (f2 (sum x (-- (m2 x)))))
+
+(define times2 (x)
+  (sum x x))

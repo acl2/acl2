@@ -29,7 +29,9 @@
 
 (progn
   (defconst *svex-simplify-rules*
-    '((:rewrite 4vec-part-select-is-bits)
+    '((:rewrite concat-of-rsh-with-0-to-bits)
+
+      (:rewrite 4vec-part-select-is-bits)
       (:rewrite equal-of-4vec-concat$)
       (:rewrite 4vec-p-of-all-4vec-fncs)
       (:rewrite 4vec-fix-wog-of-functions)

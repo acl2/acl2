@@ -53,22 +53,37 @@
   use-arith-5
   :disabled t))
 
-(define pp-list-order ((x)
-                       (y))
+
+
+(define pp-list-order-aux ((x)
+                           (y))
   :returns (mv (order)
                (equals booleanp))
   (cond ((or (atom x)
              (atom y))
          (mv (not (atom y)) (equal x y)))
         ((equal (car x) (car y))
-         (pp-list-order (cdr x) (cdr y)))
+         (pp-list-order-aux (cdr x) (cdr y)))
         (t
          (mv
           #|(b* (((mv order &)
-          (lexorder2 (car x) (car y))))
+          (lexorder2 (car x) (car y)))) ;
           order)||#
           (not (lexorder (car y) (car x)))
           nil))))
+
+(define pp-list-order (x y)
+   :returns (mv (order)
+               (equals booleanp))
+  (b* ((len-x (len x))
+       (len-y (len y)))
+    (if (not (equal len-x len-y))
+        (if (equal len-y 2)
+            (mv t nil)
+          (if (equal len-x 2)
+              (mv nil nil)
+            (mv (> len-x len-y) nil)))
+      (pp-list-order-aux x y))))
 
 ;; (defthm pp-list-order-sanity
 ;;   (implies (mv-nth 0 (pp-list-order x y))
@@ -692,11 +707,21 @@
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
 
-(define pp-flatten ((term pp-term-p))
-  (b* ((pp-lists (pp-term-to-pp-lists term nil))
-       (result (pp-lists-to-term-pp-lst pp-lists))
-       (result (If pp-lists `(list . ,result) ''nil)))
-    result))
+(define pp-flatten ((term pp-term-p)
+                    (sign booleanp))
+  (case-match term
+    (('binary-and ('bit-of & &) ('bit-of & &))
+     (if (lexorder (cadr term) (caddr term))
+         `(list ,(if sign `(-- ,term) term))
+       `(list
+         ,(if sign
+              `(-- (binary-and ,(caddr term) ,(cadr term)))
+            `(binary-and ,(caddr term) ,(cadr term))))))
+    (&
+     (b* ((pp-lists (pp-term-to-pp-lists term sign))
+          (result (pp-lists-to-term-pp-lst pp-lists))
+          (result (If pp-lists `(list . ,result) ''nil)))
+       result))))
 
 (progn
   (define sort-sum-meta-aux (term)
@@ -885,7 +910,7 @@
 
 (defthm rp-termp-of-pp-flatten
   (implies (rp-termp term)
-           (rp-termp (pp-flatten term)))
+           (rp-termp (pp-flatten term sign)))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
 
@@ -1048,7 +1073,35 @@
 
 (defthm pp-flatten-returns-valid-sc
   (implies (valid-sc term a)
-           (valid-sc (pp-flatten term) a))
+           (valid-sc (pp-flatten term sign) a))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten
                             is-if is-rp) ()))))
+
+(local
+ (defthm sort-sum-meta-aux-returns-valid-sc
+   (implies (valid-sc term a)
+            (valid-sc-subterms-lst
+             (strip-cdrs (mv-nth 1 (sort-sum-meta-aux term)))
+             a))
+   :hints (("goal"
+            :in-theory (e/d (sort-sum-meta-aux
+                             )
+                            ((:definition valid-sc)
+                             (:definition rp-termp)
+                             (:rewrite car-of-ex-from-rp-is-not-rp)
+                             (:definition rp-term-listp)
+                             (:rewrite not-include-rp-means-valid-sc)
+                             (:definition include-fnc)
+                             (:rewrite rp-termp-implies-subterms)
+                             (:definition quotep)))))))
+
+
+(defthm sort-sum-meta-returns-valid-sc
+  (implies (valid-sc term a)
+           (valid-sc (mv-nth 0 (sort-sum-meta term)) a))
+  :hints (("Goal"
+           :in-theory (e/d (sort-sum-meta
+                            is-rp
+                            is-if) ()))))
+  

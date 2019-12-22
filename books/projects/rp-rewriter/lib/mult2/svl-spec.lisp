@@ -199,6 +199,8 @@
     :measure (nfix (- out-size col-index))
     :guard (<= col-index out-size)
     :verify-guards nil
+    :prepwork ((local
+                (in-theory (e/d () (+-IS-SUM)))))
     (if (zp (- out-size col-index))
         0
       (b* ((col-sum (svl-sum-col-bybit mult 0 mcand col-index)))
@@ -357,7 +359,7 @@
                                floor2-if-f2
                                mod2-is-m2)))))
 
-   (defthm s-is-f2
+   (defthm s-is-m2
      (equal (s b c)
             (m2 (sum (sum-list b) c)))
      :hints (("Goal"
