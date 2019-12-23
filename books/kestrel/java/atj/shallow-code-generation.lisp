@@ -1329,7 +1329,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-rewrap-array-initialzer-elements
+(define atj-type-rewrap-array-initializer-elements
   ((terms pseudo-term-listp)
    (new-dst-type (member-eq new-dst-type
                             '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
@@ -1367,12 +1367,12 @@
                 from type ~x1 to type ~x2."
                term src-type dst-type))
        (new-term (atj-type-wrap-term term src-type new-dst-type))
-       (new-terms (atj-type-rewrap-array-initialzer-elements (cdr terms)
-                                                             new-dst-type)))
+       (new-terms (atj-type-rewrap-array-initializer-elements (cdr terms)
+                                                              new-dst-type)))
     (cons new-term new-terms))
   ///
 
-  (defret atj-type-rewrap-array-initialzer-elements-not-increases
+  (defret atj-type-rewrap-array-initializer-elements-not-increases
     (<= (acl2-count new-terms)
         (acl2-count terms))
     :rule-classes :linear
@@ -2295,7 +2295,7 @@
                        (long-array-with-comps :jlong)
                        (otherwise (impossible))))
                (elements
-                (atj-type-rewrap-array-initialzer-elements elements type))
+                (atj-type-rewrap-array-initializer-elements elements type))
                ((mv blocks
                     exprs
                     jvar-result-index)
