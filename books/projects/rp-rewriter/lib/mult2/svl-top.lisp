@@ -577,7 +577,6 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
-
 (rp::def-rp-rule
  bits-of-c-when-bit-when-start>0
  (implies (and (bitp (rp::c x y z))
@@ -621,10 +620,31 @@
           :in-theory (e/d (bitp) ()))))
 
 (defthm
- bits-of-c-res-when-bit-when-start=0-side-cond
- (implies (and (bitp (rp::c-res x y z)))
-          (bitp (rp::c-res x y z)))
- :rule-classes nil)
+  bits-of-c-res-when-bit-when-start=0-side-cond
+  (implies (and (bitp (rp::c-res x y z)))
+           (bitp (rp::c-res x y z)))
+  :rule-classes nil)
 
 (rp-attach-sc bits-of-c-res-when-bit-when-start=0
               bits-of-c-res-when-bit-when-start=0-side-cond)
+
+(def-rp-rule
+  concat-of-adder-and-is-f2
+  (implies (bitp other)
+           (and (equal (svl::4vec-concat$ size
+                                          (adder-and (bit-of x y) other)
+                                          other2)
+                       (svl::4vec-concat$ size
+                                          (f2 (adder-sum (bit-of x y) other))
+                                          other2))
+                (equal (svl::4vec-concat$ size
+                                          other2
+                                          (adder-and (bit-of x y) other))
+                       (svl::4vec-concat$ size
+                                          other2
+                                          (f2 (adder-sum (bit-of x y) other))))))
+  :hints (("Goal"
+           :cases ((bitp (bit-of x y)))
+           :in-theory (e/d (bitp)
+                           ((:TYPE-PRESCRIPTION BIT-OF)
+                            (:REWRITE BITP-OF-BIT-OF))))))
