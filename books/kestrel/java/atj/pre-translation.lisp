@@ -216,7 +216,7 @@
      when terms that return multiple values,
      such as the bodies of functions that return multiple results,
      are "
-    (xdoc::seetopic "term" "translated")
+    (xdoc::seetopic "acl2::term" "translated")
     " by ACL2 in internal form,
      the fact that they return multiple values is ``lost'':
      the macro @(tsee mv) expands to @(tsee list).
