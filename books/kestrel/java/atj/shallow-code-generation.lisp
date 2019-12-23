@@ -3011,9 +3011,6 @@
      for every overloaded method."))
   (b* ((in-types (atj-function-type->inputs fn-type))
        (out-types (atj-function-type->outputs fn-type))
-       (out-type (if (= (len out-types) 1)
-                     (car out-types)
-                   :acons))
        ((unless (= (len in-types) (len formals)))
         (raise "Internal error: ~
                 the number ~x0 of parameters of ~x1 ~
@@ -3021,7 +3018,7 @@
                (len formals) fn (len in-types))
         (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
        ((mv formals body)
-        (atj-pre-translate fn formals body in-types out-type nil guards$ wrld))
+        (atj-pre-translate fn formals body in-types out-types nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        ((mv formals &) (atj-type-unannotate-vars formals))
@@ -3046,6 +3043,9 @@
                                         method-params
                                         method-body
                                         tailrecp))
+       (out-type (if (= (len out-types) 1)
+                     (car out-types)
+                   :acons))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
                              :static? t

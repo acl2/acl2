@@ -94,6 +94,7 @@
                          maybe-natp
                          maybe-stringp
                          msg-listp
+                         mvify
                          nats=>string
                          no-stobjs-p
                          number-of-results+
