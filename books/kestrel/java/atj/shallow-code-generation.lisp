@@ -2350,6 +2350,58 @@
     :measure (two-nats-measure (acl2-count arg)
                                1))
 
+  (define atj-gen-shallow-mv-app ((args pseudo-term-listp)
+                                  (src-type atj-typep)
+                                  (dst-type atj-typep)
+                                  (jvar-result-base stringp)
+                                  (jvar-result-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (fn-method-names symbol-string-alistp)
+                                  (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded ACL2 application of @(tsee mv)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Calls of @(tsee mv) are introduced by a pre-translation step: see "
+      (xdoc::seetopic "atj-pre-translation-multiple-values" "here")
+      "for details.")
+     (xdoc::p
+      "These calls are treated specially for code generation.
+       For now, we generate code for the arguments
+       and then a call of @('Acl2Value.makeList()') to create the list,
+       and a cast of the call to @('Acl2ConsValue').
+       This will be improve and generalized,
+       as more direct support for multiple-result functions is added."))
+    (b* (((mv blocks
+              exprs
+              jvar-result-index)
+          (atj-gen-shallow-terms args
+                                 jvar-result-base
+                                 jvar-result-index
+                                 pkg-class-names
+                                 fn-method-names
+                                 curr-pkg
+                                 qpairs
+                                 guards$
+                                 wrld))
+         (block (flatten blocks))
+         (expr (jexpr-smethod *aij-type-value* "makeList" exprs))
+         (expr (jexpr-cast *aij-type-cons* expr))
+         (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+      (mv block expr jvar-result-index))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
+    :measure (two-nats-measure (acl2-count args)
+                               1))
+
   (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
                                   (args pseudo-term-listp)
                                   (src-type atj-typep)
@@ -2373,7 +2425,7 @@
     :short "Generate a shallowly embedded ACL2 function application."
     :long
     (xdoc::topstring
-     (xdoc::topstring
+     (xdoc::p
       "Terms of the form @('(if a a b)') are treated as @('(or a b)'),
        via a separate function, non-strictly.
        Other @(tsee if) calls are handled via a separate function,
@@ -2530,6 +2582,18 @@
                                                     curr-pkg
                                                     qpairs
                                                     wrld))
+         ((when (eq fn 'mv))
+          (atj-gen-shallow-mv-app args
+                                  src-type
+                                  dst-type
+                                  jvar-result-base
+                                  jvar-result-index
+                                  pkg-class-names
+                                  fn-method-names
+                                  curr-pkg
+                                  qpairs
+                                  guards$
+                                  wrld))
          ((mv arg-blocks
               arg-exprs
               jvar-result-index)

@@ -16,6 +16,7 @@
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
+(include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/system/remove-dead-if-branches" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
@@ -62,6 +63,12 @@
      "We remove the trivial lambda-bound variables.
       See "
      (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
+     ".")
+    (xdoc::li
+     "We replace @(tsee list) calls with @(tsee mv) calls
+      in functions that return multiple results.
+      See "
+     (xdoc::seetopic "atj-pre-translation-multiple-values" "here")
      ".")
     (xdoc::li
      "We annotate terms with ATJ type information.
@@ -192,6 +199,56 @@
      avoiding the ``artificial'' ones to close the lambda expressions.
      Indeed, @(tsee let) terms are generally not closed in other languages,
      or even in ACL2's untranslated terms.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-multiple-values
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          replacement of @(tsee list) calls with @(tsee mv) calls
+          in functions that return multiple results."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "As explained in @(tsee mvify),
+     when terms that return multiple values,
+     such as the bodies of functions that return multiple results,
+     are "
+    (xdoc::seetopic "term" "translated")
+    " by ACL2 in internal form,
+     the fact that they return multiple values is ``lost'':
+     the macro @(tsee mv) expands to @(tsee list).
+     The @(tsee mvify) utility can be used to ``recover'' this information,
+     by replacing calls of @(tsee list)
+     (which in internal form are
+     nests of @(tsee cons)es ending with quoted @('nil')s)
+     with calls of @(tsee mv).")
+   (xdoc::p
+    "This is what this ATJ pre-translation step does.
+     This is only done in the bodies of functions that return multiple results;
+     the bodies of the other functions are left unchanged."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-restore-mv-terms ((body pseudo-termp) (out-types atj-type-listp))
+  :returns (new-body pseudo-termp :hyp (pseudo-termp body))
+  :short "Replace @(tsee list) calls with @(tsee mv) calls
+          in the body of a function that returns multiple results."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Whether the function in question returns multiple results
+     is determined by the length of the list of output types.")
+   (xdoc::p
+    "The replacement is done only at the ``leaves'' of the body,
+     where `leaf' is defined in the documentation of @(tsee mvify)."))
+  (if (>= (len out-types) 2)
+      (mvify body)
+    body))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -658,6 +715,13 @@
      if the output types are not a singleton list,
      they are turned into a single @(':acons') type as explained above.")
    (xdoc::p
+    "If we encounter a call of @(tsee mv),
+     which may be introduced by a previous pre-translation step,
+     we allow its arguments to have any types
+     and we regard the call as having type @(':acons').
+     This will be changed and generalized as more direct support is added
+     for functions returning multiple results.")
+   (xdoc::p
     "An annotated term is still a regular term,
      but it has a certain structure."))
 
@@ -713,7 +777,7 @@
                      (second (if required-type?
                                  second
                                (atj-type-rewrap-term second second-type type)))
-                     (term (acl2::fcons-term* 'if first first second)))
+                     (term (fcons-term* 'if first first second)))
                   (mv (atj-type-wrap-term term type type)
                       type))
               (b* (((mv test &) (atj-type-annotate-term test
@@ -749,6 +813,9 @@
                                                    var-types
                                                    guards$
                                                    wrld))
+         ((when (eq fn 'mv))
+          (mv (atj-type-wrap-term (fcons-term 'mv args) :acons required-type?)
+              (or required-type? :acons)))
          ((when (symbolp fn))
           (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
                (main-fn-type (atj-function-type-info->main fn-info))
@@ -1959,6 +2026,7 @@
        (body (remove-unused-vars body))
        ((when deep$) (mv formals body))
        (body (remove-trivial-vars body))
+       (body (atj-restore-mv-terms body out-types))
        ((mv formals body) (atj-type-annotate-formals+body
                            formals body in-types out-types guards$ wrld))
        ((mv formals body) (atj-mark-formals+body formals body))
