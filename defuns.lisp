@@ -1646,14 +1646,26 @@
                                                 measures
                                                 t-machines
                                                 ctx wrld state))
-            (hints (if hints ; hints and default-hints already translated
-                       (value hints)
-                     (let ((default-hints (default-hints wrld)))
-                       (if default-hints ; not yet translated
-                           (translate-hints
-                            (cons "Measure Lemma for" (car names))
-                            default-hints ctx wrld state)
-                         (value hints)))))
+            (hints (cond
+                    ((member-eq (ld-skip-proofsp state)
+                                '(include-book
+                                  include-book-with-locals
+                                  initialize-acl2))
+
+; Hints are ignored below (by prove-termination) when proofs are skipped.  But
+; as with defthm-fn1 (for example), we translate default hints when
+; ld-skip-proofsp is t because in that case our intention is to do all checks
+; except for the actual proof attempts.
+
+                     (value nil))
+                    (hints ; hints and default-hints already translated
+                     (value hints))
+                    (t (let ((default-hints (default-hints wrld)))
+                         (if default-hints ; not yet translated
+                             (translate-hints
+                              (cons "Measure Lemma for" (car names))
+                              default-hints ctx wrld state)
+                           (value hints))))))
             (pair (prove-termination names
                                      t-machines
                                      measure-alist

@@ -352,7 +352,7 @@ executed \(whatever comes first\).</p>
                 *standard-co* state nil)))
         state))))
 
-(push-untouchable 'print-base t)
+(push-untouchable 'print-base nil)
 
 (defun printing-x86-to-terminal (x86 state)
   (declare (xargs :stobjs (x86 state)

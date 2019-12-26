@@ -5860,20 +5860,18 @@
                               (weak-state-vars-p state-vars))))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
-   (cond ((assoc-keyword :allow-other-keys
-                         (cdr (assoc-keyword :allow-other-keys
-                                             actuals)))
-          (er-cmp *macro-expansion-ctx*
-                  "ACL2 prohibits multiple :allow-other-keys because ~
-                   implementations differ significantly concerning which ~
-                   value to take."))
-         (t (value-cmp nil)))
-   (bind-macro-args-keys1
-    args actuals
-    (let ((tl
-           (assoc-keyword :allow-other-keys actuals)))
-      (and tl (cadr tl)))
-    alist form wrld state-vars)))
+   (let ((tl (assoc-keyword :allow-other-keys actuals)))
+     (er-progn-cmp
+      (cond ((assoc-keyword :allow-other-keys (cdr tl))
+             (er-cmp *macro-expansion-ctx*
+                     "ACL2 prohibits multiple :allow-other-keys because ~
+                      implementations differ significantly concerning which ~
+                      value to take."))
+            (t (value-cmp nil)))
+      (bind-macro-args-keys1
+       args actuals
+       (and tl (cadr tl))
+       alist form wrld state-vars)))))
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
@@ -10505,7 +10503,7 @@
 (defun macroexpand1*-cmp (x ctx wrld state-vars)
 
 ; We expand x repeatedly as long as it is a macro call, though we may stop
-; whenever we like.  We rely on a version of translate with to finish the job;
+; whenever we like.  We rely on a version of translate to finish the job;
 ; indeed, it should be the case that when translate11 is called on x with the
 ; following arguments, it returns the same result regardless of whether
 ; macroexpand1*-cmp is first called to do some expansion.
@@ -10518,7 +10516,8 @@
 ; Warning: Keep this in sync with translate11 -- especially the first cond
 ; branch's test below.
 
-  (cond ((or (or (atom x) (eq (car x) 'quote))
+  (cond ((or (atom x)
+             (eq (car x) 'quote)
              (not (true-listp (cdr x)))
              (not (symbolp (car x)))
              (member-eq (car x) '(mv
@@ -10526,25 +10525,28 @@
                                   pargs
                                   translate-and-test
                                   with-local-stobj
-                                  stobj-let))
-             (assoc-eq (car x) *ttag-fns-and-macros*))
+                                  stobj-let
+                                  swap-stobjs
+
+; It's not clear that progn! needs to be included here.  But before we excluded
+; macros from *ttag-fns* (when that constant was named *ttag-fns-and-macros*),
+; progn! was the unique macro in that list and was checked here by virtue of
+; being in that list; hence we continue to check it here.
+
+                                  progn!))
+             (not (getpropc (car x) 'macro-body nil wrld))
+             (and (member-eq (car x) '(pand por pargs plet))
+                  (eq (access state-vars state-vars
+                              :parallel-execution-enabled)
+                      t)))
          (value-cmp x))
-        ((and (getpropc (car x) 'macro-body nil wrld)
-              (not (and (member-eq (car x) '(pand por pargs plet))
-                        (eq (access state-vars state-vars :parallel-execution-enabled)
-                            t)))
-              (not (eq (car x) 'swap-stobjs))
-              (not (untouchable-fn-p (car x)
-                                     wrld
-                                     (access state-vars state-vars
-                                             :temp-touchable-fns))))
+        (t
          (mv-let
-          (erp expansion)
-          (macroexpand1-cmp x ctx wrld state-vars)
-          (cond
-           (erp (mv erp expansion))
-           (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))
-        (t (value-cmp x))))
+           (erp expansion)
+           (macroexpand1-cmp x ctx wrld state-vars)
+           (cond
+            (erp (mv erp expansion))
+            (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))))
 
 (defun find-stobj-out-and-call (lst known-stobjs ctx wrld state-vars)
 
@@ -14435,18 +14437,22 @@
                              argument must be the name of a stobj, but ~x1 is ~
                              not.  See :DOC with-local-stobj."
                             x st))))))))
-   ((and (assoc-eq (car x) *ttag-fns-and-macros*)
+   ((and (assoc-eq (car x) *ttag-fns*)
          (not (ttag wrld))
          (not (global-val 'boot-strap-flg wrld)))
     (trans-er+ x ctx
-               "The ~x0 ~s1 cannot be called unless a trust tag is in effect. ~
-                ~ See :DOC defttag.~@2"
+               "The function ~s0 cannot be called unless a trust tag is in ~
+                effect.  See :DOC defttag.~@1"
                (car x)
-               (if (getpropc (car x) 'macro-body nil wrld)
-                   "macro"
-                 "function")
-               (or (cdr (assoc-eq (car x) *ttag-fns-and-macros*))
+               (or (cdr (assoc-eq (car x) *ttag-fns*))
                    "")))
+   ((and (eq (car x) 'progn!)
+         (not (ttag wrld))
+         (not (global-val 'boot-strap-flg wrld)))
+    (trans-er+ x ctx
+               "The macro ~s0 cannot be called unless a trust tag is in ~
+                effect.  See :DOC defttag."
+               (car x)))
    ((and (eq (car x) 'stobj-let)
          (not (eq stobjs-out t))) ; else let stobj-let simply macroexpand
 
@@ -14636,22 +14642,6 @@
                 '(pand por pargs plet)
                 x
                 '(set-parallel-execution :bogus-parallelism-ok)))
-     ((untouchable-fn-p (car x)
-                        wrld
-                        (access state-vars state-vars
-                                :temp-touchable-fns))
-
-; If this error burns you during system maintenance, you can subvert our
-; security by setting untouchables to nil in raw Lisp:
-
-; (setf (cadr (assoc 'global-value
-;                    (get 'untouchable-fns *current-acl2-world-key*)))
-;       nil)
-
-      (trans-er+ x ctx
-                 "It is illegal to call ~x0 because it has been placed on ~
-                  untouchable-fns."
-                 (car x)))
      ((and (eq (car x) 'ld) ; next check if we're in a definition body
            (not (or (eq stobjs-out t)
                     (assoc-eq :stobjs-out bindings)))
@@ -14702,10 +14692,33 @@
                              wrld
                              (access state-vars state-vars
                                      :temp-touchable-fns))
-           (trans-er+ x ctx
-                      "It is illegal to call ~x0 because it has been placed ~
-                       on untouchable-fns."
-                      (car x)))
+           (cond ((and (eq (car x) 'untouchable-marker)
+                       (consp (cadr x))
+                       (eq (car (cadr x)) 'quote)
+                       (symbolp (cadr (cadr x)))
+                       (getpropc (cadr (cadr x)) 'macro-body nil wrld)
+                       (null (cddr (cadr x))))
+                  (trans-er+ x ctx
+                             "It is illegal to call ~x0 because it has been ~
+                              placed on untouchable-fns.  That call may have ~
+                              arisen from attempting to expand a call of the ~
+                              macro ~x1, ~#2~[if that macro~/which~] was ~
+                              defined with ~x3."
+                             (car x)
+                             (cadr (cadr x))
+; We print a slightly more informative error message for the built-in macros
+; defined with defmacro-untouchable.
+                             (if (member-eq (car x)
+                                            '(with-live-state
+                                              #+acl2-par f-put-global@par
+                                              when-pass-2))
+                                 0
+                               1)
+                             'defmacro-untouchable))
+                 (t (trans-er+ x ctx
+                               "It is illegal to call ~x0 because it has been ~
+                                placed on untouchable-fns."
+                               (car x)))))
           ((eq (car x) 'if)
            (cond
             ((stobjp (cadr x) known-stobjs wrld)
