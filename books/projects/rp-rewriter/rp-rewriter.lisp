@@ -47,6 +47,8 @@
 
 (include-book "rp-state-functions")
 
+(include-book "eval-functions")
+
 (local
  (include-book "proofs/local-lemmas"))
 

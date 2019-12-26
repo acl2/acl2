@@ -336,11 +336,11 @@
                  (merge-sorted-and$-lists first
                                           (cdr second)))
                 ((lexorder f s)
-                 (cons (car first)
+                 (cons (car first) ;;hons
                        (merge-sorted-and$-lists (cdr first)
                                                 second)))
                 (t
-                 (cons (car second)
+                 (cons (car second) ;;hons
                        (merge-sorted-and$-lists first
                                                 (cdr second)))))))))
 
@@ -720,7 +720,7 @@
     (&
      (b* ((pp-lists (pp-term-to-pp-lists term sign))
           (result (pp-lists-to-term-pp-lst pp-lists))
-          (result (If pp-lists `(list . ,result) ''nil)))
+          (result (If pp-lists (cons 'list result) ''nil)))
        result))))
 
 (progn
@@ -729,8 +729,11 @@
     (case-match term
       (('binary-sum x rest)
        (case-match x
-         (('binary-and ('bit-of & &) ('bit-of & &))
-          (b* (((mv rest-valid rest)
+         (('binary-and a b)
+          (b* (((unless (and (case-match a (('bit-of & &) t) (('rp ''bitp &) t))
+                             (case-match b (('bit-of & &) t) (('rp ''bitp &) t))))
+                (mv nil nil))
+               ((mv rest-valid rest)
                 (sort-sum-meta-aux rest))
                ((unless rest-valid)
                 (mv nil nil)))
@@ -740,10 +743,13 @@
          (''0
           (sort-sum-meta-aux rest))
          (& (mv nil nil))))
-      (('binary-and ('bit-of & &) ('bit-of & &))
-       (mv t
-           (cons (cons nil (cdr term))
-                 nil)))
+      (('binary-and a b)
+       (b* (((unless (and (case-match a (('bit-of & &) t) (('rp ''bitp &) t))
+                          (case-match b (('bit-of & &) t) (('rp ''bitp &) t))))
+             (mv nil nil)))
+         (mv t
+             (cons (cons nil (cdr term))
+                   nil))))
       (''0
        (mv t nil))
       (&

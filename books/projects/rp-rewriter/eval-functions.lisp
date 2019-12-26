@@ -38,7 +38,7 @@
 
 (in-package "RP")
 (include-book "macros" )
-(include-book "rp-rewriter")
+;(include-book "rp-rewriter")
 (include-book "aux-functions")
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "proofs/measure-lemmas")

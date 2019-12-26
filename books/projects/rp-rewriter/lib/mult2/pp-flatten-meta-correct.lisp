@@ -71,6 +71,8 @@
             :in-theory (e/d (ex-from-rp
                              is-rp) ())))))
 
+
+
 (local
  (defthm when-ex-from-rp-is-1
    (implies (equal (ex-from-rp term) ''1)
@@ -2377,6 +2379,7 @@
    (defthm SORT-SUM-META-AUX-returns-bit-list-listp
      (implies (and (MV-NTH 0 (SORT-SUM-META-AUX term))
                    (mult-formula-checks state)
+                   (valid-sc term a)
                    (rp-evl-meta-extract-global-facts))
               (BIT-LIST-LISTP
                (RP-EVLT-LST-LST (STRIP-CDRS (MV-NTH 1 (SORT-SUM-META-AUX term)))
@@ -2384,7 +2387,31 @@
      :hints (("Goal"
               :induct (SORT-SUM-META-AUX term)
               :do-not-induct t
-              :in-theory (e/d (SORT-SUM-META-AUX) ())))))
+              ;:expand (valid-sc term a)
+              :in-theory (e/d (sort-sum-meta-aux
+                               rp-evlt-of-ex-from-rp
+                               is-if is-rp context-from-rp eval-and-all)
+                              (bitp
+                               (:DEFINITION INCLUDE-FNC)
+                               (:REWRITE VALID-SC-CADR)
+                               (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                               (:DEFINITION RP-TERMP)
+                               (:DEFINITION RP-TERM-LISTP)
+                               (:REWRITE IS-IF-RP-TERMP)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE VALID-SC-CADDR)
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE RP-TERMP-CADR)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
+                               (:REWRITE NOT-INCLUDE-RP)
+                               (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                               (:DEFINITION EX-FROM-RP)
+                               rp-evl-of-ex-from-rp-reverse
+                               VALID-SC-EX-FROM-RP-2))))))
 
   (create-regular-eval-lemma bit-of 2 mult-formula-checks)
 
