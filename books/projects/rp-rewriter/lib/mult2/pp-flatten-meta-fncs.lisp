@@ -738,7 +738,7 @@
                ((unless rest-valid)
                 (mv nil nil)))
             (mv t
-                (cons (cons nil (cdr x))
+                (cons (cons nil (sort-and$-list (cdr x) 2))
                       rest))))
          (''0
           (sort-sum-meta-aux rest))
@@ -748,7 +748,7 @@
                           (case-match b (('bit-of & &) t) (('rp ''bitp &) t))))
              (mv nil nil)))
          (mv t
-             (cons (cons nil (cdr term))
+             (cons (cons nil (sort-and$-list (cdr term) 2))
                    nil))))
       (''0
        (mv t nil))

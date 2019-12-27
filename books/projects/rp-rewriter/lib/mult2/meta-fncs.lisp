@@ -602,8 +602,8 @@
             (('s pp-arg c/d-arg)
              (progn$
               (and
-               ;;(equal c/d-arg c/d) (equal pp-arg pp)
-               (rp-equal-cnt c/d-arg c/d 10) (rp-equal-cnt pp-arg pp 10)
+               (equal pp-arg pp) (equal c/d-arg c/d) 
+               ;;(rp-equal-cnt c/d-arg c/d 10) (rp-equal-cnt pp-arg pp 10)
                )))))
 ;(can-c-merge-fast-aux (cdr s-lst) pp c/d)
         )))

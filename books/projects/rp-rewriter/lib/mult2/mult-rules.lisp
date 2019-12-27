@@ -161,3 +161,10 @@
 
 (def-rp-rule m2-is-bitp
   (bitp (m2 x)))
+
+
+(def-rp-rule binary-xor-1-of-s
+  (equal (binary-xor 1 (s pp c/d))
+         (s-spec (list 1 (s pp c/d))))
+  :hints (("Goal"
+           :in-theory (e/d (binary-xor m2) ()))))
