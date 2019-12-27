@@ -30,7 +30,7 @@
 (in-package "SVL")
 
 
-(include-book "bits-sbits-meta")
+(include-book "bits-meta")
 
 (include-book "svex-eval-wog-meta")
 
