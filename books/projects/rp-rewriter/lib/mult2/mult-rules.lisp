@@ -168,3 +168,9 @@
          (s-spec (list 1 (s pp c/d))))
   :hints (("Goal"
            :in-theory (e/d (binary-xor m2) ()))))
+
+(def-rp-rule binary-not-of-s
+  (equal (binary-not (s pp c/d))
+         (s-spec (list 1 (s pp c/d))))
+  :hints (("Goal"
+           :in-theory (e/d (binary-xor m2) ()))))
