@@ -31,14 +31,17 @@
    (xdoc::p
     "We instantiate HMAC with the "
     (xdoc::seetopic "sha2::sha-2" "SHA-512 hash function") ",
-    whose block size is 128 bytes and output size is 64 bytes according to FIPS 180-4.")
+    whose block size is 128 bytes and output size is 64 bytes
+    according to FIPS 180-4.")
    (xdoc::p
     "See also:"
     (xdoc::ul
-     (xdoc::li (xdoc::seetopic "hmac::hmac" "HMAC-SHA-512 executable specification"))
-     (xdoc::li (xdoc::seetopic "hmac-sha-512-attachment" "attaching HMAC-SHA-512 executable specification to this interface"))))
-   ))
-
+     (xdoc::li
+      (xdoc::seetopic "hmac::hmac" "HMAC-SHA-512 executable specification"))
+     (xdoc::li
+      (xdoc::seetopic
+       "hmac-sha-512-attachment"
+       "attaching HMAC-SHA-512 executable specification to this interface"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

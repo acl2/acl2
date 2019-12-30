@@ -12352,13 +12352,13 @@
 (defun forbidden-fns (wrld state)
 
 ; We compute a value of forbidden-fns using the values of globals
-; 'untouchable-fns and 'temp-touchable-fns and constant *ttag-fns-and-macros*.
-; We might expect it to be necessary be concerned about untouchable variables,
-; perhaps simply forbidding calls of makunbound-global and put-global; but the
-; event (def-glcp-interp-thm glcp-generic-interp-w-state-preserved ...) in
-; community book books/centaur/gl/gl-generic-interp.lisp actually calls
-; put-global.  But the live state won't be an argument to any function call in
-; the generated clause, so this isn't a concern.
+; 'untouchable-fns and 'temp-touchable-fns and constant *ttag-fns*.  We might
+; expect it to be necessary be concerned about untouchable variables, perhaps
+; simply forbidding calls of makunbound-global and put-global; but the event
+; (def-glcp-interp-thm glcp-generic-interp-w-state-preserved ...) in community
+; book books/centaur/gl/gl-generic-interp.lisp actually calls put-global.  But
+; the live state won't be an argument to any function call in the generated
+; clause, so this isn't a concern.
 
   (let* ((forbidden-fns0 (cond ((eq (f-get-global 'temp-touchable-fns state)
                                     t)
@@ -12371,13 +12371,12 @@
     (reverse-strip-cars
      (and (not (ttag wrld))
 
-; Although translate11 allows the use of *ttag-fns-and-macros* during the
-; boot-strap, we would be surprised to see such use.  So we save the cost of
-; the following test, but note here that it is likely OK to uncomment this
-; test.
+; Although translate11 allows the use of *ttag-fns* during the boot-strap, we
+; would be surprised to see such use.  So we save the cost of the following
+; test, but note here that it is likely OK to uncomment this test.
 
 ;         (not (global-val 'boot-strap-flg wrld))
-          *ttag-fns-and-macros*)
+          *ttag-fns*)
      forbidden-fns0)))
 
 (table skip-meta-termp-checks-table nil nil

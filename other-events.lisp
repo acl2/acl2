@@ -759,6 +759,17 @@
                                 wrld
                                 nil))))
 
+(defun chk-defmacro-untouchable (name ctx wrld state)
+  (cond ((untouchable-fn-p name
+                           wrld
+                           (f-get-global 'temp-touchable-fns state))
+         (er soft ctx
+             "The name ~x0 has been declared to be an untouchable function.  ~
+              It is thus illegal to define this name as a macro.  See :DOC ~
+              defmacro and see :DOC push-untouchable."
+             name))
+        (t (value nil))))
+
 (defun defmacro-fn (mdef state event-form)
 
 ; Important Note:  Don't change the formals of this function without
@@ -783,6 +794,7 @@
               (dcls (caddr four))
               (body (cadddr four)))
           (er-progn
+           (chk-defmacro-untouchable name ctx wrld1 state)
            (chk-all-but-new-name name ctx 'macro wrld1 state)
 
 ; Important Note: In chk-macro-arglist-msg there is a comment warning us about
@@ -4684,17 +4696,6 @@
                                               in-encapsulatep t)))))
           ((getpropc (car form) 'macro-body nil wrld)
            (cond
-            ((untouchable-fn-p (car form)
-                               wrld
-                               (f-get-global 'temp-touchable-fns state))
-             (er soft ctx er-str
-                 form
-                 ""
-                 (chk-embedded-event-form-orig-form-msg orig-form state)
-                 (msg "~|The macro ~x0 may not be used to generate an event, ~
-                       because it has been placed on untouchable-fns.  See ~
-                       :DOC push-untouchable."
-                      (car form))))
             ((member-eq (car form)
                         '(mv mv-let translate-and-test with-local-stobj))
              (er soft ctx er-str
@@ -21566,6 +21567,13 @@
                (collect-badged-fns (cdr fns) wrld)))
         (t (collect-badged-fns (cdr fns) wrld))))
 
+(defun collect-macros (names wrld)
+  (cond ((endp names) nil)
+        ((eq (getpropc (car names) 'macro-args t wrld) t)
+         (collect-macros (cdr names) wrld))
+        (t (cons (car names)
+                 (collect-macros (cdr names) wrld)))))
+
 (defun push-untouchable-fn (name fn-p state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -21599,7 +21607,9 @@
                      nil))
              (bad2 (if fn-p
                        (collect-badged-fns names wrld)
-                     nil)))
+                     nil))
+             (bad3 (and fn-p
+                        (collect-macros names wrld))))
          (cond
           (bad1 (er soft ctx
                     "You have tried to make untouchable the ~
@@ -21638,6 +21648,12 @@
                      still a legal term that, however, is a proxy for (F arg1 ~
                      arg2 ...)."
                     bad2))
+          (bad3 (er soft ctx
+                    "You have tried to make untouchable the macro~#0~[~/s~], ~
+                     ~&0.  However, macros are never directly untouchable.  ~
+                     To get the effect of an untouchable macro, see :DOC ~
+                     defmacro-untouchable."
+                    bad3))
           (t (install-event name
                             event-form
                             'push-untouchable

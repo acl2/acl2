@@ -222,7 +222,12 @@
            (subsetp-equal (cdr x) y))
   :hints (("Goal" :in-theory (enable subsetp-equal))))
 
-(defthm subsetp-equal-of-true-list-fix
+(defthm subsetp-equal-of-true-list-fix-arg1
+  (equal (subsetp-equal (true-list-fix x) y)
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable subsetp-equal true-list-fix))))
+
+(defthm subsetp-equal-of-true-list-fix-arg2
   (equal (subsetp-equal x (true-list-fix y))
          (subsetp-equal x y))
   :hints (("Goal" :in-theory (enable subsetp-equal true-list-fix))))

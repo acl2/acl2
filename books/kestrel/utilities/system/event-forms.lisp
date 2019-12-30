@@ -14,6 +14,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc event-forms
@@ -21,27 +23,6 @@
   :short "Utilities for event forms.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pseudo-event-formp (x)
-  :returns (yes/no booleanp)
-  :parents (event-forms)
-  :short "Recognize the basic structure of an event form."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Check whether @('x') is a non-empty true list that starts with a symbol
-     (like a function or macro call).")
-   (xdoc::p
-    "This is a shallow check.
-     Its satisfaction does not guarantee that @('x') is a valid event form."))
-  (and x
-       (true-listp x)
-       (symbolp (car x)))
-  ///
-  (defrule pseudo-event-formp-of-cons
-    (equal (pseudo-event-formp (cons a b))
-           (and (symbolp a)
-                (true-listp b)))))
 
 (define maybe-pseudo-event-formp (x)
   :returns (yes/no booleanp)

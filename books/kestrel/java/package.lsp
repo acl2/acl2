@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "JAVA" (append *std-pkg-symbols*
-                       '(*pkg-witness-name*
+                       '(*nil*
+                         *pkg-witness-name*
                          *primitive-formals-and-guards*
                          *stobjs-out-invalid*
                          add-const-to-untranslate-preprocess
@@ -38,6 +39,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-list-call
                          conjoin
                          cons-pos-alistp
                          define-sk
@@ -92,6 +94,7 @@
                          maybe-natp
                          maybe-stringp
                          msg-listp
+                         mvify
                          nats=>string
                          no-stobjs-p
                          number-of-results+

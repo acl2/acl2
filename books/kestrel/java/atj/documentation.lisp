@@ -428,31 +428,83 @@
       "If @(':deep') is @('nil') and @(':guards') is @('t'),
        then requirements on @('in') depend on the type assigned,
        via @(tsee def-atj-main-function-type),
-       to the input of @('fn') corresponding to @('in'):
-       if the type is @(':a...'),
-       then @('in') must be a quoted constant;
-       if the type is @(':jboolean'),
-       then @('in') must be a term @('(java::boolean-value <boolean>)')
-       where @('<boolean>') is a quoted boolean (i.e. @('t') or @('nil'));
-       if the type is @(':jchar'),
-       then @('in') must be a term @('(java::char-value <char>)')
-       where @('<char>') is a quoted unsigned 16-bit integer;
-       if the type is @(':jbyte'),
-       then @('in') must be a term @('(java::byte-value <byte>)')
-       where @('<byte>') is a quoted signed 8-bit integer;
-       if the type is @(':jshort'),
-       then @('in') must be a term @('(java::short-value <short>)')
-       where @('<short>') is a quoted signed 16-bit integer;
-       if the type is @(':jint'),
-       then @('in') must be a term @('(java::int-value <int>)')
-       where @('<int>') is a quoted signed 32-bit integer;
-       if the type is @(':jlong'),
-       then @('in') must be a term @('(java::long-value <long>)')
-       where @('<long>') is a quoted signed 64-bit integer;
-       if the type is @(':j...[]'), it is an error,
-       i.e. there is no support yet for the generation of tests
-       of functions that manipulate Java primitive arrays,
-       including functions that have output type @(':j...[]')."))
+       to the input of @('fn') corresponding to @('in'):"
+      (xdoc::ul
+       (xdoc::li
+        "If the type is @(':a...'),
+         then @('in') must be a quoted constant.")
+       (xdoc::li
+        "If the type is @(':jboolean'),
+         then @('in') must be a term @('(java::boolean-value <boolean>)')
+         where @('<boolean>') is a quoted boolean (i.e. @('t') or @('nil')).")
+       (xdoc::li
+        "If the type is @(':jchar'),
+         then @('in') must be a term @('(java::char-value <char>)')
+         where @('<char>') is a quoted unsigned 16-bit integer.")
+       (xdoc::li
+        "If the type is @(':jbyte'),
+         then @('in') must be a term @('(java::byte-value <byte>)')
+         where @('<byte>') is a quoted signed 8-bit integer.")
+       (xdoc::li
+        "If the type is @(':jshort'),
+         then @('in') must be a term @('(java::short-value <short>)')
+         where @('<short>') is a quoted signed 16-bit integer.")
+       (xdoc::li
+        "If the type is @(':jint'),
+         then @('in') must be a term @('(java::int-value <int>)')
+         where @('<int>') is a quoted signed 32-bit integer.")
+       (xdoc::li
+        "If the type is @(':jlong'),
+         then @('in') must be a term @('(java::long-value <long>)')
+         where @('<long>') is a quoted signed 64-bit integer.")
+       (xdoc::li
+        "If the type is @(':jboolean[]'),
+         then @('in') must be a term
+         @('(java::boolean-array-with-comps <booleans>)')
+         where @('<booleans>') is the translation of
+         a term @('(list <elem1> <elem2> ...)')
+         where each @('<elem>') is a term @('(java::boolean-value <boolean>)')
+         as in the case above in which the type is @(':jboolean').")
+       (xdoc::li
+        "If the type is @(':jchar[]'),
+         then @('in') must be a term
+         @('(java::char-array-with-comps <chars>)')
+         where @('<chars>') is the translation of
+         a term @('(list <elem1> <elem2> ...)')
+         where each @('<elem>') is a term @('(java::char-value <char>)')
+         as in the case above in which the type is @(':jchar').")
+       (xdoc::li
+        "If the type is @(':jbyte[]'),
+         then @('in') must be a term
+         @('(java::byte-array-with-comps <bytes>)')
+         where @('<bytes>') is the translation of
+         a term @('(list <elem1> <elem2> ...)')
+         where each @('<elem>') is a term @('(java::byte-value <byte>)')
+         as in the case above in which the type is @(':jbyte').")
+       (xdoc::li
+        "If the type is @(':jshort[]'),
+         then @('in') must be a term
+         @('(java::short-array-with-comps <short>)')
+         where @('<short>') is the translation of
+         a term @('(list <elem1> <elem2> ...)')
+         where each @('<elem>') is a term @('(java::short-value <short>)')
+         as in the case above in which the type is @(':jshort').")
+       (xdoc::li
+        "If the type is @(':jint[]'),
+         then @('in') must be a term
+         @('(java::int-array-with-comps <ints>)')
+         where @('<ints>') is the translation of
+         a term @('(list <elem1> <elem2> ...)')
+         where each @('<elem>') is a term @('(java::int-value <int>)')
+         as in the case above in which the type is @(':jint').")
+       (xdoc::li
+        "If the type is @(':jlong[]'),
+         then @('in') must be a term
+         @('(java::long-array-with-comps <longs>)')
+         where @('<longs>') is the translation of
+         a term @('(list <elem1> <elem2> ...)')
+         where each @('<elem>') is a term @('(java::long-value <long>)')
+         as in the case above in which the type is @(':jlong')."))))
     (xdoc::p
      "All the @('namej') strings must be distinct.")
     (xdoc::p
@@ -470,16 +522,28 @@
       @('(java::char-value <char>)'),
       @('(java::byte-value <byte>)'),
       @('(java::short-value <short>)'),
-      @('(java::int-value <int>)'), or
-      @('(java::long-value <long>)')
+      @('(java::int-value <int>)'),
+      @('(java::long-value <long>)'),
+      @('(java::boolean-array-with-comps <booleans>)'),
+      @('(java::char-array-with-comps <chars>)'),
+      @('(java::byte-array-with-comps <bytes>)'),
+      @('(java::short-array-with-comps <shorts>)'),
+      @('(java::int-array-with-comps <ints>)'), or
+      @('(java::long-array-with-comps <longs>)')
       can be used only for ACL2 functions that have
       the ATJ type
       @(':jboolean'),
       @(':jchar'),
       @(':jbyte'),
       @(':jshort'),
-      @(':jint'), or
-      @(':jlong')
+      @(':jint'),
+      @(':jlong'),
+      @(':jboolean[]'),
+      @(':jchar[]'),
+      @(':jbyte[]'),
+      @(':jshort[]'),
+      @(':jint[]'), or
+      @(':jlong[]')
       assigned to the corresponding argument
       via @(tsee def-atj-main-function-type)."))
 

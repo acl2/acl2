@@ -20,7 +20,12 @@
 
   (defthm true-listp-of-union-equal
     (equal (true-listp (union-equal x y))
-           (true-listp y))))
+           (true-listp y)))
+
+  (defthm true-listp-of-union-equal-type
+    (implies (true-listp y)
+             (true-listp (union-equal x y)))
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
