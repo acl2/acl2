@@ -10,6 +10,7 @@
 ; factored out so that they can be used by other files in the community books
 ; in a more modular way.
 
+(include-book "keyword-to-keyword-value-alistp")
 (include-book "pseudo-event-form-listp")
 
 ; -----------------------------------------------------------------
@@ -1432,13 +1433,6 @@
 
 ; This is a list of fully elaborated rule classes as returned by translate-rule-classes.
 ; For the present purposes we just check that it is an alist mapping keywords to keyword alists.
-
-(defun keyword-to-keyword-value-list-alistp (x)
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (keywordp (car (car x)))
-                (keyword-value-listp (cdr (car x)))
-                (keyword-to-keyword-value-list-alistp (cdr x))))))
 
 (defun classesp (sym val)
   (declare (ignore sym))
