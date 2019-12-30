@@ -12,7 +12,7 @@
 
 (include-book "keyword-to-keyword-value-alistp")
 (include-book "pseudo-event-form-listp")
-(include-book "pseudo-tests-and-callsp")
+(include-book "pseudo-tests-and-calls-listp")
 
 ; -----------------------------------------------------------------
 
@@ -1846,11 +1846,6 @@
 ; An induction machine is a list of tests-and-calls records:
 ; (defrec tests-and-calls (tests . calls) nil), where each of the two
 ; fields is a list of terms.
-
-(defun pseudo-tests-and-calls-listp (x)
-  (cond ((atom x) (null x))
-        (t (and (pseudo-tests-and-callsp (car x))
-                (pseudo-tests-and-calls-listp (cdr x))))))
 
 (defun pseudo-induction-machinep (sym val)
   (declare (ignore sym))
