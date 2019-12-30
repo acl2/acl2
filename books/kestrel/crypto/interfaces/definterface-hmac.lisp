@@ -54,7 +54,6 @@
      the HMAC function has no limit on the sizes of its inputs either.
      Otherwise, limits are derived as follows,
      and included in the guard of the generated constrained function.
-
      RFC 2104 says that the key size
      must not exceed the hash function's block size
      in order for the key to be used ``directly'',
