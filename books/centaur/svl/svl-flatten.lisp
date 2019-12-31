@@ -43,6 +43,8 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
+(include-book "std/lists/list-defuns" :dir :system)
+
 (in-theory (disable acl2::natp-when-gte-0
                     acl2::natp-when-integerp))
 
@@ -190,6 +192,16 @@
             (and (not (equal porttype ':VL-INOUT))
                  success)))))
 
+
+  
+  (defun vl-module-to-insouts-aux (module-name mod-names)
+    (if (atom mod-names)
+        nil
+      (or (equal module-name (car mod-names))
+          (str::strprefixp module-name (car mod-names))
+          (vl-module-to-insouts-aux module-name (cdr mod-names)))))
+          
+  
   (defun vl-module-to-insouts (vl-module mod-names)
     (and
      (consp vl-module)
@@ -199,8 +211,8 @@
      (consp (caaadr vl-module))
      (b* ((smodule (caadr vl-module))
           (module-name (caaar smodule))
-          ((when (and (not (member-equal module-name
-                                         mod-names))
+          ((when (and (not (vl-module-to-insouts-aux module-name
+                                                     mod-names))
                       mod-names))
            nil)
           ((mv ins outs success1)
@@ -2763,10 +2775,10 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                  (progn$
                   (cw "~% ~% Not added modules: ~p0 ~%"
                       (get-not-added-module-occs all-tmp-occs occ-in-nodes-count))
-                  (hard-error 'svl-sort-occs-main
-                              "~p0 occs are not added! Possibly a combinational
-                               loop~% ~%"
-                              (list (cons #\0 not-added-occs-count))))))
+                  (hard-error
+                   'svl-sort-occs-main
+                   "~p0 occs are not added! Possibly a combinational loop~% ~%"
+                   (list (cons #\0 not-added-occs-count))))))
          (- (fast-alist-free occ-in-nodes-count)))
       sorted-occs)))
 
@@ -3217,6 +3229,35 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                 rest)
         rest))))
 
+(acl2::defines
+ get-sv-submodules
+ (define get-sv-submodules ((modname sv::modname-p)
+                            (modalist sv::modalist-p)
+                            (acc sv::modnamelist-p))
+   (declare (xargs :mode :program))
+   (b* (((when (or (not (stringp modname))
+                   (member-equal modname acc)))
+         acc)
+        (mod (assoc-equal modname modalist))
+        ((unless mod)
+         acc)
+        (mod (cdr mod))
+        (acc (cons modname acc))
+        (modname-lst (strip-cdrs (sv::module->insts mod))))
+     (get-sv-submodules-lst modname-lst modalist acc)))
+ 
+ (define get-sv-submodules-lst ((modname-lst sv::modnamelist-p)
+                                (modalist sv::modalist-p)
+                                (acc sv::modnamelist-p))
+   (if (atom modname-lst)
+       acc
+     (get-sv-submodules-lst (cdr modname-lst)
+                            modalist
+                            (get-sv-submodules (car modname-lst)
+                                               modalist
+                                               acc)))))
+       
+
 (define svl-flatten-design ((sv-design sv::design-p)
                             (vl-design)
                             &key
@@ -3235,7 +3276,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
        (dont-flatten-all (equal dont-flatten ':all))
        (top (if top top sv-design.top))
        (dont-flatten (if dont-flatten-all
-                         all-modnames
+                         (get-sv-submodules top sv-design.modalist nil)
                        (fix-dont-flatten
                         (union-equal dont-flatten
                                      (list top))
@@ -3243,11 +3284,11 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
        (vl-insouts (vl-design-to-insouts vl-design
                                          sv-design
-                                         (if dont-flatten-all nil dont-flatten)))
+                                         dont-flatten))
 
        (dont-flatten
         (if dont-flatten-all
-            all-modnames
+            dont-flatten
           (clean-dont-flatten dont-flatten all-modnames)))
 
        (vl-insouts (vl-insouts-insert-wire-sizes vl-insouts sv-design
