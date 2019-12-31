@@ -10,7 +10,9 @@
 ; factored out so that they can be used by other files in the community books
 ; in a more modular way.
 
+(include-book "keyword-to-keyword-value-alistp")
 (include-book "pseudo-event-form-listp")
+(include-book "pseudo-tests-and-calls-listp")
 
 ; -----------------------------------------------------------------
 
@@ -1433,13 +1435,6 @@
 ; This is a list of fully elaborated rule classes as returned by translate-rule-classes.
 ; For the present purposes we just check that it is an alist mapping keywords to keyword alists.
 
-(defun keyword-to-keyword-value-list-alistp (x)
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (keywordp (car (car x)))
-                (keyword-value-listp (cdr (car x)))
-                (keyword-to-keyword-value-list-alistp (cdr x))))))
-
 (defun classesp (sym val)
   (declare (ignore sym))
   (keyword-to-keyword-value-list-alistp val))
@@ -1851,18 +1846,6 @@
 ; An induction machine is a list of tests-and-calls records:
 ; (defrec tests-and-calls (tests . calls) nil), where each of the two
 ; fields is a list of terms.
-
-(defun pseudo-tests-and-callsp (x)
-  (case-match x
-    (('TESTS-AND-CALLS tests . calls)
-     (and (pseudo-term-listp tests)
-          (pseudo-term-listp calls)))
-    (& nil)))
-
-(defun pseudo-tests-and-calls-listp (x)
-  (cond ((atom x) (null x))
-        (t (and (pseudo-tests-and-callsp (car x))
-                (pseudo-tests-and-calls-listp (cdr x))))))
 
 (defun pseudo-induction-machinep (sym val)
   (declare (ignore sym))
