@@ -15,6 +15,7 @@
 (include-book "kestrel/fty/sbyte16" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
+(include-book "kestrel/std/util/defconstrained-recognizer" :dir :system)
 (include-book "kestrel/std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,16 +185,8 @@
    (xdoc::@def "float-value-p-aux")
    (xdoc::@def "float-value-witness"))
 
-  (encapsulate
-    (((float-value-p-aux *) => *)
-     ((float-value-witness) => *))
-    (local (defun float-value-p-aux (x) (natp x)))
-    (local (defun float-value-witness () 0))
-    (defrule booleanp-of-float-value-p-aux
-      (booleanp (float-value-p-aux x))
-      :rule-classes (:rewrite :type-prescription))
-    (defrule float-value-p-aux-of-float-value-witness
-      (float-value-p-aux (float-value-witness))))
+  (std::defconstrained-recognizer float-value-p-aux
+    :nonempty float-value-witness)
 
   (define float-value-p (x)
     :returns (yes/no booleanp)
@@ -238,16 +231,8 @@
    (xdoc::@def "double-value-p-aux")
    (xdoc::@def "double-value-witness"))
 
-  (encapsulate
-    (((double-value-p-aux *) => *)
-     ((double-value-witness) => *))
-    (local (defun double-value-p-aux (x) (natp x)))
-    (local (defun double-value-witness () 0))
-    (defrule booleanp-of-double-value-p-aux
-      (booleanp (double-value-p-aux x))
-      :rule-classes (:rewrite :type-prescription))
-    (defrule double-value-p-aux-of-double-value-witness
-      (double-value-p-aux (double-value-witness))))
+  (std::defconstrained-recognizer double-value-p-aux
+    :nonempty double-value-witness)
 
   (define double-value-p (x)
     :returns (yes/no booleanp)
