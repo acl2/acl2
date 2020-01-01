@@ -668,6 +668,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Pseudo-good-world")
+
+   (xdoc::p
+    "Some functions have been factored ouf of the file
+     @('[book]/system/pseudo-good-worldp.lisp'),
+     and put in new individual files,
+     for greater modularity.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
