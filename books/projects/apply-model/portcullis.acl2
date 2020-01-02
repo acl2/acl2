@@ -55,7 +55,7 @@
                TYPE-SET TS-SUBSETP *TS-NON-NEGATIVE-INTEGER*
                LLIST L< MAKE-FLAG
                PRETTYIFY-STOBJ-FLAGS PRETTYIFY-STOBJS-OUT SUBCOR-VAR
-               ENS ALL-FNNAMES)
+               ENS ALL-FNNAMES UNTOUCHABLE-MARKER)
              (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*))
    '(APPLY$ EV$ EV$-LIST ; now in *acl2-exports*

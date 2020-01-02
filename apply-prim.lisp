@@ -254,6 +254,7 @@
      SYS-CALL                                  ; bad -- requires trust tag
      HONS-CLEAR!                               ; bad -- requires trust tag
      HONS-WASH!                                ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                        ; bad -- untouchable
      ))
 
 ; At one time we considered disallowing these functions but we now allow them.

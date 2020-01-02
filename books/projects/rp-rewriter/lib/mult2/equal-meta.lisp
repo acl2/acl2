@@ -159,8 +159,7 @@
 
 (def-formula-checks
  rp-equal-iter-pp+-meta-formula-checks
- (rp-equal-iter-pp+-meta
-  p+))
+ (rp-equal-iter-pp+-meta))
 
 (local
  (defthmd rp-evlt-of-ex-from-rp-loose-reverse

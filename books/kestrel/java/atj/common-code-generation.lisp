@@ -160,6 +160,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-jboolean-array ((boolean-array boolean-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('boolean') array."
+  (jexpr-newarray-init (jtype-boolean)
+                       (atj-gen-jboolean-array-aux boolean-array))
+  :prepwork
+  ((define atj-gen-jboolean-array-aux ((booleans boolean-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp booleans) nil)
+           (t (cons (atj-gen-jboolean (boolean-value->bool (car booleans)))
+                    (atj-gen-jboolean-array-aux (cdr booleans))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jchar-array ((char-array char-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('char') array."
+  (jexpr-newarray-init (jtype-char)
+                       (atj-gen-jchar-array-aux char-array))
+  :prepwork
+  ((define atj-gen-jchar-array-aux ((chars char-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp chars) nil)
+           (t (cons (atj-gen-jchar (char-value->nat (car chars)))
+                    (atj-gen-jchar-array-aux (cdr chars))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jbyte-array ((byte-array byte-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('byte') array."
+  (jexpr-newarray-init (jtype-byte)
+                       (atj-gen-jbyte-array-aux byte-array))
+  :prepwork
+  ((define atj-gen-jbyte-array-aux ((bytes byte-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp bytes) nil)
+           (t (cons (atj-gen-jbyte (byte-value->int (car bytes)))
+                    (atj-gen-jbyte-array-aux (cdr bytes))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jshort-array ((short-array short-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('short') array."
+  (jexpr-newarray-init (jtype-short)
+                       (atj-gen-jshort-array-aux short-array))
+  :prepwork
+  ((define atj-gen-jshort-array-aux ((shorts short-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp shorts) nil)
+           (t (cons (atj-gen-jshort (short-value->int (car shorts)))
+                    (atj-gen-jshort-array-aux (cdr shorts))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jint-array ((int-array int-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('int') array."
+  (jexpr-newarray-init (jtype-int)
+                       (atj-gen-jint-array-aux int-array))
+  :prepwork
+  ((define atj-gen-jint-array-aux ((ints int-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp ints) nil)
+           (t (cons (atj-gen-jint (int-value->int (car ints)))
+                    (atj-gen-jint-array-aux (cdr ints))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jlong-array ((long-array long-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('long') array."
+  (jexpr-newarray-init (jtype-long)
+                       (atj-gen-jlong-array-aux long-array))
+  :prepwork
+  ((define atj-gen-jlong-array-aux ((longs long-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp longs) nil)
+           (t (cons (atj-gen-jlong (long-value->int (car longs)))
+                    (atj-gen-jlong-array-aux (cdr longs))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-paramlist ((names string-listp) (types jtype-listp))
   :guard (= (len names) (len types))
   :returns (params jparam-listp)

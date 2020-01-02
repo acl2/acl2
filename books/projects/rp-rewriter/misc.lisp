@@ -201,18 +201,22 @@
        (cons (pseudo-term-fix (car lst))
              (pseudo-term-list-fix (cdr lst))))))
 
-  (defmacro def-rw-opener-error (name term &key vars-to-avoid (disabled 'nil))
-    (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) vars-to-avoid)))
+  (defmacro def-rw-opener-error (name term &key
+                                      (do-not-print 'nil)
+                                      (disabled 'nil)
+                                      (message 'nil))
+    (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) do-not-print)))
       `;(progn
 ;(table rw-opener-error-rules  ',name t)
       (def-rp-rule$ t ,disabled  
        ,name
        (implies (hard-error
                  ',name
-                 ,(str::cat
-                   "A " (symbol-name (car term))
-                   " instance must have slipped through all of its rewrite rules.
-Try using (rp::update-rp-brr t rp::rp-state) and
+                 ,(str::cat 
+                   (if message message
+                     (str::cat "A " (symbol-name (car term))
+                               " instance must have slipped through all of its rewrite rules."))
+"To debug, you can try using (rp::update-rp-brr t rp::rp-state) and
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 12 nil nil)
                  :frames 50). ~%"
@@ -222,8 +226,8 @@ Try using (rp::update-rp-brr t rp::rp-state) and
                  ,term
                  t))
        :hints (("Goal"
-                :expand (hide ,term)
-                :in-theory '(return-last hard-error hide))))));)
+                ;:expand (hide ,term)
+                :in-theory '(return-last hard-error))))))
   
   #|(defmacro disable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name nil))||#

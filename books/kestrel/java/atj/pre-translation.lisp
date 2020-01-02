@@ -16,6 +16,7 @@
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
+(include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/system/remove-dead-if-branches" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
@@ -62,6 +63,12 @@
      "We remove the trivial lambda-bound variables.
       See "
      (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
+     ".")
+    (xdoc::li
+     "We replace @(tsee list) calls with @(tsee mv) calls
+      in functions that return multiple results.
+      See "
+     (xdoc::seetopic "atj-pre-translation-multiple-values" "here")
      ".")
     (xdoc::li
      "We annotate terms with ATJ type information.
@@ -192,6 +199,56 @@
      avoiding the ``artificial'' ones to close the lambda expressions.
      Indeed, @(tsee let) terms are generally not closed in other languages,
      or even in ACL2's untranslated terms.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-multiple-values
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          replacement of @(tsee list) calls with @(tsee mv) calls
+          in functions that return multiple results."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done only in the shallow embedding.")
+   (xdoc::p
+    "As explained in @(tsee mvify),
+     when terms that return multiple values,
+     such as the bodies of functions that return multiple results,
+     are "
+    (xdoc::seetopic "acl2::term" "translated")
+    " by ACL2 in internal form,
+     the fact that they return multiple values is ``lost'':
+     the macro @(tsee mv) expands to @(tsee list).
+     The @(tsee mvify) utility can be used to ``recover'' this information,
+     by replacing calls of @(tsee list)
+     (which in internal form are
+     nests of @(tsee cons)es ending with quoted @('nil')s)
+     with calls of @(tsee mv).")
+   (xdoc::p
+    "This is what this ATJ pre-translation step does.
+     This is only done in the bodies of functions that return multiple results;
+     the bodies of the other functions are left unchanged."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-restore-mv-terms ((body pseudo-termp) (out-types atj-type-listp))
+  :returns (new-body pseudo-termp :hyp (pseudo-termp body))
+  :short "Replace @(tsee list) calls with @(tsee mv) calls
+          in the body of a function that returns multiple results."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Whether the function in question returns multiple results
+     is determined by the length of the list of output types.")
+   (xdoc::p
+    "The replacement is done only at the ``leaves'' of the body,
+     where `leaf' is defined in the documentation of @(tsee mvify)."))
+  (if (>= (len out-types) 2)
+      (mvify body)
+    body))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -569,7 +626,12 @@
      the type required for the term, if any.
      At the top level (see @(tsee atj-type-annotate-formals+body)),
      this is the output type of the function:
-     the body of the function must have the output type of the function.")
+     the body of the function must have the output type of the function.
+     The recursive function @('atj-type-annotate-terms')
+     that operates on lists of terms
+     does not take a list of required types as input:
+     if it did, it would be always consist of @('nil')s,
+     so we simply avoid it.")
    (xdoc::p
     "The result of annotating a term is not only the annotated term,
      but also the type of the wrapped term.
@@ -624,29 +686,41 @@
      but note that the new @('var-types') has non-annotated variable names.")
    (xdoc::p
     "For a named function call, the function's types are obtained.
-     If there is just a primary function type,
-     the input types become the required ones for the argument terms,
-     while the output type is the one inferred for the call,
-     which is then wrapped as needed to match the required type if any.
-     However, if there are one or more secondary function types,
-     we first try annotating the argument terms without required types
+     We first try annotating the argument terms without required types
      (as done for a lambda expression as explained above),
      thus inferring types for the arguments.
-     Then we look for the secondary function types
+     Then we look for the function types (of the named function)
      whose input types are wider than or the same as
      the inferred argument types.
-     If there are none, we fall back to using the primary function type,
-     as if there were no secondary function types.
-     If there are some, we select the one whose input types are the least;
-     this should always exist because of the closure property
+     If there are some, we select the one whose input types are the least
+     (this always exists because of the closure property
      checked by @(tsee def-atj-other-function-type);
-     see the documentation of that macro and supporting functions for details.
-     We then use the output type of the selected secondary function type
-     as the type inferred for the function call,
+     see the documentation of that macro and supporting functions for details);
+     we then use the output type of the selected function type
+     as the type inferred for the function call
+     (if the function has multiple output types,
+     it means that it returns an @(tsee mv) result,
+     which for now we regard just as a non-empty list,
+     and thus we ``adjust'' the non-singleton type list
+     to a single type @(':acons') in this case),
      and wrap it to adapt to the required type for the function call if any.
-     The successful selection of a secondary function type means that,
+     The successful selection of such a function type means that,
      in the translated Java code, an overloaded method will be called
-     based on the argument types inferred by the Java compiler.")
+     based on the argument types inferred by the Java compiler.
+     If there are no function types satisfying the above condition,
+     we look at the primary function type (which always exists),
+     and its input types become the required ones for the argument terms,
+     while the output types are used to infer the type for the call,
+     which is then wrapped as needed to match the required type if any;
+     if the output types are not a singleton list,
+     they are turned into a single @(':acons') type as explained above.")
+   (xdoc::p
+    "If we encounter a call of @(tsee mv),
+     which may be introduced by a previous pre-translation step,
+     we allow its arguments to have any types
+     and we regard the call as having type @(':acons').
+     This will be changed and generalized as more direct support is added
+     for functions returning multiple results.")
    (xdoc::p
     "An annotated term is still a regular term,
      but it has a certain structure."))
@@ -703,7 +777,7 @@
                      (second (if required-type?
                                  second
                                (atj-type-rewrap-term second second-type type)))
-                     (term (acl2::fcons-term* 'if first first second)))
+                     (term (fcons-term* 'if first first second)))
                   (mv (atj-type-wrap-term term type type)
                       type))
               (b* (((mv test &) (atj-type-annotate-term test
@@ -736,23 +810,29 @@
                     type)))))
          (args (fargs term))
          ((mv args types) (atj-type-annotate-terms args
-                                                   (repeat (len args) nil)
                                                    var-types
                                                    guards$
                                                    wrld))
+         ((when (eq fn 'mv))
+          (mv (atj-type-wrap-term (fcons-term 'mv args) :acons required-type?)
+              (or required-type? :acons)))
          ((when (symbolp fn))
           (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
+               (main-fn-type (atj-function-type-info->main fn-info))
                (other-fn-types (atj-function-type-info->others fn-info))
-               (type? (atj-output-type-of-min-input-types types
-                                                          other-fn-types)))
-            (if type?
-                (mv (atj-type-wrap-term (fcons-term fn args)
-                                        type?
-                                        required-type?)
-                    (or required-type? type?))
-              (b* ((main-fn-type (atj-function-type-info->main fn-info))
-                   (in-types (atj-function-type->inputs main-fn-type))
-                   (out-type (atj-function-type->output main-fn-type))
+               (all-fn-types (cons main-fn-type other-fn-types))
+               (types?
+                (atj-output-types-of-min-input-types types all-fn-types)))
+            (if types?
+                (b* ((type (if (= (len types?) 1)
+                               (car types?)
+                             :acons)))
+                  (mv (atj-type-wrap-term (fcons-term fn args)
+                                          type
+                                          required-type?)
+                      (or required-type? type)))
+              (b* ((in-types (atj-function-type->inputs main-fn-type))
+                   (out-types (atj-function-type->outputs main-fn-type))
                    ((unless (= (len in-types)
                                (len args))) ; should be always true
                     (raise "Internal error: ~
@@ -760,7 +840,15 @@
                             but a different number of input types ~x2."
                            fn (len args) (len in-types))
                     (mv nil :avalue)) ; irrelevant
-                   (args (atj-type-rewrap-terms args types in-types)))
+                   (args (atj-type-rewrap-terms args types in-types))
+                   ((unless (consp out-types))
+                    (raise "Internal error: ~
+                            the function ~x0 has an empty list of output types."
+                           fn)
+                    (mv nil :avalue)) ; irrelevant
+                   (out-type (if (= (len out-types) 1)
+                                 (car out-types)
+                               :acons)))
                 (mv (atj-type-wrap-term (fcons-term fn args)
                                         out-type
                                         required-type?)
@@ -778,11 +866,9 @@
           (or required-type? type))))
 
   (define atj-type-annotate-terms ((terms pseudo-term-listp)
-                                   (required-types? atj-maybe-type-listp)
                                    (var-types atj-symbol-type-alistp)
                                    (guards$ booleanp)
                                    (wrld plist-worldp))
-    :guard (int= (len terms) (len required-types?))
     :returns (mv (annotated-terms (and (pseudo-term-listp annotated-terms)
                                        (equal (len annotated-terms)
                                               (len terms)))
@@ -793,16 +879,18 @@
                                   :hyp :guard))
     (b* (((when (endp terms)) (mv nil nil))
          ((mv term type) (atj-type-annotate-term (car terms)
-                                                 (car required-types?)
+                                                 nil ; REQUIRED-TYPE?
                                                  var-types
                                                  guards$
                                                  wrld))
          ((mv terms types) (atj-type-annotate-terms (cdr terms)
-                                                    (cdr required-types?)
                                                     var-types
                                                     guards$
                                                     wrld)))
       (mv (cons term terms) (cons type types))))
+
+  :prepwork ((local (in-theory (e/d (atj-maybe-typep)
+                                    (atj-type-iff-when-atj-maybe-typep)))))
 
   :verify-guards nil ; done below
   ///
@@ -815,9 +903,7 @@
     (defret true-listp-of-atj-type-annotate-term.annotated-terms
       (true-listp annotated-terms)
       :rule-classes :type-prescription
-      :fn atj-type-annotate-terms)
-    :hints ('(:expand ((atj-type-annotate-terms
-                        terms required-types? var-types guards$ wrld)))))
+      :fn atj-type-annotate-terms))
 
   (defret-mutual atj-type-annotate-term
     (defret true-listp-of-atj-type-annotate-term.resulting-types-aux
@@ -827,9 +913,7 @@
     (defret true-listp-of-atj-type-annotate-term.resulting-types
       (true-listp resulting-types)
       :rule-classes :type-prescription
-      :fn atj-type-annotate-terms)
-    :hints ('(:expand ((atj-type-annotate-terms
-                        terms required-types? var-types guards$ wrld)))))
+      :fn atj-type-annotate-terms))
 
   (verify-guards atj-type-annotate-term
     :hints (("Goal" :expand ((pseudo-termp term))))))
@@ -839,7 +923,7 @@
 (define atj-type-annotate-formals+body ((formals symbol-listp)
                                         (body pseudo-termp)
                                         (in-types atj-type-listp)
-                                        (out-type atj-typep)
+                                        (out-types atj-type-listp)
                                         (guards$ booleanp)
                                         (wrld plist-worldp))
   :guard (int= (len formals) (len in-types))
@@ -858,6 +942,9 @@
      but note that @('var-types') has non-annotated variable names."))
   (b* ((var-types (pairlis$ formals in-types))
        (formals (atj-type-annotate-vars formals in-types))
+       (out-type (if (= (len out-types) 1)
+                     (car out-types)
+                   :acons))
        ((mv body &)
         (atj-type-annotate-term body out-type var-types guards$ wrld)))
     (mv formals body))
@@ -1917,7 +2004,7 @@
                            (formals symbol-listp)
                            (body pseudo-termp)
                            (in-types atj-type-listp)
-                           (out-type atj-typep)
+                           (out-types atj-type-listp)
                            (deep$ booleanp)
                            (guards$ booleanp)
                            (wrld plist-worldp))
@@ -1939,8 +2026,9 @@
        (body (remove-unused-vars body))
        ((when deep$) (mv formals body))
        (body (remove-trivial-vars body))
+       (body (atj-restore-mv-terms body out-types))
        ((mv formals body) (atj-type-annotate-formals+body
-                           formals body in-types out-type guards$ wrld))
+                           formals body in-types out-types guards$ wrld))
        ((mv formals body) (atj-mark-formals+body formals body))
        ((mv formals body) (atj-rename-formals+body
                            formals body (symbol-package-name fn))))

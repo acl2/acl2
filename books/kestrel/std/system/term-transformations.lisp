@@ -19,6 +19,7 @@
 (include-book "fapply-unary-to-terms")
 (include-book "fsublis-fn")
 (include-book "fsublis-var")
+(include-book "mvify")
 (include-book "remove-dead-if-branches")
 (include-book "remove-mbe")
 (include-book "remove-progn")
