@@ -4436,3 +4436,29 @@
 
   (rp-attach-sc logxor-to-4vec-bitxor
                 logxor-to-4vec-bitxor-side-cond))
+
+
+(progn
+  (def-rp-rule$ t nil
+    binary-+-to-4vec-plus
+    (implies (and (integerp x)
+                  (integerp y))
+             (and (equal (+ x y)
+                         (sv::4vec-plus x y))))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-bitxor
+                              sv::4vec-plus
+                              4vec-p
+                              sv::3vec-bitxor) ()))))
+  (defthmd binary-+-to-4vec-plus-side-cond
+    (implies (and (integerp x)
+                  (integerp y))
+             (integerp (sv::4vec-plus x y)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-bitxor
+                              sv::3vec-bitxor) ()))))
+
+  (rp-attach-sc binary-+-to-4vec-plus
+                binary-+-to-4vec-plus-side-cond))
