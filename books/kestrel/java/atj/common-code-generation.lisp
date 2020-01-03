@@ -900,7 +900,12 @@
      that is, no time information is printed.
      Otherwise, there must exactly one argument
      that must parse to a positive integer,
-     which is passed as the repetition parameter to the test methods."))
+     which is passed as the repetition parameter to the test methods.")
+   (xdoc::p
+    "Note that we generate an expression name for @('args.length'),
+     because grammatically this is not a field access expression in Java:
+     it cannot be generated from the nonterminal @('field-acces');
+     it can be generated from the nonterminal @('expression-name')."))
   (b* ((method-param (make-jparam :final? nil
                                   :type (jtype-array (jtype-class "String"))
                                   :name "args"))
@@ -908,7 +913,7 @@
         (append
          (jblock-locvar (jtype-int) "n" (jexpr-literal-0))
          (jblock-if (jexpr-binary (jbinop-eq)
-                                  (jexpr-field (jexpr-name "args") "length")
+                                  (jexpr-name "args.length")
                                   (jexpr-literal-1))
                     (jblock-asg (jexpr-name "n")
                                 (jexpr-smethod (jtype-class "Integer")
@@ -918,7 +923,7 @@
                                                  (jexpr-name "args")
                                                  (jexpr-literal-0))))))
          (jblock-if (jexpr-binary (jbinop-gt)
-                                  (jexpr-field (jexpr-name "args") "length")
+                                  (jexpr-name "args.length")
                                   (jexpr-literal-1))
                     (jblock-throw (jexpr-newclass
                                    (jtype-class "IllegalArgumentException")

@@ -324,15 +324,17 @@
      and @('rank2') is the rank of additive expressions,
      because there is a (sub)rule
      @('additive-expression = multiplicative-expression') in the grammar.
+     (Here by 'subrule' we mean a rule not necessarily in the grammar
+     but obtainable by selecting just some of the alternatives in the definiens
+     that are separated by slashes in ABNF.)
      The nonterminal @('additive-expression') also has other alternatives,
-     but those are not single nonterminals,
-     but here we are only concerned with single nonterminals
-     as rule definientia.
+     but those are not single nonterminals;
+     here we are only concerned with single nonterminals as rule definientia.
      The reason is explained below.")
    (xdoc::p
     "Besides the abstract syntactic expression to pretty-print,
      the pretty-printer for expression has an argument
-     hat is the rank of expression that must be pretty-printed
+     that is the rank of expression that must be pretty-printed
      at that point.
      At the top level, this second argument is
      the rank of top-level expressions,
@@ -676,7 +678,7 @@
                                 (print-jexpr-list
                                  expr.args (jexpr-rank-expression))))
                 :field (msg "~@0.~@1"
-                            (print-jexpr expr.target (jexpr-rank-postfix))
+                            (print-jexpr expr.target (jexpr-rank-primary))
                             expr.name)
                 :method (msg "~@0(~@1)"
                              expr.name
