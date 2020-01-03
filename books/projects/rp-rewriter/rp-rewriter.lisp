@@ -1191,6 +1191,8 @@ returns (mv rule rules-rest bindings rp-context)"
    (include-book "proofs/measure-lemmas"))
   (local
    (use-measure-lemmas t))
+  (local
+   (in-theory (enable is-if)))
   (mutual-recursion
    (defun attach-sc (term sc-type sc-term)
      (declare (xargs :guard t
@@ -1200,19 +1202,14 @@ returns (mv rule rules-rest bindings rp-context)"
        (if (equal term sc-term)
            `(rp ',sc-type ,term)
          term))
-      ((or (eq (car term) 'quote))
+      ((equal (car term) 'quote)  
        term)
-      ((eq (car term) 'if)
-       (if (equal term sc-term)
-           `(rp ',sc-type ,term)
-         (progn$
-          (and (subtermp term sc-term)
-               (hard-error 'attach-sc
-                           "We do not support side-conditions nested under if statements yet! ~%" nil))
-          term)))
       ((equal term sc-term)
-       `(rp ',sc-type ,(cons (car term)
-                             (attach-sc-lst (cdr term) sc-type sc-term))))
+       `(rp ',sc-type ,term))
+      ((is-if term) ;; only here for induction schemes
+       `(if ,(attach-sc (cadr term) sc-type sc-term)
+            ,(attach-sc (caddr term) sc-type sc-term)
+          ,(attach-sc (cadddr term) sc-type sc-term)))
       (t (cons (car term)
                (attach-sc-lst (cdr term) sc-type sc-term)))))
 
