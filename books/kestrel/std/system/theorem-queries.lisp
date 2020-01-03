@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "classes")
+(include-book "classes-plus")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
 (include-book "theorem-formula")

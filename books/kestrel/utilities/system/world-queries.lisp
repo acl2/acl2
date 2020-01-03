@@ -22,6 +22,7 @@
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/classes" :dir :system)
+(include-book "kestrel/std/system/classes-plus" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/definedp-plus" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -130,29 +131,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define classes+ ((thm (theorem-namep thm wrld))
-                  (wrld plist-worldp))
-  :returns (classes keyword-to-keyword-value-list-alistp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee classes)."
-  :long
-  "<p>
-   This returns the same result as @(tsee classes),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (classes thm wrld)))
-    (if (keyword-to-keyword-value-list-alistp result)
-        result
-      (raise "Internal error: ~
-              the rule classes ~x0 of ~x1 are not an alist
-              from keywords to keyword-value lists."
-             result thm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
