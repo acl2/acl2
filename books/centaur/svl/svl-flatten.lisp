@@ -43,6 +43,8 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
+(include-book "std/lists/list-defuns" :dir :system)
+
 (in-theory (disable acl2::natp-when-gte-0
                     acl2::natp-when-integerp))
 
@@ -190,6 +192,16 @@
             (and (not (equal porttype ':VL-INOUT))
                  success)))))
 
+
+  
+  (defun vl-module-to-insouts-aux (module-name mod-names)
+    (if (atom mod-names)
+        nil
+      (or (equal module-name (car mod-names))
+          (str::strprefixp module-name (car mod-names))
+          (vl-module-to-insouts-aux module-name (cdr mod-names)))))
+          
+  
   (defun vl-module-to-insouts (vl-module mod-names)
     (and
      (consp vl-module)
@@ -199,8 +211,8 @@
      (consp (caaadr vl-module))
      (b* ((smodule (caadr vl-module))
           (module-name (caaar smodule))
-          ((when (and (not (member-equal module-name
-                                         mod-names))
+          ((when (and (not (vl-module-to-insouts-aux module-name
+                                                     mod-names))
                       mod-names))
            nil)
           ((mv ins outs success1)
@@ -2470,7 +2482,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -2652,6 +2664,35 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
       (fast-alist-clean (hons-acons ':initial val
                                     occ-to-occ-listeners)))))
 
+
+
+(define cut-list-until (e lst)
+  (if (atom lst)
+      nil
+    (if (equal e (car lst))
+        (list e)
+      (cons (car lst)
+            (cut-list-until e (cdr lst)))))) 
+
+(acl2::defines
+ find-loop
+ (define find-loop (occ-name occ-to-occ-listeners trace)
+   (declare (xargs :mode :program))
+   (b* ((member (member-equal occ-name trace))
+        ((when member)
+         (b* ((trace-cut (cut-list-until occ-name trace))) 
+           (progn$ (cw "Loop found for ~p0 in this trace: ~p1 ~%" occ-name
+                       trace-cut)
+                   trace-cut)))
+        (lst (cdr (hons-get occ-name occ-to-occ-listeners))))
+     (find-loop-lst lst occ-to-occ-listeners (cons occ-name trace))))
+ (define find-loop-lst (lst occ-to-occ-listeners trace)
+   (if (atom lst)
+       nil
+     (or (find-loop (car lst) occ-to-occ-listeners trace)
+         (find-loop-lst (cdr lst) occ-to-occ-listeners trace)))))
+   
+
 (progn
   (define create-occ-in-nodes-count-aux ((occ-names)
                                          (acc))
@@ -2762,11 +2803,25 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
          (- (and (not (equal not-added-occs-count 0))
                  (progn$
                   (cw "~% ~% Not added modules: ~p0 ~%"
-                      (get-not-added-module-occs all-tmp-occs occ-in-nodes-count))
-                  (hard-error 'svl-sort-occs-main
-                              "~p0 occs are not added! Possibly a combinational
-                               loop~% ~%"
-                              (list (cons #\0 not-added-occs-count))))))
+                      (get-not-added-module-occs all-tmp-occs
+                                                 occ-in-nodes-count))
+                  (b* ((found-loop (find-loop ':initial occ-to-occ-listeners
+                                              nil))
+                       (- (fmt-to-comment-window "These occs are: ~p0 ~%"  
+                                                 (list
+                                                  (cons #\0
+                                                        (acl2::pairlis2
+                                                         found-loop
+                                                         (rp::assoc-eq-vals
+                                                          found-loop all-tmp-occs))))
+                                                 0
+                                                 '(nil 10 12 nil)
+                                                 nil)))
+                    nil)
+                  (hard-error
+                   'svl-sort-occs-main
+                   "~p0 occs are not added! Possibly a combinational loop~% ~%"
+                   (list (cons #\0 not-added-occs-count))))))
          (- (fast-alist-free occ-in-nodes-count)))
       sorted-occs)))
 
@@ -2777,15 +2832,60 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   (if (atom acl2::x)
       0
     (b* (((sv::lhrange sv::xf) (car acl2::x)))
-      (sv::svex-concat sv::xf.w (sv::lhatom->svex sv::xf.atom)
+      (sv::svex-concat sv::xf.w
+                       (sv::lhatom->svex sv::xf.atom)
                        (lhs->svex (cdr acl2::x))))))
 
 (define lhslist->svex ((lhslist sv::lhslist-p))
-  :returns (res sv::svexlist-p)
   (if (atom lhslist)
       nil
-    (cons (lhs->svex (car lhslist))
-          (lhslist->svex (cdr lhslist)))))
+    (b* ((cur (lhs->svex (car lhslist)))
+         (cur (case-match cur
+                (('sv::concat size ('sv::rsh start name) '0)
+                 `(sv::partsel ,start ,size ,name))
+                (('sv::concat size name '0)
+                 `(sv::partsel 0 ,size ,name))
+                (& cur))))
+      (cons cur
+            (lhslist->svex (cdr lhslist)))))
+  ///
+
+  (local
+   (defthm lemma1
+     (implies (and (force (svex-p a))
+                   (force (svex-p b))
+                   (force (svex-p c)))
+              (SVEX-P (LIST 'PARTSEL a b c)))
+     :hints (("Goal"
+              :expand (SVEX-P (LIST 'PARTSEL a b c))
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm lemma2
+     (implies (and (svex-p main)
+                   (case-match main (('sv::concat & ('sv::rsh & &) '0) t)))
+              (and (svex-p (cadr main))
+                   (svex-p (cadr (caddr main)))
+                   (svex-p (caddr (caddr main)))))
+     :hints (("Goal"
+              :in-theory (e/d (svex-p) ())))))
+
+  (local
+   (defthm lemma3
+     (implies (and (svex-p main)
+                   (case-match main (('sv::concat & & '0) t)))
+              (and (svex-p (cadr main))
+                   (svex-p (caddr main))))
+     :hints (("Goal"
+              :in-theory (e/d (svex-p) ())))))
+
+  (defthm svexlist-p-of-ljslist->svex
+    (sv::svexlist-p (lhslist->svex lhslst))
+    :hints (("Goal"
+             :induct (lhslist->svex lhslst)
+             :do-not-induct t
+             :expand (LHSLIST->SVEX LHSLST)
+             :in-theory (e/d () ())))))
 
 (define tmp-occs->svl-occs-assign ((occ-name occ-name-p)
                                    (outputs wire-list-p)
@@ -3172,6 +3272,35 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                 rest)
         rest))))
 
+(acl2::defines
+ get-sv-submodules
+ (define get-sv-submodules ((modname sv::modname-p)
+                            (modalist sv::modalist-p)
+                            (acc sv::modnamelist-p))
+   (declare (xargs :mode :program))
+   (b* (((when (or (not (stringp modname))
+                   (member-equal modname acc)))
+         acc)
+        (mod (assoc-equal modname modalist))
+        ((unless mod)
+         acc)
+        (mod (cdr mod))
+        (acc (cons modname acc))
+        (modname-lst (strip-cdrs (sv::module->insts mod))))
+     (get-sv-submodules-lst modname-lst modalist acc)))
+ 
+ (define get-sv-submodules-lst ((modname-lst sv::modnamelist-p)
+                                (modalist sv::modalist-p)
+                                (acc sv::modnamelist-p))
+   (if (atom modname-lst)
+       acc
+     (get-sv-submodules-lst (cdr modname-lst)
+                            modalist
+                            (get-sv-submodules (car modname-lst)
+                                               modalist
+                                               acc)))))
+       
+
 (define svl-flatten-design ((sv-design sv::design-p)
                             (vl-design)
                             &key
@@ -3190,7 +3319,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
        (dont-flatten-all (equal dont-flatten ':all))
        (top (if top top sv-design.top))
        (dont-flatten (if dont-flatten-all
-                         all-modnames
+                         (get-sv-submodules top sv-design.modalist nil)
                        (fix-dont-flatten
                         (union-equal dont-flatten
                                      (list top))
@@ -3198,11 +3327,11 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
        (vl-insouts (vl-design-to-insouts vl-design
                                          sv-design
-                                         (if dont-flatten-all nil dont-flatten)))
+                                         dont-flatten))
 
        (dont-flatten
         (if dont-flatten-all
-            all-modnames
+            dont-flatten
           (clean-dont-flatten dont-flatten all-modnames)))
 
        (vl-insouts (vl-insouts-insert-wire-sizes vl-insouts sv-design
