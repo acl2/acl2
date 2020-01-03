@@ -1264,17 +1264,18 @@
 
 (mutual-recursion
  (defun ex-from-rp-all (term)
-   (cond ((atom term)
-          term)
-         ((is-rp term)
-          (ex-from-rp-all (ex-from-rp term)))
-         (t
-          (cons (car term)
-                (ex-from-rp-all-lst (cdr term))))))
+   (b* ((term (ex-from-rp term)))
+     (cond ((atom term)
+            term)
+           ((quotep term)
+            term)
+           (t
+            (cons (car term)
+                  (ex-from-rp-all-lst (cdr term)))))))
 
  (defun ex-from-rp-all-lst (lst)
    (if (atom lst)
-       nil
+       lst
      (cons (ex-from-rp-all (car lst))
            (ex-from-rp-all-lst (cdr lst))))))
 
@@ -1648,3 +1649,5 @@
        nil
      (cons (rp-untrans (car lst))
            (rp-untrans-lst (cdr lst))))))
+
+

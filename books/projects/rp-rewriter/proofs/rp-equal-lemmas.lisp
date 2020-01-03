@@ -1231,3 +1231,38 @@
     (equal (rp-equal-cnt-subterms subterm1 subterm2 cnt)
            (rp-equal-subterms subterm1 subterm2 ))
     :flag rp-equal-cnt-subterms))
+
+
+
+
+
+(defthm-rp-equal
+  (defthmd rp-equal-alt-def
+    (equal (rp-equal term1 term2)
+           (equal (ex-from-rp-all term1)
+                  (ex-from-rp-all term2)))
+    :flag rp-equal)
+  (defthmd rp-equal-subterms-alt-def
+    (equal (rp-equal-subterms subterm1 subterm2)
+           (equal (ex-from-rp-all-lst subterm1)
+                  (ex-from-rp-all-lst subterm2)))
+    :flag rp-equal-subterms)
+  :hints (("Goal"
+           :expand ((EX-FROM-RP-ALL TERM1)
+                    (EX-FROM-RP-ALL-LST SUBTERM1)
+                    (EX-FROM-RP-ALL-LST SUBTERM2)
+                    (EX-FROM-RP-ALL TERM2))
+           :in-theory (e/d (;is-rp
+                            ex-from-rp-all
+                            )
+                           (ex-from-rp)))))
+
+
+
+(defequiv rp-equal
+  :hints (("Goal"
+           :in-theory (e/d (rp-equal-alt-def) ()))))
+
+(defcong rp-equal equal (rp-evlt term a) 1)
+(defcong rp-equal equal (rp-evl term a) 1)
+

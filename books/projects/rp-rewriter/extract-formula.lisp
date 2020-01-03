@@ -244,7 +244,8 @@
     (let ((sc (car sc-list)))
       (case-match sc
         ((sc-type sc-term)
-         (if (is-rp `(rp ',sc-type ,sc-term))
+         (if (and (not (quotep sc-term))
+                  (is-rp `(rp ',sc-type ,sc-term)))
              (attach-sc-list-to-rhs (attach-sc rhs sc-type sc-term) (cdr sc-list))
            (or (cw
                 "WARNING! Side-condition problem ~p0. Skipping this one. ~%"

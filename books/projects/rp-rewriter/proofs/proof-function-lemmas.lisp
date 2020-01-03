@@ -649,4 +649,16 @@
            :induct (two-cdr-induct x y)
            :in-theory (e/d (rp-evl-of-trans-list) ()))))
 
+(defthm consp-of-RP-EVL-OF-TRANS-LIST
+  (equal (CONSP (RP-EVL-OF-TRANS-LIST lst A))
+         (consp lst))
+  :hints (("Goal"
+           :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ()))))
+
+(defthm RP-EVL-OF-TRANS-LIST-nil
+  (equal (RP-EVL-OF-TRANS-LIST nil A)
+         nil)
+  :hints (("Goal"
+           :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ()))))
+
 (in-theory (disable rp-evl-of-trans-list))

@@ -39,6 +39,10 @@
 (in-theory (disable acl2::natp-when-gte-0
                     acl2::natp-when-integerp))
 
+
+(local
+ (in-theory (disable (:definition rp::rp-rw))))
+
 (defrec svex-simplify-preloaded
   (exc-rules rules . meta-rules)
   t)
@@ -439,6 +443,8 @@
             :in-theory (e/d (RP::RW-STEP-LIMIT
                              rp::rp-statep) ())))
    :rule-classes :rewrite))
+
+
 
 (progn
   (define svexl-node-simplify ((node svexl-node-p)

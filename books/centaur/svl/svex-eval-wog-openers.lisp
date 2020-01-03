@@ -201,7 +201,7 @@
   (def-rw-opener-error
     svexlist-list-eval-wog-opener-error
     (svexlist-list-eval-wog x env)
-    :vars-to-avoid (env))
+    :do-not-print (env))
 
   (def-rp-rule svexlist-list-eval-wog-opener-nil
     (equal (svexlist-list-eval-wog nil env)
