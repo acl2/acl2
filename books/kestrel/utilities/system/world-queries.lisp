@@ -1,6 +1,6 @@
 ; System Utilities -- World Queries
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -21,6 +21,7 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
+(include-book "kestrel/std/system/classes" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/definedp-plus" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -131,21 +132,6 @@
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define classes ((thm symbolp) (wrld plist-worldp))
-  :returns (classes "An @(tsee alistp)
-                     from @(tsee keywordp) to @(tsee keyword-value-listp).")
-  :parents (world-queries)
-  :short "Rule classes of a theorem."
-  :long
-  "<p>
-   These form a value of type @('keyword-to-keyword-value-list-alistp'),
-   which is defined in @('[books]/system/pseudo-good-worldp.lisp').
-   </p>
-   <p>
-   See @(tsee classes+) for a logic-friendly variant of this utility.
-   </p>"
-  (getpropc thm 'classes nil wrld))
 
 (define classes+ ((thm (theorem-namep thm wrld))
                   (wrld plist-worldp))
