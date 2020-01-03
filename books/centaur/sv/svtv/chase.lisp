@@ -405,12 +405,63 @@
          (not (consp (cdr (last x))))
          :rule-classes :type-prescription))
 
+(define svexlist-compute-masks-with-eval ((x svexlist-p)
+                                          (mask-al svex-mask-alist-p)
+                                          (env svex-env-p))
+  :returns (mask-al1 svex-mask-alist-p)
+  (b* (((when (atom x))
+        (mbe :logic (svex-mask-alist-fix mask-al)
+             :exec mask-al))
+       (first (car x))
+       ((when (not (eq (svex-kind first) :call)))
+        (svexlist-compute-masks-with-eval (cdr x) mask-al env))
+       (mask (svex-mask-lookup first mask-al))
+       ((when (sparseint-equal mask 0))
+        (svexlist-compute-masks-with-eval (cdr x) mask-al env))
+       (args (svex-call->args first))
+       (argvals (4veclist-quote (svexlist-eval args env)))
+       (argmasks (svex-argmasks mask
+                                (svex-call->fn first)
+                                argvals))
+       (mask-al (svex-args-apply-masks args argmasks mask-al)))
+    (svexlist-compute-masks-with-eval (cdr x) mask-al env)))
+
+(define svtv-chase-expr-deps ((expr svex-p)
+                              (phase natp)
+                              (rsh natp)
+                              (mask 4vmask-p)
+                              (smartp)
+                              &key
+                              (debugdata 'debugdata)
+                              ((evaldata svtv-evaldata-p) 'evaldata))
+  :returns (deps svex-mask-alist-p)
+  (b* (((mv toposort al) (svex-toposort expr nil nil))
+       (- (fast-alist-free al))
+       (start-mask-al (svex-mask-acons expr (sparseint-ash mask rsh) nil))
+       ((unless smartp)
+        (fast-alist-free
+         (fast-alist-clean
+          (svexlist-compute-masks toposort start-mask-al))))
+       (vars (svex-collect-vars expr))
+       (env (make-fast-alist (pairlis$ vars (svtv-chase-evallist vars phase))))
+       (mask-al (fast-alist-free
+                 (fast-alist-clean
+                  (svexlist-compute-masks-with-eval
+                   toposort (svex-mask-acons expr (sparseint-ash mask rsh) nil)
+                   env)))))
+    (fast-alist-free env)
+    mask-al))
+       
+
+
 (define svtv-chase-deps ((var svar-p)
                          (phase natp)
                          (rsh natp)
                          (mask 4vmask-p)
                          &key
-                         (debugdata 'debugdata))
+                         (smartp 'smartp)
+                         (debugdata 'debugdata)
+                         ((evaldata svtv-evaldata-p) 'evaldata))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable debugdatap))))
   :returns (mv (type symbolp :rule-classes :type-prescription)
@@ -443,11 +494,7 @@
        ((unless expr)
         (mv :error nil (svex-x)))
 
-       ((mv toposort al) (svex-toposort expr nil nil))
-       (- (fast-alist-free al))
-       (mask-al (fast-alist-free
-                 (fast-alist-clean
-                  (svexlist-compute-masks toposort (svex-mask-acons expr (sparseint-ash mask rsh) nil)))))
+       (mask-al (svtv-chase-expr-deps expr phase rsh mask smartp))
        
        (vars (svex-mask-alist-to-4vmask-alist mask-al)))
     (mv type vars expr))
@@ -655,6 +702,7 @@
                            (rsh natp)
                            (mask 4vmask-p)
                            &key
+                           (smartp 'smartp)
                            (debugdata 'debugdata)
                            ((moddb moddb-ok) 'moddb)
                            ((evaldata svtv-evaldata-p) 'evaldata))
@@ -764,7 +812,8 @@
     (chase-vars :type (satisfies 4vmask-alist-p))
     (chase-expr :type (satisfies svex-p) :initially ,(svex-x))
     ;; (chase-new-phase :type (integer 0 *) :initially 0)
-    (chase-evaldata :type (satisfies svtv-evaldata-p) :initially ,(make-svtv-evaldata))))
+    (chase-evaldata :type (satisfies svtv-evaldata-p) :initially ,(make-svtv-evaldata))
+    (chase-smartp :initially t)))
 
 (define svtv-chase-signal-data ((pos chase-position-p)
                                 &key
@@ -783,7 +832,10 @@
   (b* (((chase-position pos))
        ((mv type vars expr)
         (svtv-chase-signal (make-svar :name (make-address :path pos.path))
-                           pos.phase pos.rsh pos.mask :evaldata (chase-evaldata svtv-chase-data)))
+                           pos.phase pos.rsh pos.mask
+                           :smartp (chase-smartp svtv-chase-data)
+                           :evaldata (chase-evaldata svtv-chase-data)
+                           :debugdata debugdata))
        ((when (eq type :error))
         (cw! "[Error -- discrepancy between stored updates and assignments!]~%")
         svtv-chase-data)
@@ -935,7 +987,29 @@
     (svtv-chase-signal-data pos)))
        
 
-
+(define svtv-chase-print (&key
+                          (debugdata 'debugdata)
+                          ((moddb moddb-ok) 'moddb)
+                          (svtv-chase-data 'svtv-chase-data))
+  :guard (and (< (debugdata->modidx debugdata) (moddb->nmods moddb)))
+  :returns new-svtv-chase-data
+  :guard-hints (("goal" :in-theory (enable debugdatap)
+                 :do-not-induct t)
+                ;; (and stable-under-simplificationp
+                ;;      '(:in-theory (enable chase-position-addr-p)))
+                )
+  (b* ((stack (chase-stack svtv-chase-data))
+       ((unless (consp stack))
+        (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
+        svtv-chase-data)
+       (pos (car stack))
+       (svtv-chase-data (update-chase-stack (cdr stack) svtv-chase-data))
+       (svtv-chase-data (svtv-chase-signal-data pos)))
+    svtv-chase-data)
+  ///
+  (defmacro svtv-chase-print! (&rest args)
+    `(b* ((svtv-chase-data (svtv-chase-print . ,args)))
+       (mv nil svtv-chase-data state))))
 
 (defconst *chase-usage*
   "
@@ -956,6 +1030,9 @@ What you can enter at the SVTV-CHASE prompt:
  EXPR               Print the assignment for the current signal.
  (EXPR N)           Print the assignment expression, limiting nesting depth to N.
 
+ SMARTP             Toggle data-aware dependency reduction feature
+                    (reduces the number of irrelevant signals listed).
+                    On by default.
 ")
 
 
@@ -996,6 +1073,8 @@ What you can enter at the SVTV-CHASE prompt:
 
 (verify-termination evisc-tuple)
 (verify-guards evisc-tuple)
+
+
 
 (define svtv-chase-rep (&key
                         (debugdata 'debugdata)
@@ -1053,14 +1132,7 @@ What you can enter at the SVTV-CHASE prompt:
               (cw! *chase-usage*)
               (mv nil svtv-chase-data state))
              ((when (equal objname "P"))
-              (b* ((stack (chase-stack svtv-chase-data))
-                   ((unless (consp stack))
-                    (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
-                    (mv nil svtv-chase-data state))
-                   (pos (car stack))
-                   (svtv-chase-data (update-chase-stack (cdr stack) svtv-chase-data))
-                   (svtv-chase-data (svtv-chase-signal-data pos)))
-                (mv nil svtv-chase-data state)))
+              (svtv-chase-print!))
              ((when (equal objname "EXPR"))
               (cw! "~x0~%" (chase-expr svtv-chase-data))
               (mv nil svtv-chase-data state))
@@ -1074,12 +1146,17 @@ What you can enter at the SVTV-CHASE prompt:
                                  (consp (cdr stack))))
                     (cw! "At end of stack!~%")
                     (mv nil svtv-chase-data state))
-                   (pos (cadr stack))
-                   (svtv-chase-data (update-chase-stack (cddr stack) svtv-chase-data))
-                   (svtv-chase-data (svtv-chase-signal-data pos)))
-                (mv nil svtv-chase-data state)))
+                   (svtv-chase-data (update-chase-stack (cdr stack) svtv-chase-data)))
+                (svtv-chase-print!)))
              ((when (equal objname "X"))
-              (mv t svtv-chase-data state)))
+              (mv t svtv-chase-data state))
+             ((when (equal objname "SMARTP"))
+              (b* ((smartp (chase-smartp svtv-chase-data))
+                   (new-smartp (not smartp))
+                   (svtv-chase-data (update-chase-smartp new-smartp svtv-chase-data)))
+                (cw! "Turned data-aware dependency reduction ~s0.~%"
+                     (if new-smartp "on" "off"))
+                (svtv-chase-print!))))
           (cw! "Error -- unrecognized directive: ~x0~%Type ? for allowed commands.~%" obj)
           (mv nil svtv-chase-data state)))
        ((when (and (consp obj)
@@ -1284,6 +1361,7 @@ What you can enter at the SVTV-CHASE prompt:
        (evaldata (svtv-chase-inalist-to-evaldata env))
        (svtv-chase-data (update-chase-stack nil svtv-chase-data))
        (svtv-chase-data (update-chase-evaldata evaldata svtv-chase-data))
+       (svtv-chase-data (update-chase-smartp t svtv-chase-data))
        (debugdata (set-debugdata->updates (make-fast-alist (debugdata->updates debugdata)) debugdata))
        (debugdata (set-debugdata->override-assigns
                    (make-fast-alist (debugdata->override-assigns debugdata)) debugdata))
