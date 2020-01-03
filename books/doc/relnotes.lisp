@@ -549,6 +549,12 @@
 
    (xdoc::p
     "ATJ has been extended with the ability to generate Java code
+     that uses Java primitive arrays and operations.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java code
      that operates on narrower types than the one for all ACL2 values.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
@@ -651,8 +657,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seetopic "remove-hyps" "Remove-hyps utility"))
 
    (xdoc::p
@@ -673,7 +677,7 @@
    (xdoc::p
     "Some functions have been factored ouf of the file
      @('[book]/system/pseudo-good-worldp.lisp'),
-     and put in new individual files,
+     and put into new individual files,
      for greater modularity.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
