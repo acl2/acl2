@@ -371,29 +371,29 @@
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
 
-(local
- (defsection svarlist-addr-p-of-svexlist-compute-masks
-   (defret member-vars-of-svex-args-apply-masks
-     (implies (and (not (member v (svexlist-vars args)))
-                   (not (member v (svexlist-vars (svex-mask-alist-keys mask-al)))))
-              (not (member v (svexlist-vars (svex-mask-alist-keys mask-al1)))))
-     :hints(("Goal" :in-theory (enable svex-args-apply-masks)))
-     :fn svex-args-apply-masks)
+;; (local
+;;  (defsection svarlist-addr-p-of-svexlist-compute-masks
+;;    (defret member-vars-of-svex-args-apply-masks
+;;      (implies (and (not (member v (svexlist-vars args)))
+;;                    (not (member v (svexlist-vars (svex-mask-alist-keys mask-al)))))
+;;               (not (member v (svexlist-vars (svex-mask-alist-keys mask-al1)))))
+;;      :hints(("Goal" :in-theory (enable svex-args-apply-masks)))
+;;      :fn svex-args-apply-masks)
 
-   (defret member-vars-of-svexlist-compute-masks
-     (implies (and (not (member v (svexlist-vars x)))
-                   (not (member v (svexlist-vars (svex-mask-alist-keys mask-al)))))
-              (not (member v (svexlist-vars (svex-mask-alist-keys mask-al1)))))
-     :hints(("Goal" :in-theory (enable svexlist-compute-masks)))
-     :fn svexlist-compute-masks)
+;;    (defret member-vars-of-svexlist-compute-masks
+;;      (implies (and (not (member v (svexlist-vars x)))
+;;                    (not (member v (svexlist-vars (svex-mask-alist-keys mask-al)))))
+;;               (not (member v (svexlist-vars (svex-mask-alist-keys mask-al1)))))
+;;      :hints(("Goal" :in-theory (enable svexlist-compute-masks)))
+;;      :fn svexlist-compute-masks)
 
-   (defret member-alist-keys-of-svex-mask-alist-to-4vmask-alist
-     (implies (not (member v (svexlist-vars (svex-mask-alist-keys x))))
-              (not (member v (alist-keys new-x))))
-     :hints(("Goal" :in-theory (enable svex-mask-alist-to-4vmask-alist
-                                       svex-mask-alist-keys
-                                       alist-keys)))
-     :fn svex-mask-alist-to-4vmask-alist)))
+;;    (defret member-alist-keys-of-svex-mask-alist-to-4vmask-alist
+;;      (implies (not (member v (svexlist-vars (svex-mask-alist-keys x))))
+;;               (not (member v (alist-keys new-x))))
+;;      :hints(("Goal" :in-theory (enable svex-mask-alist-to-4vmask-alist
+;;                                        svex-mask-alist-keys
+;;                                        alist-keys)))
+;;      :fn svex-mask-alist-to-4vmask-alist)))
 
 
 (local (defthm svex-mask-alist-p-of-fast-alist-fork
@@ -415,35 +415,33 @@
                      '(:in-theory (enable debugdatap))))
   :returns (mv (type symbolp :rule-classes :type-prescription)
                (vars 4vmask-alist-p)
-               (expr svex-p)
-               (new-phase natp :rule-classes :type-prescription))
+               (expr svex-p))
   (b* (((debugdata debugdata))
        (phase (lnfix phase))
        (var (svar-fix var))
-       ((mv type norm-var)
+       (type
         (b* ((svex (svex-fastlookup var debugdata.updates))
              ((when svex)
-              ;; Update or else state or input at phase 0.
-              (mv :update var))
+              :update)
              (prev-var-look (hons-get var (svar-map-fix debugdata.delays)))
              ((when prev-var-look)
               (if (eql phase 0)
-                  (mv :initst var)
-                (mv :prevst (cdr prev-var-look)))))
-          (mv :input var)))
+                  :initst
+                :prevst)))
+          :input))
 
        ((when (or (eq type :input)
                   (eq type :initst)))
-        (mv type nil (svex-var var) phase))
+        (mv type nil (svex-var var)))
 
        ((when (eq type :prevst))
-        (mv type (list (cons norm-var (sparseint-ash mask rsh)))
-            (svex-var norm-var) (1- phase)))
+        (mv type (list (cons var (sparseint-ash mask rsh)))
+            (svex-var var)))
 
-       (expr (svex-fastlookup norm-var debugdata.assigns))
+       (expr (svex-fastlookup var debugdata.override-assigns))
 
        ((unless expr)
-        (mv :error nil (svex-x) phase))
+        (mv :error nil (svex-x)))
 
        ((mv toposort al) (svex-toposort expr nil nil))
        (- (fast-alist-free al))
@@ -452,48 +450,89 @@
                   (svexlist-compute-masks toposort (svex-mask-acons expr (sparseint-ash mask rsh) nil)))))
        
        (vars (svex-mask-alist-to-4vmask-alist mask-al)))
-    (mv type vars expr phase))
+    (mv type vars expr))
   ///
-  (local (defthm svar-addr-p-lookup-in-svar-map
-           (implies (And (svarlist-addr-p (svar-map-vars x))
-                         (hons-assoc-equal k (svar-map-fix x)))
-                    (svar-addr-p (cdr (hons-assoc-equal k (svar-map-fix x)))))
-           :hints(("Goal" :in-theory (e/d (svar-map-vars svar-map-fix)
-                                          (hons-assoc-equal-of-svar-map-fix))
-                   :induct (svar-map-vars x)))
-           :rule-classes
-           ((:rewrite :corollary
-             (implies (And (svarlist-addr-p (svar-map-vars x))
-                           (svar-p k)
-                           (hons-assoc-equal k x))
-                    (svar-addr-p (cdr (hons-assoc-equal k x))))))))
+  ;; (local (defthm svar-addr-p-lookup-in-svar-map
+  ;;          (implies (And (svarlist-addr-p (svar-map-vars x))
+  ;;                        (hons-assoc-equal k (svar-map-fix x)))
+  ;;                   (svar-addr-p (cdr (hons-assoc-equal k (svar-map-fix x)))))
+  ;;          :hints(("Goal" :in-theory (e/d (svar-map-vars svar-map-fix)
+  ;;                                         (hons-assoc-equal-of-svar-map-fix))
+  ;;                  :induct (svar-map-vars x)))
+  ;;          :rule-classes
+  ;;          ((:rewrite :corollary
+  ;;            (implies (And (svarlist-addr-p (svar-map-vars x))
+  ;;                          (svar-p k)
+  ;;                          (hons-assoc-equal k x))
+  ;;                   (svar-addr-p (cdr (hons-assoc-equal k x))))))))
 
-  (local (defthm member-svex-mask-alist-keys-of-fast-alist-fork
-           (implies (and (not (member v (svexlist-vars (svex-mask-alist-keys x))))
-                         (not (member v (svexlist-vars (svex-mask-alist-keys y)))))
-                    (not (member v (svexlist-vars (svex-mask-alist-keys (fast-alist-fork x y))))))
-           :hints(("Goal" :in-theory (enable svex-mask-alist-keys)))))
+  ;; (local (defthm member-svex-mask-alist-keys-of-fast-alist-fork
+  ;;          (implies (and (not (member v (svexlist-vars (svex-mask-alist-keys x))))
+  ;;                        (not (member v (svexlist-vars (svex-mask-alist-keys y)))))
+  ;;                   (not (member v (svexlist-vars (svex-mask-alist-keys (fast-alist-fork x y))))))
+  ;;          :hints(("Goal" :in-theory (enable svex-mask-alist-keys)))))
 
-  (local (defthm svex-mask-alist-keys-of-atom
-           (implies (atom x)
-                    (equal (svex-mask-alist-keys x) nil))
-           :hints(("Goal" :in-theory (enable svex-mask-alist-keys)))))
+  ;; (local (defthm svex-mask-alist-keys-of-atom
+  ;;          (implies (atom x)
+  ;;                   (equal (svex-mask-alist-keys x) nil))
+  ;;          :hints(("Goal" :in-theory (enable svex-mask-alist-keys)))))
 
-  (defret svarlist-addr-p-of-<fn>
-    (implies (and (svar-addr-p var)
-                  (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-                  (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
-             (svarlist-addr-p (alist-keys vars)))
-    :hints(("Goal" :in-theory (enable alist-keys))))
+  ;; (defret svarlist-addr-p-of-<fn>
+  ;;   (implies (and (svar-addr-p var)
+  ;;                 (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+  ;;                 (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
+  ;;            (svarlist-addr-p (alist-keys vars)))
+  ;;   :hints(("Goal" :in-theory (enable alist-keys))))
 
   
 
-  (defret svarlist-addr-p-expr-of-<fn>
-    (implies (and (svar-addr-p var)
-                  (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-                  (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
-             (svarlist-addr-p (svex-vars expr)))
-    :hints(("Goal" :in-theory (enable alist-keys)))))
+  ;; (defret svarlist-addr-p-expr-of-<fn>
+  ;;   (implies (and (svar-addr-p var)
+  ;;                 (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+  ;;                 (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
+  ;;            (svarlist-addr-p (svex-vars expr)))
+  ;;   :hints(("Goal" :in-theory (enable alist-keys))))
+  )
+
+(define svtv-chase-var-name/range ((var svar-p)
+                                   (rsh natp)
+                                   (mask 4vmask-p)
+                                   (modidx natp)
+                                   &key
+                                   ((moddb moddb-ok) 'moddb))
+  :returns (name-range-msg)
+  :guard (< modidx (moddb->nmods moddb))
+  (b* (((svar var))
+       (rsh (lnfix rsh))
+       (mask (sparseint-val mask))
+       (maskwidth (and (<= 0 mask)
+                       (integer-length mask)))
+       ((unless (address-p var.name))
+        (b* (((when maskwidth)
+              (msg "~x0[~x1:~x2]" var.name (1- maskwidth) rsh)))
+          (cw! "Warning: For non-address variable ~x0, caremask was ~
+                unbounded!~%" var)
+          (msg "~x0[??:~x1]" var.name rsh)))
+       (path (address->path var.name))
+       (name (path->string-top path))
+       ((mv err wire & &) (moddb-path->wireidx/decl path modidx moddb))
+       ((when err)
+        (cw! "[ERROR finding wire ~s0]: ~@1~%" (path->string-top path) err)
+        (b* (((when maskwidth)
+              (msg "~s0[~x1:~x2]" name (1- maskwidth) rsh)))
+          (cw! "Warning: For unrecognized wire ~s0, caremask was unbounded!~%" name)
+          (msg "~s0[??:~x1]" (path->string-top path) rsh)))
+       ((wire wire))
+       (width (if maskwidth
+                  (min (+ rsh (max 1 maskwidth)) wire.width)
+                wire.width))
+       (lsb (if wire.revp
+                (- (+ wire.low-idx (- wire.width 1)) rsh)
+              (+ rsh wire.low-idx)))
+       (msb (if wire.revp
+                (- lsb (- width 1))
+              (+ lsb (- width 1)))))
+    (msg "~s0[~x1:~x2]" name msb lsb)))
 
 
 (define svtv-chase-print-signal ((index acl2::maybe-natp)
@@ -504,33 +543,15 @@
                                  (modidx natp)
                                  &key
                                  ((moddb moddb-ok) 'moddb))
-  :guard (and (svar-addr-p var)
+  :guard (and ;; (svar-addr-p var)
               (< modidx (moddb->nmods moddb)))
   :prepwork ((local (in-theory (e/d (svar-addr-p)
                                     (str::hexify max)))))
-  (b* ((path (address->path (svar->name var)))
-       (delay (svar->delay var))
-       ((mv err wire & &) (moddb-path->wireidx/decl path modidx moddb))
-       ((when err)
-        (cw! "[ERROR finding wire ~s0]: ~@1~%" (path->string-top path) err))
-       ((wire wire))
+  (b* ((name/range (svtv-chase-var-name/range var rsh mask modidx))
        (mask (sparseint-val mask))
        (masked-val (4vec-bitand (4vec-shift-core (- (lnfix rsh)) val)
                                 (2vec mask)))
-       (range-msg
-        (b* ((maskwidth (and (<= 0 mask)
-                             (integer-length mask)))
-             (rsh (lnfix rsh))
-             (width (if maskwidth
-                        (min (+ rsh (max 1 maskwidth)) wire.width)
-                      wire.width))
-             (lsb (if wire.revp
-                      (- (+ wire.low-idx (- wire.width 1)) rsh)
-                    (+ rsh wire.low-idx)))
-             (msb (if wire.revp
-                      (- lsb (- width 1))
-                    (+ lsb (- width 1)))))
-          (msg "[~x0:~x1]" msb lsb)))
+       (delay (svar->delay var))
        (delay-msg (if (eql delay 0)
                       ""
                     (msg " (delay ~x0)" delay))))
@@ -543,10 +564,10 @@
            (pad-v (- maxl vl))
            (pad-m (- maxl ml)))
         
-        (cw! "~@0 ~s1~@2~@3: ~t4~_5~s6~%"
+        (cw! "~@0 ~@1~@2: ~t3~_4~s5~%"
              (if index (msg "~x0." index) "")
-             (path->string-top (address->path (svar->name var)))
-             range-msg delay-msg
+             name/range
+             delay-msg
              30
              pad-v
              val)
@@ -566,10 +587,10 @@
          (pad-l (- maxl ll))
          (pad-x (- maxl xl))
          (pad-m (- maxl ml)))
-      (cw! "~@0 ~s1~@2~@3: ~t4(  ~_5~s6~%"
+      (cw! "~@0 ~@1~@2: ~t3(  ~_4~s5~%"
            (if index (msg "~x0." index) "")
-           (path->string-top (address->path (svar->name var)))
-           range-msg delay-msg
+           name/range
+           delay-msg
            30 pad-u upper)
       (cw! "~t0 . ~_1~s2 )~%" 30 pad-l lower)
       (cw! " non-Boolean portion: ~t0   ~_1~s2~%" 30 pad-x xmask)
@@ -586,7 +607,7 @@
                                   &key
                                   ((moddb moddb-ok) 'moddb))
   :guard (and (eql (len vars) (len vals))
-              (svarlist-addr-p (alist-keys vars))
+              ;; (svarlist-addr-p (alist-keys vars))
               (< modidx (moddb->nmods moddb)))
   :guard-hints (("goal" :in-theory (enable alist-keys)))
   (if (atom vars)
@@ -609,6 +630,26 @@
                          (len x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+(define svtv-chase-normalize-var/phase ((var svar-p)
+                                        (phase natp))
+  :returns (mv (new-var svar-p)
+               (new-phase natp :rule-classes :type-prescription))
+  (b* (((svar var))
+       ((when (eql 0 var.delay))
+        (mv (svar-fix var) (lnfix phase)))
+       ((when (<= var.delay (lnfix phase)))
+        (mv (change-svar var :delay 0) (- (lnfix phase) var.delay))))
+    (mv (change-svar var :delay (- var.delay (lnfix phase))) 0))
+  ///
+  ;; (defret svar-addr-p-of-<fn>
+  ;;   (implies (svar-addr-p var)
+  ;;            (svar-addr-p new-var))
+  ;;   :hints(("Goal" :in-theory (enable svar-addr-p))))
+  )
+    
+(local (in-theory (disable nth update-nth)))
+
+
 (define svtv-chase-signal ((var svar-p)
                            (phase natp)
                            (rsh natp)
@@ -617,21 +658,21 @@
                            (debugdata 'debugdata)
                            ((moddb moddb-ok) 'moddb)
                            ((evaldata svtv-evaldata-p) 'evaldata))
-  :guard (and (svar-addr-p var)
-              (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-              (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+  :guard (and ;; (svar-addr-p var)
+              ;; (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (debugdata->modidx debugdata) (moddb->nmods moddb)))
   :guard-hints ((And stable-under-simplificationp
                      '(:in-theory (enable debugdatap))))
   :returns (mv (type symbolp :rule-classes :type-prescription)
                (vars 4vmask-alist-p)
-               (expr svex-p)
-               (new-phase natp :rule-classes :type-prescription))
-  (b* (((4vec val) (svtv-chase-eval var phase))
+               (expr svex-p))
+  (b* (((mv var phase) (svtv-chase-normalize-var/phase var phase))
+       ((4vec val) (svtv-chase-eval var phase))
        (modidx (debugdata->modidx debugdata))
        (- (svtv-chase-print-signal nil var rsh mask val modidx)
           (cw! "(Phase ~x0.)~%" phase))
-       ((mv type vars expr new-phase)
+       ((mv type vars expr)
         (svtv-chase-deps var phase rsh mask)))
     (b* (((when (eq type :error))
           (cw! "Error! Somehow this signal wasn't what we expected.~%"))
@@ -639,80 +680,90 @@
           (cw! "Primary input.~%"))
          ((when (eq type :initst))
           (cw! "Initial state.~%"))
-         (vals (svtv-chase-evallist (alist-keys vars) new-phase))
+         (vals (svtv-chase-evallist (alist-keys vars) phase))
          ((when (eq type :prevst))
-          (cw! "Previous state var; new phase ~x0.~%" new-phase)
+          (cw! "Previous state var.~%")
           (svtv-chase-print-signals 0 vars vals modidx)))
       (cw! "Internal signal; dependencies:~%")
       (svtv-chase-print-signals 0 vars vals modidx))
-    (mv type vars expr new-phase))
+    (mv type vars expr))
   ///
-  (defret svarlist-addr-p-of-<fn>
-    (implies (and (svar-addr-p var)
-                  (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-                  (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
-             (svarlist-addr-p (alist-keys vars)))
-    :hints(("Goal" :in-theory (enable alist-keys))))
+  ;; (defret svarlist-addr-p-of-<fn>
+  ;;   (implies (and (svar-addr-p var)
+  ;;                 (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+  ;;                 (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
+  ;;            (svarlist-addr-p (alist-keys vars)))
+  ;;   :hints(("Goal" :in-theory (enable alist-keys))))
 
   
 
-  (defret svarlist-addr-p-expr-of-<fn>
-    (implies (and (svar-addr-p var)
-                  (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-                  (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
-             (svarlist-addr-p (svex-vars expr)))
-    :hints(("Goal" :in-theory (enable alist-keys)))))
+  ;; (defret svarlist-addr-p-expr-of-<fn>
+  ;;   (implies (and (svar-addr-p var)
+  ;;                 (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+  ;;                 (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata))))
+  ;;            (svarlist-addr-p (svex-vars expr)))
+  ;;   :hints(("Goal" :in-theory (enable alist-keys))))
+  )
 
-(define svar-addr-p! (x)
-  :enabled t
-  (and (svar-p x)
-       (svar-addr-p x)))
+;; (define svar-addr-p! (x)
+;;   :enabled t
+;;   (and (svar-p x)
+;;        (svar-addr-p x)))
 
-(define 4vmask-alist-addr-p! (x)
-  :enabled t
-  (and (4vmask-alist-p x)
-       (svarlist-addr-p (alist-keys x))))
+;; (define 4vmask-alist-addr-p! (x)
+;;   :enabled t
+;;   (and (4vmask-alist-p x)
+;;        (svarlist-addr-p (alist-keys x))))
 
-(define svex-addr-p! (x)
-  :enabled t
-  (and (svex-p x)
-       (svarlist-addr-p (svex-vars x))))
+;; (define svex-addr-p! (x)
+;;   :enabled t
+;;   (and (svex-p x)
+;;        (svarlist-addr-p (svex-vars x))))
 
 (defprod chase-position
-  ((var svar-p)
+  ((path path-p)
    (phase natp :rule-classes :type-prescription)
    (rsh natp :rule-classes :type-prescription)
    (mask 4vmask-p)))
 
-(define chase-position-addr-p ((x chase-position-p))
-  (svar-addr-p (chase-position->var x)))
+;; (define chase-position-addr-p ((x chase-position-p))
+;;   (svar-addr-p (chase-position->var x)))
 
-(define chase-position-addr-p! (x)
-  :enabled t
-  (and (chase-position-p x)
-       (chase-position-addr-p x)))
+;; (define chase-position-addr-p! (x)
+;;   :enabled t
+;;   (and (chase-position-p x)
+;;        (chase-position-addr-p x)))
 
 (deflist chase-stack :elt-type chase-position :true-listp t)
 
-(define chase-stack-addr-p ((x chase-stack-p))
-  (if (atom x)
-      t
-    (and (chase-position-addr-p (car x))
-         (chase-stack-addr-p (cdr x)))))
+;; (define chase-stack-addr-p ((x chase-stack-p))
+;;   (if (atom x)
+;;       t
+;;     (and (chase-position-addr-p (car x))
+;;          (chase-stack-addr-p (cdr x)))))
 
-(define chase-stack-addr-p! (x)
-  :enabled t
-  (and (chase-stack-p x)
-       (chase-stack-addr-p x)))
+;; (define chase-stack-addr-p! (x)
+;;   :enabled t
+;;   (and (chase-stack-p x)
+;;        (chase-stack-addr-p x)))
        
+
+;; (make-event
+;;  `(defstobj svtv-chase-data
+;;     (chase-stack :type (satisfies chase-stack-addr-p!) :initially nil)
+;;     (chase-type :type symbol)
+;;     (chase-vars :type (satisfies 4vmask-alist-addr-p!))
+;;     (chase-expr :type (satisfies svex-addr-p!) :initially ,(svex-x))
+;;     (chase-new-phase :type (integer 0 *) :initially 0)
+;;     (chase-evaldata :type (satisfies svtv-evaldata-p) :initially ,(make-svtv-evaldata))))
 
 (make-event
  `(defstobj svtv-chase-data
-    (chase-stack :type (satisfies chase-stack-addr-p!) :initially nil)
+    (chase-stack :type (satisfies chase-stack-p) :initially nil)
     (chase-type :type symbol)
-    (chase-vars :type (satisfies 4vmask-alist-addr-p!))
-    (chase-expr :type (satisfies svex-addr-p!) :initially ,(svex-x))
-    (chase-new-phase :type (integer 0 *) :initially 0)
+    (chase-vars :type (satisfies 4vmask-alist-p))
+    (chase-expr :type (satisfies svex-p) :initially ,(svex-x))
+    ;; (chase-new-phase :type (integer 0 *) :initially 0)
     (chase-evaldata :type (satisfies svtv-evaldata-p) :initially ,(make-svtv-evaldata))))
 
 (define svtv-chase-signal-data ((pos chase-position-p)
@@ -720,17 +771,19 @@
                                 (debugdata 'debugdata)
                                 ((moddb moddb-ok) 'moddb)
                                 (svtv-chase-data 'svtv-chase-data))
-  :guard (and (chase-position-addr-p pos)
-              (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-              (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+  :guard (and ;; (chase-position-addr-p pos)
+              ;; (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (debugdata->modidx debugdata) (moddb->nmods moddb)))
   :guard-hints (("goal" :in-theory (enable debugdatap
-                                           chase-position-addr-p
-                                           chase-stack-addr-p)))
+                                           ;; chase-position-addr-p
+                                           ;; chase-stack-addr-p
+                                           )))
   :returns (new-svtv-chase-data)
   (b* (((chase-position pos))
-       ((mv type vars expr new-phase)
-        (svtv-chase-signal pos.var pos.phase pos.rsh pos.mask :evaldata (chase-evaldata svtv-chase-data)))
+       ((mv type vars expr)
+        (svtv-chase-signal (make-svar :name (make-address :path pos.path))
+                           pos.phase pos.rsh pos.mask :evaldata (chase-evaldata svtv-chase-data)))
        ((when (eq type :error))
         (cw! "[Error -- discrepancy between stored updates and assignments!]~%")
         svtv-chase-data)
@@ -739,7 +792,8 @@
        (svtv-chase-data (update-chase-type type svtv-chase-data))
        (svtv-chase-data (update-chase-vars vars svtv-chase-data))
        (svtv-chase-data (update-chase-expr expr svtv-chase-data))
-       (svtv-chase-data (update-chase-new-phase new-phase svtv-chase-data)))
+       ;; (svtv-chase-data (update-chase-new-phase new-phase svtv-chase-data))
+       )
     svtv-chase-data))
 
 
@@ -750,21 +804,21 @@
                           (debugdata 'debugdata)
                           ((moddb moddb-ok) 'moddb)
                           (svtv-chase-data 'svtv-chase-data))
-  :guard (and (chase-position-addr-p pos)
-              (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-              (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+  :guard (and ;; (chase-position-addr-p pos)
+              ;; (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (debugdata->modidx debugdata) (moddb->nmods moddb)))
-  :guard-hints (("goal" :in-theory (enable chase-position-addr-p
-                                           svar-addr-p
+  :guard-hints (("goal" :in-theory (enable ;; chase-position-addr-p
+                                           ;; svar-addr-p
                                            debugdatap)))
   :returns (new-svtv-chase-data)
-  :prepwork ((local (in-theory (disable logmask))))
+  :prepwork ((local (in-theory (disable logmask not))))
   (b* ((modidx (debugdata->modidx debugdata))
        ((chase-position pos))
-       (path (address->path (svar->name pos.var)))
-       ((mv err wire & &) (moddb-path->wireidx/decl path modidx moddb))
+       ;; (path (address->path (svar->name pos.var)))
+       ((mv err wire & &) (moddb-path->wireidx/decl pos.path modidx moddb))
        ((when err)
-        (cw! "[ERROR finding wire ~s0]: ~@1~%" (path->string-top path) err)
+        (cw! "[ERROR finding wire ~s0]: ~@1~%" (path->string-top pos.path) err)
         svtv-chase-data)
        ((wire wire))
        (msb (lifix msb))
@@ -779,7 +833,7 @@
                     (and (<= wire-msb msb) (<= msb lsb) (<= lsb wire-lsb))
                   (and (<= wire-lsb lsb) (<= lsb msb) (<= msb wire-msb))))
         (cw! "Bad range for ~s0: declared range is [~x1:~x2]~%"
-             (path->string-top path) wire-msb wire-lsb)
+             (path->string-top pos.path) wire-msb wire-lsb)
         svtv-chase-data)
        (width (if wire.revp
                   (+ 1 (- lsb msb))
@@ -791,34 +845,34 @@
                                        :mask (int-to-sparseint mask))))
     (svtv-chase-signal-data new-pos)))
 
-(local
- (defsection lhs-addr-p-of-svtv-wire->lhs
+;; (local
+;;  (defsection lhs-addr-p-of-svtv-wire->lhs
 
-   (defret lhs-addr-p-of-svtv-1wire->lhs
-     (implies (svarlist-addr-p (aliases-vars aliases))
-              (svarlist-addr-p (lhs-vars lhs)))
-     :hints(("Goal" :in-theory (enable svtv-1wire->lhs
-                                       )))
-     :fn svtv-1wire->lhs)
+;;    (defret lhs-addr-p-of-svtv-1wire->lhs
+;;      (implies (svarlist-addr-p (aliases-vars aliases))
+;;               (svarlist-addr-p (lhs-vars lhs)))
+;;      :hints(("Goal" :in-theory (enable svtv-1wire->lhs
+;;                                        )))
+;;      :fn svtv-1wire->lhs)
 
-   (local (defthm member-lhs-vars-of-append
-            (implies (and (not (member v (lhs-vars a)))
-                          (not (member v (lhs-vars b))))
-                     (not (member v (lhs-vars (append a b )))))
-            :hints(("Goal" :in-theory (enable lhs-vars)))))
+;;    (local (defthm member-lhs-vars-of-append
+;;             (implies (and (not (member v (lhs-vars a)))
+;;                           (not (member v (lhs-vars b))))
+;;                      (not (member v (lhs-vars (append a b )))))
+;;             :hints(("Goal" :in-theory (enable lhs-vars)))))
 
-   (defret lhs-addr-p-of-svtv-concat->lhs
-     (implies (svarlist-addr-p (aliases-vars aliases))
-              (svarlist-addr-p (lhs-vars lhs)))
-     :hints(("Goal" :in-theory (enable svtv-concat->lhs
-                                       )))
-     :fn svtv-concat->lhs)
+;;    (defret lhs-addr-p-of-svtv-concat->lhs
+;;      (implies (svarlist-addr-p (aliases-vars aliases))
+;;               (svarlist-addr-p (lhs-vars lhs)))
+;;      :hints(("Goal" :in-theory (enable svtv-concat->lhs
+;;                                        )))
+;;      :fn svtv-concat->lhs)
 
-   (defret lhs-addr-p-of-svtv-wire->lhs
-     (implies (svarlist-addr-p (aliases-vars aliases))
-              (svarlist-addr-p (lhs-vars lhs)))
-     :hints(("Goal" :in-theory (enable svtv-wire->lhs)))
-     :fn svtv-wire->lhs)))
+;;    (defret lhs-addr-p-of-svtv-wire->lhs
+;;      (implies (svarlist-addr-p (aliases-vars aliases))
+;;               (svarlist-addr-p (lhs-vars lhs)))
+;;      :hints(("Goal" :in-theory (enable svtv-wire->lhs)))
+;;      :fn svtv-wire->lhs)))
 
 
 ;; (local (include-book "centaur/bitops/ihsext-basics" :dir :system
@@ -831,27 +885,28 @@
                          ((moddb moddb-ok) 'moddb)
                          (aliases 'aliases)
                          (svtv-chase-data 'svtv-chase-data))
-  :guard (and (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-              (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+  :guard (and ;; (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (debugdata->modidx debugdata) (moddb->nmods moddb))
               (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
                   (aliass-length aliases))
-              (svarlist-addr-p (aliases-vars aliases)))
+              ;; (svarlist-addr-p (aliases-vars aliases))
+              )
   :guard-hints (("goal" :in-theory (enable svtv-mod-alias-guard
-                                           chase-position-addr-p
+                                           ;; chase-position-addr-p
                                            debugdatap)
                  :do-not-induct t))
-  :prepwork ((local (defthm svar-addr-p-of-lhatom-var->name
-                      (implies (and (lhatom-case x :var)
-                                    (svarlist-addr-p (lhatom-vars x)))
-                               (svar-addr-p (lhatom-var->name x)))
-                      :hints(("Goal" :in-theory (enable lhatom-vars)))))
-             (local (defthm member-vars-of-lhrange->atom
-                      (implies (and (not (member v (lhs-vars x)))
-                                    (consp x))
-                               (not (member v (lhatom-vars (lhrange->atom (car x))))))
-                      :hints(("Goal" :in-theory (enable lhs-vars)))))
-             (local (in-theory (disable lhs-vars-when-consp))))
+  ;; :prepwork ((local (defthm svar-addr-p-of-lhatom-var->name
+  ;;                     (implies (and (lhatom-case x :var)
+  ;;                                   (svarlist-addr-p (lhatom-vars x)))
+  ;;                              (svar-addr-p (lhatom-var->name x)))
+  ;;                     :hints(("Goal" :in-theory (enable lhatom-vars)))))
+  ;;            (local (defthm member-vars-of-lhrange->atom
+  ;;                     (implies (and (not (member v (lhs-vars x)))
+  ;;                                   (consp x))
+  ;;                              (not (member v (lhatom-vars (lhrange->atom (car x))))))
+  ;;                     :hints(("Goal" :in-theory (enable lhs-vars)))))
+  ;;            (local (in-theory (disable lhs-vars-when-consp))))
   :guard-debug t
   :returns (new-svtv-chase-data)
   (b* (((mv err lhs) (svtv-wire->lhs str (debugdata->modidx debugdata) moddb aliases))
@@ -869,7 +924,11 @@
         (cw! "Error interpreting name: ~s0 had no variable component~%" str)
         svtv-chase-data)
        ((lhatom-var lhrange.atom))
-       (pos (make-chase-position :var lhrange.atom.name
+       ((svar lhrange.atom.name))
+       ((unless (address-p lhrange.atom.name.name))
+        (cw! "Error interpreting name: ~s0 produced a variable that was not an address~%" str)
+        svtv-chase-data)
+       (pos (make-chase-position :path (address->path lhrange.atom.name.name)
                                  :phase phase
                                  :rsh lhrange.atom.rsh
                                  :mask (int-to-sparseint (logmask lhrange.w)))))
@@ -899,18 +958,17 @@ What you can enter at the SVTV-CHASE prompt:
 
 ")
 
-(local (in-theory (disable nth update-nth)))
 
-(local (defthm chase-position-addr-p-car-when-chase-stack-addr-p
-         (implies (and (chase-stack-addr-p x)
-                       (consp x))
-                  (chase-position-addr-p (car x)))
-         :hints(("Goal" :in-theory (enable chase-stack-addr-p)))))
+;; (local (defthm chase-position-addr-p-car-when-chase-stack-addr-p
+;;          (implies (and (chase-stack-addr-p x)
+;;                        (consp x))
+;;                   (chase-position-addr-p (car x)))
+;;          :hints(("Goal" :in-theory (enable chase-stack-addr-p)))))
 
-(local (defthm chase-stack-addr-p-cdr-when-chase-stack-addr-p
-         (implies (chase-stack-addr-p x)
-                  (chase-stack-addr-p (cdr x)))
-         :hints(("Goal" :in-theory (enable chase-stack-addr-p)))))
+;; (local (defthm chase-stack-addr-p-cdr-when-chase-stack-addr-p
+;;          (implies (chase-stack-addr-p x)
+;;                   (chase-stack-addr-p (cdr x)))
+;;          :hints(("Goal" :in-theory (enable chase-stack-addr-p)))))
 
 
 (local (defthm nth-when-4vmask-alist-p
@@ -921,12 +979,12 @@ What you can enter at the SVTV-CHASE prompt:
                        (sparseint-p (cdr (nth n x)))))
          :hints(("Goal" :in-theory (enable nth)))))
 
-(local (defthm nth-svar-addr-p-when-4vmask-alist-p
-         (implies (and (4vmask-alist-p x)
-                       (svarlist-addr-p (alist-keys x))
-                       (< (nfix n) (len x)))
-                  (svar-addr-p (car (nth n x))))
-         :hints(("Goal" :in-theory (enable nth alist-keys)))))
+;; (local (defthm nth-svar-addr-p-when-4vmask-alist-p
+;;          (implies (and (4vmask-alist-p x)
+;;                        (svarlist-addr-p (alist-keys x))
+;;                        (< (nfix n) (len x)))
+;;                   (svar-addr-p (car (nth n x))))
+;;          :hints(("Goal" :in-theory (enable nth alist-keys)))))
 
 (local (in-theory (disable read-object
                            open-input-channel-p1
@@ -946,16 +1004,18 @@ What you can enter at the SVTV-CHASE prompt:
                         (aliases 'aliases)
                         (state 'state))
   :guard (and (open-input-channel-p *standard-oi* :object state)
-              (svarlist-addr-p (svex-alist-vars (debugdata->assigns debugdata)))
-              (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+              ;; (svarlist-addr-p (svex-alist-vars (debugdata->override-assigns debugdata)))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (debugdata->modidx debugdata) (moddb->nmods moddb))
               (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
                   (aliass-length aliases))
-              (svarlist-addr-p (aliases-vars aliases)))
+              ;; (svarlist-addr-p (aliases-vars aliases))
+              )
   :guard-hints (("goal" :in-theory (enable debugdatap)
                  :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable chase-position-addr-p))))
+                ;; (and stable-under-simplificationp
+                ;;      '(:in-theory (enable chase-position-addr-p)))
+                )
   :returns (mv exitp new-svtv-chase-data new-state)
   (b* ((- (cw! "SVTV-CHASE > "))
        ((mv err obj state) (read-object *standard-oi* state))
@@ -963,16 +1023,28 @@ What you can enter at the SVTV-CHASE prompt:
         (mv t svtv-chase-data state))
        ((when (natp obj))
         (b* ((vars (chase-vars svtv-chase-data))
+             (stack (chase-stack svtv-chase-data))
+             ((unless (consp stack))
+              (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
+              (mv nil svtv-chase-data state))
+             ((chase-position pos) (car stack))
              ((unless (< obj (len vars)))
               (cw "Out of range! Enter P to print current state, ? for more options.~%")
               (mv nil svtv-chase-data state))
              ((cons new-var new-mask) (nth obj vars))
              (rsh (sparseint-trailing-0-count new-mask))
              (mask (sparseint-ash new-mask (- rsh)))
+             ((mv new-var new-phase) (svtv-chase-normalize-var/phase new-var pos.phase))
+             (name (svar->name new-var))
+             ((unless (address-p name))
+              (cw! "The chosen signal isn't an address, so it must be an ~
+                    auxiliary variable supporting an override.~%Enter P to ~
+                    print current state, ? for more options.~%")
+              (mv nil svtv-chase-data state))
              (svtv-chase-data (svtv-chase-signal-data
                                (make-chase-position
-                                :var new-var
-                                :phase (chase-new-phase svtv-chase-data)
+                                :path (address->path name)
+                                :phase new-phase
                                 :rsh rsh :mask mask))))
           (mv nil svtv-chase-data state)))
        ((when (symbolp obj))
@@ -983,7 +1055,7 @@ What you can enter at the SVTV-CHASE prompt:
              ((when (equal objname "P"))
               (b* ((stack (chase-stack svtv-chase-data))
                    ((unless (consp stack))
-                    (cw! "Empty stack! Use (G \"path\") to choose a signal, ? for more options.~%")
+                    (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
                     (mv nil svtv-chase-data state))
                    (pos (car stack))
                    (svtv-chase-data (update-chase-stack (cdr stack) svtv-chase-data))
@@ -1079,12 +1151,13 @@ What you can enter at the SVTV-CHASE prompt:
                          (aliases 'aliases)
                          (state 'state))
   :guard (and (open-input-channel-p *standard-oi* :object state)
-              (svarlist-addr-p (svexlist-collect-vars (svex-alist-vals (debugdata->assigns debugdata))))
-              (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+              ;; (svarlist-addr-p (svexlist-collect-vars (svex-alist-vals (debugdata->override-assigns debugdata))))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
               (< (debugdata->modidx debugdata) (moddb->nmods moddb))
               (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
                   (aliass-length aliases))
-              (svarlist-addr-p (aliases-vars aliases)))
+              ;; (svarlist-addr-p (aliases-vars aliases))
+              )
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable debugdatap)
                        :do-not-induct t)))
@@ -1104,6 +1177,7 @@ What you can enter at the SVTV-CHASE prompt:
                               *debugdata->ins*
                               *debugdata->outs*
                               *debugdata->overrides*
+                              *debugdata->override-assigns*
                               *debugdata->status*
                               *debugdata->nphases*)))
            (equal (nth n (svtv-debug-set-ios-logic :ins ins :outs outs :internals internals
@@ -1119,6 +1193,7 @@ What you can enter at the SVTV-CHASE prompt:
                               *debugdata->ins*
                               *debugdata->outs*
                               *debugdata->overrides*
+                              *debugdata->override-assigns*
                               *debugdata->status*
                               *debugdata->nphases*)))
            (equal (nth n (svtv-debug-set-svtv x :rewrite rewrite))
@@ -1129,6 +1204,16 @@ What you can enter at the SVTV-CHASE prompt:
 (defthm svex-alist-p-updates-of-svtv-debug-set-ios-logic
   (implies (svex-alist-p (nth *debugdata->updates* debugdata))
            (svex-alist-p (nth *debugdata->updates*
+                              (svtv-debug-set-ios-logic :ins ins
+                                                        :outs outs
+                                                        :internals internals
+                                                        :overrides overrides
+                                                        :rewrite rewrite))))
+  :hints(("Goal" :in-theory (enable svtv-debug-set-ios-logic))))
+
+(defthm svex-alist-p-override-assigns-of-svtv-debug-set-ios-logic
+  (implies (svex-alist-p (nth *debugdata->override-assigns* debugdata))
+           (svex-alist-p (nth *debugdata->override-assigns*
                               (svtv-debug-set-ios-logic :ins ins
                                                         :outs outs
                                                         :internals internals
@@ -1154,12 +1239,12 @@ What you can enter at the SVTV-CHASE prompt:
                            svarlist-addr-p-by-badguy)))
 
 ;; BOZO include in ../mods/compile.lisp
-(defret vars-of-svex-design-flatten-and-normalize-aliases
-  (implies (and (not err)
-                (not indexedp))
-           (svarlist-addr-p (aliases-vars new-aliases)))
-  :hints(("Goal" :in-theory (enable svex-design-flatten-and-normalize)))
-  :fn svex-design-flatten-and-normalize)
+;; (defret vars-of-svex-design-flatten-and-normalize-aliases
+;;   (implies (and (not err)
+;;                 (not indexedp))
+;;            (svarlist-addr-p (aliases-vars new-aliases)))
+;;   :hints(("Goal" :in-theory (enable svex-design-flatten-and-normalize)))
+;;   :fn svex-design-flatten-and-normalize)
 
 
 (define svtv-chase ((x svtv-p)
@@ -1176,7 +1261,9 @@ What you can enter at the SVTV-CHASE prompt:
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-debug-init
-                                          svtv-debug-set-svtv))))
+                                          svtv-debug-set-svtv)))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable debugdatap))))
   (b* (((svtv x))
        (mod-fn (intern-in-package-of-symbol
                 (str::cat (symbol-name x.name) "-MOD")
@@ -1198,7 +1285,8 @@ What you can enter at the SVTV-CHASE prompt:
        (svtv-chase-data (update-chase-stack nil svtv-chase-data))
        (svtv-chase-data (update-chase-evaldata evaldata svtv-chase-data))
        (debugdata (set-debugdata->updates (make-fast-alist (debugdata->updates debugdata)) debugdata))
-       (debugdata (set-debugdata->assigns (make-fast-alist (debugdata->assigns debugdata)) debugdata))
+       (debugdata (set-debugdata->override-assigns
+                   (make-fast-alist (debugdata->override-assigns debugdata)) debugdata))
        (debugdata (set-debugdata->delays (make-fast-alist (debugdata->delays debugdata)) debugdata))
        (debugdata (set-debugdata->nextstates (make-fast-alist (debugdata->nextstates debugdata)) debugdata))
        (- 
