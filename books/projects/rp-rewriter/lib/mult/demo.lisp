@@ -110,7 +110,7 @@
                               ins
                               delayed-env
                               svl-design)
-      :vars-to-avoid (svl-design delayed-env))
+      :do-not-print (svl-design delayed-env))
 
     ;; in/out lemma for full adder
     (def-rp-rule svl-run-phase-of-FullAdder-tem
@@ -157,7 +157,7 @@
                               (list x y)
                               delayed-env
                               svl-design)
-      :vars-to-avoid (svl-design delayed-env))
+      :do-not-print (svl-design delayed-env))
 
     ;; value lemma
     (def-rp-rule svl-run-phase-of-HalfAdder-tem
