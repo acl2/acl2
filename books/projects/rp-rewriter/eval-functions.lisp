@@ -106,6 +106,7 @@
     (characterp . 1)
     (code-char . 1)
     (integerp . 1)
+    (natp . 1)
     (rationalp . 1)
     (symbolp . 1)
     (complex-rationalp . 1)
