@@ -1444,8 +1444,7 @@ values.</p>"
 ;; be used on their own outside function undef-read-logic.
 
 (push-untouchable
- (!undef
-  !undef$inline)
+ (!undef$inline)
  t)
 
 ;; ======================================================================

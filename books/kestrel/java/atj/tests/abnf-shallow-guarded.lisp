@@ -33,11 +33,13 @@
                                   (:ainteger :acharacter)
                                   :asymbol)
 
-(java::def-atj-main-function-type parse-exact (:ainteger :avalue) :avalue)
+(java::def-atj-main-function-type parse-exact
+                                  (:ainteger :avalue)
+                                  (:avalue :avalue :avalue))
 
 (java::def-atj-main-function-type parse-in-range
                                   (:ainteger :ainteger :avalue)
-                                  :avalue)
+                                  (:avalue :avalue :avalue))
 
 (java::def-atj-main-function-type parse-in-either-range
                                   (:ainteger
@@ -45,7 +47,7 @@
                                    :ainteger
                                    :ainteger
                                    :avalue)
-                                  :avalue)
+                                  (:avalue :avalue :avalue))
 
 (java::def-atj-main-function-type parse-*-in-either-range
                                   (:ainteger
@@ -53,13 +55,15 @@
                                    :ainteger
                                    :ainteger
                                    :avalue)
-                                  :avalue)
+                                  (:avalue :avalue :avalue))
 
-(java::def-atj-main-function-type parse-ichar (:acharacter :avalue) :avalue)
+(java::def-atj-main-function-type parse-ichar
+                                  (:acharacter :avalue)
+                                  (:avalue :avalue :avalue))
 
 (java::def-atj-main-function-type parse-ichars
                                   (:acharacter :acharacter :avalue)
-                                  :avalue)
+                                  (:avalue :avalue :avalue))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

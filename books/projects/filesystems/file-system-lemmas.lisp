@@ -1022,3 +1022,8 @@
                   (consp (assoc-equal name2 alist))
                   (equal (cdr (assoc-equal name2 alist))
                          val2))))))
+
+(defthm assoc-of-remove
+  (implies (and (atom x1) (not (null x2)))
+           (equal (assoc-equal x2 (remove-equal x1 l))
+                  (assoc-equal x2 l))))

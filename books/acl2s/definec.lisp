@@ -6,24 +6,29 @@
 (in-package "ACL2S")
 (include-book "defunc" :ttags :all)
 
-(defun map-preds (types tbl atbl ctx)
+(defun map-preds (types tbl atbl)
+  (declare (xargs :guard (and (symbol-listp types) (sym-aalistp tbl)
+                              (sym-aalistp atbl))))
   (if (endp types)
       nil
-    (cons (pred-of-type (car types) tbl atbl ctx)
-          (map-preds (rest types) tbl atbl ctx))))
+    (cons (pred-of-type (car types) tbl atbl)
+          (map-preds (rest types) tbl atbl))))
 
 (defun map-intern-type (type pkg)
+  (declare (xargs :guard (and (symbolp type) (pkgp pkg))))
   (if (keywordp type)
       (fix-intern$ (symbol-name type) pkg)
     type))
 
 (defun map-intern-types (types pkg)
+  (declare (xargs :guard (and (symbol-listp types) (pkgp pkg))))
   (if (endp types)
       nil
     (cons (map-intern-type (car types) pkg)
           (map-intern-types (rest types) pkg))))
 
 (defun make-input-contract-aux (args types)
+  (declare (xargs :guard (and (symbol-listp args) (symbol-listp types))))
   (cond ((endp args) nil)
         ((equal (car types) 'acl2s::allp)
          (make-input-contract-aux (rest args) (rest types)))
@@ -31,6 +36,7 @@
                  (make-input-contract-aux (rest args) (rest types))))))
          
 (defun make-input-contract (args types)
+  (declare (xargs :guard (and (symbol-listp args) (symbol-listp types))))
   (let ((res (make-input-contract-aux args types)))
     (cond ((endp res) t) ; if res=(), no constraints
           ((equal (len res) 1) (first res))
@@ -99,8 +105,8 @@ both expand into
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
           (d-arg-types (map-intern-types d-arg-types pkg))
-          (d-arg-preds (map-preds d-arg-types tbl atbl 'definec))
-          (pred (pred-of-type f-type tbl atbl 'definec))
+          (d-arg-preds (map-preds d-arg-types tbl atbl))
+          (pred (pred-of-type f-type tbl atbl))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-contract name d-args pred))
           (defunc `(defunc-core ,name ,d? ,d-args

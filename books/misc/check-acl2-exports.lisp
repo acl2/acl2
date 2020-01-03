@@ -200,6 +200,12 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+; NOTE: DEFMACRO-UNTOUCHABLE can probably be removed from special treatment in
+; books/projects/apply-model/portcullis.lisp
+; and
+; books/projects/apply-model-2/portcullis.lisp
+; after it is added to *acl2-exports*.
+    DEFMACRO-UNTOUCHABLE UNTOUCHABLE-MARKER
   ))
 
 (defconst *special-ops*

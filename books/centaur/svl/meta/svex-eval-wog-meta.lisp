@@ -322,7 +322,7 @@
       svex-eval-wog))))
 
 (local
- (defthmd svex-eval-wog-eval
+ (defthmd svex-eval-wog-eval 
    (implies (and (rp-evl-meta-extract-global-facts)
                  (svex-eval-wog-formula-checks state)
                  (consp x)
@@ -330,9 +330,12 @@
                  (consp (cdr x))
                  (consp (cddr x))
                  (not (cdddr x)))
-            (equal (rp-evl x a)
-                   (svex-eval-wog (rp-evl (cadr x) a)
-                                  (rp-evl (caddr x) a))))))
+            (and (equal (rp-evl x a)
+                        (svex-eval-wog (rp-evl (cadr x) a)
+                                       (rp-evl (caddr x) a)))
+                 (equal (rp-evlt x a)
+                        (svex-eval-wog (rp-evlt (cadr x) a)
+                                       (rp-evlt (caddr x) a)))))))
 
 (local
  (defthmd svexl-node-eval-wog-eval
@@ -344,10 +347,14 @@
                  (consp (cddr x))
                  (consp (cdddr x))
                  (not (cddddr x)))
-            (equal (rp-evl x a)
-                   (svexl-node-eval-wog (rp-evl (cadr x) a)
-                                        (rp-evl (caddr x) a)
-                                        (rp-evl (cadddr x) a))))))
+            (and (equal (rp-evl x a)
+                        (svexl-node-eval-wog (rp-evl (cadr x) a)
+                                             (rp-evl (caddr x) a)
+                                             (rp-evl (cadddr x) a)))
+                 (equal (rp-evlt x a)
+                        (svexl-node-eval-wog (rp-evlt (cadr x) a)
+                                             (rp-evlt (caddr x) a)
+                                             (rp-evlt (cadddr x) a)))))))
 
 (local
  (defthmd svex-env-fastlookup-wog-eval
@@ -358,15 +365,20 @@
                  (consp (cdr x))
                  (consp (cddr x))
                  (not (cdddr x)))
-            (equal (rp-evl x a)
+            (and (equal (rp-evlt x a)
+                   (svex-env-fastlookup-wog (rp-evlt (cadr x) a)
+                                            (rp-evlt (caddr x) a)))
+                 (equal (rp-evl x a)
                    (svex-env-fastlookup-wog (rp-evl (cadr x) a)
-                                            (rp-evl (caddr x) a))))))
+                                            (rp-evl (caddr x) a)))))))
 
 (local
  (defthmd rp-evl-of-ex-from-rp-reverse
    (implies (syntaxp (atom term))
-            (equal (rp-evl term a)
-                   (rp-evl (rp::ex-from-rp term) a)))
+            (and (equal (rp-evl term a)
+                        (rp-evl (rp::ex-from-rp term) a))
+                 (equal (rp-evlt term a)
+                        (rp-evlt (rp::ex-from-rp term) a))))
    :hints (("Goal"
             :in-theory (e/d (rp::is-rp) ())))))
 
@@ -379,8 +391,10 @@
                  (consp (cdr x))
                  (consp (cddr x))
                  (not (cdddr x)))
-            (equal (rp-evl x a)
-                   (rp-evl (caddr x) a)))))
+            (and (equal (rp-evl x a)
+                        (rp-evl (caddr x) a))
+                 (equal (rp-evlt x a)
+                        (rp-evlt (caddr x) a))))))
 
 (local
  (defthmd falist-eval2
@@ -391,8 +405,10 @@
                  (consp (cdr (rp::ex-from-rp x)))
                  (consp (cddr (rp::ex-from-rp x)))
                  (not (cdddr (rp::ex-from-rp x))))
-            (equal (rp-evl x a)
-                   (rp-evl (caddr (rp::ex-from-rp x)) a)))
+            (and (equal (rp-evl x a)
+                        (rp-evl (caddr (rp::ex-from-rp x)) a))
+                 (equal (rp-evlt x a)
+                        (rp-evlt (caddr (rp::ex-from-rp x)) a))))
    :hints (("Goal"
             :in-theory (e/d (rp-evl-of-ex-from-rp-reverse) ())))))
 
@@ -400,21 +416,21 @@
  (defthm rp::falist-consistent-aux-lemma
    (implies (and (rp::falist-consistent-aux env-falist term)
                  (hons-assoc-equal x env-falist)
-                 (hons-assoc-equal x (rp-evl term a)))
-            (equal (rp-evl (cdr (hons-assoc-equal x env-falist))
+                 (hons-assoc-equal x (rp-evlt term a)))
+            (equal (rp-evlt (cdr (hons-assoc-equal x env-falist))
                            a)
-                   (cdr (hons-assoc-equal x (rp-evl term a)))))))
+                   (cdr (hons-assoc-equal x (rp-evlt term a)))))))
 
 (local
  (defthm rp::falist-consistent-aux-lemma-2
    (implies (and (rp::falist-consistent-aux env-falist term)
                  (hons-assoc-equal x env-falist))
-            (hons-assoc-equal x (rp-evl term a)))))
+            (hons-assoc-equal x (rp-evlt term a)))))
 
 (local
  (defthm rp::falist-consistent-aux-lemma-3
    (implies (and (rp::falist-consistent-aux env-falist term)
-                 (hons-assoc-equal x (rp-evl term a)))
+                 (hons-assoc-equal x (rp-evlt term a)))
             (hons-assoc-equal x env-falist))))
 
 #|(local
@@ -482,9 +498,9 @@
    (defthm rp-evl-of-svex-apply-wog-meta
      (implies (and (rp-evl-meta-extract-global-facts)
                    (svex-eval-wog-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (svex-apply-wog-meta call args args-dontrw)) a)
+              (equal (rp-evlt (mv-nth 0 (svex-apply-wog-meta call args args-dontrw)) a)
                      (svex-apply-wog call
-                                     (rp-evl-lst args a))))
+                                     (rp-evlt-lst args a))))
      :hints (("goal"
               :do-not-induct t
               :do-not '(preprocess)
@@ -576,8 +592,8 @@
                      (if good-env-flg
                          (rp::falist-consistent-aux env-falist term)
                        (equal term env-falist)))
-                (equal (rp-evl (mv-nth 0 (svex-eval-wog-meta x env-falist good-env-flg)) a)
-                       (rp-evl `(svex-eval-wog ,(list 'quote x) ,term) a)))
+                (equal (rp-evlt (mv-nth 0 (svex-eval-wog-meta x env-falist good-env-flg)) a)
+                       (rp-evlt `(svex-eval-wog ,(list 'quote x) ,term) a)))
        :flag expr)
 
      (defthmd rp-evl-of-svex-eval-wog-meta-lst
@@ -586,18 +602,27 @@
                      (if good-env-flg
                          (rp::falist-consistent-aux env-falist term)
                        (equal term env-falist)))
-                (equal (rp-evl-lst
+                (equal (rp-evlt-lst
                         (mv-nth 0 (svex-eval-wog-meta-lst lst env-falist good-env-flg))
                         a)
-                       (rp-evl `(svexlist-eval-wog ,(list 'quote lst) ,term) a)))
+                       (rp-evlt `(svexlist-eval-wog ,(list 'quote lst) ,term) a)))
        :flag list)
      :hints (("goal"
+               :expand ((:free (lst term) (RP-TRANS (LIST 'SVEXLIST-EVAL-WOG
+                                                          (LIST 'QUOTE LST)
+                                                          TERM)))
+                        (:free (x y) (rp-trans-lst (cons x y))))
               :in-theory (e/d (svex-eval-wog-meta-lst
                                SVEX-ENV-FASTLOOKUP-WOG
                                svex-eval-wog
                                svexlist-eval-wog
+                               svex-eval-wog-eval
+                               svexl-node-eval-wog-eval
+                               svex-env-fastlookup-wog-eval
                                svex-eval-wog-meta)
-                              (svex-apply-is-svex-apply-wog)))))
+                              (svex-apply-is-svex-apply-wog
+                               rp-trans
+                               rp-trans-lst)))))
 
    (local
     (defthm all-falist-consistent-lemma
@@ -617,8 +642,8 @@
      (implies (and (rp-evl-meta-extract-global-facts)
                    (rp::rp-termp term)
                    (svex-eval-wog-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (svex-eval-wog-meta-main term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (svex-eval-wog-meta-main term)) a)
+                     (rp-evlt term a)))
      :hints (("goal"
               :use ((:instance rp-evl-of-svex-eval-wog-meta
                                (env-falist (cadr (cadr (rp::ex-from-rp (caddr
@@ -636,6 +661,8 @@
                                (env-falist (CADDR TERM))))
               :in-theory (e/d (svex-eval-wog-meta-main
                                falist-eval
+                               rp-trans
+                               rp-trans-lst
                                rp::rp-evl-of-ex-from-rp
                                falist-eval2
                                svex-eval-wog-eval)
@@ -654,10 +681,10 @@
                               (rp::falist-consistent-aux node-env-falist node-env-term))
                        (and (equal env-term env-falist)
                             (equal node-env-term node-env-falist))))
-                (equal (rp-evl (mv-nth 0 (svexl-node-eval-wog-meta
+                (equal (rp-evlt (mv-nth 0 (svexl-node-eval-wog-meta
                                           x node-env-falist env-falist good-env-flg))
                                a)
-                       (rp-evl `(svexl-node-eval-wog
+                       (rp-evlt `(svexl-node-eval-wog
                                  ,(list 'quote x) ,node-env-term ,env-term)
                                a)))
        :flag expr)
@@ -670,11 +697,11 @@
                               (rp::falist-consistent-aux node-env-falist node-env-term))
                        (and (equal env-term env-falist)
                             (equal node-env-term node-env-falist))))
-                (equal (rp-evl-lst
+                (equal (rp-evlt-lst
                         (mv-nth 0 (svexl-nodelist-eval-wog-meta
                                    lst node-env-falist env-falist good-env-flg))
                         a)
-                       (rp-evl `(svexl-nodelist-eval-wog
+                       (rp-evlt `(svexl-nodelist-eval-wog
                                  ,(list 'quote lst) ,node-env-term ,env-term)
                                a)))
        :flag list)
@@ -709,8 +736,8 @@
      (implies (and (rp-evl-meta-extract-global-facts)
                    (rp::rp-termp term)
                    (svex-eval-wog-formula-checks state))
-              (equal (rp-evl (mv-nth 0 (svexl-node-eval-wog-meta-main term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (svexl-node-eval-wog-meta-main term)) a)
+                     (rp-evlt term a)))
      :hints (("goal"
               :use ((:instance rp-evl-of-svexl-node-eval-wog-meta
                                (env-falist (cadr (cadr (rp::ex-from-rp (cadddr

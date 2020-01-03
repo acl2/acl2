@@ -160,6 +160,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-jboolean-array ((boolean-array boolean-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('boolean') array."
+  (jexpr-newarray-init (jtype-boolean)
+                       (atj-gen-jboolean-array-aux boolean-array))
+  :prepwork
+  ((define atj-gen-jboolean-array-aux ((booleans boolean-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp booleans) nil)
+           (t (cons (atj-gen-jboolean (boolean-value->bool (car booleans)))
+                    (atj-gen-jboolean-array-aux (cdr booleans))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jchar-array ((char-array char-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('char') array."
+  (jexpr-newarray-init (jtype-char)
+                       (atj-gen-jchar-array-aux char-array))
+  :prepwork
+  ((define atj-gen-jchar-array-aux ((chars char-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp chars) nil)
+           (t (cons (atj-gen-jchar (char-value->nat (car chars)))
+                    (atj-gen-jchar-array-aux (cdr chars))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jbyte-array ((byte-array byte-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('byte') array."
+  (jexpr-newarray-init (jtype-byte)
+                       (atj-gen-jbyte-array-aux byte-array))
+  :prepwork
+  ((define atj-gen-jbyte-array-aux ((bytes byte-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp bytes) nil)
+           (t (cons (atj-gen-jbyte (byte-value->int (car bytes)))
+                    (atj-gen-jbyte-array-aux (cdr bytes))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jshort-array ((short-array short-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('short') array."
+  (jexpr-newarray-init (jtype-short)
+                       (atj-gen-jshort-array-aux short-array))
+  :prepwork
+  ((define atj-gen-jshort-array-aux ((shorts short-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp shorts) nil)
+           (t (cons (atj-gen-jshort (short-value->int (car shorts)))
+                    (atj-gen-jshort-array-aux (cdr shorts))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jint-array ((int-array int-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('int') array."
+  (jexpr-newarray-init (jtype-int)
+                       (atj-gen-jint-array-aux int-array))
+  :prepwork
+  ((define atj-gen-jint-array-aux ((ints int-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp ints) nil)
+           (t (cons (atj-gen-jint (int-value->int (car ints)))
+                    (atj-gen-jint-array-aux (cdr ints))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-jlong-array ((long-array long-array-p))
+  :returns (expr jexprp)
+  :short "Generate Java code to build a Java @('long') array."
+  (jexpr-newarray-init (jtype-long)
+                       (atj-gen-jlong-array-aux long-array))
+  :prepwork
+  ((define atj-gen-jlong-array-aux ((longs long-value-listp))
+     :returns (exprs jexpr-listp)
+     (cond ((endp longs) nil)
+           (t (cons (atj-gen-jlong (long-value->int (car longs)))
+                    (atj-gen-jlong-array-aux (cdr longs))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-paramlist ((names string-listp) (types jtype-listp))
   :guard (= (len names) (len types))
   :returns (params jparam-listp)
@@ -346,8 +430,8 @@
    (xdoc::p
     "For a @(tsee cons) pair that is also a true list,
      the generated code builds all the elements
-     and then calls @('Acl2Value.makeList()')
-     with an array consisting of the elements;
+     and then calls @('Acl2Value.makeList()') (a variable arity method)
+     with the elements;
      the result is cast to @('Acl2ConsPair').
      For a @(tsee cons) pair that is not a true list,
      the generated code
@@ -436,8 +520,7 @@
     (b* (((mv block exprs jvar-value-index) (atj-gen-values list
                                                             jvar-value-base
                                                             jvar-value-index))
-         (array-expr (jexpr-newarray-init *aij-type-value* exprs))
-         (expr (jexpr-smethod *aij-type-value* "makeList" (list array-expr))))
+         (expr (jexpr-smethod *aij-type-value* "makeList" exprs)))
       (mv block
           (jexpr-cast *aij-type-cons* expr)
           jvar-value-index))
@@ -539,12 +622,10 @@
 
   (define atj-gen-list-flat ((list true-listp))
     :returns (expr jexprp)
-    (b* ((exprs (atj-gen-values-flat list))
-         (array-expr (jexpr-newarray-init *aij-type-value* exprs)))
-      (jexpr-cast *aij-type-cons*
-                  (jexpr-smethod *aij-type-value*
-                                 "makeList"
-                                 (list array-expr))))
+    (jexpr-cast *aij-type-cons*
+                (jexpr-smethod *aij-type-value*
+                               "makeList"
+                               (atj-gen-values-flat list)))
     ;; 2nd component is non-0 so that the call of ATJ-GEN-VALUES-FLAT decreases:
     :measure (two-nats-measure (acl2-count list) 1))
 
@@ -819,7 +900,12 @@
      that is, no time information is printed.
      Otherwise, there must exactly one argument
      that must parse to a positive integer,
-     which is passed as the repetition parameter to the test methods."))
+     which is passed as the repetition parameter to the test methods.")
+   (xdoc::p
+    "Note that we generate an expression name for @('args.length'),
+     because grammatically this is not a field access expression in Java:
+     it cannot be generated from the nonterminal @('field-acces');
+     it can be generated from the nonterminal @('expression-name')."))
   (b* ((method-param (make-jparam :final? nil
                                   :type (jtype-array (jtype-class "String"))
                                   :name "args"))
@@ -827,7 +913,7 @@
         (append
          (jblock-locvar (jtype-int) "n" (jexpr-literal-0))
          (jblock-if (jexpr-binary (jbinop-eq)
-                                  (jexpr-field (jexpr-name "args") "length")
+                                  (jexpr-name "args.length")
                                   (jexpr-literal-1))
                     (jblock-asg (jexpr-name "n")
                                 (jexpr-smethod (jtype-class "Integer")
@@ -837,7 +923,7 @@
                                                  (jexpr-name "args")
                                                  (jexpr-literal-0))))))
          (jblock-if (jexpr-binary (jbinop-gt)
-                                  (jexpr-field (jexpr-name "args") "length")
+                                  (jexpr-name "args.length")
                                   (jexpr-literal-1))
                     (jblock-throw (jexpr-newclass
                                    (jtype-class "IllegalArgumentException")

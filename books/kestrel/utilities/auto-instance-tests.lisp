@@ -21,11 +21,9 @@
 ; For testing:
 (include-book "misc/eval" :dir :system)
 
-; We include the following books in order to add more theorems to the world.  We
-; pick books that uses defrule, just to test that previous theorems can be
-; introduced via macros.
+; We include the following books in order to add more theorems to the world.
 (include-book "kestrel/utilities/lists/intersection-theorems" :dir :system)
-(include-book "kestrel/utilities/lists/union-theorems" :dir :system)
+(include-book "std/lists/union" :dir :system)
 
 (defmacro local-test (&rest args)
   `(local (encapsulate () (local (progn ,@args)))))

@@ -276,7 +276,7 @@
 
 (push-untouchable (
                    ;; Accessors
-                   env
+                   env$inline
                    env$a
                    env$c
                    env-read-logic
@@ -284,7 +284,7 @@
                    read-x86-file-des-logic
                    read-x86-file-contents-logic
                    ;; Updaters
-                   !env
+                   !env$inline
                    !env$a
                    !env$c
                    write-x86-file-des-logic
@@ -292,7 +292,7 @@
                    write-x86-file-contents-logic
                    delete-x86-file-contents-logic
                    pop-x86-oracle-logic
-                   !undef
+                   !undef$inline
                    )
                   t)
 

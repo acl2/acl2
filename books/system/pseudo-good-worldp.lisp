@@ -6,6 +6,36 @@
 
 ; -----------------------------------------------------------------
 
+; The files included here were originally part of this file, but they have been
+; factored out so that they can be used by other files in the community books
+; in a more modular way.
+
+(include-book "keyword-to-keyword-value-alistp")
+(include-book "pseudo-event-form-listp")
+(include-book "pseudo-tests-and-calls-listp")
+
+; -----------------------------------------------------------------
+
+; This book is used by the book worldp-check.lisp to check the concept of a
+; ``good world'', as discussed below.  If that check fails, proceed as follows.
+
+;   (include-book "pseudo-good-worldp")
+;   (chk-pseudo-good-worldp "pseudo-good-worldp")
+
+; You will typically see an error message of the following form, for some value
+; of N:
+
+;   Bad World detected by PSEUDO-GOOD-WORLDP2:  (nth N ...) is an illegal
+;   triple.
+
+; In the loop, execute (nth N (w state)), which should evaluate to the
+; offending form.  Then you need to figure out why that form causes a failure.
+; (There are other error messages, probably much less common.  The context, in
+; this case PSEUDO-GOOD-WORLDP2, gives you a function to look at as a starting
+; point.)
+
+; -----------------------------------------------------------------
+
 ; This file defines the concept of a ``good world''.  But we wrestled with the
 ; question of how strong it should be.  Ultimately what we define is the
 ; concept pseudo-good-worldp.  This is a relatively weak approximation of the
@@ -216,16 +246,6 @@
 
 ; EVENT-LANDMARK [GLOBAL-VALUE]
 
-; A ``form'' in the sense used here is an untranslated event or command form or
-; even a raw List form.  Because of macros it is almost impossible to put
-; constraints on forms.  For example, with an appropriate defmacro of barf,
-; this could be a form (barf (1 . 2)).  But even macros have to be symbols and
-; take a true-list of args.  So we know that much at the top but all bets are
-; off after that.  The most rigorous test would translate the alleged form, but
-; that would require state and the specification of translate's many options
-; like whether stobjs are treated specially.  Until we need it, we're not going
-; to try to implement the stronger test.
-
 (defun pseudo-function-symbolp (fn n)
 
 ; The n above is just a placeholder to allow me to record the requirements on
@@ -241,18 +261,6 @@
       (null lst)
       (and (pseudo-function-symbolp (car lst) n)
            (pseudo-function-symbol-listp (cdr lst) n))))
-
-(defun pseudo-formp (x)
-  (or (atom x)
-      (and (consp x)
-           (true-listp x)
-           (symbolp (car x)))))   ; This symbolp could be a macro or a function.
-
-(defun pseudo-form-listp (x)
-  (if (atom x)
-      (equal x nil)
-      (and (pseudo-formp (car x))
-           (pseudo-form-listp (cdr x)))))
 
 (defun string-or-symbol-listp (x)
   (if (atom x)
@@ -294,7 +302,7 @@
                     (natp (cdr (car val))))) ; = d
            (consp (cdr val))
            (if (symbolp (cadr val))    ; ev-type is recoverable from form
-               (pseudo-formp (cdr val))  ; (cdr val) here is the event form
+               (pseudo-event-formp (cdr val))  ; (cdr val) here is the event form
                (and (consp (cadr val))
                     (consp (car (cadr val))) ; (ev-type . skipped-proofs-p)
                     (symbolp (car (car (cadr val)))) ; ev-type
@@ -306,11 +314,18 @@
                         (string-or-symbol-listp (cadr (cadr val)))) ; list of names introduced
                     (member-eq (cddr (cadr val)) ; symbol-class
                                '(nil :program :ideal :common-lisp-compliant))
-                    (pseudo-formp (cddr val))))))) ; (cddr val) here is the event form
+                    (pseudo-event-formp (cddr val))))))) ; (cddr val) here is the event form
 
 ; -----------------------------------------------------------------
 
 ; COMMAND-LANDMARK [GLOBAL-VALUE]
+
+(defun pseudo-command-formp (x)
+
+; We see no reasonable way to restrict the form of a command, other than to
+; insist that it is a true list.
+
+  (true-listp x))
 
 (defun pseudo-command-landmarkp (val)
 
@@ -323,13 +338,13 @@
        (consp (cadr val))
        (if (keywordp (car (cadr val)))
            (and (eq (car (cadr val)) :logic)
-                (pseudo-formp (cdr (cadr val))))
-           (pseudo-formp (cadr val)))
+                (pseudo-command-formp (cdr (cadr val))))
+           (pseudo-command-formp (cadr val)))
        (consp (cddr val))
        (or (null (caddr val))
            (stringp (caddr val)))
        (or (null (cdddr val))
-           (pseudo-formp (cdddr val)))))
+           (pseudo-command-formp (cdddr val)))))
 
 ; -----------------------------------------------------------------
 ; KNOWN-PACKAGE-ALIST [GLOBAL-VALUE]
@@ -645,8 +660,20 @@
                    (eq (car ignorep) 'defstobj)
                    (pseudo-function-symbolp (cdr ignorep) nil)) ; really must be stobj-name
               (null ignorep))
-          (pseudo-form-listp defs)))
-    (& (pseudo-formp val))))
+
+; We could do better than (true-listp defs) below.  For example
+; (pseudo-event-form-listp defs) should be true, as it is defined in late
+; December 2019 (but perhaps it won't be true in the future -- after all, defs
+; is a list of CDRs of events).  Much more should also be true, but in the
+; "pseudo" spirit we keep this simple.
+
+          (true-listp defs)))
+    (&
+
+; We could probably insist that val be a true-listp in this case, but that is
+; such a weak check that given our lack of certainty, we don't bother.
+
+     t)))
 
 ; The value of TOP-LEVEL-CLTL-COMMAND-STACK is a list of CLTL-COMMAND objects.
 
@@ -934,30 +961,28 @@
 
 (defun skip-proofs-seenp (val)
 
-; Legal values are nil, (:include-book full-book-name), or any translatable form which might be
-; found in a skip-proofs.
+; Legal values are nil, (:include-book full-book-name), or any event form.
 
   (or (null val)
       (and (true-listp val)
            (equal (len val) 2)
            (eq (car val) :include-book)
            (stringp (cadr val)))
-      (pseudo-formp val)))
+      (pseudo-event-formp val)))
 
 ; -----------------------------------------------------------------
 ; REDEF-SEEN [GLOBAL-VALUE]
 
 (defun redef-seenp (val)
 
-; Legal values are nil, (:include-book full-book-name), or any translatable form which might be
-; found in a skip-proofs.
+; Legal values are nil, (:include-book full-book-name), or any event form.
 
   (or (null val)
       (and (true-listp val)
            (equal (len val) 2)
            (eq (car val) :include-book)
            (stringp (cadr val)))
-      (pseudo-formp val)))
+      (pseudo-event-formp val)))
 
 ; -----------------------------------------------------------------
 ; CERT-REPLAY [GLOBAL-VALUE]
@@ -1410,13 +1435,6 @@
 ; This is a list of fully elaborated rule classes as returned by translate-rule-classes.
 ; For the present purposes we just check that it is an alist mapping keywords to keyword alists.
 
-(defun keyword-to-keyword-value-list-alistp (x)
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (keywordp (car (car x)))
-                (keyword-value-listp (cdr (car x)))
-                (keyword-to-keyword-value-list-alistp (cdr x))))))
-
 (defun classesp (sym val)
   (declare (ignore sym))
   (keyword-to-keyword-value-list-alistp val))
@@ -1828,18 +1846,6 @@
 ; An induction machine is a list of tests-and-calls records:
 ; (defrec tests-and-calls (tests . calls) nil), where each of the two
 ; fields is a list of terms.
-
-(defun pseudo-tests-and-callsp (x)
-  (case-match x
-    (('TESTS-AND-CALLS tests . calls)
-     (and (pseudo-term-listp tests)
-          (pseudo-term-listp calls)))
-    (& nil)))
-
-(defun pseudo-tests-and-calls-listp (x)
-  (cond ((atom x) (null x))
-        (t (and (pseudo-tests-and-callsp (car x))
-                (pseudo-tests-and-calls-listp (cdr x))))))
 
 (defun pseudo-induction-machinep (sym val)
   (declare (ignore sym))
@@ -2683,8 +2689,11 @@
 ; UNTRANSLATED-THEOREM
 
 (defun untranslated-theoremp (sym val)
+
+; The form of an untranslated theorem is quite arbitrary, because of macros.
+
   (declare (ignore sym))
-  (pseudo-formp val))
+  (true-listp val))
 
 ; -----------------------------------------------------------------
 

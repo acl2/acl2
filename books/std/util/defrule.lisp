@@ -377,8 +377,8 @@ afterward.</p>
           :do-not '(generalize fertilize))
 })
 
-<p>The @('rule') command is implemented with a simple @(see make-event).
-Unlike @(see thm), @('rule') calls are valid embedded events.  However, on
+<p>The @('rule') command is implemented with a simple @(see make-event), and
+its calls are valid embedded events.  However, on
 success a @('rule') merely expands into @('(value-triple :success)').  No
 record of the rule's existence is found in the world, so there is no way to use
 the rule once it has been proven, etc.</p>")

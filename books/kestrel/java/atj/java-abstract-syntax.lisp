@@ -285,7 +285,7 @@
      class literals, and
      method references.")
    (xdoc::p
-    "For name expressions [JLS:6.5], we use ACL2 strings,
+    "For expression names [JLS:6.5], we use ACL2 strings,
      which allow dot-separated identifiers,
      as well as @('this') and @('super').")
    (xdoc::p

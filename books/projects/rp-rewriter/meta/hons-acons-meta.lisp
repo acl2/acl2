@@ -221,9 +221,9 @@
      :hints (("goal" :in-theory (enable hons-acons-meta))))||#))
 
 (local
- (defthmd rp-evl-of-ex-from-rp
-   (equal (rp-evl (ex-from-rp term) a)
-          (rp-evl term a))
+ (defthmd rp-evlt-of-ex-from-rp
+   (equal (rp-evlt (ex-from-rp term) a)
+          (rp-evlt term a))
    :hints (("Goal"
             :in-theory (e/d (ex-from-rp is-rp) ())))))
 
@@ -234,10 +234,10 @@
    (local
     (defthmd lemma9-2
       (implies (syntaxp (equal term 'term))
-               (equal (rp-evl (cadddr term) a)
-                      (rp-evl (ex-from-rp (cadddr term)) a)))
+               (equal (rp-evlt (cadddr term) a)
+                      (rp-evlt (ex-from-rp (cadddr term)) a)))
       :hints (("Goal"
-               :in-theory (e/d (rp-evl-of-ex-from-rp) ())))))
+               :in-theory (e/d (rp-evlt-of-ex-from-rp) ())))))
 
    (local
     (defthm lemma2
@@ -249,16 +249,16 @@
                       (CONSP (CDDR TERM))
                       (CONSP (CDDDR TERM))
                       (NOT (CDDR (CDDR TERM))))
-                 (equal (RP-EVL TERM A)
-                        (acons (rp-evl (cadr term) a)
-                               (RP-EVL (CADDR TERM) A)
-                               (RP-EVL (CADDDR TERM) A))))))
+                 (equal (RP-EVLt TERM A)
+                        (acons (rp-evlt (cadr term) a)
+                               (RP-EVLt (CADDR TERM) A)
+                               (RP-EVLt (CADDDR TERM) A))))))
 
    (defthm rp-evl-of-hons-acons-meta
      (implies (and (hons-acons-meta-formula-checks state)
                    (rp-evl-meta-extract-global-facts))
-              (equal (rp-evl (mv-nth 0 (hons-acons-meta term)) a)
-                     (rp-evl term a)))
+              (equal (rp-evlt (mv-nth 0 (hons-acons-meta term)) a)
+                     (rp-evlt term a)))
      :hints (("Goal"
               :in-theory (e/d (lemma9-2) ()))))))
 

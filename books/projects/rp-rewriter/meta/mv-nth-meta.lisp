@@ -76,8 +76,8 @@
 (defthm rp-evl-of-mv-nth-meta
   (implies (and (rp-evl-meta-extract-global-facts)
                 (mv-nth-formula-checks state))
-           (equal (rp-evl (mv-nth 0 (mv-nth-meta term)) a)
-                  (rp-evl term a)))
+           (equal (rp-evlt (mv-nth 0 (mv-nth-meta term)) a)
+                  (rp-evlt term a)))
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (mv-nth) ()))))

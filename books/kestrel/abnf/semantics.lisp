@@ -208,36 +208,13 @@
   :short "Union of trees and @('nil')."
   :pred maybe-treep)
 
-(define set-all-treep ((set setp))
-  :returns (yes/no booleanp)
-  :short "Check if all the elements of a set are trees."
-  (or (empty set)
-      (and (treep (head set))
-           (set-all-treep (tail set))))
-  :no-function t
-  ///
-
-  (defrule set-all-treep-of-insert
-    (equal (set-all-treep (insert tree trees))
-           (and (treep tree)
-                (set-all-treep (sfix trees))))))
-
-(define tree-setp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize finite sets of trees."
-  (and (setp x)
-       (set-all-treep x))
-  :no-function t
-  ///
-
-  (defrule setp-when-tree-setp
-    (implies (tree-setp trees)
-             (setp trees)))
-
-  (defrule tree-setp-of-insert
-    (equal (tree-setp (insert tree trees))
-           (and (treep tree)
-                (tree-setp (sfix trees))))))
+(fty::defset tree-set
+  :elt-type tree
+  :elementp-of-nil nil
+  :pred tree-setp
+  :fix tree-set-fix
+  :equiv tree-set-equiv
+  :short "Finite sets of trees.")
 
 (defines tree->string
   :short "String at the leaves of trees."

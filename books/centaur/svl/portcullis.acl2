@@ -99,6 +99,10 @@
 	    rp::cons-countw
 	    rp::cons-count
             rp::rp-evl
+	    rp::rp-evlt
+	    rp::rp-evlt-lst
+	    rp::rp-trans
+	    rp::rp-trans-lst
             rp::rp-evl-meta-extract-global-facts
             rp::rp-evl-lst
             rp::rp-evl-of-fncall-args

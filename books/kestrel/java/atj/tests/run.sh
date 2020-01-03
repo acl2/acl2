@@ -57,6 +57,10 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowGua
 # (without timings because they are very fast, all print as 0.000):
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimitivesShallowGuardedTests
 
+# test the Java code that manipulates Java primitive arrays
+# (without timings because they are very fast, all print as 0.000):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimarraysShallowGuardedTests
+
 # printed only if all the tests succeed:
 echo "" # blank line
 echo "All the ATJ tests have succeeded."

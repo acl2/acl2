@@ -86,7 +86,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * are validated.
      * Returns quickly if this validation has already been performed.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     void validateFunctionCallsInDefinition() {
         if (validatedFunctionCalls)
@@ -101,7 +101,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * We call {@link #validateFunctionCallsInDefinition()}
      * on all the functions created so far.
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     static void validateFunctionCallsInAllDefinitions() {
         for (Acl2DefinedFunction function : functions.values())
@@ -185,10 +185,10 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      *                                  or the function definition
      *                                  (viewed as a lambda expression)
      *                                  contains some variable
-     *                                  that is not bound in the formals of
+     *                                  that has its index already set
+     *                                  or that is not bound in the formals of
      *                                  its smallest enclosing
-     *                                  lambda expression
-     *                                  or that has an index already set.
+     *                                  lambda expression.
      */
     @Override
     public void define(Acl2Symbol[] parameters, Acl2Term body) {

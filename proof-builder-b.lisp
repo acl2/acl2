@@ -1529,7 +1529,7 @@
 ; that the guard of ev-fncall-w will be satisfied.
 
                      (equal (stobjs-in val world) '(nil nil nil nil))
-                     (not (assoc-eq val *ttag-fns-and-macros*))
+                     (not (assoc-eq val *ttag-fns*))
 
 ; The following test is a bit too strong, since it fails to take into account
 ; temp-touchable-fns; see untouchable-fn-p.  However, this drawback seems quite

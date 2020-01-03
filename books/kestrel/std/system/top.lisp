@@ -18,6 +18,7 @@
 (include-book "known-packages-plus")
 (include-book "logic-friendly")
 (include-book "macro-queries")
+(include-book "pseudo-event-formp")
 (include-book "rune-disabledp")
 (include-book "rune-enabledp")
 (include-book "table-alist-plus")

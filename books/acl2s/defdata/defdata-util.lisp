@@ -274,17 +274,17 @@
 ;;                 (symbolp x))
 ;;            (alistp (table-alist x w))))
 
-(defun sym-aalistp (x)
+(defun sym-aalist1p (x)
   (declare (xargs :guard t))
   (if (consp x)
       (and (consp (car x))
            (symbolp (caar x))
            (symbol-alistp (cdar x))
-           (sym-aalistp (cdr x)))
+           (sym-aalist1p (cdr x)))
     (null x)))
 
 (defun base-alias-type (type A)
-  (declare (xargs :guard (sym-aalistp A)))
+  (declare (xargs :guard (sym-aalist1p A)))
   (b* (((unless (symbolp type)) type)
        (atype (assoc-equal :type (acl2s::get-alist type A))))
     (if (consp atype)
@@ -292,7 +292,7 @@
       type)))
 
 (defun base-alias-pred (pred ptbl)
-  (declare (xargs :guard (sym-aalistp ptbl)))
+  (declare (xargs :guard (sym-aalist1p ptbl)))
   (b* (((unless (symbolp pred)) pred)
        (ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
     (if (consp ppred)
@@ -637,10 +637,11 @@
   (reverse (symbol-fns::item-to-numbered-symbol-list-rec x k)))
 
 #|
-This is true when we have defdata available.
+This is true when we have defdata available. We prove this
+in base.lisp
 
 (defdata symbol-aalist (alistof symbol symbol-alist))
-(thm (equal (sym-aalistp x) (symbol-aalistp x)))
+(thm (equal (sym-aalist1p x) (symbol-aalistp x)))
 |#
 
 #|
@@ -770,8 +771,8 @@ see (defdata foo rational)
 
 (defloop predicate-names-fn (tnames A M)
   (declare (xargs :guard (and (symbol-listp tnames)
-                              (sym-aalistp A)
-                              (sym-aalistp M))))
+                              (sym-aalist1p A)
+                              (sym-aalist1p M))))
   (for ((tname in tnames)) (collect (predicate-name tname A M))))
 
 (defmacro predicate-names (tnames &optional A M)

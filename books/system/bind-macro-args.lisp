@@ -147,20 +147,18 @@
                   :verify-guards nil))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
-   (cond ((assoc-keyword :allow-other-keys
-                         (cdr (assoc-keyword :allow-other-keys
-                                             actuals)))
-          (er-cmp *macro-expansion-ctx*
-                  "ACL2 prohibits multiple :allow-other-keys because ~
-                   implementations differ significantly concerning which ~
-                   value to take."))
-         (t (value-cmp nil)))
-   (bind-macro-args-keys1
-    args actuals
-    (let ((tl
-           (assoc-keyword :allow-other-keys actuals)))
-      (and tl (cadr tl)))
-    alist form wrld state-vars)))
+   (let ((tl (assoc-keyword :allow-other-keys actuals)))
+     (er-progn-cmp
+      (cond ((assoc-keyword :allow-other-keys (cdr tl))
+             (er-cmp *macro-expansion-ctx*
+                     "ACL2 prohibits multiple :allow-other-keys because ~
+                      implementations differ significantly concerning which ~
+                      value to take."))
+            (t (value-cmp nil)))
+      (bind-macro-args-keys1
+       args actuals
+       (and tl (cadr tl))
+       alist form wrld state-vars)))))
 
 (defun bind-macro-args-after-rest (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)

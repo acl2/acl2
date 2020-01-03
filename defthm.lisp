@@ -11546,7 +11546,8 @@
      (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
      "( THM ...)")
     (cond
-     ((ld-skip-proofsp state)
+     ((member-eq (ld-skip-proofsp state)
+                 '(include-book include-book-with-locals initialize-acl2))
       (value nil))
      (t
       (let ((wrld (w state))

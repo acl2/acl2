@@ -117,6 +117,7 @@
      SYS-CALL                                  ; bad -- requires trust tag
      HONS-CLEAR!                               ; bad -- requires trust tag
      HONS-WASH!                                ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                        ; bad -- untouchable
 ;    BREAK$
 ;    PRINT-CALL-HISTORY
 ;    NEVER-MEMOIZE-FN

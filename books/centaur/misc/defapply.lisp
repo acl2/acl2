@@ -61,7 +61,7 @@
                 (not (member (car syms) '(synp ;; must-be-equal
                                           open-output-channel!
                                           wormhole-eval)))
-                (not (assoc (car syms) *ttag-fns-and-macros*))
+                (not (assoc (car syms) *ttag-fns*))
                 ;; (list-of-nilsp (fgetprop (car syms) 'stobjs-out nil
                 ;;                          world))
                 ;; (list-of-nilsp (fgetprop (car syms) 'stobjs-in nil
@@ -118,7 +118,7 @@
       (er hard 'defapply-call "~
 The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
           fn (if (eq formals :none) 'formals 'stobjs-out)))
-     ((or (assoc fn *ttag-fns-and-macros*)
+     ((or (assoc fn *ttag-fns*)
           (member fn '(mv-list return-last))
           (remove nil stobjs-in)) ;; takes a stobj or needs a ttag
       `(mv t (non-exec (ecc (,fn . ,(make-list-of-nths 'args 0 (length formals)))))))

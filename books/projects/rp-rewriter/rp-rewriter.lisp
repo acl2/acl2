@@ -59,6 +59,8 @@
 (local
  (in-theory (enable rule-syntaxp)))
 
+(defconst *rp-hard-error-returns-nilp* t)
+
 (encapsulate
   nil
 
@@ -103,9 +105,15 @@
                               term))))
             res))
          ((acl2::fquotep term) term)
-         ((is-synp term) ''t) ;; helps a lot mem usage e.g. 950MB->820MB, and
-         ;; time = 10% gain
-         (t
+         ((is-synp term) ''t)
+         #|((is-cons term)
+          (b* ((term1 (rp-apply-bindings (cadr term) bindings))
+               (term2 (rp-apply-bindings (caddr term) bindings)))
+            (case-match term2
+              (('list . rest)
+               `(list ,term1 . ,rest))
+              (& `(list ,term1 ,term2)))))||#
+         (t 
           (cons-with-hint (car term)
                           (rp-apply-bindings-subterms (cdr term) bindings )
                           term))))
@@ -135,8 +143,8 @@
                      :guard (and (alistp acc-bindings)
                                  (rp-termp rule-lhs))
                      #|(and (rp-termp term)
-                     (bindings-alistp acc-bindings)
-                     (rp-termp rule-lhs)
+                     (bindings-alistp acc-bindings) ;
+                     (rp-termp rule-lhs) ;
                      )||#
                      :verify-guards nil
                      :mode :logic))
@@ -178,12 +186,28 @@
            (let ((term-in-cons (put-term-in-cons term-w/o-rp)))
              (rp-match-lhs-subterms (cdr term-in-cons) (cdr rule-lhs) context
                                     acc-bindings)))
-          ((consp term-w/o-rp) ;; both term and rule is consp, then their
-           ;; function name shold be the same. if so keep on matching.
-           (if (equal (car term-w/o-rp) (car rule-lhs))
-               (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
-                                      acc-bindings)
-             (mv context acc-bindings nil)))
+          ((consp term-w/o-rp) ;; both term and rule is consp,
+           (cond #|((and (is-cons rule-lhs)
+                       (equal (car term-w/o-rp) 'list))
+                  (case-match term-w/o-rp
+                    (('list & &)
+                     (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
+                                            acc-bindings))
+                    (('list & & . &)
+                     (b* ((-  (cw "here1 ~%"))
+                          ((mv context acc-bindings valid)
+                           (rp-match-lhs (cadr term-w/o-rp) (cadr rule-lhs) context acc-bindings))
+                          ((when (not valid)) ;; stop trying if not valid.
+                           (mv context acc-bindings nil))
+                          (-  (cw "here2 ~%")))
+                       (rp-match-lhs `(list . ,(cddr term-w/o-rp))
+                                     (caddr rule-lhs) context acc-bindings)))
+                    (& (mv context acc-bindings nil))))||#
+                 ((equal (car term-w/o-rp) (car rule-lhs))
+                  ;; if their function name be the same, keep on matching.
+                  (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
+                                         acc-bindings))
+                 (t (mv context acc-bindings nil))))
           (t ;; rule is consp but term isn't. then we cannot match this rule to
            ;; the tem.
            (mv context acc-bindings nil))))))
@@ -193,7 +217,7 @@
                      :guard (and (alistp acc-bindings)
                                  (rp-term-listp sublhs))
                      #|(and (rp-term-listp subterms)
-                     (bindings-alistp acc-bindings)
+                     (bindings-alistp acc-bindings) ;
                      (rp-term-listp sublhs))||#
                      :verify-guards nil
                      :mode :logic))
@@ -261,7 +285,8 @@
 ;(rp-term-listp (cdr term))
                 )
 
-    (and ;(consp rule-lhs)
+    
+    (and  ;(consp rule-lhs)
 ;(not (eq (car rule-lhs) 'quote))
      (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs))
      #|(or (not rule-fnc)
@@ -347,7 +372,7 @@
 
   (defun magic-ev-fncall-wrapper (ACL2::FN ARGS STATE
                                            ACL2::HARD-ERROR-RETURNS-NILP ACL2::AOK)
-    (DECLARE (XARGS :MODE :LOGIC
+    (declare (xargs :mode :logic
                     :guard t
                     :stobjs (state)))
     (magic-ev-fncall ACL2::FN ARGS STATE
@@ -364,6 +389,7 @@
     ;; returns (mv term-changed term)
     (if (or (atom term)
             (eq (car term) 'quote)
+            (eq (car term) 'list)
             (not (quote-listp (cdr term)))
             (consp (hons-get (car term) exc-rules)))
         (mv term rp-state)
@@ -376,14 +402,15 @@
               "Error with ex. counterpart: not a logic-mode function:~p1 ~%"
               fn)
              (mv term rp-state)))
+           #|(term (if (equal fn 'list) (rp-untrans term) term))||#
            ((mv err val)
-            (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state t nil))
+            (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state *rp-hard-error-returns-nilp* nil))
            (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (if err
                 (progn$
                  (fmt-to-comment-window "Error with ex. counterpart: ~p0 for term: ~p1 ~%"
-                                        (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST VAL TERM))
+                                        (pairlis2 acl2::*base-10-chars* (list val term))
                                         0
                                         '(nil 8 10 nil)
                                         NIL)
@@ -426,7 +453,7 @@
                      :mode :logic))
     (b* ((params (rp-apply-bindings-subterms params var-bindings))
          ((mv err val)
-          (magic-ev-fncall fn-name (unquote-all params) state t nil)))
+          (magic-ev-fncall fn-name (unquote-all params) state *rp-hard-error-returns-nilp* nil)))
       (if err
           (progn$ (hard-error 'rp-ev-fncall
                               "Magic-ev-fncall error for syntaxp check. val: ~p0 for term: ~p1 ~%"
@@ -640,7 +667,7 @@ returns (mv rule rules-rest bindings rp-context)"
           (magic-ev-fncall (rp-meta-fnc meta-rule)
                            (list term)
                            state
-                           t
+                           *rp-hard-error-returns-nilp*
                            nil))
          ((when (or error
                     (not (mbe :logic (acl2::logicp (rp-meta-fnc meta-rule) (w state))
@@ -1235,6 +1262,10 @@ returns (mv rule rules-rest bindings rp-context)"
                           #|(rp-stat-p rp-state)||#)
                   :verify-guards nil))
   (b* ((step-limit (rw-step-limit rp-state))
+       ((when (include-fnc term 'list))
+        (progn$ (hard-error 'rp-rw-aux "unexpected term is given to rp-rw-aux! ~p0"
+                            (list (cons #\0 term)))
+                (mv term rp-state)))
        ((mv res- rp-state)
         (case-match
           term
@@ -1298,4 +1329,4 @@ Resulting  term is:~% ~p0 ~%"
                        (cw "--- WARNING! --- Term was not reduced to 't. To throw an error instead, run:
 (set-not-simplified-action :error) ~% ~%" ))))
             nil)))
-    (mv res- rp-state)))
+    (mv (rp-trans res-) rp-state)))

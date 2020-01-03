@@ -57,7 +57,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * but also the function calls in the argument terms
      * and in the function itself (if the function is a lambda expression).
      *
-     * @throws IllegalStateException If some call is invalid.
+     * @throws Acl2InvalidFunctionCallException If some call is invalid.
      */
     @Override
     void validateFunctionCalls() {

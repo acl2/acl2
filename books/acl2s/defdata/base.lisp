@@ -2199,3 +2199,9 @@ No longer needed.
 
 (in-theory (disable varp))
 
+; Some later proofs are easier if I use listof instead of alistof
+(defdata sym-aalist (listof (cons symbol symbol-alist)))
+
+(defthm sym-aalist-sym-aalist1
+  (equal (defdata::sym-aalist1p x)
+         (sym-aalistp x)))

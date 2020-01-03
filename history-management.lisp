@@ -1865,34 +1865,38 @@
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (setq *rewrite-depth-max* 0)
 
-  (progn$
+  (cond
+   ((global-val 'include-book-path (w state))
+    state)
+   (t
+    (progn$
 
 ; If these time-tracker calls are changed, update :doc time-tracker
 ; accordingly.
 
-   (time-tracker :tau :end) ; in case interrupt prevented preceding summary
-   (time-tracker :tau :init
-                 :times '(1 5)
-                 :interval 10
-                 :msg (concatenate
-                       'string
-                       (if (f-get-global 'get-internal-time-as-realtime
-                                         state)
-                           "Elapsed realtime"
-                         "Elapsed runtime")
-                       " in tau is ~st secs; see :DOC time-tracker-tau.~|~%"))
-   (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
-                  (mv-let (x state)
-                          (main-timer state)
-                          (declare (ignore x))
-                          state))
-                 (t ; inbetween events
-                  (increment-timer 'other-time state)))
-           (push-timer 'other-time 0 state)
-           (push-timer 'prove-time 0 state)
-           (push-timer 'print-time 0 state)
-           (push-timer 'proof-tree-time 0 state)
-           (push-warning-frame state))))
+     (time-tracker :tau :end) ; in case interrupt prevented preceding summary
+     (time-tracker :tau :init
+                   :times '(1 5)
+                   :interval 10
+                   :msg (concatenate
+                         'string
+                         (if (f-get-global 'get-internal-time-as-realtime
+                                           state)
+                             "Elapsed realtime"
+                           "Elapsed runtime")
+                         " in tau is ~st secs; see :DOC time-tracker-tau.~|~%"))
+     (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
+                    (mv-let (x state)
+                      (main-timer state)
+                      (declare (ignore x))
+                      state))
+                   (t ; inbetween events
+                    (increment-timer 'other-time state)))
+             (push-timer 'other-time 0 state)
+             (push-timer 'prove-time 0 state)
+             (push-timer 'print-time 0 state)
+             (push-timer 'proof-tree-time 0 state)
+             (push-warning-frame state))))))
 
 (defun print-warnings-summary (state)
   (mv-let
@@ -2915,109 +2919,113 @@
 
   #-acl2-loop-only (dmr-flush)
 
-  (let ((wrld (w state))
-        (steps (prover-steps state)))
-    (pprogn
-     (clear-event-data state)
-     (let ((trip (car wrld)))
-       (cond ((and (not noop-flg)
-                   (eq (car trip) 'EVENT-LANDMARK)
-                   (eq (cadr trip) 'GLOBAL-VALUE))
-              (put-event-data 'namex
-                              (access-event-tuple-namex (cddr trip))
-                              state))
-             (t state)))
-     (put-event-data 'prover-steps-counted steps state)
-     (put-event-data 'form ctx state)
-     (increment-timer 'other-time state)
-     (put-event-data 'time
-                     (list (car (get-timer 'prove-time state))
-                           (car (get-timer 'print-time state))
-                           (car (get-timer 'proof-tree-time state))
-                           (car (get-timer 'other-time state)))
-                     state)
-     (let ((abort-causes
-            (tagged-objects 'abort-cause
-                            (f-get-global 'accumulated-ttree state))))
-       (if abort-causes
-           (put-event-data 'abort-causes abort-causes state)
-         state))
-     (cond
-      ((ld-skip-proofsp state)
-       (pprogn (if (or erp noop-flg)
-                   state
-                 (print-redefinition-warning wrld ctx state))
-               (pop-timer 'prove-time t state)
-               (pop-timer 'print-time t state)
-               (pop-timer 'proof-tree-time t state)
-               (pop-timer 'other-time t state)
-               (mv-let (warnings state)
-                 (pop-warning-frame nil state)
-                 (declare (ignore warnings))
-                 state)))
-      (t
+  (let ((wrld (w state)))
+    (cond
+     ((global-val 'include-book-path wrld)
+      (clear-event-data state))
+     (t
+      (let ((steps (prover-steps state)))
+        (pprogn
+         (clear-event-data state)
+         (let ((trip (car wrld)))
+           (cond ((and (not noop-flg)
+                       (eq (car trip) 'EVENT-LANDMARK)
+                       (eq (cadr trip) 'GLOBAL-VALUE))
+                  (put-event-data 'namex
+                                  (access-event-tuple-namex (cddr trip))
+                                  state))
+                 (t state)))
+         (put-event-data 'prover-steps-counted steps state)
+         (put-event-data 'form ctx state)
+         (increment-timer 'other-time state)
+         (put-event-data 'time
+                         (list (car (get-timer 'prove-time state))
+                               (car (get-timer 'print-time state))
+                               (car (get-timer 'proof-tree-time state))
+                               (car (get-timer 'other-time state)))
+                         state)
+         (let ((abort-causes
+                (tagged-objects 'abort-cause
+                                (f-get-global 'accumulated-ttree state))))
+           (if abort-causes
+               (put-event-data 'abort-causes abort-causes state)
+             state))
+         (cond
+          ((ld-skip-proofsp state)
+           (pprogn (if (or erp noop-flg)
+                       state
+                     (print-redefinition-warning wrld ctx state))
+                   (pop-timer 'prove-time t state)
+                   (pop-timer 'print-time t state)
+                   (pop-timer 'proof-tree-time t state)
+                   (pop-timer 'other-time t state)
+                   (mv-let (warnings state)
+                     (pop-warning-frame nil state)
+                     (declare (ignore warnings))
+                     state)))
+          (t
 
 ; Even if this case were only taken when 'summary is inhibited, we would still
 ; use io? below, and inside some functions below, because of its window hacking
 ; and saved-output functions.
 
-       (let ((output-ignored-p (output-ignored-p 'summary state)))
-         (pprogn
-          (if (or erp noop-flg output-ignored-p)
-              state
-            (print-redefinition-warning wrld ctx state))
-          (io? summary nil state
-               ()
-               (let ((channel (proofs-co state)))
-                 (cond ((member-eq 'header
-                                   (f-get-global 'inhibited-summary-types
-                                                 state))
-                        state)
-                       (t
-                        (pprogn (newline channel state)
-                                (princ$ "Summary" channel state)
-                                (newline channel state))))))
-          (io? summary nil state
-               (ctx)
-               (let ((channel (proofs-co state)))
-                 (cond ((member-eq 'form
-                                   (f-get-global 'inhibited-summary-types
-                                                 state))
-                        state)
-                       (t
-                        (mv-let
-                          (col state)
-                          (fmt1 "Form:  " nil 0 channel state nil)
-                          (mv-let
-                            (col state)
-                            (fmt-ctx ctx col channel state)
-                            (declare (ignore col))
-                            (newline channel state)))))))
-          (print-rules-and-hint-events-summary
-           (f-get-global 'accumulated-ttree state)
-           state)
-          (print-system-attachments-summary state)
-          (print-warnings-summary state)
-          (print-time-summary state)
-          (print-steps-summary steps state)
-          (progn$
-           (and (not output-ignored-p)
+           (let ((output-ignored-p (output-ignored-p 'summary state)))
+             (pprogn
+              (if (or erp noop-flg output-ignored-p)
+                  state
+                (print-redefinition-warning wrld ctx state))
+              (io? summary nil state
+                   ()
+                   (let ((channel (proofs-co state)))
+                     (cond ((member-eq 'header
+                                       (f-get-global 'inhibited-summary-types
+                                                     state))
+                            state)
+                           (t
+                            (pprogn (newline channel state)
+                                    (princ$ "Summary" channel state)
+                                    (newline channel state))))))
+              (io? summary nil state
+                   (ctx)
+                   (let ((channel (proofs-co state)))
+                     (cond ((member-eq 'form
+                                       (f-get-global 'inhibited-summary-types
+                                                     state))
+                            state)
+                           (t
+                            (mv-let
+                              (col state)
+                              (fmt1 "Form:  " nil 0 channel state nil)
+                              (mv-let
+                                (col state)
+                                (fmt-ctx ctx col channel state)
+                                (declare (ignore col))
+                                (newline channel state)))))))
+              (print-rules-and-hint-events-summary
+               (f-get-global 'accumulated-ttree state)
+               state)
+              (print-system-attachments-summary state)
+              (print-warnings-summary state)
+              (print-time-summary state)
+              (print-steps-summary steps state)
+              (progn$
+               (and (not output-ignored-p)
 
 ; If the time-tracker call below is changed, update :doc time-tracker
 ; accordingly.
 
-                (time-tracker
-                 :tau :print?
-                 :min-time 1
-                 :msg
-                 (concatenate
-                  'string
-                  "For the proof above, the total "
-                  (if (f-get-global 'get-internal-time-as-realtime
-                                    state)
-                      "realtime"
-                    "runtime")
-                  " spent in the tau system was ~st seconds.  See :DOC ~
+                    (time-tracker
+                     :tau :print?
+                     :min-time 1
+                     :msg
+                     (concatenate
+                      'string
+                      "For the proof above, the total "
+                      (if (f-get-global 'get-internal-time-as-realtime
+                                        state)
+                          "realtime"
+                        "runtime")
+                      " spent in the tau system was ~st seconds.  See :DOC ~
                     time-tracker-tau.~|~%")))
 
 ; At one time we put (time-tracker :tau :end) here.  But in community book
@@ -3027,25 +3035,25 @@
 ; to avoid :end here; after all, we invoke :end before invoking :init anyhow,
 ; in case the proof was aborted without printing this part of the summary.
 
-           state)
-          (pprogn
-           (cond (erp
-                  (pprogn
-                   (print-failure erp event-type ctx state)
-                   (cond
-                    ((f-get-global 'proof-tree state)
-                     (io? proof-tree nil state
-                          (ctx)
-                          (pprogn (f-put-global 'proof-tree-ctx
-                                                (cons :failed ctx)
-                                                state)
-                                  (print-proof-tree state))))
-                    (t state))))
-                 (t (pprogn
-                     #+acl2-par
-                     (erase-acl2p-checkpoints-for-summary state)
-                     state)))
-           (f-put-global 'proof-tree nil state)))))))))
+               state)
+              (pprogn
+               (cond (erp
+                      (pprogn
+                       (print-failure erp event-type ctx state)
+                       (cond
+                        ((f-get-global 'proof-tree state)
+                         (io? proof-tree nil state
+                              (ctx)
+                              (pprogn (f-put-global 'proof-tree-ctx
+                                                    (cons :failed ctx)
+                                                    state)
+                                      (print-proof-tree state))))
+                        (t state))))
+                     (t (pprogn
+                         #+acl2-par
+                         (erase-acl2p-checkpoints-for-summary state)
+                         state)))
+               (f-put-global 'proof-tree nil state))))))))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 

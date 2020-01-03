@@ -18,8 +18,7 @@
 
 (defxdoc+ atj-java-primitive-arrays
   :parents (atj-implementation)
-  :short "Representation of Java primitive arrays and operations on them,
-          for ATJ."
+  :short "ATJ's representation of Java primitive arrays and operations on them."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -53,12 +52,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-java-primarray-reads*
-  :short "List of the (the names of) the ACL2 functions that model
+  :short "List of (the names of) the ACL2 functions that model
           the reading of components from Java primitive arrays."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The consists of the readers for all the Java primitive array types
+    "This consists of the readers
+     for all the Java primitive array types
      except @('float[]') and @('double[]'),
      which are currently not supported by ATJ."))
   '(boolean-array-read
@@ -71,12 +71,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-java-primarray-lengths*
-  :short "List of the (the names of) the ACL2 functions that model
-          the obtaining of lengths of Java primitive arrays."
+  :short "List of (the names of) the ACL2 functions that model
+          the retrieval of lengths of Java primitive arrays."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The consists of the length functions for all the Java primitive array types
+    "This consists of the length functions
+     for all the Java primitive array types
      except @('float[]') and @('double[]'),
      which are currently not supported by ATJ."))
   '(boolean-array-length
@@ -85,6 +86,46 @@
     short-array-length
     int-array-length
     long-array-length))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-java-primarray-constructors*
+  :short "List of (the names of) the ACL2 functions that model
+          the construction of Java primitive arrays."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of the functions to construct arrays
+     of given sizes with default component values,
+     for all the Java primitive types
+     except @('float[]') and @('double[]'),
+     which currently are not supported by ATJ."))
+  '(boolean-array-of-length
+    char-array-of-length
+    byte-array-of-length
+    short-array-of-length
+    int-array-of-length
+    long-array-of-length))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-java-primarray-constructors-init*
+  :short "List of (the names of) the ACL2 functions that model
+          the construction of Java primitive arrays with initializers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of the functions to construct arrays
+     with given component values,
+     for all the Java primitive types
+     except @('float[]') and @('double[]'),
+     which currently are not supported by ATJ."))
+  '(boolean-array-with-comps
+    char-array-with-comps
+    byte-array-with-comps
+    short-array-with-comps
+    int-array-with-comps
+    long-array-with-comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +138,9 @@
     "This just consists of the read and length functions for now.
      More will be added in the future."))
   (append *atj-java-primarray-reads*
-          *atj-java-primarray-lengths*)
+          *atj-java-primarray-lengths*
+          *atj-java-primarray-constructors*
+          *atj-java-primarray-constructors-init*)
   ///
   (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
@@ -133,4 +176,32 @@
 
   (def-atj-main-function-type int-array-length (:jint[]) :jint)
 
-  (def-atj-main-function-type long-array-length (:jlong[]) :jint))
+  (def-atj-main-function-type long-array-length (:jlong[]) :jint)
+
+  ;; constructors from length:
+
+  (def-atj-main-function-type boolean-array-of-length (:jint) :jboolean[])
+
+  (def-atj-main-function-type char-array-of-length (:jint) :jchar[])
+
+  (def-atj-main-function-type byte-array-of-length (:jint) :jbyte[])
+
+  (def-atj-main-function-type short-array-of-length (:jint) :jshort[])
+
+  (def-atj-main-function-type int-array-of-length (:jint) :jint[])
+
+  (def-atj-main-function-type long-array-of-length (:jint) :jlong[])
+
+  ;; constructors from components:
+
+  (def-atj-main-function-type boolean-array-with-comps (:avalue) :jboolean[])
+
+  (def-atj-main-function-type char-array-with-comps (:avalue) :jchar[])
+
+  (def-atj-main-function-type byte-array-with-comps (:avalue) :jbyte[])
+
+  (def-atj-main-function-type short-array-with-comps (:avalue) :jshort[])
+
+  (def-atj-main-function-type int-array-with-comps (:avalue) :jint[])
+
+  (def-atj-main-function-type long-array-with-comps (:avalue) :jlong[]))

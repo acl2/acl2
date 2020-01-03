@@ -171,6 +171,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (or (equal c 't) (equal c ''t)))
 
 (defun type-of-pred-aux (pred tbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl))))
   (cond ((endp tbl) nil)
         ((equal pred (get-alist :predicate (cdar tbl)))
          (caar tbl))
@@ -185,6 +186,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 |#
 
 (defun type-of-pred (pred tbl ptbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl) (sym-aalistp ptbl))))
   (let ((apred (assoc-equal :type (get-alist pred ptbl))))
     (if apred
         (cdr apred) 
@@ -215,22 +217,30 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 |#
 
 (defun enum-of-type (type tbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
   (get-alist :enumerator (get-alist type tbl)))
 
 ; (enum-of-type 'integer (type-metadata-table (w state)))
 
 (defun base-val-of-type (type tbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
   (get-alist :default-base-value (get-alist type tbl)))
 
 ; (base-val-of-type 'integer (type-metadata-table (w state)))
 
 (defun unalias-pred (pred ptbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
   (let ((apred (assoc-equal :predicate (get-alist pred ptbl))))
     (if apred
         (cdr apred)
       pred)))
 
 (defun pred-of-oc (name formals oc ptbl)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              (or (atom oc)
+                                  (symbolp (car oc)))
+                              (sym-aalistp ptbl))))
   (and (consp oc) 
        (equal (cdr oc) `((,name ,@formals)))
        (unalias-pred (car oc) ptbl)))
@@ -816,10 +826,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ; Decided to take care of error printing on my own, but kept previous
 ; versions above.
 
-(defun type-of-type (type tbl atbl ctx)
+(defun type-of-type (type tbl atbl)
   (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
                               (sym-aalistp atbl))))
-  (declare (ignore ctx))
   (let ((atype (assoc-equal :type (get-alist type atbl))))
     (if atype
         (cdr atype)
@@ -828,10 +837,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             type
           nil)))))
 
-(defun pred-of-type (type tbl atbl ctx)
+(defun pred-of-type (type tbl atbl)
   (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
                               (sym-aalistp atbl))))
-  (declare (ignore ctx))
   (let ((atype (assoc-equal :predicate (get-alist type atbl))))
     (if atype
         (cdr atype)
@@ -872,7 +880,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (cdr l) acc name formals tbl atbl pkg))
    ((keywordp (car l))
     (b* ((type (fix-intern$ (symbol-name (car l)) pkg))
-         (pred (pred-of-type type tbl atbl 'defunc))
+         (pred (pred-of-type type tbl atbl))
          ((unless pred)
           (er hard 'defunc
               "~%The given type, ~x0, is not a known type." type))

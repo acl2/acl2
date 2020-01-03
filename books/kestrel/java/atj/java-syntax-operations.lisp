@@ -35,7 +35,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return all the names in name expressions.
+    "We return all the names in expression names.
      The list is without duplicates but in no particular order."))
 
   (define jexpr-vars ((expr jexprp))

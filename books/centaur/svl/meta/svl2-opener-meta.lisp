@@ -91,155 +91,155 @@
 
   (verify-guards save-wires-to-env-wires ))
 
-(define save-wires-to-env-wires-meta (term)
-  (case-match term
-    (('save-wires-to-env-wires val
-                               ('quote (wire . wires-rest))
-                               ('falist ('quote falist) &))
-     (if (consp wire)
-         (b* ((old-val-entry (hons-get (wire-name wire) falist))
-              (old-val (if old-val-entry (cdr old-val-entry)
-                         (list 'quote (sv::4vec-x)))))
-           (case-match wire
-             ((& w . s)
-              (mv `(hons-acons
-                    ',(wire-name wire)
-                    (sbits ',s ',w ,val ,old-val)
-                    ,(if (equal wires-rest nil)
-                         (cadddr term)
-                       `(save-wires-to-env-wires (4vec-rsh ',w ,val)
-                                                 ',wires-rest
-                                                 ,(cadddr term))))
-                  (if (equal wires-rest nil)
-                      `(nil t (nil t t t t) t)
-                    `(nil t
-                          (nil t t t t)
-                          (nil (nil t t) t t)))))
-             (& (mv `(hons-acons ',(wire-name wire)
-                                 ,val
-                                 ,(cadddr term))
-                    `(nil t t t)))))
-       (mv term nil)))
-    (& (mv term nil))))
+;; (define save-wires-to-env-wires-meta (term)
+;;   (case-match term
+;;     (('save-wires-to-env-wires val
+;;                                ('quote (wire . wires-rest))
+;;                                ('falist ('quote falist) &))
+;;      (if (consp wire)
+;;          (b* ((old-val-entry (hons-get (wire-name wire) falist))
+;;               (old-val (if old-val-entry (cdr old-val-entry)
+;;                          (list 'quote (sv::4vec-x)))))
+;;            (case-match wire
+;;              ((& w . s)
+;;               (mv `(hons-acons
+;;                     ',(wire-name wire)
+;;                     (sbits ',s ',w ,val ,old-val)
+;;                     ,(if (equal wires-rest nil)
+;;                          (cadddr term)
+;;                        `(save-wires-to-env-wires (4vec-rsh ',w ,val)
+;;                                                  ',wires-rest
+;;                                                  ,(cadddr term))))
+;;                   (if (equal wires-rest nil)
+;;                       `(nil t (nil t t t t) t)
+;;                     `(nil t
+;;                           (nil t t t t)
+;;                           (nil (nil t t) t t)))))
+;;              (& (mv `(hons-acons ',(wire-name wire)
+;;                                  ,val
+;;                                  ,(cadddr term))
+;;                     `(nil t t t)))))
+;;        (mv term nil)))
+;;     (& (mv term nil))))
 
 
-(rp::def-formula-checks-default-evl
- rp::rp-evl
- (strip-cars rp::*small-evl-fncs*))
+;; (rp::def-formula-checks-default-evl
+;;  rp::rp-evl
+;;  (strip-cars rp::*small-evl-fncs*))
 
-(rp::def-formula-checks save-wires-to-env-wires-formula-checks
-                        (save-wires-to-env-wires-meta
-                         save-wires-to-env-wires))
+;; (rp::def-formula-checks save-wires-to-env-wires-formula-checks
+;;                         (save-wires-to-env-wires-meta
+;;                          save-wires-to-env-wires))
 
-(local
- (defthm eval-of-SAVE-WIRES-TO-ENV-WIRES
-   (implies (and (rp-evl-meta-extract-global-facts)
-                 (CONSP TERM)
-                 (EQUAL (CAR TERM)
-                        'SAVE-WIRES-TO-ENV-WIRES)
-                 (CONSP (CDR TERM))
-                 (CONSP (CDDR TERM))
-                 (CONSP (CdDDR TERM))
-                 (not (CdDdDR TERM))
-                 (save-wires-to-env-wires-formula-checks state))
-            (equal (rp-evl term a)
-                   (SAVE-WIRES-TO-ENV-WIRES (rp-evl (cadr term) a)
-                                            (rp-evl (caddr term) a)
-                                            (rp-evl (cadddr term) a))))))
-
-(local
- (defthmd lemma1
-   (implies (and (RP::FALIST-CONSISTENT-AUX x; (CADR (CADR (CADDDR TERM)))
-
-                                            y; (CADDR (CADDDR TERM))
-                                            )
-                 (HONS-ASSOC-EQUAL z ;;(CAR (CAR (CADR (CADDR TERM))))
-                                   x)
-;(HONS-ASSOC-EQUAL z (RP-EVL y A))
-                 )
-            (equal (RP-EVL (CDR (HONS-ASSOC-EQUAL z x)) A)
-                   (CDR (HONS-ASSOC-EQUAL z (RP-EVL y A)))))
-   :hints (("Goal"
-            :in-theory (e/d ((:TYPE-PRESCRIPTION O<)
-                             (:REWRITE DEFAULT-CAR)
-                             (:REWRITE DEFAULT-CDR)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
-                             (:REWRITE
-                              ACL2::CAR-OF-TRUE-LIST-LIST-FIX-X-NORMALIZE-CONST-UNDER-LIST-EQUIV)) ())))))
-
-(local
- (defthm lemma2
-   (equal (sbits x y z nil)
-          (sbits x y z '(-1 . 0)))
-   :hints (("Goal"
-            :in-theory (e/d (sbits
-                             4VEC-PART-INSTALL) ())))))
-
-(local
- (defthmd lemma3
-   (implies (and (RP::FALIST-CONSISTENT-AUX x  y) )
-            (iff (HONS-ASSOC-EQUAL z x)
-                 (HONS-ASSOC-EQUAL z (RP-EVL y A))))))
-
-(defthm rp-evl-of-save-wires-to-env-wires-meta
-  (implies (and (rp-evl-meta-extract-global-facts)
-                (rp::rp-termp term)
-                (save-wires-to-env-wires-formula-checks state))
-           (equal (rp-evl (mv-nth 0 (save-wires-to-env-wires-meta term)) a)
-                  (rp-evl term a)))
-  :hints (("Goal"
-           :do-not-induct t
-           :use ((:instance lemma1
-                            (x (CADR (CADR (CADDDR TERM))))
-                            (y (CADDR (CADDDR TERM)))
-                            (z (CAR (CAR (CADR (CADDR TERM))))))
-                 (:instance lemma3
-                            (x (CADR (CADR (CADDDR TERM))))
-                            (y (CADDR (CADDDR TERM)))
-                            (z (CAR (CAR (CADR (CADDR TERM)))))))
-           :expand ((SAVE-WIRES-TO-ENV-WIRES (RP-EVL (CADR TERM) A)
-                                             (CADR (CADDR TERM))
-                                             (RP-EVL (CADDR (CADDDR TERM)) A))
-                    (SAVE-WIRES-TO-ENV-WIRES (4VEC-RSH (CADR (CAR (CADR (CADDR TERM))))
-                                                       (RP-EVL (CADR TERM) A))
-                                             NIL (RP-EVL (CADDR (CADDDR TERM)) A)))
-           :in-theory (e/d (save-wires-to-env-wires-meta)
-                           (hons-acons)))))
-
-#|(defthm all-falist-consistent-save-wires-to-env-wires-meta
-  (implies (rp::all-falist-consistent term)
-           (rp::all-falist-consistent (mv-nth 0 (save-wires-to-env-wires-meta
-                                                 term))))
-  :hints (("Goal"
-           :in-theory (e/d (save-wires-to-env-wires-meta
-                            RP::ALL-FALIST-CONSISTENT)
-                           (hons-acons)))))||#
-
-;; :i-am-here
-
-;; (skip-proofs
-;;  (defthm valid-rp-meta-rulep-save-wires-to-env-wires-meta
+;; (local
+;;  (defthm eval-of-SAVE-WIRES-TO-ENV-WIRES
 ;;    (implies (and (rp-evl-meta-extract-global-facts)
+;;                  (CONSP TERM)
+;;                  (EQUAL (CAR TERM)
+;;                         'SAVE-WIRES-TO-ENV-WIRES)
+;;                  (CONSP (CDR TERM))
+;;                  (CONSP (CDDR TERM))
+;;                  (CONSP (CdDDR TERM))
+;;                  (not (CdDdDR TERM))
 ;;                  (save-wires-to-env-wires-formula-checks state))
-;;             (let ((rule (make rp::rp-meta-rule-rec
-;;                               :fnc 'save-wires-to-env-wires-meta
-;;                               :trig-fnc 'save-wires-to-env-wires
-;;                               :dont-rw t
-;;                               :valid-syntax t)))
-;;               (and (rp::rp-meta-valid-syntaxp-sk rule state)
-;;                    (rp::valid-rp-meta-rulep rule state))))
-;;    :otf-flg t
+;;             (equal (rp-evl term a)
+;;                    (SAVE-WIRES-TO-ENV-WIRES (rp-evl (cadr term) a)
+;;                                             (rp-evl (caddr term) a)
+;;                                             (rp-evl (cadddr term) a))))))
+
+;; (local
+;;  (defthmd lemma1
+;;    (implies (and (RP::FALIST-CONSISTENT-AUX x; (CADR (CADR (CADDDR TERM)))
+
+;;                                             y; (CADDR (CADDDR TERM))
+;;                                             )
+;;                  (HONS-ASSOC-EQUAL z ;;(CAR (CAR (CADR (CADDR TERM))))
+;;                                    x)
+;; ;(HONS-ASSOC-EQUAL z (RP-EVL y A))
+;;                  )
+;;             (equal (RP-EVL (CDR (HONS-ASSOC-EQUAL z x)) A)
+;;                    (CDR (HONS-ASSOC-EQUAL z (RP-EVL y A)))))
 ;;    :hints (("Goal"
-;;             :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
-;;                             (rp::PSEUDO-TERMP2
-;;                              rp::PSEUDO-TERM-LISTP2
+;;             :in-theory (e/d ((:TYPE-PRESCRIPTION O<)
+;;                              (:REWRITE DEFAULT-CAR)
+;;                              (:REWRITE DEFAULT-CDR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE
+;;                               ACL2::CAR-OF-TRUE-LIST-LIST-FIX-X-NORMALIZE-CONST-UNDER-LIST-EQUIV)) ())))))
 
-;;                              rp::RP-SYNTAXP
-;;                              rp::VALID-SC))))))
+;; (local
+;;  (defthm lemma2
+;;    (equal (sbits x y z nil)
+;;           (sbits x y z '(-1 . 0)))
+;;    :hints (("Goal"
+;;             :in-theory (e/d (sbits
+;;                              4VEC-PART-INSTALL) ())))))
 
-;; (rp::add-meta-rules save-wires-to-env-wires-formula-checks
-;;                     (list (make rp::rp-meta-rule-rec
-;;                                 :fnc 'save-wires-to-env-wires-meta
-;;                                 :trig-fnc 'save-wires-to-env-wires
-;;                                 :dont-rw t
-;;                                 :valid-syntax t)))
+;; (local
+;;  (defthmd lemma3
+;;    (implies (and (RP::FALIST-CONSISTENT-AUX x  y) )
+;;             (iff (HONS-ASSOC-EQUAL z x)
+;;                  (HONS-ASSOC-EQUAL z (RP-EVL y A))))))
+
+;; (defthm rp-evl-of-save-wires-to-env-wires-meta
+;;   (implies (and (rp-evl-meta-extract-global-facts)
+;;                 (rp::rp-termp term)
+;;                 (save-wires-to-env-wires-formula-checks state))
+;;            (equal (rp-evl (mv-nth 0 (save-wires-to-env-wires-meta term)) a)
+;;                   (rp-evl term a)))
+;;   :hints (("Goal"
+;;            :do-not-induct t
+;;            :use ((:instance lemma1
+;;                             (x (CADR (CADR (CADDDR TERM))))
+;;                             (y (CADDR (CADDDR TERM)))
+;;                             (z (CAR (CAR (CADR (CADDR TERM))))))
+;;                  (:instance lemma3
+;;                             (x (CADR (CADR (CADDDR TERM))))
+;;                             (y (CADDR (CADDDR TERM)))
+;;                             (z (CAR (CAR (CADR (CADDR TERM)))))))
+;;            :expand ((SAVE-WIRES-TO-ENV-WIRES (RP-EVL (CADR TERM) A)
+;;                                              (CADR (CADDR TERM))
+;;                                              (RP-EVL (CADDR (CADDDR TERM)) A))
+;;                     (SAVE-WIRES-TO-ENV-WIRES (4VEC-RSH (CADR (CAR (CADR (CADDR TERM))))
+;;                                                        (RP-EVL (CADR TERM) A))
+;;                                              NIL (RP-EVL (CADDR (CADDDR TERM)) A)))
+;;            :in-theory (e/d (save-wires-to-env-wires-meta)
+;;                            (hons-acons)))))
+
+;; #|(defthm all-falist-consistent-save-wires-to-env-wires-meta
+;;   (implies (rp::all-falist-consistent term)
+;;            (rp::all-falist-consistent (mv-nth 0 (save-wires-to-env-wires-meta
+;;                                                  term))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d (save-wires-to-env-wires-meta
+;;                             RP::ALL-FALIST-CONSISTENT)
+;;                            (hons-acons)))))||#
+
+;; ;; :i-am-here
+
+;; ;; (skip-proofs
+;; ;;  (defthm valid-rp-meta-rulep-save-wires-to-env-wires-meta
+;; ;;    (implies (and (rp-evl-meta-extract-global-facts)
+;; ;;                  (save-wires-to-env-wires-formula-checks state))
+;; ;;             (let ((rule (make rp::rp-meta-rule-rec
+;; ;;                               :fnc 'save-wires-to-env-wires-meta
+;; ;;                               :trig-fnc 'save-wires-to-env-wires
+;; ;;                               :dont-rw t
+;; ;;                               :valid-syntax t)))
+;; ;;               (and (rp::rp-meta-valid-syntaxp-sk rule state)
+;; ;;                    (rp::valid-rp-meta-rulep rule state))))
+;; ;;    :otf-flg t
+;; ;;    :hints (("Goal"
+;; ;;             :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
+;; ;;                             (rp::PSEUDO-TERMP2
+;; ;;                              rp::PSEUDO-TERM-LISTP2
+
+;; ;;                              rp::RP-SYNTAXP
+;; ;;                              rp::VALID-SC))))))
+
+;; ;; (rp::add-meta-rules save-wires-to-env-wires-formula-checks
+;; ;;                     (list (make rp::rp-meta-rule-rec
+;; ;;                                 :fnc 'save-wires-to-env-wires-meta
+;; ;;                                 :trig-fnc 'save-wires-to-env-wires
+;; ;;                                 :dont-rw t
+;; ;;                                 :valid-syntax t)))
