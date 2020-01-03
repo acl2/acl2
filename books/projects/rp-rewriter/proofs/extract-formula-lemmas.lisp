@@ -800,6 +800,23 @@
      :hints (("Goal"
               :in-theory (e/d (is-rp) ())))))
 
+
+  (local
+   (defthm is-rp-of-if
+     (not (is-rp (cons 'if x)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
+
+
+  (local
+   (defthm is-rp-of-rp
+     (NOT (IS-RP (LIST 'RP
+                       (LIST 'RP
+                             x
+                             y)
+                       z)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
   
   (local
    (defthm lemma17
@@ -833,8 +850,8 @@
      (IMPLIES (AND (ACL2::FLAG-IS 'ATTACH-SC)
                    (CONSP TERM)
                    (case-split (is-rp term))
-                   (NOT (EQUAL (CAR TERM) 'QUOTE))
-                   (NOT (EQUAL TERM SC-TERM))
+                   (NOT (EQUAL (CAR TERM) 'quote))
+                   (not (EQUAL TERM SC-TERM))
                    (valid-sc-nt-subterms (ATTACH-SC-LST (CDR TERM)
                                                         SC-TYPE SC-TERM)
                                          A)
@@ -869,7 +886,7 @@
                                     A))
               :in-theory (e/d (IS-RP-IMPLIES-FC
                                is-if
-                               is-rp
+                               ;;is-rp
                                eval-and-all-nt
                                rp-evl-of-fncall-args
                                RP-EVL-lst-of-cons
@@ -882,7 +899,7 @@
    (defthm lemma19
      (IMPLIES (AND
                (CONSP SC-TERM)
-               (NOT (EQUAL (CAR SC-TERM) 'QUOTE))
+               ;(case-split (NOT (EQUAL (CAR SC-TERM) 'QUOTE)))
                (valid-sc-nt-subterms (ATTACH-SC-LST (CDR SC-TERM)
                                                     SC-TYPE SC-TERM)
                                      A)
@@ -942,17 +959,46 @@
                                is-rp
                                valid-sc-nt))))))
 
+
+
+  (local
+   (defthm rp-evlt-lemma20
+     (implies (and (equal (rp-evlt-lst lst1 a)
+                          (rp-evlt-lst lst2 a))
+                   (not (equal fn 'quote)))     
+              (equal (rp-evlt (cons fn lst1) a)
+                     (rp-evlt (cons fn lst2) a)))
+     :hints (("Goal"
+              :expand ((RP-TRANS (CONS FN LST1))
+                       (RP-TRANS (CONS FN LST2)))
+              :in-theory (e/d (rp-evl-of-fncall-args) ())))))
+
+  (local
+   (defthm rp-evl-lemma20
+     (implies (and (equal (rp-evl-lst lst1 a)
+                          (rp-evl-lst lst2 a))
+                   (not (equal fn 'quote))
+                   )     
+              (equal (rp-evl (cons fn lst1) a)
+                     (rp-evl (cons fn lst2) a)))
+     :hints (("Goal"
+              :expand ((RP-TRANS (CONS FN LST1))
+                       (RP-TRANS (CONS FN LST2)))
+              :in-theory (e/d (rp-evl-of-fncall-args) ())))))
+  
+  
+  
   (local
    (defthm lemma20
      (IMPLIES (AND
                (CONSP SC-TERM)
-               (NOT (EQUAL (CAR SC-TERM) 'QUOTE))
+               (case-split (NOT (EQUAL (CAR SC-TERM) 'QUOTE)))
                (valid-sc-nt-subterms (ATTACH-SC-LST (CDR SC-TERM)
                                                     SC-TYPE SC-TERM)
                                      A)
                (valid-sc-nt SC-TERM A)
                (rp-termp SC-TERM)
-               (NOT (EQUAL (CAR SC-TERM) 'IF))
+               (case-split (NOT (is-if sc-term)))
 ; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM)
 ;                           'IF))
                (not (is-rp sc-term))
@@ -977,20 +1023,33 @@
                                           (ATTACH-SC-LST (CDR SC-TERM)
                                                          SC-TYPE SC-TERM))
                                     A)
+                        (VALID-SC-NT (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM)
+                                     A)
                        (EX-FROM-RP (LIST 'RP
                                          (LIST 'QUOTE SC-TYPE)
                                          (CONS (CAR SC-TERM)
                                                (ATTACH-SC-LST (CDR SC-TERM)
-                                                              SC-TYPE SC-TERM)))))
+                                                              SC-TYPE
+                                                              SC-TERM)))))
+              :cases ((EQUAL (CAR SC-TERM) 'QUOTE))
+              :use ((:instance rp-evl-lemma20
+                               (fn (CAR SC-TERM))
+                               (lst1 (ATTACH-SC-LST (CDR SC-TERM)
+                                                    SC-TYPE SC-TERM))
+                               (lst2 (cdr sc-term))))
               :in-theory (e/d (IS-RP-IMPLIES-FC
-                               is-if
+                               ;;is-if
+  
 
                                eval-and-all-nt
                                rp-evl-of-fncall-args
                                RP-EVL-lst-of-cons
+                               rp-evl-of-fncall-args
                                CONTEXT-FROM-RP)
                               (VALID-SC-EX-FROM-RP-2
                                EX-FROM-RP-LEMMA1
+                               rp-evl-lemma20
+                               rp-termp
                                is-rp
                                valid-sc-nt))))))
 
@@ -1119,7 +1178,7 @@
    (defthm lemma18-v2
      (IMPLIES (AND (CONSP TERM)
                    (NOT (EQUAL (CAR TERM) 'QUOTE))
-                   (NOT (EQUAL (CAR TERM) 'IF))
+                   (case-split (NOT (is-if term)))
                    (NOT (EQUAL TERM SC-TERM))
                    (VALID-SC-SUBTERMS (ATTACH-SC-LST (CDR TERM)
                                                      SC-TYPE SC-TERM)
@@ -1140,36 +1199,29 @@
      :hints (("Goal"
               :do-not-induct t
               :cases ((is-rp term)) 
-              :in-theory (e/d (is-if
+              :in-theory (e/d (
                                valid-sc-single-step
                                is-rp-implies-fc
                                rp-evl-of-fncall-args)
                               (is-rp
+                               is-if
                                rp-termp
                                ))))))
 
-  (local
-   (defthm rp-evlt-lemma20
-     (implies (and (equal (rp-evlt-lst lst1 a)
-                          (rp-evlt-lst lst2 a))
-                   (not (equal fn 'quote)))     
-              (equal (rp-evlt (cons fn lst1) a)
-                     (rp-evlt (cons fn lst2) a)))
-     :hints (("Goal"
-              :expand ((RP-TRANS (CONS FN LST1))
-                       (RP-TRANS (CONS FN LST2)))
-              :in-theory (e/d (rp-evl-of-fncall-args) ())))))
+
+  
 
   (local
    (defthm lemma20-v2
      (IMPLIES (AND (CONSP SC-TERM)
                    (NOT (EQUAL (CAR SC-TERM) 'QUOTE))
-                   (NOT (EQUAL (CAR SC-TERM) 'IF))
+                  ; (NOT (EQUAL (CAR SC-TERM) 'IF))
                    (VALID-SC-SUBTERMS (ATTACH-SC-LST (CDR SC-TERM)
                                                      SC-TYPE SC-TERM)
                                       A)
                    (VALID-SC-SUBTERMS (CDR SC-TERM) A)
                    (RP-TERMP SC-TERM)
+                   (case-split (NOT (is-if sc-term)))
                    (IS-RP (LIST 'RP
                                 (LIST 'QUOTE SC-TYPE)
                                 SC-TERM))
@@ -1194,12 +1246,121 @@
               ;;                                         SC-TYPE SC-TERM))))
               :in-theory (e/d (valid-sc-single-step
                                rp-evl-of-fncall-args
-                               is-if)
-                              (rp-evlt-lemma20))))))
+                               )
+                              (rp-evlt-lemma20
+                               is-if))))))
 
+
+  ;; (skip-proofs
+  ;;  (local
+  ;;   (defthm lemma22-lemma
+  ;;     (implies (and (equal (len (cdr term)) (len sublist))
+  ;;                   (is-if term)
+  ;;                   (consp term))
+  ;;              (is-if (CONS 'if sublist)))
+  ;;     :rule-classes :forward-chaining
+  ;;     :hints (("Goal"
+  ;;              :do-not-induct t
+  ;;              :in-theory (e/d (is-if) ()))))))
+  
+
+  ;; (local
+  ;;  (defthm lemma22
+  ;;    (implies (and (rp-termp term)
+  ;;                  ;(rp-term-listp sublist)
+  ;;                  (if (rp-evl (car sublist) a)
+  ;;                      (valid-sc-nt (cadr sublist) a)
+  ;;                    (valid-sc-nt (caddr sublist) a))
+  ;;                  (valid-sc-nt (car sublist) a)
+  ;;                  (equal (rp-evl (cadr term) a)
+  ;;                         (rp-evl (car sublist) a))
+  ;;                  (consp term)
+  ;;                  (case-split (is-if term))
+  ;;                  (equal (len (cdr term)) (len sublist))
+  ;;                  (valid-sc-nt term a))
+  ;;             (VALID-SC-NT (CONS (CAR TERM) sublist)
+  ;;                          A))
+  ;;    :hints (("Goal"
+  ;;             :do-not-induct t
+  ;;             :expand ((VALID-SC-NT (CONS 'IF SUBLIST) A))
+  ;;             :in-theory (e/d (VALID-SC-NT
+  ;;                              is-rp)
+  ;;                             (rp-termp
+  ;;                              len
+  ;;                              rp-term-listp)))))) 
+
+
+  ;; (local
+  ;;  (defthm lemma23
+  ;;    (EQUAL (LEN (ATTACH-SC-LST subterms
+  ;;                               SC-TYPE SC-TERM))
+  ;;           (LEN subterms))
+  ;;    :hints (("Goal"
+  ;;             :induct (LEN subterms)
+  ;;             :do-not-induct t
+  ;;             :in-theory (e/d (ATTACH-SC-LST) ())))))
+
+
+  #|(local
+   (defthm-attach-sc
+     (defthm valid-sc-nt-attach-sc-when-quoted
+       (implies (and (valid-sc-nt term a)
+                     (rp-termp term)
+                     (quotep sc-term)
+                     (is-rp (list 'rp (list 'quote sc-type) sc-term))
+                     (not (is-rp sc-term))
+                     (rp-evl `(,sc-type ,sc-term) a))
+                (valid-sc-nt (attach-sc term sc-type sc-term) a))
+       :flag attach-sc)
+
+     (defthm valid-sc-nt-subterms-attach-sc-lst
+       (implies (and (valid-sc-nt-subterms lst a)
+                     (NOT (EQUAL (CAR SC-TERM) 'QUOTE))
+                     (rp-term-listp lst)
+                     (is-rp (list 'rp (list 'quote sc-type) sc-term))
+                     (not (is-rp sc-term))
+                     (rp-evl `(,sc-type ,sc-term) a))
+                (valid-sc-nt-subterms (attach-sc-lst lst sc-type sc-term) a))
+       :flag attach-sc-lst)
+     :hints (("goal"
+              ;;:cases ((is-rp term))
+              :in-theory (e/d (is-rp-implies-fc
+                               is-if
+                               ;;rp-evl-constraint-0
+                               eval-and-all-nt
+                               context-from-rp
+                               valid-sc-nt-single-step)
+                              (valid-sc-ex-from-rp-2
+                               (:rewrite lemma10)
+                               (:definition falist-consistent)
+                               (:rewrite measure-lemma1)
+                               (:rewrite measure-lemma1-2)
+                               (:rewrite default-cdr)
+                               (:rewrite default-car)
+                               rp-evl-lst-of-cons))))))||#
+  (local
+   (defthm not-consp-implies-not-is-rp
+     (implies (Not (consp x))
+              (not (is-rp x)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
+
+
+  (local
+   (defthm is-if-lemma
+     (is-if (list 'if x y z))
+     :hints (("Goal"
+              :in-theory (e/d (is-if) ())))))
+
+  (local
+   (defthm rp-evl-lst-of-list
+     (equal (rp-evl-lst (list x) a)
+            (list (rp-evl x a)))))
+  
   (defthm-attach-sc
     (defthm valid-sc-nt-attach-sc
       (implies (and (valid-sc-nt term a)
+                    (NOT (quotep sc-term))
                     (rp-termp term)
 ;          (not (include-fnc term 'if)) ;; rhs should not have any if
                     (is-rp (list 'rp (list 'quote sc-type) sc-term))
@@ -1210,6 +1371,8 @@
 
     (defthm valid-sc-nt-subterms-attach-sc-lst
       (implies (and (valid-sc-nt-subterms lst a)
+                    (NOT (quotep sc-term))
+                    (NOT (EQUAL (CAR SC-TERM) 'QUOTE))
                     (rp-term-listp lst)
 ;         (not (include-fnc-subterms lst 'if))
                     (is-rp (list 'rp (list 'quote sc-type) sc-term))
@@ -1220,7 +1383,7 @@
     :hints (("goal"
              ;;:cases ((is-rp term))
              :in-theory (e/d (is-rp-implies-fc
-                              is-if
+                             ; is-if
                               ;;rp-evl-constraint-0
                               eval-and-all-nt
                               context-from-rp
@@ -1235,11 +1398,14 @@
                               rp-evl-lst-of-cons)))))
 
 
+  
+
+  
+  
   (defthm-attach-sc
     (defthm valid-sc-attach-sc
       (implies (and (valid-sc term a)
                     (rp-termp term)
-;          (not (include-fnc term 'if)) ;; RHS should not have any if
                     (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM))
                     (not (is-rp sc-term))
                     (rp-evlt `(,sc-type ,sc-term) a))
@@ -1249,21 +1415,34 @@
     (defthm valid-sc-subterms-attach-sc-lst
       (implies (and (valid-sc-subterms lst a)
                     (rp-term-listp lst)
-;         (not (include-fnc-subterms lst 'if))
                     (is-rp (LIST 'RP (LIST 'QUOTE SC-TYPE) SC-TERM))
                     (not (is-rp sc-term))
                     (rp-evlt `(,sc-type ,sc-term) a))
                (valid-sc-subterms (attach-sc-lst lst sc-type sc-term) a))
       :flag attach-sc-lst)
-    :hints (("Goal"
+    :otf-flg t
+    :hints (("Subgoal *1/3"
+             :use ((:instance RP-EVLt-LEMMA20
+                              (fn (car sc-term))
+                              (lst1 (cdr sc-term))
+                              (lst2 (attach-sc-lst (cdr sc-term) sc-type sc-term)))))          
+            ("Goal"
+             :do-not-induct t
              ;;:cases ((Is-rp term))
              :in-theory (e/d (IS-RP-IMPLIES-FC
-                              is-if
+                              ;;is-if
                               ;;rp-evl-constraint-0
-                              eval-and-all-nt
+                              eval-and-all
                               CONTEXT-FROM-RP
-                              valid-sc-nt-single-step)
+                              rp-trans
+                              rp-evl-of-fncall-args
+                              valid-sc-single-step)
                              (VALID-SC-EX-FROM-RP-2
+                              RP-EVL-LEMMA20
+                              NOT-INCLUDE-RP-MEANS-VALID-SC
+                              not-include-rp-means-valid-sc-lst
+                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                              RP-TERMP
                               (:REWRITE LEMMA10)
                               (:DEFINITION FALIST-CONSISTENT)
                               (:REWRITE MEASURE-LEMMA1)
@@ -1360,7 +1539,15 @@
   (defthm get-vars1-attach-sc-lst
     (equal (get-vars-subterms (attach-sc-lst subterms sc-type sc-term) acc)
            (get-vars-subterms subterms acc))
-    :flag get-vars-subterms))
+    :flag get-vars-subterms)
+  :hints (("Goal"
+           :expand (ATTACH-SC Q SC-TYPE SC-TERM)
+           :in-theory (e/d ()
+                           ((:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            rp-termp
+                            true-listp
+                            rp-term-listp)))))
+
 
 (encapsulate
   nil

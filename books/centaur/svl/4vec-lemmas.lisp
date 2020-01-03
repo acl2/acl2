@@ -53,6 +53,28 @@
   (include-book "ihs/quotient-remainder-lemmas" :dir :system)
   use-qr-lemmas))
 
+(progn
+  ;; lemmas about ifix
+  (rp::def-rp-rule
+   integerp-ifix
+   (integerp (ifix x)))
+
+
+  (rp::def-rp-rule
+   ifix-opener
+   (implies (integerp x)
+            (equal (ifix x)
+                   x)))
+
+  ;; optional but may make it faster::
+  (defthm ifix-opener-side-cond
+    (implies (integerp x)
+             (integerp x))
+    :rule-classes nil)
+
+  (rp::rp-attach-sc ifix-opener
+                    ifix-opener-side-cond))
+
 (add-rp-rule sv::4vec-fix-of-4vec)
 
 (define 4vec-bitnot$ ((size 4vec-p)
@@ -134,11 +156,7 @@
   :hints (("goal"
            :in-theory (e/d (4vec-zero-ext loghead) ()))))
 
-(local
- (defthm ifix-opener
-   (implies (integerp x)
-            (equal (ifix x)
-                   x))))
+
 
 (local
  (defthm 4vec->lower-opener
@@ -4462,3 +4480,6 @@
 
   (rp-attach-sc binary-+-to-4vec-plus
                 binary-+-to-4vec-plus-side-cond))
+
+
+
