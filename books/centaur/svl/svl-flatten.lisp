@@ -2664,6 +2664,35 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
       (fast-alist-clean (hons-acons ':initial val
                                     occ-to-occ-listeners)))))
 
+
+
+(define cut-list-until (e lst)
+  (if (atom lst)
+      nil
+    (if (equal e (car lst))
+        (list e)
+      (cons (car lst)
+            (cut-list-until e (cdr lst)))))) 
+
+(acl2::defines
+ find-loop
+ (define find-loop (occ-name occ-to-occ-listeners trace)
+   (declare (xargs :mode :program))
+   (b* ((member (member-equal occ-name trace))
+        ((when member)
+         (b* ((trace-cut (cut-list-until occ-name trace))) 
+           (progn$ (cw "Loop found for ~p0 in this trace: ~p1 ~%" occ-name
+                       trace-cut)
+                   trace-cut)))
+        (lst (cdr (hons-get occ-name occ-to-occ-listeners))))
+     (find-loop-lst lst occ-to-occ-listeners (cons occ-name trace))))
+ (define find-loop-lst (lst occ-to-occ-listeners trace)
+   (if (atom lst)
+       nil
+     (or (find-loop (car lst) occ-to-occ-listeners trace)
+         (find-loop-lst (cdr lst) occ-to-occ-listeners trace)))))
+   
+
 (progn
   (define create-occ-in-nodes-count-aux ((occ-names)
                                          (acc))
@@ -2774,7 +2803,21 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
          (- (and (not (equal not-added-occs-count 0))
                  (progn$
                   (cw "~% ~% Not added modules: ~p0 ~%"
-                      (get-not-added-module-occs all-tmp-occs occ-in-nodes-count))
+                      (get-not-added-module-occs all-tmp-occs
+                                                 occ-in-nodes-count))
+                  (b* ((found-loop (find-loop ':initial occ-to-occ-listeners
+                                              nil))
+                       (- (fmt-to-comment-window "These occs are: ~p0 ~%"  
+                                                 (list
+                                                  (cons #\0
+                                                        (acl2::pairlis2
+                                                         found-loop
+                                                         (rp::assoc-eq-vals
+                                                          found-loop all-tmp-occs))))
+                                                 0
+                                                 '(nil 10 12 nil)
+                                                 nil)))
+                    nil)
                   (hard-error
                    'svl-sort-occs-main
                    "~p0 occs are not added! Possibly a combinational loop~% ~%"
