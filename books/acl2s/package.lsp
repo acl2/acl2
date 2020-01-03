@@ -212,6 +212,7 @@
       hints
       lemmas
       flatten
+      v
       
       => ;sig
       _  ;range
@@ -246,6 +247,7 @@
       defdata::deffilter
       defdata::remove1-assoc-eq-lst
       defdata::sym-aalistp
+      defdata::sym-aalist
       
       read-run-time
       trans-eval
