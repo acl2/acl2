@@ -242,7 +242,12 @@
   :short "Recognize true lists of true lists of ATJ types."
   (atj-type-listp x)
   :true-listp t
-  :elementp-of-nil t)
+  :elementp-of-nil t
+  ///
+
+  (defrule atj-type-list-listp-of-remove-duplicates-equal
+    (implies (atj-type-list-listp x)
+             (atj-type-list-listp (remove-duplicates-equal x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,6 +823,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-function-type-list->outputs ((fn-types atj-function-type-listp))
+  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-function-type->outputs) to lists."
+  (cond ((endp fn-types) nil)
+        (t (cons (atj-function-type->outputs (car fn-types))
+                 (atj-function-type-list->outputs (cdr fn-types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defaggregate atj-function-type-info
   :short "Recognize ATJ function type information."
   :long
@@ -829,6 +843,16 @@
      as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
   ((main atj-function-type-p)
    (others atj-function-type-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-function-type-info->outputs ((info atj-function-type-info-p))
+  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :short "Return the list of all the output type lists
+          in a function's type information."
+  (cons
+   (atj-function-type->outputs (atj-function-type-info->main info))
+   (atj-function-type-list->outputs (atj-function-type-info->others info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

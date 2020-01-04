@@ -657,6 +657,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-mv-class-name ((types atj-type-listp))
+  :returns (class-name stringp)
+  :short "Generate the name of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since Java does not allow methods to return multiple values directly,
+     we need to create, for ACL2 functions that return @(tsee mv) results,
+     Java classes that group these multiple values into single objects.
+     There is a different class for each tuple of types
+     of the multiple values.
+     Here we generate the names of these classes,
+     based on the ATJ types of the multiple values.")
+   (xdoc::p
+    "These classes have names of the form @('MV_A_B_C_...'),
+     where @('A'), @('B'), @('C'), etc. correspond to the ATJ types,
+     or more precisely to their Java types counterparts.
+     For AIJ classes, we use the class names themselves.
+     For Java primitive types, we use the primitive types themselves.
+     For Java primitive array types,
+     we use the element types followed by @('array').
+     For instance, for the ATJ types @('(:asymbol :jint :jbyte[])'),
+     the class name is @('MV_Acl2Symbol_int_bytearray').")
+   (xdoc::p
+    "The list of ATJ types must have at least two elements.
+     It does not make sense to have a multiple value
+     consisting of zero or one values."))
+  (if (< (len types) 2)
+      (prog2$
+       (raise "Internal error: ~
+               cannot create MV class name for fewer than two types ~x0."
+              types)
+       "") ; irrelevant
+    (str::cat "MV" (atj-gen-shallow-mv-class-name-aux types)))
+
+  :prepwork
+  ((define atj-gen-shallow-mv-class-name-aux ((types atj-type-listp))
+     :returns (class-name-suffix stringp)
+     (b* (((when (endp types)) "")
+          (type (car types))
+          (jtype (atj-type-to-jtype type))
+          (first (cond
+                  ((equal jtype (jtype-boolean)) "_boolean")
+                  ((equal jtype (jtype-char)) "_char")
+                  ((equal jtype (jtype-byte)) "_byte")
+                  ((equal jtype (jtype-short)) "_short")
+                  ((equal jtype (jtype-int)) "_int")
+                  ((equal jtype (jtype-long)) "_long")
+                  ((equal jtype (jtype-array (jtype-boolean))) "_booleanarray")
+                  ((equal jtype (jtype-array (jtype-char))) "_chararray")
+                  ((equal jtype (jtype-array (jtype-byte))) "_bytearray")
+                  ((equal jtype (jtype-array (jtype-short))) "_shortarray")
+                  ((equal jtype (jtype-array (jtype-int))) "_intarray")
+                  ((equal jtype (jtype-array (jtype-long))) "_longarray")
+                  (t (str::cat "_" (jtype-class->name jtype)))))
+          (rest (atj-gen-shallow-mv-class-name-aux (cdr types))))
+       (str::cat first rest))
+     :verify-guards nil ; done below
+     ///
+     (verify-guards atj-gen-shallow-mv-class-name-aux
+       :hints (("Goal" :in-theory (enable atj-type-to-jtype)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-field-name ((index natp))
+  :returns (field-name stringp)
+  :short "Generate the name of the field with the given index
+          in an @(tsee mv) class."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     These classes have non-private fields named after the indices (0-based)
+     of the components of the @(tsee mv) values.")
+   (xdoc::p
+    "Currently we generate field names of the form @('$<i>'),
+     where @('<i>') is the base-10 representation of the index,
+     i.e. @('$0'), @('$1'), etc."))
+  (str::cat "$" (natstr index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-let-bindings ((vars symbol-listp)
                                       (blocks jblock-listp)
                                       (exprs jexpr-listp))
@@ -3791,6 +3874,243 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-mv-fields ((types atj-type-listp))
+  :returns (fields jfield-listp)
+  :short "Generate the fields of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     Each of these classes has a package-private instance field
+     for each component type.
+     The field is not private so that it can be quickly accessed
+     when we translate calls of @(tsee mv-nth) to Java;
+     this translation is not supported yet,
+     but we are in the process of building
+     more direct support for @(tsee mv) values
+     in the Java code generated by ATJ."))
+  (atj-gen-shallow-mv-fields-aux types 0)
+
+  :prepwork
+  ((define atj-gen-shallow-mv-fields-aux ((types atj-type-listp) (index natp))
+     :returns (fields jfield-listp)
+     (b* (((when (endp types)) nil)
+          (field (make-jfield :access (jaccess-default)
+                              :static? nil
+                              :final? nil
+                              :transient? nil
+                              :volatile? nil
+                              :type (atj-type-to-jtype (car types))
+                              :name (atj-gen-shallow-mv-field-name index)
+                              :init? nil))
+          (fields (atj-gen-shallow-mv-fields-aux (cdr types) (1+ index))))
+       (cons field fields)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-params ((types atj-type-listp))
+  :returns (params jparam-listp)
+  :short "Generate the parameters of the factory method
+          of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     Each such class has a static factory method
+     that re-uses a singleton instance of the class.
+     The names of this method's parameter are the same as
+     the corresponding fields."))
+  (atj-gen-shallow-mv-params-aux types 0)
+
+  :prepwork
+  ((define atj-gen-shallow-mv-params-aux ((types atj-type-listp) (index natp))
+     :returns (params jparam-listp)
+     (b* (((when (endp types)) nil)
+          (type (car types))
+          (param (make-jparam :final? nil
+                              :type (atj-type-to-jtype type)
+                              :name (atj-gen-shallow-mv-field-name index)))
+          (params (atj-gen-shallow-mv-params-aux (cdr types) (1+ index))))
+       (cons param params)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-mv-singleton-field-name*
+  :short "Name of the private static field that stores
+          the singleton instance of an @(tsee mv) class."
+  :long
+  (xdoc::topstring-p
+   "All the @(tsee mv) classes use the same name for this field.")
+  "singleton")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-mv-factory-method-name*
+  :short "Name of the package-private static factory method
+          of an @(tsee mv) class."
+  :long
+  (xdoc::topstring-p
+   "All the @(tsee mv) classes use the same name for this method.")
+  "make")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-asgs ((types atj-type-listp))
+  :returns (block jblockp)
+  :short "Generate the assignments in the factory method
+          of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     Each such class has a static factory method
+     that re-uses a singleton instance of the class.
+     The body of this method assigns the parameters
+     to the corresponding fields of the singleton instance,
+     which is stored in a private static field."))
+  (atj-gen-shallow-mv-asgs-aux types 0)
+
+  :prepwork
+  ((define atj-gen-shallow-mv-asgs-aux ((types atj-type-listp) (index natp))
+     :returns (block jblockp)
+     (b* (((when (endp types)) nil)
+          (param-name (atj-gen-shallow-mv-field-name index))
+          (field-var (jexpr-name (str::cat *atj-mv-singleton-field-name*
+                                           "."
+                                           param-name)))
+          (asg (jstatem-expr (jexpr-binary (jbinop-asg)
+                                           field-var
+                                           (jexpr-name param-name))))
+          (asgs (atj-gen-shallow-mv-asgs-aux (cdr types) (1+ index))))
+       (cons asg asgs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-class ((types atj-type-listp))
+  :returns (mv (class-name stringp)
+               (class jclassp))
+  :short "Generate the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values,
+     a different class for each tuple of types of interest.
+     This is a private static final class, nested in the main class.
+     It has a package-private instance field for each component type,
+     and a private static final field that stores a singleton instance
+     created in this field's initializer.
+     It also has a package-private static factory method
+     that reuses the singleton instance
+     by assigning the arguments to the fields
+     and then returning the singleton instance.
+     This way, we can build an @(tsee mv) value
+     without creating a new Java object.")
+   (xdoc::p
+    "Ideally, we would like to generate
+     one generic Java class with 2 type parameters for 2-tuples of MV values,
+     one generic Java class with 3 type parameters for 3-tuples of MV values,
+     and so on.
+     However, Java's restriction on generic types prevent us from doing that:
+     the factory method, being static, cannot reference type parameters."))
+  (b* ((name (atj-gen-shallow-mv-class-name types))
+       (instance-fields (atj-gen-shallow-mv-fields types))
+       (static-field (make-jfield :access (jaccess-private)
+                                  :static? t
+                                  :final? t
+                                  :transient? nil
+                                  :volatile? nil
+                                  :type (jtype-class name)
+                                  :name *atj-mv-singleton-field-name*
+                                  :init? (jexpr-newclass (jtype-class name)
+                                                         nil)))
+       (method-body (append (atj-gen-shallow-mv-asgs types)
+                            (jblock-return
+                             (jexpr-name *atj-mv-singleton-field-name*))))
+       (method (make-jmethod :access (jaccess-default)
+                             :abstract? nil
+                             :static? t
+                             :final? nil
+                             :synchronized? nil
+                             :native? nil
+                             :strictfp? nil
+                             :result (jresult-type (jtype-class name))
+                             :name *atj-mv-factory-method-name*
+                             :params (atj-gen-shallow-mv-params types)
+                             :throws nil
+                             :body method-body))
+       (class (make-jclass :access (jaccess-default)
+                           :abstract? nil
+                           :static? t
+                           :final? t
+                           :strictfp? nil
+                           :name name
+                           :superclass? nil
+                           :superinterfaces nil
+                           :body (append (jfields-to-jcbody-elements
+                                          (append instance-fields
+                                                  (list static-field)))
+                                         (jmethods-to-jcbody-elements
+                                          (list method))))))
+    (mv name class)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-classes ((typess atj-type-list-listp))
+  :returns (mv (class-names (and (string-listp class-names)
+                                 (equal (len class-names) (len typess))))
+               (classes (and (jclass-listp classes)
+                             (equal (len classes) (len typess)))))
+  :short "Lift @(tsee atj-gen-shallow-mv-class) to lists."
+  (b* (((when (endp typess)) (mv nil nil))
+       ((mv name class) (atj-gen-shallow-mv-class (car typess)))
+       ((mv names classes) (atj-gen-shallow-mv-classes (cdr typess))))
+    (mv (cons name names)
+        (cons class classes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-all-mv-classes ((fns-to-translate symbol-listp)
+                                        (guards$ booleanp)
+                                        (wrld plist-worldp))
+  :returns (mv (mv-class-names string-listp)
+               (classes jclass-listp))
+  :short "Generate all the @(tsee mv) classes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     We generate one such class for each distinct function output type list
+     of length two or more.
+     We go through all the ACL2 functions to translate to Java,
+     and consider the output types of the function types
+     associated to each such function that returns two or more results.
+     For each such list of two or more output types,
+     we generate a distinct class.
+     We also return a list of the nmes of all these classes."))
+  (b* (((when (endp fns-to-translate)) (mv nil nil))
+       (fn (car fns-to-translate))
+       ((unless (and (not (member-eq fn *stobjs-out-invalid*))
+                     (>= (number-of-results+ fn wrld) 2)))
+        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (out-typess (atj-function-type-info->outputs fn-info))
+       (out-typess (remove-duplicates-equal out-typess))
+       ((mv class-names classes) (atj-gen-shallow-mv-classes out-typess))
+       ((mv more-class-names more-classes)
+        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld)))
+    (mv (union-equal class-names more-class-names)
+        (union-equal classes more-classes)))
+  :verify-guards :after-returns
+  :prepwork ((local
+              (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-main-class ((pkgs string-listp)
                                     (fns-to-translate symbol-listp)
                                     (guards$ booleanp)
@@ -3815,14 +4135,14 @@
     "The class contains the initialization method,
      the methods to build the ACL2 packages,
      the classes that contain methods for the ACL2 functions,
+     the @(tsee mv) classes,
      the fields for quoted constants (only numbers and characters for now),
      and the static initializer.")
    (xdoc::p
     "It is critical that the static initializer
      comes before the fields for the quoted constants,
      so that the ACL2 environment is initialized
-     before the field initializers, which construct ACL2 values,
-     are executed;
+     before the field initializers, which construct ACL2 values, are executed;
      [JLS:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
@@ -3854,7 +4174,9 @@
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)
         (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
-       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
+       ((mv mv-class-names mv-classes)
+        (atj-gen-shallow-all-mv-classes fns-to-translate guards$ wrld))
+       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$ mv-class-names))
        (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
        (qconsts (make-atj-qconstants :integers nil
@@ -3883,11 +4205,11 @@
                                                       qsymbols-by-pkg))
        ((run-when verbose$)
         (cw "~%Generate the Java classes for the ACL2 packages:~%"))
-       (classes (atj-gen-shallow-pkg-classes pkgs
-                                             fields-by-pkg
-                                             methods-by-pkg
-                                             pkg-class-names
-                                             verbose$))
+       (pkg-classes (atj-gen-shallow-pkg-classes pkgs
+                                                 fields-by-pkg
+                                                 methods-by-pkg
+                                                 pkg-class-names
+                                                 verbose$))
        ((run-when verbose$)
         (cw "~%Generate the main Java class.~%"))
        (qinteger-fields (atj-gen-shallow-number-fields qconsts.integers))
@@ -3909,7 +4231,8 @@
        (body-class (append (list (jcbody-element-init static-init))
                            (jmethods-to-jcbody-elements pkg-methods)
                            (jfields-to-jcbody-elements all-qconst-fields)
-                           (jclasses-to-jcbody-elements classes)
+                           (jclasses-to-jcbody-elements mv-classes)
+                           (jclasses-to-jcbody-elements pkg-classes)
                            (list (jcbody-element-member
                                   (jcmember-method init-method))))))
     (mv (make-jclass :access (jaccess-public)
