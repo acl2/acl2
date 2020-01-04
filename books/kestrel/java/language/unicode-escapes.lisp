@@ -28,20 +28,20 @@
      The first set of constraints is described in [JLS:3.3],
      which also describes how
      a sequence of Unicode characters satisfying these constraints
-     is turned into another sequence of Unicode characters
-     that is then subjected to further constraints checks
-     and associated transformations.")
+     is turned into another sequence of Unicode characters,
+     which is then subjected to
+     further constraint checks and associated transformations.")
    (xdoc::p
     "The grammar rules in [JLS:3.3] express
      part of this first set of constraints,
-     but they are ambiguous alone:
+     but they are ambiguous if taken alone:
      one could always choose the @('raw-input-character') alternative
      for @('unicode-input-character'),
      without recognizing any @('unicode-escape'),
      and therefore leave the original Unicode sequence unchanged.
      The English text in [JLS:3.3] provides additional constraints.")
    (xdoc::p
-    "One additional constraint is that,
+    "One additional constraint in this first set is that,
      in order for a Unicode escape to be recognized
      (i.e. in order for @('unicode-escape') to be chosen),
      the backslash that starts the escape must be preceded
@@ -52,7 +52,7 @@
      where the double backslash is
      a (non-Unicode) escape sequence for a single backslash [JLS:3.10.6]:
      without the constraint, this Java literal string would be equivalent to
-     @('\"The Unicode escape \\ is the ASCII space character.\"').
+     @('\"The Unicode escape \\  is the ASCII space character.\"').
      [JLS:3.3] introduces the notion of `eligible' backslash
      as one preceded by an even number of backslashes (possibly none).
      In the example string above,
@@ -60,7 +60,7 @@
      because it is preceded by an odd number of backslashes.")
    (xdoc::p
     "For each eligible backslash, there are two cases:
-     either the eligible backslah is followed by one or more @('u') letters,
+     either the eligible backslash is followed by one or more @('u') letters,
      or it is not.
      In the second case, there is no Unicode escape,
      because the grammar requires the presence of one or more @('u') letters;
@@ -398,7 +398,7 @@
 (define-sk even-backslashes-tree-constraints-p
   ((trees (abnf-tree-list-with-root-p trees "unicode-input-character")))
   :returns (yes/no booleanp)
-  :short "Necessary condition for a parsed tree to be a Unicode escape."
+  :short "Necessary condition for parsed trees to be Unicode escapes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -412,7 +412,7 @@
      (this is the constraint expressed by the grammar alone),
      and such that some additional constrains are satisfied.
      This predicates expresses one such additional constraint, namely that
-     if the (only) subtree of the tree is a @('unicode-escape') tree
+     if the (only) subtree of any parsed tree is a @('unicode-escape') tree
      (i.e. if a Unicode escape is parsed),
      then the backslash that starts the Unicode escape must be eligible,
      i.e. preceded by an even number of backslashes in the character list.")
@@ -423,7 +423,7 @@
      this predicate only takes a list of trees as argument:
      the Unicode character list can be derived from the list of trees.")
    (xdoc::p
-    "Note that here we do not need to use @(tsee uniescapep),
+    "Note that here we do not need to use @(tsee uniescapep) here,
      because the implicit grammar constraint,
      namely that the string at the leaves of the tree is the parser input,
      captures most of @(tsee uniescapep),
@@ -441,7 +441,7 @@
 (define-sk uniescape-tree-constraints-p
   ((trees (abnf-tree-list-with-root-p trees "unicode-input-character")))
   :returns (yes/no booleanp)
-  :short "Sufficient condition for a parsed tree to be a Unicode escape."
+  :short "Sufficient condition for parsed trees to be Unicode escapes."
   :long
   (xdoc::topstring
    (xdoc::p
