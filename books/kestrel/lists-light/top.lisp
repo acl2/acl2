@@ -34,6 +34,8 @@
 (include-book "revappend")
 (include-book "remove-equal")
 (include-book "remove1-equal")
+(include-book "union-equal")
+(include-book "intersection-equal")
 
 ;; Books about non-built-in functions:
 (include-book "firstn")
