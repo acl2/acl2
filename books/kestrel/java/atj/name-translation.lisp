@@ -383,7 +383,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-pkg-to-class ((pkg stringp)
-                          (containing-class stringp)
+                          (java-class$ stringp)
                           (mv-class-names string-listp))
   :returns (class stringp)
   :short "Turn an ACL2 package name into a Java class name."
@@ -413,7 +413,7 @@
   (b* ((jchars (atj-chars-to-jchars-id (explode pkg) t :dash nil))
        (jstring (implode jchars))
        (jstring (if (or (member-equal jstring *atj-disallowed-class-names*)
-                        (equal jstring containing-class)
+                        (equal jstring java-class$)
                         (member-equal jstring mv-class-names))
                     (str::cat jstring "$")
                   jstring)))
@@ -422,7 +422,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-pkgs-to-classes ((pkgs string-listp)
-                             (containing-class stringp)
+                             (java-class$ stringp)
                              (mv-class-names string-listp))
   :guard (no-duplicatesp-equal pkgs)
   :returns (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
@@ -444,10 +444,8 @@
      corresponding to the ACL2 package names."))
   (b* (((when (endp pkgs)) nil)
        (pkg (car pkgs))
-       (class (atj-pkg-to-class pkg containing-class mv-class-names))
-       (rest-alist (atj-pkgs-to-classes (cdr pkgs)
-                                        containing-class
-                                        mv-class-names)))
+       (class (atj-pkg-to-class pkg java-class$ mv-class-names))
+       (rest-alist (atj-pkgs-to-classes (cdr pkgs) java-class$ mv-class-names)))
     (acons pkg class rest-alist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
