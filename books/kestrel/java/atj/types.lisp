@@ -50,9 +50,8 @@
      In other words,
      narrower types than the one for all ACL2 values (i.e. @('Acl2Value'))
      can be used for the argument and result of this Java method.
-     This narrowing can also lead to methods that operate
-     on Java primitive types and arrays,
-     the former of which ATJ already generates.")
+     This narrowing is also used to generate methods
+     that operate on Java primitive values and primitive arrays.")
    (xdoc::p
     "In general, establishing the narrower input and output types
      for a Java method generated from an ACL2 function
