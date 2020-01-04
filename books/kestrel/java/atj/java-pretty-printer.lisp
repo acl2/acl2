@@ -860,16 +860,26 @@
   :returns (line msgp)
   :short "Pretty-print a field declaration."
   (b* (((jfield field) field))
-    (print-jline (msg "~@0~@1~@2~@3~@4~@5 ~@6 = ~@7;"
-                      (print-jaccess field.access)
-                      (if field.static? "static " "")
-                      (if field.final? "final " "")
-                      (if field.transient? "transient " "")
-                      (if field.volatile? "volatile " "")
-                      (print-jtype field.type)
-                      field.name
-                      (print-jexpr field.init (jexpr-rank-expression)))
-                 indent-level)))
+    (if field.init?
+        (print-jline (msg "~@0~@1~@2~@3~@4~@5 ~@6 = ~@7;"
+                          (print-jaccess field.access)
+                          (if field.static? "static " "")
+                          (if field.final? "final " "")
+                          (if field.transient? "transient " "")
+                          (if field.volatile? "volatile " "")
+                          (print-jtype field.type)
+                          field.name
+                          (print-jexpr field.init? (jexpr-rank-expression)))
+                     indent-level)
+      (print-jline (msg "~@0~@1~@2~@3~@4~@5 ~@6;"
+                        (print-jaccess field.access)
+                        (if field.static? "static " "")
+                        (if field.final? "final " "")
+                        (if field.transient? "transient " "")
+                        (if field.volatile? "volatile " "")
+                        (print-jtype field.type)
+                        field.name)
+                   indent-level))))
 
 (define print-jresult ((result jresultp))
   :returns (part msgp)

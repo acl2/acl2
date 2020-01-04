@@ -624,7 +624,7 @@
   (xdoc::topstring
    (xdoc::p
     "We only capture declarations of single fields,
-     with a literal as initializer,
+     with or without an initializer,
      and without array square brackets after the name
      (i.e. all the array square brackets are in the type)."))
   ((access jaccess)
@@ -634,7 +634,7 @@
    (volatile? bool)
    (type jtype)
    (name string)
-   (init jexpr))
+   (init? maybe-jexpr))
   :pred jfieldp)
 
 (fty::deflist jfield-list
