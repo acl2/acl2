@@ -254,6 +254,8 @@
 
   ///
 
+  (fty::deffixequiv-mutual tree->string)
+
   (defrule tree-list->string-when-atom
     (implies (atom trees)
              (equal (tree-list->string trees) nil)))
@@ -321,6 +323,8 @@
     :no-function t)
 
   ///
+
+  (fty::deffixequiv-mutual tree-terminatedp)
 
   (std::deflist tree-list-terminatedp (x)
     (tree-terminatedp x)
@@ -390,7 +394,8 @@
                  ((natp (car (tree-leafterm->get tree))))
                  ;; Matt K. mod to get proof to work in ACL2(r):
                  :in-theory (enable tree-leafterm->get)))
-  :no-function t)
+  :no-function t
+  :hooks (:fix))
 
 (define nat-match-sensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
