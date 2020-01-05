@@ -632,45 +632,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-annotate-var ((var symbolp) (type atj-typep))
+(define atj-type-annotate-var ((var symbolp) (types atj-type-listp))
+  :guard (consp types)
   :returns (annotated-var symbolp)
-  :short "Annotate an ACL2 variable with a type."
+  :short "Annotate an ACL2 variable with a non-empty list of types."
   :long
   (xdoc::topstring
    (xdoc::p
     "As mentioned "
     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
     ", we systematically add type information to each ACL2 variable.
-     We do so by adding @('[type]') before the variable name,
-     where @('type') identifies an ATJ type."))
-  (packn-pos (list "[" (atj-type-id type) "]" var) var))
+     We do so by adding @('[types]') before the variable name,
+     where @('types') identifies a list of ATJ types."))
+  (packn-pos (list "[" (atj-types-id types) "]" var) var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unannotate-var ((var symbolp))
   :returns (mv (unannotated-var symbolp)
-               (type atj-typep))
+               (types atj-type-listp))
   :short "Decompose an annotated ACL2 variable into
-          its unannotated counterpart and its type."
+          its unannotated counterpart and its types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the inverse of @(tsee atj-type-annotate-var).")
-   (xdoc::p
-    "It is used when translating from ACL2 to Java,
-     because the name of the Java variable is the one of the ACL2 variable
-     without the type annotation."))
+    "This is the inverse of @(tsee atj-type-annotate-var)."))
   (b* ((string (symbol-name var))
-       ((unless (and (>= (length string) 4)
-                     (eql (char string 0) #\[)
-                     (eql (char string 3) #\])))
-        (raise "Internal error: ~x0 has the wrong format." var)
-        (mv nil :avalue)) ; irrelevant
-       (unannotated-string (subseq string 4 (length string)))
+       ((unless (and (> (length string) 0)
+                     (eql (char string 0) #\[)))
+        (raise "Internal error: ~x0 is not an annotated variable." var)
+        (mv nil (list :avalue))) ; irrelevant
+       (pos (position #\] string))
+       ((unless (natp pos))
+        (raise "Internal error: ~x0 is not an annotated variable." var)
+        (mv nil (list :avalue))) ; irrelevant
+       (types-id (subseq string 1 pos))
+       (types (atj-types-of-id types-id))
+       ;; ((unless (and (>= (length string) 4)
+       ;;               (eql (char string 0) #\[)
+       ;;               (eql (char string 3) #\])))
+       ;;  (raise "Internal error: ~x0 has the wrong format." var)
+       ;;  (mv nil :avalue)) ; irrelevant
+       (unannotated-string (subseq string (1+ pos) (length string)))
        (unannotated-var (intern-in-package-of-symbol unannotated-string var))
-       (type-id (subseq string 1 3))
-       (type (atj-type-of-id type-id)))
-    (mv unannotated-var type)))
+       ;; (type-id (subseq string 1 3))
+       ;; (type (atj-type-of-id type-id))
+       )
+    (mv unannotated-var types))
+  :guard-hints (("Goal"
+                 :use ((:instance acl2::nth-of-index-when-member
+                        (k #\]) (x (explode (symbol-name var)))))
+                 :in-theory (disable acl2::nth-of-index-when-member)))
+  :prepwork ((local (include-book "std/lists/index-of" :dir :system)))
+  ///
+
+  (more-returns
+   (types consp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -678,9 +695,10 @@
                                 (types atj-type-listp))
   :guard (int= (len vars) (len types))
   :returns (new-vars symbol-listp)
-  :short "Lift @(tsee atj-type-annotate-var) to lists."
+  :short "Annotate each of a list of ACL2 variable
+          with a corresponding singleton list of types."
   (cond ((endp vars) nil)
-        (t (cons (atj-type-annotate-var (car vars) (car types))
+        (t (cons (atj-type-annotate-var (car vars) (list (car types)))
                  (atj-type-annotate-vars (cdr vars) (cdr types)))))
   ///
 
@@ -691,21 +709,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unannotate-vars ((vars symbol-listp))
-  :returns (mv (unannotated-vars symbol-listp)
-               (types atj-type-listp))
-  :short "Lift @(tsee atj-type-unannotate-var) to lists."
-  (b* (((when (endp vars)) (mv nil nil))
-       ((mv var type) (atj-type-unannotate-var (car vars)))
-       ((mv vars types) (atj-type-unannotate-vars (cdr vars))))
-    (mv (cons var vars) (cons type types)))
+  :returns (unannotated-vars symbol-listp)
+  :short "Remove the type annotations from a list of variables."
+  :long
+  (xdoc::topstring-p
+   "The annotating types are discarded.")
+  (b* (((when (endp vars)) nil)
+       ((mv var &) (atj-type-unannotate-var (car vars)))
+       (vars (atj-type-unannotate-vars (cdr vars))))
+    (cons var vars))
   ///
 
-  (defret len-of-atj-type-unannotate-vars.unannotated-vars
+  (defret len-of-atj-type-unannotate-vars
     (equal (len unannotated-vars)
-           (len vars)))
-
-  (defret len-of-atj-type-unannotate-vars.types
-    (equal (len types)
            (len vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -861,7 +877,7 @@
                  (raise "Internal error: the variable ~x0 has no type." term)
                  (mv nil :avalue))) ; irrelevant
                (type (cdr var+type))
-               (var (atj-type-annotate-var var type)))
+               (var (atj-type-annotate-var var (list type))))
             (mv (atj-type-wrap-term var
                                     (list type)
                                     (and required-type?
@@ -1866,10 +1882,10 @@
                                                curr-pkg
                                                vars-by-name)))
           (mv (cons new-formal new-formals) renaming-new renaming-old indices)))
-       ((mv uuformal type) (atj-type-unannotate-var uformal))
+       ((mv uuformal types) (atj-type-unannotate-var uformal))
        ((mv new-uuformal indices)
         (atj-rename-formal uuformal indices curr-pkg vars-by-name))
-       (new-uformal (atj-type-annotate-var new-uuformal type))
+       (new-uformal (atj-type-annotate-var new-uuformal types))
        (renaming-new (acons uformal new-uformal renaming-new))
        (renaming-old (acons uformal new-uformal renaming-old))
        (new-formal (atj-mark-var-new new-uformal))
@@ -2120,7 +2136,7 @@
      and we use the resulting renaming alists to process the body."))
   (b* ((vars (union-eq formals (all-free/bound-vars body)))
        ((mv vars &) (atj-unmark-vars vars))
-       ((mv vars &) (atj-type-unannotate-vars vars))
+       (vars (atj-type-unannotate-vars vars))
        (vars-by-name (organize-symbols-by-name vars))
        ((mv new-formals renaming-new renaming-old indices)
         (atj-rename-formals

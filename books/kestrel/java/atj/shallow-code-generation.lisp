@@ -783,8 +783,9 @@
        (var (car vars))
        (expr (car exprs))
        ((mv var new?) (atj-unmark-var var))
-       ((mv var type) (atj-type-unannotate-var var))
+       ((mv var types) (atj-type-unannotate-var var))
        (jvar (symbol-name var))
+       (type (atj-type-list-to-type types))
        (var-block (if new?
                       (jblock-locvar (atj-type-to-jtype type) jvar expr)
                     (jblock-asg (jexpr-name jvar) expr)))
@@ -3192,7 +3193,7 @@
         (atj-pre-translate fn formals body in-types out-types nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
-       ((mv formals &) (atj-type-unannotate-vars formals))
+       (formals (atj-type-unannotate-vars formals))
        (method-params (atj-gen-paramlist
                        (symbol-name-lst formals)
                        (atj-type-list-to-jtype-list in-types)))
