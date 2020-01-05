@@ -1633,8 +1633,7 @@
  <p>Added some <see topic='@(url nat-list-fix-theorems)'>theorems about lists
  of natural numbers</see>.</p>
 
- <p>Added a <see topic='@(url string-listp-theorems)'>theorem about lists of
- strings</see>.</p>
+ <p>Added a theorem about lists of strings.</p>
 
  <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
  the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the
