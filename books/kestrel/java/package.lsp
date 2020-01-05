@@ -41,6 +41,7 @@
                          chars=>nats
                          check-list-call
                          conjoin
+                         cons-listp
                          cons-pos-alistp
                          define-sk
                          defxdoc+

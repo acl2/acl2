@@ -1390,7 +1390,7 @@
      where @('<T>') is a Java primitive type.
      In this case, we want to retrieve the elements of the list
      and use the corresponding Java expressions for the array initializer."))
-  (b* (((mv term & &) (atj-type-unwrap-term term))
+  (b* (((mv term & &) (atj-type-unwrap-term$ term))
        ((when (variablep term)) (mv nil nil))
        ((when (fquotep term)) (if (equal term *nil*)
                                   (mv t nil)
@@ -1406,7 +1406,8 @@
        ((mv yes/no-rest elements-rest) (atj-check-type-annotated-list-call cdr))
        ((unless yes/no-rest) (mv nil nil)))
     (mv t (cons car elements-rest)))
-  :prepwork ((local (in-theory (enable atj-type-unwrap-term))))
+  :prepwork ((local (in-theory (enable atj-type-unwrap-term$
+                                       atj-type-unwrap-term))))
   ///
 
   (defret atj-check-type-annotated-list-call-decreases
@@ -1447,14 +1448,16 @@
      with a modified destination type."))
   (b* (((when (endp terms)) nil)
        (term (car terms))
-       ((mv term src-type dst-type) (atj-type-unwrap-term term))
+       ((mv term src-type dst-type) (atj-type-unwrap-term$ term))
        ((unless term) nil) ; to prove ACL2-COUNT theorem below
        ((unless (eq dst-type :avalue))
         (raise "Internal error: ~
                 the term ~x0 is wrapped with a conversion function ~
                 from type ~x1 to type ~x2."
                term src-type dst-type))
-       (new-term (atj-type-wrap-term term src-type new-dst-type))
+       (new-term (atj-type-wrap-term term
+                                     (list src-type)
+                                     (list new-dst-type)))
        (new-terms (atj-type-rewrap-array-initializer-elements (cdr terms)
                                                               new-dst-type)))
     (cons new-term new-terms))
@@ -1464,7 +1467,8 @@
     (<= (acl2-count new-terms)
         (acl2-count terms))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
+    :hints (("Goal" :in-theory (enable atj-type-unwrap-term$
+                                       atj-type-unwrap-term
                                        atj-type-wrap-term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1546,7 +1550,7 @@
        and return an expression that compares it with
        (the Java representation of) @('nil')."))
     (b* ((jbool? ; non-NIL iff TEST has the form explained above
-          (b* (((mv test src-type dst-type) (atj-type-unwrap-term test))
+          (b* (((mv test src-type dst-type) (atj-type-unwrap-term$ test))
                ((unless (and (eq src-type :asymbol)
                              (eq dst-type :asymbol)))
                 nil)
@@ -1558,7 +1562,8 @@
                (test (fargn test 1))
                ((unless (and (consp test)
                              (eq (ffn-symb test)
-                                 (atj-type-conv :jboolean :jboolean))
+                                 (atj-type-conv (list :jboolean)
+                                                (list :jboolean)))
                              (int= (len (fargs test)) 1))) ; always true
                 nil))
             test))
@@ -1847,7 +1852,7 @@
       "Note that we are dealing with annotated terms,
        so the argument of the constructor must be unwrapped
        to be examined."))
-    (b* (((mv arg & &) (atj-type-unwrap-term arg))
+    (b* (((mv arg & &) (atj-type-unwrap-term$ arg))
          ((unless arg) ; for termination proof
           (mv nil (jexpr-name "irrelevant") jvar-result-index)))
       (if (quotep arg)
@@ -2826,7 +2831,7 @@
       "If the ACL2 term is a quoted constant,
        we represent it as its value.
        We wrap the resulting expression with a Java conversion, if needed."))
-    (b* (((mv term src-type dst-type) (atj-type-unwrap-term term))
+    (b* (((mv term src-type dst-type) (atj-type-unwrap-term$ term))
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))
@@ -2906,10 +2911,12 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-shallow-term
-    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
-                                       unquote-term
-                                       pseudo-termfnp
-                                       pseudo-lambdap)))))
+    :hints (("Goal" :in-theory (e/d (atj-type-unwrap-term$
+                                     atj-type-unwrap-term
+                                     unquote-term
+                                     pseudo-termfnp
+                                     pseudo-lambdap)
+                                    (atj-type-iff-when-atj-maybe-typep))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3177,6 +3184,9 @@
                 the number ~x0 of parameters of ~x1 ~
                 does not match the number ~x2 of input types of ~x1."
                (len formals) fn (len in-types))
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
+       ((unless (consp out-types))
+        (raise "Internal error: no output types ~x0 for ~x1." out-types fn)
         (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-types nil guards$ wrld))

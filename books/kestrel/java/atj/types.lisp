@@ -18,6 +18,7 @@
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -1606,3 +1607,58 @@
                                                (cdr fn-types)
                                                current-min-in-jtypes
                                                current-out-types?)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-to-type-list ((type atj-typep))
+  :returns (types atj-type-listp :hyp :guard)
+  :short "Turn a single ATJ type into a singleton list of it."
+  :long
+  (xdoc::topstring-p
+   "This is just @(tsee list),
+    but we introduce an explicit function for greater clarity.")
+  (list type)
+  ///
+
+  (more-returns
+   (types consp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type-list-list ((types atj-type-listp))
+  :returns (typess atj-type-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-type-to-types) to lists."
+  (cond ((endp types) nil)
+        (t (cons (atj-type-to-type-list (car types))
+                 (atj-type-list-to-type-list-list (cdr types)))))
+  ///
+
+  (more-returns
+   (typess acl2::cons-listp))
+
+  (defret len-of-atj-type-list-to-type-list-list
+    (equal (len typess)
+           (len types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type ((types atj-type-listp))
+  :guard (consp types)
+  :returns (type atj-typep :hyp :guard)
+  :short "Treat a non-empty list of ATJ types as a single type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is temporary code, useful while we are in the process of
+     building more direct support for @(tsee mv) in ATJ.
+     As we are generalizing things (e.g. type annotations)
+     from single types to (non-empty) lists of types,
+     it is sometimes necessary to treat lists of two or more types
+     as the single @(':acons') type,
+     which was the output type of @(tsee mv) functions
+     before we started to build more direct support for @(tsee mv).
+     If instead the list of types is a singleton,
+     we return the unique element."))
+  (if (= (len types) 1)
+      (car types)
+    :acons))
