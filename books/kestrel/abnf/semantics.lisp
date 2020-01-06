@@ -405,8 +405,10 @@
    "A natural number matches
     a character in a case-sensitive character value notation iff
     the natural number is the character's code.")
-  (equal nat (char-code char))
+  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
+    (equal nat (char-code char)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nat-match-sensitive-char-p-of-char-fix
@@ -424,10 +426,12 @@
     the natural number is the code
     of the character or
     of the uppercase or lowercase counterpart of the character.")
-  (or (equal nat (char-code char))
-      (equal nat (char-code (upcase-char char)))
-      (equal nat (char-code (downcase-char char))))
+  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
+    (or (equal nat (char-code char))
+        (equal nat (char-code (upcase-char char)))
+        (equal nat (char-code (downcase-char char)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nat-match-insensitive-char-p-of-char-fix
@@ -443,6 +447,7 @@
                 (nat-match-sensitive-char-p (car nats) (car chars))
                 (nats-match-sensitive-chars-p (cdr nats) (cdr chars)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nats-match-sensitive-chars-p-when-atom-chars
@@ -465,6 +470,7 @@
                 (nat-match-insensitive-char-p (car nats) (car chars))
                 (nats-match-insensitive-chars-p (cdr nats) (cdr chars)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nats-match-insensitive-chars-p-when-atom-chars
@@ -496,7 +502,8 @@
                                 nats (explode char-val.get))
                     :insensitive (nats-match-insensitive-chars-p
                                   nats (explode char-val.get)))))
-  :no-function t)
+  :no-function t
+  :hooks (:fix))
 
 (define tree-match-prose-val-p ((tree treep) (prose-val prose-val-p))
   :returns (yes/no booleanp)
@@ -509,7 +516,8 @@
     its meaning can be formalized via external predicates on trees.=")
   t
   :ignore-ok t
-  :no-function t)
+  :no-function t
+  :hooks (:fix))
 
 (define numrep-match-repeat-range-p ((numrep natp) (range repeat-rangep))
   :returns (yes/no booleanp)
@@ -518,19 +526,21 @@
   (xdoc::topstring-p
    "A number of repetitions (a natural number) matches a repetition range iff
     it is between the range's minimum and the range's maximum.")
-  (let ((min (repeat-range->min range))
-        (max (repeat-range->max range)))
+  (b* ((numrep (mbe :logic (nfix numrep) :exec numrep))
+       (min (repeat-range->min range))
+       (max (repeat-range->max range)))
     (and (<= min numrep)
          (or (nati-case max :infinity)
              (<= numrep (nati-finite->get max)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule 0-when-match-repeat-range-0
     (implies (and (equal range (repeat-range 0 (nati-finite 0)))
                   (acl2-numberp n)) ; added by Matt K after tau bug fix 8/16/18
              (equal (numrep-match-repeat-range-p n range)
-                    (equal n 0)))
+                    (equal (nfix n) 0)))
     :enable numrep-match-repeat-range-p))
 
 (define lookup-rulename ((rulename rulenamep) (rules rulelistp))
@@ -545,13 +555,16 @@
     appears (on the left side of) some rule in @('rules').
     The reason is that well-formed rules
     must have non-empty alternations as definientia.")
-  (cond ((endp rules) nil)
-        (t (let ((rule (car rules)))
-             (if (equal (rule->name rule) rulename)
-                 (append (rule->definiens rule)
-                         (lookup-rulename rulename (cdr rules)))
-               (lookup-rulename rulename (cdr rules))))))
-  :no-function t)
+  (b* ((rulename (mbe :logic (rulename-fix rulename) :exec rulename)))
+    (cond ((endp rules) nil)
+          (t (let ((rule (car rules)))
+               (if (equal (rule->name rule) rulename)
+                   (append (rule->definiens rule)
+                           (lookup-rulename rulename (cdr rules)))
+                 (lookup-rulename rulename (cdr rules)))))))
+  :no-function t
+  :measure (len rules)
+  :hooks (:fix))
 
 (defines tree-match-alt/conc/rep/elem-p
   :flag-local nil
@@ -840,7 +853,9 @@
              (nat-listp (tree->string tree)))
     :enable (tree-match-num-val-p
              tree-match-char-val-p
-             tree->string)))
+             tree->string))
+
+  (fty::deffixequiv-mutual tree-match-alt/conc/rep/elem-p))
 
 (define parse-treep
   (tree (string stringp) (rulename rulenamep) (rules rulelistp))
