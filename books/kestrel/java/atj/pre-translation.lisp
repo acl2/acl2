@@ -758,7 +758,7 @@
      At the top level (see @(tsee atj-type-annotate-formals+body)),
      this is the output type of the function:
      the body of the function must have the output type of the function.
-     The recursive function @('atj-type-annotate-terms')
+     The recursive function @('atj-type-annotate-args')
      that operates on lists of terms
      does not take a list of required types as input:
      if it did, it would be always consist of @('nil')s,
@@ -960,10 +960,10 @@
                 (mv (atj-type-wrap-term term (list type) (list type))
                     type)))))
          (args (fargs term))
-         ((mv args types) (atj-type-annotate-terms args
-                                                   var-types
-                                                   guards$
-                                                   wrld))
+         ((mv args types) (atj-type-annotate-args args
+                                                  var-types
+                                                  guards$
+                                                  wrld))
          ((when (eq fn 'mv))
           (mv (atj-type-wrap-term (fcons-term 'mv args)
                                   (list :acons)
@@ -1022,42 +1022,42 @@
                                    (list required-type?)))
           (or required-type? type))))
 
-  (define atj-type-annotate-terms ((terms pseudo-term-listp)
-                                   (var-types atj-symbol-type-alistp)
-                                   (guards$ booleanp)
-                                   (wrld plist-worldp))
-    :returns (mv (annotated-terms (and (pseudo-term-listp annotated-terms)
-                                       (equal (len annotated-terms)
-                                              (len terms)))
-                                  :hyp :guard)
+  (define atj-type-annotate-args ((args pseudo-term-listp)
+                                  (var-types atj-symbol-type-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
+    :returns (mv (annotated-args (and (pseudo-term-listp annotated-args)
+                                      (equal (len annotated-args)
+                                             (len args)))
+                                 :hyp :guard)
                  (resulting-types (and (atj-type-listp resulting-types)
                                        (equal (len resulting-types)
-                                              (len terms)))
+                                              (len args)))
                                   :hyp :guard))
-    (b* (((when (endp terms)) (mv nil nil))
-         ((mv term type) (atj-type-annotate-term (car terms)
+    (b* (((when (endp args)) (mv nil nil))
+         ((mv term type) (atj-type-annotate-term (car args)
                                                  nil ; REQUIRED-TYPE?
                                                  var-types
                                                  guards$
                                                  wrld))
-         ((mv terms types) (atj-type-annotate-terms (cdr terms)
-                                                    var-types
-                                                    guards$
-                                                    wrld)))
-      (mv (cons term terms) (cons type types))))
+         ((mv args types) (atj-type-annotate-args (cdr args)
+                                                  var-types
+                                                  guards$
+                                                  wrld)))
+      (mv (cons term args) (cons type types))))
 
   :verify-guards nil ; done below
   ///
 
   (defret-mutual atj-type-annotate-term
-    (defret true-listp-of-atj-type-annotate-term.annotated-terms-aux
+    (defret true-listp-of-atj-type-annotate-term.annotated-args-aux
       t
       :rule-classes nil
       :fn atj-type-annotate-term)
-    (defret true-listp-of-atj-type-annotate-term.annotated-terms
-      (true-listp annotated-terms)
+    (defret true-listp-of-atj-type-annotate-term.annotated-args
+      (true-listp annotated-args)
       :rule-classes :type-prescription
-      :fn atj-type-annotate-terms))
+      :fn atj-type-annotate-args))
 
   (defret-mutual atj-type-annotate-term
     (defret true-listp-of-atj-type-annotate-term.resulting-types-aux
@@ -1067,7 +1067,7 @@
     (defret true-listp-of-atj-type-annotate-term.resulting-types
       (true-listp resulting-types)
       :rule-classes :type-prescription
-      :fn atj-type-annotate-terms))
+      :fn atj-type-annotate-args))
 
   (verify-guards atj-type-annotate-term
     :hints (("Goal" :expand ((pseudo-termp term))))))
