@@ -1627,7 +1627,7 @@
 
 (define atj-type-list-to-type-list-list ((types atj-type-listp))
   :returns (typess atj-type-list-listp :hyp :guard)
-  :short "Lift @(tsee atj-type-to-types) to lists."
+  :short "Lift @(tsee atj-type-to-type-list) to lists."
   (cond ((endp types) nil)
         (t (cons (atj-type-to-type-list (car types))
                  (atj-type-list-to-type-list-list (cdr types)))))

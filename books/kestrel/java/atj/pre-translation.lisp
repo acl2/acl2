@@ -856,7 +856,7 @@
     "An annotated term is still a regular term,
      but it has a certain structure.")
    (xdoc::p
-    "While @(tsee atj-type-wrap) and @(tsee atj-type-rewrap)
+    "While @(tsee atj-type-wrap-term) and @(tsee atj-type-rewrap-term)
      have been extended to handle multiple types as well as single types,
      for now we still annotate terms
      with conversion functions between single types.
