@@ -55,7 +55,9 @@
      it depends on whether @('mv-term') is single-valued or multi-valued,
      and also on whether the terms is translated for execution or not.
      However, the result of translating @(tsee mv-let)
-     necessarily has the form above."))
+     necessarily has the form above.")
+   (xdoc::p
+    "This utility is essentially the inverse of @(tsee make-mv-let-call)."))
   (b* (((when (variablep term)) (mv nil nil nil nil))
        ((when (fquotep term)) (mv nil nil nil nil))
        (lambda-mv (ffn-symb term))
