@@ -86,4 +86,18 @@
      :returns (yes/no booleanp)
      (or (endp terms)
          (and (equal (car terms) `(mv-nth ',index mv))
-              (check-mv-let-call-aux (cdr terms) (1+ index)))))))
+              (check-mv-let-call-aux (cdr terms) (1+ index))))))
+
+  ///
+
+  (defret check-mv-let-call-mv-term-smaller
+    (implies yes/no
+             (< (acl2-count mv-term)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret check-mv-let-call-body-term-smaller
+    (implies yes/no
+             (< (acl2-count body-term)
+                (acl2-count term)))
+    :rule-classes :linear))
