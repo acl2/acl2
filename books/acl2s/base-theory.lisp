@@ -28,6 +28,7 @@
 (include-book "std/strings/top" :dir :system)
 (include-book "system/doc/developers-guide" :dir :system)
 
+(include-book "acl2s/acl2s-size" :dir :system)
 (include-book "acl2s/ccg/ccg" :dir :system 
   :uncertified-okp nil :ttags ((:ccg))
   :load-compiled-file nil)
@@ -685,6 +686,7 @@ I commented out some disabled theorems that seem fine to me.
 (local
  (set-default-hints
   '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
+    (acl2s::stage acl2s-size)
     (acl2s::stage acl2s::negp)
     (acl2s::stage acl2s::posp)
     (acl2s::stage acl2s::natp)
@@ -771,10 +773,13 @@ I commented out some disabled theorems that seem fine to me.
 
 (add-macro-fn tl-fix acl2::true-list-fix)
 
-(defmacro app (&rest rst)
-  `(append ,@rst))
+(definec bin-app (x :tl y :tl) :tl
+  (append x y))
+
+(make-n-ary-macro app bin-app nil t)
 
 (add-macro-fn app binary-append)
+(add-macro-fn app bin-app)
 
 ; shorthand for equal
 (defmacro == (x y)

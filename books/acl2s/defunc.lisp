@@ -1715,7 +1715,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program))
   (make-undefined-aux parsed w d? nil pkg))
 
-
 (defun defunc-events (parsed d? state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((list name formals ic oc decls body kwd-alist) parsed)
