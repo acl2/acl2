@@ -41,3 +41,5 @@
 (include-book "firstn")
 (include-book "repeat")
 (include-book "reverse-list")
+(include-book "memberp-def")
+(include-book "memberp")
