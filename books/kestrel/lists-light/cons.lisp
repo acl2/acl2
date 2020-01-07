@@ -20,3 +20,9 @@
                   (and (consp z)
                        (equal x (car z))
                        (equal y (cdr z))))))
+
+;; Param names changed to match std
+(defthm true-listp-of-cons
+  (equal (true-listp (cons a x))
+         (true-listp x))
+  :hints (("Goal" :cases ((true-listp x)))))
