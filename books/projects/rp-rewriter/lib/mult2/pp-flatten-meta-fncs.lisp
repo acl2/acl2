@@ -114,6 +114,8 @@
           (pp-has-bitp-rp (caddr term)))
     nil))
 
+
+
 (define pp-term-p (term)
   :enabled t
   :measure (cons-count term)
@@ -162,8 +164,7 @@
             :in-theory (e/d (cut-list-by-half) ())))))
 
 (local
- (in-theory (disable floor
-                     len)))
+ (in-theory (disable floor len)))
 
 (in-theory (disable pp-list-order))
 

@@ -1241,6 +1241,149 @@
     (cons (list 'quote (car lst))
           (quote-all (cdr lst)))))
 
+(local
+ (in-theory (disable
+             pp-term-p)))
+
+(define good-4vec-term-p (term)
+  :measure (cons-count term)
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
+  (b* ((orig term)
+       (term (ex-from-rp term)))
+    (case-match term
+      (('sv::4vec-bitand x y)
+       (and (good-4vec-term-p x)
+            (good-4vec-term-p y)))
+      (('sv::4vec-bitxor x y)
+       (and (good-4vec-term-p x)
+            (good-4vec-term-p y)))
+      (('sv::4vec-bitor x y)
+       (and (good-4vec-term-p x)
+            (good-4vec-term-p y)))
+      (('sv::4vec-? x y z)
+       (and (good-4vec-term-p x)
+            (good-4vec-term-p y)
+            (good-4vec-term-p z)))
+      (('sv::4vec-?* x y z)
+       (and (good-4vec-term-p x)
+            (good-4vec-term-p y)
+            (good-4vec-term-p z)))
+      (('svl::4vec-bitnot$ ''1 x)
+       (and (good-4vec-term-p x)
+            ))
+      (('svl::bits num start size)
+       (and (equal size ''1)
+            (case-match num
+              (('rp ''integerp x)
+               (atom (ex-from-rp x))))
+            (case-match start
+              (('quote x)
+               (natp x)))))
+      (('sv::4vec-fix$inline x)
+       (and (good-4vec-term-p x)))
+      (('sv::3vec-fix x)
+       (and (good-4vec-term-p x)))
+      (& (pp-term-p orig)))))
+
+(define 4vec->pp-term ((term good-4vec-term-p))
+  :returns (pp-term)
+  :measure (cons-count term)
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (good-4vec-term-p) ())))
+  (b* ((orig term)
+       (term (ex-from-rp term)))
+    (case-match term
+      (('sv::4vec-bitand x y)
+       (b* ((n1 (4vec->pp-term x))
+            (n2 (4vec->pp-term y)))
+         `(binary-and ,n1 ,n2)))
+      (('sv::4vec-bitxor x y)
+       (b* ((n1 (4vec->pp-term x))
+            (n2 (4vec->pp-term y)))
+         `(binary-xor ,n1 ,n2)))
+      (('sv::4vec-bitor x y)
+       (b* ((n1 (4vec->pp-term x))
+            (n2 (4vec->pp-term y)))
+         `(binary-or ,n1 ,n2)))
+      (('sv::4vec-? x y z)
+       (b* ((n1 (4vec->pp-term x))
+            (n2 (4vec->pp-term y))
+            (n3 (4vec->pp-term z)))
+         `(binary-? ,n1 ,n2 ,n3)))
+      (('sv::4vec-?* x y z)
+       (b* ((n1 (4vec->pp-term x))
+            (n2 (4vec->pp-term y))
+            (n3 (4vec->pp-term z)))
+         `(binary-? ,n1 ,n2 ,n3)))
+      (('svl::4vec-bitnot$ ''1 x)
+       `(binary-not ,(4vec->pp-term x)))
+      (('svl::bits num start &)
+       `(bit-of ,num ,start))
+      (('sv::4vec-fix$inline x)
+       (4vec->pp-term x))
+      (('sv::3vec-fix x)
+       (4vec->pp-term x))
+      (& orig)))
+  ///
+
+  (acl2::defret
+   rp-termp-of--<fn>
+   (rp-termp pp-term)
+   :hyp (rp-termp term)
+   
+   :hints (("Goal"
+            :induct (4vec->pp-term term)
+            :do-not-induct t
+            :expand ((:free (rest) (RP-TERMP (cons 'BIT-OF rest)))
+                     (:free (rest) (RP-TERMP (cons 'quote rest)))
+                     (:free (rest) (RP-TERMP (cons 'binary-not rest)))
+                     (:free (rest) (RP-TERMP (cons 'binary-and rest)))
+                     (:free (rest) (RP-TERMP (cons 'binary-or rest)))
+                     (:free (rest) (RP-TERMP (cons 'binary-? rest)))
+                     (:free (rest) (RP-TERMP (cons 'binary-xor rest))))
+            :in-theory (e/d () (rp-termp
+                                falist-consistent
+                                pp-term-p)))))
+
+  #|(local
+   (defthm lemma1
+     (IMPLIES (AND (PP-HAS-BITP-RP TERM))
+              (equal (PP-TERM-P TERM)
+                     (B* ((ORIG TERM) (TERM (EX-FROM-RP TERM)))
+                       (CASE-MATCH TERM
+                         (('BINARY-AND X Y)
+                          (AND (PP-TERM-P X) (PP-TERM-P Y)))
+                         (('BINARY-OR X Y)
+                          (AND (PP-TERM-P X) (PP-TERM-P Y)))
+                         (('BINARY-XOR X Y)
+                          (AND (PP-TERM-P X) (PP-TERM-P Y)))
+                         (('BINARY-? X Y Z)
+                          (AND (PP-TERM-P X)
+                               (PP-TERM-P Y)
+                               (PP-TERM-P Z)))
+                         (('BINARY-NOT X) (AND (PP-TERM-P X)))
+                         (('BIT-OF & &) T)
+                         (''1 T)
+                         (& (PP-HAS-BITP-RP ORIG))))))
+     :hints (("goal"
+              :do-not-induct t
+              :expand (pp-term-p term)
+              :in-theory (e/d () (pp-has-bitp-rp))))))||#
+  
+  (acl2::defret
+   pp-term-p-of--<fn>
+   :hyp (good-4vec-term-p term)
+   (pp-term-p pp-term)
+   :hints (("Goal"
+            :induct (4vec->pp-term term)
+            :do-not-induct t
+            :expand ((:free (x y) (pp-term-p (cons x y)))
+                     (:free (x y) (is-rp (cons x y))))
+            :in-theory (e/d (good-4vec-term-p) (rp-termp pp-term-p))))))
+
 (progn
   (define well-formed-new-sum (term)
     :returns (res booleanp)
@@ -1248,7 +1391,7 @@
       (('cons x rest)
        (b* ((x (ex-from-rp-loose x))
             (rest-res (well-formed-new-sum rest)))
-         (cond ((pp-term-p x)
+         (cond ((good-4vec-term-p x)
                 rest-res)
                ((case-match x (('s & &) t))
                 rest-res)
@@ -1295,10 +1438,11 @@
             (limit (expt 2 40))
             (x-orig x)
             (x (ex-from-rp-loose x)))
-         (cond ((pp-term-p x)
-                (mv s-rest
-                    (mv-nth-0-of-2 (pp-sum-merge (pp-flatten x nil) pp-rest))
-                    c/d-rest))
+         (cond ((good-4vec-term-p x) ;; (pp-term-p x)
+                (b* ((x (4vec->pp-term x)))
+                  (mv s-rest
+                      (mv-nth-0-of-2 (pp-sum-merge (pp-flatten x nil) pp-rest))
+                      c/d-rest)))
                ((case-match x (('s & &) t))
                 (mv (s-sum-merge `(list ,x-orig) s-rest)
                     pp-rest
@@ -1384,7 +1528,7 @@
 (define light-pp-term-p (term)
   :inline t
   (or
-   (PP-HAS-BITP-RP term)
+   (pp-has-bitp-rp term)
    (b* ((term (ex-from-rp term)))
      (case-match term
        (('binary-not &)
@@ -1702,6 +1846,7 @@
                D-IS-D2
                s-is-m2
                s-spec-is-m2
+               SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
                c-spec-is-f2
                s-c-spec-is-list-m2-f2
                c-s-spec-is-list-m2-f2
@@ -1848,6 +1993,14 @@
        rp::c-spec
        rp::s-spec
        bit-of
+       svl::bits
+       svl::4vec-bitand
+       svl::4vec-bitor
+       svl::4vec-?
+       svl::4vec-?*
+       sv::4vec-bitxor
+       svl::4vec-bitnot
+       svl::4vec-bitnot$
        adder-b+
        s-of-c-trig
        binary-?
@@ -1864,4 +2017,6 @@
        sort-sum-meta
        evenpi
        d-sum
+       sv::3vec-fix
+       sv::4vec-fix
        c-s-spec-meta))))

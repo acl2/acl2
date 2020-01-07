@@ -55,6 +55,9 @@
   use-arithmetic-5
   :disabled t))
 
+(defun bits-to-bit-of (x)
+  x)
+
 (local
  (in-theory (disable oddp evenp
                      ash ifix and$ acl2::b-and
@@ -129,7 +132,7 @@
                             
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
-  (def-rp-rule bits-is-bit-of
+  (defthm bits-is-bit-of
     (implies (and (integerp num)
                   (natp start)
                   (syntaxp (atom (ex-from-rp num))))
@@ -570,8 +573,8 @@
     (implies (not (zp col-index))
              (equal (svl-sum-col-bybit mult start mcand col-index)
                     (sum (and$
-                          (svl::bits mult start 1)
-                          (svl::bits mcand col-index 1))
+                          (bits-to-bit-of (svl::bits mult start 1))
+                          (bits-to-bit-of (svl::bits mcand col-index 1)))
                          (svl-sum-col-bybit mult
                                             (1+ start)
                                             mcand (1- col-index)))))
@@ -599,8 +602,8 @@
 
   (def-rp-rule svl-sum-col-bybit-opener-col-index=0
     (equal (svl-sum-col-bybit mult start mcand 0)
-           (and$ (svl::bits mult start 1)
-                 (svl::bits mcand 0 1)))
+           (and$ (bits-to-bit-of (svl::bits mult start 1))
+                 (bits-to-bit-of (svl::bits mcand 0 1))))
     :hints (("goal"
              :in-theory (e/d (svl-sum-col-bybit) ())))))
 
@@ -732,8 +735,8 @@
   (defthm-lambda 4vec-adder-opener-size>0
     (implies (not (zp size))
              (equal (4vec-adder x y carry-in size)
-                    (b* (((list s c) (s-c-spec (list (svl::bits x 0 1)
-                                                     (svl::bits y 0 1)
+                    (b* (((list s c) (s-c-spec (list (bits-to-bit-of (svl::bits x 0 1))
+                                                     (bits-to-bit-of (svl::bits y 0 1))
                                                      carry-in))))
                          (svl::4vec-concat$ 1 (s-of-c-trig s)
                                             (4vec-adder (sv::4vec-rsh 1 x)
@@ -749,3 +752,15 @@
 
 (defmacro rp::sign-ext (num size)
   `(logapp ,size ,num (- (svl::bits ,num (1- ,size) 1))))
+
+
+(def-rw-opener-error
+  bits-to-bit-of-opener-error
+  (bits-to-bit-of x))
+
+(def-rp-rule bits-to-bit-of-with-wrapper
+  (implies (and (integerp num)
+                (natp start)
+                (syntaxp (atom (ex-from-rp num))))
+           (equal (bits-to-bit-of (svl::bits num start 1))
+                  (bit-of num start))))
