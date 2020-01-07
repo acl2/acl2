@@ -520,14 +520,7 @@
 
 (def-rp-rule bits-of-bit-of
   (equal (svl::bits (bit-of x pos) 0 1)
-         (bit-of x pos))
-  :hints (("Goal"
-           :do-not-induct t
-           :cases ((bitp (bit-of x pos)))
-           :in-theory (e/d (bitp)
-                           ((:REWRITE BITP-OF-BINARY-FNCS)
-                            (:REWRITE BITP-OF-BIT-OF)
-                            (:TYPE-PRESCRIPTION BIT-OF))))))
+         (bit-of x pos)))
 
 (def-rp-rule
   integerp-of-bit-of
