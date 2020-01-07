@@ -15,8 +15,8 @@
 ;; but always returns a boolean.
 
 (include-book "memberp-def")
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "len"))
+(local (include-book "nth"))
 
 ;; We use memberp as the normal form.
 (defthm member-equal-becomes-memberp
