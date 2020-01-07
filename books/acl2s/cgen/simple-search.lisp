@@ -385,8 +385,7 @@ eg:n/a")
                                    (merge-car-symbol-< l1 (cdr l2))))))
 
 (defthm acl2-count-evens-strong
-  (implies (and (consp x)
-                (consp (cdr x)))
+  (implies (consp (cdr x))
            (< (acl2-count (evens x)) (acl2-count x)))
   :rule-classes :linear)
 
