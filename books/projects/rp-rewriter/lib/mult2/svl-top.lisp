@@ -121,6 +121,8 @@
     :hints (("Goal"
              :in-theory (e/d (bits-is-bit-of-nosyntaxp) ()))))
 
+  (add-rp-rule bits-is-bit-of)
+  
   (defthmd bits-is-bit-of-reverse
     (implies (and (integerp num)
                   (natp start))

@@ -1066,10 +1066,12 @@
 
       m2-of-f2-for-adder
       m2-of-ifix
+      bits-is-bit-of
       ))
 
-  (deftheory adder-rules
-    *adder-rules*))
+  #|(deftheory adder-rules
+    *adder-rules*)||#
+  )
 
 (deftheory adder-greedy-rules
   '(c-of-same-c
@@ -1079,4 +1081,4 @@
     b-or-comm2))
 
 (in-theory (disable adder-greedy-rules))
-(in-theory (disable adder-rules))
+;(in-theory (disable adder-rules))
