@@ -38,8 +38,10 @@
 (include-book "intersection-equal")
 
 ;; Books about non-built-in functions:
+(include-book "firstn-def")
 (include-book "firstn")
 (include-book "repeat")
+(include-book "reverse-list-def")
 (include-book "reverse-list")
 (include-book "memberp-def")
 (include-book "memberp")
