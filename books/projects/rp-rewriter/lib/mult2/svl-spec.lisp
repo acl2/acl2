@@ -758,6 +758,11 @@
   bits-to-bit-of-opener-error
   (bits-to-bit-of x))
 
+(def-rp-rule
+  bits-to-bit-of-opener
+  (equal (bits-to-bit-of x)
+         x))
+
 (def-rp-rule bits-to-bit-of-with-wrapper
   (implies (and (integerp num)
                 (natp start)
