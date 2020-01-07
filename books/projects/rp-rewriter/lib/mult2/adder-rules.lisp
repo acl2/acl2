@@ -964,7 +964,9 @@
 
 (progn
   (defconst *adder-rules*
-    '(m2-of-adder-sum-m2
+    '(bits-is-bit-of
+
+      m2-of-adder-sum-m2
       bin-or-p2a
 
       ;; adder-adder-and-comm1
@@ -1066,11 +1068,11 @@
 
       m2-of-f2-for-adder
       m2-of-ifix
-      bits-is-bit-of
+      
       ))
 
-  #|(deftheory adder-rules
-    *adder-rules*)||#
+  (deftheory adder-rules
+    (nthcdr 1 *adder-rules*))
   )
 
 (deftheory adder-greedy-rules
@@ -1081,4 +1083,4 @@
     b-or-comm2))
 
 (in-theory (disable adder-greedy-rules))
-;(in-theory (disable adder-rules))
+(in-theory (disable adder-rules))

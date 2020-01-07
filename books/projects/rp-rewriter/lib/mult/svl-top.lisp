@@ -53,7 +53,6 @@
 
   (update-rp-clause-proc svl-multiplier))
 
-  
 (local
  (rp::fetch-new-events
   (include-book "arithmetic-5/top" :dir :system)
@@ -80,14 +79,13 @@
                             bits-is-bit-of)))))
 
 
-
 (defthmd bit-of--0-of-m2
   (equal (bit-of (m2 x) 0)
          (m2 x))
   :hints (("goal"
            :use ((:instance bitp-m2))
            :in-theory (e/d (bitp) (mod
-                               bitp-m2)))))
+                                   bitp-m2)))))
 
 (def-rp-rule 4vec-bitxor-is-binary-xor-when-bitp
   (implies (and (bitp x)
@@ -113,7 +111,6 @@
                   (rp::and$ x y)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
-
 
 (def-rp-rule 4vec-bitand-is-binary-and-when-integerp
   (implies t
@@ -200,7 +197,6 @@
                               SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$))))))
 
 
-
 #|(defthm 4vec-bitand$-is-binary-and-when-size=1
     (implies t
              (equal (svl::4vec-bitand$ 1 x y)
@@ -222,7 +218,6 @@
                              (SVL::4VEC-PART-SELECT-IS-BITS
                               SVL::4VEC-CONCAT$-OF-SIZE=1-TERM2=0
                               SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$)))))||#
-
 
 (def-rp-rule 4vec-bitor-is-binary-and-when-bitp
   (implies (and (bitp x)
@@ -250,7 +245,6 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
-
 (def-rp-rule 4vec-?-to-binary-?*
   (implies (and (bitp test)
                 (bitp x)
@@ -261,24 +255,22 @@
            :in-theory (e/d (bitp) ()))))
 
 (def-rp-rule convert-4vec-bitnot$-binary-not
-    (implies (bitp x)
-             (equal (svl::4vec-bitnot$ 1 x)
-                    (binary-not x)))
-    :hints (("Goal"
-             :in-theory (e/d (bitp) ()))))
-
+  (implies (bitp x)
+           (equal (svl::4vec-bitnot$ 1 x)
+                  (binary-not x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 ;; (defthm convert-4vec-bitnot-of-bit-of-to-binary-not
 ;;   (implies t
 ;;            (equal (svl::4vec-bitnot (BIT-OF x start))
 ;;                   (binary-not (BIT-OF x start))))
-;;   :hints (("Goal" 
+;;   :hints (("Goal"
 ;;            :use ((:instance BITP-OF-BIT-OF
 ;;                             (num x)
 ;;                             (pos start)))
 ;;            :in-theory (e/d (bitp) (BITP-OF-BIT-OF
 ;;                                    (:TYPE-PRESCRIPTION BIT-OF))))))
-
 
 (def-rp-rule 4vec-fix=-of-binary-fns
   (and (equal (svl::4vec-fix (binary-not s))
@@ -289,7 +281,6 @@
               (and$ x y))
        (equal (svl::4vec-fix (binary-xor x y))
               (binary-xor x y))))
-
 
 (def-rp-rule 4vec-p-of-fncs
   (and (svl::4vec-p (pp-sum x y))
@@ -305,7 +296,7 @@
 
 (encapsulate
   nil
-  
+
   (local
    (use-arithmetic-5 t))
 
@@ -378,7 +369,7 @@
 
 (encapsulate
   nil
-  
+
   (local
    (use-arithmetic-5 t))
 
@@ -398,7 +389,7 @@
                      x))
      :hints (("Goal"
               :in-theory (e/d (bitp bit-of) ())))))
-  
+
   (def-rp-rule$ t t
     bit-of-binary-fns
     (implies (not (zp start))
@@ -450,10 +441,10 @@
   :hints (("goal"
            :in-theory (e/d (svl::bits
                             bitp)
-                            (svl::4vec-part-select-is-bits
-                              svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
-                              svl::4vec-zero-ext-is-4vec-concat)))))
+                           (svl::4vec-part-select-is-bits
+                            svl::convert-4vec-concat-to-4vec-concat$
+                            svl::4vec-concat$-of-size=1-term2=0
+                            svl::4vec-zero-ext-is-4vec-concat)))))
 
 (def-rp-rule$ t t
   bit-of-1-of-b+
@@ -463,11 +454,10 @@
   :hints (("goal"
            :in-theory (e/d (svl::bits
                             bitp)
-                            (svl::4vec-part-select-is-bits
-                              svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
-                              svl::4vec-zero-ext-is-4vec-concat)))))
-
+                           (svl::4vec-part-select-is-bits
+                            svl::convert-4vec-concat-to-4vec-concat$
+                            svl::4vec-concat$-of-size=1-term2=0
+                            svl::4vec-zero-ext-is-4vec-concat)))))
 
 (def-rp-rule bits-1-1-of-f2
   (implies (bitp (f2 x))
@@ -476,11 +466,10 @@
   :hints (("goal"
            :in-theory (e/d (svl::bits
                             bitp)
-                            (svl::4vec-part-select-is-bits
-                              svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
-                              svl::4vec-zero-ext-is-4vec-concat)))))
-
+                           (svl::4vec-part-select-is-bits
+                            svl::convert-4vec-concat-to-4vec-concat$
+                            svl::4vec-concat$-of-size=1-term2=0
+                            svl::4vec-zero-ext-is-4vec-concat)))))
 
 (def-rp-rule bits-of-4vec-==-binary-fncs
   (and (equal (SVL::BITS (SV::4VEC-== (BINARY-OR x y) 1) '0 '1)
@@ -493,8 +482,6 @@
 
 
 
-
-
 (def-rp-rule$ t t
   bit-of-4vec-bitnot-main
   (implies (bitp x)
@@ -503,7 +490,6 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) (bitp-of-bit-of
                                    (:TYPE-PRESCRIPTION BIT-OF))))))
-
 
 (def-rp-rule$ t t
   bit-of-4vec-bitnot
@@ -524,7 +510,6 @@
 
 
 
-
 (def-rp-rule 4vec-fix-of-bit-of
   (equal (svl::4vec-fix (bit-of x pos))
          (bit-of x pos))
@@ -535,25 +520,30 @@
 
 (def-rp-rule bits-of-bit-of
   (equal (svl::bits (bit-of x pos) 0 1)
-         (bit-of x pos)))
+         (bit-of x pos))
+  :hints (("Goal"
+           :do-not-induct t
+           :cases ((bitp (bit-of x pos)))
+           :in-theory (e/d (bitp)
+                           ((:REWRITE BITP-OF-BINARY-FNCS)
+                            (:REWRITE BITP-OF-BIT-OF)
+                            (:TYPE-PRESCRIPTION BIT-OF))))))
 
 (def-rp-rule
   integerp-of-bit-of
   (b* ((res (bit-of num pos))) (integerp res))
   :rule-classes :rewrite)
 
-
 (def-rp-rule 4vec-concat$-of-and$-commutes
   (implies (syntaxp (pp-and$-order x y))
            (equal (svl::4vec-concat$ size
-                                (and$ y x)
-                                rest)
+                                     (and$ y x)
+                                     rest)
                   (svl::4vec-concat$ size
-                                (and$ x y)
-                                rest)))
+                                     (and$ x y)
+                                     rest)))
   :hints (("Goal"
            :in-theory (e/d (and$) ()))))
-
 
 (def-rp-rule 3vec-fix-of-binary-fncs
   (and (equal (SV::3VEC-FIX (binary-and a b))
@@ -574,10 +564,9 @@
                             binary-xor) ()))))
 
 (def-rp-rule 3vec-fix-of-bit-of
-  (implies t 
+  (implies t
            (equal (sv::3vec-fix (bit-of x index))
                   (bit-of x index))))
-
 
 (def-rp-rule bits-of-adder-and
   (equal (svl::bits (adder-and a b) 0 1)
