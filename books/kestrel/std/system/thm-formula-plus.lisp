@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "theorem-formula")
+(include-book "thm-formula")
 (include-book "theorem-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
