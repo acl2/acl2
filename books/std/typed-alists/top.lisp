@@ -31,4 +31,5 @@
   (xdoc::topstring
    (xdoc::p
     "A library of alists with keys and values of specific types.
-     These are built-in types, or ``general'' types in Std.")))
+     The key and value types are built-in types,
+     or ``general'' types in Std.")))
