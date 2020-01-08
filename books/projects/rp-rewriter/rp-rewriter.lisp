@@ -47,6 +47,8 @@
 
 (include-book "rp-state-functions")
 
+(include-book "eval-functions")
+
 (local
  (include-book "proofs/local-lemmas"))
 
@@ -107,13 +109,13 @@
          ((acl2::fquotep term) term)
          ((is-synp term) ''t)
          #|((is-cons term)
-          (b* ((term1 (rp-apply-bindings (cadr term) bindings))
-               (term2 (rp-apply-bindings (caddr term) bindings)))
-            (case-match term2
-              (('list . rest)
-               `(list ,term1 . ,rest))
-              (& `(list ,term1 ,term2)))))||#
-         (t 
+         (b* ((term1 (rp-apply-bindings (cadr term) bindings))
+         (term2 (rp-apply-bindings (caddr term) bindings)))
+         (case-match term2
+         (('list . rest)
+         `(list ,term1 . ,rest))
+         (& `(list ,term1 ,term2)))))||#
+         (t
           (cons-with-hint (car term)
                           (rp-apply-bindings-subterms (cdr term) bindings )
                           term))))
@@ -136,7 +138,7 @@
 
   (defconst *match-lhs-rp-equal-cnt*
     2)
-  
+
   (mutual-recursion
    (defun rp-match-lhs (term rule-lhs context acc-bindings)
      (declare (xargs :measure (acl2::acl2-count rule-lhs)
@@ -188,26 +190,26 @@
                                     acc-bindings)))
           ((consp term-w/o-rp) ;; both term and rule is consp,
            (cond #|((and (is-cons rule-lhs)
-                       (equal (car term-w/o-rp) 'list))
-                  (case-match term-w/o-rp
-                    (('list & &)
-                     (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
-                                            acc-bindings))
-                    (('list & & . &)
-                     (b* ((-  (cw "here1 ~%"))
-                          ((mv context acc-bindings valid)
-                           (rp-match-lhs (cadr term-w/o-rp) (cadr rule-lhs) context acc-bindings))
-                          ((when (not valid)) ;; stop trying if not valid.
-                           (mv context acc-bindings nil))
-                          (-  (cw "here2 ~%")))
-                       (rp-match-lhs `(list . ,(cddr term-w/o-rp))
-                                     (caddr rule-lhs) context acc-bindings)))
-                    (& (mv context acc-bindings nil))))||#
-                 ((equal (car term-w/o-rp) (car rule-lhs))
-                  ;; if their function name be the same, keep on matching.
-                  (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
-                                         acc-bindings))
-                 (t (mv context acc-bindings nil))))
+            (equal (car term-w/o-rp) 'list))
+            (case-match term-w/o-rp
+            (('list & &)
+            (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
+            acc-bindings))
+            (('list & & . &)
+            (b* ((-  (cw "here1 ~%"))
+            ((mv context acc-bindings valid)
+            (rp-match-lhs (cadr term-w/o-rp) (cadr rule-lhs) context acc-bindings))
+            ((when (not valid)) ;; stop trying if not valid.
+            (mv context acc-bindings nil))
+            (-  (cw "here2 ~%")))
+            (rp-match-lhs `(list . ,(cddr term-w/o-rp))
+            (caddr rule-lhs) context acc-bindings)))
+            (& (mv context acc-bindings nil))))||#
+            ((equal (car term-w/o-rp) (car rule-lhs))
+             ;; if their function name be the same, keep on matching.
+             (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
+                                    acc-bindings))
+            (t (mv context acc-bindings nil))))
           (t ;; rule is consp but term isn't. then we cannot match this rule to
            ;; the tem.
            (mv context acc-bindings nil))))))
@@ -285,7 +287,6 @@
 ;(rp-term-listp (cdr term))
                 )
 
-    
     (and  ;(consp rule-lhs)
 ;(not (eq (car rule-lhs) 'quote))
      (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs))
@@ -354,10 +355,8 @@
      (cons (rp-get-dont-rw (car subterm))
            (rp-get-dont-rw-subterm (cdr subterm))))))
 
-(encapsulate
-  nil
+(progn
   ;; Executable counterpart related functions.
-
   (defun unquote-all (lst)
     (declare (xargs :guard t))
     (if (atom lst)
@@ -387,12 +386,34 @@
     ;; it supports only the given functions.
 
     ;; returns (mv term-changed term)
-    (if (or (atom term)
-            (eq (car term) 'quote)
-            (eq (car term) 'list)
-            (not (quote-listp (cdr term)))
-            (consp (hons-get (car term) exc-rules)))
-        (mv term rp-state)
+    (cond
+     ((or (atom term)
+          (eq (car term) 'quote)
+          (eq (car term) 'list)
+          (not (quote-listp (cdr term)))
+          (consp (hons-get (car term) exc-rules)))
+      (mv term rp-state))
+     ((case-match term ((fn ('quote &)) (or (equal fn 'car)
+                                            (equal fn 'cdr)
+                                            (equal fn 'natp)
+                                            (equal fn 'not)
+                                            (equal fn 'bitp)
+                                            (equal fn 'zp)
+                                            (equal fn 'integerp))))
+      (b* ((fn (car term))
+           (val (unquote (cadr term)))
+           (res (case fn
+                  (car (if (consp val) (car val) nil))
+                  (cdr (if (consp val) (cdr val) nil))
+                  (not (not val))
+                  (zp (if (integerp val) (<= val 0) t))
+                  (natp (natp val))
+                  (bitp (bitp val))
+                  (integerp (integerp val))))
+           (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
+           (rp-state (increment-rw-stack-size rp-state)))
+        (mv (list 'quote res) rp-state)))
+     (t
       (b* ((fn (car term))
            ((unless (and (symbolp fn)
                          (acl2::logicp fn (w state))))
@@ -416,7 +437,7 @@
                                         NIL)
                  term)
               (list 'quote val))
-            rp-state)))))
+            rp-state))))))
 
 (defun rp-extract-context (term)
   (declare (xargs  :mode :logic
@@ -559,7 +580,7 @@
       ((and (case-match term (('synp & & ('quote &)) t) (& nil))
             #|(check-synp-syntax-aux term)||#)
        (b* ((hyp (unquote (cadddr term)))
-            (exc (rp-apply-bindings (rp-exc-all hyp bindings state) bindings))
+            (exc (rp-exc-all hyp bindings state))
             (res (nonnil-p exc)))
          res))
       (t (rp-rw-relieve-synp-subterms (cdr term) bindings exc-rules state))))
@@ -1189,6 +1210,8 @@ returns (mv rule rules-rest bindings rp-context)"
    (include-book "proofs/measure-lemmas"))
   (local
    (use-measure-lemmas t))
+  (local
+   (in-theory (enable is-if)))
   (mutual-recursion
    (defun attach-sc (term sc-type sc-term)
      (declare (xargs :guard t
@@ -1198,19 +1221,14 @@ returns (mv rule rules-rest bindings rp-context)"
        (if (equal term sc-term)
            `(rp ',sc-type ,term)
          term))
-      ((or (eq (car term) 'quote))
+      ((equal (car term) 'quote)
        term)
-      ((eq (car term) 'if)
-       (if (equal term sc-term)
-           `(rp ',sc-type ,term)
-         (progn$
-          (and (subtermp term sc-term)
-               (hard-error 'attach-sc
-                           "We do not support side-conditions nested under if statements yet! ~%" nil))
-          term)))
       ((equal term sc-term)
-       `(rp ',sc-type ,(cons (car term)
-                             (attach-sc-lst (cdr term) sc-type sc-term))))
+       `(rp ',sc-type ,term))
+      ((is-if term) ;; only here for induction schemes
+       `(if ,(attach-sc (cadr term) sc-type sc-term)
+            ,(attach-sc (caddr term) sc-type sc-term)
+          ,(attach-sc (cadddr term) sc-type sc-term)))
       (t (cons (car term)
                (attach-sc-lst (cdr term) sc-type sc-term)))))
 
@@ -1224,7 +1242,7 @@ returns (mv rule rules-rest bindings rp-context)"
 
 (define attach-sc-from-context ((context)
                                 (term))
-  
+
   (cond ((atom context)
          (mv context term))
         ((include-fnc term 'falist)
@@ -1241,7 +1259,7 @@ returns (mv rule rules-rest bindings rp-context)"
                                  (cadr cur))))
                (b* ((term (attach-sc term (car cur) (cadr cur))))
                  (attach-sc-from-context (cdr context) term)))
-       
+
               (t (b* (((mv rest-context term)
                        (attach-sc-from-context (cdr context) term)))
                    (mv

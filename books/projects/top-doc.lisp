@@ -36,6 +36,12 @@
    (include-book "include-doc")
    (include-projects-doc)))
 
+(make-event
+ #!xdoc
+ `(table xdoc 'resource-dirs
+         (append ',(cdr (assoc 'resource-dirs (table-alist 'xdoc (w state))))
+                 (cdr (assoc 'resource-dirs (table-alist 'xdoc world))))))
+
 (xdoc::archive-matching-topics
  (or (str::strprefixp "[books]/projects/" (cdr (assoc :from x)))
      (equal "[books]/tools/defsum.lisp" (cdr (assoc :from x)))))

@@ -18,6 +18,7 @@
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -50,9 +51,8 @@
      In other words,
      narrower types than the one for all ACL2 values (i.e. @('Acl2Value'))
      can be used for the argument and result of this Java method.
-     This narrowing can also lead to methods that operate
-     on Java primitive types and arrays,
-     the former of which ATJ already generates.")
+     This narrowing is also used to generate methods
+     that operate on Java primitive values and primitive arrays.")
    (xdoc::p
     "In general, establishing the narrower input and output types
      for a Java method generated from an ACL2 function
@@ -242,7 +242,12 @@
   :short "Recognize true lists of true lists of ATJ types."
   (atj-type-listp x)
   :true-listp t
-  :elementp-of-nil t)
+  :elementp-of-nil t
+  ///
+
+  (defrule atj-type-list-listp-of-remove-duplicates-equal
+    (implies (atj-type-list-listp x)
+             (atj-type-list-listp (remove-duplicates-equal x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,6 +823,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-function-type-list->outputs ((fn-types atj-function-type-listp))
+  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-function-type->outputs) to lists."
+  (cond ((endp fn-types) nil)
+        (t (cons (atj-function-type->outputs (car fn-types))
+                 (atj-function-type-list->outputs (cdr fn-types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defaggregate atj-function-type-info
   :short "Recognize ATJ function type information."
   :long
@@ -829,6 +843,16 @@
      as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
   ((main atj-function-type-p)
    (others atj-function-type-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-function-type-info->outputs ((info atj-function-type-info-p))
+  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :short "Return the list of all the output type lists
+          in a function's type information."
+  (cons
+   (atj-function-type->outputs (atj-function-type-info->main info))
+   (atj-function-type-list->outputs (atj-function-type-info->others info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1583,3 +1607,58 @@
                                                (cdr fn-types)
                                                current-min-in-jtypes
                                                current-out-types?)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-to-type-list ((type atj-typep))
+  :returns (types atj-type-listp :hyp :guard)
+  :short "Turn a single ATJ type into a singleton list of it."
+  :long
+  (xdoc::topstring-p
+   "This is just @(tsee list),
+    but we introduce an explicit function for greater clarity.")
+  (list type)
+  ///
+
+  (more-returns
+   (types consp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type-list-list ((types atj-type-listp))
+  :returns (typess atj-type-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-type-to-type-list) to lists."
+  (cond ((endp types) nil)
+        (t (cons (atj-type-to-type-list (car types))
+                 (atj-type-list-to-type-list-list (cdr types)))))
+  ///
+
+  (more-returns
+   (typess acl2::cons-listp))
+
+  (defret len-of-atj-type-list-to-type-list-list
+    (equal (len typess)
+           (len types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type ((types atj-type-listp))
+  :guard (consp types)
+  :returns (type atj-typep :hyp :guard)
+  :short "Treat a non-empty list of ATJ types as a single type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is temporary code, useful while we are in the process of
+     building more direct support for @(tsee mv) in ATJ.
+     As we are generalizing things (e.g. type annotations)
+     from single types to (non-empty) lists of types,
+     it is sometimes necessary to treat lists of two or more types
+     as the single @(':acons') type,
+     which was the output type of @(tsee mv) functions
+     before we started to build more direct support for @(tsee mv).
+     If instead the list of types is a singleton,
+     we return the unique element."))
+  (if (= (len types) 1)
+      (car types)
+    :acons))

@@ -90,7 +90,7 @@
      This manual provides up-to-date information about AIJ and ATJ.
      The following differences exist
      between the current version of AIJ and ATJ
-     and the contents of the paper and presentation:")
+     and the version described in the paper and presentation:")
    (xdoc::ul
     (xdoc::li
      "The Java class @('Acl2Constant')
@@ -162,6 +162,9 @@
       have been made more precise than the general type @('Acl2Value'),
       e.g. now the method for @(tsee equal) returns @('Acl2Symbol').")
     (xdoc::li
+     "Some native Java implementations of ACL2 primitive functions
+      have been optimized.")
+    (xdoc::li
      "Public static methods have been added
       to execute the native implementations of ACL2 functions
       from outside AIJ.
@@ -173,8 +176,8 @@
       when assuming that the guards are satisfied (see below).")
     (xdoc::li
      "AIJ has been extended with the ability to validate statically that
-      all the function calls have a number of arguments
-      that matches the function arity.
+      all the function calls reference existing functions
+      and have a number of arguments that matches the function arity.
       AIJ provides a new public API method
       to validate all the currently defined functions.
       AIJ can thus avoid these checks at run time,
@@ -192,4 +195,8 @@
      "ATJ has been extended with a facility to generate Java code
       assuming that all the guards are satisfied.
       This facility is available for
-      both the deep and shallow embedding approaches."))))
+      both the deep and shallow embedding approaches."))
+   (xdoc::p
+    "The last two bullet points above provide a major extension of ATJ,
+     which produces much more readable and efficient Java code,
+     including Java code that manipulates Java primitive types and arrays.")))

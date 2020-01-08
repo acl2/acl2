@@ -289,6 +289,7 @@
          (ins        :type (satisfies svtv-lines-p)       :initially nil)
          (outs       :type (satisfies svtv-lines-p)       :initially nil)
          (overrides  :type (satisfies svtv-lines-p)       :initially nil)
+         (override-assigns :type (satisfies svex-alist-p) :initially nil)
          (status     :type (satisfies debugdata-status-p) :initially :empty)))
       (field-names (strip-cars fields))
       (renaming (debugdata-renaming field-names))
@@ -325,7 +326,7 @@ nextstate and update functions given a timing diagram.</p>
 
        ;; Make a moddb, canonical alias table, and flattened, alias-normalized
        ;; assignments from the design.  :Indexedp nil leaves wires expressed in
-       ;; terms of absolute moddb indices rather than paths.
+       ;; terms of paths rather than absolute moddb indices.
        ((mv err assigns delays ?constraints moddb aliases)
         (svex-design-flatten-and-normalize design :indexedp nil))
 
@@ -402,7 +403,7 @@ nextstate and update functions given a timing diagram.</p>
                           (svtv-max-length outs))))
        (overrides (svtv-expand-lines overrides nphases))
 
-       ((mv updates next-states ?constraints)
+       ((mv updates next-states override-assigns)
         (b* (((when (and (eq debugdata.status :composed)
                          (equal debugdata.overrides overrides)))
               ;; Presumably we're just updating some inputs or outputs.  We
@@ -427,15 +428,18 @@ nextstate and update functions given a timing diagram.</p>
              ;; get that variable's value before overriding it.  At the moment we
              ;; don't pay attention to output variables in svtv-debug, so we don't
              ;; care about this.  If this changes, revisit this issue.
-
-             (- (fast-alist-free overridden-assigns)))
-          ;; Compose together the final (gate-level) assignments to get full
-          ;; update formulas (in terms of PIs and current states), and compose
-          ;; delays with these to get next states.
-          (svex-compose-assigns/delays overridden-assigns
-                                       debugdata.delays
-                                       nil
-                                       :rewrite rewrite)))
+             
+             (- (fast-alist-free overridden-assigns))
+             
+             ((mv updates next-states ?constraints)
+              ;; Compose together the final (gate-level) assignments to get full
+              ;; update formulas (in terms of PIs and current states), and compose
+              ;; delays with these to get next states.
+              (svex-compose-assigns/delays overridden-assigns
+                                           debugdata.delays
+                                           nil
+                                           :rewrite rewrite)))
+          (mv updates next-states overridden-assigns)))
 
        (debugdata (set-debugdata->updates updates debugdata))
        (debugdata (set-debugdata->nextstates next-states debugdata))
@@ -443,6 +447,7 @@ nextstate and update functions given a timing diagram.</p>
        (debugdata (set-debugdata->ins ins debugdata))
        (debugdata (set-debugdata->outs outs debugdata))
        (debugdata (set-debugdata->overrides overrides debugdata))
+       (debugdata (set-debugdata->override-assigns override-assigns debugdata))
        (debugdata (set-debugdata->status :composed debugdata)))
     debugdata)
   ///

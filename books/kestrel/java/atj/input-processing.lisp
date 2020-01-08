@@ -617,9 +617,7 @@
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
-       (out-type (if (= (len out-types?) 1)
-                     (car out-types?)
-                   :acons))
+       (out-type (atj-type-list-to-type out-types?))
        (test-output
         (case out-type
           (:jboolean (atj-test-value-jvalue-boolean output))

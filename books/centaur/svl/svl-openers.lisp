@@ -74,7 +74,7 @@
   (def-rw-opener-error
     svl-retrieve-values-opener-error
     (svl-retrieve-values wires env-wires)
-    :vars-to-avoid (env-wires))
+    :do-not-print (env-wires))
   
   (def-rp-rule svl-retrieve-values-nil
     (equal (svl-retrieve-values nil env-wires)
@@ -157,7 +157,7 @@
   (def-rw-opener-error
     save-wires-to-env-wires-opener-error
     (save-wires-to-env-wires val wires env-wires)
-    :vars-to-avoid (env-wires))
+    :do-not-print (env-wires))
   
   (def-rp-rule save-wires-to-env-wires-cons-1
     (equal (save-wires-to-env-wires val (cons `(,wire-name) rest) env-wires)
@@ -237,7 +237,7 @@
   (def-rw-opener-error
     svl-save-mod-outputs-opener-error
     (svl-save-mod-outputs vals wire-list-list env-wires)
-    :vars-to-avoid (env-wires))
+    :do-not-print (env-wires))
   
   (def-rp-rule svl-save-mod-outputs-nil
     (and (equal (svl-save-mod-outputs nil wire-list-list env-wires)
@@ -356,12 +356,12 @@
 (def-rw-opener-error
   svl-run-phase-opener-error
   (svl-run-phase modname inputs delayed-env modules)
-  :vars-to-avoid (modules))
+  :do-not-print (modules))
 
 (def-rw-opener-error
   svl-run-phase-occs-opener-error
   (svl-run-phase-occs occs env-wires delayed-env modules)
-  :vars-to-avoid (modules
+  :do-not-print (modules
                   env-wires
                   delayed-env))
 
@@ -713,7 +713,7 @@
     (svl-run-phase-wog modname inputs
                      delayed-env
                      modules)
-    :vars-to-avoid (modules))
+    :do-not-print (modules))
 
   (rp::defthm-lambda
    svl-run-phase-wog-opener
@@ -756,7 +756,7 @@
   (def-rw-opener-error
     svl-run-phase-occs-wog-opener-error
     (svl-run-phase-occs-wog occs env-wires delayed-env-alist modules)
-    :vars-to-avoid (env-wires))
+    :do-not-print (env-wires))
 
   (def-rp-rule svl-run-phase-occs-wog-opener-nil
     (equal (svl-run-phase-occs-wog nil env-wires delayed-env-alist modules)
@@ -902,12 +902,12 @@
   (def-rw-opener-error
     svl-run-aux-opener-error
     (svl-run-aux modname inputs out-wires out-bind-alist delayed-env modules)
-    :vars-to-avoid (modules delayed-env))
+    :do-not-print (modules delayed-env))
 
   (def-rw-opener-error
     svl-run-aux-wog-opener-error
     (svl-run-aux-wog modname inputs out-wires out-bind-alist delayed-env modules)
-    :vars-to-avoid (modules delayed-env))
+    :do-not-print (modules delayed-env))
 
   (def-rp-rule svl-run-aux-is-svl-run-aux-wog
     (implies (and (force (sv::modname-p modname))
@@ -984,7 +984,7 @@
   (def-rw-opener-error
     svl-run-opener-error
     (svl-run modname inputs-env ins-bind-alist out-bind-alist modules)
-    :vars-to-avoid (modules))
+    :do-not-print (modules))
 
 
   

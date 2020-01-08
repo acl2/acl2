@@ -48,7 +48,7 @@
 
   (local
    (use-arithmetic-5 t))
-  
+
   (def-rp-rule$ t t
     bits-of-a-bit-for-big-start
     (implies (and (bitp x)
@@ -64,7 +64,7 @@
                               4VEC-RSH
                               4VEC-CONCAT
                               4VEC-SHIFT-CORE) ()))))
-  
+
   (def-rp-rule$ t t
     bits-01-of-a-bit
     (implies (and (bitp x))
@@ -94,13 +94,13 @@
     4vec-bitand$-of-bits-of-same-size
     (and
      (implies (syntaxp (and (consp (rp::ex-from-rp val1))
-                           (not (equal (car (rp::ex-from-rp val1))
-                                       'svex-env-fastlookup-wog))))
+                            (not (equal (car (rp::ex-from-rp val1))
+                                        'svex-env-fastlookup-wog))))
               (equal (4vec-bitand$ size (bits val1 0 size) val2)
                      (4vec-bitand$ size val1 val2)))
      (implies (syntaxp (and (consp (rp::ex-from-rp val2))
-                           (not (equal (car (rp::ex-from-rp val2))
-                                       'svex-env-fastlookup-wog))))
+                            (not (equal (car (rp::ex-from-rp val2))
+                                        'svex-env-fastlookup-wog))))
               (equal (4vec-bitand$ size val1 (bits val2 0 size))
                      (4vec-bitand$ size val1 val2))))
     :hints (("Goal"
@@ -114,13 +114,13 @@
     4vec-bitor$-of-bits-of-same-size
     (and
      (implies (syntaxp (and (consp (rp::ex-from-rp val1))
-                           (not (equal (car (rp::ex-from-rp val1))
-                                       'svex-env-fastlookup-wog))))
+                            (not (equal (car (rp::ex-from-rp val1))
+                                        'svex-env-fastlookup-wog))))
               (equal (4vec-bitor$ size (bits val1 0 size) val2)
                      (4vec-bitor$ size val1 val2)))
      (implies (syntaxp (and (consp (rp::ex-from-rp val2))
-                           (not (equal (car (rp::ex-from-rp val2))
-                                       'svex-env-fastlookup-wog))))
+                            (not (equal (car (rp::ex-from-rp val2))
+                                        'svex-env-fastlookup-wog))))
               (equal (4vec-bitor$ size val1 (bits val2 0 size))
                      (4vec-bitor$ size val1 val2))))
     :hints (("Goal"
@@ -149,6 +149,36 @@
                               bits
                               4VEC-BITxor$)
                              ()))))
+
+  (def-rp-rule 4vec-bitxor-of-4vec-concat$
+    (implies (and (natp size))
+             (equal (sv::4vec-bitxor x (4vec-concat$ size a b))
+                    (4vec-concat$ size
+                                  (sv::4vec-bitxor (bits x 0 size) a)
+                                  (sv::4vec-bitxor (4vec-rsh size x) b))))
+    :hints (("Goal"
+             :use ((:instance 4vec-bitxor-of-4vec-concat))
+             :in-theory (e/d (4vec-concat$) ()))))
+
+  (def-rp-rule 4vec-bitand-of-4vec-concat$
+    (implies (and (natp size))
+             (equal (sv::4vec-bitand x (4vec-concat$ size a b))
+                    (4vec-concat$ size
+                                  (sv::4vec-bitand (bits x 0 size) a)
+                                  (sv::4vec-bitand (4vec-rsh size x) b))))
+    :hints (("Goal"
+             :use ((:instance 4vec-bitand-of-4vec-concat))
+             :in-theory (e/d (4vec-concat$) ()))))
+
+  (def-rp-rule 4vec-bitor-of-4vec-concat$
+    (implies (and (natp size))
+             (equal (sv::4vec-bitor x (4vec-concat$ size a b))
+                    (4vec-concat$ size
+                                  (sv::4vec-bitor (bits x 0 size) a)
+                                  (sv::4vec-bitor (4vec-rsh size x) b))))
+    :hints (("Goal"
+             :use ((:instance 4vec-bitor-of-4vec-concat))
+             :in-theory (e/d (4vec-concat$) ()))))
 
   (def-rp-rule bits-of-4vec-bitnot
     (implies (and (natp size)
@@ -262,14 +292,13 @@
                              (sv::4vec-bitxor
                               sv::4vec)))))
 
-
   (def-rp-rule sbits-of-4vec-bitnot$-with-same-size
     (implies (and (natp size))
              (equal (sbits 0 size new (4vec-bitnot$ size val))
                     (bits new 0 size)))
     :hints (("Goal"
              :in-theory (e/d (4VEC-BITNOT$) ()))))
-  
+
   (def-rp-rule bits-of-4vec-bitnot$
     (implies (and (natp bits-size)
                   (natp size)
@@ -307,15 +336,15 @@
   (def-rp-rule 4vec-bitor-of-negated-same-var-with-bitnot$
     (implies (and (natp size)
                   (integerp x))
-           (and (equal (sv::4vec-bitor (4vec-bitnot$ size x) x)
-                       (sbits 0 size -1 x))
-                (equal (sv::4vec-bitor x (4vec-bitnot$ size x))
-                       (sbits 0 size -1 x))))
+             (and (equal (sv::4vec-bitor (4vec-bitnot$ size x) x)
+                         (sbits 0 size -1 x))
+                  (equal (sv::4vec-bitor x (4vec-bitnot$ size x))
+                         (sbits 0 size -1 x))))
     :hints (("Goal"
              :use ((:instance 4vec-bitor-of-negated-same-var))
              :in-theory (e/d (4VEC-BITNOT$)
                              (4vec-bitor-of-negated-same-var)))))
-  
+
   (def-rp-rule bits-of-4vec-bitor$
     (implies (and (natp bits-size)
                   (natp size)
@@ -566,7 +595,6 @@
                               (val2 y)))
              :in-theory (e/d (4vec-concat$) ()))))
 
-
   (def-rp-rule 4vec-rsh-of-bits-1
     (implies (and (natp amount)
                   (natp start)
@@ -604,7 +632,7 @@
                          (equal (svl::4vec-rsh 1 x)
                                 l))))
     :hints (("Goal"
-             :use (:instance equal-of-4vec-concat-with-size=1) 
+             :use (:instance equal-of-4vec-concat-with-size=1)
              :in-theory (e/d* (4vec-concat$)
                               (equal-of-4vec-concat-with-size=1
                                4VEC-PART-SELECT-OF-CONCAT-1
@@ -1420,8 +1448,7 @@
     :hints (("Goal"
              :in-theory (e/d (4vec-concat$)
                              ()))))
-  
-  
+
   (def-rp-rule integerp-4vec-concat$-slower
     (implies (and (integerp (bits x 0 size))
                   (integerp y)
@@ -1448,8 +1475,8 @@
                               (:type-prescription
                                acl2::expt-type-prescription-nonpositive-base-odd-exponent)
                               (:type-prescription
-                                acl2::expt-type-prescription-nonpositive-base-even-exponent))))))
-  
+                               acl2::expt-type-prescription-nonpositive-base-even-exponent))))))
+
   (def-rp-rule integerp-4vec-concat$
     (implies (and (integerp x)
                   (integerp y)
@@ -1725,7 +1752,6 @@
               (4vec-concat$ size val1 val2))))
 
 
-
 (def-rp-rule 4vec-p-of-all-4vec-fncs
   #!SV
   (and (4vec-p (4vec-bitand x y))
@@ -1757,7 +1783,7 @@
        (4vec-p (4vec-quotient x y))
        (4vec-p (4vec-remainder x y))
        (4vec-p (4vec-xdet x))
-       ;(4vec-p (4vec-cuontones x))
+;(4vec-p (4vec-cuontones x))
        (4vec-p (4vec-onehot x))
        (4vec-p (4vec-onehot x))
        (4vec-p (4vec-onehot0 x))
@@ -1779,6 +1805,22 @@
 (rp::add-rp-rule 4vec-p-of-bits)
 (rp::add-rp-rule 4vec-p-of-4vec-concat$)
 ;;(rp::add-rp-rule svl::svl-env-p-of-svl-env)
+
+
+(def-rp-rule concat-of-rsh-with-0-to-bits
+  (implies (and (natp start)
+                (natp size))
+           (equal (4vec-concat$ size (4vec-rsh start term) 0)
+                  (bits term start size)))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-concat$
+                            4VEC-RSH
+                            4VEC-CONCAT
+                            4vec-part-select
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER
+                            bits)
+                           ()))))
 
 (encapsulate
   nil
@@ -1811,7 +1853,6 @@
 
 (rp::enable-rules '(4vec-part-install-is-sbits
                     4vec-zero-ext-is-bits))
-                  
 
 (def-rp-rule$ t nil
   4vec-part-select-is-bits
@@ -1835,9 +1876,3 @@
     bits-of-sbits-3-no-syntaxp
     bits-of-sbits-4-no-syntaxp
     bits-of-sbits-5-no-syntaxp))
-
-
-
-
-
- 
