@@ -45,3 +45,6 @@
 (include-book "reverse-list")
 (include-book "memberp-def")
 (include-book "memberp")
+(include-book "perm-def")
+(include-book "perm")
+(include-book "perm2")
