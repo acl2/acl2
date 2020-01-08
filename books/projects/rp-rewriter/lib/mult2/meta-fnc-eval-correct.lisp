@@ -3753,7 +3753,7 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (let ((rule (make rp-meta-rule-rec
-                             :fnc 'c-spec-meta
+                             :fnc 's-c-spec-meta
                              :trig-fnc 'c-spec
                              :dont-rw t
                              :valid-syntax t)))
@@ -3771,7 +3771,7 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-spec-meta
+                             :fnc 's-c-spec-meta
                              :trig-fnc 's-spec
                              :dont-rw t
                              :valid-syntax t)))
