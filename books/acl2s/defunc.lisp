@@ -9,8 +9,10 @@
 (include-book "kestrel/utilities/symbols" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "centaur/misc/outer-local" :dir :system)
 (include-book "std/lists/top" :dir :system)
+(include-book "coi/util/pseudo-translate" :dir :system)
 
 #|
 Here is the top-level defunc control flow:
@@ -164,8 +166,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             ctrl-pocket
             )
         nil))))
-
-(include-book "coi/util/pseudo-translate" :dir :system)
 
 (defun c-is-t (c)
   (or (equal c 't) (equal c ''t)))
@@ -1313,7 +1313,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                          (eq nil (get1 :testing-enabled kwd-alist))))
        (testing-timeout (get1 :cgen-timeout kwd-alist))
        ((when skip-tests-p) (value nil))
+       (wrld (w state))
        (mode (if (get1 :program-mode-p kwd-alist) :program :logic))
+       ((mv ?erp tbody)
+        (acl2::pseudo-translate body (list (cons name formals)) wrld))
+       (mode
+        (if (and (eql mode :logic)
+                 (acl2::all-program-ffn-symbs tbody nil wrld))
+            :program
+          mode))
        (defun (list* 'acl2::defun name formals
                      (append (update-xargs-decls decls :guard ic :mode mode)
                              (list body))))
