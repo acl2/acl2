@@ -201,6 +201,7 @@
       *nil*
       *t*
       variablep
+      fn-symb
       fcons-term*
       fquotep
       ffn-symb
@@ -212,6 +213,7 @@
       hints
       lemmas
       flatten
+      impliez
       v
       
       => ;sig
@@ -232,6 +234,9 @@
       must-not-prove
       symbol-package-name-safe
 
+      cons-size
+      acl2s-size
+      
       error warning warning! observation prove
       proof-builder event history summary proof-tree
       stage
@@ -262,7 +267,7 @@
       gen-sym-sym-fn
       gen-sym-sym
       packn1
-
+      
       flg
       sort
       guard-checking-on

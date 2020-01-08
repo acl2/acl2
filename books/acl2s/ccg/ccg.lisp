@@ -9,7 +9,7 @@
 ; load in the expander book.
 
 (include-book "misc/expander" :dir :system)
-
+(include-book "acl2s/acl2s-size" :dir :system)
 
 ; load in Peter's hacker stuff.  we use at least three things from this:
 ; - add several keys to the acl2-defaults-table
@@ -452,11 +452,11 @@
 
     ;;  ~c[Ccm-cs] limits which CCMs are compared using the theorem
     ;;  prover. Consider again the ~c[ack] example in the documentation for
-    ;;  ~il[CCG]. All we needed was to compare the value of ~c[(acl2-count x)]
-    ;;  before and after the recursive call and the value of ~c[(acl2-count y)]
+    ;;  ~il[CCG]. All we needed was to compare the value of ~c[(acl2s-size x)]
+    ;;  before and after the recursive call and the value of ~c[(acl2s-size y)]
     ;;  before and after the recursive call. We would learn nothing, and waste
-    ;;  time with the theorem prover if we compared ~c[(acl2-count x)] to
-    ;;  ~c[(acl2-count y)]. However, other times, it is important to compare CCMs
+    ;;  time with the theorem prover if we compared ~c[(acl2s-size x)] to
+    ;;  ~c[(acl2s-size y)]. However, other times, it is important to compare CCMs
     ;;  with each other, for example, when arguments are permuted, or we are
     ;;  dealing with a mutual recursion.
 
@@ -475,9 +475,9 @@
     ;;      (1+ (f (cdr x)))))
     ;;  ~ev[]
     ;;  Now consider the case where ~c[m1] and ~c[m2] are both the measure
-    ;;  ~c[(acl2-count x)]. Then if we look at the recursive call ~c[(f (cdr x))]
+    ;;  ~c[(acl2s-size x)]. Then if we look at the recursive call ~c[(f (cdr x))]
     ;;  in the body of ~c[f], then ~c[m2'] is the result of replacing ~c[x] with
-    ;;  ~c[(cdr x)] in ~c[m2], i.e., ~c[(acl2-count (cdr x))].
+    ;;  ~c[(cdr x)] in ~c[m2], i.e., ~c[(acl2s-size (cdr x))].
 
     ;;  If ~c[ccm-cs] is ~c[:EQUAL] we will compare ~c[m1] to
     ;;  ~c[m2] if ~c[v1] and ~c[v2] are equal. If ~c[value] is ~c[:ALL] we will
@@ -508,16 +508,16 @@
 
     ;;  Clearly this is terminating. If we choose a measure of ~c[(nfix x)] we
     ;;  know that if ~c[x] is a positive integer, ~c[(nfix (- x 2))] is less than
-    ;;  ~c[(nfix x)]. But consider the measure ~c[(acl2-count x)]. The strange
-    ;;  thing here is that if ~c[x] is 1, then ~c[(acl2-count (- x 2))] is
-    ;;  ~c[(acl2-count -1)], which is 1, i.e. the ~c[acl2-count] of ~c[x]. So, the
+    ;;  ~c[(nfix x)]. But consider the measure ~c[(acl2s-size x)]. The strange
+    ;;  thing here is that if ~c[x] is 1, then ~c[(acl2s-size (- x 2))] is
+    ;;  ~c[(acl2s-size -1)], which is 1, i.e. the ~c[acl2s-size] of ~c[x]. So, the
     ;;  fact that we know that ~c[x] is a positive integer is not enough to show
     ;;  that this measure decreases. But notice that if ~c[x] is 1, we will recur
     ;;  just one more time. So, if we consider what happens when we move from the
     ;;  recursive call back to itself. In this case we know
     ;; ~c[(and (not (zp x)) (not (zp (- x 2))))].
     ;;  Under these conditions, it is trivial for ACL2 to prove that
-    ;;  ~c[(acl2-count (- x 2))] is always less than ~c[(acl2-count x)].
+    ;;  ~c[(acl2s-size (- x 2))] is always less than ~c[(acl2s-size x)].
 
     ;;  However, this can make the CCG analysis much more expensive, since
     ;;  information about how values change from step to step are done on a
@@ -1872,7 +1872,7 @@
          * Set the :don't-guess-ccms flag to t. Sometimes CCG analysis ~
            guesses too many CCMs which leads to excessive prover ~
            queries. This will eliminate *all* CCMs other than the ~
-           acl2-count of each formal.~|~%~
+           acl2s-size of each formal.~|~%~
          * Do you see a variable that you don't think is relevant to the ~
            termination proof? In that case, us the :ignore-formals flag ~
            to tell the CCG analysis to throw out CCMs that contain that ~
@@ -2228,9 +2228,9 @@
 
 (defun-raw ccg-formal-sizes (formals)
   ;; given a list of formals, this function returns a list of
-  ;; expressions to calculate the acl2-count of each formal.
+  ;; expressions to calculate the acl2s-size of each formal.
   (loop for x in formals
-        collect `(acl2-count ,x)))
+        collect `(acl2s-size ,x)))
 
 (defun-raw ccg-add-zp-ccm (r formals ccms)
   ;; if an expression, r -- which will generally correspond to one of
@@ -2281,8 +2281,8 @@ x-y+1, but instead it guessed y-x+1. Now, looking at the code
 below, notice the how p is defined in the let*. That definition
 essentially orders the args based on the term order, so we lose
 the information about how they were compared. This is not a good
-idea. In many cases, it might be fine because acl2-count is
-robust, eg, acl2-count -10 = 10, but in this case the ccm we
+idea. In many cases, it might be fine because acl2s-size is
+robust, eg, acl2s-size -10 = 10, but in this case the ccm we
 guess does not decrease and cgen finds a counterexample. So, I
 don't understand why the term order is used here at all. I
 rewrote just this case in my updated version of ccg, below.
@@ -2296,10 +2296,10 @@ e2-e1+1.
   ;; the expressions in a ruler -- is one of the following forms, we
   ;; add the corresponding expression to the ccms:
   ;;
-  ;; * (< 0 e2) --> (acl2-count e2)
-  ;; * (< e1 e2) --> (acl2-count (- e2 e1))
-  ;; * (not (< e1 0)) --> (1+ (acl2-count e1))
-  ;; * (not (< e1 e2)) --> (1+ (acl2-count (- e1 e2)))
+  ;; * (< 0 e2) --> (acl2s-size e2)
+  ;; * (< e1 e2) --> (acl2s-size (- e2 e1))
+  ;; * (not (< e1 0)) --> (1+ (acl2s-size e1))
+  ;; * (not (< e1 e2)) --> (1+ (acl2s-size (- e1 e2)))
   (declare (ignore formals))
   (cond ((atom r) ccms)
         ((or (eq (car r) '<)
@@ -2313,7 +2313,7 @@ e2-e1+1.
            (cond ((and (quotep arg1) (quotep arg2))
                   ccms)
                  ((not (or (quotep arg1) (quotep arg2)))
-                  (cons `(acl2-count (binary-+ '1
+                  (cons `(acl2s-size (binary-+ '1
                                                (binary-+ ,arg2
                                                          (unary-- ,arg1))))
                         ccms))
@@ -2322,14 +2322,14 @@ e2-e1+1.
                                (eql (unquote arg1) 1))
                            (variablep arg2))
                       ccms
-                    (cons `(acl2-count (binary-+ (quote ,(- 1 (unquote arg1))) ,arg2))
+                    (cons `(acl2s-size (binary-+ (quote ,(- 1 (unquote arg1))) ,arg2))
                           ccms)))
                  ((and (quotep arg2) (acl2-numberp (unquote arg2)))
                   (if (and (or (eql (unquote arg2) 0)
                                (eql (unquote arg2) 1))
                            (variablep arg1))
                       ccms
-                    (cons `(acl2-count (binary-+ (quote ,(- 1 (unquote arg2))) ,arg1))
+                    (cons `(acl2s-size (binary-+ (quote ,(- 1 (unquote arg2))) ,arg1))
                           ccms)))
                  (t
                   ccms))))
@@ -2342,10 +2342,10 @@ e2-e1+1.
   ;; the expressions in a ruler -- is one of the following forms, we
   ;; add the corresponding expression to the ccms:
   ;;
-  ;; * (< 0 e2) --> (acl2-count e2)
-  ;; * (< e1 e2) --> (acl2-count (- e2 e1))
-  ;; * (not (< e1 0)) --> (1+ (acl2-count e1))
-  ;; * (not (< e1 e2)) --> (1+ (acl2-count (- e1 e2)))
+  ;; * (< 0 e2) --> (acl2s-size e2)
+  ;; * (< e1 e2) --> (acl2s-size (- e2 e1))
+  ;; * (not (< e1 0)) --> (1+ (acl2s-size e1))
+  ;; * (not (< e1 e2)) --> (1+ (acl2s-size (- e1 e2)))
   (declare (ignore formals))
   (cond ((atom r) ccms)
         ((or (eq (car r) '<)
@@ -2363,11 +2363,11 @@ e2-e1+1.
                   ccms)
                  ((not (or (quotep arg1) (quotep arg2)))
                   (if not?
-                      (cons `(acl2-count (binary-+ '1
+                      (cons `(acl2s-size (binary-+ '1
                                                    (binary-+ ,rarg1
                                                              (unary-- ,rarg2))))
                             ccms)
-                    (cons `(acl2-count  (binary-+ '1
+                    (cons `(acl2s-size  (binary-+ '1
                                                   (binary-+ ,rarg2
                                                             (unary-- ,rarg1))))
                           ccms)))
@@ -2376,14 +2376,14 @@ e2-e1+1.
                                (eql (unquote arg1) 1))
                            (variablep arg2))
                       ccms
-                    (cons `(acl2-count (binary-+ (quote ,(- 1 (unquote arg1))) ,arg2))
+                    (cons `(acl2s-size (binary-+ (quote ,(- 1 (unquote arg1))) ,arg2))
                           ccms)))
                  ((and (quotep arg2) (acl2-numberp (unquote arg2)))
                   (if (and (or (eql (unquote arg2) 0)
                                (eql (unquote arg2) 1))
                            (variablep arg1))
                       ccms
-                    (cons `(acl2-count (binary-+ (quote ,(- 1 (unquote arg2))) ,arg1))
+                    (cons `(acl2s-size (binary-+ (quote ,(- 1 (unquote arg2))) ,arg1))
                           ccms)))
                  (t
                   ccms))))
@@ -2401,7 +2401,7 @@ e2-e1+1.
     ccms))
 
 (defun-raw accg-guess-ccms-for-node (node)
-  ;; given a node, guesses ccms beyond the basic acl2-count of the
+  ;; given a node, guesses ccms beyond the basic acl2s-size of the
   ;; formals.
   (let ((ccms nil)
         (rulers (accg-node-ruler node))
@@ -2429,12 +2429,12 @@ e2-e1+1.
                                              :test #'equal
                                              :key #'de-propagate)))))
 
-;; when we guess ccms beyond the basic acl2-count of the formals of a
+;; when we guess ccms beyond the basic acl2s-size of the formals of a
 ;; function, we need to propagate the ccms throughout the accg. for
 ;; example, suppose we have two functions, f and g, such that f
 ;; contains the call (g x y) when (not (zp (- y x))) and g always
 ;; calls (f (1+ x) y). then f will get assigned the ccm (- y x), but g
-;; will only have (acl2-count x) and (acl2-count y). in this
+;; will only have (acl2s-size x) and (acl2s-size y). in this
 ;; situation, there will be no way to tell that (- y x) decreases each
 ;; time through the loop. we need some sort of "place-holder" to keep
 ;; track of the value of (- y x) when we are in the function g. the
@@ -2565,9 +2565,9 @@ e2-e1+1.
                              (aref ccms i))))
     ;; next, we propagate the ccms and then partition them by
     ;; function. finally, we set the ccm list of each node to be the
-    ;; non-trivial ccms for the function plus the acl2-count of each
+    ;; non-trivial ccms for the function plus the acl2s-size of each
     ;; formal of the parent function and the sum of all the formal
-    ;; acl2-counts (if there is more than one formal).
+    ;; acl2s-sizes (if there is more than one formal).
      (accg-propagate-ccms
       (ccg-remove-duplicate-ccms ccms)
       accg
@@ -7587,9 +7587,9 @@ e2-e1+1.
 
  <p>ACL2 cannot automatically prove the termination of @('ack') using its
   measure-based termination proof. In order to admit the function, the user
-  must supply a measure. An example measure is @('(make-ord 1 (1+ (acl2-count
-  y)) (acl2-count x))'), which is equivalent to the ordinal @('w * (1+
-  (acl2-count y)) + (acl2-count x)'), where @('w') is the first infinite
+  must supply a measure. An example measure is @('(make-ord 1 (1+ (acl2s-size
+  y)) (acl2s-size x))'), which is equivalent to the ordinal @('w * (1+
+  (acl2s-size y)) + (acl2s-size x)'), where @('w') is the first infinite
   ordinal.</p>
 
  <p>The CCG analysis, on the other hand, automatically proves termination as
@@ -7619,7 +7619,7 @@ e2-e1+1.
  heuristics for guessing appropriate measures. However, there is a mechanism
  for supplying measures to the CCG analysis if you need to see @(see
  CCG-XARGS). In our example, the CCG analysis will guess the measures
- @('(acl2-count x)'), @('(acl2-count y)'), and @('(+ (acl2-count x) (acl2-count
+ @('(acl2s-size x)'), @('(acl2s-size y)'), and @('(+ (acl2s-size x) (acl2s-size
  y))'). This last one turns out to be unimportant for the termination
  proof. However, note that the first two of these measures are components of
  the ordinal measure that we gave ACL2 to prove termination earlier. As one
@@ -7632,14 +7632,14 @@ e2-e1+1.
  measure compares to another across recursive calls.</p>
 
  <p>In our example, note that when the recursive call of the context 1 is made,
- the new value of @('(acl2-count x)') is less than the original value of
- @('(acl2-count x)'). More formally, we can prove the following:</p>
+ the new value of @('(acl2s-size x)') is less than the original value of
+ @('(acl2s-size x)'). More formally, we can prove the following:</p>
 
  @({
   (implies (and (not (zp x))
                 (not (zp y)))
-           (o< (acl2-count (1- x))
-               (acl2-count x)))
+           (o< (acl2s-size (1- x))
+               (acl2s-size x)))
  })
 
  <p>For those of you that are familiar with measure-based termination proofs in
@@ -7650,13 +7650,13 @@ e2-e1+1.
  @({
   (implies (and (not (zp x))
                 (not (zp y)))
-           (o<= (acl2-count y)
-                (acl2-count y)))
+           (o<= (acl2s-size y)
+                (acl2s-size y)))
  })
 
  <p>That is, @('y') stays the same across this recursive call. For the other
- context, we similarly note that @('(acl2-count y)') is decreasing. However, we
- can say nothing about the value of @('(acl2-count x)'). The CCG algorithm does
+ context, we similarly note that @('(acl2s-size y)') is decreasing. However, we
+ can say nothing about the value of @('(acl2s-size x)'). The CCG algorithm does
  this analysis using queries to the theorem prover that are carefully
  restricted to limit prover time.</p>
 
@@ -7677,15 +7677,15 @@ e2-e1+1.
 
  <p>For our example, consider two kinds of infinite paths through our CCG:
  those that visit context 2 infinitely often, and those that don't. In the
- first case, we know that @('(acl2-count y)') is never increasing, since a
+ first case, we know that @('(acl2s-size y)') is never increasing, since a
  visit to context 1 does not change the value of @('y'), and a visit to context
- 2 decreases the value of @('(acl2-count y)'). Furthermore, since we visit
- context 2 infinitely often, we know that @('(acl2-count y)') is infinitely
+ 2 decreases the value of @('(acl2s-size y)'). Furthermore, since we visit
+ context 2 infinitely often, we know that @('(acl2s-size y)') is infinitely
  decreasing along this path. Therefore, we have met the criteria for proving no
  such path is a valid computation. In the case in which we do not visit context
  2 infinitely often, there must be a value @('N') such that we do not visit
  context 2 any more after the @('N')th context in the path. After this, we must
- only visit context 1, which always decreases the value of @('(acl2-count
+ only visit context 1, which always decreases the value of @('(acl2s-size
  x)'). Therefore, no such path can be a valid computation. Since all infinite
  paths through our CCG either visit context 2 infinitely often or not, we have
  proven termination. This analysis of the local data in the global context is
@@ -7907,10 +7907,10 @@ analysis."
 
  <p>@('Ccm-cs') limits which CCMs are compared using the theorem
  prover. Consider again the @('ack') example in the documentation for @(see
- CCG). All we needed was to compare the value of @('(acl2-count x)') before and
- after the recursive call and the value of @('(acl2-count y)') before and after
+ CCG). All we needed was to compare the value of @('(acl2s-size x)') before and
+ after the recursive call and the value of @('(acl2s-size y)') before and after
  the recursive call. We would learn nothing, and waste time with the theorem
- prover if we compared @('(acl2-count x)') to @('(acl2-count y)'). However,
+ prover if we compared @('(acl2s-size x)') to @('(acl2s-size y)'). However,
  other times, it is important to compare CCMs with each other, for example,
  when arguments are permuted, or we are dealing with a mutual recursion.</p>
 
@@ -7931,9 +7931,9 @@ analysis."
  })
 
  <p>Now consider the case where @('m1') and @('m2') are both the measure
- @('(acl2-count x)'). Then if we look at the recursive call @('(f (cdr x))') in
+ @('(acl2s-size x)'). Then if we look at the recursive call @('(f (cdr x))') in
  the body of @('f'), then @('m2'') is the result of replacing @('x') with
- @('(cdr x)') in @('m2'), i.e., @('(acl2-count (cdr x))').</p>
+ @('(cdr x)') in @('m2'), i.e., @('(acl2s-size (cdr x))').</p>
 
  <p>If @('ccm-cs') is @(':EQUAL') we will compare @('m1') to @('m2') if @('v1')
  and @('v2') are equal. If @('value') is @(':ALL') we will compare @('m1') to
@@ -7964,15 +7964,15 @@ analysis."
 
  <p>Clearly this is terminating. If we choose a measure of @('(nfix x)') we
  know that if @('x') is a positive integer, @('(nfix (- x 2))') is less than
- @('(nfix x)'). But consider the measure @('(acl2-count x)'). The strange thing
- here is that if @('x') is 1, then @('(acl2-count (- x 2))') is @('(acl2-count
- -1)'), which is 1, i.e. the @('acl2-count') of @('x'). So, the fact that we
+ @('(nfix x)'). But consider the measure @('(acl2s-size x)'). The strange thing
+ here is that if @('x') is 1, then @('(acl2s-size (- x 2))') is @('(acl2s-size
+ -1)'), which is 1, i.e. the @('acl2s-size') of @('x'). So, the fact that we
  know that @('x') is a positive integer is not enough to show that this measure
  decreases. But notice that if @('x') is 1, we will recur just one more
  time. So, if we consider what happens when we move from the recursive call
  back to itself. In this case we know @('(and (not (zp x)) (not (zp (- x
  2))))').  Under these conditions, it is trivial for ACL2 to prove that
- @('(acl2-count (- x 2))') is always less than @('(acl2-count x)').
+ @('(acl2s-size (- x 2))') is always less than @('(acl2s-size x)').
 
  However, this can make the CCG analysis much more expensive, since information
  about how values change from step to step are done on a per-edge, rather than
