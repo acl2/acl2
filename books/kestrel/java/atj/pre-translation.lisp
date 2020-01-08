@@ -843,7 +843,7 @@
      @('var-types') assigns single types to variables.
      The only variables annotated with lists of two or more types
      are the @('mv') vars that arise in the translation of @(tsee mv-let)
-     (see @(tsee make-mv-let-call)).
+     (see @(tsee atj-check-mv-let-call)).
      These @('mv') variables are treated specially
      by the type annotation process,
      without a need to add them to @('var-types').")
@@ -964,7 +964,8 @@
     "Before attempting to process lambda expression or named function calls
      as described above,
      we first check whether the term is a translated @(tsee mv-let).
-     For this to be the case, not only @(tsee check-mv-let-call) must succeed,
+     For this to be the case,
+     not only @(tsee atj-check-mv-let-call) must succeed,
      yielding variables @('var1'), ..., @('varn')
      and subterms @('mv-term') and @('body-term'),
      but also the term assigned to the @('mv') variable
@@ -1013,7 +1014,7 @@
      and we update @('var-types') with the @(tsee mv-let) variables
      associated to the types for the term to which @('mv') is bound;
      we do not need to update @('var-types') with @('mv')
-     because @(tsee check-mv-let-call) ensures that
+     because @(tsee atj-check-mv-let-call) ensures that
      the variable @('mv') does not occur free in the body term.
      Note that, in general, some variables bound to @(tsee mv-nth) calls
      may have been removed by a previous pre-translation step,
