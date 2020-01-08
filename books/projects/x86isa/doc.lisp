@@ -59,6 +59,8 @@
 ;; manual.
 (xdoc::add-resource-directory "images" "images")
 
+; (depends-on "images/x86isa.png")
+
 (defxdoc X86ISA
   :parents (acl2::software-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
@@ -284,6 +286,8 @@
  <p>then you do <i>not</i> have @('SYSCALL') execution support.
  Otherwise, you do.</p>"
   )
+
+; (depends-on "images/cosim.png")
 
 (defxdoc model-validation
   :parents (x86isa)
