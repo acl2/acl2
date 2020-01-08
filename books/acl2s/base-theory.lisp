@@ -686,7 +686,6 @@ I commented out some disabled theorems that seem fine to me.
 (local
  (set-default-hints
   '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
-    (acl2s::stage acl2s-size)
     (acl2s::stage acl2s::negp)
     (acl2s::stage acl2s::posp)
     (acl2s::stage acl2s::natp)
