@@ -18,6 +18,8 @@
 (include-book "fundef-enabledp")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
+(include-book "induction-machine")
+(include-book "induction-machine-plus")
 (include-book "irecursivep")
 (include-book "irecursivep-plus")
 (include-book "measure")

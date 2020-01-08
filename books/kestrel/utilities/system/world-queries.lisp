@@ -35,6 +35,8 @@
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
 (include-book "kestrel/std/system/included-books" :dir :system)
+(include-book "kestrel/std/system/induction-machine" :dir :system)
+(include-book "kestrel/std/system/induction-machine-plus" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 (include-book "kestrel/std/system/known-packages" :dir :system)
@@ -131,52 +133,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define induction-machine ((fn symbolp) (wrld plist-worldp))
-  :returns (result "A @('pseudo-induction-machinep').")
-  :parents (world-queries)
-  :short "Induction machine of a named logic-mode (singly) recursive function."
-  :long
-  "<p>
-   This is a list of @('tests-and-calls') records
-   (see the ACL2 source code for information on these records),
-   each of which contains zero or more recursive calls
-   along with the tests that lead to them.
-   The induction machine is a value of type @('pseudo-induction-machinep'),
-   which is defined in @('[books]/system/pseudo-good-worldp.lisp').
-   </p>
-   <p>
-   Note that
-   induction is not directly supported for mutually recursive functions.
-   </p>
-   <p>
-   See @(tsee induction-machine+) for a logic-friendly variant of this utility.
-   </p>"
-  (getpropc fn 'induction-machine nil wrld))
-
-(define induction-machine+ ((fn (and (logic-function-namep fn wrld)
-                                     (= 1 (len (irecursivep+ fn wrld)))))
-                            (wrld plist-worldp))
-  :returns (result (pseudo-induction-machinep fn result))
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee induction-machine)."
-  :long
-  "<p>
-   This returns the same result as @(tsee induction-machine),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (induction-machine fn wrld)))
-    (if (pseudo-induction-machinep fn result)
-        result
-      (raise "Internal error: ~
-              the INDUCTION-MACHINE property ~x0 of ~x1 ~
-              does not have the expected form."
-             result fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
