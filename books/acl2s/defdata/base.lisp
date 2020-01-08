@@ -1362,24 +1362,31 @@ No longer needed.
            (< (acl2-count (nth i x1)) (acl2-count x2)))
   :hints (("Goal" :in-theory (disable nth))))
 
+#|
+
+The corresponding rules do not seem to help, at all.
 
 (include-book "acl2s/acl2s-size" :dir :system)
 (defthm termination-tree-enum-cdr-acl2s-size
-  (implies (consp x)
+  (implies (consp (double-rewrite x))
            (and (< (acl2s-size (cdr x))
                    (acl2s-size x))
                 (< (acl2s-size (car x))
-                   (acl2s-size x)))))
+                   (acl2s-size x))))
+  :rule-classes :linear)
 
 (defthm termination-tree-enum-dec-acl2s-size
-  (implies (< (acl2s-size x1) (acl2s-size x2))
+  (implies (< (acl2s-size (double-rewrite x1)) (acl2s-size x2))
            (and (< (acl2s-size (car x1)) (acl2s-size x2))
-                (< (acl2s-size (cdr x1)) (acl2s-size x2)))))
+                (< (acl2s-size (cdr x1)) (acl2s-size x2))))
+  :rule-classes ((:linear :match-free :all)))
 
 (defthm termination-tree-enum-dec2-acl2s-size
   (implies (< (acl2s-size x1) (acl2s-size x2))
            (< (acl2s-size (nth i x1)) (acl2s-size x2)))
-  :hints (("Goal" :in-theory (disable nth))))
+  :hints (("Goal" :in-theory (disable nth)))
+  :rule-classes ((:linear :match-free :all)))
+|#
 
 ; IMPORTANT: PROPER-CONS is put ahead of all lists, so that in the
 ; event of intersecting it with lists, the lists are given preference,
