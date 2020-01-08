@@ -41,7 +41,6 @@
 
 (include-book "var-book" :ttags :all)
 
-
 ;; (make-event ;TODO make sure to get this working
 ;;  (er-progn
 ;;   (defdata::set-acl2s-defdata-verbose t)
@@ -1355,7 +1354,7 @@ No longer needed.
                 (< (acl2-count (cdr x1)) (acl2-count x2)))))
 (defthm terminination-tree-enum-nth
   (<= (acl2-count (nth i x))
-              (acl2-count x))
+      (acl2-count x))
   :rule-classes (:rewrite :linear))
 
 (defthm termination-tree-enum-dec2
@@ -1364,6 +1363,23 @@ No longer needed.
   :hints (("Goal" :in-theory (disable nth))))
 
 
+(include-book "acl2s/acl2s-size" :dir :system)
+(defthm termination-tree-enum-cdr-acl2s-size
+  (implies (consp x)
+           (and (< (acl2s-size (cdr x))
+                   (acl2s-size x))
+                (< (acl2s-size (car x))
+                   (acl2s-size x)))))
+
+(defthm termination-tree-enum-dec-acl2s-size
+  (implies (< (acl2s-size x1) (acl2s-size x2))
+           (and (< (acl2s-size (car x1)) (acl2s-size x2))
+                (< (acl2s-size (cdr x1)) (acl2s-size x2)))))
+
+(defthm termination-tree-enum-dec2-acl2s-size
+  (implies (< (acl2s-size x1) (acl2s-size x2))
+           (< (acl2s-size (nth i x1)) (acl2s-size x2)))
+  :hints (("Goal" :in-theory (disable nth))))
 
 ; IMPORTANT: PROPER-CONS is put ahead of all lists, so that in the
 ; event of intersecting it with lists, the lists are given preference,
