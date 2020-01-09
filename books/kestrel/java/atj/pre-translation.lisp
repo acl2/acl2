@@ -977,11 +977,11 @@
      If the term is a translated @(tsee mv-let),
      we annotate it by building a term of the form")
    (xdoc::codeblock
-    "([type>type]"
+    "([reqinf>reqinf]"
     " ((lambda ([types]mv)"
-    "          ([type>type]"
+    "          ([reqinf>reqinf]"
     "           ((lambda ([type1]var1 ... [typen]varn)"
-    "                    ([...>type] body-term))"
+    "                    ([...>reqinf] body-term))"
     "            ([AV>type1] (mv-nth ([AI>AI] '0)"
     "                                ([types>types] [types]mv)))"
     "            ..."
@@ -990,8 +990,8 @@
     "  ([types>types] mv-term)))")
    (xdoc::p
     "where @('types') consists of @('type1'), ..., @('typen'),
-     and where @('type') is @('required-types?') if non-@('nil')
-     or otherwise the type inferred for @('body-term').
+     and where @('reqinf') is @('required-types?') if non-@('nil')
+     or otherwise the types inferred for @('body-term').
      This term is systematically annotated in the same way as any other term,
      so that subsequent pre-processing steps can treat all terms uniformly.
      The @('[AV>typei]') conversions
