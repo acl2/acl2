@@ -862,6 +862,7 @@ I commented out some disabled theorems that seem fine to me.
                            (equal (mod b n) b))))))
 
 #|
+
 Useful for testing defunc/definec errors
 
 :trans1
@@ -871,11 +872,9 @@ Useful for testing defunc/definec errors
            (in a (cdr X)))))
 
 :trans1
-(DEFUNC IN (A X)
-  :INPUT-CONTRACT (TRUE-LISTP X)
-  :OUTPUT-CONTRACT (BOOLEANP (IN A X))
-  (AND (CONSP X)
-       (OR (== A (CAR X)) (IN A (CDR X)))))
+(DEFINEC-CORE IN NIL (A :ALL X :TL)
+  :BOOL (AND (CONSP X)
+             (OR (== A (CAR X)) (IN A (CDR X)))))
 
 (redef+)
 (redef-)
@@ -1249,14 +1248,16 @@ Useful for testing defunc/definec errors
  :rule-classes nil
  :proper nil)
 
-(definec lapp (x :tl y :tl) :tl
-  (app x y))
+(definec lendp (x :tl) :bool
+  (atom x))
+
+(definec llen (x :tl) :nat
+  (if (lendp x)
+      0
+    (1+ (llen (tail x)))))
 
 (definec lrev (x :tl) :tl
   (rev x))
-
-(definec lendp (x :tl) :bool
-  (atom x))
 
 (in-theory
  #!acl2(disable
