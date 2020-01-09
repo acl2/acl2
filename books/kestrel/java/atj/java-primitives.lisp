@@ -447,7 +447,7 @@
      the Java expression derived from @('b'):
      for instance, if @('b') is @('(java::int-less x y)'),
      the generated Java test is @('(jx < jy)'),
-     where @('jx') and @('jy') are the Java equivalents of @('x') and @('y).")
+     where @('jx') and @('jy') are the Java equivalents of @('x') and @('y').")
    (xdoc::p
     "To make this work, we do not want the generated Java code
      to convert @('b') to the Java representation of the ACL2 representation
@@ -459,6 +459,6 @@
    (xdoc::p
     "Since the @(tsee boolean-value->bool) destructor is inlined,
      we need to specify @('boolean-value->bool$inline')
-     to @(tsee def-atj-main-function-type)."))
+     for @(tsee def-atj-main-function-type)."))
 
   (def-atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol))
