@@ -37,8 +37,6 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
-;; Definitions for binary functions to be used by multiplier rules
-
 (in-package "RP")
 
 ;; To load the verilog designs:

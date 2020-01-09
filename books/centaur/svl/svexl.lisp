@@ -92,9 +92,9 @@
                :true-listp t))
 
 (fty::defalist svexl-node-alist
-                :key-type natp
-                :val-type svexl-node
-                :true-listp t)
+               :key-type natp
+               :val-type svexl-node
+               :true-listp t)
 
 (fty::defprod
  svexl
@@ -331,8 +331,8 @@
        (- (fast-alist-free svexl-node-alist))
        (- (fast-alist-free reuse-stats))
        (svexl (make-svexl
-                    :top-node new-node
-                    :node-alist svexl-node-alist)))
+               :top-node new-node
+               :node-alist svexl-node-alist)))
     svexl))
 
 (define svexlist-to-svexllist ((svexlist svexlist-p))
@@ -346,10 +346,9 @@
        (- (fast-alist-free svexl-node-alist))
        (- (fast-alist-free reuse-stats))
        (svexllist (make-svexllist
-                         :top-nodelist new-node-lst
-                         :node-alist svexl-node-alist)))
+                   :top-nodelist new-node-lst
+                   :node-alist svexl-node-alist)))
     svexllist))
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,8 +370,8 @@
                    ())))
   (local
    (defthm lemma1
-     (implies (and 
-               
+     (implies (and
+
                (hons-assoc-equal x
                                  reverse-nodesdb)
                (reverse-nodesdb-p reverse-nodesdb))
@@ -417,7 +416,7 @@
            x.fn
            (svexl-nodelist-to-svexlist x.args
                                        reverse-nodesdb))))
- 
+
  (define svexl-nodelist-to-svexlist ((lst svexl-nodelist-p)
                                      (reverse-nodesdb reverse-nodesdb-p))
    :returns (res sv::svexlist-p :hyp (and (svexl-nodelist-p lst)
@@ -431,7 +430,6 @@
  ///
 
  (verify-guards svexl-node-to-svex))
-
 
 (define svexl-to-svex-aux ((x svexl-node-alist-p))
   :verify-guards nil
@@ -452,7 +450,7 @@
   (verify-guards svexl-to-svex-aux))
 
 (define svexl-to-svex ((svexl svexl-p))
-  :returns (svex svex-p :hyp (svexl-p svexl)) 
+  :returns (svex svex-p :hyp (svexl-p svexl))
   (b* ((node (svexl->top-node svexl))
        (node-alist (svexl->node-alist svexl))
        (reverse-nodesdb (svexl-to-svex-aux node-alist))
@@ -461,14 +459,13 @@
     res))
 
 (define svexllist-to-svexlist ((svexllist svexllist-p))
-  :returns (svexlist svexlist-p :hyp (svexllist-p svexllist)) 
+  :returns (svexlist svexlist-p :hyp (svexllist-p svexllist))
   (b* ((top-nodelist (svexllist->top-nodelist svexllist))
        (node-alist (svexllist->node-alist svexllist))
        (reverse-nodesdb (svexl-to-svex-aux node-alist))
        (res (svexl-nodelist-to-svexlist top-nodelist reverse-nodesdb))
        (- (fast-alist-free reverse-nodesdb)))
     res))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Eval functions
@@ -539,7 +536,7 @@
                      node-env-p)
                     ()))))
   :returns (res-node-env node-env-p :hyp (and (svexl-node-alist-p x)
-                                                  (sv::svex-env-p env)))
+                                              (sv::svex-env-p env)))
   (if (atom x)
       nil
     (b* ((node-env (svexl-eval-aux (cdr x) env))
@@ -608,7 +605,6 @@
          :node)
         (t :call)))
 
-
 (def-rp-rule$ t nil
   svexl-node-kind-is-svexl-node-kind-wog
   (equal (svexl-node-kind x)
@@ -622,7 +618,7 @@
          (svexl-node-kind x))
   :hints (("Goal"
            :in-theory (e/d (svexl-node-kind-wog
-                            svexl-node-kind) ())))) 
+                            svexl-node-kind) ()))))
 
 (acl2::defines
  svexl-node-eval-wog
@@ -810,9 +806,8 @@
     (equal (svexl-eval-aux-wog nil env)
            nil)))
 
-
 (define svexl-eval-wog ((x svexl-p)
-                        (env)) 
+                        (env))
   (b* ((node (svexl->top-node x))
        (node-alist (svexl->node-alist x))
        (node-env (svexl-eval-aux-wog node-alist env))
@@ -842,9 +837,8 @@
                (- (fast-alist-free node-env)))
             res))))
 
-
 (define svexllist-eval-wog ((x svexllist-p)
-                            (env)) 
+                            (env))
   (b* ((node-lst (svexllist->top-nodelist x))
        (node-alist (svexllist->node-alist x))
        (node-env (svexl-eval-aux-wog node-alist env))
@@ -872,7 +866,6 @@
                (res (svexl-nodelist-eval-wog node-lst node-env env))
                (- (fast-alist-free node-env)))
             res))))
-
 
 (defthm-svexl-node-eval-wog
   (defthm svex-p-implies-svexl-node-p
