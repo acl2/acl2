@@ -1479,21 +1479,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In the shallow embedding approach,
-     the actual arguments of an ACL2 function or lambda expression
-     are calculated by the generated Java code,
-     and then the (shallowly embedded) ACL2 function or lambda expression
-     is called on them.
-     However, for the non-strict function @(tsee if)
-     and the non-strict ``pseudo-function'' @('or')
-     (see the documentation of AIJ for details on the latter),
-     the generated Java code follows a different strategy,
-     in order to realize the required non-strictness.
-     This strategy involves generating Java local variables
-     to store results of arguments of non-strict ACL2 functions.
-     The base name to use for these variables
-     is an argument of these code generation functions.")
-   (xdoc::p
     "These code generation functions assume that the ACL2 terms
      have been type-annotated via @(tsee atj-type-annotate-term).
      They also assume that all the variables of the ACL2 terms have been marked
@@ -1502,7 +1487,15 @@
      If the @(':guards') input is @('nil'),
      then all the type annotations consist of
      the type @(':avalue') of all ACL2 values,
-     i.e. it is as if there were no types."))
+     i.e. it is as if there were no types.")
+   (xdoc::p
+    "Our code generation strategy involves
+     generating Java local variables
+     to store results of arguments of ACL2's non-strict @(tsee if).
+     The base name to use for these variables
+     is an argument of these code generation functions;
+     the index to make these variables unique
+     is threaded through the code generation functions."))
 
   (define atj-gen-shallow-if-test ((test pseudo-termp)
                                    (jvar-result-base stringp)
@@ -1570,15 +1563,16 @@
             test))
          ((mv block
               expr
-              jvar-result-index) (atj-gen-shallow-term (or jbool? test)
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term (or jbool? test)
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          (expr (if jbool?
                    expr
                  (jexpr-binary (jbinop-ne)
@@ -1657,37 +1651,40 @@
        see @(tsee atj-gen-shallow-if-test) for details."))
     (b* (((mv test-block
               test-expr
-              jvar-result-index) (atj-gen-shallow-if-test test
-                                                          jvar-result-base
-                                                          jvar-result-index
-                                                          pkg-class-names
-                                                          fn-method-names
-                                                          curr-pkg
-                                                          qpairs
-                                                          guards$
-                                                          wrld))
+              jvar-result-index)
+          (atj-gen-shallow-if-test test
+                                   jvar-result-base
+                                   jvar-result-index
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   qpairs
+                                   guards$
+                                   wrld))
          ((mv then-block
               then-expr
-              jvar-result-index) (atj-gen-shallow-term then
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term then
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          ((mv else-block
               else-expr
-              jvar-result-index) (atj-gen-shallow-term else
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term else
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          ((when (and *atj-gen-cond-exprs*
                      (null then-block)
                      (null else-block)))
@@ -1699,7 +1696,9 @@
                 expr
                 jvar-result-index)))
          (jtype (atj-type-to-jtype type))
-         ((mv result-locvar-block jvar-result jvar-result-index)
+         ((mv result-locvar-block
+              jvar-result
+              jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
                                    jvar-result-base
                                    jvar-result-index
@@ -1763,26 +1762,28 @@
       "and the Java expression @('<result>')."))
     (b* (((mv first-block
               first-expr
-              jvar-result-index) (atj-gen-shallow-term first
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term first
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          ((mv second-block
               second-expr
-              jvar-result-index) (atj-gen-shallow-term second
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term second
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          (jtype (atj-type-to-jtype type))
          ((mv result-locvar-block jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
@@ -2078,26 +2079,28 @@
        whose operator corresponds to the function."))
     (b* (((mv left-block
               left-expr
-              jvar-result-index) (atj-gen-shallow-term left
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term left
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          ((mv right-block
               right-expr
-              jvar-result-index) (atj-gen-shallow-term right
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term right
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          (binop (case fn
                   (boolean-and (jbinop-and))
                   (boolean-xor (jbinop-xor))
@@ -2188,26 +2191,28 @@
        and generate a Java array access expression."))
     (b* (((mv array-block
               array-expr
-              jvar-result-index) (atj-gen-shallow-term array
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term array
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          ((mv index-block
               index-expr
-              jvar-result-index) (atj-gen-shallow-term index
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term index
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          (block (append array-block index-block))
          (expr (jexpr-array array-expr index-expr)))
       (mv block
@@ -2562,10 +2567,10 @@
                      (int= (len args) 3))) ; should be always true
           (b* ((first (first args))
                (second (second args))
-               (athird (third args)))
+               (third (third args)))
             (if (equal first second)
                 (atj-gen-shallow-or-app first
-                                        athird
+                                        third
                                         dst-type ; = SRC-TYPE
                                         jvar-result-base
                                         jvar-result-index
@@ -2577,7 +2582,7 @@
                                         wrld)
               (atj-gen-shallow-if-app first
                                       second
-                                      athird
+                                      third
                                       dst-type ; = SRC-TYPE
                                       jvar-result-base
                                       jvar-result-index
@@ -2783,15 +2788,16 @@
                                                   arg-exprs))
          ((mv body-block
               body-expr
-              jvar-result-index) (atj-gen-shallow-term body
-              jvar-result-base
-              jvar-result-index
-              pkg-class-names
-              fn-method-names
-              curr-pkg
-              qpairs
-              guards$
-              wrld)))
+              jvar-result-index)
+          (atj-gen-shallow-term body
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld)))
       (mv (append let-block body-block)
           (atj-adapt-expr-to-type body-expr src-type dst-type)
           jvar-result-index))
@@ -2884,26 +2890,28 @@
         (mv nil nil jvar-result-index)
       (b* (((mv first-block
                 first-expr
-                jvar-result-index) (atj-gen-shallow-term (car terms)
-                jvar-result-base
-                jvar-result-index
-                pkg-class-names
-                fn-method-names
-                curr-pkg
-                qpairs
-                guards$
-                wrld))
+                jvar-result-index)
+            (atj-gen-shallow-term (car terms)
+                                  jvar-result-base
+                                  jvar-result-index
+                                  pkg-class-names
+                                  fn-method-names
+                                  curr-pkg
+                                  qpairs
+                                  guards$
+                                  wrld))
            ((mv rest-blocks
                 rest-exprs
-                jvar-result-index) (atj-gen-shallow-terms (cdr terms)
-                jvar-result-base
-                jvar-result-index
-                pkg-class-names
-                fn-method-names
-                curr-pkg
-                qpairs
-                guards$
-                wrld)))
+                jvar-result-index)
+            (atj-gen-shallow-terms (cdr terms)
+                                   jvar-result-base
+                                   jvar-result-index
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   qpairs
+                                   guards$
+                                   wrld)))
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
             jvar-result-index)))
