@@ -14,8 +14,8 @@
 (include-book "classes-plus")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
-(include-book "theorem-formula")
-(include-book "theorem-formula-plus")
+(include-book "thm-formula")
+(include-book "thm-formula-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

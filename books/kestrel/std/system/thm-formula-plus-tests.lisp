@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "theorem-formula-plus")
+(include-book "thm-formula-plus")
 
 (include-book "misc/assert" :dir :system)
 (include-book "misc/eval" :dir :system)

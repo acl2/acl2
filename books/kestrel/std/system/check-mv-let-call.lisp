@@ -13,6 +13,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "dumb-occur-var-open")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-mv-let-call ((term pseudo-termp))
@@ -37,7 +39,9 @@
     "where @('mv-term-trans') and @('body-term-trans') are
      the translations of @('mv-term') and @('body-term').")
    (xdoc::p
-    "This utility checks if a translated term has the form above.
+    "This utility checks if a translated term has the form above;
+     it also checks that @('mv') does not occur free in @('body-term')
+     (via @(tsee dumb-occur-var-open) for greater flexibility).
      If it does, it returns @('t') as first result,
      and additionally the list @('(var1 ... varn)'),
      the term @('mv-term-trans'),
@@ -72,6 +76,7 @@
        ((unless (flambdap lambda-vars)) (mv nil nil nil nil))
        (vars (lambda-formals lambda-vars))
        (body-term (lambda-body lambda-vars))
+       ((when (dumb-occur-var-open 'mv body-term)) (mv nil nil nil nil))
        (mv-nths (fargs lambda-vars-of-mv-nths))
        ((unless (check-mv-let-call-aux mv-nths 0)) (mv nil nil nil nil)))
     (mv t vars mv-term body-term))
@@ -81,4 +86,18 @@
      :returns (yes/no booleanp)
      (or (endp terms)
          (and (equal (car terms) `(mv-nth ',index mv))
-              (check-mv-let-call-aux (cdr terms) (1+ index)))))))
+              (check-mv-let-call-aux (cdr terms) (1+ index))))))
+
+  ///
+
+  (defret check-mv-let-call-mv-term-smaller
+    (implies yes/no
+             (< (acl2-count mv-term)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret check-mv-let-call-body-term-smaller
+    (implies yes/no
+             (< (acl2-count body-term)
+                (acl2-count term)))
+    :rule-classes :linear))
