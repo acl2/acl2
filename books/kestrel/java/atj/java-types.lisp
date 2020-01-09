@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -309,7 +309,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-maybe-jtype-meet ((x atj-maybe-jtypep) (y atj-maybe-jtypep))
-  :returns (glb atj-maybe-jtypep :hyp :guard)
+  :returns (glb atj-maybe-jtypep)
   :short "Greatest lower bound of two ATJ Java types or @('nil')s, according to
           the partial order over ATJ Java types extended to @('nil')."
   :long
@@ -335,114 +335,116 @@
      ATJ will actually use the lifting of this operation to lists
      (since in general methods have multiple arguments),
      which we define later."))
-  (cond ((equal x *aij-type-char*)
-         (cond ((member-equal y (list *aij-type-char*
-                                      *aij-type-value*)) *aij-type-char*)
-               (t nil)))
-        ((equal x *aij-type-string*)
-         (cond ((member-equal y (list *aij-type-string*
-                                      *aij-type-value*)) *aij-type-string*)
-               (t nil)))
-        ((equal x *aij-type-symbol*)
-         (cond ((member-equal y (list *aij-type-symbol*
-                                      *aij-type-value*)) *aij-type-symbol*)
-               (t nil)))
-        ((equal x *aij-type-int*)
-         (cond ((member-equal y (list *aij-type-int*
-                                      *aij-type-rational*
-                                      *aij-type-number*
-                                      *aij-type-value*)) *aij-type-int*)
-               (t nil)))
-        ((equal x *aij-type-rational*)
-         (cond ((equal y *aij-type-int*) *aij-type-int*)
-               ((member-equal y (list *aij-type-rational*
-                                      *aij-type-number*
-                                      *aij-type-value*)) *aij-type-rational*)
-               (t nil)))
-        ((equal x *aij-type-number*)
-         (cond ((equal y *aij-type-int*) *aij-type-int*)
-               ((equal y *aij-type-rational*) *aij-type-rational*)
-               ((member-equal y (list *aij-type-number*
-                                      *aij-type-value*)) *aij-type-number*)
-               (t nil)))
-        ((equal x *aij-type-cons*)
-         (cond ((member-equal y (list *aij-type-cons*
-                                      *aij-type-value*)) *aij-type-cons*)
-               (t nil)))
-        ((equal x *aij-type-value*)
-         (cond ((member-equal y (list (jtype-boolean)
-                                      (jtype-char)
-                                      (jtype-byte)
-                                      (jtype-short)
-                                      (jtype-int)
-                                      (jtype-long)
-                                      (jtype-array (jtype-boolean))
-                                      (jtype-array (jtype-char))
-                                      (jtype-array (jtype-byte))
-                                      (jtype-array (jtype-short))
-                                      (jtype-array (jtype-int))
-                                      (jtype-array (jtype-long)))) nil)
-               (t y)))
-        ((equal x (jtype-boolean))
-         (cond ((equal y (jtype-boolean)) (jtype-boolean))
-               (t nil)))
-        ((equal x (jtype-char))
-         (cond ((member-equal y (list (jtype-char)
-                                      (jtype-int)
-                                      (jtype-long))) (jtype-char))
-               (t nil)))
-        ((equal x (jtype-byte))
-         (cond ((member-equal y (list (jtype-byte)
-                                      (jtype-short)
-                                      (jtype-int)
-                                      (jtype-long))) (jtype-byte))
-               (t nil)))
-        ((equal x (jtype-short))
-         (cond ((member-equal y (list (jtype-short)
-                                      (jtype-int)
-                                      (jtype-long))) (jtype-short))
-               ((equal y (jtype-byte)) (jtype-byte))
-               (t nil)))
-        ((equal x (jtype-int))
-         (cond ((member-equal y (list (jtype-int)
-                                      (jtype-long))) (jtype-int))
-               ((member-equal y (list (jtype-char)
-                                      (jtype-byte)
-                                      (jtype-short))) y)
-               (t nil)))
-        ((equal x (jtype-long))
-         (cond ((equal y (jtype-long)) (jtype-long))
-               ((member-equal y (list (jtype-char)
-                                      (jtype-byte)
-                                      (jtype-short)
-                                      (jtype-int))) y)
-               (t nil)))
-        ((equal x (jtype-array (jtype-boolean)))
-         (cond ((equal y (jtype-array
-                          (jtype-boolean))) (jtype-array (jtype-boolean)))
-               (t nil)))
-        ((equal x (jtype-array (jtype-char)))
-         (cond ((equal y (jtype-array
-                          (jtype-char))) (jtype-array (jtype-char)))
-               (t nil)))
-        ((equal x (jtype-array (jtype-byte)))
-         (cond ((equal y (jtype-array
-                          (jtype-byte))) (jtype-array (jtype-byte)))
-               (t nil)))
-        ((equal x (jtype-array (jtype-short)))
-         (cond ((equal y (jtype-array
-                          (jtype-short))) (jtype-array (jtype-short)))
-               (t nil)))
-        ((equal x (jtype-array (jtype-int)))
-         (cond ((equal y (jtype-array
-                          (jtype-int))) (jtype-array (jtype-int)))
-               (t nil)))
-        ((equal x (jtype-array (jtype-long)))
-         (cond ((equal y (jtype-array
-                          (jtype-long))) (jtype-array (jtype-long)))
-               (t nil)))
-        ((equal x nil) nil)
-        (t (impossible)))
+  (b* ((x (if (mbt (atj-maybe-jtypep x)) x nil))
+       (y (if (mbt (atj-maybe-jtypep y)) y nil)))
+    (cond ((equal x *aij-type-char*)
+           (cond ((member-equal y (list *aij-type-char*
+                                        *aij-type-value*)) *aij-type-char*)
+                 (t nil)))
+          ((equal x *aij-type-string*)
+           (cond ((member-equal y (list *aij-type-string*
+                                        *aij-type-value*)) *aij-type-string*)
+                 (t nil)))
+          ((equal x *aij-type-symbol*)
+           (cond ((member-equal y (list *aij-type-symbol*
+                                        *aij-type-value*)) *aij-type-symbol*)
+                 (t nil)))
+          ((equal x *aij-type-int*)
+           (cond ((member-equal y (list *aij-type-int*
+                                        *aij-type-rational*
+                                        *aij-type-number*
+                                        *aij-type-value*)) *aij-type-int*)
+                 (t nil)))
+          ((equal x *aij-type-rational*)
+           (cond ((equal y *aij-type-int*) *aij-type-int*)
+                 ((member-equal y (list *aij-type-rational*
+                                        *aij-type-number*
+                                        *aij-type-value*)) *aij-type-rational*)
+                 (t nil)))
+          ((equal x *aij-type-number*)
+           (cond ((equal y *aij-type-int*) *aij-type-int*)
+                 ((equal y *aij-type-rational*) *aij-type-rational*)
+                 ((member-equal y (list *aij-type-number*
+                                        *aij-type-value*)) *aij-type-number*)
+                 (t nil)))
+          ((equal x *aij-type-cons*)
+           (cond ((member-equal y (list *aij-type-cons*
+                                        *aij-type-value*)) *aij-type-cons*)
+                 (t nil)))
+          ((equal x *aij-type-value*)
+           (cond ((member-equal y (list (jtype-boolean)
+                                        (jtype-char)
+                                        (jtype-byte)
+                                        (jtype-short)
+                                        (jtype-int)
+                                        (jtype-long)
+                                        (jtype-array (jtype-boolean))
+                                        (jtype-array (jtype-char))
+                                        (jtype-array (jtype-byte))
+                                        (jtype-array (jtype-short))
+                                        (jtype-array (jtype-int))
+                                        (jtype-array (jtype-long)))) nil)
+                 (t y)))
+          ((equal x (jtype-boolean))
+           (cond ((equal y (jtype-boolean)) (jtype-boolean))
+                 (t nil)))
+          ((equal x (jtype-char))
+           (cond ((member-equal y (list (jtype-char)
+                                        (jtype-int)
+                                        (jtype-long))) (jtype-char))
+                 (t nil)))
+          ((equal x (jtype-byte))
+           (cond ((member-equal y (list (jtype-byte)
+                                        (jtype-short)
+                                        (jtype-int)
+                                        (jtype-long))) (jtype-byte))
+                 (t nil)))
+          ((equal x (jtype-short))
+           (cond ((member-equal y (list (jtype-short)
+                                        (jtype-int)
+                                        (jtype-long))) (jtype-short))
+                 ((equal y (jtype-byte)) (jtype-byte))
+                 (t nil)))
+          ((equal x (jtype-int))
+           (cond ((member-equal y (list (jtype-int)
+                                        (jtype-long))) (jtype-int))
+                 ((member-equal y (list (jtype-char)
+                                        (jtype-byte)
+                                        (jtype-short))) y)
+                 (t nil)))
+          ((equal x (jtype-long))
+           (cond ((equal y (jtype-long)) (jtype-long))
+                 ((member-equal y (list (jtype-char)
+                                        (jtype-byte)
+                                        (jtype-short)
+                                        (jtype-int))) y)
+                 (t nil)))
+          ((equal x (jtype-array (jtype-boolean)))
+           (cond ((equal y (jtype-array
+                            (jtype-boolean))) (jtype-array (jtype-boolean)))
+                 (t nil)))
+          ((equal x (jtype-array (jtype-char)))
+           (cond ((equal y (jtype-array
+                            (jtype-char))) (jtype-array (jtype-char)))
+                 (t nil)))
+          ((equal x (jtype-array (jtype-byte)))
+           (cond ((equal y (jtype-array
+                            (jtype-byte))) (jtype-array (jtype-byte)))
+                 (t nil)))
+          ((equal x (jtype-array (jtype-short)))
+           (cond ((equal y (jtype-array
+                            (jtype-short))) (jtype-array (jtype-short)))
+                 (t nil)))
+          ((equal x (jtype-array (jtype-int)))
+           (cond ((equal y (jtype-array
+                            (jtype-int))) (jtype-array (jtype-int)))
+                 (t nil)))
+          ((equal x (jtype-array (jtype-long)))
+           (cond ((equal y (jtype-array
+                            (jtype-long))) (jtype-array (jtype-long)))
+                 (t nil)))
+          ((equal x nil) nil)
+          (t (impossible))))
   :guard-hints (("Goal" :in-theory (enable atj-maybe-jtypep atj-jtypep)))
   ///
 
@@ -524,7 +526,7 @@
 
 (define atj-maybe-jtype-list-meet ((x atj-maybe-jtype-listp)
                                    (y atj-maybe-jtype-listp))
-  :returns (glb atj-maybe-jtype-listp :hyp :guard)
+  :returns (glb atj-maybe-jtype-listp)
   :short "Lift @(tsee atj-maybe-jtype-meet) to lists."
   :long
   (xdoc::topstring

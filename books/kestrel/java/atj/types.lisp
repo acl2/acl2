@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -503,7 +503,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-join ((x atj-typep) (y atj-typep))
-  :returns (lub atj-typep :hyp :guard)
+  :returns (lub atj-typep)
   :short "Least upper bound of two ATJ types."
   :long
   (xdoc::topstring
@@ -524,75 +524,77 @@
     "ATJ uses this least upper bound operation
      to calculate the type of an @(tsee if)
      from the types of the `then' and `else' branches."))
-  (case x
-    (:acharacter (case y
-                   (:acharacter :acharacter)
-                   (t :avalue)))
-    (:astring (case y
-                (:astring :astring)
-                (t :avalue)))
-    (:asymbol (case y
-                (:asymbol :asymbol)
-                (t :avalue)))
-    (:ainteger (case y
-                 (:ainteger :ainteger)
-                 (:arational :arational)
-                 (:anumber :anumber)
-                 (t :avalue)))
-    (:arational (case y
-                  ((:ainteger :arational) :arational)
-                  (:anumber :anumber)
+  (b* ((x (if (mbt (atj-typep x)) x :avalue))
+       (y (if (mbt (atj-typep y)) y :avalue)))
+    (case x
+      (:acharacter (case y
+                     (:acharacter :acharacter)
+                     (t :avalue)))
+      (:astring (case y
+                  (:astring :astring)
                   (t :avalue)))
-    (:anumber (case y
-                ((:ainteger :arational :anumber) :anumber)
+      (:asymbol (case y
+                  (:asymbol :asymbol)
+                  (t :avalue)))
+      (:ainteger (case y
+                   (:ainteger :ainteger)
+                   (:arational :arational)
+                   (:anumber :anumber)
+                   (t :avalue)))
+      (:arational (case y
+                    ((:ainteger :arational) :arational)
+                    (:anumber :anumber)
+                    (t :avalue)))
+      (:anumber (case y
+                  ((:ainteger :arational :anumber) :anumber)
+                  (t :avalue)))
+      (:acons (case y
+                ((:acons :jboolean :jchar :jbyte :jshort :jint :jlong) :acons)
                 (t :avalue)))
-    (:acons (case y
-              ((:acons :jboolean :jchar :jbyte :jshort :jint :jlong) :acons)
-              (t :avalue)))
-    (:avalue :avalue)
-    (:jboolean (case y
-                 (:jboolean :jboolean)
-                 ((:jchar :jbyte :jshort :jint :jlong :acons) :acons)
-                 (t :avalue)))
-    (:jchar (case y
-                 (:jchar :jchar)
-                 ((:jboolean :jbyte :jshort :jint :jlong :acons) :acons)
-                 (t :avalue)))
-    (:jbyte (case y
-                 (:jbyte :jbyte)
-                 ((:jboolean :jchar :jshort :jint :jlong :acons) :acons)
-                 (t :avalue)))
-    (:jshort (case y
+      (:avalue :avalue)
+      (:jboolean (case y
+                   (:jboolean :jboolean)
+                   ((:jchar :jbyte :jshort :jint :jlong :acons) :acons)
+                   (t :avalue)))
+      (:jchar (case y
+                (:jchar :jchar)
+                ((:jboolean :jbyte :jshort :jint :jlong :acons) :acons)
+                (t :avalue)))
+      (:jbyte (case y
+                (:jbyte :jbyte)
+                ((:jboolean :jchar :jshort :jint :jlong :acons) :acons)
+                (t :avalue)))
+      (:jshort (case y
                  (:jshort :jshort)
                  ((:jboolean :jchar :jbyte :jint :jlong :acons) :acons)
                  (t :avalue)))
-    (:jint (case y
-             (:jint :jint)
-             ((:jboolean :jchar :jbyte :jshort :jlong :acons) :acons)
-             (t :avalue)))
-    (:jlong (case y
-              (:jlong :jlong)
-              ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
-              (t :avalue)))
-    (:jboolean[] (case y
-                   (:jboolean[] :jboolean[])
-                   (t :avalue)))
-    (:jchar[] (case y
-                (:jchar[] :jchar[])
-                (t :avalue)))
-    (:jbyte[] (case y
-                (:jbyte[] :jbyte[])
-                (t :avalue)))
-    (:jshort[] (case y
-                 (:jshort[] :jshort[])
-                 (t :avalue)))
-    (:jint[] (case y
-               (:jint[] :jint[])
+      (:jint (case y
+               (:jint :jint)
+               ((:jboolean :jchar :jbyte :jshort :jlong :acons) :acons)
                (t :avalue)))
-    (:jlong[] (case y
-                (:jlong[] :jlong[])
+      (:jlong (case y
+                (:jlong :jlong)
+                ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
                 (t :avalue)))
-    (otherwise (impossible)))
+      (:jboolean[] (case y
+                     (:jboolean[] :jboolean[])
+                     (t :avalue)))
+      (:jchar[] (case y
+                  (:jchar[] :jchar[])
+                  (t :avalue)))
+      (:jbyte[] (case y
+                  (:jbyte[] :jbyte[])
+                  (t :avalue)))
+      (:jshort[] (case y
+                   (:jshort[] :jshort[])
+                   (t :avalue)))
+      (:jint[] (case y
+                 (:jint[] :jint[])
+                 (t :avalue)))
+      (:jlong[] (case y
+                  (:jlong[] :jlong[])
+                  (t :avalue)))
+      (otherwise (impossible))))
   ///
 
   (defrule atj-type-join-upper-bound
@@ -670,7 +672,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-list-join ((x atj-type-listp) (y atj-type-listp))
-  :returns (lub atj-type-listp :hyp :guard)
+  :returns (lub atj-type-listp)
   :short "Lift @(tsee atj-type-join) to lists."
   :long
   (xdoc::topstring
@@ -681,8 +683,12 @@
    (xdoc::p
     "We show that this indeed returns the least upper bound
      of the order relation lifted to lists."))
-  (cond ((endp x) y)
-        ((endp y) x)
+  (cond ((endp x) (if (mbt (atj-type-listp y))
+                      y
+                    (repeat (len y) :avalue)))
+        ((endp y) (if (mbt (atj-type-listp x))
+                      x
+                    (repeat (len x) :avalue)))
         (t (cons (atj-type-join (car x) (car y))
                  (atj-type-list-join (cdr x) (cdr y)))))
   ///
@@ -701,12 +707,17 @@
                   (atj-type-list-<= x z)
                   (atj-type-list-<= y z))
              (atj-type-list-<= (atj-type-list-join x y) z))
-    :enable atj-type-list-<=))
+    :enable atj-type-list-<=)
+
+  (defret consp-of-atj-type-list-join
+    (equal (consp lub)
+           (or (consp x)
+               (consp y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-to-jtype ((type atj-typep))
-  :returns (jtype atj-jtypep :hyp :guard)
+  :returns (jtype atj-jtypep)
   :short "Java type denoted by an ATJ type."
   :long
   (xdoc::topstring
@@ -737,12 +748,12 @@
     (:jshort[] (jtype-array (jtype-short)))
     (:jint[] (jtype-array (jtype-int)))
     (:jlong[] (jtype-array (jtype-long)))
-    (otherwise (impossible))))
+    (otherwise (prog2$ (impossible) *aij-type-value*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-list-to-jtype-list ((types atj-type-listp))
-  :returns (jtypes atj-jtype-listp :hyp :guard)
+  :returns (jtypes atj-jtype-listp)
   :short "Lift @(tsee atj-type-to-jtype) to lists."
   (cond ((endp types) nil)
         (t (cons (atj-type-to-jtype (car types))
@@ -756,7 +767,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-list-list-to-jtype-list-list ((typess atj-type-list-listp))
-  :returns (jtypess atj-jtype-list-listp :hyp :guard)
+  :returns (jtypess atj-jtype-list-listp)
   :short "Lift @(tsee atj-type-list-to-jtype-list) to lists."
   (cond ((endp typess) nil)
         (t (cons (atj-type-list-to-jtype-list (car typess))

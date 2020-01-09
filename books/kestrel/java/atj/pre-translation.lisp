@@ -302,7 +302,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-id ((type atj-typep))
-  :returns (id stringp :hyp :guard)
+  :returns (id stringp)
   :short "Short string identifying an ATJ type."
   :long
   (xdoc::topstring
@@ -336,7 +336,7 @@
     (:jshort[] "YS")
     (:jint[] "YI")
     (:jlong[] "YJ")
-    (otherwise (impossible)))
+    (otherwise (prog2$ (impossible) "")))
   ///
 
   (defrule atj-type-id-injective
@@ -389,7 +389,7 @@
 
 (define atj-types-id ((types atj-type-listp))
   :guard (consp types)
-  :returns (id stringp :hyp :guard)
+  :returns (id stringp)
   :short "String identifying a non-empty list of ATJ types."
   :long
   (xdoc::topstring-p
@@ -526,7 +526,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unwrap-term ((term pseudo-termp))
-  :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
+  :returns (mv (unwrapped-term pseudo-termp)
                (src-types atj-type-listp)
                (dst-types atj-type-listp))
   :short "Unwrap an ACL2 term wrapped by @(tsee atj-type-wrap-term)."
@@ -536,7 +536,8 @@
     "This is essentially the inverse function,
      except that it always returns a list of destination types,
      never @('nil')."))
-  (b* (((when (or (variablep term)
+  (b* ((term (if (mbt (pseudo-termp term)) term nil))
+       ((when (or (variablep term)
                   (fquotep term)
                   (flambda-applicationp term)))
         (raise "Internal error: the term ~x0 has the wrong format." term)
@@ -562,7 +563,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-unwrap-term$ ((term pseudo-termp))
-  :returns (mv (unwrapped-term pseudo-termp :hyp :guard)
+  :returns (mv (unwrapped-term pseudo-termp)
                (src-type atj-typep)
                (dst-type atj-typep))
   :short "Temporary variant of @(tsee atj-type-unwrap-term)
@@ -596,7 +597,7 @@
                               (src-types atj-type-listp)
                               (dst-types? atj-type-listp))
   :guard (consp src-types)
-  :returns (rewrapped-term pseudo-termp :hyp (pseudo-termp term)
+  :returns (rewrapped-term pseudo-termp
                            :hints (("Goal" :expand ((pseudo-termp term)))))
   :short "Re-wrap an ACL2 term with a type conversion function."
   :long
@@ -623,7 +624,7 @@
   :guard (and (acl2::cons-listp src-typess)
               (= (len terms) (len src-typess))
               (= (len terms) (len dst-types?s)))
-  :returns (rewrapped-terms pseudo-term-listp :hyp (pseudo-term-listp terms))
+  :returns (rewrapped-terms pseudo-term-listp)
   :short "Lift @(tsee atj-type-rewrap-term) to lists."
   (cond ((endp terms) nil)
         (t (cons (atj-type-rewrap-term (car terms)
@@ -724,9 +725,9 @@
 (define atj-check-mv-let-call ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (indices nat-listp)
-               (vars symbol-listp :hyp :guard)
-               (mv-term pseudo-termp :hyp :guard)
-               (body-term pseudo-termp :hyp :guard))
+               (vars symbol-listp)
+               (mv-term pseudo-termp)
+               (body-term pseudo-termp))
   :short "Check if a term is a (translated) call of @(tsee mv-let)
           with some possibly missing @(tsee mv-nth) calls."
   :long
@@ -745,7 +746,8 @@
      that are present, in increasing order
      (if they appear in a different order,
      this function returns @('nil') as first result)."))
-  (b* (((when (variablep term)) (mv nil nil nil nil nil))
+  (b* ((term (if (mbt (pseudo-termp term)) term nil))
+       ((when (variablep term)) (mv nil nil nil nil nil))
        ((when (fquotep term)) (mv nil nil nil nil nil))
        (lambda-mv (ffn-symb term))
        ((unless (flambdap lambda-mv)) (mv nil nil nil nil nil))
@@ -1037,9 +1039,15 @@
                                   (var-types atj-symbol-type-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :returns (mv (annotated-term pseudo-termp :hyp :guard)
-                 (resulting-types atj-type-listp :hyp :guard))
-    (b* (((when (variablep term))
+    :returns (mv (annotated-term pseudo-termp)
+                 (resulting-types atj-type-listp))
+    (b* (((unless (mbt (pseudo-termp term)))
+          (mv nil (list :avalue)))
+         ((unless (mbt (atj-type-listp required-types?)))
+          (mv nil (list :avalue)))
+         ((unless (mbt (atj-symbol-type-alistp var-types)))
+          (mv nil (list :avalue)))
+         ((when (variablep term))
           (b* ((var term)
                (var+type (assoc-eq var var-types))
                ((unless (consp var+type))
@@ -1277,9 +1285,15 @@
                                     (guards$ booleanp)
                                     (wrld plist-worldp))
     :returns (mv (success booleanp)
-                 (annotated-term pseudo-termp :hyp :guard)
-                 (resulting-types atj-type-listp :hyp :guard))
-    (b* (((mv mv-let-p indices vars mv-term body-term)
+                 (annotated-term pseudo-termp)
+                 (resulting-types atj-type-listp))
+    (b* (((unless (mbt (pseudo-termp term)))
+          (mv nil nil (list :avalue)))
+         ((unless (mbt (atj-type-listp required-types?)))
+          (mv nil nil (list :avalue)))
+         ((unless (mbt (atj-symbol-type-alistp var-types)))
+          (mv nil nil (list :avalue)))
+         ((mv mv-let-p indices vars mv-term body-term)
           (atj-check-mv-let-call term))
          ((unless mv-let-p)
           (mv nil nil (list :avalue))) ; 2nd and 3rd result irrelevant
@@ -1327,13 +1341,15 @@
                                   (wrld plist-worldp))
     :returns (mv (annotated-args (and (pseudo-term-listp annotated-args)
                                       (equal (len annotated-args)
-                                             (len args)))
-                                 :hyp :guard)
+                                             (len args))))
                  (resulting-types (and (atj-type-listp resulting-types)
                                        (equal (len resulting-types)
-                                              (len args)))
-                                  :hyp :guard))
-    (b* (((when (endp args)) (mv nil nil))
+                                              (len args)))))
+    (b* (((unless (mbt (pseudo-term-listp args)))
+          (mv (repeat (len args) nil) (repeat (len args) :avalue)))
+         ((unless (mbt (atj-symbol-type-alistp var-types)))
+          (mv (repeat (len args) nil) (repeat (len args) :avalue)))
+         ((when (endp args)) (mv nil nil))
          ((mv arg types) (atj-type-annotate-term (car args)
                                                  nil ; REQUIRED-TYPES?
                                                  var-types
@@ -1358,7 +1374,7 @@
                                            (indices nat-listp)
                                            (wrapped-mv pseudo-termp))
      :guard (= (len types) (len indices))
-     :returns (terms pseudo-term-listp :hyp :guard)
+     :returns (terms pseudo-term-listp)
      (b* (((when (endp types)) nil)
           (wrapped-index (atj-type-wrap-term (list 'quote (car indices))
                                              (list :ainteger)
@@ -1380,11 +1396,14 @@
                                      (mv-types atj-type-listp))
      :returns (selected-mv-types
                atj-type-listp
-               :hyp :guard
                :hints (("Goal"
                         :in-theory (disable
                                     atj-type-iff-when-atj-maybe-typep))))
-     (b* (((when (endp indices)) nil)
+     (b* (((unless (mbt (nat-listp indices)))
+           (repeat (len indices) :avalue))
+          ((unless (mbt (atj-type-listp mv-types)))
+           (repeat (len indices) :avalue))
+          ((when (endp indices)) nil)
           (index (car indices))
           ((unless (< index (len mv-types)))
            (raise "Internal error: ~
@@ -1476,8 +1495,8 @@
                                         (wrld plist-worldp))
   :guard (and (int= (len formals) (len in-types))
               (consp out-types))
-  :returns (mv (annotated-formals symbol-listp :hyp :guard)
-               (annotated-body pseudo-termp :hyp :guard))
+  :returns (mv (annotated-formals symbol-listp)
+               (annotated-body pseudo-termp))
   :short "Add ATJ type annotations to the formal parameters and body
           of an ACL2 function definition."
   :long
