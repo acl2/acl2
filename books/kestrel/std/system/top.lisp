@@ -20,6 +20,7 @@
 (include-book "macro-queries")
 (include-book "pseudo-event-formp")
 (include-book "pseudo-tests-and-callp")
+(include-book "pseudo-tests-and-call-listp")
 (include-book "rune-disabledp")
 (include-book "rune-enabledp")
 (include-book "table-alist-plus")

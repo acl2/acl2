@@ -63,6 +63,7 @@
 (include-book "kestrel/std/system/number-of-results" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/pseudo-tests-and-callp" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders" :dir :system)
@@ -134,15 +135,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist pseudo-tests-and-call-listp (x)
-  (pseudo-tests-and-callp x)
-  :parents (world-queries)
-  :short "Recognize true lists of well-formed @('tests-and-call') records."
-  :true-listp t
-  :elementp-of-nil nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -15,30 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (pseudo-tests-and-call-listp nil))
-
-(assert! (pseudo-tests-and-call-listp (list (make tests-and-call
-                                                  :tests '((f x))
-                                                  :call '(g y z))
-                                            (make tests-and-call
-                                                  :tests '('3 x)
-                                                  :call ''#\a))))
-
-(assert! (not (pseudo-tests-and-call-listp (list (make tests-and-call
-                                                       :tests 1
-                                                       :call 2)
-                                                 (make tests-and-call
-                                                       :tests "a"
-                                                       :call "b")))))
-
-(assert! (not (pseudo-tests-and-call-listp 88)))
-
-(assert! (not (pseudo-tests-and-call-listp (make tests-and-call
-                                                 :tests 1
-                                                 :call 2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (let ((rc (recursive-calls 'len (w state))))
            (and (pseudo-tests-and-call-listp rc)
                 (= (len rc) 1)
