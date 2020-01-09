@@ -1387,11 +1387,11 @@
    (xdoc::p
     "This function is used to generate
      Java array creation expressions with initializers
-     from terms @('(<T>-array (list ...))'),
+     from terms @('(<T>-array-with-comps (list ...))'),
      where @('<T>') is a Java primitive type.
      In this case, we want to retrieve the elements of the list
      and use the corresponding Java expressions for the array initializer."))
-  (b* (((mv term & &) (atj-type-unwrap-term$ term))
+  (b* (((mv term & &) (atj-type-unwrap-term term))
        ((when (variablep term)) (mv nil nil))
        ((when (fquotep term)) (if (equal term *nil*)
                                   (mv t nil)
@@ -1407,8 +1407,7 @@
        ((mv yes/no-rest elements-rest) (atj-check-type-annotated-list-call cdr))
        ((unless yes/no-rest) (mv nil nil)))
     (mv t (cons car elements-rest)))
-  :prepwork ((local (in-theory (enable atj-type-unwrap-term$
-                                       atj-type-unwrap-term))))
+  :prepwork ((local (in-theory (enable atj-type-unwrap-term))))
   ///
 
   (defret atj-check-type-annotated-list-call-decreases
@@ -1449,15 +1448,15 @@
      with a modified destination type."))
   (b* (((when (endp terms)) nil)
        (term (car terms))
-       ((mv term src-type dst-type) (atj-type-unwrap-term$ term))
+       ((mv term src-types dst-types) (atj-type-unwrap-term term))
        ((unless term) nil) ; to prove ACL2-COUNT theorem below
-       ((unless (eq dst-type :avalue))
+       ((unless (equal dst-types (list :avalue)))
         (raise "Internal error: ~
                 the term ~x0 is wrapped with a conversion function ~
-                from type ~x1 to type ~x2."
-               term src-type dst-type))
+                from types ~x1 to types ~x2."
+               term src-types dst-types))
        (new-term (atj-type-wrap-term term
-                                     (list src-type)
+                                     src-types
                                      (list new-dst-type)))
        (new-terms (atj-type-rewrap-array-initializer-elements (cdr terms)
                                                               new-dst-type)))
@@ -1468,8 +1467,7 @@
     (<= (acl2-count new-terms)
         (acl2-count terms))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable atj-type-unwrap-term$
-                                       atj-type-unwrap-term
+    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
                                        atj-type-wrap-term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1544,9 +1542,9 @@
        and return an expression that compares it with
        (the Java representation of) @('nil')."))
     (b* ((jbool? ; non-NIL iff TEST has the form explained above
-          (b* (((mv test src-type dst-type) (atj-type-unwrap-term$ test))
-               ((unless (and (eq src-type :asymbol)
-                             (eq dst-type :asymbol)))
+          (b* (((mv test src-types dst-types) (atj-type-unwrap-term test))
+               ((unless (and (equal src-types (list :asymbol))
+                             (equal dst-types (list :asymbol))))
                 nil)
                ((unless (and (consp test)
                              (eq (ffn-symb test)
@@ -1854,7 +1852,7 @@
       "Note that we are dealing with annotated terms,
        so the argument of the constructor must be unwrapped
        to be examined."))
-    (b* (((mv arg & &) (atj-type-unwrap-term$ arg))
+    (b* (((mv arg & &) (atj-type-unwrap-term arg))
          ((unless arg) ; for termination proof
           (mv nil (jexpr-name "irrelevant") jvar-result-index)))
       (if (quotep arg)
@@ -2838,7 +2836,9 @@
       "If the ACL2 term is a quoted constant,
        we represent it as its value.
        We wrap the resulting expression with a Java conversion, if needed."))
-    (b* (((mv term src-type dst-type) (atj-type-unwrap-term$ term))
+    (b* (((mv term src-types dst-types) (atj-type-unwrap-term term))
+         (src-type (atj-type-list-to-type src-types))
+         (dst-type (atj-type-list-to-type dst-types))
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))
@@ -2920,8 +2920,7 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-shallow-term
-    :hints (("Goal" :in-theory (e/d (atj-type-unwrap-term$
-                                     atj-type-unwrap-term
+    :hints (("Goal" :in-theory (e/d (atj-type-unwrap-term
                                      unquote-term
                                      pseudo-termfnp
                                      pseudo-lambdap)

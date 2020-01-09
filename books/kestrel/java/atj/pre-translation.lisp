@@ -562,37 +562,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-unwrap-term$ ((term pseudo-termp))
-  :returns (mv (unwrapped-term pseudo-termp)
-               (src-type atj-typep)
-               (dst-type atj-typep))
-  :short "Temporary variant of @(tsee atj-type-unwrap-term)
-          that returns single source and destination types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As we are building more direct support for @(tsee mv) in ATJ,
-     some parts of the ATJ code deal with non-empty lists of types
-     (singletons for single values,
-     or with two or more elements for multiple values),
-     while other parts of the code still deal with single types.
-     This function is like @(tsee atj-type-unwrap-term),
-     except that it coerces the source and destination type lists
-     to single source and destination types,
-     via @(tsee atj-type-list-to-type) (see that function too)."))
-  (b* (((mv unwrapped-term src-types dst-types) (atj-type-unwrap-term term)))
-    (mv unwrapped-term (car src-types) (car dst-types)))
-  :prepwork ((local (in-theory (disable atj-type-iff-when-atj-maybe-typep))))
-  ///
-
-  (defret acl2-count-of-atj-type-unwrap-term$-linear
-    (implies unwrapped-term
-             (< (acl2-count unwrapped-term)
-                (acl2-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-type-rewrap-term ((term pseudo-termp)
                               (src-types atj-type-listp)
                               (dst-types? atj-type-listp))
