@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -874,8 +874,9 @@
   (and (treep tree)
        (tree-match-element-p tree (element-rulename rulename) rules)
        (equal (tree->string tree)
-              string))
+              (string-fix string)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule treep-when-parse-treep
@@ -892,6 +893,33 @@
   (exists (tree)
           (parse-treep tree string rulename rules))
   ///
+
+  ;; boilerplate:
+  (fty::deffixequiv string-parsablep
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
+    :hints (("Goal"
+             :in-theory (disable string-parsablep-suff)
+             :use (;; for STRING:
+                   (:instance string-parsablep-suff
+                    (string (string-fix string))
+                    (tree (string-parsablep-witness string rulename rules)))
+                   (:instance string-parsablep-suff
+                    (tree (string-parsablep-witness
+                           (string-fix string) rulename rules)))
+                   ;; for RULENAME:
+                   (:instance string-parsablep-suff
+                    (rulename (rulename-fix rulename))
+                    (tree (string-parsablep-witness string rulename rules)))
+                   (:instance string-parsablep-suff
+                    (tree (string-parsablep-witness
+                           string (rulename-fix rulename) rules)))
+                   ;; for RULES:
+                   (:instance string-parsablep-suff
+                    (rules (rulelist-fix rules))
+                    (tree (string-parsablep-witness string rulename rules)))
+                   (:instance string-parsablep-suff
+                    (tree (string-parsablep-witness
+                           string rulename (rulelist-fix rules))))))))
 
   (defrule treep-of-string-parsablep-witness-when-string-parsablep
     (implies (string-parsablep string rulename rules)
