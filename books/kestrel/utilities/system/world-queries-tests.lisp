@@ -15,18 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (pseudo-tests-and-callp (make tests-and-call
-                                       :tests '((f x))
-                                       :call ''3)))
-
-(assert! (not (pseudo-tests-and-callp (make tests-and-call
-                                            :tests "a"
-                                            :call 2))))
-
-(assert! (not (pseudo-tests-and-callp 88)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (pseudo-tests-and-call-listp nil))
 
 (assert! (pseudo-tests-and-call-listp (list (make tests-and-call

@@ -62,6 +62,7 @@
 (include-book "kestrel/std/system/non-executablep-plus" :dir :system)
 (include-book "kestrel/std/system/number-of-results" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-callp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders" :dir :system)
@@ -135,41 +136,6 @@
    </p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pseudo-tests-and-callp (x)
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize well-formed @('tests-and-call') records."
-  :long
-  "<p>
-   A @('tests-and-call') record is defined as
-   </p>
-   @({
-     (defrec tests-and-call (tests call) nil)
-   })
-   <p>
-   (see the ACL2 source code).
-   </p>
-   <p>
-   In a well-formed @('tests-and-call') record,
-   @('tests') must be a list of terms and
-   @('call') must be a term.
-   </p>
-   <p>
-   This recognizer is analogous to @('pseudo-tests-and-callsp')
-   in @('[books]/system/pseudo-good-worldp.lisp')
-   for @('tests-and-calls') records.
-   </p>"
-  (case-match x
-    (('tests-and-call tests call)
-     (and (pseudo-term-listp tests)
-          (pseudo-termp call)))
-    (& nil))
-  ///
-
-  (defrule weak-tests-and-call-p-when-pseudo-tests-and-callp
-    (implies (pseudo-tests-and-callp x)
-             (weak-tests-and-call-p x))))
 
 (std::deflist pseudo-tests-and-call-listp (x)
   (pseudo-tests-and-callp x)
