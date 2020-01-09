@@ -784,10 +784,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (local (defun acl2s-d-undefined () nil)))
 
 (defconst *input-contract-alias*
-  '(:input-contract :require :assume :pre :pre-condition))
+  '(:input-contract :ic :pre-condition :pre :require :assume))
 
 (defconst *output-contract-alias*
-  '(:output-contract :ensure :guarantee :post :post-condition))
+  '(:output-contract :oc :post-condition :post :ensure :guarantee))
 
 (defun gather-alias1 (alias alist)
   (declare (xargs :guard (and (symbol-listp alias) (alistp alist))))
