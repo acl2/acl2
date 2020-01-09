@@ -49,13 +49,13 @@ Added these rules as built-in clauses
                 (not (stringp x)))
            (equal (acl2s-size x) 0))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-|#
 
 (defthm acl2s-size-type
   (natp (acl2s-size x))
   :rule-classes
   ((:type-prescription)
    (:forward-chaining :trigger-terms ((acl2s-size x)))))
+|#
 
 (defthm acons-acl2s-size-lemma
   (= (acl2s-size (acons x1 x2 x3))
@@ -478,48 +478,60 @@ Maybe be useful for replacing acl2-count with acl2s-size.
 (global-val 'half-length-built-in-clauses (w state))
 |#
 
-
 (defthm acl2s-size-built-in-1
   (o-p (acl2s-size x))
+  :rule-classes :built-in-clause)
+
+(defthm acl2s-size-built-int
+  (integerp (acl2s-size x))
+  :rule-classes :built-in-clause)
+
+(defthm acl2s-size-built-nat
+  (<= 0 (acl2s-size x))
+  :rule-classes :built-in-clause)
+
+(defthm acl2s-size-o<-<
+  (equal (o< (acl2s-size x) (acl2s-size y))
+         (< (acl2s-size x) (acl2s-size y)))
   :rule-classes :built-in-clause)
 
 ; Car and cdr decrease on consps.
 (defthm acl2s-size-built-in-2
   (implies (consp x)
-           (o< (acl2s-size (car x))
-               (acl2s-size x)))
+           (< (acl2s-size (car x))
+              (acl2s-size x)))
   :rule-classes :built-in-clause)
 
 (defthm acl2s-size-built-in-3
   (implies (consp x)
-           (o< (acl2s-size (cdr x))
-               (acl2s-size x)))
+           (< (acl2s-size (cdr x))
+              (acl2s-size x)))
   :rule-classes :built-in-clause)
 
 ; Car and cdr decrease on non-atoms.
 
 (defthm acl2s-size-built-in-4
   (implies (not (atom x))
-           (o< (acl2s-size (car x))
-               (acl2s-size x)))
+           (< (acl2s-size (car x))
+              (acl2s-size x)))
   :rule-classes :built-in-clause)
 
 (defthm acl2s-size-built-in-5
   (implies (not (atom x))
-           (o< (acl2s-size (cdr x)) 
-               (acl2s-size x)))
+           (< (acl2s-size (cdr x)) 
+              (acl2s-size x)))
   :rule-classes :built-in-clause)
 
 ; Car and cdr decrease on non-endps.
 (defthm acl2s-size-built-in-6
   (implies (not (endp x))
-           (o< (acl2s-size (car x))
-               (acl2s-size x)))
+           (< (acl2s-size (car x))
+              (acl2s-size x)))
   :rule-classes :built-in-clause)
 
 (defthm acl2s-size-built-in-7
   (implies (not (endp x))
-           (o< (acl2s-size (cdr x))
+           (< (acl2s-size (cdr x))
                (acl2s-size x)))
   :rule-classes :built-in-clause)
 
@@ -539,20 +551,20 @@ Maybe be useful for replacing acl2-count with acl2s-size.
  (local (include-book "arithmetic-5/top" :dir :system))
  (defthm acl2s-size-built-in-8
    (implies (not (zp x))
-            (o< (acl2s-size (binary-+ x -1))
+            (< (acl2s-size (binary-+ x -1))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
  (defthm acl2s-size-built-in-9
    (implies (not (zp x))
-            (o< (acl2s-size (binary-+ -1 x))
+            (< (acl2s-size (binary-+ -1 x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
  (defthm acl2s-size-built-in-10
    (implies (and (integerp x)
                  (< 0 x))
-            (o< (acl2s-size (binary-+ x -1))
+            (< (acl2s-size (binary-+ x -1))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -560,7 +572,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    (implies (and (integerp x)
                  (not (< x 0))
                  (not (= x 0)))
-            (o< (acl2s-size (binary-+ x -1))
+            (< (acl2s-size (binary-+ x -1))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -568,7 +580,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    (implies (and (integerp x)
                  (not (< x 0))
                  (not (= x 0)))
-            (o< (acl2s-size (binary-+ x -1))
+            (< (acl2s-size (binary-+ x -1))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -576,14 +588,14 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    (implies (and (integerp x)
                  (not (< x 0))
                  (not (equal x 0)))
-            (o< (acl2s-size (binary-+ x -1))
+            (< (acl2s-size (binary-+ x -1))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
  (defthm acl2s-size-built-in-14
    (implies (and (integerp x)
                  (< 0 x))
-            (o< (acl2s-size (binary-+ -1 x))
+            (< (acl2s-size (binary-+ -1 x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -591,7 +603,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    (implies (and (integerp x)
                  (not (< x 0))
                  (not (= x 0)))
-            (o< (acl2s-size (binary-+ -1 x))
+            (< (acl2s-size (binary-+ -1 x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -599,7 +611,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    (implies (and (integerp x)
                  (not (< x 0))
                  (not (= 0 x)))
-            (o< (acl2s-size (binary-+ -1 x))
+            (< (acl2s-size (binary-+ -1 x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -607,7 +619,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    (implies (and (integerp x)
                  (not (< x 0))
                  (not (equal 0 x)))
-            (o< (acl2s-size (binary-+ -1 x))
+            (< (acl2s-size (binary-+ -1 x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
@@ -616,28 +628,28 @@ Maybe be useful for replacing acl2-count with acl2s-size.
  (defthm acl2s-size-built-in-18
    (implies (and (true-listp x)
                  (not (eq x nil)))
-            (o< (acl2s-size (cdr x))
+            (< (acl2s-size (cdr x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
  (defthm acl2s-size-built-in-19
    (implies (and (true-listp x)
                  (not (null x)))
-            (o< (acl2s-size (cdr x))
+            (< (acl2s-size (cdr x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
  (defthm acl2s-size-built-in-20
    (implies (and (true-listp x)
                  (not (eq nil x)))
-            (o< (acl2s-size (cdr x))
+            (< (acl2s-size (cdr x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
  (defthm acl2s-size-built-in-21
    (implies (and (true-listp x)
                  (not (equal x nil)))
-            (o< (acl2s-size (cdr x))
+            (< (acl2s-size (cdr x))
                 (acl2s-size x)))
    :rule-classes :built-in-clause)
 
