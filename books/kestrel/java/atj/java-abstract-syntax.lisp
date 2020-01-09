@@ -422,6 +422,21 @@
   :short "Build a Java expression consisting of the null literal."
   (jexpr-literal (jliteral-null)))
 
+(define jexpr-get-field ((expr jexprp) (name stringp))
+  :returns (get-field-expr jexprp)
+  :short "Build a Java expression to access a field."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the Java grammar,
+     not all expressions that access fields
+     can be derived from @('field-access').
+     When the target object is an expression name,
+     the field access expression is also an expression name."))
+  (if (jexpr-case expr :name)
+      (jexpr-name (str::cat (jexpr-name->get expr) "." name))
+    (jexpr-field expr name)))
+
 (fty::defprod jlocvar
   :short "Local variable declarations [JLS:14.4]."
   :long
