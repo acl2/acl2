@@ -16,15 +16,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define classes ((thm symbolp) (wrld plist-worldp))
-  :returns (classes "A @('keyword-to-keyword-value-alistp').")
+  :returns (classes "A @(tsee keyword-to-keyword-value-alistp).")
   :parents (std/system/theorem-queries)
   :short "Rule classes of a theorem."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "These form a value of type @('keyword-to-keyword-value-list-alistp'),
-     which is defined in
-     @('[books]/system/keyword-to-keyword-value-list-alistp.lisp').")
    (xdoc::p
     "See @(tsee classes+) for a logic-friendly variant of this utility."))
   (getpropc thm 'classes nil wrld))
