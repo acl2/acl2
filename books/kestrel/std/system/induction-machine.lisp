@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define induction-machine ((fn symbolp) (wrld plist-worldp))
-  :returns (result "A @('pseudo-tests-and-calls-listp').")
+  :returns (result "A @(tsee pseudo-tests-and-calls-listp).")
   :parents (std/system/function-queries)
   :short "Induction machine of a named logic-mode (singly) recursive function."
   :long
