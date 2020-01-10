@@ -469,10 +469,13 @@ functions over natural numbers.
          (t (cons (subst-var new old (car l))
                   (subst-var-lst new old (cdr l)))))))
 
+; Used to have a guard for old, new in nest below of legal-variable,
+; but now use symbol because * is not a legal variable and needed this
+; in bare-bones mode.
 (mutual-recursion
  (defun subst-fun-sym (new old form)
-   (declare (xargs :guard (and (legal-variablep old)
-                               (legal-variablep new)
+   (declare (xargs :guard (and (symbolp old)
+                               (symbolp new)
                                (all-tlps form))))
    (cond ((atom form)
           form)
@@ -483,8 +486,8 @@ functions over natural numbers.
                   (subst-fun-lst new old (cdr form))))))
 
  (defun subst-fun-lst (new old l)
-   (declare (xargs :guard (and (legal-variablep old)
-                               (legal-variablep new)
+   (declare (xargs :guard (and (symbolp old)
+                               (symbolp new)
                                (true-listp l)
                                (all-tlps l))))
    (cond ((endp l) nil)
