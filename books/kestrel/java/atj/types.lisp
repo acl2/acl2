@@ -222,7 +222,7 @@
    (xdoc::p
     "Each ATJ type denotes
      (i) an ACL2 predicate (see @(tsee atj-type-to-pred)) and
-     (ii) a Java type (see @(tsee atj-type-to-jtype)).
+     (ii) a Java type (see @(tsee atj-type-to-jitype)).
      The initial @('a') and @('j') in their names
      does not mean that they denote either ACL2 types or Java types,
      but just that the ones starting with @('a') denote ACL2 built-in types
@@ -687,9 +687,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-to-jtype ((type atj-typep))
-  :returns (jtype atj-jtypep)
-  :short "Java type denoted by an ATJ type."
+(define atj-type-to-jitype ((type atj-typep))
+  :returns (jtype atj-jitypep)
+  :short "Java input type denoted by an ATJ type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -723,29 +723,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-to-jtype-list ((types atj-type-listp))
-  :returns (jtypes atj-jtype-listp)
-  :short "Lift @(tsee atj-type-to-jtype) to lists."
+(define atj-type-list-to-jitype-list ((types atj-type-listp))
+  :returns (jtypes atj-jitype-listp)
+  :short "Lift @(tsee atj-type-to-jitype) to lists."
   (cond ((endp types) nil)
-        (t (cons (atj-type-to-jtype (car types))
-                 (atj-type-list-to-jtype-list (cdr types)))))
+        (t (cons (atj-type-to-jitype (car types))
+                 (atj-type-list-to-jitype-list (cdr types)))))
   ///
 
-  (defret len-of-atj-type-list-to-jtype-list
+  (defret len-of-atj-type-list-to-jitype-list
     (equal (len jtypes)
            (len types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-list-to-jtype-list-list ((typess atj-type-list-listp))
-  :returns (jtypess atj-jtype-list-listp)
-  :short "Lift @(tsee atj-type-list-to-jtype-list) to lists."
+(define atj-type-list-list-to-jitype-list-list ((typess atj-type-list-listp))
+  :returns (jtypess atj-jitype-list-listp)
+  :short "Lift @(tsee atj-type-list-to-jitype-list) to lists."
   (cond ((endp typess) nil)
-        (t (cons (atj-type-list-to-jtype-list (car typess))
-                 (atj-type-list-list-to-jtype-list-list (cdr typess)))))
+        (t (cons (atj-type-list-to-jitype-list (car typess))
+                 (atj-type-list-list-to-jitype-list-list (cdr typess)))))
   ///
 
-  (defret len-of-atj-type-list-to-jtype-list-list
+  (defret len-of-atj-type-list-to-jitype-list-list
     (equal (len jtypess)
            (len typess))))
 
@@ -1269,7 +1269,7 @@
 
 (define atj-check-other-function-type ((new-in-types atj-type-listp)
                                        (old-fn-types atj-function-type-listp)
-                                       (all-in-jtypess atj-jtype-list-listp))
+                                       (all-in-jtypess atj-jitype-list-listp))
   :returns (yes/no booleanp)
   :short "Check the new input types
           passed to @(tsee def-atj-other-function-type)
@@ -1311,7 +1311,7 @@
      it will also fit the method corresponding to the greatest lower bound;
      therefore, there will be always a ``minimum'' method
      that will be selected at compile time and called at run time.
-     However, recall that @(tsee atj-maybe-jtype-meet) may produce @('nil'):
+     However, recall that @(tsee atj-maybe-jitype-meet) may produce @('nil'):
      if the greatest lower bound contains a @('nil') component,
      the closure requirement does not apply,
      because it means that some types are incompatible
@@ -1358,9 +1358,9 @@
                 for the function, ~
                 but they are equal to some of these existing types."
                new-in-types))
-       (old-in-jtypes (atj-type-list-to-jtype-list old-in-types))
-       (new-in-jtypes (atj-type-list-to-jtype-list new-in-types))
-       (glb (atj-maybe-jtype-list-meet old-in-jtypes new-in-jtypes))
+       (old-in-jtypes (atj-type-list-to-jitype-list old-in-types))
+       (new-in-jtypes (atj-type-list-to-jitype-list new-in-types))
+       (glb (atj-maybe-jitype-list-meet old-in-jtypes new-in-jtypes))
        ((unless (or (member-eq nil glb)
                     (member-equal glb all-in-jtypess)))
         (raise "The Java counterparts ~x0 of the proposed input types ~x1 ~
@@ -1482,7 +1482,7 @@
        ((when (member-equal new-fn-type other-fn-types))
         `(value-triple :redundant))
        (other-in-types (atj-function-type-list->inputs other-fn-types))
-       (all-in-jtypess (atj-type-list-list-to-jtype-list-list
+       (all-in-jtypess (atj-type-list-list-to-jitype-list-list
                         (cons in-types other-in-types)))
        (- (atj-check-other-function-type in-types
                                          other-fn-types
@@ -1562,27 +1562,27 @@
      and @(tsee def-atj-other-function-type)),
      so it is appropriate to use @('nil') here to signal that
      no function types matching the criteria were found."))
-  (atj-output-type-of-min-input-types-aux (atj-type-list-to-jtype-list in-types)
+  (atj-output-type-of-min-input-types-aux (atj-type-list-to-jitype-list in-types)
                                           fn-types
                                           nil
                                           nil)
 
   :prepwork
   ((define atj-output-type-of-min-input-types-aux
-     ((in-jtypes atj-jtype-listp)
+     ((in-jtypes atj-jitype-listp)
       (fn-types atj-function-type-listp)
-      (current-min-in-jtypes atj-jtype-listp)
+      (current-min-in-jtypes atj-jitype-listp)
       (current-out-types? atj-type-listp))
      :returns (out-types? atj-type-listp :hyp :guard)
      (b* (((when (endp fn-types)) current-out-types?)
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
-          (fn-in-jtypes (atj-type-list-to-jtype-list fn-in-types))
+          (fn-in-jtypes (atj-type-list-to-jitype-list fn-in-types))
           ((mv current-min-in-jtypes current-out-types?)
-           (if (and (atj-maybe-jtype-list-<= in-jtypes fn-in-jtypes)
+           (if (and (atj-maybe-jitype-list-<= in-jtypes fn-in-jtypes)
                     (or (null current-out-types?) ; i.e. none found yet
-                        (atj-maybe-jtype-list-< fn-in-jtypes
-                                                current-min-in-jtypes)))
+                        (atj-maybe-jitype-list-< fn-in-jtypes
+                                                 current-min-in-jtypes)))
                (mv fn-in-jtypes (atj-function-type->outputs fn-type))
              (mv current-min-in-jtypes current-out-types?))))
        (atj-output-type-of-min-input-types-aux in-jtypes
