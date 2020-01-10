@@ -334,7 +334,6 @@
   "@(def alistp-forward-to-true-listp)
    @(def eqlable-alistp-forward-to-alistp)
    @(def symbol-alistp-forward-to-eqlable-alistp)
-   @(def symbol-alistp-forward-to-eqlable-alistp)
    @(def character-alistp-forward-to-eqlable-alistp)
    @(def nat-alistp-forward-to-eqlable-alistp)
    @(def standard-string-alistp-forward-to-alistp)
