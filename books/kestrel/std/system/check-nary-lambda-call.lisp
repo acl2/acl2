@@ -23,12 +23,15 @@
   :short "Check if a term is a (translated) call of
           an @('n')-ary lambda expression."
   :long
-  (xdoc::topstring-p
-   "This is like @(tsee check-lambda-call)
-    but it additionally requires the lambda expression
-    to have a specified arity.
-    It is accompanied by theorems saying that
-    the lengths of the formal and argument lists equal the specified arity.")
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee check-lambda-call)
+     but it additionally requires the lambda expression
+     to have a specified arity.
+     It is accompanied by theorems saying that
+     the lengths of the formal and argument lists equal the specified arity.")
+   (xdoc::p
+    "See also @(tsee check-unary-lambda-call)."))
   (b* (((mv yes/no formals body args) (check-lambda-call term))
        ((unless yes/no) (mv nil nil nil nil))
        ((unless (equal (len formals) n)) (mv nil nil nil nil)))

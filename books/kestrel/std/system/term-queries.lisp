@@ -24,6 +24,7 @@
 (include-book "check-list-call")
 (include-book "check-mv-let-call")
 (include-book "check-nary-lambda-call")
+(include-book "check-unary-lambda-call")
 (include-book "check-user-lambda")
 (include-book "check-user-term")
 (include-book "dumb-occur-var-open")
