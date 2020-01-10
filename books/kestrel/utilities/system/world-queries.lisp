@@ -66,6 +66,7 @@
 (include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
+(include-book "kestrel/std/system/recursive-calls" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders-plus" :dir :system)
 (include-book "kestrel/std/system/rune-disabledp" :dir :system)
@@ -135,45 +136,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define recursive-calls ((fn symbolp) (wrld plist-worldp))
-  :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
-  :mode :program
-  :parents (world-queries)
-  :short "Recursive calls of a named non-mutually-recursive function,
-          along with the controlling tests."
-  :long
-  "<p>
-   For singly recursive logic-mode functions,
-   this is similar to the result of @(tsee induction-machine),
-   but each record has one recursive call (instead of zero or more),
-   and there is exactly one record for each recursive call.
-   </p>
-   <p>
-   This utility works on both logic-mode and program-mode functions
-   (if the program-mode functions have an @('unnormalized-body') property).
-   This utility should not be called on a function that is
-   mutually recursive with other functions;
-   it must be called only on singly recursive functions,
-   or on non-recursive functions (the result is @('nil') in this case).
-   </p>
-   <p>
-   This utility may be extended to handle also mutually recursive functions.
-   </p>
-   <p>
-   If the function is in logic mode and recursive,
-   we obtain its ruler extenders and pass them to
-   the built-in function @('termination-machine').
-   Otherwise, we pass the default ruler extenders.
-   </p>"
-  (b* ((ruler-extenders (if (and (logicp fn wrld)
-                                 (irecursivep fn wrld))
-                            (ruler-extenders fn wrld)
-                          (default-ruler-extenders wrld))))
-    (termination-machine
-     (list fn) (ubody fn wrld) nil nil ruler-extenders)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

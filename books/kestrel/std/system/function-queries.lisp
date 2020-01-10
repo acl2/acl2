@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -36,6 +36,7 @@
 (include-book "primitivep-plus")
 (include-book "pure-raw-p")
 (include-book "rawp")
+(include-book "recursive-calls")
 (include-book "ruler-extenders")
 (include-book "ruler-extenders-plus")
 (include-book "stobjs-in-plus")
