@@ -10,7 +10,7 @@
 ; factored out so that they can be used by other files in the community books
 ; in a more modular way.
 
-(include-book "keyword-to-keyword-value-alistp")
+(include-book "std/typed-alists/keyword-to-keyword-value-list-alistp" :dir :system)
 (include-book "pseudo-event-form-listp")
 (include-book "pseudo-tests-and-calls-listp")
 

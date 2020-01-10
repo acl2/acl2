@@ -12,8 +12,8 @@
   :short "Recognize alists from keywords to keyword-value lists."
   :long
   "<p>A keyword-value list is a true list of even length
-   whose even-position elements are keywords;
-   see @(tsee keyword-value-listp).</p>"
+      whose even-position elements are keywords;
+      see @(tsee keyword-value-listp).</p>"
 
   (defun keyword-to-keyword-value-list-alistp (x)
     (declare (xargs :guard t))

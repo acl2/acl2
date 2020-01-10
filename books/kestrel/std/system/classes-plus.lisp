@@ -13,7 +13,7 @@
 (include-book "classes")
 (include-book "theorem-symbolp")
 
-(include-book "system/keyword-to-keyword-value-alistp" :dir :system)
+(include-book "std/typed-alists/keyword-to-keyword-value-list-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
