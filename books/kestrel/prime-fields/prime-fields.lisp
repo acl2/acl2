@@ -561,6 +561,15 @@
 
 (verify-guards pow :hints (("Goal" :expand (EXPT X N)
                             :in-theory (enable pow-rewrite mul))))
+
+(defthmd pow-opener
+  (implies (posp n)
+           (equal (pow x n p)
+                  (mul x
+                       (pow x (+ -1 n) p)
+                       p)))
+  :hints (("Goal" :in-theory (enable pow))))
+
 ;;;
 ;;; inv
 ;;;
