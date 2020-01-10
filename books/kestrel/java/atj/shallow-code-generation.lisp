@@ -658,6 +658,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-mv-class-name ((types atj-type-listp))
+  :guard (>= (len types) 2)
   :returns (class-name stringp)
   :short "Generate the name of the @(tsee mv) class for the given types."
   :long
@@ -684,13 +685,7 @@
     "The list of ATJ types must have at least two elements.
      It does not make sense to have a multiple value
      consisting of zero or one values."))
-  (if (< (len types) 2)
-      (prog2$
-       (raise "Internal error: ~
-               cannot create MV class name for fewer than two types ~x0."
-              types)
-       "") ; irrelevant
-    (str::cat "MV" (atj-gen-shallow-mv-class-name-aux types)))
+  (str::cat "MV" (atj-gen-shallow-mv-class-name-aux types))
 
   :prepwork
   ((define atj-gen-shallow-mv-class-name-aux ((types atj-type-listp))
@@ -3997,6 +3992,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-mv-class ((types atj-type-listp))
+  :guard (>= (len types) 2)
   :returns (mv (class-name stringp)
                (class jclassp))
   :short "Generate the @(tsee mv) class for the given types."
@@ -4076,6 +4072,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-mv-classes ((typess atj-type-list-listp))
+  :guard (atj-gen-shallow-mv-classes-guard typess)
   :returns (mv (class-names (and (string-listp class-names)
                                  (equal (len class-names) (len typess))))
                (classes (and (jclass-listp classes)
@@ -4085,7 +4082,14 @@
        ((mv name class) (atj-gen-shallow-mv-class (car typess)))
        ((mv names classes) (atj-gen-shallow-mv-classes (cdr typess))))
     (mv (cons name names)
-        (cons class classes))))
+        (cons class classes)))
+  :guard-hints (("Goal" :in-theory (enable atj-gen-shallow-mv-classes-guard)))
+  :prepwork
+  ((define atj-gen-shallow-mv-classes-guard ((typess atj-type-list-listp))
+     :returns (yes/no booleanp)
+     (or (endp typess)
+         (and (>= (len (car typess)) 2)
+              (atj-gen-shallow-mv-classes-guard (cdr typess)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4116,6 +4120,13 @@
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (out-typess (atj-function-type-info->outputs fn-info))
        (out-typess (remove-duplicates-equal out-typess))
+       ((unless (atj-gen-shallow-mv-classes-guard out-typess))
+        (raise "Internal error: ~
+                not all the output types ~x0 of ~x1, ~
+                which returns ~x2 results, ~
+                are lists of two or more types."
+               out-typess fn (number-of-results+ fn wrld))
+        (mv nil nil))
        ((mv class-names classes) (atj-gen-shallow-mv-classes out-typess))
        ((mv more-class-names more-classes)
         (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld)))
