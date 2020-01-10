@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define classes ((thm symbolp) (wrld plist-worldp))
-  :returns (classes "A @(tsee keyword-to-keyword-value-alistp).")
+  :returns (classes "A @(tsee keyword-to-keyword-value-list-alistp).")
   :parents (std/system/theorem-queries)
   :short "Rule classes of a theorem."
   :long
