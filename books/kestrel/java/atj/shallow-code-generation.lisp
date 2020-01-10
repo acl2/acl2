@@ -785,7 +785,7 @@
        ((mv var new?) (atj-unmark-var var))
        ((mv var types) (atj-type-unannotate-var var))
        (jvar (symbol-name var))
-       (type (atj-type-list-to-type types))
+       (type (atj-type-list-to-type/acons types))
        (var-block (if new?
                       (jblock-locvar (atj-type-to-jtype type) jvar expr)
                     (jblock-asg (jexpr-name jvar) expr)))
@@ -2837,8 +2837,8 @@
        we represent it as its value.
        We wrap the resulting expression with a Java conversion, if needed."))
     (b* (((mv term src-types dst-types) (atj-type-unwrap-term term))
-         (src-type (atj-type-list-to-type src-types))
-         (dst-type (atj-type-list-to-type dst-types))
+         (src-type (atj-type-list-to-type/acons src-types))
+         (dst-type (atj-type-list-to-type/acons dst-types))
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))

@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -617,7 +617,7 @@
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
-       (out-type (atj-type-list-to-type out-types?))
+       (out-type (atj-type-list-to-type/acons out-types?))
        (test-output
         (case out-type
           (:jboolean (atj-test-value-jvalue-boolean output))

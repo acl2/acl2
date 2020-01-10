@@ -1624,7 +1624,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-to-type ((types atj-type-listp))
+(define atj-type-list-to-type/acons ((types atj-type-listp))
   :guard (consp types)
   :returns (type atj-typep :hyp :guard)
   :short "Treat a non-empty list of ATJ types as a single type."
