@@ -251,35 +251,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-maybe-typep (x)
-  :returns (yes/no booleanp)
-  :short "Recognize ATJ types and @('nil')."
-  (or (atj-typep x)
-      (null x))
-  ///
-
-  (defrule atj-maybe-typep-when-atj-typep
-    (implies (atj-typep x)
-             (atj-maybe-typep x)))
-
-  (defrule atj-type-iff-when-atj-maybe-typep
-    (implies (atj-maybe-typep x)
-             (iff (atj-typep x) x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist atj-maybe-type-listp (x)
-  :short "Recognize true lists of ATJ types and @('nil')s."
-  (atj-maybe-typep x)
-  :true-listp t
-  :elementp-of-nil t
-  ///
-  (defrule atj-maybe-type-listp-when-atj-type-listp
-    (implies (atj-type-listp x)
-             (atj-maybe-type-listp x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::defalist atj-symbol-type-alistp (x)
   :short "Recognize alists from symbols to ATJ types."
   :key (symbolp x)

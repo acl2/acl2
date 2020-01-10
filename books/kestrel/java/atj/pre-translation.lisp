@@ -1363,11 +1363,7 @@
 
    (define atj-select-mv-term-types ((indices nat-listp)
                                      (mv-types atj-type-listp))
-     :returns (selected-mv-types
-               atj-type-listp
-               :hints (("Goal"
-                        :in-theory (disable
-                                    atj-type-iff-when-atj-maybe-typep))))
+     :returns (selected-mv-types atj-type-listp)
      (b* (((unless (mbt (nat-listp indices)))
            (repeat (len indices) :avalue))
           ((unless (mbt (atj-type-listp mv-types)))

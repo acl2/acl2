@@ -448,7 +448,7 @@
   :guard-hints (("Goal" :in-theory (enable atj-maybe-jtypep atj-jtypep)))
   ///
 
-  (defrule atj-maybe-type-meet-lower-bound
+  (defrule atj-maybe-jtype-meet-lower-bound
     (implies (and (atj-maybe-jtypep x)
                   (atj-maybe-jtypep y))
              (and (atj-maybe-jtype-<= (atj-maybe-jtype-meet x y) x)

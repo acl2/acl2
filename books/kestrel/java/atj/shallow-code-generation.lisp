@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -2920,11 +2920,10 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-shallow-term
-    :hints (("Goal" :in-theory (e/d (atj-type-unwrap-term
-                                     unquote-term
-                                     pseudo-termfnp
-                                     pseudo-lambdap)
-                                    (atj-type-iff-when-atj-maybe-typep))))))
+    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
+                                       unquote-term
+                                       pseudo-termfnp
+                                       pseudo-lambdap)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3000,11 +2999,7 @@
                            (atj-type-list-to-jtype-list in-types))
                   :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
-  :guard-hints (("Goal"
-                 :in-theory (disable
-                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
-                             atj-maybe-typep-when-atj-typep))))
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3238,11 +3233,7 @@
                              :throws (list *aij-class-undef-pkg-exc*)
                              :body method-body)))
     (mv method qconsts))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
-  :guard-hints (("Goal"
-                 :in-theory (disable
-                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
-                             atj-maybe-typep-when-atj-typep))))
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3532,11 +3523,7 @@
                   :params method-params
                   :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
-  :guard-hints (("Goal"
-                 :in-theory (disable
-                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
-                             atj-maybe-typep-when-atj-typep))))
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
