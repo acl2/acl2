@@ -1252,9 +1252,7 @@ Useful for testing defunc/definec errors
   (atom x))
 
 (definec llen (x :tl) :nat
-  (if (lendp x)
-      0
-    (1+ (llen (tail x)))))
+  (len x))
 
 (definec lrev (x :tl) :tl
   (rev x))
