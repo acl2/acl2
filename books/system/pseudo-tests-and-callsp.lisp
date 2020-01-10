@@ -5,14 +5,25 @@
 
 (in-package "ACL2")
 
-; Recognize tests-and-calls records (defrec tests-and-calls (tests . calls) nil)
-; where each of the two fields is a list of terms.
-; These records are built into ACL2.
+(include-book "xdoc/top" :dir :system)
 
-(defun pseudo-tests-and-callsp (x)
-  (declare (xargs :guard t))
-  (case-match x
-    (('TESTS-AND-CALLS tests . calls)
-     (and (pseudo-term-listp tests)
-          (pseudo-term-listp calls)))
-    (& nil)))
+(defsection pseudo-tests-and-callsp
+  :parents (std/system)
+  :short "Recognize well-formed @('tests-and-calls') records."
+  :long
+  "<p>A @('tests-and-call') record is defined as</p>
+   @({
+     (defrec tests-and-calls (tests . calls) nil)
+   })
+   <p>(see the ACL2 source code)</p>
+   <p>In a well-formed @('tests-and-call') record,
+      @('tests') and @('calls') must be lists of terms.</p>
+   <p>This recognizer is analogous to @(tsee pseudo-tests-and-callp').</p>"
+
+  (defun pseudo-tests-and-callsp (x)
+    (declare (xargs :guard t))
+    (case-match x
+      (('tests-and-calls tests . calls)
+       (and (pseudo-term-listp tests)
+            (pseudo-term-listp calls)))
+      (& nil))))

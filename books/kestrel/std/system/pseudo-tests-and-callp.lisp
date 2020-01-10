@@ -32,9 +32,7 @@
      @('tests') must be a list of terms and
      @('call') must be a term.")
    (xdoc::p
-    "This recognizer is analogous to @('pseudo-tests-and-callsp')
-     in @('[books]/system/pseudo-tests-and-callsp.lisp')
-     for @('tests-and-calls') records."))
+    "This recognizer is analogous to @(tsee pseudo-tests-and-callsp)."))
   (case-match x
     (('tests-and-call tests call)
      (and (pseudo-term-listp tests)
