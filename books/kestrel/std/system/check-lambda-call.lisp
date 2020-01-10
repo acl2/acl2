@@ -29,7 +29,9 @@
      the formal parameters of the lambda expression,
      the body of the lambda expression, and
      the arguments on which the lambda expression is called.
-     Otherwise, all the results are @('nil')."))
+     Otherwise, all the results are @('nil').")
+   (xdoc::p
+    "See also @(tsee check-nary-lambda-call)."))
   (b* (((when (variablep term)) (mv nil nil nil nil))
        ((when (fquotep term)) (mv nil nil nil nil))
        (fn (ffn-symb term))
