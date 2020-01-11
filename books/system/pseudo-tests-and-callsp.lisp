@@ -18,7 +18,7 @@
    <p>(see the ACL2 source code)</p>
    <p>In a well-formed @('tests-and-call') record,
       @('tests') and @('calls') must be lists of terms.</p>
-   <p>This recognizer is analogous to @(tsee pseudo-tests-and-callp').</p>"
+   <p>This recognizer is analogous to @(tsee pseudo-tests-and-callp).</p>"
 
   (defun pseudo-tests-and-callsp (x)
     (declare (xargs :guard t))
