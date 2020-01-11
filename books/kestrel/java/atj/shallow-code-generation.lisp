@@ -1580,7 +1580,7 @@
   (define atj-gen-shallow-if-app ((test pseudo-termp)
                                   (then pseudo-termp)
                                   (else pseudo-termp)
-                                  (type atj-typep)
+                                  (types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -1589,7 +1589,8 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1688,6 +1689,7 @@
             (mv block
                 expr
                 jvar-result-index)))
+         (type (atj-type-list-to-type/acons types))
          (jtype (atj-type-to-jitype type))
          ((mv result-locvar-block
               jvar-result
@@ -1720,7 +1722,7 @@
 
   (define atj-gen-shallow-or-app ((first pseudo-termp)
                                   (second pseudo-termp)
-                                  (type atj-typep)
+                                  (types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -1729,7 +1731,8 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1777,6 +1780,7 @@
                                 qpairs
                                 guards$
                                 wrld))
+         (type (atj-type-list-to-type/acons types))
          (jtype (atj-type-to-jitype type))
          ((mv result-locvar-block jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
@@ -1807,8 +1811,8 @@
   (define atj-gen-shallow-jprim-constr-app
     ((fn (member-eq fn *atj-java-primitive-constructors*))
      (arg pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -1816,7 +1820,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1849,7 +1855,9 @@
        to be examined."))
     (b* (((mv arg & &) (atj-type-unwrap-term arg))
          ((unless arg) ; for termination proof
-          (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+         (src-type (atj-type-list-to-type src-types))
+         (dst-type (atj-type-list-to-type dst-types)))
       (if (quotep arg)
           (cond ((eq fn 'boolean-value)
                  (b* ((boolean (unquote-term arg))
@@ -1947,8 +1955,8 @@
   (define atj-gen-shallow-jprim-unop-app
     ((fn (member-eq fn *atj-java-primitive-unops*))
      (operand pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -1956,7 +1964,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1982,15 +1992,16 @@
        we may revisit this decision in the future."))
     (b* (((mv operand-block
               operand-expr
-              jvar-result-index) (atj-gen-shallow-term operand
-              jvar-result-base
-              jvar-result-index
-              pkg-class-names
-              fn-method-names
-              curr-pkg
-              qpairs
-              t ; GUARDS$
-              wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term operand
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          (expr (if (member-eq fn '(boolean-not
                                    int-plus
                                    long-plus
@@ -2031,7 +2042,9 @@
                    (jexpr-cast jtype operand-expr))))
          (block operand-block))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2042,8 +2055,8 @@
     ((fn (member-eq fn *atj-java-primitive-binops*))
      (left pseudo-termp)
      (right pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2051,7 +2064,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2143,7 +2158,9 @@
          (expr (jexpr-binary binop left-expr right-expr))
          (block (append left-block right-block)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -2155,8 +2172,8 @@
   (define atj-gen-shallow-jprimarr-read-app
     ((array pseudo-termp)
      (index pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2164,7 +2181,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2209,7 +2228,9 @@
          (block (append array-block index-block))
          (expr (jexpr-array array-expr index-expr)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -2220,8 +2241,8 @@
 
   (define atj-gen-shallow-jprimarr-length-app
     ((array pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2229,7 +2250,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2270,7 +2293,9 @@
                                          ".length"))
                  (jexpr-field array-expr "length"))))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2280,8 +2305,8 @@
   (define atj-gen-shallow-jprimarr-constr-app
     ((fn (member-eq fn *atj-java-primarray-constructors*))
      (length pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2289,7 +2314,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2331,7 +2358,9 @@
                   (otherwise (impossible))))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2341,8 +2370,8 @@
   (define atj-gen-shallow-jprimarr-constr-init-app
     ((fn (member-eq fn *atj-java-primarray-constructors-init*))
      (arg pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2350,7 +2379,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2420,7 +2451,9 @@
                         (otherwise (impossible))))
                (expr (jexpr-newarray-init jtype exprs)))
             (mv block
-                (atj-adapt-expr-to-type expr src-type dst-type)
+                (atj-adapt-expr-to-type expr
+                                        (atj-type-list-to-type src-types)
+                                        (atj-type-list-to-type dst-types))
                 jvar-result-index))
         (b* (((mv block
                   expr
@@ -2444,7 +2477,9 @@
                      (otherwise (impossible))))
              (expr (atj-adapt-expr-to-type expr :avalue type)))
           (mv block
-              (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
               jvar-result-index))))
     ;; 2nd component is non-0
     ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2452,8 +2487,8 @@
                                1))
 
   (define atj-gen-shallow-mv-app ((args pseudo-term-listp)
-                                  (src-type atj-typep)
-                                  (dst-type atj-typep)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -2462,7 +2497,9 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2496,6 +2533,8 @@
          (block (flatten blocks))
          (expr (jexpr-smethod *aij-type-value* "makeList" exprs))
          (expr (jexpr-cast *aij-type-cons* expr))
+         (src-type (atj-type-list-to-type/acons src-types))
+         (dst-type (atj-type-list-to-type/acons dst-types))
          (expr (atj-adapt-expr-to-type expr src-type dst-type)))
       (mv block expr jvar-result-index))
     ;; 2nd component is non-0
@@ -2505,8 +2544,8 @@
 
   (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
                                   (args pseudo-term-listp)
-                                  (src-type atj-typep)
-                                  (dst-type atj-typep)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -2515,7 +2554,9 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (and (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg ""))
                 (or (not (pseudo-lambdap fn))
                     (equal (len (lambda-formals fn))
                            (len args))))
@@ -2564,7 +2605,7 @@
             (if (equal first second)
                 (atj-gen-shallow-or-app first
                                         third
-                                        dst-type ; = SRC-TYPE
+                                        dst-types ; = SRC-TYPES
                                         jvar-result-base
                                         jvar-result-index
                                         pkg-class-names
@@ -2576,7 +2617,7 @@
               (atj-gen-shallow-if-app first
                                       second
                                       third
-                                      dst-type ; = SRC-TYPE
+                                      dst-types ; = SRC-TYPES
                                       jvar-result-base
                                       jvar-result-index
                                       pkg-class-names
@@ -2590,8 +2631,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-constr-app fn
                                             (car args)
-                                            src-type
-                                            dst-type
+                                            src-types
+                                            dst-types
                                             jvar-result-base
                                             jvar-result-index
                                             pkg-class-names
@@ -2604,8 +2645,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-unop-app fn
                                           (car args)
-                                          src-type
-                                          dst-type
+                                          src-types
+                                          dst-types
                                           jvar-result-base
                                           jvar-result-index
                                           pkg-class-names
@@ -2619,8 +2660,8 @@
           (atj-gen-shallow-jprim-binop-app fn
                                            (first args)
                                            (second args)
-                                           src-type
-                                           dst-type
+                                           src-types
+                                           dst-types
                                            jvar-result-base
                                            jvar-result-index
                                            pkg-class-names
@@ -2633,8 +2674,8 @@
                      (int= (len args) 2))) ; should be always true
           (atj-gen-shallow-jprimarr-read-app (first args)
                                              (second args)
-                                             src-type
-                                             dst-type
+                                             src-types
+                                             dst-types
                                              jvar-result-base
                                              jvar-result-index
                                              pkg-class-names
@@ -2646,8 +2687,8 @@
                      (member-eq fn *atj-java-primarray-lengths*)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-length-app (car args)
-                                               src-type
-                                               dst-type
+                                               src-types
+                                               dst-types
                                                jvar-result-base
                                                jvar-result-index
                                                pkg-class-names
@@ -2660,8 +2701,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-app fn
                                                (car args)
-                                               src-type
-                                               dst-type
+                                               src-types
+                                               dst-types
                                                jvar-result-base
                                                jvar-result-index
                                                pkg-class-names
@@ -2674,8 +2715,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-init-app fn
                                                     (car args)
-                                                    src-type
-                                                    dst-type
+                                                    src-types
+                                                    dst-types
                                                     jvar-result-base
                                                     jvar-result-index
                                                     pkg-class-names
@@ -2685,8 +2726,8 @@
                                                     wrld))
          ((when (eq fn 'mv))
           (atj-gen-shallow-mv-app args
-                                  src-type
-                                  dst-type
+                                  src-types
+                                  dst-types
                                   jvar-result-base
                                   jvar-result-index
                                   pkg-class-names
@@ -2714,6 +2755,8 @@
                                               fn-method-names
                                               curr-pkg)
                       arg-exprs))
+               (src-type (atj-type-list-to-type/acons src-types))
+               (dst-type (atj-type-list-to-type/acons dst-types))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv (flatten arg-blocks)
                 expr
@@ -2725,8 +2768,8 @@
                                   (lambda-body fn)
                                   arg-blocks
                                   arg-exprs
-                                  src-type
-                                  dst-type
+                                  src-types
+                                  dst-types
                                   jvar-result-base
                                   jvar-result-index
                                   pkg-class-names
@@ -2752,8 +2795,8 @@
                                   (body pseudo-termp)
                                   (arg-blocks jblock-listp)
                                   (arg-exprs jexpr-listp)
-                                  (src-type atj-typep)
-                                  (dst-type atj-typep)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -2762,7 +2805,9 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (and (int= (len arg-blocks) (len formals))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (int= (len arg-blocks) (len formals))
                 (int= (len arg-exprs) (len formals))
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
@@ -2790,7 +2835,9 @@
                                 curr-pkg
                                 qpairs
                                 guards$
-                                wrld)))
+                                wrld))
+         (src-type (atj-type-list-to-type/acons src-types))
+         (dst-type (atj-type-list-to-type/acons dst-types)))
       (mv (append let-block body-block)
           (atj-adapt-expr-to-type body-expr src-type dst-type)
           jvar-result-index))
@@ -2832,15 +2879,17 @@
        we represent it as its value.
        We wrap the resulting expression with a Java conversion, if needed."))
     (b* (((mv term src-types dst-types) (atj-type-unwrap-term term))
-         (src-type (atj-type-list-to-type/acons src-types))
-         (dst-type (atj-type-list-to-type/acons dst-types))
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))
           (b* (((mv var &) (atj-unmark-var term))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr (atj-adapt-expr-to-type expr
+                                             (atj-type-list-to-type/acons
+                                              src-types)
+                                             (atj-type-list-to-type/acons
+                                              dst-types))))
             (mv nil expr jvar-result-index)))
          ((when (fquotep term))
           (b* ((value (unquote-term term))
@@ -2848,12 +2897,15 @@
                                             qpairs
                                             pkg-class-names
                                             curr-pkg))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr
+                (atj-adapt-expr-to-type expr
+                                        (atj-type-list-to-type src-types)
+                                        (atj-type-list-to-type dst-types))))
             (mv nil expr jvar-result-index))))
       (atj-gen-shallow-fn-app (ffn-symb term)
                               (fargs term)
-                              src-type
-                              dst-type
+                              src-types
+                              dst-types
                               jvar-result-base
                               jvar-result-index
                               pkg-class-names
