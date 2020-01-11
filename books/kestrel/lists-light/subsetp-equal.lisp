@@ -287,3 +287,21 @@
 (defthm subsetp-equal-of-cons-and-cons
   (equal (subsetp-equal (cons a x) (cons a y))
          (subsetp-equal (remove-equal a x) (remove-equal a y))))
+
+(defthm subsetp-equal-of-remove-equal-and-remove-equal
+  (implies (subsetp-equal x y)
+           (subsetp-equal (remove-equal a x)
+                          (remove-equal a y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
+
+(defthm member-equal-when-subsetp-equal-1
+  (implies (and (subsetp-equal lst2 lst) ;lst2 is a free var
+                (member-equal x lst2))
+           (member-equal x lst))
+  :hints (("Goal" :in-theory (enable subsetp-equal member-equal))))
+
+(defthm member-equal-when-subsetp-equal-2
+  (implies (and (member-equal x lst2) ;lst2 is a free var
+                (subsetp-equal lst2 lst))
+           (member-equal x lst))
+  :hints (("Goal" :in-theory (enable subsetp-equal member-equal))))
