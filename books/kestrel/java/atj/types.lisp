@@ -1624,6 +1624,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-list-to-type ((types atj-type-listp))
+  :guard (consp types)
+  :returns (type atj-typep :hyp :guard)
+  :short "Ensure that a non-empty list of types is a singleton,
+          and return its only element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In some cases, a non-empty list of types is expected to be a singleton.
+     For instance, the type list may be the output types of a function
+     that is known to return a single result.
+     This utility can be used in these cases,
+     to check the expectation for robustness,
+     and to retrieve the single type from the singleton list."))
+  (if (= (len types) 1)
+      (car types)
+    (prog2$
+     (raise "Internal error: ~x0 is not a singleton list of types." types)
+     :avalue))) ; irrelevant
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-list-to-type/acons ((types atj-type-listp))
   :guard (consp types)
   :returns (type atj-typep :hyp :guard)
