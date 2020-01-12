@@ -11,6 +11,7 @@
 ; in a more modular way.
 
 (include-book "std/typed-alists/keyword-to-keyword-value-list-alistp" :dir :system)
+(include-book "std/typed-lists/string-or-symbol-listp" :dir :system)
 (include-book "pseudo-event-form-listp")
 (include-book "pseudo-tests-and-calls-listp")
 
@@ -261,14 +262,6 @@
       (null lst)
       (and (pseudo-function-symbolp (car lst) n)
            (pseudo-function-symbol-listp (cdr lst) n))))
-
-(defun string-or-symbol-listp (x)
-  (if (atom x)
-      (null x)
-      (and (or (stringp (car x))
-               (symbolp (car x)))
-           (string-or-symbol-listp (cdr x)))))
-
 
 (defun pseudo-event-landmarkp (val)
 
