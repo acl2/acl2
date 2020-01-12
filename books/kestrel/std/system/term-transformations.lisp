@@ -14,6 +14,7 @@
 (include-book "apply-terms-same-args")
 (include-book "apply-unary-to-terms")
 (include-book "close-lambdas")
+(include-book "conjoin-equalities")
 (include-book "fapply-term")
 (include-book "fapply-terms-same-args")
 (include-book "fapply-unary-to-terms")
