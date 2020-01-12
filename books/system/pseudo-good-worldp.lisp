@@ -272,27 +272,9 @@
 
 (defun pseudo-event-landmarkp (val)
 
-; If this function has to be changed, see whether there is more to say in the
-; comment, labeled Event Tuples, just above make-event-tuple, or the comment in
+; Discussions of event landmarks may be found in the comment in
+; make-event-tuple and in the comment, labeled Event Tuples, above
 ; make-event-tuple.
-
-; xxx change the commment in make-event-tuple:
-
-; An event tuple is always a cons.  Except in the initial case created by
-; primordial-world-globals, the car is always either a natural (denoting n and
-; implying d=0) or a cons of two naturals, n and d.    Its cadr is
-; either a symbol, denoting its type and signalling that the cdr is the form,
-; the symbol-class is :program and that the namex can be recovered from the
-; form, or else the cadr is the pair (ev-type namex . symbol-class) signalling
-; that the form is the cddr.
-
-; Generally, the val encodes:
-;  n - absolute event number
-;  d - embedded event depth
-;  form - form that created the event
-;  ev-type - name of the primitive event macro we use, e.g., defun, defthm, defuns
-;  namex - name or names introduced (0 is none)
-;  symbol-class - of names (or nil)
 
   (or (equal val '(-1 ((NIL) 0)))   ; bogus tuple by primordial-world-globals
       (and (consp val)
