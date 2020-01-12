@@ -90,7 +90,6 @@
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
-(local (include-book "arglistp-theorems"))
 (local (include-book "world-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
