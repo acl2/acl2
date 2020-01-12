@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "conjoin")
 (include-book "event-name-queries")
 (include-book "function-queries")
 (include-book "included-books")
