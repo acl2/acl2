@@ -39,7 +39,9 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-lambda-call
                          check-list-call
+                         check-unary-lambda-call
                          conjoin
                          cons-listp
                          cons-pos-alistp
