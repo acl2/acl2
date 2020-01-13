@@ -735,6 +735,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-mv-factory-method-name*
+  :short "Name of the package-private static factory method
+          of an @(tsee mv) class."
+  :long
+  (xdoc::topstring-p
+   "All the @(tsee mv) classes use the same name for this method.")
+  "make")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-let-bindings ((vars symbol-listp)
                                       (blocks jblock-listp)
                                       (exprs jexpr-listp))
@@ -1335,6 +1345,83 @@
                  (atj-adapt-exprs-to-types (cdr exprs)
                                            (cdr src-types)
                                            (cdr dst-types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-adapt-expr-to-types ((expr jexprp)
+                                 (src-types atj-type-listp)
+                                 (dst-types atj-type-listp)
+                                 (jvar-result-base stringp)
+                                 (jvar-result-index posp))
+  :guard (and (consp src-types)
+              (consp dst-types)
+              (= (len src-types) (len dst-types)))
+  :returns (mv (block jblockp)
+               (new-expr jexprp :hyp (jexprp expr))
+               (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+  :short "Adapt a Java expression from source types to destination types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the two lists are singletons, we use @(tsee atj-adapt-expr-to-type).
+     Otherwise, we are converting a multi-valued expression
+     to another multi-valued expression with the same number of components;
+     here `multi-valued' is in the sense of ACL2's @(tsee mv).
+     We project the components of the expressions by reading the fields,
+     call @(tsee atj-adapt-expr-to-type) on each of them,
+     and then build a new multi-valued expression
+     with the resulting expressions as arguments.
+     That is, we adapt the expression component-wise.")
+   (xdoc::p
+    "Unless the starting expression is an expression name,
+     we use an intermediate variable to store the value of the expression
+     before projecting the components;
+     otherwise, we would be re-evaluating the starting expression
+     multiple times.
+     Thus, in general we return a block and an expression,
+     and the index for the temporary variable is threade though."))
+  (b* (((when (= (len src-types) 1))
+        (mv nil
+            (atj-adapt-expr-to-type expr (car src-types) (car dst-types))
+            jvar-result-index))
+       (src-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
+       (dst-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
+       ((when (equal src-jtype dst-jtype)) (mv nil expr jvar-result-index))
+       ((mv block
+            expr
+            jvar-result-index)
+        (if (jexpr-case expr :name)
+            (mv nil expr jvar-result-index)
+          (b* (((mv block var jvar-result-index)
+                (atj-gen-jlocvar-indexed src-jtype
+                                         jvar-result-base
+                                         jvar-result-index
+                                         expr)))
+            (mv block (jexpr-name var) jvar-result-index))))
+       (exprs (atj-adapt-expr-to-types-aux expr 0 (len src-types)))
+       (exprs (atj-adapt-exprs-to-types exprs src-types dst-types)))
+    (mv block
+        (jexpr-smethod dst-jtype
+                       *atj-mv-factory-method-name*
+                       exprs)
+        jvar-result-index))
+
+  :prepwork
+  ((define atj-adapt-expr-to-types-aux ((expr jexprp) (i natp) (n natp))
+     :returns (exprs jexpr-listp)
+     (if (or (not (mbt (natp i)))
+             (not (mbt (natp n)))
+             (>= i n))
+         nil
+       (cons (jexpr-get-field expr (atj-gen-shallow-mv-field-name i))
+             (atj-adapt-expr-to-types-aux expr (1+ i) n)))
+     :measure (nfix (- n i))
+     ///
+     (defret len-of-atj-adapt-expr-to-types-aux
+       (equal (len exprs)
+              (if (and (natp n) (natp i))
+                  (nfix (- n i))
+                0))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3998,16 +4085,6 @@
   (xdoc::topstring-p
    "All the @(tsee mv) classes use the same name for this field.")
   "singleton")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atj-mv-factory-method-name*
-  :short "Name of the package-private static factory method
-          of an @(tsee mv) class."
-  :long
-  (xdoc::topstring-p
-   "All the @(tsee mv) classes use the same name for this method.")
-  "make")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
