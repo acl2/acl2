@@ -18,6 +18,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
@@ -1551,6 +1552,163 @@
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable atj-type-unwrap-term
                                        atj-type-wrap-term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-marked-annotated-mv-let-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (mv-var symbolp)
+               (mv-term pseudo-termp)
+               (vars symbol-listp)
+               (indices nat-listp)
+               (body-term pseudo-termp))
+  :short "Recognize translated @(tsee mv-let)s after pre-translation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type annotation pre-translation step recognizes @(tsee mv-let)s
+     and transforms them as explained in @(tsee atj-type-annotate-term).
+     the variable reuse pre-translation step additionally marks the variables,
+     and the variable renaming pre-translation step
+     may change their (unmarked, unannotated) names.
+     So the resulting term should have the form")
+   (xdoc::codeblock
+    "([reqinf>reqinf]"
+    " ((lambda ([m][types]mv)"
+    "          ([reqinf>reqinf]"
+    "           ((lambda ([m1][type1]var1 ... [mn][typen]varn)"
+    "                    ([...>reqinf] body-term))"
+    "            ([AV>type1] (mv-nth ([AI>AI] '0)"
+    "                                ([types>types] [m][types]mv)))"
+    "            ..."
+    "            ([AV>typen] (mv-nth ([AI>AI] 'n-1)"
+    "                                ([types>types] [m][types]mv))))))"
+    "  ([types>types] mv-term)))")
+   (xdoc::p
+    "where @('[m]'), @('[m1]'), ..., @('[mn]') are new/old markings,
+     and where @('mv') may not be the symbol `@('mv')' but some other symbol.
+     Because of the pre-translation steps that removes unused variables,
+     the formals and arguments of the inner lambda
+     may be fewer than the elements of @('types');
+     i.e. some @(tsee mv-nth) indices may be skipped.")
+   (xdoc::p
+    "This code recognizes terms of the form above,
+     returning some of the constituents if successful.
+     The @('mv-var') result is @('[m][types]mv'),
+     i.e. the marked and annotated multi-value variable.
+     The @('mv-term') result is @('([types>types] mv-term)'),
+     i.e. the wrapped multi-value term.
+     The @('vars') result is @('([m1][type1]var1 ... [mn][typen]varn)')
+     (possibly skipping some indices),
+     i.e. the list of formals of the inner lambda expression,
+     all marked and annotated.
+     The @('indices') result is the ordered list of @(tsee mv-nth) indices
+     actually present; these are 0-based.
+     The @('body-term') result is @('([...>reqinf] body-term)'),
+     i.e. the wrapped body of the inner lambda expression.
+     The term and variable results are marked/annotated/wrapped so that
+     they can be treated uniformly by the code generation functions."))
+  (b* (((mv outer-lambda-call reqinf reqinf2) (atj-type-unwrap-term term))
+       ((unless (equal reqinf reqinf2)) (mv nil nil nil nil nil nil))
+       ((mv okp mv-var wrapped-inner-lambda-call mv-term)
+        (check-unary-lambda-call outer-lambda-call))
+       ((unless okp) (mv nil nil nil nil nil nil))
+       ((mv mv-var-unmarked &) (atj-unmark-var mv-var))
+       ((mv & types) (atj-type-unannotate-var mv-var-unmarked))
+       ((unless (> (len types) 1)) (mv nil nil nil nil nil nil))
+       ((mv & src-types dst-types) (atj-type-unwrap-term mv-term))
+       ((unless (and (equal src-types types)
+                     (equal dst-types types)))
+        (raise "Internal error: malformed term ~x0." term)
+        (mv nil nil nil nil nil nil))
+       ((mv inner-lambda-call src-types dst-types)
+        (atj-type-unwrap-term wrapped-inner-lambda-call))
+       ((unless (and (equal src-types reqinf)
+                     (equal dst-types reqinf))) (mv nil nil nil nil nil nil))
+       ((mv okp vars body-term args) (check-lambda-call inner-lambda-call))
+       ((unless okp)
+        (raise "Internal error: malformed term ~x0." term)
+        (mv nil nil nil nil nil nil))
+       ((mv & & dst-types) (atj-type-unwrap-term body-term))
+       ((unless (equal dst-types reqinf))
+        (raise "Internal error: malformed term ~x0." term)
+        (mv nil nil nil nil nil nil))
+       (indices (atj-check-marked-annotated-mv-let-call-aux
+                 args vars types mv-var)))
+    (mv t mv-var mv-term vars indices body-term))
+  :guard-hints (("Goal"
+                 :in-theory
+                 (enable acl2::len-of-check-lambda-calls.formals-is-args)))
+
+  :prepwork
+
+  ((define atj-check-marked-annotated-mv-let-call-aux ((args pseudo-term-listp)
+                                                       (vars symbol-listp)
+                                                       (types atj-type-listp)
+                                                       (mv-var symbolp))
+     :guard (and (= (len vars) (len args))
+                 (consp types))
+     :returns (indices nat-listp)
+     (b* (((when (endp args)) nil)
+          ((mv arg arg-src arg-dst) (atj-type-unwrap-term (car args)))
+          ((unless (and (not (variablep arg))
+                        (not (fquotep arg))
+                        (eq (ffn-symb arg) 'mv-nth)
+                        (= (len (fargs arg)) 2)
+                        (equal (fargn arg 2)
+                               (atj-type-wrap-term mv-var types types))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          ((mv index index-src index-dst) (atj-type-unwrap-term (fargn arg 1)))
+          ((unless (and (quotep index)
+                        (equal index-src (list :ainteger))
+                        (equal index-dst (list :ainteger))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          (index (unquote-term index))
+          ((unless (integer-range-p 0 (len types) index))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          ((unless (and (equal arg-src (list :avalue))
+                        (equal arg-dst (list (nth index types)))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          ((mv var &) (atj-unmark-var (car vars)))
+          ((mv & var-types) (atj-type-unannotate-var var))
+          ((unless (equal var-types (list (nth index types))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0)))
+       (cons index (atj-check-marked-annotated-mv-let-call-aux (cdr args)
+                                                               (cdr vars)
+                                                               types
+                                                               mv-var)))
+
+     :prepwork
+
+     ((local (include-book "std/typed-lists/nat-listp" :dir :system))
+
+      (defrulel verify-guards-lemma
+        (implies (and (pseudo-termp term)
+                      (not (variablep term))
+                      (not (fquotep term)))
+                 (pseudo-termp (fargn term 1)))
+        :expand ((pseudo-termp term))))
+
+     ///
+
+     (defret len-of-atj-check-marked-annotated-mv-let-call-aux
+       (equal (len indices) (len args)))))
+
+  ///
+
+  (defret len-of-atj-check-marked-annotated-mv-let.vars/indices
+    (equal (len indices)
+           (len vars))
+    :hints (("Goal"
+             :in-theory
+             (enable acl2::len-of-check-lambda-calls.formals-is-args))))
+
+  (in-theory (disable len-of-atj-check-marked-annotated-mv-let.vars/indices)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
