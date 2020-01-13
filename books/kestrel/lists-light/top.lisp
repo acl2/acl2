@@ -36,6 +36,8 @@
 (include-book "remove1-equal")
 (include-book "union-equal")
 (include-book "intersection-equal")
+(include-book "add-to-set-equal")
+(include-book "set-difference-equal")
 
 ;; Books about non-built-in functions:
 (include-book "firstn-def")
