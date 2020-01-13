@@ -64,4 +64,16 @@
 
   (theory-invariant (incompatible
                      (:rewrite len-of-check-lambda-calls.formals-is-args)
-                     (:rewrite len-of-check-lambda-calls.args-is-formals))))
+                     (:rewrite len-of-check-lambda-calls.args-is-formals)))
+
+  (defret acl2-count-of-check-lambda-call.body
+    (implies yes/no
+             (< (acl2-count body)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-check-lambda-call.args
+    (implies yes/no
+             (< (acl2-count args)
+                (acl2-count term)))
+    :rule-classes :linear))
