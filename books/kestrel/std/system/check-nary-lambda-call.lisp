@@ -58,4 +58,16 @@
              (equal (len args) n))
     :hyp :guard
     :hints (("Goal"
-             :in-theory (enable len-of-check-lambda-calls.args-is-formals)))))
+             :in-theory (enable len-of-check-lambda-calls.args-is-formals))))
+
+  (defret acl2-count-of-check-nary-lambda-call.body
+    (implies yes/no
+             (< (acl2-count body)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-check-nary-lambda-call.args
+    (implies yes/no
+             (< (acl2-count args)
+                (acl2-count term)))
+    :rule-classes :linear))
