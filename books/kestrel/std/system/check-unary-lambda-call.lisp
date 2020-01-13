@@ -31,4 +31,20 @@
     (mv t (car formals) body (car args)))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-   (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))))
+   (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
+
+  ///
+
+  (defret acl2-count-of-check-unary-lambda-call.body
+    (implies yes/no
+             (< (acl2-count body)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-check-unary-lambda-call.arg
+    (implies yes/no
+             (< (acl2-count arg)
+                (acl2-count term)))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable check-nary-lambda-call
+                                       check-lambda-call)))))
