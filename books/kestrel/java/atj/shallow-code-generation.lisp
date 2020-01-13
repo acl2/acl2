@@ -746,6 +746,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-jtype ((types atj-type-listp))
+  :guard (consp types)
+  :returns (jtype jtypep)
+  :short "Generate a Java type, in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We map a non-empty list of ATJ types to a Java type as follows.
+     If the list is a singleton,
+     we map the (only) type to the corresponding Java type,
+     according to @(tsee atj-type-to-jtype).
+     Otherwise, we map the list of two or more types
+     to the @(tsee mv) class for the types,
+     according to @(tsee atj-gen-shallow-mv-class-name)."))
+  (if (= (len types) 1)
+      (atj-type-to-jitype (car types))
+    (jtype-class (atj-gen-shallow-mv-class-name types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-let-bindings ((vars symbol-listp)
                                       (blocks jblock-listp)
                                       (exprs jexpr-listp))
