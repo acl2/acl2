@@ -90,13 +90,13 @@
 
   ///
 
-  (defret check-mv-let-call-mv-term-smaller
+  (defret acl2-count-of-check-mv-let-call.mv-term
     (implies yes/no
              (< (acl2-count mv-term)
                 (acl2-count term)))
     :rule-classes :linear)
 
-  (defret check-mv-let-call-body-term-smaller
+  (defret acl2-count-of-check-mv-let-call.body-term
     (implies yes/no
              (< (acl2-count body-term)
                 (acl2-count term)))
