@@ -368,8 +368,7 @@
   :short "Logic form of @(see ipasir-set-limit).  See @(see ipasir) for usage."
   (b* (((ipasir$a solver)))
     (change-ipasir$a solver
-                     :history (cons `(:limit ,(acl2::maybe-natp-fix limit)) solver.history)
-                     :callback-count 0))
+                     :history (cons `(:limit ,(acl2::maybe-natp-fix limit)) solver.history)))
   ///
   (std::defret status-of-ipasir-set-limit$a
     (equal (ipasir$a->status new-solver)

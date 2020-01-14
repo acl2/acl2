@@ -206,22 +206,28 @@ o;;  * unsatisfiability of the formula under the assumptions
                           (null-pointer-p limit-ptr))
                       (foreign-alloc :int :initial-element 0 :count 3)
                     limit-ptr)))
-        (setf (mem-aref ptr :int) 0) ;; reset callback count
+        ;; Used to reset callback count here but now we'll preserve it across set-limit calls.
+        ;; Foreign-alloc call above should initialize new ones to 0.
+        ;; (setf (mem-aref ptr :int) 0) ;; reset callback count
         (setf (mem-aref ptr :int 2) n) ;; per-solve limit
         (ipasir-set-terminate solver ptr (callback term))
         ptr)
-    (progn
-      (unless (or (not limit-ptr) (null-pointer-p limit-ptr))
-        (foreign-free limit-ptr))
-      (let ((null-ptr (null-pointer)))
-        (ipasir-set-terminate solver null-ptr null-ptr)
-        null-ptr))))
+    (let ((ptr (or limit-ptr (null-pointer))))
+      ;; (unless (or (not limit-ptr) (null-pointer-p limit-ptr))
+      ;;   (foreign-free limit-ptr))
+      (ipasir-set-terminate solver ptr (null-pointer))
+      ptr)))
 
 (defun ipasir-reset-limit (limit-ptr)
   (unless (null-pointer-p limit-ptr)
     (let* ((count (mem-aref limit-ptr :int))
            (per-solve-limit (mem-aref limit-ptr :int 2)))
       (setf (mem-aref limit-ptr :int 1) (+ count per-solve-limit)))))
+
+(defun ipasir-free-limit (limit-ptr)
+  (unless (or (not limit-ptr) (null-pointer-p limit-ptr))
+    (foreign-free limit-ptr))
+  nil)
 
 (defun ipasir-callback-count (limit-ptr)
   (if (null-pointer-p limit-ptr)
@@ -241,76 +247,6 @@ o;;  * unsatisfiability of the formula under the assumptions
 
 
 (in-package "IPASIR")
-
-(defun ipasir-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-set
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-limit-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-limit-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-limit-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-limit-set
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-status-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-status-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-status-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-status-set
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-assumption-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-assumption-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-assumption-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-assumption-set
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-some-history-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-some-history-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-some-history-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-some-history-set
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-empty-new-clause-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-empty-new-clause-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-empty-new-clause-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-empty-new-clause-set
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-solved-assumption-get (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-solved-assumption-get
-      "This function can't be executed once the ipasir execution environment is installed."))
-
-(defun ipasir-solved-assumption-set (ipasir$c)
-  (declare (ignore ipasir$c))
-  (er hard? 'ipasir-solved-assumption-set
-      "This function can't be executed once the ipasir execution environment is installed."))
 
 (defun ipasir$cp (ipasir$c)
   (declare (ignore ipasir$c))
@@ -380,6 +316,8 @@ o;;  * unsatisfiability of the formula under the assumptions
 
 (defun ipasir-release$c (ipasir)
   (ipasir-raw::ipasir-release (ipasir-get-raw ipasir))
+  (setf (ipasir-get-limit-raw ipasir)
+        (ipasir-raw::ipasir-free-limit (ipasir-get-limit-raw ipasir)))
   (setf (ipasir-get-status-raw ipasir) :undef)
   (setf (ipasir-get-some-history-raw ipasir) t)
   ipasir)
