@@ -37,7 +37,7 @@
   (define dec-digitp (x)
     :returns (yes/no booleanp)
     :parents (dec-digit)
-    :short "Recognizer for @(tsee digit)."
+    :short "Recognizer for @(tsee dec-digit)."
     (and (integerp x)
          (<= (char-code #\0) x)
          (<= x (char-code #\9))))
