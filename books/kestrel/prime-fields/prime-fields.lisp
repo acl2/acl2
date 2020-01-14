@@ -360,7 +360,9 @@
   :hints (("Goal" :in-theory (enable neg fep))))
 
 (defthm equal-of-neg-solve
-  (implies (and (syntaxp (quotep k1))
+  (implies (and (syntaxp (and (quotep k1)
+                              ;; prevent loops when both are constants:
+                              (not (quotep x))))
                 (fep x p)
                 (fep k1 p)
                 (integerp p))
