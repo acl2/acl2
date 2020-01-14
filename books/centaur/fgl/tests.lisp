@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-(include-book "top-plus")
+(include-book "top")
 
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
 (include-book "misc/eval" :dir :system)
