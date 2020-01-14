@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,52 +24,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection octal-digit
+(defsection oct-digit
   :short "Fixtype of Java octal digits [JLS:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A Java octal digit is a Java ASCII character between `0' and `7'.
-     See the grammar rule @('octal-digit'),
-     after which this type and these functions are named.")
+     See the grammar rule @('octal-digit').")
    (xdoc::p
     "This is a type introduced by @(tsee fty::deffixtype)."))
 
-  (define octal-digitp (x)
+  (define oct-digitp (x)
     :returns (yes/no booleanp)
-    :parents (octal-digit)
-    :short "Recognizer for @(tsee octal-digit)."
+    :parents (oct-digit)
+    :short "Recognizer for @(tsee oct-digit)."
     (and (integerp x)
          (<= (char-code #\0) x)
          (<= x (char-code #\7))))
 
-  (std::deffixer octal-digit-fix
-    :pred octal-digitp
+  (std::deffixer oct-digit-fix
+    :pred oct-digitp
     :body-fix (char-code #\0)
-    :parents (octal-digit)
-    :short "Fixer for @(tsee octal-digit).")
+    :parents (oct-digit)
+    :short "Fixer for @(tsee oct-digit).")
 
-  (fty::deffixtype octal-digit
-    :pred octal-digitp
-    :fix octal-digit-fix
-    :equiv octal-digit-equiv
+  (fty::deffixtype oct-digit
+    :pred oct-digitp
+    :fix oct-digit-fix
+    :equiv oct-digit-equiv
     :define t
     :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define octal-digit-value ((x octal-digitp))
+(define oct-digit-value ((x oct-digitp))
   :returns (val natp
                 :rule-classes (:rewrite :type-prescription)
-                :hints (("Goal" :in-theory (enable octal-digitp
-                                                   octal-digit-fix))))
+                :hints (("Goal" :in-theory (enable oct-digitp
+                                                   oct-digit-fix))))
   :short "Numeric value of a Java octal digit."
-  (b* ((x (mbe :logic (octal-digit-fix x) :exec x)))
+  (b* ((x (mbe :logic (oct-digit-fix x) :exec x)))
     (- x (char-code #\0)))
-  :guard-hints (("Goal" :in-theory (enable octal-digitp)))
+  :guard-hints (("Goal" :in-theory (enable oct-digitp)))
   ///
 
-  (defret octal-digit-value-upper-bound
+  (defret oct-digit-value-upper-bound
     (<= val 7)
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable octal-digit-fix octal-digitp)))))
+    :hints (("Goal" :in-theory (enable oct-digit-fix oct-digitp)))))

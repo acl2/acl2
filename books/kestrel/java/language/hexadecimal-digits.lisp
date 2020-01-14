@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,8 +33,7 @@
      either a decimal digit (i.e. between `0' and `9')
      or an (uppercase or lowercase) letter
      between `A' and `F' or between `a' and `f'.
-     See the grammar rule @('hex-digit') (also in [JLS:3.3]),
-     after which this type and these functions are named.")
+     See the grammar rule @('hex-digit') (also in [JLS:3.3]).")
    (xdoc::p
     "This is a type introduced by @(tsee fty::deffixtype)."))
 
