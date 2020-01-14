@@ -441,7 +441,7 @@
 ;(in-theory (disable BVCHOP-+-CANCEL))
 
 (defthm bvchop-of-+-cancel-1-2
-  (Implies (and (integerp x)
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp z)
                 (integerp z2))
@@ -449,7 +449,7 @@
                   (equal (bvchop size y) (bvchop size (+ z z2))))))
 
 (defthm bvchop-of-+-cancel-2-2-alt
-  (Implies (and (integerp x)
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp z)
                 (integerp z2))
@@ -457,7 +457,7 @@
                   (equal (bvchop size (+ y z)) (bvchop size z2)))))
 
 (defthm bvchop-of-+-cancel-1-1
-  (Implies (and (integerp x)
+  (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
            (equal (equal (bvchop size (+ x y)) (bvchop size (+ x z)))
