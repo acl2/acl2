@@ -664,8 +664,15 @@
      :hints (("Goal"
               :in-theory (e/d (sv::svex-env-p
                                pairlis3
-                               sv::svar-p) ())))))
+                               sv::svar-p)
+                              ())))))
 
+  (local
+   (defthm alistp-append
+     (implies (and (alistp x)
+                   (alistp y))
+              (alistp (append x y))))) 
+  
   (define svl-run-aux ((modname sv::modname-p)
                        (inputs 4vec-list-listp)
                        (out-wires sv::svarlist-p)
@@ -673,6 +680,7 @@
                        (delayed-env svl-env-p)
                        (modules svl-module-alist-p))
     :guard (string-listp (strip-cars out-bind-alist))
+    :returns (res alistp)
     (if (atom inputs)
         (progn$ ;(svl-free-env modname delayed-env modules (expt 2 30))
          nil)
@@ -721,6 +729,7 @@
                    (modules svl-module-alist-p))
     :guard (and (string-listp (strip-cars out-bind-alist))
                 (string-listp (strip-cars ins-bind-alist)))
+    :returns (res alistp)
     (declare (ignorable out-bind-alist))
     (b* ((module (assoc-equal modname modules))
          ((unless module)
