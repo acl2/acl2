@@ -2417,9 +2417,6 @@ registers are not used.</p>"
 
 
 
-(defmacro fgl-validity-check (params x)
-  `(not (fgl-sat-check ,params (not ,x))))
-
 (define append-alist-vals ((x true-list-listp))
   (if (atom x)
       nil

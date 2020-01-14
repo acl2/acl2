@@ -40,7 +40,7 @@
 (defprod fgl-ipasir-config
   :parents (fgl-sat-check)
   :short "Configuration object for IPASIR SAT checks in the default FGL configuration."
-  ((ignore-pathcond booleanp :default t)
+  ((ignore-pathcond booleanp :default nil)
    (ignore-constraint booleanp :default nil)
    (ipasir-callback-limit acl2::maybe-natp :default nil
                           "Limit on the number of callbacks in a single SAT check
@@ -119,8 +119,6 @@
        
 
 
-
-
 (define logicman-maybe-recycle-ipasir ((config fgl-ipasir-config-p)
                                        logicman
                                        state)
@@ -136,7 +134,8 @@
                (ipasir sat-lits state)
                (b* (((when (eq (ipasir::ipasir-get-status ipasir) :undef))
                      (b* (((mv ipasir state) (ipasir::ipasir-init ipasir state))
-                          (sat-lits (sat-lits-init sat-lits)))
+                          (sat-lits (sat-lits-init sat-lits))
+                          (ipasir (ipasir-set-limit ipasir config.ipasir-callback-limit)))
                        (mv ipasir sat-lits state)))
                     (ipasir (ipasir::ipasir-cancel-new-clause ipasir))
                     (ipasir (ipasir::ipasir-cancel-assumption ipasir))

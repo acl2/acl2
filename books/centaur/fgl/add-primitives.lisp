@@ -58,7 +58,8 @@
                    bindings
                    new-interp-st
                    new-state)
-      :prepwork <prepwork>
+      :prepwork (<prepwork>
+                 (local (in-theory (disable w))))
       <body>
       ///
       <thms>
@@ -88,10 +89,10 @@
    :splice-alist `((<thms> . ,*fgl-meta-rule-thms*)
                    (<formula-check> . 
                                     ,(and formula-check-fn
-                                          `((,formula-check-fn st)))))
+                                          `((,formula-check-fn st))))
+                   (<prepwork> . ,prepwork))
    :atom-alist `((<metafn> . ,name)
-                 (<body> . ,body)
-                 (<prepwork> . ,prepwork))
+                 (<body> . ,body))
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
 (defun def-fgl-meta-fn (name fn formals body formula-check-fn prepwork)
@@ -132,7 +133,8 @@
                      ans
                      new-interp-st
                      new-state)
-        :prepwork <prepwork>
+        :prepwork (<prepwork>
+                   (local (in-theory (disable w))))
         (if (and (eq (pseudo-fnsym-fix origfn) '<fn>)
                  (eql (len args) <arity>))
             (b* (((list <formals>) (fgl-objectlist-fix args)))
@@ -170,12 +172,12 @@
                      (<thms> . ,*fgl-primitive-rule-thms*)
                      (<formula-check> . 
                                       ,(and formula-check-fn
-                                            `((,formula-check-fn st)))))
+                                            `((,formula-check-fn st))))
+                     (<prepwork> . ,prepwork))
      :atom-alist `((<primfn> . ,primfn)
                    (<fn> . ,fn)
                    (<arity> . ,(len formals))
-                   (<body> . ,body)
-                   (<prepwork> . ,prepwork))
+                   (<body> . ,body))
      :str-alist `(("<FN>" . ,(symbol-name fn)))
      :features (and updates-state '(:updates-state)))))
 
@@ -193,17 +195,18 @@
               ((mv successp ans interp-st state) <body>)))
           (mv successp 'x `((x . ,ans)) interp-st state))
         :origfn <fn> :formals <formals>
-        :prepwork <prepwork>
+        :prepwork (<prepwork>
+                   (local (in-theory (disable w))))
         <formula-check>)
      :splice-alist `((<formals> . ,formals)
                      (<formula-check> . 
                                       ,(and formula-check-fn
-                                            `(:formula-check ,formula-check-fn))))
+                                            `(:formula-check ,formula-check-fn)))
+                     (<prepwork> . ,prepwork))
      :atom-alist `((<primfn> . ,primfn)
                    (<fn> . ,fn)
                    (<arity> . ,(len formals))
-                   (<body> . ,body)
-                   (<prepwork> . ,prepwork))
+                   (<body> . ,body))
      :str-alist `(("<FN>" . ,(symbol-name fn)))
      :features (and updates-state '(:updates-state))
      :pkg-sym primfn)))
@@ -228,7 +231,8 @@
                    rhs-contexts
                    new-interp-st
                    new-state)
-      :prepwork <prepwork>
+      :prepwork (<prepwork>
+                 (local (in-theory (disable w))))
       <body>
       ///
       <thms>
@@ -266,10 +270,10 @@
    :splice-alist `((<thms> . ,*fgl-binder-rule-thms*)
                    (<formula-check> . 
                                     ,(and formula-check-fn
-                                          `((,formula-check-fn st)))))
-   :atom-alist `((<metafn> . ,name)
-                 (<body> . ,body)
+                                          `((,formula-check-fn st))))
                  (<prepwork> . ,prepwork))
+   :atom-alist `((<metafn> . ,name)
+                 (<body> . ,body))
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
 (defun def-fgl-binder-meta-fn (name fn formals body formula-check-fn prepwork)
@@ -361,6 +365,7 @@
           :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
           :returns (mv successp ans new-interp-st new-state)
           :ignore-ok t
+          :prepwork ((local (in-theory (disable w))))
           (case (pseudo-fnsym-fix primfn)
             . <prim-entries>) ;;,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld)))
           ///
@@ -394,6 +399,7 @@
           :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
           :returns (mv successp rhs bindings new-interp-st new-state)
           :ignore-ok t
+          :prepwork ((local (in-theory (disable w))))
           (case (pseudo-fnsym-fix metafn)
             . <meta-entries>) ;;,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld)))
           ///
@@ -429,6 +435,7 @@
           :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
           :returns (mv successp rhs bindings rhs-contexts new-interp-st new-state)
           :ignore-ok t
+          :prepwork ((local (in-theory (disable w))))
           (case (pseudo-fnsym-fix bindfn)
             . <bind-entries>) ;;,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld)))
           ///
@@ -470,8 +477,6 @@
                           (pseudo-fnsym-equiv x y))
                  :rule-classes :forward-chaining))
 
-        (local (in-theory (disable fgl-ev-context-equiv-forall-extensions)))
-
         (defattach
           ;; BOZO add all these back in as well as substitutions for -concretize functions
           ;; if we support adding new evaluators.
@@ -489,6 +494,7 @@
           (fgl-formula-checks-stub <prefix>-formula-checks)
           :hints(("Goal"
                   :do-not '(preprocess simplify)
+                  :in-theory (disable w fgl-ev-context-equiv-forall-extensions)
                   :clause-processor dumb-clausify-cp)
                  (let ((term (car (last clause))))
                    (case-match term

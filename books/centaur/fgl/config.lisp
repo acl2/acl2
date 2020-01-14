@@ -141,8 +141,17 @@
       (make-fgl-config
        . ,(default-fgl-config-settings *fgl-config-fields* state)))))
 
+(defun default-fgl-config-filter-args (args)
+  (declare (xargs :mode :program))
+  (if (atom args)
+      nil
+    (if (acl2::assoc-symbol-name-equal (car args) *fgl-config-fields*)
+        (list* (car args) (cadr args)
+               (default-fgl-config-filter-args (cddr args)))
+      (default-fgl-config-filter-args (cddr args)))))
+  
 
 (defmacro default-fgl-config (&rest args)
-  `(default-fgl-config-fn ',args state))
+  `(default-fgl-config-fn (list . ,(default-fgl-config-filter-args args)) state))
 
 (table fgl-config-table)

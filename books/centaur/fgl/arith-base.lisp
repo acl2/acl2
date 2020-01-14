@@ -347,3 +347,7 @@ counterexample info for the stack frame from which it is called.</p>"
   x)
 
 
+
+
+(defmacro fgl-validity-check (params x)
+  `(not (fgl-sat-check ,params (not ,x))))
